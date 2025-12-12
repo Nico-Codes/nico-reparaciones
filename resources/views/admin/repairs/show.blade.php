@@ -11,6 +11,8 @@
     @endif
 
     <p><b>Cliente:</b> {{ $repair->customer_name }} ({{ $repair->customer_phone }})</p>
+    <p><b>Vinculada a usuario:</b> {{ $repair->user_id ? 'Sí (user_id: '.$repair->user_id.')' : 'No' }}</p>
+
     <p><b>Equipo:</b> {{ $repair->device_brand }} {{ $repair->device_model }}</p>
     <p><b>Estado:</b> {{ $statuses[$repair->status] ?? $repair->status }}</p>
 

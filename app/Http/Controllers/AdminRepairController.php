@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Repair;
 use App\Models\RepairStatusHistory;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class AdminRepairController extends Controller
@@ -52,6 +53,9 @@ class AdminRepairController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
+            // NUEVO: opcional para vincular a un usuario existente
+            'user_email' => 'nullable|email',
+
             'customer_name' => 'required|string|max:255',
             'customer_phone' => 'required|string|max:30',
 
@@ -71,6 +75,18 @@ class AdminRepairController extends Controller
             'notes' => 'nullable|string',
         ]);
 
+        // Resolver user_id si mandaron email
+        $userId = null;
+        if (!empty($data['user_email'])) {
+            $user = User::where('email', $data['user_email'])->first();
+            if (!$user) {
+                return back()
+                    ->withErrors(['user_email' => 'No existe un usuario con ese email.'])
+                    ->withInput();
+            }
+            $userId = $user->id;
+        }
+
         $data['parts_cost'] = $data['parts_cost'] ?? 0;
         $data['labor_cost'] = $data['labor_cost'] ?? 0;
         $data['warranty_days'] = $data['warranty_days'] ?? 0;
@@ -80,7 +96,30 @@ class AdminRepairController extends Controller
             $data['delivered_at'] = now();
         }
 
-        $repair = Repair::create($data);
+        $repair = Repair::create([
+            'user_id' => $userId,
+
+            'customer_name' => $data['customer_name'],
+            'customer_phone' => $data['customer_phone'],
+
+            'device_brand' => $data['device_brand'] ?? null,
+            'device_model' => $data['device_model'] ?? null,
+
+            'issue_reported' => $data['issue_reported'],
+            'diagnosis' => $data['diagnosis'] ?? null,
+
+            'parts_cost' => $data['parts_cost'],
+            'labor_cost' => $data['labor_cost'],
+            'final_price' => $data['final_price'] ?? null,
+
+            'status' => $data['status'],
+            'warranty_days' => $data['warranty_days'],
+
+            'received_at' => $data['received_at'],
+            'delivered_at' => $data['delivered_at'] ?? null,
+
+            'notes' => $data['notes'] ?? null,
+        ]);
 
         // Generar código: R-YYYYMMDD-00001
         $repair->code = 'R-' . now()->format('Ymd') . '-' . str_pad((string) $repair->id, 5, '0', STR_PAD_LEFT);
