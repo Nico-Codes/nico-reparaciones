@@ -4,38 +4,66 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\Product;
-use App\Models\Repair;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class AdminDashboardController extends Controller
 {
     public function index()
     {
-        // Pedidos "abiertos"
-        $openOrderStatuses = ['pendiente', 'confirmado', 'preparando', 'listo_retirar'];
-        $ordersOpenCount = Order::whereIn('status', $openOrderStatuses)->count();
+        // Pedidos
+        $ordersTotal = Order::count();
 
-        // Reparaciones "abiertas" (ajustá si tus statuses cambian)
-        $closedRepairStatuses = ['entregado', 'cancelado'];
-        $repairsOpenCount = Repair::whereNotIn('status', $closedRepairStatuses)->count();
+        // Conteo por estado (para widgets rápidos)
+        $orderStatusCounts = Order::select('status', DB::raw('COUNT(*) as total'))
+            ->groupBy('status')
+            ->pluck('total', 'status')
+            ->toArray();
 
-        // Stock bajo
-        $lowStockThreshold = 2;
+        // "Pendientes" (ajustá si tus estados cambian)
+        $pendingOrderStatuses = ['pendiente', 'confirmado', 'preparando', 'listo_retirar'];
+        $ordersPending = Order::whereIn('status', $pendingOrderStatuses)->count();
+
+        // Stock bajo (umbral simple)
+        $lowStockThreshold = 3;
         $lowStockProducts = Product::where('stock', '<=', $lowStockThreshold)
-            ->orderBy('stock', 'asc')
-            ->limit(10)
+            ->orderBy('stock')
+            ->limit(12)
             ->get();
 
-        // Últimos movimientos
-        $recentOrders = Order::orderByDesc('id')->limit(5)->get();
-        $recentRepairs = Repair::orderByDesc('id')->limit(5)->get();
+        // Reparaciones (si existe el modelo + tabla)
+        $repairsEnabled = class_exists(\App\Models\Repair::class) && Schema::hasTable('repairs');
 
-        return view('admin.dashboard', compact(
-            'ordersOpenCount',
-            'repairsOpenCount',
-            'lowStockThreshold',
-            'lowStockProducts',
-            'recentOrders',
-            'recentRepairs'
-        ));
+        $repairsTotal = 0;
+        $repairsActive = 0;
+        $repairStatusCounts = [];
+
+        if ($repairsEnabled) {
+            $repairModel = \App\Models\Repair::class;
+
+            $repairsTotal = $repairModel::count();
+
+            $repairStatusCounts = $repairModel::select('status', DB::raw('COUNT(*) as total'))
+                ->groupBy('status')
+                ->pluck('total', 'status')
+                ->toArray();
+
+            // Activas = todo menos "entregado/cancelado" (si existen)
+            $repairsActive = $repairModel::whereNotIn('status', ['entregado', 'cancelado'])->count();
+        }
+
+        return view('admin.dashboard', [
+            'ordersTotal' => $ordersTotal,
+            'ordersPending' => $ordersPending,
+            'orderStatusCounts' => $orderStatusCounts,
+
+            'repairsEnabled' => $repairsEnabled,
+            'repairsTotal' => $repairsTotal,
+            'repairsActive' => $repairsActive,
+            'repairStatusCounts' => $repairStatusCounts,
+
+            'lowStockThreshold' => $lowStockThreshold,
+            'lowStockProducts' => $lowStockProducts,
+        ]);
     }
 }
