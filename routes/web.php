@@ -9,6 +9,7 @@ use App\Http\Controllers\AuthController;
 
 use App\Http\Controllers\AdminOrderController;
 use App\Http\Controllers\AdminRepairController;
+use App\Http\Controllers\AdminDashboardController;
 
 use App\Http\Controllers\RepairLookupController;
 use App\Http\Controllers\UserRepairController;
@@ -69,7 +70,7 @@ Route::middleware('auth')->group(function () {
     Route::get('mis-pedidos', [OrderController::class, 'index'])->name('orders.index');
     Route::get('mis-pedidos/{order}', [OrderController::class, 'show'])->name('orders.show');
 
-    // NUEVO: Mis reparaciones (solo si la reparación está vinculada a tu user_id)
+    // Mis reparaciones
     Route::get('mis-reparaciones', [UserRepairController::class, 'index'])->name('repairs.my.index');
     Route::get('mis-reparaciones/{repair}', [UserRepairController::class, 'show'])->name('repairs.my.show');
 });
@@ -81,7 +82,10 @@ Route::middleware('auth')->group(function () {
 */
 Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
 
-    // Pedidos (existente)
+    // NUEVO: Dashboard Admin
+    Route::get('/', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
+
+    // Pedidos
     Route::get('pedidos', [AdminOrderController::class, 'index'])->name('admin.orders.index');
     Route::get('pedidos/{order}', [AdminOrderController::class, 'show'])->name('admin.orders.show');
     Route::post('pedidos/{order}/estado', [AdminOrderController::class, 'updateStatus'])->name('admin.orders.updateStatus');
@@ -90,6 +94,15 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     Route::get('reparaciones', [AdminRepairController::class, 'index'])->name('admin.repairs.index');
     Route::get('reparaciones/crear', [AdminRepairController::class, 'create'])->name('admin.repairs.create');
     Route::post('reparaciones', [AdminRepairController::class, 'store'])->name('admin.repairs.store');
+
     Route::get('reparaciones/{repair}', [AdminRepairController::class, 'show'])->name('admin.repairs.show');
+
+    // Editar datos de reparación (PUT)
+    Route::put('reparaciones/{repair}', [AdminRepairController::class, 'update'])->name('admin.repairs.update');
+
+    // Cambiar estado (POST)
     Route::post('reparaciones/{repair}/estado', [AdminRepairController::class, 'updateStatus'])->name('admin.repairs.updateStatus');
+
+    // Comprobante imprimible
+    Route::get('reparaciones/{repair}/imprimir', [AdminRepairController::class, 'print'])->name('admin.repairs.print');
 });
