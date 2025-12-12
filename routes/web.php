@@ -4,22 +4,21 @@ use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\CartController;
-use App\Http\Controllers\OrderController;
 use App\Http\Controllers\AuthController;
-
+use App\Http\Controllers\OrderController;
 use App\Http\Controllers\AdminOrderController;
 use App\Http\Controllers\AdminRepairController;
-use App\Http\Controllers\AdminDashboardController;
-
 use App\Http\Controllers\RepairLookupController;
 use App\Http\Controllers\UserRepairController;
+use App\Http\Controllers\AdminDashboardController;
 
 /*
 |--------------------------------------------------------------------------
-| Tienda (público)
+| Home / Tienda
 |--------------------------------------------------------------------------
 */
 Route::get('/', [StoreController::class, 'index'])->name('home');
+
 Route::get('tienda', [StoreController::class, 'index'])->name('store.index');
 Route::get('tienda/categoria/{slug}', [StoreController::class, 'category'])->name('store.category');
 Route::get('producto/{slug}', [StoreController::class, 'product'])->name('store.product');
@@ -81,8 +80,7 @@ Route::middleware('auth')->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
-
-    // NUEVO: Dashboard Admin
+    // Dashboard
     Route::get('/', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
 
     // Pedidos
@@ -94,10 +92,9 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     Route::get('reparaciones', [AdminRepairController::class, 'index'])->name('admin.repairs.index');
     Route::get('reparaciones/crear', [AdminRepairController::class, 'create'])->name('admin.repairs.create');
     Route::post('reparaciones', [AdminRepairController::class, 'store'])->name('admin.repairs.store');
-
     Route::get('reparaciones/{repair}', [AdminRepairController::class, 'show'])->name('admin.repairs.show');
 
-    // Editar datos de reparación (PUT)
+    // Editar (PUT)
     Route::put('reparaciones/{repair}', [AdminRepairController::class, 'update'])->name('admin.repairs.update');
 
     // Cambiar estado (POST)
@@ -105,4 +102,7 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
 
     // Comprobante imprimible
     Route::get('reparaciones/{repair}/imprimir', [AdminRepairController::class, 'print'])->name('admin.repairs.print');
+
+    // ✅ NUEVO: registrar envío WhatsApp (historial)
+    Route::post('reparaciones/{repair}/whatsapp', [AdminRepairController::class, 'logWhatsapp'])->name('admin.repairs.whatsappLog');
 });

@@ -34,13 +34,13 @@ class Repair extends Model
     ];
 
     public const STATUSES = [
-        'received' => 'Recibido',
-        'diagnosing' => 'Diagnosticando',
+        'received'         => 'Recibido',
+        'diagnosing'       => 'Diagnosticando',
         'waiting_approval' => 'Esperando aprobación',
-        'repairing' => 'En reparación',
-        'ready_pickup' => 'Listo para retirar',
-        'delivered' => 'Entregado',
-        'cancelled' => 'Cancelado',
+        'repairing'        => 'En reparación',
+        'ready_pickup'     => 'Listo para retirar',
+        'delivered'        => 'Entregado',
+        'cancelled'        => 'Cancelado',
     ];
 
     // Normaliza teléfono a "solo números" al guardar
@@ -52,6 +52,11 @@ class Repair extends Model
     public function statusHistory()
     {
         return $this->hasMany(RepairStatusHistory::class)->orderByDesc('changed_at');
+    }
+
+    public function whatsappLogs()
+    {
+        return $this->hasMany(RepairWhatsappLog::class)->orderByDesc('sent_at');
     }
 
     public function getProfitAttribute(): float

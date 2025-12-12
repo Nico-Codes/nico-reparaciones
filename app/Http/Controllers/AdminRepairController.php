@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Repair;
 use App\Models\RepairStatusHistory;
+use App\Models\RepairWhatsappLog;
 use App\Models\User;
 use Illuminate\Http\Request;
 
@@ -36,10 +37,10 @@ class AdminRepairController extends Controller
         $repairs = $query->paginate(20)->withQueryString();
 
         return view('admin.repairs.index', [
-            'repairs' => $repairs,
-            'statuses' => Repair::STATUSES,
-            'status' => $status,
-            'q' => $q,
+            'repairs'   => $repairs,
+            'statuses'  => Repair::STATUSES,
+            'status'    => $status,
+            'q'         => $q,
         ]);
     }
 
@@ -53,41 +54,39 @@ class AdminRepairController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'user_email' => 'nullable|email',
-
-            'customer_name' => 'required|string|max:255',
-            'customer_phone' => 'required|string|max:30',
-
-            'device_brand' => 'nullable|string|max:255',
-            'device_model' => 'nullable|string|max:255',
-
-            'issue_reported' => 'required|string',
-            'diagnosis' => 'nullable|string',
-
-            'parts_cost' => 'nullable|numeric|min:0',
-            'labor_cost' => 'nullable|numeric|min:0',
-            'final_price' => 'nullable|numeric|min:0',
-
-            'status' => 'required|string|in:' . implode(',', array_keys(Repair::STATUSES)),
-            'warranty_days' => 'nullable|integer|min:0',
-
-            'notes' => 'nullable|string',
+            'user_email'      => 'nullable|email',
+            'customer_name'   => 'required|string|max:255',
+            'customer_phone'  => 'required|string|max:30',
+            'device_brand'    => 'nullable|string|max:255',
+            'device_model'    => 'nullable|string|max:255',
+            'issue_reported'  => 'required|string',
+            'diagnosis'       => 'nullable|string',
+            'parts_cost'      => 'nullable|numeric|min:0',
+            'labor_cost'      => 'nullable|numeric|min:0',
+            'final_price'     => 'nullable|numeric|min:0',
+            'status'          => 'required|string|in:' . implode(',', array_keys(Repair::STATUSES)),
+            'warranty_days'   => 'nullable|integer|min:0',
+            'notes'           => 'nullable|string',
         ]);
 
         $userId = null;
+
         if (!empty($data['user_email'])) {
             $user = User::where('email', $data['user_email'])->first();
+
             if (!$user) {
                 return back()
                     ->withErrors(['user_email' => 'No existe un usuario con ese email.'])
                     ->withInput();
             }
+
             $userId = $user->id;
         }
 
         $data['parts_cost'] = $data['parts_cost'] ?? 0;
         $data['labor_cost'] = $data['labor_cost'] ?? 0;
         $data['warranty_days'] = $data['warranty_days'] ?? 0;
+
         $data['received_at'] = now();
 
         if (($data['status'] ?? null) === 'delivered') {
@@ -95,40 +94,33 @@ class AdminRepairController extends Controller
         }
 
         $repair = Repair::create([
-            'user_id' => $userId,
-
-            'customer_name' => $data['customer_name'],
+            'user_id'        => $userId,
+            'customer_name'  => $data['customer_name'],
             'customer_phone' => $data['customer_phone'],
-
-            'device_brand' => $data['device_brand'] ?? null,
-            'device_model' => $data['device_model'] ?? null,
-
+            'device_brand'   => $data['device_brand'] ?? null,
+            'device_model'   => $data['device_model'] ?? null,
             'issue_reported' => $data['issue_reported'],
-            'diagnosis' => $data['diagnosis'] ?? null,
-
-            'parts_cost' => $data['parts_cost'],
-            'labor_cost' => $data['labor_cost'],
-            'final_price' => $data['final_price'] ?? null,
-
-            'status' => $data['status'],
-            'warranty_days' => $data['warranty_days'],
-
-            'received_at' => $data['received_at'],
-            'delivered_at' => $data['delivered_at'] ?? null,
-
-            'notes' => $data['notes'] ?? null,
+            'diagnosis'      => $data['diagnosis'] ?? null,
+            'parts_cost'     => $data['parts_cost'],
+            'labor_cost'     => $data['labor_cost'],
+            'final_price'    => $data['final_price'] ?? null,
+            'status'         => $data['status'],
+            'warranty_days'  => $data['warranty_days'],
+            'received_at'    => $data['received_at'],
+            'delivered_at'   => $data['delivered_at'] ?? null,
+            'notes'          => $data['notes'] ?? null,
         ]);
 
         $repair->code = 'R-' . now()->format('Ymd') . '-' . str_pad((string) $repair->id, 5, '0', STR_PAD_LEFT);
         $repair->save();
 
         RepairStatusHistory::create([
-            'repair_id' => $repair->id,
+            'repair_id'   => $repair->id,
             'from_status' => null,
-            'to_status' => $repair->status,
-            'changed_by' => auth()->id(),
-            'changed_at' => now(),
-            'comment' => 'Creación de reparación',
+            'to_status'   => $repair->status,
+            'changed_by'  => auth()->id(),
+            'changed_at'  => now(),
+            'comment'     => 'Creación de reparación',
         ]);
 
         return redirect()
@@ -139,6 +131,7 @@ class AdminRepairController extends Controller
     public function show(Repair $repair)
     {
         $linkedUserEmail = null;
+
         if ($repair->user_id) {
             $linkedUserEmail = User::where('id', $repair->user_id)->value('email');
         }
@@ -146,59 +139,54 @@ class AdminRepairController extends Controller
         // WhatsApp (estado actual)
         $waPhone = $this->normalizeWhatsappPhone($repair->customer_phone);
         $waMessage = $this->buildWhatsappMessage($repair);
-        $waUrl = $waPhone
-            ? ('https://wa.me/' . $waPhone . '?text=' . urlencode($waMessage))
-            : null;
+        $waUrl = $waPhone ? ('https://wa.me/' . $waPhone . '?text=' . urlencode($waMessage)) : null;
+
+        $waLogs = $repair->whatsappLogs()->with('sentBy')->get();
 
         return view('admin.repairs.show', [
-            'repair' => $repair,
-            'statuses' => Repair::STATUSES,
-            'history' => $repair->statusHistory()->get(),
+            'repair'          => $repair,
+            'statuses'        => Repair::STATUSES,
+            'history'         => $repair->statusHistory()->get(),
             'linkedUserEmail' => $linkedUserEmail,
-
-            'waPhone' => $waPhone,
-            'waMessage' => $waMessage,
-            'waUrl' => $waUrl,
+            'waPhone'         => $waPhone,
+            'waMessage'       => $waMessage,
+            'waUrl'           => $waUrl,
+            'waLogs'          => $waLogs,
         ]);
     }
 
     public function update(Request $request, Repair $repair)
     {
         $data = $request->validate([
-            'user_email' => 'nullable|email',
-            'unlink_user' => 'nullable|boolean',
-
-            'customer_name' => 'required|string|max:255',
+            'user_email'     => 'nullable|email',
+            'unlink_user'    => 'nullable|boolean',
+            'customer_name'  => 'required|string|max:255',
             'customer_phone' => 'required|string|max:30',
-
-            'device_brand' => 'nullable|string|max:255',
-            'device_model' => 'nullable|string|max:255',
-
+            'device_brand'   => 'nullable|string|max:255',
+            'device_model'   => 'nullable|string|max:255',
             'issue_reported' => 'required|string',
-            'diagnosis' => 'nullable|string',
-
-            'parts_cost' => 'nullable|numeric|min:0',
-            'labor_cost' => 'nullable|numeric|min:0',
-            'final_price' => 'nullable|numeric|min:0',
-
-            'warranty_days' => 'nullable|integer|min:0',
-
-            'notes' => 'nullable|string',
+            'diagnosis'      => 'nullable|string',
+            'parts_cost'     => 'nullable|numeric|min:0',
+            'labor_cost'     => 'nullable|numeric|min:0',
+            'final_price'    => 'nullable|numeric|min:0',
+            'warranty_days'  => 'nullable|integer|min:0',
+            'notes'          => 'nullable|string',
         ]);
 
         $unlink = $request->boolean('unlink_user');
-
         $userId = $repair->user_id;
 
         if ($unlink) {
             $userId = null;
         } elseif (!empty($data['user_email'])) {
             $user = User::where('email', $data['user_email'])->first();
+
             if (!$user) {
                 return back()
                     ->withErrors(['user_email' => 'No existe un usuario con ese email.'])
                     ->withInput();
             }
+
             $userId = $user->id;
         }
 
@@ -207,24 +195,18 @@ class AdminRepairController extends Controller
         $warranty = $data['warranty_days'] ?? 0;
 
         $repair->update([
-            'user_id' => $userId,
-
-            'customer_name' => $data['customer_name'],
+            'user_id'        => $userId,
+            'customer_name'  => $data['customer_name'],
             'customer_phone' => $data['customer_phone'],
-
-            'device_brand' => $data['device_brand'] ?? null,
-            'device_model' => $data['device_model'] ?? null,
-
+            'device_brand'   => $data['device_brand'] ?? null,
+            'device_model'   => $data['device_model'] ?? null,
             'issue_reported' => $data['issue_reported'],
-            'diagnosis' => $data['diagnosis'] ?? null,
-
-            'parts_cost' => $parts,
-            'labor_cost' => $labor,
-            'final_price' => $data['final_price'] ?? null,
-
-            'warranty_days' => $warranty,
-
-            'notes' => $data['notes'] ?? null,
+            'diagnosis'      => $data['diagnosis'] ?? null,
+            'parts_cost'     => $parts,
+            'labor_cost'     => $labor,
+            'final_price'    => $data['final_price'] ?? null,
+            'warranty_days'  => $warranty,
+            'notes'          => $data['notes'] ?? null,
         ]);
 
         return back()->with('success', 'Datos de la reparación actualizados.');
@@ -233,8 +215,8 @@ class AdminRepairController extends Controller
     public function updateStatus(Request $request, Repair $repair)
     {
         $request->validate([
-            'status' => 'required|string|in:' . implode(',', array_keys(Repair::STATUSES)),
-            'comment' => 'nullable|string|max:500',
+            'status'   => 'required|string|in:' . implode(',', array_keys(Repair::STATUSES)),
+            'comment'  => 'nullable|string|max:500',
         ]);
 
         $from = $repair->status;
@@ -253,12 +235,12 @@ class AdminRepairController extends Controller
         $repair->save();
 
         RepairStatusHistory::create([
-            'repair_id' => $repair->id,
+            'repair_id'   => $repair->id,
             'from_status' => $from,
-            'to_status' => $to,
-            'changed_by' => auth()->id(),
-            'changed_at' => now(),
-            'comment' => $request->input('comment'),
+            'to_status'   => $to,
+            'changed_by'  => auth()->id(),
+            'changed_at'  => now(),
+            'comment'     => $request->input('comment'),
         ]);
 
         // Flash para “enviar WhatsApp ahora”
@@ -270,22 +252,45 @@ class AdminRepairController extends Controller
             ->route('admin.repairs.show', $repair)
             ->with('success', 'Estado actualizado.')
             ->with('wa_after', [
-                'phone' => $waPhone,
+                'phone'   => $waPhone,
                 'message' => $waMessage,
-                'url' => $waUrl,
+                'url'     => $waUrl,
             ]);
+    }
+
+    // ✅ NUEVO: registrar (guardar) el envío de WhatsApp
+    public function logWhatsapp(Repair $repair)
+    {
+        $waPhone = $this->normalizeWhatsappPhone($repair->customer_phone);
+        $waMessage = $this->buildWhatsappMessage($repair);
+
+        if (!$waPhone) {
+            return back()->withErrors(['customer_phone' => 'No se pudo armar el WhatsApp: revisá el teléfono del cliente.']);
+        }
+
+        RepairWhatsappLog::create([
+            'repair_id'       => $repair->id,
+            'notified_status' => $repair->status,
+            'phone'           => $waPhone,
+            'message'         => $waMessage,
+            'sent_by'         => auth()->id(),
+            'sent_at'         => now(),
+        ]);
+
+        return back()->with('success', 'Envío de WhatsApp registrado en el historial.');
     }
 
     public function print(Repair $repair)
     {
         $linkedUserEmail = null;
+
         if ($repair->user_id) {
             $linkedUserEmail = User::where('id', $repair->user_id)->value('email');
         }
 
         return view('admin.repairs.print', [
-            'repair' => $repair,
-            'statuses' => Repair::STATUSES,
+            'repair'          => $repair,
+            'statuses'        => Repair::STATUSES,
             'linkedUserEmail' => $linkedUserEmail,
         ]);
     }
@@ -295,7 +300,6 @@ class AdminRepairController extends Controller
     | Helpers WhatsApp
     |--------------------------------------------------------------------------
     */
-
     private function normalizeWhatsappPhone(string $raw): ?string
     {
         $digits = preg_replace('/\D+/', '', $raw);
@@ -320,7 +324,7 @@ class AdminRepairController extends Controller
     {
         $statusLabel = Repair::STATUSES[$repair->status] ?? $repair->status;
 
-        $msg = "Hola {$repair->customer_name} 👋\n";
+        $msg  = "Hola {$repair->customer_name}\n";
         $msg .= "Tu reparación ({$repair->code}) está en estado: *{$statusLabel}*.\n";
 
         switch ($repair->status) {
@@ -331,7 +335,7 @@ class AdminRepairController extends Controller
                 $msg .= "¡Ya está lista para retirar! ✅\n";
                 break;
             case 'delivered':
-                $msg .= "¡Gracias por tu visita! 🙌\n";
+                $msg .= "¡Gracias por tu visita!\n";
                 break;
         }
 
