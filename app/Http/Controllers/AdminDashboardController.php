@@ -2,62 +2,60 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Support\Facades\DB;
+use App\Models\Order;
+use App\Models\Repair;
+use App\Models\Product;
+use Illuminate\Http\Request;
 
 class AdminDashboardController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        // Pedidos
-        $ordersTotal = DB::table('orders')->count();
-        $ordersByStatus = DB::table('orders')
-            ->select('status', DB::raw('COUNT(*) as total'))
-            ->groupBy('status')
-            ->pluck('total', 'status')
-            ->toArray();
+        // Pedidos “activos” (ajustable)
+        $activeOrderStatuses = ['pendiente', 'confirmado', 'preparando', 'listo_retirar'];
 
-        $latestOrders = DB::table('orders')
-            ->orderByDesc('id')
-            ->limit(8)
+        $ordersActiveCount = Order::query()
+            ->whereIn('status', $activeOrderStatuses)
+            ->count();
+
+        $ordersTodayCount = Order::query()
+            ->whereDate('created_at', now()->toDateString())
+            ->count();
+
+        $latestOrders = Order::query()
+            ->latest()
+            ->take(8)
             ->get();
 
-        // Reparaciones
-        $repairsTotal = DB::table('repairs')->count();
-        $repairsByStatus = DB::table('repairs')
-            ->select('status', DB::raw('COUNT(*) as total'))
-            ->groupBy('status')
-            ->pluck('total', 'status')
-            ->toArray();
+        // Reparaciones activas (si tu sistema usa otros strings, igual no rompe)
+        $finalRepairStatuses = ['entregado', 'cancelado'];
 
-        $latestRepairs = DB::table('repairs')
-            ->orderByDesc('id')
-            ->limit(8)
+        $repairsActiveCount = Repair::query()
+            ->whereNotIn('status', $finalRepairStatuses)
+            ->count();
+
+        $latestRepairs = Repair::query()
+            ->latest()
+            ->take(8)
             ->get();
 
-        // Stock bajo (si existe la tabla products y el campo stock)
-        $lowStockProducts = collect();
-        try {
-            $lowStockProducts = DB::table('products')
-                ->whereNotNull('stock')
-                ->where('stock', '<=', 3)
-                ->orderBy('stock')
-                ->limit(10)
-                ->get();
-        } catch (\Throwable $e) {
-            // Si todavía no existe tabla/campo, no rompemos el dashboard.
-            $lowStockProducts = collect();
-        }
+        // Stock bajo (umbral simple)
+        $lowStockThreshold = 3;
+
+        $lowStockProducts = Product::query()
+            ->where('stock', '<=', $lowStockThreshold)
+            ->orderBy('stock')
+            ->take(10)
+            ->get();
 
         return view('admin.dashboard', [
-            'ordersTotal' => $ordersTotal,
-            'ordersByStatus' => $ordersByStatus,
+            'ordersActiveCount' => $ordersActiveCount,
+            'ordersTodayCount' => $ordersTodayCount,
             'latestOrders' => $latestOrders,
-
-            'repairsTotal' => $repairsTotal,
-            'repairsByStatus' => $repairsByStatus,
+            'repairsActiveCount' => $repairsActiveCount,
             'latestRepairs' => $latestRepairs,
-
             'lowStockProducts' => $lowStockProducts,
+            'lowStockThreshold' => $lowStockThreshold,
         ]);
     }
 }
