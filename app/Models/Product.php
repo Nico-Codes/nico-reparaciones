@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Product extends Model
 {
@@ -10,24 +11,31 @@ class Product extends Model
         'category_id',
         'name',
         'slug',
-        'brand',
-        'quality',
         'price',
         'stock',
-        'short_description',
         'description',
-        'image',
-        'featured',
+        'image_path',
     ];
 
     protected $casts = [
-        'price' => 'integer',
+        'price' => 'decimal:2',
         'stock' => 'integer',
-        'featured' => 'boolean',
     ];
 
-    public function category()
+    public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    /**
+     * URL pública de la imagen (usa tu ruta storage.local).
+     * En blades podés usar: $product->image_url
+     */
+    public function getImageUrlAttribute(): ?string
+    {
+        if (!$this->image_path) return null;
+
+        // Si existe la route storage.local en tu proyecto (ya aparece en tu route:list), esto funciona siempre.
+        return route('storage.local', $this->image_path);
     }
 }

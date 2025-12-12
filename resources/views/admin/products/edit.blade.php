@@ -1,118 +1,100 @@
 @extends('layouts.app')
 
-@section('title', 'Admin - Editar producto')
-
 @section('content')
-<div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
-    <h1 style="margin:0;">Editar producto</h1>
-    <a href="{{ route('admin.products.index') }}" style="text-decoration:none; padding:10px 12px; border:1px solid #eee; border-radius:12px;">← Volver</a>
-</div>
-
-@if(session('success'))
-    <div style="margin-top:12px; padding:12px; border:1px solid #d1fae5; background:#ecfdf5; border-radius:12px;">
-        {{ session('success') }}
+<div style="max-width:900px; margin:0 auto; padding:18px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+        <h2 style="margin:0;">Editar producto</h2>
+        <a href="{{ route('admin.products.index') }}" style="text-decoration:none; color:#111; border:1px solid #ddd; padding:10px 12px; border-radius:10px;">
+            ← Volver
+        </a>
     </div>
-@endif
 
-@if($errors->any())
-    <div style="margin-top:12px; padding:12px; border:1px solid #fecaca; background:#fef2f2; border-radius:12px;">
-        <strong>Revisá estos errores:</strong>
-        <ul style="margin:8px 0 0; padding-left:18px;">
-            @foreach($errors->all() as $error)
-                <li>{{ $error }}</li>
-            @endforeach
-        </ul>
-    </div>
-@endif
-
-<form method="POST" action="{{ route('admin.products.update', $product) }}" enctype="multipart/form-data" style="margin-top:14px; display:flex; flex-direction:column; gap:14px;">
-    @csrf
-    @method('PUT')
-
-    <div style="padding:12px; border:1px solid #eee; border-radius:12px; display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:12px;">
-        <div>
-            <label>Categoría *</label><br>
-            <select name="category_id" required style="width:100%; padding:10px; border:1px solid #eee; border-radius:12px;">
-                @foreach($categories as $c)
-                    <option value="{{ $c->id }}" {{ old('category_id', $product->category_id) == $c->id ? 'selected' : '' }}>
-                        {{ $c->icon ?? '' }} {{ $c->name }}
-                    </option>
+    @if($errors->any())
+        <div style="margin-top:12px; padding:12px; background:#fef2f2; border:1px solid #fecaca; border-radius:12px;">
+            <div style="font-weight:700; margin-bottom:6px;">Revisá estos errores:</div>
+            <ul style="margin:0; padding-left:18px;">
+                @foreach($errors->all() as $e)
+                    <li>{{ $e }}</li>
                 @endforeach
-            </select>
+            </ul>
+        </div>
+    @endif
+
+    <form method="POST" action="{{ route('admin.products.update', $product) }}" enctype="multipart/form-data"
+          style="margin-top:14px; display:flex; flex-direction:column; gap:12px;">
+        @csrf
+        @method('PUT')
+
+        <div style="border:1px solid #eee; border-radius:14px; padding:14px;">
+            <label>Nombre</label><br>
+            <input name="name" value="{{ old('name', $product->name) }}" style="width:100%; padding:10px; border-radius:10px; border:1px solid #ddd;">
         </div>
 
-        <div>
-            <label>Nombre *</label><br>
-            <input type="text" name="name" required value="{{ old('name', $product->name) }}" style="width:100%; padding:10px; border:1px solid #eee; border-radius:12px;">
+        <div style="display:flex; gap:12px; flex-wrap:wrap;">
+            <div style="flex:1; min-width:260px; border:1px solid #eee; border-radius:14px; padding:14px;">
+                <label>Categoría</label><br>
+                <select name="category_id" style="width:100%; padding:10px; border-radius:10px; border:1px solid #ddd;">
+                    @foreach($categories as $c)
+                        <option value="{{ $c->id }}" @selected(old('category_id', $product->category_id) == $c->id)>{{ $c->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div style="flex:1; min-width:200px; border:1px solid #eee; border-radius:14px; padding:14px;">
+                <label>Precio</label><br>
+                <input type="number" step="0.01" name="price" value="{{ old('price', $product->price) }}"
+                       style="width:100%; padding:10px; border-radius:10px; border:1px solid #ddd;">
+            </div>
+
+            <div style="flex:1; min-width:200px; border:1px solid #eee; border-radius:14px; padding:14px;">
+                <label>Stock</label><br>
+                <input type="number" name="stock" value="{{ old('stock', $product->stock) }}"
+                       style="width:100%; padding:10px; border-radius:10px; border:1px solid #ddd;">
+            </div>
         </div>
 
-        <div>
-            <label>Slug</label><br>
-            <input type="text" name="slug" value="{{ old('slug', $product->slug) }}" style="width:100%; padding:10px; border:1px solid #eee; border-radius:12px;">
+        <div style="border:1px solid #eee; border-radius:14px; padding:14px;">
+            <label>Descripción (opcional)</label><br>
+            <textarea name="description" rows="5" style="width:100%; padding:10px; border-radius:10px; border:1px solid #ddd;">{{ old('description', $product->description) }}</textarea>
         </div>
 
-        <div>
-            <label>Marca</label><br>
-            <input type="text" name="brand" value="{{ old('brand', $product->brand) }}" style="width:100%; padding:10px; border:1px solid #eee; border-radius:12px;">
-        </div>
-
-        <div>
-            <label>Calidad *</label><br>
-            @php $q = old('quality', $product->quality); @endphp
-            <select name="quality" required style="width:100%; padding:10px; border:1px solid #eee; border-radius:12px;">
-                <option value="original" {{ $q==='original'?'selected':'' }}>Original</option>
-                <option value="premium" {{ $q==='premium'?'selected':'' }}>Premium</option>
-                <option value="generico" {{ $q==='generico'?'selected':'' }}>Genérico</option>
-            </select>
-        </div>
-
-        <div>
-            <label>Precio (ARS) *</label><br>
-            <input type="number" min="0" name="price" required value="{{ old('price', $product->price) }}" style="width:100%; padding:10px; border:1px solid #eee; border-radius:12px;">
-        </div>
-
-        <div>
-            <label>Stock *</label><br>
-            <input type="number" min="0" name="stock" required value="{{ old('stock', $product->stock) }}" style="width:100%; padding:10px; border:1px solid #eee; border-radius:12px;">
-        </div>
-    </div>
-
-    <div style="padding:12px; border:1px solid #eee; border-radius:12px;">
-        <label>Descripción corta</label><br>
-        <input type="text" name="short_description" value="{{ old('short_description', $product->short_description) }}" style="width:100%; padding:10px; border:1px solid #eee; border-radius:12px;" maxlength="255">
-    </div>
-
-    <div style="padding:12px; border:1px solid #eee; border-radius:12px;">
-        <label>Descripción</label><br>
-        <textarea name="description" rows="5" style="width:100%; padding:10px; border:1px solid #eee; border-radius:12px;">{{ old('description', $product->description) }}</textarea>
-    </div>
-
-    <div style="padding:12px; border:1px solid #eee; border-radius:12px; display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:12px;">
-        <div>
-            <label>Imagen</label><br>
-
-            @if($product->image)
-                <div style="margin:8px 0; display:flex; gap:10px; align-items:center;">
-                    <img src="{{ asset('storage/'.$product->image) }}" alt="" style="width:72px; height:72px; object-fit:cover; border-radius:12px; border:1px solid #f1f1f1;">
-                    <label style="display:flex; gap:8px; align-items:center;">
-                        <input type="checkbox" name="remove_image" value="1">
-                        Quitar imagen actual
-                    </label>
+        <div style="border:1px solid #eee; border-radius:14px; padding:14px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+                <div>
+                    <div style="font-weight:700;">Imagen actual</div>
+                    <div style="font-size:12px; color:#666;">Podés subir otra para reemplazarla.</div>
                 </div>
-            @endif
+                @if($product->image_url)
+                    <img src="{{ $product->image_url }}" alt="{{ $product->name }}"
+                         style="width:72px; height:72px; object-fit:cover; border-radius:12px; border:1px solid #eee;">
+                @else
+                    <div style="width:72px; height:72px; border-radius:12px; border:1px dashed #ddd; display:flex; align-items:center; justify-content:center; color:#999; font-size:12px;">
+                        sin foto
+                    </div>
+                @endif
+            </div>
 
-            <input type="file" name="image" accept="image/*">
-            <div style="opacity:.75; margin-top:6px; font-size:13px;">Si subís una nueva, reemplaza la anterior.</div>
+            <div style="margin-top:10px;">
+                <label>Nueva imagen (opcional)</label><br>
+                <input type="file" name="image" accept="image/*">
+            </div>
+
+            <div style="margin-top:10px;">
+                <label style="display:flex; gap:8px; align-items:center;">
+                    <input type="checkbox" name="remove_image" value="1">
+                    Quitar imagen
+                </label>
+            </div>
         </div>
 
-        <div style="display:flex; align-items:center; gap:8px;">
-            <input type="checkbox" id="featured" name="featured" value="1" {{ old('featured', $product->featured) ? 'checked' : '' }}>
-            <label for="featured" style="margin:0;">Destacado</label>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button type="submit" style="padding:10px 14px; border-radius:12px; background:#111; color:#fff; border:none; cursor:pointer;">
+                Guardar cambios
+            </button>
+            <a href="{{ route('admin.products.index') }}" style="padding:10px 14px; border-radius:12px; border:1px solid #ddd; color:#111; text-decoration:none;">
+                Cancelar
+            </a>
         </div>
-    </div>
-
-    <button type="submit" style="padding:12px 14px; border-radius:12px; border:1px solid #111; background:#111; color:#fff; cursor:pointer;">
-        Guardar cambios
-    </button>
-</form>
+    </form>
+</div>
 @endsection
