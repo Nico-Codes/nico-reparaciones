@@ -1,119 +1,130 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\OrderController;
 
+use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AdminOrderController;
 use App\Http\Controllers\AdminRepairController;
-use App\Http\Controllers\AdminDashboardController;
-use App\Http\Controllers\AdminWhatsappTemplateController;
-use App\Http\Controllers\AdminBusinessSettingsController;
 
 use App\Http\Controllers\RepairLookupController;
 use App\Http\Controllers\UserRepairController;
 
 /*
 |--------------------------------------------------------------------------
-| Home / Tienda
+| Store (Público)
 |--------------------------------------------------------------------------
 */
 Route::get('/', [StoreController::class, 'index'])->name('home');
 
-Route::get('tienda', [StoreController::class, 'index'])->name('store.index');
-Route::get('tienda/categoria/{slug}', [StoreController::class, 'category'])->name('store.category');
-Route::get('producto/{slug}', [StoreController::class, 'product'])->name('store.product');
+Route::get('/tienda', [StoreController::class, 'index'])->name('store.index');
+Route::get('/tienda/categoria/{slug}', [StoreController::class, 'category'])->name('store.category');
+Route::get('/producto/{slug}', [StoreController::class, 'product'])->name('store.product');
 
 /*
 |--------------------------------------------------------------------------
-| Carrito (público)
+| Carrito (Público)
 |--------------------------------------------------------------------------
 */
-Route::get('carrito', [CartController::class, 'index'])->name('cart.index');
-Route::post('carrito/agregar/{product}', [CartController::class, 'add'])->name('cart.add');
-Route::post('carrito/actualizar/{product}', [CartController::class, 'update'])->name('cart.update');
-Route::post('carrito/eliminar/{product}', [CartController::class, 'remove'])->name('cart.remove');
-Route::post('carrito/vaciar', [CartController::class, 'clear'])->name('cart.clear');
+Route::get('/carrito', [CartController::class, 'index'])->name('cart.index');
+Route::post('/carrito/agregar/{product}', [CartController::class, 'add'])->name('cart.add');
+Route::post('/carrito/actualizar/{product}', [CartController::class, 'update'])->name('cart.update');
+Route::post('/carrito/eliminar/{product}', [CartController::class, 'remove'])->name('cart.remove');
+Route::post('/carrito/vaciar', [CartController::class, 'clear'])->name('cart.clear');
 
 /*
 |--------------------------------------------------------------------------
-| Reparaciones - consulta cliente (público)
+| Checkout
+|--------------------------------------------------------------------------
+| - GET checkout lo dejamos público (si no está logueado, el controller puede redirigir)
+| - POST confirmar SI o SI con auth (evita pedidos “a mano” sin sesión)
+*/
+Route::get('/checkout', [CartController::class, 'checkout'])->name('checkout');
+Route::post('/checkout/confirmar', [OrderController::class, 'confirm'])
+    ->middleware('auth')
+    ->name('checkout.confirm');
+
+/*
+|--------------------------------------------------------------------------
+| Auth
 |--------------------------------------------------------------------------
 */
-Route::get('reparacion', [RepairLookupController::class, 'form'])->name('repairs.lookup');
-Route::post('reparacion', [RepairLookupController::class, 'lookup'])->name('repairs.lookup.post');
+Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+Route::post('/login', [AuthController::class, 'login'])->name('login.post');
+
+Route::get('/registro', [AuthController::class, 'showRegister'])->name('register');
+Route::post('/registro', [AuthController::class, 'register'])->name('register.post');
+
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 /*
 |--------------------------------------------------------------------------
-| Auth (guest)
-|--------------------------------------------------------------------------
-*/
-Route::middleware('guest')->group(function () {
-    Route::get('login', [AuthController::class, 'showLogin'])->name('login');
-    Route::post('login', [AuthController::class, 'login'])->name('login.post');
-
-    Route::get('registro', [AuthController::class, 'showRegister'])->name('register');
-    Route::post('registro', [AuthController::class, 'register'])->name('register.post');
-});
-
-/*
-|--------------------------------------------------------------------------
-| Usuario logueado
+| Pedidos y Reparaciones del Cliente (Auth)
 |--------------------------------------------------------------------------
 */
 Route::middleware('auth')->group(function () {
-    Route::post('logout', [AuthController::class, 'logout'])->name('logout');
+    // Pedidos
+    Route::get('/mis-pedidos', [OrderController::class, 'index'])->name('orders.index');
+    Route::get('/mis-pedidos/{order}', [OrderController::class, 'show'])->name('orders.show');
 
-    Route::get('checkout', [CartController::class, 'checkout'])->name('checkout');
-    Route::post('checkout/confirmar', [OrderController::class, 'confirm'])->name('checkout.confirm');
-
-    Route::get('mis-pedidos', [OrderController::class, 'index'])->name('orders.index');
-    Route::get('mis-pedidos/{order}', [OrderController::class, 'show'])->name('orders.show');
-
-    Route::get('mis-reparaciones', [UserRepairController::class, 'index'])->name('repairs.my.index');
-    Route::get('mis-reparaciones/{repair}', [UserRepairController::class, 'show'])->name('repairs.my.show');
+    // Reparaciones
+    Route::get('/mis-reparaciones', [UserRepairController::class, 'index'])->name('repairs.my.index');
+    Route::get('/mis-reparaciones/{repair}', [UserRepairController::class, 'show'])->name('repairs.my.show');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Consulta pública de reparación (por código / dato)
+|--------------------------------------------------------------------------
+*/
+Route::get('/reparacion', [RepairLookupController::class, 'form'])->name('repairs.lookup');
+Route::post('/reparacion', [RepairLookupController::class, 'lookup'])->name('repairs.lookup.post');
 
 /*
 |--------------------------------------------------------------------------
 | Admin (auth + admin)
 |--------------------------------------------------------------------------
 */
-Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
-    // Dashboard
-    Route::get('/', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
+Route::middleware(['auth', 'admin'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+        // Dashboard
+        Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
 
-    // ✅ Configuración del negocio
-    Route::get('configuracion', [AdminBusinessSettingsController::class, 'index'])->name('admin.settings.index');
-    Route::post('configuracion', [AdminBusinessSettingsController::class, 'update'])->name('admin.settings.update');
+        // Pedidos
+        Route::get('/pedidos', [AdminOrderController::class, 'index'])->name('orders.index');
+        Route::get('/pedidos/{order}', [AdminOrderController::class, 'show'])->name('orders.show');
+        Route::post('/pedidos/{order}/estado', [AdminOrderController::class, 'updateStatus'])->name('orders.updateStatus');
 
-    // ✅ Plantillas WhatsApp
-    Route::get('plantillas-whatsapp', [AdminWhatsappTemplateController::class, 'index'])->name('admin.whatsappTemplates.index');
-    Route::post('plantillas-whatsapp', [AdminWhatsappTemplateController::class, 'update'])->name('admin.whatsappTemplates.update');
+        // Reparaciones
+        Route::get('/reparaciones', [AdminRepairController::class, 'index'])->name('repairs.index');
+        Route::get('/reparaciones/crear', [AdminRepairController::class, 'create'])->name('repairs.create');
+        Route::post('/reparaciones', [AdminRepairController::class, 'store'])->name('repairs.store');
+        Route::get('/reparaciones/{repair}', [AdminRepairController::class, 'show'])->name('repairs.show');
+        Route::post('/reparaciones/{repair}/estado', [AdminRepairController::class, 'updateStatus'])->name('repairs.updateStatus');
+    });
 
-    // Pedidos
-    Route::get('pedidos', [AdminOrderController::class, 'index'])->name('admin.orders.index');
-    Route::get('pedidos/{order}', [AdminOrderController::class, 'show'])->name('admin.orders.show');
-    Route::post('pedidos/{order}/estado', [AdminOrderController::class, 'updateStatus'])->name('admin.orders.updateStatus');
+/*
+|--------------------------------------------------------------------------
+| Storage local (porque no está el symlink public/storage)
+|--------------------------------------------------------------------------
+*/
+Route::get('/storage/{path}', function (string $path) {
+    if (str_contains($path, '..')) {
+        abort(404);
+    }
 
-    // Reparaciones
-    Route::get('reparaciones', [AdminRepairController::class, 'index'])->name('admin.repairs.index');
-    Route::get('reparaciones/crear', [AdminRepairController::class, 'create'])->name('admin.repairs.create');
-    Route::post('reparaciones', [AdminRepairController::class, 'store'])->name('admin.repairs.store');
+    $disk = Storage::disk('public');
 
-    Route::get('reparaciones/{repair}', [AdminRepairController::class, 'show'])->name('admin.repairs.show');
+    if (!$disk->exists($path)) {
+        abort(404);
+    }
 
-    Route::put('reparaciones/{repair}', [AdminRepairController::class, 'update'])->name('admin.repairs.update');
-    Route::post('reparaciones/{repair}/estado', [AdminRepairController::class, 'updateStatus'])->name('admin.repairs.updateStatus');
-
-    Route::get('reparaciones/{repair}/imprimir', [AdminRepairController::class, 'print'])->name('admin.repairs.print');
-
-    // Historial WhatsApp (manual)
-    Route::post('reparaciones/{repair}/whatsapp', [AdminRepairController::class, 'logWhatsapp'])->name('admin.repairs.whatsappLog');
-
-    // Log “silencioso” para 1-click
-    Route::post('reparaciones/{repair}/whatsapp-ajax', [AdminRepairController::class, 'logWhatsappAjax'])->name('admin.repairs.whatsappLogAjax');
-});
+    return response()->file($disk->path($path));
+})->where('path', '.*')->name('storage.local');

@@ -11,41 +11,42 @@ class AdminDashboardController extends Controller
 {
     public function index()
     {
-        // Pedidos: conteo por estado (no asumimos nombres exactos)
         $ordersByStatus = Order::select('status', DB::raw('COUNT(*) as total'))
             ->groupBy('status')
             ->pluck('total', 'status')
             ->toArray();
 
-        $lastOrders = Order::latest()->take(8)->get();
-
-        // Reparaciones
         $repairsByStatus = Repair::select('status', DB::raw('COUNT(*) as total'))
             ->groupBy('status')
             ->pluck('total', 'status')
             ->toArray();
 
-        $activeRepairsCount = Repair::whereNotIn('status', ['delivered', 'cancelled'])->count();
-        $lastRepairs = Repair::latest()->take(8)->get();
+        $ordersTotal = array_sum($ordersByStatus);
+        $repairsTotal = array_sum($repairsByStatus);
 
-        // Stock bajo
-        $lowStockThreshold = 3; // podés ajustar
-        $lowStockProducts = Product::where('stock', '<=', $lowStockThreshold)
+        // Simple y fijo (sin mil configuraciones)
+        $lowStockThreshold = 3;
+
+        $lowStockProducts = Product::query()
+            ->whereNotNull('stock')
+            ->where('stock', '<=', $lowStockThreshold)
             ->orderBy('stock')
-            ->take(12)
+            ->limit(10)
             ->get();
+
+        $lowStockCount = Product::query()
+            ->whereNotNull('stock')
+            ->where('stock', '<=', $lowStockThreshold)
+            ->count();
 
         return view('admin.dashboard', [
             'ordersByStatus' => $ordersByStatus,
-            'lastOrders' => $lastOrders,
-
             'repairsByStatus' => $repairsByStatus,
-            'activeRepairsCount' => $activeRepairsCount,
-            'lastRepairs' => $lastRepairs,
-            'repairStatuses' => Repair::STATUSES,
-
+            'ordersTotal' => $ordersTotal,
+            'repairsTotal' => $repairsTotal,
             'lowStockThreshold' => $lowStockThreshold,
             'lowStockProducts' => $lowStockProducts,
+            'lowStockCount' => $lowStockCount,
         ]);
     }
 }
