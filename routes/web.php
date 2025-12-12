@@ -6,11 +6,13 @@ use App\Http\Controllers\StoreController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\OrderController;
+
 use App\Http\Controllers\AdminOrderController;
 use App\Http\Controllers\AdminRepairController;
+use App\Http\Controllers\AdminDashboardController;
+
 use App\Http\Controllers\RepairLookupController;
 use App\Http\Controllers\UserRepairController;
-use App\Http\Controllers\AdminDashboardController;
 
 /*
 |--------------------------------------------------------------------------
@@ -69,7 +71,6 @@ Route::middleware('auth')->group(function () {
     Route::get('mis-pedidos', [OrderController::class, 'index'])->name('orders.index');
     Route::get('mis-pedidos/{order}', [OrderController::class, 'show'])->name('orders.show');
 
-    // Mis reparaciones
     Route::get('mis-reparaciones', [UserRepairController::class, 'index'])->name('repairs.my.index');
     Route::get('mis-reparaciones/{repair}', [UserRepairController::class, 'show'])->name('repairs.my.show');
 });
@@ -92,17 +93,17 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     Route::get('reparaciones', [AdminRepairController::class, 'index'])->name('admin.repairs.index');
     Route::get('reparaciones/crear', [AdminRepairController::class, 'create'])->name('admin.repairs.create');
     Route::post('reparaciones', [AdminRepairController::class, 'store'])->name('admin.repairs.store');
+
     Route::get('reparaciones/{repair}', [AdminRepairController::class, 'show'])->name('admin.repairs.show');
 
-    // Editar (PUT)
     Route::put('reparaciones/{repair}', [AdminRepairController::class, 'update'])->name('admin.repairs.update');
-
-    // Cambiar estado (POST)
     Route::post('reparaciones/{repair}/estado', [AdminRepairController::class, 'updateStatus'])->name('admin.repairs.updateStatus');
 
-    // Comprobante imprimible
     Route::get('reparaciones/{repair}/imprimir', [AdminRepairController::class, 'print'])->name('admin.repairs.print');
 
-    // ✅ NUEVO: registrar envío WhatsApp (historial)
+    // Historial WhatsApp (manual)
     Route::post('reparaciones/{repair}/whatsapp', [AdminRepairController::class, 'logWhatsapp'])->name('admin.repairs.whatsappLog');
+
+    // ✅ NUEVO: log “silencioso” para 1-click (fetch keepalive)
+    Route::post('reparaciones/{repair}/whatsapp-ajax', [AdminRepairController::class, 'logWhatsappAjax'])->name('admin.repairs.whatsappLogAjax');
 });
