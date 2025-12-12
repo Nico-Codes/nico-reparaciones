@@ -11,6 +11,7 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\AdminOrderController;
 use App\Http\Controllers\AdminRepairController;
 use App\Http\Controllers\AdminRepairPrintController;
+use App\Http\Controllers\AdminDashboardController;
 
 use App\Http\Controllers\RepairLookupController;
 use App\Http\Controllers\UserRepairController;
@@ -85,10 +86,8 @@ Route::prefix('admin')
     ->name('admin.')
     ->group(function () {
 
-        // Home admin
-        Route::get('/', function () {
-            return redirect()->route('admin.repairs.index');
-        })->name('dashboard');
+        // ✅ Dashboard REAL (ya no redirige a reparaciones)
+        Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
 
         // Pedidos
         Route::get('/pedidos', [AdminOrderController::class, 'index'])->name('orders.index');
@@ -101,9 +100,10 @@ Route::prefix('admin')
         Route::post('/reparaciones', [AdminRepairController::class, 'store'])->name('repairs.store');
         Route::get('/reparaciones/{repair}', [AdminRepairController::class, 'show'])->name('repairs.show');
 
-        // ✅ ESTA ES LA QUE FALTABA (para el form de "Editar datos" en show.blade.php)
+        // Editar (form en show.blade.php)
         Route::put('/reparaciones/{repair}', [AdminRepairController::class, 'update'])->name('repairs.update');
 
+        // Cambiar estado
         Route::post('/reparaciones/{repair}/estado', [AdminRepairController::class, 'updateStatus'])->name('repairs.updateStatus');
 
         // WhatsApp logs

@@ -24,7 +24,6 @@ class AdminDashboardController extends Controller
         $ordersTotal = array_sum($ordersByStatus);
         $repairsTotal = array_sum($repairsByStatus);
 
-        // Simple y fijo (sin mil configuraciones)
         $lowStockThreshold = 3;
 
         $lowStockProducts = Product::query()
