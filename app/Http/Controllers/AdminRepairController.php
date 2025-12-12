@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Repair;
 use App\Models\RepairStatusHistory;
 use App\Models\RepairWhatsappLog;
+use App\Models\RepairWhatsappTemplate;
 use App\Models\User;
 use Illuminate\Http\Request;
 
@@ -306,7 +307,6 @@ class AdminRepairController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    // Manual (botón)
     public function logWhatsapp(Repair $repair)
     {
         $waPhone = $this->normalizeWhatsappPhone($repair->customer_phone);
@@ -324,7 +324,6 @@ class AdminRepairController extends Controller
         );
     }
 
-    // ✅ Nuevo: Ajax/keepalive (para 1-click al abrir WhatsApp)
     public function logWhatsappAjax(Request $request, Repair $repair)
     {
         $waPhone = $this->normalizeWhatsappPhone($repair->customer_phone);
@@ -344,7 +343,6 @@ class AdminRepairController extends Controller
 
     private function createWhatsappLogIfNotDuplicate(Repair $repair, string $waPhone, string $waMessage): bool
     {
-        // Anti-spam: si ya registraste este mismo estado hace < 10 minutos, no duplica
         $last = RepairWhatsappLog::where('repair_id', $repair->id)
             ->where('notified_status', $repair->status)
             ->orderByDesc('sent_at')
@@ -396,26 +394,50 @@ class AdminRepairController extends Controller
     {
         $statusLabel = Repair::STATUSES[$repair->status] ?? $repair->status;
 
-        $msg  = "Hola {$repair->customer_name} 👋\n";
-        $msg .= "Tu reparación ({$repair->code}) está en estado: *{$statusLabel}*.\n";
-
-        switch ($repair->status) {
-            case 'waiting_approval':
-                $msg .= "Necesitamos tu aprobación para continuar.\n";
-                break;
-            case 'ready_pickup':
-                $msg .= "¡Ya está lista para retirar! ✅\n";
-                break;
-            case 'delivered':
-                $msg .= "¡Gracias por tu visita! 🙌\n";
-                break;
+        // ✅ Si hay plantilla en DB para ese status, la usamos; sino default
+        $tpl = RepairWhatsappTemplate::where('status', $repair->status)->value('template');
+        if (!$tpl || trim($tpl) === '') {
+            $tpl = $this->defaultTemplate($repair->status);
         }
 
-        $msg .= "\nPodés consultar el estado en: " . url('/reparacion') . "\n";
-        $msg .= "Código: {$repair->code}\n";
-        $msg .= "Teléfono: {$repair->customer_phone}\n";
-        $msg .= "\nNicoReparaciones";
+        $device = trim(($repair->device_brand ?? '') . ' ' . ($repair->device_model ?? ''));
+        $finalPrice = $repair->final_price !== null ? number_format((float)$repair->final_price, 0, ',', '.') : '';
 
-        return $msg;
+        $replacements = [
+            '{customer_name}' => (string) $repair->customer_name,
+            '{code}' => (string) $repair->code,
+            '{status}' => (string) $repair->status,
+            '{status_label}' => (string) $statusLabel,
+            '{lookup_url}' => url('/reparacion'),
+            '{phone}' => (string) $repair->customer_phone,
+            '{device_brand}' => (string) ($repair->device_brand ?? ''),
+            '{device_model}' => (string) ($repair->device_model ?? ''),
+            '{device}' => (string) $device,
+            '{final_price}' => (string) $finalPrice,
+            '{warranty_days}' => (string) ((int)($repair->warranty_days ?? 0)),
+        ];
+
+        return strtr($tpl, $replacements);
+    }
+
+    private function defaultTemplate(string $status): string
+    {
+        $base = "Hola {customer_name} 👋\n";
+        $base .= "Tu reparación ({code}) está en estado: *{status_label}*.\n";
+
+        if ($status === 'waiting_approval') {
+            $base .= "Necesitamos tu aprobación para continuar.\n";
+        } elseif ($status === 'ready_pickup') {
+            $base .= "¡Ya está lista para retirar! ✅\n";
+        } elseif ($status === 'delivered') {
+            $base .= "¡Gracias por tu visita! 🙌\n";
+        }
+
+        $base .= "\nPodés consultar el estado en: {lookup_url}\n";
+        $base .= "Código: {code}\n";
+        $base .= "Equipo: {device}\n";
+        $base .= "NicoReparaciones";
+
+        return $base;
     }
 }

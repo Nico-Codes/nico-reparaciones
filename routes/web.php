@@ -10,6 +10,7 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\AdminOrderController;
 use App\Http\Controllers\AdminRepairController;
 use App\Http\Controllers\AdminDashboardController;
+use App\Http\Controllers\AdminWhatsappTemplateController;
 
 use App\Http\Controllers\RepairLookupController;
 use App\Http\Controllers\UserRepairController;
@@ -84,6 +85,10 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     // Dashboard
     Route::get('/', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
 
+    // ✅ Plantillas WhatsApp
+    Route::get('plantillas-whatsapp', [AdminWhatsappTemplateController::class, 'index'])->name('admin.whatsappTemplates.index');
+    Route::post('plantillas-whatsapp', [AdminWhatsappTemplateController::class, 'update'])->name('admin.whatsappTemplates.update');
+
     // Pedidos
     Route::get('pedidos', [AdminOrderController::class, 'index'])->name('admin.orders.index');
     Route::get('pedidos/{order}', [AdminOrderController::class, 'show'])->name('admin.orders.show');
@@ -104,6 +109,6 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     // Historial WhatsApp (manual)
     Route::post('reparaciones/{repair}/whatsapp', [AdminRepairController::class, 'logWhatsapp'])->name('admin.repairs.whatsappLog');
 
-    // ✅ NUEVO: log “silencioso” para 1-click (fetch keepalive)
+    // Log “silencioso” para 1-click
     Route::post('reparaciones/{repair}/whatsapp-ajax', [AdminRepairController::class, 'logWhatsappAjax'])->name('admin.repairs.whatsappLogAjax');
 });

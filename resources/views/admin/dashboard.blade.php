@@ -10,6 +10,7 @@
             <a href="{{ route('admin.orders.index') }}">Ver pedidos</a>
             <a href="{{ route('admin.repairs.index') }}">Ver reparaciones</a>
             <a href="{{ route('admin.repairs.create') }}">+ Nueva reparación</a>
+            <a href="{{ route('admin.whatsappTemplates.index') }}">Plantillas WhatsApp</a>
         </div>
     </div>
 
