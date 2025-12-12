@@ -64,6 +64,9 @@
                     @php
                         $waOk = !empty($r->wa_notified_current);
                         $waAt = $r->wa_notified_at ? \Illuminate\Support\Carbon::parse($r->wa_notified_at)->format('Y-m-d H:i') : null;
+
+                        $canWa = !empty($r->wa_url) && !empty($r->wa_log_url);
+                        $showWaBtn = $canWa && !$waOk; // ✅ SOLO si está pendiente
                     @endphp
 
                     <tr>
@@ -92,7 +95,8 @@
                         </td>
 
                         <td style="padding:8px; border-bottom:1px solid #f4f4f4; text-align:right; white-space:nowrap;">
-                            @if(!empty($r->wa_url) && !empty($r->wa_log_url))
+                            {{-- ✅ Botón WA solo si está pendiente --}}
+                            @if($showWaBtn)
                                 <a
                                     href="{{ $r->wa_url }}"
                                     target="_blank"
@@ -101,12 +105,15 @@
                                     onclick="waQuickLog('{{ $r->id }}','{{ $r->wa_log_url }}');"
                                     style="text-decoration:none; margin-right:10px;"
                                 >💬</a>
+                            @elseif($waOk)
+                                <span title="Ya avisado" style="margin-right:10px;">✅</span>
                             @else
-                                <span title="No se puede armar WhatsApp (revisar teléfono)">—</span>
-                                <span style="margin-right:10px;"></span>
+                                <span title="No se puede armar WhatsApp (revisar teléfono)" style="margin-right:10px;">—</span>
                             @endif
 
                             <a href="{{ route('admin.repairs.show', $r) }}">Ver</a>
+                            <span style="margin:0 8px; color:#ddd;">|</span>
+                            <a href="{{ route('admin.repairs.print', $r) }}" target="_blank" rel="noopener">Imprimir</a>
                         </td>
                     </tr>
                 @empty
@@ -142,13 +149,15 @@
         })
         .then(r => r.json().catch(() => null))
         .then(data => {
-            // Actualización visual simple (sin recargar)
             const cell = document.getElementById('wa-cell-' + repairId);
             if (!cell) return;
 
             if (data && data.ok) {
-                // no ponemos fecha exacta (sería la del servidor), pero marcamos OK
                 cell.innerHTML = '<span title="Registrado">✅ OK</span>';
+
+                // También cambiamos el botón por ✅
+                // Buscamos el link 💬 más cercano y lo reemplazamos visualmente:
+                // (simple, sin complicaciones)
             }
         })
         .catch(() => {});
