@@ -3,38 +3,39 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
-use App\Models\Repair;
 use App\Models\Product;
-use Illuminate\Support\Facades\DB;
+use App\Models\Repair;
 
 class AdminDashboardController extends Controller
 {
     public function index()
     {
-        // Pedidos por estado
-        $orderCounts = Order::query()
-            ->select('status', DB::raw('COUNT(*) as total'))
-            ->groupBy('status')
-            ->pluck('total', 'status')
-            ->toArray();
+        // Pedidos "abiertos"
+        $openOrderStatuses = ['pendiente', 'confirmado', 'preparando', 'listo_retirar'];
+        $ordersOpenCount = Order::whereIn('status', $openOrderStatuses)->count();
 
-        // Reparaciones por estado (si existe el modelo)
-        $repairCounts = [];
-        if (class_exists(Repair::class)) {
-            $repairCounts = Repair::query()
-                ->select('status', DB::raw('COUNT(*) as total'))
-                ->groupBy('status')
-                ->pluck('total', 'status')
-                ->toArray();
-        }
+        // Reparaciones "abiertas" (ajustá si tus statuses cambian)
+        $closedRepairStatuses = ['entregado', 'cancelado'];
+        $repairsOpenCount = Repair::whereNotIn('status', $closedRepairStatuses)->count();
 
-        $stats = [
-            'orders_total'   => Order::count(),
-            'orders_pending' => Order::where('status', 'pendiente')->count(),
-            'repairs_total'  => class_exists(Repair::class) ? Repair::count() : 0,
-            'products_total' => class_exists(Product::class) ? Product::count() : 0,
-        ];
+        // Stock bajo
+        $lowStockThreshold = 2;
+        $lowStockProducts = Product::where('stock', '<=', $lowStockThreshold)
+            ->orderBy('stock', 'asc')
+            ->limit(10)
+            ->get();
 
-        return view('admin.dashboard', compact('stats', 'orderCounts', 'repairCounts'));
+        // Últimos movimientos
+        $recentOrders = Order::orderByDesc('id')->limit(5)->get();
+        $recentRepairs = Repair::orderByDesc('id')->limit(5)->get();
+
+        return view('admin.dashboard', compact(
+            'ordersOpenCount',
+            'repairsOpenCount',
+            'lowStockThreshold',
+            'lowStockProducts',
+            'recentOrders',
+            'recentRepairs'
+        ));
     }
 }

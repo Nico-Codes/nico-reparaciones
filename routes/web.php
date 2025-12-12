@@ -13,109 +13,138 @@ use App\Http\Controllers\UserRepairController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AdminOrderController;
 use App\Http\Controllers\AdminRepairController;
-
+use App\Http\Controllers\AdminRepairPrintController;
 use App\Http\Controllers\AdminProductController;
 use App\Http\Controllers\AdminCategoryController;
 
 /*
 |--------------------------------------------------------------------------
-| Home / Tienda
+| Public
 |--------------------------------------------------------------------------
 */
 Route::get('/', [StoreController::class, 'index'])->name('home');
-Route::get('tienda', [StoreController::class, 'index'])->name('store.index');
-Route::get('tienda/categoria/{slug}', [StoreController::class, 'category'])->name('store.category');
-Route::get('producto/{slug}', [StoreController::class, 'product'])->name('store.product');
+Route::get('/tienda', [StoreController::class, 'index'])->name('store.index');
+Route::get('/tienda/categoria/{slug}', [StoreController::class, 'category'])->name('store.category');
+Route::get('/producto/{slug}', [StoreController::class, 'product'])->name('store.product');
 
 /*
 |--------------------------------------------------------------------------
-| Carrito (público)
+| Auth
 |--------------------------------------------------------------------------
 */
-Route::get('carrito', [CartController::class, 'index'])->name('cart.index');
-Route::post('carrito/agregar/{product}', [CartController::class, 'add'])->name('cart.add');
-Route::post('carrito/actualizar/{product}', [CartController::class, 'update'])->name('cart.update');
-Route::post('carrito/eliminar/{product}', [CartController::class, 'remove'])->name('cart.remove');
-Route::post('carrito/vaciar', [CartController::class, 'clear'])->name('cart.clear');
+Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+Route::post('/login', [AuthController::class, 'login'])->name('login.post');
+
+Route::get('/registro', [AuthController::class, 'showRegister'])->name('register');
+Route::post('/registro', [AuthController::class, 'register'])->name('register.post');
+
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 /*
 |--------------------------------------------------------------------------
-| Reparaciones - consulta cliente (público)
+| Cart / Checkout
 |--------------------------------------------------------------------------
 */
-Route::get('reparacion', [RepairLookupController::class, 'form'])->name('repairs.lookup');
-Route::post('reparacion', [RepairLookupController::class, 'lookup'])->name('repairs.lookup.post');
+Route::get('/carrito', [CartController::class, 'index'])->name('cart.index');
+Route::post('/carrito/agregar/{product}', [CartController::class, 'add'])->name('cart.add');
+Route::post('/carrito/actualizar/{product}', [CartController::class, 'update'])->name('cart.update');
+Route::post('/carrito/eliminar/{product}', [CartController::class, 'remove'])->name('cart.remove');
+Route::post('/carrito/vaciar', [CartController::class, 'clear'])->name('cart.clear');
+
+Route::get('/checkout', [CartController::class, 'checkout'])->name('checkout');
+Route::post('/checkout/confirmar', [OrderController::class, 'confirm'])->name('checkout.confirm');
 
 /*
 |--------------------------------------------------------------------------
-| Auth (guest)
+| Orders (User)
 |--------------------------------------------------------------------------
 */
-Route::middleware('guest')->group(function () {
-    Route::get('login', [AuthController::class, 'showLogin'])->name('login');
-    Route::post('login', [AuthController::class, 'login'])->name('login.post');
-
-    Route::get('registro', [AuthController::class, 'showRegister'])->name('register');
-    Route::post('registro', [AuthController::class, 'register'])->name('register.post');
+Route::middleware(['auth'])->group(function () {
+    Route::get('/mis-pedidos', [OrderController::class, 'index'])->name('orders.index');
+    Route::get('/mis-pedidos/{order}', [OrderController::class, 'show'])->name('orders.show');
 });
 
 /*
 |--------------------------------------------------------------------------
-| Usuario logueado
+| Repairs (Lookup + User)
 |--------------------------------------------------------------------------
 */
-Route::middleware('auth')->group(function () {
-    Route::post('logout', [AuthController::class, 'logout'])->name('logout');
+Route::get('/reparacion', [RepairLookupController::class, 'form'])->name('repairs.lookup');
+Route::post('/reparacion', [RepairLookupController::class, 'lookup'])->name('repairs.lookup.post');
 
-    Route::get('checkout', [CartController::class, 'checkout'])->name('checkout');
-    Route::post('checkout/confirmar', [OrderController::class, 'confirm'])->name('checkout.confirm');
-
-    Route::get('mis-pedidos', [OrderController::class, 'index'])->name('orders.index');
-    Route::get('mis-pedidos/{order}', [OrderController::class, 'show'])->name('orders.show');
-
-    Route::get('mis-reparaciones', [UserRepairController::class, 'index'])->name('repairs.my.index');
-    Route::get('mis-reparaciones/{repair}', [UserRepairController::class, 'show'])->name('repairs.my.show');
+Route::middleware(['auth'])->group(function () {
+    Route::get('/mis-reparaciones', [UserRepairController::class, 'index'])->name('repairs.my.index');
+    Route::get('/mis-reparaciones/{repair}', [UserRepairController::class, 'show'])->name('repairs.my.show');
 });
 
 /*
 |--------------------------------------------------------------------------
-| Admin (auth + admin)
+| Admin
 |--------------------------------------------------------------------------
 */
-Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
-    Route::get('/', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
+Route::prefix('admin')
+    ->name('admin.')
+    ->middleware(['auth', 'admin'])
+    ->group(function () {
 
-    // Pedidos
-    Route::get('pedidos', [AdminOrderController::class, 'index'])->name('admin.orders.index');
-    Route::get('pedidos/{order}', [AdminOrderController::class, 'show'])->name('admin.orders.show');
-    Route::post('pedidos/{order}/estado', [AdminOrderController::class, 'updateStatus'])->name('admin.orders.updateStatus');
+        // ✅ Dashboard (/admin)
+        Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
 
-    // Reparaciones
-    Route::get('reparaciones', [AdminRepairController::class, 'index'])->name('admin.repairs.index');
-    Route::get('reparaciones/crear', [AdminRepairController::class, 'create'])->name('admin.repairs.create');
-    Route::post('reparaciones', [AdminRepairController::class, 'store'])->name('admin.repairs.store');
-    Route::get('reparaciones/{repair}', [AdminRepairController::class, 'show'])->name('admin.repairs.show');
-    Route::put('reparaciones/{repair}', [AdminRepairController::class, 'update'])->name('admin.repairs.update');
-    Route::post('reparaciones/{repair}/estado', [AdminRepairController::class, 'updateStatus'])->name('admin.repairs.updateStatus');
-    Route::get('reparaciones/{repair}/imprimir', [AdminRepairController::class, 'print'])->name('admin.repairs.print');
+        // Pedidos
+        Route::get('pedidos', [AdminOrderController::class, 'index'])->name('orders.index');
+        Route::get('pedidos/{order}', [AdminOrderController::class, 'show'])->name('orders.show');
+        Route::post('pedidos/{order}/estado', [AdminOrderController::class, 'updateStatus'])->name('orders.updateStatus');
 
-    // WhatsApp logs (si los usás)
-    Route::post('reparaciones/{repair}/whatsapp', [AdminRepairController::class, 'whatsappLog'])->name('admin.repairs.whatsappLog');
-    Route::post('reparaciones/{repair}/whatsapp-ajax', [AdminRepairController::class, 'whatsappLogAjax'])->name('admin.repairs.whatsappLogAjax');
+        // Reparaciones
+        Route::get('reparaciones', [AdminRepairController::class, 'index'])->name('repairs.index');
+        Route::get('reparaciones/crear', [AdminRepairController::class, 'create'])->name('repairs.create');
+        Route::post('reparaciones', [AdminRepairController::class, 'store'])->name('repairs.store');
 
-    // Productos (NUEVO)
-    Route::get('productos', [AdminProductController::class, 'index'])->name('admin.products.index');
-    Route::get('productos/crear', [AdminProductController::class, 'create'])->name('admin.products.create');
-    Route::post('productos', [AdminProductController::class, 'store'])->name('admin.products.store');
-    Route::get('productos/{product}/editar', [AdminProductController::class, 'edit'])->name('admin.products.edit');
-    Route::put('productos/{product}', [AdminProductController::class, 'update'])->name('admin.products.update');
-    Route::delete('productos/{product}', [AdminProductController::class, 'destroy'])->name('admin.products.destroy');
+        // Importante: rutas "fijas" antes de {repair}
+        Route::get('reparaciones/{repair}/imprimir', AdminRepairPrintController::class)->name('repairs.print');
 
-    // Categorías (NUEVO)
-    Route::get('categorias', [AdminCategoryController::class, 'index'])->name('admin.categories.index');
-    Route::get('categorias/crear', [AdminCategoryController::class, 'create'])->name('admin.categories.create');
-    Route::post('categorias', [AdminCategoryController::class, 'store'])->name('admin.categories.store');
-    Route::get('categorias/{category}/editar', [AdminCategoryController::class, 'edit'])->name('admin.categories.edit');
-    Route::put('categorias/{category}', [AdminCategoryController::class, 'update'])->name('admin.categories.update');
-    Route::delete('categorias/{category}', [AdminCategoryController::class, 'destroy'])->name('admin.categories.destroy');
-});
+        Route::get('reparaciones/{repair}', [AdminRepairController::class, 'show'])->name('repairs.show');
+        Route::put('reparaciones/{repair}', [AdminRepairController::class, 'update'])->name('repairs.update');
+
+        Route::post('reparaciones/{repair}/estado', [AdminRepairController::class, 'updateStatus'])->name('repairs.updateStatus');
+
+        Route::post('reparaciones/{repair}/whatsapp', [AdminRepairController::class, 'whatsappLog'])->name('repairs.whatsappLog');
+        Route::post('reparaciones/{repair}/whatsapp-ajax', [AdminRepairController::class, 'whatsappLogAjax'])->name('repairs.whatsappLogAjax');
+
+        // Productos
+        Route::get('productos', [AdminProductController::class, 'index'])->name('products.index');
+        Route::get('productos/crear', [AdminProductController::class, 'create'])->name('products.create');
+        Route::post('productos', [AdminProductController::class, 'store'])->name('products.store');
+        Route::get('productos/{product}/editar', [AdminProductController::class, 'edit'])->name('products.edit');
+        Route::put('productos/{product}', [AdminProductController::class, 'update'])->name('products.update');
+        Route::delete('productos/{product}', [AdminProductController::class, 'destroy'])->name('products.destroy');
+
+        // Categorías
+        Route::get('categorias', [AdminCategoryController::class, 'index'])->name('categories.index');
+        Route::get('categorias/crear', [AdminCategoryController::class, 'create'])->name('categories.create');
+        Route::post('categorias', [AdminCategoryController::class, 'store'])->name('categories.store');
+        Route::get('categorias/{category}/editar', [AdminCategoryController::class, 'edit'])->name('categories.edit');
+        Route::put('categorias/{category}', [AdminCategoryController::class, 'update'])->name('categories.update');
+        Route::delete('categorias/{category}', [AdminCategoryController::class, 'destroy'])->name('categories.destroy');
+    });
+
+/*
+|--------------------------------------------------------------------------
+| Local storage helper (si lo venís usando)
+|--------------------------------------------------------------------------
+*/
+Route::get('/storage/{path}', function (string $path) {
+    $path = ltrim($path, '/');
+
+    $public = public_path('storage/' . $path);
+    if (is_file($public)) {
+        return response()->file($public);
+    }
+
+    $storage = storage_path('app/public/' . $path);
+    if (is_file($storage)) {
+        return response()->file($storage);
+    }
+
+    abort(404);
+})->where('path', '.*')->name('storage.local');
