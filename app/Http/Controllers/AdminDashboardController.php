@@ -2,67 +2,61 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Order;
-use App\Models\Product;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 class AdminDashboardController extends Controller
 {
     public function index()
     {
         // Pedidos
-        $ordersTotal = Order::count();
-
-        // Conteo por estado (para widgets rápidos)
-        $orderStatusCounts = Order::select('status', DB::raw('COUNT(*) as total'))
+        $ordersTotal = DB::table('orders')->count();
+        $ordersByStatus = DB::table('orders')
+            ->select('status', DB::raw('COUNT(*) as total'))
             ->groupBy('status')
             ->pluck('total', 'status')
             ->toArray();
 
-        // "Pendientes" (ajustá si tus estados cambian)
-        $pendingOrderStatuses = ['pendiente', 'confirmado', 'preparando', 'listo_retirar'];
-        $ordersPending = Order::whereIn('status', $pendingOrderStatuses)->count();
-
-        // Stock bajo (umbral simple)
-        $lowStockThreshold = 3;
-        $lowStockProducts = Product::where('stock', '<=', $lowStockThreshold)
-            ->orderBy('stock')
-            ->limit(12)
+        $latestOrders = DB::table('orders')
+            ->orderByDesc('id')
+            ->limit(8)
             ->get();
 
-        // Reparaciones (si existe el modelo + tabla)
-        $repairsEnabled = class_exists(\App\Models\Repair::class) && Schema::hasTable('repairs');
+        // Reparaciones
+        $repairsTotal = DB::table('repairs')->count();
+        $repairsByStatus = DB::table('repairs')
+            ->select('status', DB::raw('COUNT(*) as total'))
+            ->groupBy('status')
+            ->pluck('total', 'status')
+            ->toArray();
 
-        $repairsTotal = 0;
-        $repairsActive = 0;
-        $repairStatusCounts = [];
+        $latestRepairs = DB::table('repairs')
+            ->orderByDesc('id')
+            ->limit(8)
+            ->get();
 
-        if ($repairsEnabled) {
-            $repairModel = \App\Models\Repair::class;
-
-            $repairsTotal = $repairModel::count();
-
-            $repairStatusCounts = $repairModel::select('status', DB::raw('COUNT(*) as total'))
-                ->groupBy('status')
-                ->pluck('total', 'status')
-                ->toArray();
-
-            // Activas = todo menos "entregado/cancelado" (si existen)
-            $repairsActive = $repairModel::whereNotIn('status', ['entregado', 'cancelado'])->count();
+        // Stock bajo (si existe la tabla products y el campo stock)
+        $lowStockProducts = collect();
+        try {
+            $lowStockProducts = DB::table('products')
+                ->whereNotNull('stock')
+                ->where('stock', '<=', 3)
+                ->orderBy('stock')
+                ->limit(10)
+                ->get();
+        } catch (\Throwable $e) {
+            // Si todavía no existe tabla/campo, no rompemos el dashboard.
+            $lowStockProducts = collect();
         }
 
         return view('admin.dashboard', [
             'ordersTotal' => $ordersTotal,
-            'ordersPending' => $ordersPending,
-            'orderStatusCounts' => $orderStatusCounts,
+            'ordersByStatus' => $ordersByStatus,
+            'latestOrders' => $latestOrders,
 
-            'repairsEnabled' => $repairsEnabled,
             'repairsTotal' => $repairsTotal,
-            'repairsActive' => $repairsActive,
-            'repairStatusCounts' => $repairStatusCounts,
+            'repairsByStatus' => $repairsByStatus,
+            'latestRepairs' => $latestRepairs,
 
-            'lowStockThreshold' => $lowStockThreshold,
             'lowStockProducts' => $lowStockProducts,
         ]);
     }
