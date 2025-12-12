@@ -28,13 +28,12 @@
         </div>
     @endif
 
-    {{-- Banner post-cambio de estado --}}
+    {{-- ✅ 1) Bloque post-cambio de estado --}}
     @if(session('wa_after'))
         @php $waAfter = session('wa_after'); @endphp
 
         <div style="padding:12px; border:1px solid #ddd; background:#fafafa; margin:14px 0; border-radius:12px;">
             <strong>¿Avisar por WhatsApp?</strong>
-
             <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
                 @if(!empty($waAfter['url']))
                     <a href="{{ $waAfter['url'] }}"
@@ -66,6 +65,54 @@
 
             <textarea id="wa_after_message" rows="6" style="width:100%; margin-top:10px; padding:10px; border:1px solid #eee; border-radius:10px;">{{ $waAfter['message'] }}</textarea>
         </div>
+
+    {{-- ✅ 2) Banner inteligente (solo si NO venís del wa_after) --}}
+    @else
+        @if($waNotifiedCurrent)
+            <div style="padding:12px; border:1px solid #cfe9cf; background:#eef9ee; margin:14px 0; border-radius:12px;">
+                ✅ WhatsApp ya registrado para este estado:
+                <strong>{{ $statuses[$repair->status] ?? $repair->status }}</strong>
+                @if($waNotifiedAt)
+                    — {{ \Illuminate\Support\Carbon::parse($waNotifiedAt)->format('Y-m-d H:i') }}
+                @endif
+            </div>
+        @else
+            <div style="padding:12px; border:1px solid #f1e1a6; background:#fff8d9; margin:14px 0; border-radius:12px;">
+                <strong>⚠️ Pendiente de avisar por WhatsApp</strong>
+                <div style="margin-top:6px; color:#444;">
+                    Estado actual: <strong>{{ $statuses[$repair->status] ?? $repair->status }}</strong>
+                </div>
+
+                <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                    @if($waUrl)
+                        <a href="{{ $waUrl }}"
+                           target="_blank"
+                           rel="noopener"
+                           onclick="waQuickLog()"
+                           style="border:1px solid #ddd; padding:8px 12px; border-radius:10px; background:#fff; text-decoration:none;">
+                            💬 Abrir WhatsApp + Registrar
+                        </a>
+                    @else
+                        <span style="border:1px solid #f0c2c2; padding:8px 12px; border-radius:10px; background:#fff;">
+                            No se pudo armar el link (revisar teléfono)
+                        </span>
+                    @endif
+
+                    <button type="button" onclick="copyText('wa_message')"
+                            style="border:1px solid #ddd; padding:8px 12px; border-radius:10px; background:#fff; cursor:pointer;">
+                        📋 Copiar mensaje
+                    </button>
+
+                    <form method="POST" action="{{ route('admin.repairs.whatsappLog', $repair) }}" style="display:inline;">
+                        @csrf
+                        <button type="submit"
+                                style="border:1px solid #ddd; padding:8px 12px; border-radius:10px; background:#fff; cursor:pointer;">
+                            ✅ Registrar envío (manual)
+                        </button>
+                    </form>
+                </div>
+            </div>
+        @endif
     @endif
 
     <div style="margin-top:10px;">
@@ -121,12 +168,6 @@
 
     <div style="margin-top:14px;">
         <h4>Historial WhatsApp</h4>
-
-        @if(($waLogs ?? collect())->count() && ($waLogs->first()->notified_status === $repair->status))
-            <div style="padding:8px; border:1px solid #cfe9cf; background:#eef9ee; margin:8px 0; border-radius:10px;">
-                ✅ Este estado ya figura como notificado por WhatsApp (registro más reciente).
-            </div>
-        @endif
 
         <ul style="margin:0; padding-left:18px;">
             @forelse($waLogs as $log)
@@ -317,12 +358,11 @@
         alert('Copiado ✅');
     }
 
-    // ✅ 1-click: registra el envío en segundo plano (sin bloquear apertura WA)
+    // ✅ 1-click: registra el envío en segundo plano
     function waQuickLog() {
         const url = @json(route('admin.repairs.whatsappLogAjax', $repair));
         const token = @json(csrf_token());
 
-        // keepalive evita que se corte si el navegador abre otra pestaña
         fetch(url, {
             method: 'POST',
             headers: {

@@ -2,64 +2,156 @@
 
 @section('content')
 <div class="container">
-    <h1>Reparaciones</h1>
 
-    @if (session('success'))
-        <div style="margin:12px 0; padding:10px; border:1px solid #7c7; border-radius:8px;">
-            {{ session('success') }}
+    <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:center;">
+        <h1 style="margin:0;">Reparaciones</h1>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <a href="{{ route('admin.repairs.create') }}">+ Nueva reparación</a>
+            <a href="{{ route('admin.dashboard') }}">← Panel</a>
         </div>
-    @endif
+    </div>
 
-    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin:12px 0;">
-        <a href="{{ route('admin.repairs.create') }}">+ Nueva reparación</a>
+    <div style="margin-top:12px; border:1px solid #eee; border-radius:12px; padding:12px;">
+        <form method="GET" action="{{ route('admin.repairs.index') }}" style="display:flex; gap:10px; flex-wrap:wrap; align-items:end;">
 
-        <form method="GET" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-            <select name="status">
-                <option value="">-- Todos --</option>
-                @foreach($statuses as $k => $label)
-                    <option value="{{ $k }}" @selected($status === $k)>{{ $label }}</option>
-                @endforeach
-            </select>
+            <div>
+                <label>Estado</label><br>
+                <select name="status">
+                    <option value="">Todos</option>
+                    @foreach($statuses as $k => $label)
+                        <option value="{{ $k }}" {{ ($status === $k) ? 'selected' : '' }}>{{ $label }}</option>
+                    @endforeach
+                </select>
+            </div>
 
-            <input name="q" value="{{ $q }}" placeholder="Buscar: código, nombre o teléfono">
+            <div>
+                <label>WhatsApp</label><br>
+                <select name="wa">
+                    <option value="">Todos</option>
+                    <option value="pending" {{ ($wa === 'pending') ? 'selected' : '' }}>🟡 Pendiente</option>
+                    <option value="sent" {{ ($wa === 'sent') ? 'selected' : '' }}>✅ Avisado</option>
+                </select>
+            </div>
 
-            <button type="submit">Filtrar</button>
+            <div style="flex:1; min-width:240px;">
+                <label>Buscar</label><br>
+                <input type="text" name="q" value="{{ $q }}" placeholder="Código, cliente o teléfono" style="width:100%;">
+            </div>
+
+            <div>
+                <button type="submit">Filtrar</button>
+                <a href="{{ route('admin.repairs.index') }}" style="margin-left:8px;">Limpiar</a>
+            </div>
+
         </form>
     </div>
 
-    <table style="width:100%; border-collapse:collapse;">
-        <thead>
-            <tr>
-                <th style="text-align:left; border-bottom:1px solid #ddd; padding:8px;">Código</th>
-                <th style="text-align:left; border-bottom:1px solid #ddd; padding:8px;">Cliente</th>
-                <th style="text-align:left; border-bottom:1px solid #ddd; padding:8px;">Equipo</th>
-                <th style="text-align:left; border-bottom:1px solid #ddd; padding:8px;">Estado</th>
-                <th style="text-align:left; border-bottom:1px solid #ddd; padding:8px;">Ganancia</th>
-                <th style="border-bottom:1px solid #ddd; padding:8px;"></th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse($repairs as $r)
-                <tr>
-                    <td style="padding:8px;">{{ $r->code }}</td>
-                    <td style="padding:8px;">{{ $r->customer_name }}</td>
-                    <td style="padding:8px;">{{ $r->device_brand }} {{ $r->device_model }}</td>
-                    <td style="padding:8px;">{{ $statuses[$r->status] ?? $r->status }}</td>
-                    <td style="padding:8px;">${{ number_format($r->profit, 2) }}</td>
-                    <td style="padding:8px; text-align:right;">
-                        <a href="{{ route('admin.repairs.show', $r) }}">Ver</a>
-                    </td>
-                </tr>
-            @empty
-                <tr>
-                    <td colspan="6" style="padding:12px;">No hay reparaciones.</td>
-                </tr>
-            @endforelse
-        </tbody>
-    </table>
-
     <div style="margin-top:12px;">
-        {{ $repairs->links() }}
+        <table style="width:100%; border-collapse:collapse;">
+            <thead>
+                <tr>
+                    <th style="text-align:left; border-bottom:1px solid #eee; padding:8px;">Código</th>
+                    <th style="text-align:left; border-bottom:1px solid #eee; padding:8px;">Cliente</th>
+                    <th style="text-align:left; border-bottom:1px solid #eee; padding:8px;">Teléfono</th>
+                    <th style="text-align:left; border-bottom:1px solid #eee; padding:8px;">Estado</th>
+                    <th style="text-align:left; border-bottom:1px solid #eee; padding:8px;">WA</th>
+                    <th style="text-align:right; border-bottom:1px solid #eee; padding:8px;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($repairs as $r)
+                    @php
+                        $waOk = !empty($r->wa_notified_current);
+                        $waAt = $r->wa_notified_at ? \Illuminate\Support\Carbon::parse($r->wa_notified_at)->format('Y-m-d H:i') : null;
+                    @endphp
+
+                    <tr>
+                        <td style="padding:8px; border-bottom:1px solid #f4f4f4;">
+                            <strong>{{ $r->code ?? ('#'.$r->id) }}</strong>
+                        </td>
+
+                        <td style="padding:8px; border-bottom:1px solid #f4f4f4;">
+                            {{ $r->customer_name }}
+                        </td>
+
+                        <td style="padding:8px; border-bottom:1px solid #f4f4f4;">
+                            {{ $r->customer_phone }}
+                        </td>
+
+                        <td style="padding:8px; border-bottom:1px solid #f4f4f4;">
+                            {{ $statuses[$r->status] ?? $r->status }}
+                        </td>
+
+                        <td id="wa-cell-{{ $r->id }}" style="padding:8px; border-bottom:1px solid #f4f4f4;">
+                            @if($waOk)
+                                <span title="Ya avisado (registrado)">{{ $waAt ? '✅ '.$waAt : '✅ OK' }}</span>
+                            @else
+                                <span title="Pendiente de avisar">🟡 Pendiente</span>
+                            @endif
+                        </td>
+
+                        <td style="padding:8px; border-bottom:1px solid #f4f4f4; text-align:right; white-space:nowrap;">
+                            @if(!empty($r->wa_url) && !empty($r->wa_log_url))
+                                <a
+                                    href="{{ $r->wa_url }}"
+                                    target="_blank"
+                                    rel="noopener"
+                                    title="Abrir WhatsApp + Registrar"
+                                    onclick="waQuickLog('{{ $r->id }}','{{ $r->wa_log_url }}');"
+                                    style="text-decoration:none; margin-right:10px;"
+                                >💬</a>
+                            @else
+                                <span title="No se puede armar WhatsApp (revisar teléfono)">—</span>
+                                <span style="margin-right:10px;"></span>
+                            @endif
+
+                            <a href="{{ route('admin.repairs.show', $r) }}">Ver</a>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="6" style="padding:12px; color:#666;">
+                            No hay reparaciones para los filtros seleccionados.
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+
+        <div style="margin-top:12px;">
+            {{ $repairs->links() }}
+        </div>
     </div>
+
 </div>
+
+<script>
+    function waQuickLog(repairId, logUrl) {
+        const token = @json(csrf_token());
+
+        fetch(logUrl, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': token,
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ source: 'list_quick' }),
+            keepalive: true
+        })
+        .then(r => r.json().catch(() => null))
+        .then(data => {
+            // Actualización visual simple (sin recargar)
+            const cell = document.getElementById('wa-cell-' + repairId);
+            if (!cell) return;
+
+            if (data && data.ok) {
+                // no ponemos fecha exacta (sería la del servidor), pero marcamos OK
+                cell.innerHTML = '<span title="Registrado">✅ OK</span>';
+            }
+        })
+        .catch(() => {});
+    }
+</script>
 @endsection

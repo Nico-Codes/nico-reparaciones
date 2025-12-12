@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BusinessSetting;
 use App\Models\Repair;
 use App\Models\RepairStatusHistory;
 use App\Models\RepairWhatsappLog;
@@ -14,12 +15,40 @@ class AdminRepairController extends Controller
     public function index(Request $request)
     {
         $status = $request->get('status');
+        $wa = $request->get('wa'); // pending | sent | null
         $q = trim((string) $request->get('q', ''));
 
-        $query = Repair::query()->latest();
+        $query = Repair::query()
+            ->select('repairs.*')
+            // ✅ flags para el listado (sin N+1)
+            ->addSelect([
+                'wa_notified_current' => RepairWhatsappLog::selectRaw('1')
+                    ->whereColumn('repair_id', 'repairs.id')
+                    ->whereColumn('notified_status', 'repairs.status')
+                    ->limit(1),
+            ])
+            ->addSelect([
+                'wa_notified_at' => RepairWhatsappLog::select('sent_at')
+                    ->whereColumn('repair_id', 'repairs.id')
+                    ->whereColumn('notified_status', 'repairs.status')
+                    ->orderByDesc('sent_at')
+                    ->limit(1),
+            ])
+            ->latest();
 
         if ($status) {
             $query->where('status', $status);
+        }
+
+        // ✅ Filtro WA
+        if ($wa === 'pending') {
+            $query->whereDoesntHave('whatsappLogs', function ($q) {
+                $q->whereColumn('repair_whatsapp_logs.notified_status', 'repairs.status');
+            });
+        } elseif ($wa === 'sent') {
+            $query->whereHas('whatsappLogs', function ($q) {
+                $q->whereColumn('repair_whatsapp_logs.notified_status', 'repairs.status');
+            });
         }
 
         if ($q !== '') {
@@ -37,10 +66,66 @@ class AdminRepairController extends Controller
 
         $repairs = $query->paginate(20)->withQueryString();
 
+        // ✅ Generar WA URL + log_url para el botón rápido del listado (sin tocar la vista con lógica pesada)
+        $shopAddress = BusinessSetting::getValue('shop_address', '');
+        $shopHours = BusinessSetting::getValue('shop_hours', '');
+
+        $statusesInPage = $repairs->getCollection()->pluck('status')->unique()->values();
+
+        $templates = RepairWhatsappTemplate::whereIn('status', $statusesInPage)
+            ->pluck('template', 'status'); // [status => template]
+
+        $repairs->setCollection(
+            $repairs->getCollection()->map(function ($r) use ($templates, $shopAddress, $shopHours) {
+                $r->wa_log_url = route('admin.repairs.whatsappLogAjax', $r);
+
+                $waPhone = $this->normalizeWhatsappPhone((string) $r->customer_phone);
+                if (!$waPhone) {
+                    $r->wa_url = null;
+                    $r->wa_message = null;
+                    return $r;
+                }
+
+                $statusLabel = Repair::STATUSES[$r->status] ?? $r->status;
+
+                $tpl = (string) ($templates[$r->status] ?? '');
+                if (trim($tpl) === '') {
+                    $tpl = $this->defaultTemplate((string) $r->status);
+                }
+
+                $device = trim(((string) ($r->device_brand ?? '')) . ' ' . ((string) ($r->device_model ?? '')));
+                $finalPrice = $r->final_price !== null ? number_format((float)$r->final_price, 0, ',', '.') : '';
+
+                $replacements = [
+                    '{customer_name}' => (string) $r->customer_name,
+                    '{code}' => (string) $r->code,
+                    '{status}' => (string) $r->status,
+                    '{status_label}' => (string) $statusLabel,
+                    '{lookup_url}' => url('/reparacion'),
+                    '{phone}' => (string) $r->customer_phone,
+                    '{device_brand}' => (string) ($r->device_brand ?? ''),
+                    '{device_model}' => (string) ($r->device_model ?? ''),
+                    '{device}' => (string) $device,
+                    '{final_price}' => (string) $finalPrice,
+                    '{warranty_days}' => (string) ((int)($r->warranty_days ?? 0)),
+                    '{shop_address}' => (string) $shopAddress,
+                    '{shop_hours}' => (string) $shopHours,
+                ];
+
+                $message = strtr($tpl, $replacements);
+
+                $r->wa_message = $message;
+                $r->wa_url = 'https://wa.me/' . $waPhone . '?text=' . urlencode($message);
+
+                return $r;
+            })
+        );
+
         return view('admin.repairs.index', [
             'repairs' => $repairs,
             'statuses' => Repair::STATUSES,
             'status' => $status,
+            'wa' => $wa,
             'q' => $q,
         ]);
     }
@@ -150,12 +235,20 @@ class AdminRepairController extends Controller
             $linkedUserEmail = User::where('id', $repair->user_id)->value('email');
         }
 
-        // WhatsApp (estado actual)
         $waPhone = $this->normalizeWhatsappPhone($repair->customer_phone);
         $waMessage = $this->buildWhatsappMessage($repair);
         $waUrl = $waPhone ? ('https://wa.me/' . $waPhone . '?text=' . urlencode($waMessage)) : null;
 
         $waLogs = $repair->whatsappLogs()->with('sentBy')->get();
+
+        $waNotifiedCurrent = RepairWhatsappLog::where('repair_id', $repair->id)
+            ->where('notified_status', $repair->status)
+            ->exists();
+
+        $waNotifiedAt = RepairWhatsappLog::where('repair_id', $repair->id)
+            ->where('notified_status', $repair->status)
+            ->orderByDesc('sent_at')
+            ->value('sent_at');
 
         return view('admin.repairs.show', [
             'repair' => $repair,
@@ -167,6 +260,9 @@ class AdminRepairController extends Controller
             'waMessage' => $waMessage,
             'waUrl' => $waUrl,
             'waLogs' => $waLogs,
+
+            'waNotifiedCurrent' => $waNotifiedCurrent,
+            'waNotifiedAt' => $waNotifiedAt,
         ]);
     }
 
@@ -271,7 +367,6 @@ class AdminRepairController extends Controller
             'comment' => $request->input('comment'),
         ]);
 
-        // Flash para “enviar WhatsApp ahora”
         $waPhone = $this->normalizeWhatsappPhone($repair->customer_phone);
         $waMessage = $this->buildWhatsappMessage($repair);
         $waUrl = $waPhone ? ('https://wa.me/' . $waPhone . '?text=' . urlencode($waMessage)) : null;
@@ -394,7 +489,6 @@ class AdminRepairController extends Controller
     {
         $statusLabel = Repair::STATUSES[$repair->status] ?? $repair->status;
 
-        // ✅ Si hay plantilla en DB para ese status, la usamos; sino default
         $tpl = RepairWhatsappTemplate::where('status', $repair->status)->value('template');
         if (!$tpl || trim($tpl) === '') {
             $tpl = $this->defaultTemplate($repair->status);
@@ -402,6 +496,9 @@ class AdminRepairController extends Controller
 
         $device = trim(($repair->device_brand ?? '') . ' ' . ($repair->device_model ?? ''));
         $finalPrice = $repair->final_price !== null ? number_format((float)$repair->final_price, 0, ',', '.') : '';
+
+        $shopAddress = BusinessSetting::getValue('shop_address', '');
+        $shopHours = BusinessSetting::getValue('shop_hours', '');
 
         $replacements = [
             '{customer_name}' => (string) $repair->customer_name,
@@ -415,6 +512,8 @@ class AdminRepairController extends Controller
             '{device}' => (string) $device,
             '{final_price}' => (string) $finalPrice,
             '{warranty_days}' => (string) ((int)($repair->warranty_days ?? 0)),
+            '{shop_address}' => (string) $shopAddress,
+            '{shop_hours}' => (string) $shopHours,
         ];
 
         return strtr($tpl, $replacements);
@@ -429,6 +528,8 @@ class AdminRepairController extends Controller
             $base .= "Necesitamos tu aprobación para continuar.\n";
         } elseif ($status === 'ready_pickup') {
             $base .= "¡Ya está lista para retirar! ✅\n";
+            $base .= "\n📍 Dirección: {shop_address}\n";
+            $base .= "🕒 Horarios: {shop_hours}\n";
         } elseif ($status === 'delivered') {
             $base .= "¡Gracias por tu visita! 🙌\n";
         }

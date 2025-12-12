@@ -11,6 +11,7 @@ use App\Http\Controllers\AdminOrderController;
 use App\Http\Controllers\AdminRepairController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AdminWhatsappTemplateController;
+use App\Http\Controllers\AdminBusinessSettingsController;
 
 use App\Http\Controllers\RepairLookupController;
 use App\Http\Controllers\UserRepairController;
@@ -84,6 +85,10 @@ Route::middleware('auth')->group(function () {
 Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     // Dashboard
     Route::get('/', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
+
+    // ✅ Configuración del negocio
+    Route::get('configuracion', [AdminBusinessSettingsController::class, 'index'])->name('admin.settings.index');
+    Route::post('configuracion', [AdminBusinessSettingsController::class, 'update'])->name('admin.settings.update');
 
     // ✅ Plantillas WhatsApp
     Route::get('plantillas-whatsapp', [AdminWhatsappTemplateController::class, 'index'])->name('admin.whatsappTemplates.index');
