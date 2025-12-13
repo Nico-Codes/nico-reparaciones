@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 class Repair extends Model
 {
@@ -15,9 +17,15 @@ class Repair extends Model
         'device_model',
         'issue_reported',
         'diagnosis',
+
         'parts_cost',
         'labor_cost',
         'final_price',
+
+        'paid_amount',
+        'payment_method',
+        'payment_notes',
+
         'status',
         'warranty_days',
         'received_at',
@@ -29,6 +37,10 @@ class Repair extends Model
         'parts_cost'   => 'decimal:2',
         'labor_cost'   => 'decimal:2',
         'final_price'  => 'decimal:2',
+
+        'paid_amount'  => 'decimal:2',
+        'warranty_days'=> 'integer',
+
         'received_at'  => 'datetime',
         'delivered_at' => 'datetime',
     ];
@@ -43,28 +55,67 @@ class Repair extends Model
         'cancelled'        => 'Cancelado',
     ];
 
+    public const PAYMENT_METHODS = [
+        'cash'        => 'Efectivo',
+        'transfer'    => 'Transferencia',
+        'debit'       => 'Débito',
+        'credit'      => 'Crédito',
+        'mp'          => 'Mercado Pago',
+        'other'       => 'Otro',
+    ];
+
     // Normaliza teléfono a "solo números" al guardar
     public function setCustomerPhoneAttribute($value): void
     {
         $this->attributes['customer_phone'] = preg_replace('/\D+/', '', (string) $value);
     }
 
-    public function statusHistory()
+    public function statusHistory(): HasMany
     {
         return $this->hasMany(RepairStatusHistory::class)->orderByDesc('changed_at');
     }
 
-    public function whatsappLogs()
+    public function whatsappLogs(): HasMany
     {
         return $this->hasMany(RepairWhatsappLog::class)->orderByDesc('sent_at');
+    }
+
+    public function getTotalCostAttribute(): float
+    {
+        $parts = (float) ($this->parts_cost ?? 0);
+        $labor = (float) ($this->labor_cost ?? 0);
+        return $parts + $labor;
     }
 
     public function getProfitAttribute(): float
     {
         $final = (float) ($this->final_price ?? 0);
-        $parts = (float) ($this->parts_cost ?? 0);
-        $labor = (float) ($this->labor_cost ?? 0);
+        return $final - $this->total_cost;
+    }
 
-        return $final - ($parts + $labor);
+    public function getBalanceDueAttribute(): float
+    {
+        $final = (float) ($this->final_price ?? 0);
+        $paid  = (float) ($this->paid_amount ?? 0);
+        $balance = $final - $paid;
+        return $balance > 0 ? $balance : 0.0;
+    }
+
+    public function getWarrantyExpiresAtAttribute(): ?Carbon
+    {
+        $days = (int) ($this->warranty_days ?? 0);
+        if ($days <= 0) return null;
+
+        // Garantía empieza cuando se entrega
+        if (!$this->delivered_at) return null;
+
+        return $this->delivered_at->copy()->addDays($days)->endOfDay();
+    }
+
+    public function getInWarrantyAttribute(): bool
+    {
+        $exp = $this->warranty_expires_at;
+        if (!$exp) return false;
+        return now()->lte($exp);
     }
 }

@@ -1,346 +1,278 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container" style="max-width:1100px;">
+@if(session('success'))
+  <div style="padding:10px;border:1px solid #9f9;background:#f5fff5;margin-bottom:12px;">
+    {{ session('success') }}
+  </div>
+@endif
 
-    {{-- Flash messages --}}
-    @if(session('success'))
-        <div style="background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;padding:10px 12px;border-radius:10px;margin-bottom:12px;">
-            {{ session('success') }}
-        </div>
-    @endif
+@if($errors->any())
+  <div style="padding:10px;border:1px solid #f99;background:#fff5f5;margin-bottom:12px;">
+    <b>Hay errores:</b>
+    <ul>
+      @foreach($errors->all() as $e)
+        <li>{{ $e }}</li>
+      @endforeach
+    </ul>
+  </div>
+@endif
 
-    @if($errors->any())
-        <div style="background:#fef2f2;border:1px solid #fecaca;color:#7f1d1d;padding:10px 12px;border-radius:10px;margin-bottom:12px;">
-            <strong>Hay errores:</strong>
-            <ul style="margin:8px 0 0; padding-left:18px;">
-                @foreach($errors->all() as $e)
-                    <li>{{ $e }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
+<h1>Reparación</h1>
+<h3 style="margin-top:6px;">
+  {{ $repair->code ?? ('#'.$repair->id) }}
+  — {{ $statuses[$repair->status] ?? $repair->status }}
+</h3>
 
-    {{-- Header + acciones --}}
-    <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;">
-        <div>
-            <h1 style="margin:0;">Reparación</h1>
-            <div style="color:#666;margin-top:4px;">
-                <strong>{{ $repair->code ?? ('#'.$repair->id) }}</strong>
-                — {{ $statuses[$repair->status] ?? $repair->status }}
-            </div>
-        </div>
+<p style="margin-top:10px;">
+  <a href="{{ route('admin.repairs.index') }}">⬅ Volver</a>
+  &nbsp;|&nbsp;
+  <a href="{{ route('admin.repairs.print', $repair) }}">🖨️ Imprimir</a>
+  &nbsp;|&nbsp;
+  @if(!empty($waUrl))
+    <a href="{{ $waUrl }}" target="_blank">WhatsApp</a>
+  @else
+    WhatsApp —
+  @endif
+</p>
 
-        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-            <a href="{{ route('admin.repairs.index') }}">⬅ Volver</a>
+<hr>
 
-            <a href="{{ route('admin.repairs.print', $repair) }}" target="_blank" rel="noopener">
-                🖨️ Imprimir
-            </a>
+<h3>Resumen</h3>
 
-            @if(!empty($waUrl))
-                <a
-                    href="{{ $waUrl }}"
-                    target="_blank"
-                    rel="noopener"
-                    onclick="waQuickLog('{{ $repair->id }}','{{ route('admin.repairs.whatsappLogAjax', $repair) }}');"
-                    title="Abrir WhatsApp + Registrar"
-                >
-                    💬 WhatsApp
-                </a>
-            @else
-                <span title="No se pudo armar WhatsApp (revisar teléfono)" style="color:#999;">💬 WhatsApp —</span>
-            @endif
-        </div>
+<div style="display:flex;gap:16px;flex-wrap:wrap;">
+  <div style="min-width:260px;border:1px solid #ddd;padding:12px;border-radius:8px;">
+    <h4>Cliente</h4>
+    <div><b>Nombre:</b> {{ $repair->customer_name }}</div>
+    <div><b>Tel:</b> {{ $repair->customer_phone }}</div>
+    <div><b>Usuario:</b> {{ $linkedUserEmail ?? '—' }}</div>
+  </div>
+
+  <div style="min-width:260px;border:1px solid #ddd;padding:12px;border-radius:8px;">
+    <h4>Equipo</h4>
+    <div><b>Marca/Modelo:</b> {{ trim(($repair->device_brand ?? '').' '.($repair->device_model ?? '')) ?: '—' }}</div>
+    <div><b>Falla:</b> {{ $repair->issue_reported }}</div>
+  </div>
+
+  <div style="min-width:300px;border:1px solid #ddd;padding:12px;border-radius:8px;">
+    <h4>Finanzas</h4>
+    <div><b>Repuestos:</b> ${{ number_format((float)$repair->parts_cost, 0, ',', '.') }}</div>
+    <div><b>Mano de obra:</b> ${{ number_format((float)$repair->labor_cost, 0, ',', '.') }}</div>
+    <div><b>Costo total:</b> ${{ number_format((float)$repair->total_cost, 0, ',', '.') }}</div>
+    <div><b>Precio final:</b> {{ $repair->final_price !== null ? ('$'.number_format((float)$repair->final_price, 0, ',', '.')) : '—' }}</div>
+    <div><b>Ganancia:</b> ${{ number_format((float)$repair->profit, 0, ',', '.') }}</div>
+    <hr>
+    <div><b>Pagado:</b> ${{ number_format((float)($repair->paid_amount ?? 0), 0, ',', '.') }}</div>
+    <div><b>Saldo:</b> ${{ number_format((float)$repair->balance_due, 0, ',', '.') }}</div>
+    <div><b>Método:</b>
+      @php
+        $pm = $repair->payment_method;
+        $pmLabel = $pm && isset($paymentMethods[$pm]) ? $paymentMethods[$pm] : ($pm ?: '—');
+      @endphp
+      {{ $pmLabel }}
     </div>
+    <div><b>Notas:</b> {{ $repair->payment_notes ?: '—' }}</div>
+  </div>
 
-    {{-- Resumen --}}
-    <div style="margin-top:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;">
-        <div style="border:1px solid #eee;border-radius:12px;padding:12px;">
-            <h3 style="margin:0 0 10px;">Cliente</h3>
-            <div style="color:#444;"><strong>Nombre:</strong> {{ $repair->customer_name }}</div>
-            <div style="color:#444;"><strong>Tel:</strong> {{ $repair->customer_phone }}</div>
-            <div style="color:#444;"><strong>Usuario:</strong> {{ $linkedUserEmail ?? '—' }}</div>
-        </div>
-
-        <div style="border:1px solid #eee;border-radius:12px;padding:12px;">
-            <h3 style="margin:0 0 10px;">Equipo</h3>
-            <div style="color:#444;">
-                <strong>Marca/Modelo:</strong>
-                {{ trim(($repair->device_brand ?? '').' '.($repair->device_model ?? '')) ?: '—' }}
-            </div>
-            <div style="color:#444;"><strong>Falla:</strong> {{ $repair->issue_reported }}</div>
-        </div>
-
-        <div style="border:1px solid #eee;border-radius:12px;padding:12px;">
-            <h3 style="margin:0 0 10px;">Costos</h3>
-            <div style="color:#444;"><strong>Repuestos:</strong> {{ number_format((float)$repair->parts_cost, 0, ',', '.') }}</div>
-            <div style="color:#444;"><strong>Mano de obra:</strong> {{ number_format((float)$repair->labor_cost, 0, ',', '.') }}</div>
-            <div style="color:#444;"><strong>Precio final:</strong>
-                {{ $repair->final_price !== null ? number_format((float)$repair->final_price, 0, ',', '.') : '—' }}
-            </div>
-            <div style="color:#444;"><strong>Garantía:</strong> {{ ($repair->warranty_days ?? 0) ? ($repair->warranty_days.' días') : '—' }}</div>
-        </div>
+  <div style="min-width:260px;border:1px solid #ddd;padding:12px;border-radius:8px;">
+    <h4>Garantía</h4>
+    <div><b>Días:</b> {{ ($repair->warranty_days ?? 0) ? ($repair->warranty_days.' días') : '—' }}</div>
+    <div><b>Entregado:</b> {{ $repair->delivered_at ? $repair->delivered_at->format('Y-m-d H:i') : '—' }}</div>
+    <div><b>Vence:</b>
+      @if($repair->warranty_expires_at)
+        {{ $repair->warranty_expires_at->format('Y-m-d') }}
+        {!! $repair->in_warranty ? '<span style="color:green;font-weight:bold;">(EN GARANTÍA)</span>' : '<span style="color:#b00;font-weight:bold;">(VENCIDA)</span>' !!}
+      @else
+        —
+      @endif
     </div>
-
-    {{-- Cambiar estado --}}
-    <div style="margin-top:14px;border:1px solid #eee;border-radius:12px;padding:12px;">
-        <h3 style="margin:0 0 10px;">Actualizar estado</h3>
-
-        <form method="POST" action="{{ route('admin.repairs.updateStatus', $repair) }}" style="display:flex;gap:10px;flex-wrap:wrap;align-items:end;">
-            @csrf
-
-            <div>
-                <label>Estado</label><br>
-                <select name="status">
-                    @foreach($statuses as $k => $label)
-                        <option value="{{ $k }}" {{ $repair->status === $k ? 'selected' : '' }}>{{ $label }}</option>
-                    @endforeach
-                </select>
-            </div>
-
-            <div style="flex:1;min-width:260px;">
-                <label>Comentario (opcional)</label><br>
-                <input type="text" name="comment" placeholder="Ej: listo para retirar" style="width:100%;">
-            </div>
-
-            <button type="submit">Guardar estado</button>
-        </form>
-
-        @if(session('wa_after') && !empty(session('wa_after.url')))
-            <div style="margin-top:10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px;">
-                <div style="font-weight:700;margin-bottom:6px;">Acción rápida</div>
-                <a href="{{ session('wa_after.url') }}" target="_blank" rel="noopener">💬 Abrir WhatsApp con mensaje del nuevo estado</a>
-            </div>
-        @endif
-    </div>
-
-    {{-- WhatsApp info + logs --}}
-    <div style="margin-top:14px;border:1px solid #eee;border-radius:12px;padding:12px;">
-        <h3 style="margin:0 0 10px;">WhatsApp</h3>
-
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;">
-            <div style="border:1px solid #f2f2f2;border-radius:12px;padding:12px;">
-                <div style="color:#666;font-size:12px;">Estado actual</div>
-                <div style="font-weight:800;">
-                    {{ $statuses[$repair->status] ?? $repair->status }}
-                </div>
-                <div style="margin-top:8px;">
-                    @if(!empty($waNotifiedCurrent))
-                        <span title="Ya avisado" style="font-weight:700;">✅ Avisado</span>
-                        @if(!empty($waNotifiedAt))
-                            <span style="color:#666;font-size:12px;">( {{ \Illuminate\Support\Carbon::parse($waNotifiedAt)->format('Y-m-d H:i') }} )</span>
-                        @endif
-                    @else
-                        <span title="Pendiente" style="font-weight:700;">🟡 Pendiente</span>
-                    @endif
-                </div>
-
-                @if(!empty($waUrl))
-                    <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;">
-                        <a href="{{ $waUrl }}" target="_blank" rel="noopener"
-                           onclick="waQuickLog('{{ $repair->id }}','{{ route('admin.repairs.whatsappLogAjax', $repair) }}');">
-                            💬 Abrir WhatsApp + registrar
-                        </a>
-
-                        <form method="POST" action="{{ route('admin.repairs.whatsappLog', $repair) }}">
-                            @csrf
-                            <button type="submit">Registrar (manual)</button>
-                        </form>
-                    </div>
-                @endif
-            </div>
-
-            <div style="border:1px solid #f2f2f2;border-radius:12px;padding:12px;">
-                <div style="color:#666;font-size:12px;">Mensaje armado</div>
-                <textarea readonly style="width:100%;min-height:140px;margin-top:6px;">{{ $waMessage ?? '' }}</textarea>
-            </div>
-        </div>
-
-        <div style="margin-top:12px;">
-            <h4 style="margin:0 0 8px;">Historial de WhatsApp</h4>
-
-            @if($waLogs->isEmpty())
-                <div style="color:#666;">No hay envíos registrados.</div>
-            @else
-                <div style="overflow:auto;">
-                    <table style="width:100%;border-collapse:collapse;">
-                        <thead>
-                            <tr>
-                                <th style="text-align:left;padding:8px;border-bottom:1px solid #eee;">Fecha</th>
-                                <th style="text-align:left;padding:8px;border-bottom:1px solid #eee;">Estado avisado</th>
-                                <th style="text-align:left;padding:8px;border-bottom:1px solid #eee;">Por</th>
-                                <th style="text-align:left;padding:8px;border-bottom:1px solid #eee;">Tel</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($waLogs as $log)
-                                <tr>
-                                    <td style="padding:8px;border-bottom:1px solid #f4f4f4;">
-                                        {{ $log->sent_at ? $log->sent_at->format('Y-m-d H:i') : '—' }}
-                                    </td>
-                                    <td style="padding:8px;border-bottom:1px solid #f4f4f4;">
-                                        {{ $statuses[$log->notified_status] ?? $log->notified_status }}
-                                    </td>
-                                    <td style="padding:8px;border-bottom:1px solid #f4f4f4;">
-                                        {{ $log->sentBy->name ?? '—' }}
-                                    </td>
-                                    <td style="padding:8px;border-bottom:1px solid #f4f4f4;">
-                                        {{ $log->phone ?? '—' }}
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            @endif
-        </div>
-    </div>
-
-    {{-- Historial de estados --}}
-    <div style="margin-top:14px;border:1px solid #eee;border-radius:12px;padding:12px;">
-        <h3 style="margin:0 0 10px;">Historial de estados</h3>
-
-        @if($history->isEmpty())
-            <div style="color:#666;">Sin movimientos aún.</div>
-        @else
-            <div style="overflow:auto;">
-                <table style="width:100%;border-collapse:collapse;">
-                    <thead>
-                        <tr>
-                            <th style="text-align:left;padding:8px;border-bottom:1px solid #eee;">Fecha</th>
-                            <th style="text-align:left;padding:8px;border-bottom:1px solid #eee;">De</th>
-                            <th style="text-align:left;padding:8px;border-bottom:1px solid #eee;">A</th>
-                            <th style="text-align:left;padding:8px;border-bottom:1px solid #eee;">Comentario</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($history as $h)
-                            <tr>
-                                <td style="padding:8px;border-bottom:1px solid #f4f4f4;">
-                                    {{ $h->changed_at ? \Illuminate\Support\Carbon::parse($h->changed_at)->format('Y-m-d H:i') : '—' }}
-                                </td>
-                                <td style="padding:8px;border-bottom:1px solid #f4f4f4;">
-                                    {{ $h->from_status ? ($statuses[$h->from_status] ?? $h->from_status) : '—' }}
-                                </td>
-                                <td style="padding:8px;border-bottom:1px solid #f4f4f4;">
-                                    {{ $statuses[$h->to_status] ?? $h->to_status }}
-                                </td>
-                                <td style="padding:8px;border-bottom:1px solid #f4f4f4;">
-                                    {{ $h->comment ?? '—' }}
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        @endif
-    </div>
-
-    {{-- Editar datos --}}
-    <div style="margin-top:14px;border:1px solid #eee;border-radius:12px;padding:12px;">
-        <h3 style="margin:0 0 10px;">Editar datos</h3>
-
-        <form method="POST" action="{{ route('admin.repairs.update', $repair) }}" style="display:flex;flex-direction:column;gap:12px;">
-            @csrf
-            @method('PUT')
-
-            <div style="border:1px solid #f2f2f2;padding:12px;border-radius:12px;">
-                <h4 style="margin:0 0 8px;">Vincular a usuario (opcional)</h4>
-
-                <div style="display:flex;gap:10px;flex-wrap:wrap;">
-                    <div style="flex:1;min-width:260px;">
-                        <label>Email del usuario</label><br>
-                        <input type="email" name="user_email" value="{{ old('user_email', $linkedUserEmail) }}" style="width:100%;">
-                    </div>
-
-                    <div style="display:flex;align-items:end;gap:8px;">
-                        <label style="display:flex;gap:8px;align-items:center;margin:0;">
-                            <input type="checkbox" name="unlink_user" value="1">
-                            Desvincular usuario
-                        </label>
-                    </div>
-                </div>
-                <div style="color:#666;font-size:12px;margin-top:6px;">
-                    Si marcás “Desvincular”, se borra el vínculo aunque pongas un email.
-                </div>
-            </div>
-
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;">
-                <div style="border:1px solid #f2f2f2;padding:12px;border-radius:12px;">
-                    <h4 style="margin:0 0 8px;">Cliente</h4>
-
-                    <label>Nombre</label><br>
-                    <input type="text" name="customer_name" value="{{ old('customer_name', $repair->customer_name) }}" style="width:100%;"><br><br>
-
-                    <label>Teléfono</label><br>
-                    <input type="text" name="customer_phone" value="{{ old('customer_phone', $repair->customer_phone) }}" style="width:100%;">
-                </div>
-
-                <div style="border:1px solid #f2f2f2;padding:12px;border-radius:12px;">
-                    <h4 style="margin:0 0 8px;">Equipo</h4>
-
-                    <label>Marca</label><br>
-                    <input type="text" name="device_brand" value="{{ old('device_brand', $repair->device_brand) }}" style="width:100%;"><br><br>
-
-                    <label>Modelo</label><br>
-                    <input type="text" name="device_model" value="{{ old('device_model', $repair->device_model) }}" style="width:100%;">
-                </div>
-
-                <div style="border:1px solid #f2f2f2;padding:12px;border-radius:12px;">
-                    <h4 style="margin:0 0 8px;">Trabajo</h4>
-
-                    <label>Falla reportada</label><br>
-                    <textarea name="issue_reported" style="width:100%;min-height:90px;">{{ old('issue_reported', $repair->issue_reported) }}</textarea><br><br>
-
-                    <label>Diagnóstico</label><br>
-                    <textarea name="diagnosis" style="width:100%;min-height:70px;">{{ old('diagnosis', $repair->diagnosis) }}</textarea>
-                </div>
-
-                <div style="border:1px solid #f2f2f2;padding:12px;border-radius:12px;">
-                    <h4 style="margin:0 0 8px;">Costos</h4>
-
-                    <label>Repuestos</label><br>
-                    <input type="number" step="0.01" name="parts_cost" value="{{ old('parts_cost', $repair->parts_cost) }}" style="width:100%;"><br><br>
-
-                    <label>Mano de obra</label><br>
-                    <input type="number" step="0.01" name="labor_cost" value="{{ old('labor_cost', $repair->labor_cost) }}" style="width:100%;"><br><br>
-
-                    <label>Precio final</label><br>
-                    <input type="number" step="0.01" name="final_price" value="{{ old('final_price', $repair->final_price) }}" style="width:100%;"><br><br>
-
-                    <label>Garantía (días)</label><br>
-                    <input type="number" name="warranty_days" value="{{ old('warranty_days', $repair->warranty_days) }}" style="width:100%;">
-                </div>
-            </div>
-
-            <div style="border:1px solid #f2f2f2;padding:12px;border-radius:12px;">
-                <h4 style="margin:0 0 8px;">Notas</h4>
-                <textarea name="notes" style="width:100%;min-height:80px;">{{ old('notes', $repair->notes) }}</textarea>
-            </div>
-
-            <div>
-                <button type="submit">Guardar cambios</button>
-            </div>
-        </form>
-    </div>
-
+  </div>
 </div>
 
-<script>
-function waQuickLog(repairId, logUrl) {
-    const token = @json(csrf_token());
+<hr>
 
-    fetch(logUrl, {
-        method: 'POST',
-        headers: {
-            'X-CSRF-TOKEN': token,
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ source: 'show_quick' }),
-        keepalive: true
-    }).catch(() => {});
-}
-</script>
+<h3>Actualizar estado</h3>
+<form method="POST" action="{{ route('admin.repairs.updateStatus', $repair) }}">
+  @csrf
+  <label>Estado</label><br>
+  <select name="status" style="width:260px;">
+    @foreach($statuses as $k => $label)
+      <option value="{{ $k }}" {{ $repair->status === $k ? 'selected' : '' }}>{{ $label }}</option>
+    @endforeach
+  </select>
+  <br><br>
+
+  <label>Comentario (opcional)</label><br>
+  <input type="text" name="comment" style="width:520px;max-width:100%;" maxlength="500">
+  <br><br>
+
+  <button type="submit">Guardar estado</button>
+</form>
+
+@if(session('wa_after') && !empty(session('wa_after.url')))
+  <div style="margin-top:10px;">
+    <b>Acción rápida:</b>
+    <a href="{{ session('wa_after.url') }}" target="_blank">Abrir WhatsApp con mensaje del nuevo estado</a>
+  </div>
+@endif
+
+<hr>
+
+<h3>WhatsApp</h3>
+<div><b>Estado actual:</b> {{ $statuses[$repair->status] ?? $repair->status }}</div>
+<div>
+  <b>Notificación:</b>
+  @if(!empty($waNotifiedCurrent))
+    ✅ Avisado
+    @if(!empty($waNotifiedAt))
+      ({{ \Illuminate\Support\Carbon::parse($waNotifiedAt)->format('Y-m-d H:i') }})
+    @endif
+  @else
+    Pendiente
+  @endif
+</div>
+
+@if(!empty($waUrl))
+  <p style="margin-top:8px;">
+    <a href="{{ $waUrl }}" target="_blank">Abrir WhatsApp</a>
+  </p>
+
+  <form method="POST" action="{{ route('admin.repairs.whatsappLog', $repair) }}">
+    @csrf
+    <button type="submit">Registrar envío (manual)</button>
+  </form>
+@endif
+
+<h4 style="margin-top:14px;">Mensaje armado</h4>
+<pre style="white-space:pre-wrap;border:1px solid #ddd;padding:10px;border-radius:8px;">{{ $waMessage ?? '' }}</pre>
+
+<h4>Historial de WhatsApp</h4>
+@if($waLogs->isEmpty())
+  <p>No hay envíos registrados.</p>
+@else
+  <ul>
+    @foreach($waLogs as $log)
+      <li>
+        {{ $log->sent_at ? $log->sent_at->format('Y-m-d H:i') : '—' }}
+        — {{ $statuses[$log->notified_status] ?? $log->notified_status }}
+        — {{ $log->sentBy->name ?? '—' }}
+        — {{ $log->phone ?? '—' }}
+      </li>
+    @endforeach
+  </ul>
+@endif
+
+<hr>
+
+<h3>Historial de estados (timeline)</h3>
+@if($history->isEmpty())
+  <p>Sin movimientos aún.</p>
+@else
+  <div style="border-left:3px solid #ddd;padding-left:12px;">
+    @foreach($history as $h)
+      <div style="margin:10px 0;">
+        <div style="color:#555;font-size:12px;">
+          {{ $h->changed_at ? \Illuminate\Support\Carbon::parse($h->changed_at)->format('Y-m-d H:i') : '—' }}
+        </div>
+        <div>
+          <b>
+            {{ $h->from_status ? ($statuses[$h->from_status] ?? $h->from_status) : '—' }}
+            →
+            {{ $statuses[$h->to_status] ?? $h->to_status }}
+          </b>
+        </div>
+        <div style="color:#333;">
+          {{ $h->comment ?? '—' }}
+        </div>
+      </div>
+    @endforeach
+  </div>
+@endif
+
+<hr>
+
+<h3>Editar datos</h3>
+<form method="POST" action="{{ route('admin.repairs.update', $repair) }}">
+  @csrf
+  @method('PUT')
+
+  <h4>Vincular a usuario (opcional)</h4>
+  <label>Email del usuario</label><br>
+  <input type="email" name="user_email" value="{{ old('user_email', $linkedUserEmail) }}" style="width:320px;max-width:100%;"><br><br>
+
+  <label>
+    <input type="checkbox" name="unlink_user" value="1" {{ old('unlink_user') ? 'checked' : '' }}>
+    Desvincular usuario
+  </label>
+  <p style="margin-top:6px;color:#666;">Si marcás “Desvincular”, se borra el vínculo aunque pongas un email.</p>
+
+  <hr>
+
+  <h4>Cliente</h4>
+  <label>Nombre</label><br>
+  <input type="text" name="customer_name" value="{{ old('customer_name', $repair->customer_name) }}" required style="width:320px;max-width:100%;"><br><br>
+
+  <label>Teléfono</label><br>
+  <input type="text" name="customer_phone" value="{{ old('customer_phone', $repair->customer_phone) }}" required style="width:320px;max-width:100%;">
+
+  <hr>
+
+  <h4>Equipo</h4>
+  <label>Marca</label><br>
+  <input type="text" name="device_brand" value="{{ old('device_brand', $repair->device_brand) }}" style="width:320px;max-width:100%;"><br><br>
+
+  <label>Modelo</label><br>
+  <input type="text" name="device_model" value="{{ old('device_model', $repair->device_model) }}" style="width:320px;max-width:100%;">
+
+  <hr>
+
+  <h4>Trabajo</h4>
+  <label>Falla reportada</label><br>
+  <textarea name="issue_reported" rows="3" required style="width:520px;max-width:100%;">{{ old('issue_reported', $repair->issue_reported) }}</textarea><br><br>
+
+  <label>Diagnóstico</label><br>
+  <textarea name="diagnosis" rows="3" style="width:520px;max-width:100%;">{{ old('diagnosis', $repair->diagnosis) }}</textarea>
+
+  <hr>
+
+  <h4>Costos / Precio</h4>
+  <label>Repuestos</label><br>
+  <input type="number" step="0.01" min="0" name="parts_cost" value="{{ old('parts_cost', $repair->parts_cost) }}" style="width:200px;"><br><br>
+
+  <label>Mano de obra</label><br>
+  <input type="number" step="0.01" min="0" name="labor_cost" value="{{ old('labor_cost', $repair->labor_cost) }}" style="width:200px;"><br><br>
+
+  <label>Precio final</label><br>
+  <input type="number" step="0.01" min="0" name="final_price" value="{{ old('final_price', $repair->final_price) }}" style="width:200px;"><br><br>
+
+  <label>Garantía (días)</label><br>
+  <input type="number" min="0" name="warranty_days" value="{{ old('warranty_days', $repair->warranty_days) }}" style="width:200px;">
+
+  <hr>
+
+  <h4>Pagos</h4>
+  <label>Pagado</label><br>
+  <input type="number" step="0.01" min="0" name="paid_amount" value="{{ old('paid_amount', $repair->paid_amount) }}" style="width:200px;"><br><br>
+
+  <label>Método</label><br>
+  <select name="payment_method" style="width:220px;">
+    <option value="">—</option>
+    @foreach(($paymentMethods ?? []) as $k => $label)
+      <option value="{{ $k }}" {{ old('payment_method', $repair->payment_method) === $k ? 'selected' : '' }}>
+        {{ $label }}
+      </option>
+    @endforeach
+  </select><br><br>
+
+  <label>Notas de pago</label><br>
+  <textarea name="payment_notes" rows="2" style="width:520px;max-width:100%;">{{ old('payment_notes', $repair->payment_notes) }}</textarea>
+
+  <hr>
+
+  <h4>Notas</h4>
+  <textarea name="notes" rows="3" style="width:520px;max-width:100%;">{{ old('notes', $repair->notes) }}</textarea>
+
+  <br><br>
+  <button type="submit">Guardar cambios</button>
+</form>
 @endsection
