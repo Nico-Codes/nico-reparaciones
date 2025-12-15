@@ -1,102 +1,96 @@
 @extends('layouts.app')
 
-@section('title', 'Carrito — NicoReparaciones')
+@section('title', 'Carrito')
 
-@section('content')
 @php
-  $money = fn($n) => '$ ' . number_format((float)$n, 0, ',', '.');
+  $fmt = fn($n) => '$ ' . number_format((float)$n, 0, ',', '.');
 @endphp
 
-<div class="container-page py-6">
-  <h1 class="page-title">Carrito</h1>
-  <p class="page-subtitle">Revisá productos y cantidades antes de finalizar.</p>
-
-  @if (session('success'))
-    <div class="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-      {{ session('success') }}
-    </div>
-  @endif
+@section('content')
+  <div class="page-head">
+    <div class="page-title">Carrito</div>
+    <div class="page-subtitle">Revisá tu compra antes de confirmar.</div>
+  </div>
 
   @if(empty($cart))
-    <div class="mt-6 card">
+    <div class="card">
       <div class="card-body">
-        <div class="text-sm text-zinc-600">Tu carrito está vacío.</div>
-        <a class="btn-primary mt-4" href="{{ route('store.index') }}">Ir a la tienda</a>
+        <div class="font-black">Tu carrito está vacío.</div>
+        <div class="muted mt-1">Volvé a la tienda y agregá un producto.</div>
+        <div class="mt-4">
+          <a href="{{ route('store.index') }}" class="btn-primary">Ir a la tienda</a>
+        </div>
       </div>
     </div>
   @else
-    <div class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-      {{-- Lista --}}
-      <div class="lg:col-span-2 space-y-3">
+    <div class="grid gap-4 lg:grid-cols-3">
+      <div class="lg:col-span-2 grid gap-3">
         @foreach($cart as $item)
           <div class="card">
             <div class="card-body">
               <div class="flex items-start justify-between gap-3">
-                <div class="min-w-0">
-                  <a href="{{ route('store.product', $item['slug']) }}"
-                     class="block text-sm font-semibold text-zinc-900 hover:text-sky-700">
-                    {{ $item['name'] }}
-                  </a>
-                  <div class="mt-1 text-sm text-zinc-500">Unitario: {{ $money($item['price']) }}</div>
+                <div>
+                  <div class="font-black leading-snug">
+                    <a href="{{ route('store.product', $item['slug']) }}" class="text-zinc-900 hover:text-sky-700">
+                      {{ $item['name'] }}
+                    </a>
+                  </div>
+                  <div class="muted mt-1">
+                    Precio: <span class="font-bold text-zinc-900">{{ $fmt($item['price']) }}</span>
+                  </div>
                 </div>
 
-                <form action="{{ route('cart.remove', $item['id']) }}" method="POST">
+                <form method="POST" action="{{ route('cart.remove', $item['id']) }}">
                   @csrf
-                  <button type="submit" class="btn-outline px-3 py-2">Quitar</button>
+                  <button class="btn-ghost btn-sm text-rose-700 hover:bg-rose-50">Eliminar</button>
                 </form>
               </div>
 
-              <div class="mt-4 flex items-end justify-between gap-3">
-                <form action="{{ route('cart.update', $item['id']) }}" method="POST" class="flex items-end gap-2">
+              <div class="mt-3 flex flex-col sm:flex-row sm:items-center gap-2 justify-between">
+                <form method="POST" action="{{ route('cart.update', $item['id']) }}" class="flex items-center gap-2">
                   @csrf
-                  <div class="w-24">
-                    <label class="text-sm font-medium text-zinc-800">Cant.</label>
-                    <input class="input" type="number" name="quantity" min="1" value="{{ $item['quantity'] }}">
-                  </div>
-                  <button type="submit" class="btn-primary px-3 py-2.5">Actualizar</button>
+                  <input type="number" name="quantity" min="1" value="{{ $item['quantity'] }}" class="w-24">
+                  <button class="btn-outline btn-sm">Actualizar</button>
                 </form>
 
-                <div class="text-right">
-                  <div class="text-xs text-zinc-500">Subtotal</div>
-                  <div class="text-base font-extrabold text-zinc-900">
-                    {{ $money($item['price'] * $item['quantity']) }}
-                  </div>
+                <div class="font-black">
+                  Subtotal: {{ $fmt($item['price'] * $item['quantity']) }}
                 </div>
               </div>
             </div>
           </div>
         @endforeach
+
+        <div class="flex flex-col sm:flex-row gap-2">
+          <a href="{{ route('store.index') }}" class="btn-outline w-full sm:w-auto">Seguir comprando</a>
+
+          <form method="POST" action="{{ route('cart.clear') }}" class="w-full sm:w-auto">
+            @csrf
+            <button class="btn-ghost w-full sm:w-auto text-rose-700 hover:bg-rose-50">Vaciar carrito</button>
+          </form>
+        </div>
       </div>
 
-      {{-- Resumen --}}
-      <div class="space-y-3">
-        <div class="card">
-          <div class="card-header">
-            <div class="text-sm font-semibold text-zinc-900">Resumen</div>
-          </div>
-          <div class="card-body space-y-3">
-            <div class="flex items-center justify-between">
-              <span class="text-sm text-zinc-600">Total</span>
-              <span class="text-lg font-extrabold text-zinc-900">{{ $money($total) }}</span>
-            </div>
-
-            <a href="{{ route('checkout') }}" class="btn-primary w-full">Finalizar pedido</a>
-
-            <form action="{{ route('cart.clear') }}" method="POST">
-              @csrf
-              <button type="submit" class="btn-outline w-full">Vaciar carrito</button>
-            </form>
-
-            <a href="{{ route('store.index') }}" class="btn-ghost w-full">Seguir comprando</a>
-          </div>
+      <div class="card h-fit">
+        <div class="card-head">
+          <div class="font-black">Resumen</div>
+          <span class="badge-sky">{{ count($cart) }} ítems</span>
         </div>
+        <div class="card-body">
+          <div class="flex items-center justify-between">
+            <div class="muted">Total</div>
+            <div class="text-xl font-black">{{ $fmt($total) }}</div>
+          </div>
 
-        <div class="rounded-2xl border border-sky-200 bg-sky-50 p-4 text-sm text-sky-900">
-          <div class="font-semibold">Tip</div>
-          <div class="mt-1 text-sky-800/90">Si necesitás instalación o reparación, usá “Mis reparaciones” para seguimiento.</div>
+          <a href="{{ route('checkout') }}" class="btn-primary w-full mt-4">
+            Ir a checkout
+          </a>
+
+          <div class="muted mt-3">
+            Tip: si no estás logueado, te pedirá iniciar sesión antes de confirmar.
+          </div>
         </div>
       </div>
     </div>
   @endif
-</div>
 @endsection

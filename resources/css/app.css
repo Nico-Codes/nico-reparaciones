@@ -1,41 +1,86 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
+/* =========================
+   Base (look & feel global)
+   ========================= */
 @layer base {
   html { -webkit-text-size-adjust: 100%; }
   body { @apply bg-zinc-50 text-zinc-900 antialiased; }
+
+  a { @apply text-sky-700 hover:text-sky-800; }
+  hr { @apply border-zinc-100; }
+
+  /* Forms */
+  input, textarea, select {
+    @apply w-full rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-sm
+           outline-none focus:ring-4 focus:ring-sky-100 focus:border-sky-400;
+  }
+  textarea { @apply min-h-24; }
+
+  label { @apply text-sm font-bold text-zinc-800; }
+
+  /* Tables */
+  table { @apply w-full border-collapse; }
+  th { @apply text-left text-xs font-black uppercase tracking-wide text-zinc-500; }
+  td { @apply text-sm text-zinc-800; }
 }
 
+/* =========================
+   Components (reusable)
+   ========================= */
 @layer components {
-  /* Layout */
   .container-page { @apply max-w-6xl mx-auto px-4; }
 
-  .page-title { @apply text-xl md:text-2xl font-extrabold tracking-tight text-zinc-900; }
-  .page-subtitle { @apply mt-1 text-sm text-zinc-600; }
+  .page-head { @apply flex flex-col gap-1 mb-5; }
+  .page-title { @apply text-xl md:text-2xl font-black tracking-tight; }
+  .page-subtitle { @apply text-sm text-zinc-600; }
 
-  /* Cards */
-  .card { @apply rounded-2xl border border-zinc-200 bg-white shadow-sm; }
-  .card-header { @apply px-5 py-4 border-b border-zinc-100; }
-  .card-body { @apply px-5 py-5; }
+  .card { @apply bg-white border border-zinc-100 rounded-2xl shadow-sm; }
+  .card-head { @apply px-4 py-3 border-b border-zinc-100 flex items-center justify-between gap-3; }
+  .card-body { @apply px-4 py-4; }
+  .card-foot { @apply px-4 py-3 border-t border-zinc-100; }
 
-  /* Buttons */
-  .btn-primary { @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold bg-sky-600 text-white shadow-sm hover:bg-sky-700 active:scale-[0.99] transition; }
-  .btn-outline { @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold border border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-50 active:scale-[0.99] transition; }
-  .btn-ghost { @apply inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-100 active:scale-[0.99] transition; }
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-2 text-sm font-extrabold
+                transition active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed; }
+  .btn-primary { @apply btn bg-sky-600 text-white hover:bg-sky-700; }
+  .btn-outline { @apply btn bg-white text-zinc-900 border border-zinc-200 hover:bg-zinc-50; }
+  .btn-ghost { @apply btn bg-transparent text-zinc-900 hover:bg-zinc-100; }
+  .btn-danger { @apply btn bg-rose-600 text-white hover:bg-rose-700; }
+  .btn-sm { @apply px-3 py-1.5 text-xs rounded-xl; }
 
-  /* Inputs */
-  .input { @apply w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-300; }
-  .select { @apply w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-300; }
-  .textarea { @apply w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-300; }
+  .badge { @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-black border; }
+  .badge-sky { @apply badge bg-sky-50 text-sky-700 border-sky-200; }
+  .badge-emerald { @apply badge bg-emerald-50 text-emerald-700 border-emerald-200; }
+  .badge-amber { @apply badge bg-amber-50 text-amber-800 border-amber-200; }
+  .badge-rose { @apply badge bg-rose-50 text-rose-700 border-rose-200; }
+  .badge-zinc { @apply badge bg-zinc-50 text-zinc-700 border-zinc-200; }
+  .badge-indigo { @apply badge bg-indigo-50 text-indigo-700 border-indigo-200; }
 
-  .label { @apply block text-sm font-semibold text-zinc-800 mb-1; }
-  .helper { @apply mt-1 text-xs text-zinc-500; }
+  .nav-link {
+    @apply inline-flex items-center gap-2 rounded-2xl px-3 py-2 text-sm font-extrabold
+           text-zinc-800 hover:bg-zinc-100 hover:text-zinc-900;
+  }
+  .nav-link.active { @apply bg-sky-50 text-sky-800; }
 
-  /* Badges */
-  .badge { @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset; }
-  .badge-zinc { @apply bg-zinc-100 text-zinc-800 ring-zinc-200; }
-  .badge-amber { @apply bg-amber-100 text-amber-900 ring-amber-200; }
-  .badge-sky { @apply bg-sky-100 text-sky-900 ring-sky-200; }
-  .badge-purple { @apply bg-purple-100 text-purple-900 ring-purple-200; }
-  .badge-emerald { @apply bg-emerald-100 text-emerald-900 ring-emerald-200; }
-  .badge-rose { @apply bg-rose-100 text-rose-900 ring-rose-200; }
+  .dropdown-menu { @apply absolute right-0 mt-2 w-56 rounded-2xl border border-zinc-100 bg-white shadow-lg overflow-hidden; }
+  .dropdown-item { @apply block w-full text-left px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50; }
+
+  .alert-success { @apply rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-800; }
+  .alert-error { @apply rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-800; }
+
+  .muted { @apply text-sm text-zinc-600; }
+
+  /* Legacy helpers (por si quedó markup viejo) */
+  .hero { @apply card; }
+  .hero-title { @apply page-title; }
+  .hero-text { @apply page-subtitle; }
+  .orders-list { @apply grid gap-3; }
+  .order-card { @apply card p-4; }
+}
+
+/* =========================
+   Utilities
+   ========================= */
+@layer utilities {
+  .tap { -webkit-tap-highlight-color: transparent; }
 }

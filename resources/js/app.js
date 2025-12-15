@@ -1,43 +1,29 @@
 import './bootstrap';
 
-document.addEventListener('DOMContentLoaded', () => {
-  // Mobile drawer
-  const openBtn = document.querySelector('[data-toggle="mobile-drawer"]');
-  const drawer = document.getElementById('mobileDrawer');
-  const overlay = document.getElementById('mobileOverlay');
-  const closeBtns = document.querySelectorAll('[data-close="mobile-drawer"]');
+function toggleEl(el) {
+  if (!el) return;
+  el.classList.toggle('hidden');
+}
 
-  const open = () => {
-    if (!drawer || !overlay) return;
-    drawer.classList.remove('translate-x-full');
-    overlay.classList.remove('hidden');
-    document.body.classList.add('overflow-hidden');
-  };
+document.addEventListener('click', (e) => {
+  // Mobile menu
+  const mobileBtn = e.target.closest('[data-toggle="mobile-menu"]');
+  if (mobileBtn) {
+    toggleEl(document.getElementById('mobileMenu'));
+    return;
+  }
 
-  const close = () => {
-    if (!drawer || !overlay) return;
-    drawer.classList.add('translate-x-full');
-    overlay.classList.add('hidden');
-    document.body.classList.remove('overflow-hidden');
-  };
+  // User menu
+  const userBtn = e.target.closest('[data-toggle="user-menu"]');
+  const userMenu = document.querySelector('[data-menu="user-menu"]');
 
-  openBtn?.addEventListener('click', open);
-  overlay?.addEventListener('click', close);
-  closeBtns.forEach(b => b.addEventListener('click', close));
+  if (userBtn) {
+    toggleEl(userMenu);
+    return;
+  }
 
-  // Toast (cart added)
-  const toast = document.getElementById('toast');
-  if (toast) {
-    setTimeout(() => {
-      toast.classList.remove('opacity-0', 'translate-y-2');
-    }, 40);
-
-    setTimeout(() => {
-      toast.classList.add('opacity-0');
-    }, 3200);
-
-    setTimeout(() => {
-      toast.remove();
-    }, 3800);
+  // Click outside closes dropdown
+  if (userMenu && !userMenu.contains(e.target)) {
+    userMenu.classList.add('hidden');
   }
 });

@@ -1,100 +1,66 @@
 @extends('layouts.app')
 
-@section('title', $product->name.' - Tienda')
+@section('title', $product->name.' — Tienda')
 
-@section('content')
 @php
-  $money = fn($n) => '$ ' . number_format((float)$n, 0, ',', '.');
-  $img = $product->image_url;
-  $inStock = ((int)($product->stock ?? 0)) > 0;
+  $fmt = fn($n) => '$ ' . number_format((float)$n, 0, ',', '.');
 @endphp
 
-<div class="space-y-4">
-  {{-- Breadcrumb --}}
-  <div class="text-xs text-zinc-500">
-    <a class="hover:text-sky-700" href="{{ route('store.index') }}">Tienda</a>
-    <span class="mx-1">/</span>
-    @if($product->category)
-      <a class="hover:text-sky-700" href="{{ route('store.category', $product->category->slug) }}">{{ $product->category->name }}</a>
-      <span class="mx-1">/</span>
-    @endif
-    <span class="text-zinc-700 font-semibold">{{ $product->name }}</span>
+@section('content')
+  <div class="page-head">
+    <div class="page-title">{{ $product->name }}</div>
+    <div class="page-subtitle">
+      Categoría:
+      <a href="{{ route('store.category', $product->category->slug) }}" class="font-bold">
+        {{ $product->category->name }}
+      </a>
+    </div>
   </div>
 
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    {{-- Image --}}
+  <div class="grid gap-4 lg:grid-cols-2">
     <div class="card overflow-hidden">
-      <div class="aspect-square bg-zinc-50">
-        @if($img)
-          <img src="{{ $img }}" alt="{{ $product->name }}" class="h-full w-full object-cover">
+      <div class="aspect-[4/3] bg-zinc-50">
+        @if($product->image_url)
+          <img src="{{ $product->image_url }}" alt="{{ $product->name }}" class="h-full w-full object-cover">
         @else
-          <div class="h-full w-full flex items-center justify-center">
-            <div class="h-20 w-20 rounded-3xl bg-white border border-zinc-200 flex items-center justify-center font-extrabold text-2xl text-zinc-700">
-              {{ strtoupper(substr($product->name, 0, 1)) }}
-            </div>
+          <div class="h-full w-full flex items-center justify-center text-zinc-400 text-sm font-bold">
+            Sin imagen
           </div>
         @endif
       </div>
     </div>
 
-    {{-- Info --}}
-    <div class="space-y-4">
-      <div>
-        <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight text-zinc-900">{{ $product->name }}</h1>
+    <div class="card">
+      <div class="card-body">
+        <div class="flex items-center justify-between gap-3">
+          <div class="text-2xl font-black">{{ $fmt($product->price) }}</div>
 
-        <div class="mt-2 flex items-center gap-2 flex-wrap">
-          <span class="badge {{ $inStock ? 'badge-emerald' : 'badge-rose' }}">
-            {{ $inStock ? 'En stock' : 'Sin stock' }}
-          </span>
-
-          @if($product->category)
-            <span class="badge badge-zinc">{{ $product->category->name }}</span>
+          @if($product->stock > 0)
+            <span class="badge-emerald">En stock</span>
+          @else
+            <span class="badge-rose">Sin stock</span>
           @endif
         </div>
-      </div>
 
-      <div class="card">
-        <div class="card-body space-y-3">
-          <div class="flex items-end justify-between gap-3">
-            <div class="text-xs text-zinc-500">Precio</div>
-            <div class="text-2xl font-extrabold text-zinc-900">{{ $money($product->price) }}</div>
+        @if($product->description)
+          <div class="mt-4 text-sm text-zinc-700 leading-relaxed">
+            {{ $product->description }}
           </div>
+        @endif
 
-          <form method="POST" action="{{ route('cart.add', $product->id) }}" class="grid grid-cols-3 gap-2 items-end">
+        <div class="mt-6 flex flex-col sm:flex-row gap-2">
+          <form method="POST" action="{{ route('cart.add', $product) }}" class="sm:flex-1">
             @csrf
-
-            <div class="col-span-1">
-              <label class="label">Cantidad</label>
-              <input class="input" type="number" name="quantity" min="1" value="1" {{ $inStock ? '' : 'disabled' }}>
-            </div>
-
-            <div class="col-span-2">
-              <button class="btn-primary w-full" type="submit" {{ $inStock ? '' : 'disabled' }}>
-                Agregar al carrito
-              </button>
-            </div>
+            <button class="btn-primary w-full" {{ $product->stock > 0 ? '' : 'disabled' }}>
+              Agregar al carrito
+            </button>
           </form>
 
-          <div class="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-700">
-            <div class="font-extrabold text-zinc-900">Retiro en local</div>
-            <div class="mt-1 text-zinc-600">
-              Coordinás y retirás en el local. Más adelante sumamos envío si querés.
-            </div>
-          </div>
-
-          <a href="{{ route('store.index') }}" class="btn-outline w-full text-center">← Volver a la tienda</a>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-header">
-          <div class="text-sm font-extrabold text-zinc-900">Descripción</div>
-        </div>
-        <div class="card-body text-sm text-zinc-700 leading-relaxed">
-          {{ $product->description ?: 'Sin descripción por ahora.' }}
+          <a href="{{ route('cart.index') }}" class="btn-outline w-full sm:w-auto">
+            Ver carrito
+          </a>
         </div>
       </div>
     </div>
   </div>
-</div>
 @endsection

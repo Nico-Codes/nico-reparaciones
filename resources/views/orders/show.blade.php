@@ -1,143 +1,103 @@
 @extends('layouts.app')
 
-@section('title', 'Pedido #' . $order->id . ' — NicoReparaciones')
+@section('title', 'Pedido #'.$order->id)
 
-@section('content')
 @php
-  $money = fn($n) => '$ ' . number_format((float)$n, 0, ',', '.');
+  $fmt = fn($n) => '$ ' . number_format((float)$n, 0, ',', '.');
 
-  $statusLabel = fn($s) => match($s) {
-    'pendiente' => 'Pendiente',
-    'confirmado' => 'Confirmado',
-    'preparando' => 'Preparando',
-    'listo_retirar' => 'Listo para retirar',
-    'entregado' => 'Entregado',
-    'cancelado' => 'Cancelado',
-    default => ucfirst(str_replace('_', ' ', (string)$s)),
+  $badge = function(string $s) {
+    return match($s) {
+      'pendiente' => 'badge-amber',
+      'confirmado' => 'badge-sky',
+      'preparando' => 'badge-indigo',
+      'listo_retirar' => 'badge-emerald',
+      'entregado' => 'badge-zinc',
+      'cancelado' => 'badge-rose',
+      default => 'badge-zinc',
+    };
   };
 
-  $statusBadge = fn($s) => match($s) {
-    'pendiente' => 'badge badge-amber',
-    'confirmado' => 'badge badge-sky',
-    'preparando' => 'badge badge-purple',
-    'listo_retirar' => 'badge badge-emerald',
-    'entregado' => 'badge bg-zinc-900 text-white ring-zinc-900/10',
-    'cancelado' => 'badge badge-rose',
-    default => 'badge badge-zinc',
-  };
-
-  $payLabel = fn($p) => match($p) {
-    'local' => 'Pago en el local',
-    'mercado_pago' => 'Mercado Pago',
-    'transferencia' => 'Transferencia',
-    default => ucfirst(str_replace('_', ' ', (string)$p)),
-  };
+  $label = fn(string $s) => ucfirst(str_replace('_',' ',$s));
 @endphp
 
-<div class="container-page py-6">
-  <div class="flex items-start justify-between gap-4">
+@section('content')
+  <div class="flex items-start justify-between gap-3 mb-5">
     <div>
-      <div class="flex items-center gap-2 flex-wrap">
-        <h1 class="page-title">Pedido #{{ $order->id }}</h1>
-        <span class="{{ $statusBadge($order->status) }}">{{ $statusLabel($order->status) }}</span>
+      <div class="page-title">Pedido #{{ $order->id }}</div>
+      <div class="page-subtitle">
+        {{ $order->created_at?->format('d/m/Y H:i') }}
       </div>
-      <p class="page-subtitle">Detalle del pedido y productos comprados.</p>
     </div>
-
-    <a href="{{ route('orders.index') }}" class="btn-outline">Volver</a>
+    <span class="{{ $badge($order->status) }}">{{ $label($order->status) }}</span>
   </div>
 
-  @if(session('success'))
-    <div class="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-      {{ session('success') }}
-    </div>
-  @endif
+  <div class="grid gap-4 lg:grid-cols-3">
+    <div class="lg:col-span-2 card">
+      <div class="card-head">
+        <div class="font-black">Ítems</div>
+        <span class="badge-sky">{{ $order->items->count() }} productos</span>
+      </div>
 
-  <div class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="card-body overflow-x-auto">
+        <table class="min-w-[520px]">
+          <thead>
+            <tr class="border-b border-zinc-100">
+              <th class="py-2">Producto</th>
+              <th class="py-2">Precio</th>
+              <th class="py-2">Cant.</th>
+              <th class="py-2 text-right">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            @foreach($order->items as $item)
+              <tr class="border-b border-zinc-50">
+                <td class="py-3 font-bold">{{ $item->product_name }}</td>
+                <td class="py-3">{{ $fmt($item->unit_price) }}</td>
+                <td class="py-3">{{ $item->quantity }}</td>
+                <td class="py-3 text-right font-black">{{ $fmt($item->subtotal) }}</td>
+              </tr>
+            @endforeach
+          </tbody>
+        </table>
 
-    {{-- Items --}}
-    <div class="lg:col-span-2 space-y-3">
-      <div class="card">
-        <div class="card-header">
-          <div class="text-sm font-semibold text-zinc-900">Productos</div>
-          <div class="text-xs text-zinc-500">Cantidad, precio y subtotal.</div>
-        </div>
-        <div class="card-body space-y-3">
-          @foreach($order->items as $item)
-            <div class="rounded-2xl border border-zinc-200 bg-white p-4">
-              <div class="flex items-start justify-between gap-3">
-                <div class="min-w-0">
-                  <div class="text-sm font-semibold text-zinc-900">{{ $item->product_name }}</div>
-                  <div class="mt-1 text-sm text-zinc-500">
-                    x {{ $item->quantity }} · {{ $money($item->price) }} c/u
-                  </div>
-                </div>
-                <div class="text-right">
-                  <div class="text-xs text-zinc-500">Subtotal</div>
-                  <div class="text-sm font-extrabold text-zinc-900">{{ $money($item->subtotal) }}</div>
-                </div>
-              </div>
-            </div>
-          @endforeach
+        <div class="mt-4 flex items-center justify-between">
+          <div class="muted">Total</div>
+          <div class="text-xl font-black">{{ $fmt($order->total) }}</div>
         </div>
       </div>
     </div>
 
-    {{-- Resumen --}}
-    <div class="space-y-6">
-      <div class="card">
-        <div class="card-header">
-          <div class="text-sm font-semibold text-zinc-900">Resumen</div>
-        </div>
-        <div class="card-body space-y-3 text-sm">
-          <div class="flex items-center justify-between">
-            <span class="text-zinc-600">Fecha</span>
-            <span class="font-semibold text-zinc-900">{{ $order->created_at?->format('d/m/Y H:i') ?? '—' }}</span>
-          </div>
-
-          <div class="flex items-center justify-between">
-            <span class="text-zinc-600">Total</span>
-            <span class="font-extrabold text-zinc-900">{{ $money($order->total) }}</span>
-          </div>
-
-          <div class="flex items-center justify-between">
-            <span class="text-zinc-600">Pago</span>
-            <span class="font-semibold text-zinc-900">{{ $payLabel($order->payment_method) }}</span>
-          </div>
-
-          @if($order->pickup_name)
-            <div class="flex items-center justify-between">
-              <span class="text-zinc-600">Retira</span>
-              <span class="font-semibold text-zinc-900">{{ $order->pickup_name }}</span>
-            </div>
-          @endif
-
-          @if($order->pickup_phone)
-            <div class="flex items-center justify-between">
-              <span class="text-zinc-600">Teléfono</span>
-              <span class="font-semibold text-zinc-900">{{ $order->pickup_phone }}</span>
-            </div>
-          @endif
-
-          @if($order->notes)
-            <div class="h-px bg-zinc-100"></div>
-            <div>
-              <div class="text-xs text-zinc-500">Notas</div>
-              <div class="mt-1 text-sm text-zinc-800 whitespace-pre-line">{{ $order->notes }}</div>
-            </div>
-          @endif
-        </div>
+    <div class="card h-fit">
+      <div class="card-head">
+        <div class="font-black">Detalles</div>
+        <span class="badge-sky">Retiro</span>
       </div>
 
-      <div class="rounded-2xl border border-sky-200 bg-sky-50 p-4">
-        <div class="text-sm font-semibold text-sky-900">¿Tenés una reparación?</div>
-        <div class="mt-1 text-sm text-sky-800/90">
-          Podés consultar el estado con código + teléfono.
+      <div class="card-body grid gap-3">
+        <div>
+          <div class="muted">Nombre</div>
+          <div class="font-black">{{ $order->pickup_name ?: '—' }}</div>
         </div>
-        <a href="{{ route('repairs.lookup') }}" class="btn-primary w-full mt-3">Consultar reparación</a>
+
+        <div>
+          <div class="muted">Teléfono</div>
+          <div class="font-black">{{ $order->pickup_phone ?: '—' }}</div>
+        </div>
+
+        <div>
+          <div class="muted">Pago</div>
+          <div class="font-black">{{ $order->payment_method }}</div>
+        </div>
+
+        @if($order->notes)
+          <div>
+            <div class="muted">Notas</div>
+            <div class="text-sm text-zinc-800">{{ $order->notes }}</div>
+          </div>
+        @endif
+
+        <a href="{{ route('orders.index') }}" class="btn-outline w-full">Volver</a>
       </div>
     </div>
-
   </div>
-</div>
 @endsection
