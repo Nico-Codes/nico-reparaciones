@@ -1,77 +1,90 @@
 @extends('layouts.app')
 
+@section('title', 'Admin — Crear producto')
+
 @section('content')
-<div style="max-width:900px; margin:0 auto; padding:18px;">
-    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
-        <h2 style="margin:0;">Crear producto</h2>
-        <a href="{{ route('admin.products.index') }}" style="text-decoration:none; color:#111; border:1px solid #ddd; padding:10px 12px; border-radius:10px;">
-            ← Volver
-        </a>
+<div class="container-page py-6">
+  <div class="flex items-start justify-between gap-4 flex-wrap">
+    <div>
+      <h1 class="page-title">Crear producto</h1>
+      <p class="page-subtitle">Nombre, categoría, precio, stock, descripción e imagen.</p>
+    </div>
+    <a href="{{ route('admin.products.index') }}" class="btn-outline">← Volver</a>
+  </div>
+
+  @if($errors->any())
+    <div class="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+      <div class="font-semibold">Revisá estos errores:</div>
+      <ul class="list-disc pl-5 mt-2 space-y-1">
+        @foreach($errors->all() as $e)
+          <li>{{ $e }}</li>
+        @endforeach
+      </ul>
+    </div>
+  @endif
+
+  <form class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6"
+        method="POST"
+        action="{{ route('admin.products.store') }}"
+        enctype="multipart/form-data">
+    @csrf
+
+    <div class="lg:col-span-2 space-y-6">
+      <div class="card">
+        <div class="card-header">
+          <div class="text-sm font-semibold text-zinc-900">Datos</div>
+          <div class="text-xs text-zinc-500">Lo básico para vender.</div>
+        </div>
+        <div class="card-body grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="md:col-span-2">
+            <label class="label">Nombre *</label>
+            <input class="input" name="name" value="{{ old('name') }}" required>
+          </div>
+
+          <div>
+            <label class="label">Categoría *</label>
+            <select class="select" name="category_id" required>
+              <option value="">— Seleccionar —</option>
+              @foreach($categories as $c)
+                <option value="{{ $c->id }}" @selected(old('category_id') == $c->id)>{{ $c->name }}</option>
+              @endforeach
+            </select>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="label">Precio *</label>
+              <input class="input" type="number" step="0.01" min="0" name="price" value="{{ old('price') }}" required>
+            </div>
+            <div>
+              <label class="label">Stock *</label>
+              <input class="input" type="number" min="0" name="stock" value="{{ old('stock', 0) }}" required>
+            </div>
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="label">Descripción</label>
+            <textarea class="textarea" rows="4" name="description">{{ old('description') }}</textarea>
+          </div>
+        </div>
+      </div>
     </div>
 
-    @if($errors->any())
-        <div style="margin-top:12px; padding:12px; background:#fef2f2; border:1px solid #fecaca; border-radius:12px;">
-            <div style="font-weight:700; margin-bottom:6px;">Revisá estos errores:</div>
-            <ul style="margin:0; padding-left:18px;">
-                @foreach($errors->all() as $e)
-                    <li>{{ $e }}</li>
-                @endforeach
-            </ul>
+    <div class="space-y-6">
+      <div class="card">
+        <div class="card-header">
+          <div class="text-sm font-semibold text-zinc-900">Imagen</div>
+          <div class="text-xs text-zinc-500">JPG/PNG/WEBP (máx 4MB).</div>
         </div>
-    @endif
+        <div class="card-body">
+          <input class="input" type="file" name="image" accept="image/*">
+          <p class="helper">Recomendado: 800×800 o cuadrada.</p>
 
-    <form method="POST" action="{{ route('admin.products.store') }}" enctype="multipart/form-data"
-          style="margin-top:14px; display:flex; flex-direction:column; gap:12px;">
-        @csrf
-
-        <div style="border:1px solid #eee; border-radius:14px; padding:14px;">
-            <label>Nombre</label><br>
-            <input name="name" value="{{ old('name') }}" style="width:100%; padding:10px; border-radius:10px; border:1px solid #ddd;">
+          <button class="btn-primary w-full mt-4" type="submit">Guardar</button>
+          <a class="btn-outline w-full text-center mt-2" href="{{ route('admin.products.index') }}">Cancelar</a>
         </div>
-
-        <div style="display:flex; gap:12px; flex-wrap:wrap;">
-            <div style="flex:1; min-width:260px; border:1px solid #eee; border-radius:14px; padding:14px;">
-                <label>Categoría</label><br>
-                <select name="category_id" style="width:100%; padding:10px; border-radius:10px; border:1px solid #ddd;">
-                    <option value="">-- Seleccionar --</option>
-                    @foreach($categories as $c)
-                        <option value="{{ $c->id }}" @selected(old('category_id') == $c->id)>{{ $c->name }}</option>
-                    @endforeach
-                </select>
-            </div>
-
-            <div style="flex:1; min-width:200px; border:1px solid #eee; border-radius:14px; padding:14px;">
-                <label>Precio</label><br>
-                <input type="number" step="0.01" name="price" value="{{ old('price') }}"
-                       style="width:100%; padding:10px; border-radius:10px; border:1px solid #ddd;">
-            </div>
-
-            <div style="flex:1; min-width:200px; border:1px solid #eee; border-radius:14px; padding:14px;">
-                <label>Stock</label><br>
-                <input type="number" name="stock" value="{{ old('stock', 0) }}"
-                       style="width:100%; padding:10px; border-radius:10px; border:1px solid #ddd;">
-            </div>
-        </div>
-
-        <div style="border:1px solid #eee; border-radius:14px; padding:14px;">
-            <label>Descripción (opcional)</label><br>
-            <textarea name="description" rows="5" style="width:100%; padding:10px; border-radius:10px; border:1px solid #ddd;">{{ old('description') }}</textarea>
-        </div>
-
-        <div style="border:1px solid #eee; border-radius:14px; padding:14px;">
-            <label>Imagen (opcional)</label><br>
-            <input type="file" name="image" accept="image/*">
-            <div style="font-size:12px; color:#666; margin-top:6px;">Formatos: JPG/PNG/WEBP. Máx 4MB.</div>
-        </div>
-
-        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-            <button type="submit" style="padding:10px 14px; border-radius:12px; background:#111; color:#fff; border:none; cursor:pointer;">
-                Guardar
-            </button>
-            <a href="{{ route('admin.products.index') }}" style="padding:10px 14px; border-radius:12px; border:1px solid #ddd; color:#111; text-decoration:none;">
-                Cancelar
-            </a>
-        </div>
-    </form>
+      </div>
+    </div>
+  </form>
 </div>
 @endsection

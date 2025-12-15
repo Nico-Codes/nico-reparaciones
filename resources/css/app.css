@@ -1,47 +1,41 @@
 @import "tailwindcss";
 
-@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
-@source '../../storage/framework/views/*.php';
-@source '../**/*.blade.php';
-@source '../**/*.js';
-
 @layer base {
-  body { @apply bg-zinc-50 text-zinc-900; }
-  a { @apply text-sky-700 hover:text-sky-800; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { @apply bg-zinc-50 text-zinc-900 antialiased; }
 }
 
 @layer components {
-  .container-page { @apply mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8; }
+  /* Layout */
+  .container-page { @apply max-w-6xl mx-auto px-4; }
 
-  .page-title { @apply text-xl sm:text-2xl font-semibold text-zinc-900; }
-  .page-subtitle { @apply mt-1 text-sm text-zinc-500; }
+  .page-title { @apply text-xl md:text-2xl font-extrabold tracking-tight text-zinc-900; }
+  .page-subtitle { @apply mt-1 text-sm text-zinc-600; }
 
+  /* Cards */
   .card { @apply rounded-2xl border border-zinc-200 bg-white shadow-sm; }
-  .card-header { @apply border-b border-zinc-100 px-4 py-3; }
-  .card-body { @apply p-4; }
+  .card-header { @apply px-5 py-4 border-b border-zinc-100; }
+  .card-body { @apply px-5 py-5; }
 
-  .btn-primary { @apply inline-flex items-center justify-center rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-sky-500 focus:outline-none focus:ring-4 focus:ring-sky-200; }
-  .btn-outline { @apply inline-flex items-center justify-center rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-700 hover:bg-zinc-50; }
-  .btn-ghost { @apply inline-flex items-center justify-center rounded-xl px-3 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-100; }
+  /* Buttons */
+  .btn-primary { @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold bg-sky-600 text-white shadow-sm hover:bg-sky-700 active:scale-[0.99] transition; }
+  .btn-outline { @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold border border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-50 active:scale-[0.99] transition; }
+  .btn-ghost { @apply inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-100 active:scale-[0.99] transition; }
 
-  /* Compat (si alguna vista vieja usa .btn) */
-  .btn { @apply btn-primary; }
+  /* Inputs */
+  .input { @apply w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-300; }
+  .select { @apply w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-300; }
+  .textarea { @apply w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-300; }
 
-  .input { @apply w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-100; }
-  .select { @apply w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-100; }
-  .textarea { @apply w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-100; }
+  .label { @apply block text-sm font-semibold text-zinc-800 mb-1; }
+  .helper { @apply mt-1 text-xs text-zinc-500; }
 
+  /* Badges */
   .badge { @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset; }
-  .badge-zinc { @apply bg-zinc-100 text-zinc-700 ring-zinc-200; }
-  .badge-emerald { @apply bg-emerald-100 text-emerald-800 ring-emerald-200; }
-  .badge-rose { @apply bg-rose-100 text-rose-800 ring-rose-200; }
-  .badge-sky { @apply bg-sky-100 text-sky-800 ring-sky-200; }
-
-  /* Extras para estados (y compat con clases tipo "badge-blue") */
-  .badge-amber { @apply bg-amber-100 text-amber-800 ring-amber-200; }
-  .badge-purple { @apply bg-purple-100 text-purple-800 ring-purple-200; }
-  .badge-slate { @apply bg-slate-100 text-slate-700 ring-slate-200; }
-  .badge-blue { @apply bg-sky-100 text-sky-800 ring-sky-200; }
-  .badge-green { @apply bg-emerald-100 text-emerald-800 ring-emerald-200; }
-  .badge-red { @apply bg-rose-100 text-rose-800 ring-rose-200; }
+  .badge-zinc { @apply bg-zinc-100 text-zinc-800 ring-zinc-200; }
+  .badge-amber { @apply bg-amber-100 text-amber-900 ring-amber-200; }
+  .badge-sky { @apply bg-sky-100 text-sky-900 ring-sky-200; }
+  .badge-purple { @apply bg-purple-100 text-purple-900 ring-purple-200; }
+  .badge-emerald { @apply bg-emerald-100 text-emerald-900 ring-emerald-200; }
+  .badge-rose { @apply bg-rose-100 text-rose-900 ring-rose-200; }
 }

@@ -1,35 +1,43 @@
 import './bootstrap';
 
-/**
- * NicoReparaciones UI helpers (sin dependencias)
- * - Toggle de menús (mobile)
- * - Toast autocierre
- */
 document.addEventListener('DOMContentLoaded', () => {
-  // Toggle targets por id via data-toggle / data-target
-  document.querySelectorAll('[data-toggle]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const targetId = btn.getAttribute('data-target');
-      if (!targetId) return;
-      const el = document.getElementById(targetId);
-      if (!el) return;
-      el.classList.toggle('hidden');
-    });
-  });
+  // Mobile drawer
+  const openBtn = document.querySelector('[data-toggle="mobile-drawer"]');
+  const drawer = document.getElementById('mobileDrawer');
+  const overlay = document.getElementById('mobileOverlay');
+  const closeBtns = document.querySelectorAll('[data-close="mobile-drawer"]');
 
-  // Cerrar toast manual
-  document.querySelectorAll('[data-toast-close]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const toast = btn.closest('[data-toast]');
-      if (toast) toast.remove();
-    });
-  });
+  const open = () => {
+    if (!drawer || !overlay) return;
+    drawer.classList.remove('translate-x-full');
+    overlay.classList.remove('hidden');
+    document.body.classList.add('overflow-hidden');
+  };
 
-  // Autocierre de toasts
-  document.querySelectorAll('[data-toast]').forEach((toast) => {
-    const ms = parseInt(toast.getAttribute('data-timeout') || '4500', 10);
-    window.setTimeout(() => {
-      if (toast && toast.parentElement) toast.remove();
-    }, ms);
-  });
+  const close = () => {
+    if (!drawer || !overlay) return;
+    drawer.classList.add('translate-x-full');
+    overlay.classList.add('hidden');
+    document.body.classList.remove('overflow-hidden');
+  };
+
+  openBtn?.addEventListener('click', open);
+  overlay?.addEventListener('click', close);
+  closeBtns.forEach(b => b.addEventListener('click', close));
+
+  // Toast (cart added)
+  const toast = document.getElementById('toast');
+  if (toast) {
+    setTimeout(() => {
+      toast.classList.remove('opacity-0', 'translate-y-2');
+    }, 40);
+
+    setTimeout(() => {
+      toast.classList.add('opacity-0');
+    }, 3200);
+
+    setTimeout(() => {
+      toast.remove();
+    }, 3800);
+  }
 });
