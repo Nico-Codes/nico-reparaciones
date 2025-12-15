@@ -15,7 +15,11 @@
   $cartCount = 0;
   foreach ($cart as $i) { $cartCount += (int)($i['quantity'] ?? 0); }
 
-  $logo = asset('brand/logo.png');
+  // Logo: si existe PNG lo usa, si no usa el JPG del repo
+  $logoPngPath = public_path('img/logo-nicoreparaciones.png');
+  $logo = file_exists($logoPngPath)
+      ? asset('img/logo-nicoreparaciones.png')
+      : asset('img/logo-nicoreparaciones.jpg');
 @endphp
 
 <body class="min-h-screen flex flex-col">
@@ -55,7 +59,6 @@
               Mis pedidos
             </a>
 
-            {{-- IMPORTANTE: tus rutas se llaman repairs.my.* (aunque las vistas estén en repairs/) --}}
             <a class="nav-link {{ request()->routeIs('repairs.my.index','repairs.my.show') ? 'active' : '' }}"
                href="{{ route('repairs.my.index') }}">
               Mis reparaciones
@@ -131,6 +134,20 @@
     <div class="container-page py-6">
       @if (session('success'))
         <div class="alert-success mb-4">{{ session('success') }}</div>
+      @endif
+
+      @if (session('cart_added'))
+        <div class="card mb-4">
+          <div class="card-body flex items-center justify-between gap-3">
+            <div class="min-w-0">
+              <div class="font-black">Agregado al carrito ✅</div>
+              <div class="muted mt-1">
+                {{ session('cart_added.product_name') }} · Cant: <span class="font-black text-zinc-900">{{ session('cart_added.quantity') }}</span>
+              </div>
+            </div>
+            <a href="{{ route('cart.index') }}" class="btn-primary btn-sm">Ver</a>
+          </div>
+        </div>
       @endif
 
       @if ($errors->any())

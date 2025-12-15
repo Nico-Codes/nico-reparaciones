@@ -6,29 +6,34 @@
   <div class="max-w-md mx-auto">
     <div class="page-head">
       <div class="page-title">Ingresar</div>
-      <div class="page-subtitle">Accedé para ver pedidos y reparaciones.</div>
+      <div class="page-subtitle">Accedé para ver tus pedidos y reparaciones.</div>
     </div>
 
     <div class="card">
       <div class="card-body">
-        <form method="POST" action="{{ route('login') }}" class="grid gap-4">
+        <form method="POST" action="{{ route('login.post') }}" class="grid gap-4">
           @csrf
 
           <div>
             <label for="email">Email</label>
-            <input id="email" type="email" name="email" value="{{ old('email') }}" required autofocus>
+            <input id="email" name="email" type="email" value="{{ old('email') }}" required placeholder="tu@email.com">
           </div>
 
           <div>
             <label for="password">Contraseña</label>
-            <input id="password" type="password" name="password" required>
+            <input id="password" name="password" type="password" required placeholder="••••••••">
           </div>
 
-          <button class="btn-primary w-full">Ingresar</button>
+          <label class="flex items-center gap-2 text-sm text-zinc-700 font-bold">
+            <input type="checkbox" name="remember" value="1" style="width:auto">
+            Recordarme
+          </label>
+
+          <button class="btn-primary w-full" type="submit">Entrar</button>
 
           <div class="muted text-center">
             ¿No tenés cuenta?
-            <a href="{{ route('register') }}" class="font-bold">Registrate</a>
+            <a class="font-black" href="{{ route('register') }}">Registrate</a>
           </div>
         </form>
       </div>
