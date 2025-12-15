@@ -24,6 +24,9 @@
   .btn-outline { @apply inline-flex items-center justify-center rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-700 hover:bg-zinc-50; }
   .btn-ghost { @apply inline-flex items-center justify-center rounded-xl px-3 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-100; }
 
+  /* Compat (si alguna vista vieja usa .btn) */
+  .btn { @apply btn-primary; }
+
   .input { @apply w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-100; }
   .select { @apply w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-100; }
   .textarea { @apply w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-100; }
@@ -33,4 +36,12 @@
   .badge-emerald { @apply bg-emerald-100 text-emerald-800 ring-emerald-200; }
   .badge-rose { @apply bg-rose-100 text-rose-800 ring-rose-200; }
   .badge-sky { @apply bg-sky-100 text-sky-800 ring-sky-200; }
+
+  /* Extras para estados (y compat con clases tipo "badge-blue") */
+  .badge-amber { @apply bg-amber-100 text-amber-800 ring-amber-200; }
+  .badge-purple { @apply bg-purple-100 text-purple-800 ring-purple-200; }
+  .badge-slate { @apply bg-slate-100 text-slate-700 ring-slate-200; }
+  .badge-blue { @apply bg-sky-100 text-sky-800 ring-sky-200; }
+  .badge-green { @apply bg-emerald-100 text-emerald-800 ring-emerald-200; }
+  .badge-red { @apply bg-rose-100 text-rose-800 ring-rose-200; }
 }

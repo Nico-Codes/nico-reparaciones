@@ -1,88 +1,88 @@
 @extends('layouts.app')
 
-@section('title', 'Mis reparaciones - NicoReparaciones')
+@section('title', 'Mis reparaciones — NicoReparaciones')
 
 @section('content')
-  <div class="flex items-start justify-between gap-3">
+@php
+  $badgeClass = function($status) {
+    return match($status) {
+      'received' => 'badge badge-slate',
+      'diagnosing' => 'badge badge-amber',
+      'waiting_approval' => 'badge badge-purple',
+      'repairing' => 'badge badge-sky',
+      'ready_pickup' => 'badge badge-emerald',
+      'delivered' => 'badge bg-zinc-900 text-white ring-zinc-900/10',
+      'cancelled' => 'badge badge-rose',
+      default => 'badge badge-zinc',
+    };
+  };
+@endphp
+
+<div class="container-page py-6">
+  <div class="flex items-start justify-between gap-4">
     <div>
       <h1 class="page-title">Mis reparaciones</h1>
-      <p class="muted mt-1">Seguimiento del estado de tus equipos.</p>
+      <p class="page-subtitle">Seguimiento de tus equipos: estado, diagnóstico y fechas.</p>
     </div>
-    <a href="{{ route('repairs.lookup') }}" class="btn-outline">Consultar por código</a>
+
+    <a href="{{ route('repairs.lookup') }}" class="btn-outline">
+      Consultar con código
+    </a>
   </div>
 
-  @if($repairs->isEmpty())
+  @if($repairs->count() === 0)
     <div class="mt-6 card">
       <div class="card-body">
-        <div class="font-bold text-lg">Todavía no tenés reparaciones registradas</div>
-        <div class="muted mt-1">
-          Si dejaste un equipo en el local, podés consultarlo con el código desde “Consultar reparación”.
+        <div class="text-sm text-zinc-700 font-semibold">Todavía no tenés reparaciones vinculadas a tu cuenta.</div>
+        <div class="mt-2 text-sm text-zinc-500">
+          Si te dieron un <b>código</b> y querés consultar sin cuenta, usá la búsqueda por teléfono.
         </div>
-        <div class="mt-4 flex flex-col sm:flex-row gap-2">
-          <a class="btn-primary" href="{{ route('repairs.lookup') }}">Consultar reparación</a>
-          <a class="btn-outline" href="{{ route('store.index') }}">Ir a la tienda</a>
+        <div class="mt-4 flex flex-col sm:flex-row gap-3">
+          <a href="{{ route('repairs.lookup') }}" class="btn-primary">Consultar reparación</a>
+          <a href="{{ route('store.index') }}" class="btn-outline">Ir a la tienda</a>
         </div>
       </div>
     </div>
   @else
-    <div class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
-      @foreach($repairs as $repair)
-        @php
-          $status = (string) $repair->status;
-          $badge = match ($status) {
-            'received' => 'badge-blue',
-            'diagnosing' => 'badge-amber',
-            'waiting_approval' => 'badge-amber',
-            'repairing' => 'badge-blue',
-            'ready_pickup' => 'badge-green',
-            'delivered' => 'badge-green',
-            'cancelled' => 'badge-red',
-            default => 'badge-zinc'
-          };
-
-          $label = method_exists($repair, 'getStatusLabelAttribute')
-            ? ($repair->status_label ?? ucfirst(str_replace('_',' ',$status)))
-            : ucfirst(str_replace('_',' ',$status));
-        @endphp
-
-        <div class="card">
+    <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+      @foreach($repairs as $r)
+        <div class="card overflow-hidden">
           <div class="card-body">
             <div class="flex items-start justify-between gap-3">
-              <div>
-                <div class="font-extrabold tracking-tight">
-                  Reparación {{ $repair->code ?? ('#'.$repair->id) }}
+              <div class="min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <div class="font-mono text-sm font-extrabold text-zinc-900">#{{ $r->code }}</div>
+                  <span class="{{ $badgeClass($r->status) }}">
+                    {{ $statuses[$r->status] ?? $r->status }}
+                  </span>
                 </div>
-                <div class="muted mt-1">
-                  {{ $repair->device_brand ?? 'Equipo' }} {{ $repair->device_model ?? '' }}
+
+                <div class="mt-2 text-sm text-zinc-700 font-semibold">
+                  {{ trim(($r->device_brand ?? '').' '.($r->device_model ?? '')) ?: 'Equipo sin especificar' }}
+                </div>
+
+                <div class="mt-1 text-xs text-zinc-500">
+                  Actualizado: {{ $r->updated_at?->format('d/m/Y H:i') ?? '—' }}
                 </div>
               </div>
-              <span class="{{ $badge }}">{{ $label }}</span>
+
+              <a href="{{ route('repairs.my.show', $r) }}" class="btn-primary px-3 py-2.5">
+                Ver
+              </a>
             </div>
 
-            <div class="mt-4 grid grid-cols-2 gap-3">
-              <div class="rounded-2xl bg-zinc-50 ring-1 ring-zinc-200 p-3">
-                <div class="muted">Ingreso</div>
-                <div class="font-semibold">
-                  {{ optional($repair->received_at ?? $repair->created_at)->format('d/m/Y') }}
-                </div>
-              </div>
-              <div class="rounded-2xl bg-zinc-50 ring-1 ring-zinc-200 p-3">
-                <div class="muted">Entrega</div>
-                <div class="font-semibold">
-                  {{ $repair->delivered_at ? $repair->delivered_at->format('d/m/Y') : '—' }}
-                </div>
-              </div>
-            </div>
-
-            <div class="mt-4 flex items-center justify-between gap-3">
-              <div class="muted">
-                Problema: <span class="font-semibold text-zinc-800">{{ Str::limit($repair->issue_reported ?? '—', 40) }}</span>
-              </div>
-              <a href="{{ route('repairs.show', $repair->id) }}" class="btn-primary">Ver</a>
+            <div class="mt-3 rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-700">
+              <div class="text-xs text-zinc-500">Falla reportada</div>
+              <div class="mt-1 line-clamp-2">{{ $r->issue_reported }}</div>
             </div>
           </div>
         </div>
       @endforeach
     </div>
+
+    <div class="mt-6">
+      {{ $repairs->links() }}
+    </div>
   @endif
+</div>
 @endsection

@@ -1,127 +1,85 @@
 @extends('layouts.app')
 
-@section('title', 'Resultado reparación - NicoReparaciones')
+@section('title', 'Estado de reparación — NicoReparaciones')
 
 @section('content')
-  @php
-    $repair = $repair ?? null;
-
-    $status = $repair ? (string)$repair->status : '';
-    $badge = match ($status) {
-      'received' => 'badge-blue',
-      'diagnosing' => 'badge-amber',
-      'waiting_approval' => 'badge-amber',
-      'repairing' => 'badge-blue',
-      'ready_pickup' => 'badge-green',
-      'delivered' => 'badge-green',
-      'cancelled' => 'badge-red',
-      default => 'badge-zinc'
+@php
+  $badgeClass = function($status) {
+    return match($status) {
+      'received' => 'badge badge-slate',
+      'diagnosing' => 'badge badge-amber',
+      'waiting_approval' => 'badge badge-purple',
+      'repairing' => 'badge badge-sky',
+      'ready_pickup' => 'badge badge-emerald',
+      'delivered' => 'badge bg-zinc-900 text-white ring-zinc-900/10',
+      'cancelled' => 'badge badge-rose',
+      default => 'badge badge-zinc',
     };
+  };
+@endphp
 
-    $label = $repair?->status_label ?? ucfirst(str_replace('_',' ',$status));
-  @endphp
+<div class="container-page py-6">
+  <h1 class="page-title">Estado de reparación</h1>
+  <p class="page-subtitle">Resultado de tu búsqueda por código + teléfono.</p>
 
-  <div class="flex items-start justify-between gap-3">
-    <div>
-      <h1 class="page-title">Resultado</h1>
-      <p class="muted mt-1">Estado actual de tu reparación.</p>
-    </div>
-    <a href="{{ route('repairs.lookup') }}" class="btn-outline">Nueva consulta</a>
-  </div>
+  @if (!$repair)
+    <div class="mt-6 rounded-2xl border border-rose-200 bg-rose-50 p-4">
+      <div class="text-sm font-semibold text-rose-900">No se encontró ninguna reparación con esos datos.</div>
+      <div class="mt-1 text-sm text-rose-800/90">
+        Verificá que el <b>código</b> y el <b>teléfono</b> estén exactamente como fueron registrados.
+      </div>
 
-  @if(!$repair)
-    <div class="mt-6 card">
-      <div class="card-body">
-        <div class="font-bold text-lg text-rose-700">No encontramos una reparación con esos datos</div>
-        <div class="muted mt-1">Revisá el código y el teléfono tal como figuran en el comprobante.</div>
-
-        <div class="mt-4">
-          <a class="btn-primary" href="{{ route('repairs.lookup') }}">Volver a consultar</a>
-        </div>
+      <div class="mt-4 flex flex-col sm:flex-row gap-3">
+        <a href="{{ route('repairs.lookup') }}" class="btn-primary">Volver a intentar</a>
+        <a href="{{ route('store.index') }}" class="btn-outline">Ir a la tienda</a>
       </div>
     </div>
   @else
-    <div class="mt-6 grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
-      <div class="card">
-        <div class="card-header flex items-center justify-between gap-3">
-          <div class="section-title">Reparación {{ $repair->code ?? ('#'.$repair->id) }}</div>
-          <span class="{{ $badge }}">{{ $label }}</span>
-        </div>
-
-        <div class="card-body space-y-4">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div class="rounded-2xl bg-zinc-50 ring-1 ring-zinc-200 p-3">
-              <div class="muted">Equipo</div>
-              <div class="font-semibold">
-                {{ $repair->device_brand ?? '—' }} {{ $repair->device_model ?? '' }}
-              </div>
-            </div>
-            <div class="rounded-2xl bg-zinc-50 ring-1 ring-zinc-200 p-3">
-              <div class="muted">Ingreso</div>
-              <div class="font-semibold">
-                {{ optional($repair->received_at ?? $repair->created_at)->format('d/m/Y') }}
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <div class="section-title">Problema reportado</div>
-            <p class="mt-2 text-sm text-zinc-700 leading-relaxed">
-              {{ $repair->issue_reported ?? '—' }}
-            </p>
-          </div>
-
-          @if(!empty($repair->diagnosis))
-            <div>
-              <div class="section-title">Diagnóstico</div>
-              <p class="mt-2 text-sm text-zinc-700 leading-relaxed">
-                {{ $repair->diagnosis }}
-              </p>
-            </div>
-          @endif
-
-          @if(!empty($repair->notes))
-            <div>
-              <div class="section-title">Notas</div>
-              <p class="mt-2 text-sm text-zinc-700 leading-relaxed">
-                {{ $repair->notes }}
-              </p>
-            </div>
-          @endif
+    <div class="mt-6 card">
+      <div class="card-header">
+        <div class="flex items-center justify-between gap-3">
+          <div class="text-sm font-semibold text-zinc-900">Reparación</div>
+          <div class="font-mono text-sm font-extrabold text-zinc-900">#{{ $repair->code }}</div>
         </div>
       </div>
 
-      <div class="card h-fit lg:sticky lg:top-20">
-        <div class="card-header">
-          <div class="section-title">Info rápida</div>
-          <div class="muted">Pagos / entrega</div>
+      <div class="card-body space-y-3">
+        <div class="flex items-center justify-between gap-3">
+          <div class="text-sm text-zinc-600">Cliente</div>
+          <div class="text-sm font-semibold text-zinc-900">{{ $repair->customer_name }}</div>
         </div>
 
-        <div class="card-body space-y-3">
-          <div class="rounded-2xl bg-brand-soft ring-1 ring-blue-200 p-3">
-            <div class="font-bold">¿Cuándo retiro?</div>
-            <div class="muted mt-1">
-              Si el estado está en <span class="font-semibold">“Listo para retirar”</span>, podés pasar por el local.
-            </div>
+        <div class="flex items-center justify-between gap-3">
+          <div class="text-sm text-zinc-600">Equipo</div>
+          <div class="text-sm font-semibold text-zinc-900">
+            {{ trim(($repair->device_brand ?? '').' '.($repair->device_model ?? '')) ?: '—' }}
           </div>
+        </div>
 
-          <div class="flex items-center justify-between">
-            <div class="muted">Entrega</div>
-            <div class="font-semibold">
-              {{ $repair->delivered_at ? $repair->delivered_at->format('d/m/Y') : '—' }}
-            </div>
-          </div>
+        <div class="flex items-center justify-between gap-3">
+          <div class="text-sm text-zinc-600">Estado</div>
+          <span class="{{ $badgeClass($repair->status) }}">
+            {{ $statuses[$repair->status] ?? $repair->status }}
+          </span>
+        </div>
 
-          @if(!empty($repair->final_price))
-            <div class="flex items-center justify-between">
-              <div class="muted">Precio</div>
-              <div class="font-extrabold text-xl">${{ number_format((float)$repair->final_price, 0, ',', '.') }}</div>
-            </div>
-          @endif
+        <div class="h-px bg-zinc-100"></div>
 
-          <a href="{{ route('repairs.lookup') }}" class="btn-outline w-full">Consultar otra</a>
+        <div class="text-xs text-zinc-500">
+          Última actualización: {{ $repair->updated_at?->format('d/m/Y H:i') ?? '—' }}
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-3 pt-2">
+          <a href="{{ route('repairs.lookup') }}" class="btn-outline flex-1">Volver</a>
+
+          @auth
+            @if((int)$repair->user_id === (int)auth()->id())
+              <a href="{{ route('repairs.my.show', $repair) }}" class="btn-primary flex-1">Ver en “Mis reparaciones”</a>
+            @endif
+          @endauth
         </div>
       </div>
     </div>
   @endif
+</div>
 @endsection

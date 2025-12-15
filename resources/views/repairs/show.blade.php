@@ -1,136 +1,125 @@
 @extends('layouts.app')
 
-@section('title', 'Reparación ' . ($repair->code ?? ('#'.$repair->id)) . ' - NicoReparaciones')
+@section('title', 'Reparación #' . $repair->code . ' — NicoReparaciones')
 
 @section('content')
-  @php
-    $status = (string) $repair->status;
-    $badge = match ($status) {
-      'received' => 'badge-blue',
-      'diagnosing' => 'badge-amber',
-      'waiting_approval' => 'badge-amber',
-      'repairing' => 'badge-blue',
-      'ready_pickup' => 'badge-green',
-      'delivered' => 'badge-green',
-      'cancelled' => 'badge-red',
-      default => 'badge-zinc'
-    };
-    $label = $repair->status_label ?? ucfirst(str_replace('_',' ',$status));
+@php
+  $badgeClass = match($repair->status) {
+    'received' => 'badge badge-slate',
+    'diagnosing' => 'badge badge-amber',
+    'waiting_approval' => 'badge badge-purple',
+    'repairing' => 'badge badge-sky',
+    'ready_pickup' => 'badge badge-emerald',
+    'delivered' => 'badge bg-zinc-900 text-white ring-zinc-900/10',
+    'cancelled' => 'badge badge-rose',
+    default => 'badge badge-zinc',
+  };
+@endphp
 
-    $final = (float)($repair->final_price ?? 0);
-    $paid  = (float)($repair->paid_amount ?? 0);
-    $due   = max(0, $final - $paid);
-  @endphp
-
-  <div class="flex items-start justify-between gap-3">
+<div class="container-page py-6">
+  <div class="flex items-start justify-between gap-4">
     <div>
-      <h1 class="page-title">Reparación {{ $repair->code ?? ('#'.$repair->id) }}</h1>
-      <p class="muted mt-1">{{ $repair->device_brand ?? 'Equipo' }} {{ $repair->device_model ?? '' }}</p>
+      <div class="flex items-center gap-2 flex-wrap">
+        <h1 class="page-title">Reparación <span class="font-mono">#{{ $repair->code }}</span></h1>
+        <span class="{{ $badgeClass }}">{{ $statuses[$repair->status] ?? $repair->status }}</span>
+      </div>
+      <p class="page-subtitle">
+        {{ trim(($repair->device_brand ?? '').' '.($repair->device_model ?? '')) ?: 'Equipo sin especificar' }}
+      </p>
     </div>
+
     <a href="{{ route('repairs.my.index') }}" class="btn-outline">Volver</a>
   </div>
 
-  <div class="mt-6 grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
-    {{-- Info principal --}}
-    <div class="card">
-      <div class="card-header flex items-center justify-between gap-3">
-        <div class="section-title">Estado</div>
-        <span class="{{ $badge }}">{{ $label }}</span>
-      </div>
+  <div class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+    {{-- Principal --}}
+    <div class="lg:col-span-2 space-y-6">
 
-      <div class="card-body space-y-4">
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div class="rounded-2xl bg-zinc-50 ring-1 ring-zinc-200 p-3">
-            <div class="muted">Ingreso</div>
-            <div class="font-semibold">
-              {{ optional($repair->received_at ?? $repair->created_at)->format('d/m/Y H:i') }}
-            </div>
+      <section class="card">
+        <div class="card-header">
+          <div class="text-sm font-semibold text-zinc-900">Detalle del problema</div>
+          <div class="text-xs text-zinc-500">Lo que se reportó y el diagnóstico actual (si existe).</div>
+        </div>
+        <div class="card-body space-y-4">
+          <div>
+            <div class="text-xs text-zinc-500">Falla reportada</div>
+            <div class="mt-1 text-sm text-zinc-800 whitespace-pre-line">{{ $repair->issue_reported }}</div>
           </div>
-          <div class="rounded-2xl bg-zinc-50 ring-1 ring-zinc-200 p-3">
-            <div class="muted">Entrega</div>
-            <div class="font-semibold">
-              {{ $repair->delivered_at ? $repair->delivered_at->format('d/m/Y H:i') : '—' }}
+
+          <div class="h-px bg-zinc-100"></div>
+
+          <div>
+            <div class="text-xs text-zinc-500">Diagnóstico</div>
+            <div class="mt-1 text-sm text-zinc-800 whitespace-pre-line">
+              {{ $repair->diagnosis ?: 'Aún no disponible. Estamos trabajando en el diagnóstico.' }}
             </div>
           </div>
         </div>
+      </section>
 
-        <div>
-          <div class="section-title">Problema reportado</div>
-          <p class="mt-2 text-sm text-zinc-700 leading-relaxed">
-            {{ $repair->issue_reported ?? '—' }}
-          </p>
-        </div>
-
-        @if(!empty($repair->diagnosis))
-          <div>
-            <div class="section-title">Diagnóstico</div>
-            <p class="mt-2 text-sm text-zinc-700 leading-relaxed">
-              {{ $repair->diagnosis }}
-            </p>
+      @if(!empty($repair->notes))
+        <section class="card">
+          <div class="card-header">
+            <div class="text-sm font-semibold text-zinc-900">Notas</div>
+            <div class="text-xs text-zinc-500">Información adicional cargada por el taller.</div>
           </div>
-        @endif
-
-        @if(!empty($repair->notes))
-          <div>
-            <div class="section-title">Notas</div>
-            <p class="mt-2 text-sm text-zinc-700 leading-relaxed">
-              {{ $repair->notes }}
-            </p>
+          <div class="card-body">
+            <div class="text-sm text-zinc-800 whitespace-pre-line">{{ $repair->notes }}</div>
           </div>
-        @endif
-      </div>
+        </section>
+      @endif
+
     </div>
 
-    {{-- Resumen económico (si hay precio) --}}
-    <div class="card h-fit lg:sticky lg:top-20">
-      <div class="card-header">
-        <div class="section-title">Resumen</div>
-        <div class="muted">Pagos y garantía</div>
-      </div>
-
-      <div class="card-body space-y-3">
-        <div class="flex items-center justify-between">
-          <div class="muted">Precio final</div>
-          <div class="font-extrabold text-xl">
-            ${{ number_format($final, 0, ',', '.') }}
-          </div>
+    {{-- Sidebar --}}
+    <div class="space-y-6">
+      <section class="card">
+        <div class="card-header">
+          <div class="text-sm font-semibold text-zinc-900">Seguimiento</div>
+          <div class="text-xs text-zinc-500">Fechas y garantía (si aplica).</div>
         </div>
-
-        <div class="flex items-center justify-between">
-          <div class="muted">Pagado</div>
-          <div class="font-semibold">
-            ${{ number_format($paid, 0, ',', '.') }}
+        <div class="card-body space-y-3 text-sm">
+          <div class="flex items-center justify-between">
+            <span class="text-zinc-600">Recibido</span>
+            <span class="font-semibold text-zinc-900">{{ $repair->received_at?->format('d/m/Y H:i') ?? '—' }}</span>
           </div>
-        </div>
 
-        <div class="flex items-center justify-between">
-          <div class="muted">Saldo</div>
-          <div class="font-semibold {{ $due > 0 ? 'text-rose-700' : 'text-emerald-700' }}">
-            ${{ number_format($due, 0, ',', '.') }}
+          <div class="flex items-center justify-between">
+            <span class="text-zinc-600">Entregado</span>
+            <span class="font-semibold text-zinc-900">{{ $repair->delivered_at?->format('d/m/Y H:i') ?? '—' }}</span>
           </div>
-        </div>
 
-        @if(!empty($repair->payment_method))
-          <div class="rounded-2xl bg-zinc-50 ring-1 ring-zinc-200 p-3">
-            <div class="muted">Método</div>
-            <div class="font-semibold">{{ ucfirst(str_replace('_',' ', $repair->payment_method)) }}</div>
-          </div>
-        @endif
+          @if(($repair->warranty_days ?? 0) > 0)
+            <div class="h-px bg-zinc-100"></div>
 
-        @if(!empty($repair->warranty_days) && $repair->delivered_at)
-          <div class="rounded-2xl bg-brand-soft ring-1 ring-blue-200 p-3">
-            <div class="font-bold">Garantía</div>
-            <div class="muted mt-1">
-              {{ (int)$repair->warranty_days }} días · vence el
-              <span class="font-semibold text-zinc-800">
-                {{ $repair->delivered_at->copy()->addDays((int)$repair->warranty_days)->format('d/m/Y') }}
-              </span>
+            <div class="flex items-center justify-between">
+              <span class="text-zinc-600">Garantía</span>
+              <span class="font-semibold text-zinc-900">{{ (int)$repair->warranty_days }} días</span>
             </div>
-          </div>
-        @endif
 
-        <a href="{{ route('repairs.lookup') }}" class="btn-outline w-full">Consultar otra reparación</a>
-      </div>
+            <div class="flex items-center justify-between">
+              <span class="text-zinc-600">Vence</span>
+              <span class="font-semibold text-zinc-900">{{ $repair->warranty_expires_at?->format('d/m/Y') ?? '—' }}</span>
+            </div>
+
+            @if($repair->in_warranty)
+              <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-emerald-900">
+                <div class="font-semibold">✅ En garantía</div>
+                <div class="text-xs text-emerald-800/90 mt-1">Traelo al local si aparece cualquier falla relacionada.</div>
+              </div>
+            @endif
+          @endif
+        </div>
+      </section>
+
+      <section class="rounded-2xl border border-sky-200 bg-sky-50 p-4">
+        <div class="text-sm font-semibold text-sky-900">¿No ves tu reparación?</div>
+        <div class="mt-1 text-sm text-sky-800/90">
+          Podés buscar con <b>código</b> + <b>teléfono</b> aunque no esté vinculada a tu cuenta.
+        </div>
+        <a href="{{ route('repairs.lookup') }}" class="btn-primary w-full mt-3">Consultar con código</a>
+      </section>
     </div>
   </div>
+</div>
 @endsection
