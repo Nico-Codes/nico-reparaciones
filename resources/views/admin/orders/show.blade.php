@@ -17,13 +17,13 @@
   };
 
   $statusBadge = fn($s) => match($s) {
-    'pendiente' => 'badge badge-amber',
-    'confirmado' => 'badge badge-sky',
-    'preparando' => 'badge badge-purple',
-    'listo_retirar' => 'badge badge-emerald',
-    'entregado' => 'badge bg-zinc-900 text-white ring-zinc-900/10',
-    'cancelado' => 'badge badge-rose',
-    default => 'badge badge-zinc',
+    'pendiente' => 'badge-amber',
+    'confirmado' => 'badge-sky',
+    'preparando' => 'badge-indigo',
+    'listo_retirar' => 'badge-emerald',
+    'entregado' => 'badge-zinc',
+    'cancelado' => 'badge-rose',
+    default => 'badge-zinc',
   };
 
   $payLabel = fn($p) => match($p) {
@@ -48,14 +48,14 @@
   ]);
 @endphp
 
-<div class="container-page py-6">
+<div class="space-y-6">
   <div class="flex items-start justify-between gap-4 flex-wrap">
-    <div>
+    <div class="page-head mb-0">
       <div class="flex items-center gap-2 flex-wrap">
         <h1 class="page-title">Pedido #{{ $order->id }}</h1>
         <span class="{{ $statusBadge($order->status) }}">{{ $statusLabel($order->status) }}</span>
       </div>
-      <p class="page-subtitle">Detalle completo del pedido y acciones de administración.</p>
+      <p class="page-subtitle">Detalle del pedido + acciones rápidas para operar el local.</p>
     </div>
 
     <div class="flex gap-2 flex-wrap">
@@ -64,21 +64,18 @@
     </div>
   </div>
 
-  @if(session('success'))
-    <div class="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-      {{ session('success') }}
-    </div>
-  @endif
-
-  <div class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-    {{-- Items --}}
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    {{-- Items + acciones --}}
     <div class="lg:col-span-2 space-y-6">
       <div class="card">
-        <div class="card-header">
-          <div class="text-sm font-semibold text-zinc-900">Productos</div>
-          <div class="text-xs text-zinc-500">Resumen de items del pedido.</div>
+        <div class="card-head">
+          <div>
+            <div class="font-extrabold text-zinc-900">Productos</div>
+            <div class="text-xs text-zinc-500">Items del pedido.</div>
+          </div>
+          <div class="badge-zinc">{{ $order->items->count() }} items</div>
         </div>
+
         <div class="card-body space-y-3">
           @foreach($order->items as $item)
             <div class="rounded-2xl border border-zinc-200 bg-white p-4">
@@ -100,14 +97,16 @@
       </div>
 
       <div class="card">
-        <div class="card-header">
-          <div class="text-sm font-semibold text-zinc-900">Actualizar estado</div>
-          <div class="text-xs text-zinc-500">Esto cambia lo que ve el cliente en “Mis pedidos”.</div>
+        <div class="card-head">
+          <div>
+            <div class="font-extrabold text-zinc-900">Actualizar estado</div>
+            <div class="text-xs text-zinc-500">Cambia lo que ve el cliente en “Mis pedidos”.</div>
+          </div>
         </div>
         <div class="card-body">
           <form method="POST" action="{{ route('admin.orders.updateStatus', $order) }}" class="flex flex-col sm:flex-row gap-3">
             @csrf
-            <select name="status" class="select sm:w-72" required>
+            <select name="status" class="sm:w-72" required>
               <option value="pendiente" {{ $order->status === 'pendiente' ? 'selected' : '' }}>Pendiente</option>
               <option value="confirmado" {{ $order->status === 'confirmado' ? 'selected' : '' }}>Confirmado</option>
               <option value="preparando" {{ $order->status === 'preparando' ? 'selected' : '' }}>Preparando</option>
@@ -124,9 +123,11 @@
     {{-- Sidebar --}}
     <div class="space-y-6">
       <div class="card">
-        <div class="card-header">
-          <div class="text-sm font-semibold text-zinc-900">Cliente</div>
-          <div class="text-xs text-zinc-500">Datos del usuario / retiro.</div>
+        <div class="card-head">
+          <div>
+            <div class="font-extrabold text-zinc-900">Cliente</div>
+            <div class="text-xs text-zinc-500">Datos usuario / retiro.</div>
+          </div>
         </div>
         <div class="card-body text-sm space-y-2">
           <div class="flex items-center justify-between gap-3">
@@ -167,9 +168,11 @@
       </div>
 
       <div class="card">
-        <div class="card-header">
-          <div class="text-sm font-semibold text-zinc-900">Pedido</div>
-          <div class="text-xs text-zinc-500">Total, pago y notas.</div>
+        <div class="card-head">
+          <div>
+            <div class="font-extrabold text-zinc-900">Pedido</div>
+            <div class="text-xs text-zinc-500">Total, pago y notas.</div>
+          </div>
         </div>
         <div class="card-body text-sm space-y-2">
           <div class="flex items-center justify-between gap-3">

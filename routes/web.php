@@ -17,6 +17,8 @@ use App\Http\Controllers\AdminRepairController;
 use App\Http\Controllers\AdminRepairPrintController;
 use App\Http\Controllers\AdminCategoryController;
 use App\Http\Controllers\AdminProductController;
+use App\Http\Controllers\AdminBusinessSettingsController;
+use App\Http\Controllers\AdminWhatsappTemplateController;
 
 /*
 |--------------------------------------------------------------------------
@@ -61,7 +63,7 @@ Route::post('/checkout/confirmar', [OrderController::class, 'confirm'])->name('c
 
 /*
 |--------------------------------------------------------------------------
-| Pedidos (cliente)
+| Pedidos + Reparaciones (cliente)
 |--------------------------------------------------------------------------
 */
 
@@ -88,14 +90,12 @@ Route::post('/reparacion', [RepairLookupController::class, 'lookup'])->name('rep
 |--------------------------------------------------------------------------
 */
 Route::get('/storage/{path}', function (string $path) {
-    // Evitar exponer esto en producción.
     if (app()->environment('production')) {
         abort(404);
     }
 
     $path = ltrim($path, '/');
 
-    // Bloqueo básico anti traversal
     if (str_contains($path, '..')) {
         abort(400);
     }
@@ -116,7 +116,6 @@ Route::get('/storage/{path}', function (string $path) {
 */
 Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
 
-    // ✅ Dashboard (esto arregla /admin)
     Route::get('/', [AdminDashboardController::class, 'index'])->name('admin');
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
 
@@ -135,11 +134,9 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
 
     Route::post('/reparaciones/{repair}/estado', [AdminRepairController::class, 'updateStatus'])->name('admin.repairs.updateStatus');
 
-    // WhatsApp log
     Route::post('/reparaciones/{repair}/whatsapp', [AdminRepairController::class, 'whatsappLog'])->name('admin.repairs.whatsappLog');
     Route::post('/reparaciones/{repair}/whatsapp-ajax', [AdminRepairController::class, 'whatsappLogAjax'])->name('admin.repairs.whatsappLogAjax');
 
-    // Imprimir
     Route::get('/reparaciones/{repair}/imprimir', [AdminRepairPrintController::class, '__invoke'])->name('admin.repairs.print');
 
     // Categorías
@@ -157,4 +154,12 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     Route::get('/productos/{product}/editar', [AdminProductController::class, 'edit'])->name('admin.products.edit');
     Route::put('/productos/{product}', [AdminProductController::class, 'update'])->name('admin.products.update');
     Route::delete('/productos/{product}', [AdminProductController::class, 'destroy'])->name('admin.products.destroy');
+
+    // ✅ Configuración negocio
+    Route::get('/configuracion', [AdminBusinessSettingsController::class, 'index'])->name('admin.settings.index');
+    Route::post('/configuracion', [AdminBusinessSettingsController::class, 'update'])->name('admin.settings.update');
+
+    // ✅ Plantillas WhatsApp
+    Route::get('/whatsapp', [AdminWhatsappTemplateController::class, 'index'])->name('admin.whatsapp_templates.index');
+    Route::post('/whatsapp', [AdminWhatsappTemplateController::class, 'update'])->name('admin.whatsapp_templates.update');
 });

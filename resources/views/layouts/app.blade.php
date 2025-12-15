@@ -15,11 +15,8 @@
   $cartCount = 0;
   foreach ($cart as $i) { $cartCount += (int)($i['quantity'] ?? 0); }
 
-  // Logo: si existe PNG lo usa, si no usa el JPG del repo
-  $logoPngPath = public_path('img/logo-nicoreparaciones.png');
-  $logo = file_exists($logoPngPath)
-      ? asset('img/logo-nicoreparaciones.png')
-      : asset('img/logo-nicoreparaciones.jpg');
+  $logoRel = 'brand/logo.png'; // 👉 poné tu logo acá: public/brand/logo.png
+  $logoExists = file_exists(public_path($logoRel));
 @endphp
 
 <body class="min-h-screen flex flex-col">
@@ -28,13 +25,22 @@
       <div class="h-14 flex items-center justify-between gap-3">
         {{-- Left --}}
         <div class="flex items-center gap-3">
-          <button class="tap md:hidden btn-ghost px-3 py-2" data-toggle="mobile-menu" aria-label="Menú" aria-expanded="false">☰</button>
+          <button class="tap md:hidden btn-ghost px-3 py-2" data-toggle="mobile-menu" aria-label="Menú">☰</button>
 
           <a href="{{ $isAdmin ? route('admin.dashboard') : route('store.index') }}" class="flex items-center gap-2">
-            <img src="{{ $logo }}" class="h-9 w-9 rounded-xl ring-1 ring-zinc-100 bg-white object-contain" alt="NicoReparaciones">
+            @if($logoExists)
+              <img src="{{ asset($logoRel) }}"
+                   class="h-9 w-9 rounded-xl ring-1 ring-zinc-100 bg-white object-contain"
+                   alt="NicoReparaciones">
+            @else
+              <div class="h-9 w-9 rounded-xl ring-1 ring-zinc-100 bg-white flex items-center justify-center font-black text-sky-700">
+                NR
+              </div>
+            @endif
+
             <div class="leading-tight">
               <div class="font-black tracking-tight text-zinc-900">
-                Nico<span class="text-[rgb(var(--brand))]">Reparaciones</span>
+                Nico<span class="text-sky-600">Reparaciones</span>
               </div>
               <div class="text-[11px] text-zinc-500 -mt-0.5">Tienda + Reparaciones</div>
             </div>
@@ -43,7 +49,7 @@
 
         {{-- Desktop nav --}}
         <nav class="hidden md:flex items-center gap-1">
-          <a class="nav-link {{ request()->routeIs('home','store.index','store.category','store.product') ? 'active' : '' }}"
+          <a class="nav-link {{ request()->routeIs('store.index','store.category','store.product','home') ? 'active' : '' }}"
              href="{{ route('store.index') }}">
             Tienda
           </a>
@@ -87,16 +93,18 @@
             <a href="{{ route('register') }}" class="btn-primary px-3 py-2">Crear cuenta</a>
           @else
             <div class="relative">
-              <button class="btn-ghost px-3 py-2" data-menu="userMenu" aria-expanded="false">
+              <button class="btn-ghost px-3 py-2" data-toggle="user-menu">
                 {{ auth()->user()->name ?? 'Mi cuenta' }} ▾
               </button>
 
-              <div id="userMenu" class="dropdown-menu hidden">
+              <div class="dropdown-menu hidden" data-menu="user-menu">
                 <a class="dropdown-item" href="{{ route('orders.index') }}">Mis pedidos</a>
                 <a class="dropdown-item" href="{{ route('repairs.my.index') }}">Mis reparaciones</a>
 
                 @if($isAdmin)
                   <a class="dropdown-item" href="{{ route('admin.dashboard') }}">Panel admin</a>
+                  <a class="dropdown-item" href="{{ route('admin.settings.index') }}">Configuración</a>
+                  <a class="dropdown-item" href="{{ route('admin.whatsapp_templates.index') }}">Plantillas WhatsApp</a>
                 @endif
 
                 <form method="POST" action="{{ route('logout') }}">
@@ -124,30 +132,40 @@
 
           @if($isAdmin)
             <a class="nav-link" href="{{ route('admin.dashboard') }}">Panel admin</a>
+            <a class="nav-link" href="{{ route('admin.settings.index') }}">Configuración</a>
+            <a class="nav-link" href="{{ route('admin.whatsapp_templates.index') }}">Plantillas WhatsApp</a>
           @endif
         </div>
       </div>
     </div>
+
+    {{-- Admin quickbar (solo admin) --}}
+    @if($isAdmin && request()->is('admin*'))
+      <div class="bg-white border-t border-zinc-100">
+        <div class="container-page py-2 flex items-center gap-2 overflow-x-auto">
+          <a class="{{ request()->routeIs('admin.dashboard') ? 'btn-primary btn-sm' : 'btn-outline btn-sm' }}"
+             href="{{ route('admin.dashboard') }}">Dashboard</a>
+          <a class="{{ request()->routeIs('admin.orders.*') ? 'btn-primary btn-sm' : 'btn-outline btn-sm' }}"
+             href="{{ route('admin.orders.index') }}">Pedidos</a>
+          <a class="{{ request()->routeIs('admin.repairs.*') ? 'btn-primary btn-sm' : 'btn-outline btn-sm' }}"
+             href="{{ route('admin.repairs.index') }}">Reparaciones</a>
+          <a class="{{ request()->routeIs('admin.products.*') ? 'btn-primary btn-sm' : 'btn-outline btn-sm' }}"
+             href="{{ route('admin.products.index') }}">Productos</a>
+          <a class="{{ request()->routeIs('admin.categories.*') ? 'btn-primary btn-sm' : 'btn-outline btn-sm' }}"
+             href="{{ route('admin.categories.index') }}">Categorías</a>
+          <a class="{{ request()->routeIs('admin.settings.*') ? 'btn-primary btn-sm' : 'btn-outline btn-sm' }}"
+             href="{{ route('admin.settings.index') }}">Configuración</a>
+          <a class="{{ request()->routeIs('admin.whatsapp_templates.*') ? 'btn-primary btn-sm' : 'btn-outline btn-sm' }}"
+             href="{{ route('admin.whatsapp_templates.index') }}">WhatsApp</a>
+        </div>
+      </div>
+    @endif
   </header>
 
   <main class="flex-1">
     <div class="container-page py-6">
       @if (session('success'))
         <div class="alert-success mb-4">{{ session('success') }}</div>
-      @endif
-
-      @if (session('cart_added'))
-        <div class="card mb-4">
-          <div class="card-body flex items-center justify-between gap-3">
-            <div class="min-w-0">
-              <div class="font-black">Agregado al carrito ✅</div>
-              <div class="muted mt-1">
-                {{ session('cart_added.product_name') }} · Cant: <span class="font-black text-zinc-900">{{ session('cart_added.quantity') }}</span>
-              </div>
-            </div>
-            <a href="{{ route('cart.index') }}" class="btn-primary btn-sm">Ver</a>
-          </div>
-        </div>
       @endif
 
       @if ($errors->any())
@@ -169,8 +187,14 @@
       <div class="grid gap-6 md:grid-cols-3">
         <div>
           <div class="flex items-center gap-2">
-            <img src="{{ $logo }}" class="h-9 w-9 rounded-xl ring-1 ring-zinc-100 bg-white object-contain" alt="NicoReparaciones">
-            <div class="font-black tracking-tight">Nico<span class="text-[rgb(var(--brand))]">Reparaciones</span></div>
+            @if($logoExists)
+              <img src="{{ asset($logoRel) }}" class="h-9 w-9 rounded-xl ring-1 ring-zinc-100 bg-white object-contain" alt="NicoReparaciones">
+            @else
+              <div class="h-9 w-9 rounded-xl ring-1 ring-zinc-100 bg-white flex items-center justify-center font-black text-sky-700">
+                NR
+              </div>
+            @endif
+            <div class="font-black tracking-tight">Nico<span class="text-sky-600">Reparaciones</span></div>
           </div>
           <p class="muted mt-2">Plataforma propia para tienda + gestión de reparaciones.</p>
         </div>
@@ -192,7 +216,7 @@
               <a href="{{ route('repairs.my.index') }}">Mis reparaciones</a>
               <form method="POST" action="{{ route('logout') }}">
                 @csrf
-                <button class="text-left text-rose-700 hover:text-rose-800 font-black">Cerrar sesión</button>
+                <button class="text-left text-rose-700 hover:text-rose-800 font-bold">Cerrar sesión</button>
               </form>
             @else
               <a href="{{ route('login') }}">Ingresar</a>

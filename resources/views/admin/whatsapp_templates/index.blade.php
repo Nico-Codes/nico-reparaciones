@@ -1,52 +1,65 @@
 @extends('layouts.app')
 
+@section('title', 'Admin — Plantillas WhatsApp')
+
 @section('content')
-<div class="container">
-    <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:center;">
-        <h1 style="margin:0;">Plantillas WhatsApp</h1>
-        <a href="{{ route('admin.dashboard') }}">← Volver al panel</a>
+<div class="space-y-6">
+  <div class="flex items-start justify-between gap-4 flex-wrap">
+    <div class="page-head mb-0">
+      <h1 class="page-title">Plantillas WhatsApp</h1>
+      <p class="page-subtitle">Editá mensajes por estado. Si dejás vacío, se usa el default del sistema.</p>
     </div>
 
-    @if (session('success'))
-        <div style="margin:12px 0; padding:10px; border:1px solid #cfe9cf; background:#eef9ee; border-radius:10px;">
-            {{ session('success') }}
-        </div>
-    @endif
+    <div class="flex gap-2 flex-wrap">
+      <a class="btn-outline" href="{{ route('admin.settings.index') }}">Configuración</a>
+      <a class="btn-outline" href="{{ route('admin.dashboard') }}">Volver</a>
+    </div>
+  </div>
 
-    <div style="margin:12px 0; padding:12px; border:1px solid #eee; border-radius:12px;">
-        <h3 style="margin:0 0 8px;">Placeholders disponibles</h3>
-        <ul style="margin:0; padding-left:18px;">
-            @foreach($placeholders as $k => $desc)
-                <li><code>{{ $k }}</code> — {{ $desc }}</li>
-            @endforeach
-        </ul>
-        <p style="margin:10px 0 0; color:#666;">
-            Tip: si dejás una plantilla vacía, se guarda automáticamente el “default” del sistema.
-        </p>
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <div class="font-extrabold text-zinc-900">Placeholders disponibles</div>
+        <div class="text-xs text-zinc-500">Podés combinarlos como quieras en cada plantilla.</div>
+      </div>
+    </div>
+    <div class="card-body text-sm">
+      <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        @foreach($placeholders as $k => $desc)
+          <div class="rounded-2xl border border-zinc-200 bg-white p-3">
+            <div class="font-black text-zinc-900"><code>{{ $k }}</code></div>
+            <div class="text-xs text-zinc-600 mt-1">{{ $desc }}</div>
+          </div>
+        @endforeach
+      </div>
+    </div>
+  </div>
+
+  <form method="POST" action="{{ route('admin.whatsapp_templates.update') }}" class="space-y-4">
+    @csrf
+
+    <div class="grid gap-4 lg:grid-cols-2">
+      @foreach($statuses as $key => $label)
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="font-extrabold text-zinc-900">{{ $label }}</div>
+              <div class="text-xs text-zinc-500">{{ $key }}</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <textarea
+              name="templates[{{ $key }}]"
+              rows="8"
+            >{{ old("templates.$key", $templates[$key] ?? '') }}</textarea>
+          </div>
+        </div>
+      @endforeach
     </div>
 
-    <form method="POST" action="{{ route('admin.whatsappTemplates.update') }}">
-        @csrf
-
-        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap:12px;">
-            @foreach($statuses as $key => $label)
-                <div style="border:1px solid #eee; border-radius:12px; padding:12px;">
-                    <h3 style="margin:0 0 8px;">{{ $label }} <small style="color:#888;">({{ $key }})</small></h3>
-
-                    <textarea
-                        name="templates[{{ $key }}]"
-                        rows="8"
-                        style="width:100%; padding:10px; border:1px solid #ddd; border-radius:10px;"
-                    >{{ old("templates.$key", $templates[$key] ?? '') }}</textarea>
-                </div>
-            @endforeach
-        </div>
-
-        <div style="margin-top:14px;">
-            <button type="submit" style="border:1px solid #ddd; padding:10px 14px; border-radius:12px; background:#fff; cursor:pointer;">
-                Guardar plantillas
-            </button>
-        </div>
-    </form>
+    <div class="flex justify-end">
+      <button type="submit" class="btn-primary">Guardar plantillas</button>
+    </div>
+  </form>
 </div>
 @endsection
