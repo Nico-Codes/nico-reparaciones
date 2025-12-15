@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Admin - Nueva reparación')
+@section('title', 'Nueva reparación — Admin')
 
 @section('content')
 @php
@@ -12,163 +12,234 @@
     'device_model'    => request('device_model'),
     'issue_reported'  => request('issue_reported'),
     'diagnosis'       => request('diagnosis'),
-
     'parts_cost'      => request('parts_cost'),
     'labor_cost'      => request('labor_cost'),
     'final_price'     => request('final_price'),
-
     'paid_amount'     => request('paid_amount'),
     'payment_method'  => request('payment_method'),
     'payment_notes'   => request('payment_notes'),
-
     'status'          => request('status', 'received'),
     'warranty_days'   => request('warranty_days'),
     'notes'           => request('notes'),
   ];
+
+  $i = "w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-100";
+  $t = "w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-100";
+  $l = "text-sm font-medium text-zinc-800";
+  $h = "text-xs text-zinc-500";
 @endphp
 
-<h1>Nueva reparación</h1>
-
-<p>
-  <a href="{{ route('admin.repairs.index') }}">← Volver a reparaciones</a>
-</p>
-
-@if($errors->any())
-  <div style="padding:10px;border:1px solid #f99;background:#fff5f5;margin-bottom:12px;">
-    <b>Revisá estos errores:</b>
-    <ul>
-      @foreach($errors->all() as $error)
-        <li>{{ $error }}</li>
-      @endforeach
-    </ul>
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+  <div class="flex items-start justify-between gap-4">
+    <div>
+      <h1 class="text-xl sm:text-2xl font-semibold text-zinc-900">Nueva reparación</h1>
+      <p class="mt-1 text-sm text-zinc-500">Creá una orden para operar el taller (cliente, equipo, estado, costos y pagos).</p>
+    </div>
+    <a href="{{ route('admin.repairs.index') }}"
+       class="inline-flex items-center justify-center rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50">
+      Volver
+    </a>
   </div>
-@endif
 
-<form method="POST" action="{{ route('admin.repairs.store') }}">
-  @csrf
+  @if(session('success'))
+    <div class="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+      {{ session('success') }}
+    </div>
+  @endif
 
-  <h3>Vincular a usuario (opcional)</h3>
-  <label>Email del usuario</label><br>
-  <input type="email" name="user_email" value="{{ old('user_email', $prefill['user_email']) }}" style="width:320px;max-width:100%;">
-  <p style="margin-top:6px;color:#666;">Si existe ese email en la tabla users, la reparación queda vinculada.</p>
+  @if($errors->any())
+    <div class="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+      <div class="font-semibold">Hay errores para corregir:</div>
+      <ul class="mt-2 list-disc pl-5 space-y-1">
+        @foreach($errors->all() as $e)
+          <li>{{ $e }}</li>
+        @endforeach
+      </ul>
+    </div>
+  @endif
 
-  <hr>
+  <form method="POST" action="{{ route('admin.repairs.store') }}" class="mt-6">
+    @csrf
 
-  <h3>Cliente</h3>
-  <label>Nombre del cliente *</label><br>
-  <input type="text" name="customer_name" value="{{ old('customer_name', $prefill['customer_name']) }}" required style="width:320px;max-width:100%;"><br><br>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {{-- Columna principal --}}
+      <div class="lg:col-span-2 space-y-6">
 
-  <label>Teléfono del cliente *</label><br>
-  <input type="text" name="customer_phone" value="{{ old('customer_phone', $prefill['customer_phone']) }}" required style="width:320px;max-width:100%;">
-  <p style="margin-top:6px;color:#666;">Se normaliza a solo números al guardar.</p>
+        {{-- Cliente / vínculo --}}
+        <section class="rounded-2xl border border-zinc-200 bg-white shadow-sm">
+          <div class="border-b border-zinc-100 px-4 py-3">
+            <h2 class="text-sm font-semibold text-zinc-900">Cliente</h2>
+            <p class="{{ $h }}">Datos para contacto y trazabilidad.</p>
+          </div>
+          <div class="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="sm:col-span-2">
+              <label class="{{ $l }}">Email de usuario (opcional)</label>
+              <input class="{{ $i }}" type="email" name="user_email" value="{{ old('user_email', $prefill['user_email']) }}" placeholder="cliente@email.com">
+              <p class="{{ $h }} mt-1">Si existe un usuario con ese email, se vincula la reparación a su cuenta.</p>
+            </div>
 
-  <hr>
+            <div>
+              <label class="{{ $l }}">Nombre *</label>
+              <input class="{{ $i }}" type="text" name="customer_name" required value="{{ old('customer_name', $prefill['customer_name']) }}" placeholder="Nombre y apellido">
+            </div>
 
-  <h3>Equipo</h3>
-  <label>Marca</label><br>
-  <input type="text" name="device_brand" value="{{ old('device_brand', $prefill['device_brand']) }}" style="width:320px;max-width:100%;"><br><br>
+            <div>
+              <label class="{{ $l }}">Teléfono *</label>
+              <input class="{{ $i }}" type="text" name="customer_phone" required value="{{ old('customer_phone', $prefill['customer_phone']) }}" placeholder="Ej: 341xxxxxxx">
+              <p class="{{ $h }} mt-1">Se normaliza a solo números al guardar.</p>
+            </div>
+          </div>
+        </section>
 
-  <label>Modelo</label><br>
-  <input type="text" name="device_model" value="{{ old('device_model', $prefill['device_model']) }}" style="width:320px;max-width:100%;">
+        {{-- Equipo --}}
+        <section class="rounded-2xl border border-zinc-200 bg-white shadow-sm">
+          <div class="border-b border-zinc-100 px-4 py-3">
+            <h2 class="text-sm font-semibold text-zinc-900">Equipo</h2>
+            <p class="{{ $h }}">Marca y modelo para identificar el dispositivo.</p>
+          </div>
+          <div class="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="{{ $l }}">Marca</label>
+              <input class="{{ $i }}" type="text" name="device_brand" value="{{ old('device_brand', $prefill['device_brand']) }}" placeholder="Samsung, iPhone, Motorola...">
+            </div>
+            <div>
+              <label class="{{ $l }}">Modelo</label>
+              <input class="{{ $i }}" type="text" name="device_model" value="{{ old('device_model', $prefill['device_model']) }}" placeholder="A13, 12 Pro Max, G32...">
+            </div>
+          </div>
+        </section>
 
-  <hr>
+        {{-- Trabajo --}}
+        <section class="rounded-2xl border border-zinc-200 bg-white shadow-sm">
+          <div class="border-b border-zinc-100 px-4 py-3">
+            <h2 class="text-sm font-semibold text-zinc-900">Trabajo</h2>
+            <p class="{{ $h }}">Falla reportada + diagnóstico (si ya lo tenés).</p>
+          </div>
+          <div class="p-4 space-y-4">
+            <div>
+              <label class="{{ $l }}">Falla reportada *</label>
+              <textarea class="{{ $t }}" name="issue_reported" rows="3" required placeholder="Ej: No carga / pantalla rota / no enciende...">{{ old('issue_reported', $prefill['issue_reported']) }}</textarea>
+            </div>
 
-  <h3>Trabajo</h3>
-  <label>Problema reportado *</label><br>
-  <textarea name="issue_reported" rows="3" required style="width:520px;max-width:100%;">{{ old('issue_reported', $prefill['issue_reported']) }}</textarea><br><br>
+            <div>
+              <label class="{{ $l }}">Diagnóstico</label>
+              <textarea class="{{ $t }}" name="diagnosis" rows="3" placeholder="Ej: módulo dañado / pin de carga...">{{ old('diagnosis', $prefill['diagnosis']) }}</textarea>
+            </div>
+          </div>
+        </section>
 
-  <label>Diagnóstico (opcional)</label><br>
-  <textarea name="diagnosis" rows="3" style="width:520px;max-width:100%;">{{ old('diagnosis', $prefill['diagnosis']) }}</textarea>
+        {{-- Notas --}}
+        <section class="rounded-2xl border border-zinc-200 bg-white shadow-sm">
+          <div class="border-b border-zinc-100 px-4 py-3">
+            <h2 class="text-sm font-semibold text-zinc-900">Notas internas</h2>
+            <p class="{{ $h }}">Cualquier detalle útil para el taller (no necesariamente visible para el cliente).</p>
+          </div>
+          <div class="p-4">
+            <textarea class="{{ $t }}" name="notes" rows="3" placeholder="Notas...">{{ old('notes', $prefill['notes']) }}</textarea>
+          </div>
+        </section>
 
-  <hr>
+      </div>
 
-  <h3>Costos / Precio</h3>
-  <label>Costo repuestos</label><br>
-  <input id="parts_cost" type="number" step="0.01" min="0" name="parts_cost" value="{{ old('parts_cost', $prefill['parts_cost']) }}" style="width:200px;"><br><br>
+      {{-- Sidebar --}}
+      <div class="space-y-6">
 
-  <label>Costo mano de obra</label><br>
-  <input id="labor_cost" type="number" step="0.01" min="0" name="labor_cost" value="{{ old('labor_cost', $prefill['labor_cost']) }}" style="width:200px;"><br><br>
+        {{-- Estado / garantía --}}
+        <section class="rounded-2xl border border-zinc-200 bg-white shadow-sm">
+          <div class="border-b border-zinc-100 px-4 py-3">
+            <h2 class="text-sm font-semibold text-zinc-900">Estado inicial</h2>
+            <p class="{{ $h }}">Podés arrancar en “Recibido” o en el estado que ya corresponda.</p>
+          </div>
+          <div class="p-4 space-y-4">
+            <div>
+              <label class="{{ $l }}">Estado *</label>
+              <select class="{{ $i }}" name="status" required>
+                @foreach($statuses as $k => $label)
+                  <option value="{{ $k }}" {{ old('status', $prefill['status']) === $k ? 'selected' : '' }}>
+                    {{ $label }}
+                  </option>
+                @endforeach
+              </select>
+            </div>
 
-  <label>Precio final (opcional)</label><br>
-  <input id="final_price" type="number" step="0.01" min="0" name="final_price" value="{{ old('final_price', $prefill['final_price']) }}" style="width:200px;">
+            <div>
+              <label class="{{ $l }}">Garantía (días)</label>
+              <input class="{{ $i }}" type="number" min="0" name="warranty_days" value="{{ old('warranty_days', $prefill['warranty_days']) }}" placeholder="0">
+              <p class="{{ $h }} mt-1">La garantía comienza cuando se marca “Entregado”.</p>
+            </div>
+          </div>
+        </section>
 
-  <p style="margin-top:10px;">
-    <b>Costo total:</b> $<span id="ui_total_cost">0</span> &nbsp;|&nbsp;
-    <b>Ganancia:</b> $<span id="ui_profit">0</span>
-  </p>
+        {{-- Costos / precio --}}
+        <section class="rounded-2xl border border-zinc-200 bg-white shadow-sm">
+          <div class="border-b border-zinc-100 px-4 py-3">
+            <h2 class="text-sm font-semibold text-zinc-900">Costos y precio</h2>
+            <p class="{{ $h }}">Repuestos + mano de obra + precio final.</p>
+          </div>
+          <div class="p-4 grid grid-cols-1 gap-4">
+            <div>
+              <label class="{{ $l }}">Repuestos</label>
+              <input class="{{ $i }}" type="number" step="0.01" min="0" name="parts_cost" value="{{ old('parts_cost', $prefill['parts_cost']) }}" placeholder="0.00">
+            </div>
 
-  <hr>
+            <div>
+              <label class="{{ $l }}">Mano de obra</label>
+              <input class="{{ $i }}" type="number" step="0.01" min="0" name="labor_cost" value="{{ old('labor_cost', $prefill['labor_cost']) }}" placeholder="0.00">
+            </div>
 
-  <h3>Pagos</h3>
-  <label>Pagado</label><br>
-  <input id="paid_amount" type="number" step="0.01" min="0" name="paid_amount" value="{{ old('paid_amount', $prefill['paid_amount']) }}" style="width:200px;"><br><br>
+            <div>
+              <label class="{{ $l }}">Precio final</label>
+              <input class="{{ $i }}" type="number" step="0.01" min="0" name="final_price" value="{{ old('final_price', $prefill['final_price']) }}" placeholder="0.00">
+            </div>
+          </div>
+        </section>
 
-  <label>Método de pago</label><br>
-  <select name="payment_method" style="width:220px;">
-    <option value="">—</option>
-    @foreach(($paymentMethods ?? []) as $k => $label)
-      <option value="{{ $k }}" {{ old('payment_method', $prefill['payment_method']) === $k ? 'selected' : '' }}>
-        {{ $label }}
-      </option>
-    @endforeach
-  </select><br><br>
+        {{-- Pagos --}}
+        <section class="rounded-2xl border border-zinc-200 bg-white shadow-sm">
+          <div class="border-b border-zinc-100 px-4 py-3">
+            <h2 class="text-sm font-semibold text-zinc-900">Pagos</h2>
+            <p class="{{ $h }}">Señal, método y notas (si aplica).</p>
+          </div>
 
-  <label>Notas de pago (opcional)</label><br>
-  <textarea name="payment_notes" rows="2" style="width:520px;max-width:100%;">{{ old('payment_notes', $prefill['payment_notes']) }}</textarea>
+          <div class="p-4 space-y-4">
+            <div>
+              <label class="{{ $l }}">Pagado</label>
+              <input class="{{ $i }}" type="number" step="0.01" min="0" name="paid_amount" value="{{ old('paid_amount', $prefill['paid_amount']) }}" placeholder="0.00">
+            </div>
 
-  <p style="margin-top:10px;">
-    <b>Saldo:</b> $<span id="ui_balance_due">0</span>
-  </p>
+            <div>
+              <label class="{{ $l }}">Método</label>
+              <select class="{{ $i }}" name="payment_method">
+                <option value="">—</option>
+                @foreach($paymentMethods as $k => $label)
+                  <option value="{{ $k }}" {{ old('payment_method', $prefill['payment_method']) === $k ? 'selected' : '' }}>
+                    {{ $label }}
+                  </option>
+                @endforeach
+              </select>
+            </div>
 
-  <hr>
+            <div>
+              <label class="{{ $l }}">Notas de pago</label>
+              <textarea class="{{ $t }}" name="payment_notes" rows="2" placeholder="Ej: seña por MP / transferencia...">{{ old('payment_notes', $prefill['payment_notes']) }}</textarea>
+            </div>
+          </div>
+        </section>
 
-  <h3>Garantía / Estado</h3>
-  <label>Garantía (días)</label><br>
-  <input type="number" min="0" name="warranty_days" value="{{ old('warranty_days', $prefill['warranty_days']) }}" style="width:200px;"><br><br>
+        {{-- Acciones --}}
+        <div class="flex flex-col sm:flex-row lg:flex-col gap-3">
+          <button type="submit"
+                  class="inline-flex items-center justify-center rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-zinc-800">
+            Guardar reparación
+          </button>
+          <a href="{{ route('admin.repairs.index') }}"
+             class="inline-flex items-center justify-center rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-700 hover:bg-zinc-50">
+            Cancelar
+          </a>
+        </div>
 
-  <label>Estado *</label><br>
-  @php $selected = old('status', $prefill['status'] ?? 'received'); @endphp
-  <select name="status" required style="width:260px;">
-    @foreach($statuses as $key => $label)
-      <option value="{{ $key }}" {{ $selected === $key ? 'selected' : '' }}>{{ $label }}</option>
-    @endforeach
-  </select>
-
-  <hr>
-
-  <h3>Notas (opcional)</h3>
-  <textarea name="notes" rows="3" style="width:520px;max-width:100%;">{{ old('notes', $prefill['notes']) }}</textarea>
-
-  <br><br>
-  <button type="submit">Crear reparación</button>
-</form>
-
-<script>
-(function(){
-  function n(v){ v = parseFloat(v); return isNaN(v) ? 0 : v; }
-  function fmt(v){ return Math.round(v).toLocaleString('es-AR'); }
-
-  function recalc(){
-    const parts = n(document.getElementById('parts_cost').value);
-    const labor = n(document.getElementById('labor_cost').value);
-    const finalp = n(document.getElementById('final_price').value);
-    const paid  = n(document.getElementById('paid_amount').value);
-
-    const total = parts + labor;
-    const profit = finalp - total;
-    const balance = Math.max(0, finalp - paid);
-
-    document.getElementById('ui_total_cost').textContent = fmt(total);
-    document.getElementById('ui_profit').textContent = fmt(profit);
-    document.getElementById('ui_balance_due').textContent = fmt(balance);
-  }
-
-  ['parts_cost','labor_cost','final_price','paid_amount'].forEach(id=>{
-    const el = document.getElementById(id);
-    if (el) el.addEventListener('input', recalc);
-  });
-
-  recalc();
-})();
-</script>
+      </div>
+    </div>
+  </form>
+</div>
 @endsection

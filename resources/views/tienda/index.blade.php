@@ -1,121 +1,181 @@
 @extends('layouts.app')
 
-@section('title', 'Carrito - NicoReparaciones')
+@section('title', isset($currentCategory) ? $currentCategory->name . ' — Tienda' : 'Tienda — NicoReparaciones')
 
 @section('content')
-  <div class="flex items-center justify-between gap-3">
-    <div>
-      <h1 class="page-title">Carrito</h1>
-      <p class="muted mt-1">Revisá tus productos antes de finalizar.</p>
+@php
+  $money = fn($n) => '$ ' . number_format((float)$n, 0, ',', '.');
+@endphp
+
+<div class="container-page py-6">
+
+  {{-- Hero --}}
+  <div class="rounded-2xl border border-sky-200 bg-gradient-to-r from-sky-600 to-cyan-500 text-white p-5 sm:p-7">
+    <div class="flex items-start justify-between gap-4">
+      <div>
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">
+          @if(isset($currentCategory))
+            {{ $currentCategory->name }}
+          @else
+            Tienda
+          @endif
+        </h1>
+        <p class="mt-2 text-sm sm:text-base text-white/90 max-w-2xl">
+          Accesorios listos para retirar en el local. Comprás rápido desde el celu y listo.
+        </p>
+
+        <div class="mt-4 flex flex-wrap gap-2">
+          <span class="badge badge-sky">Mobile-first</span>
+          <span class="badge bg-white/20 text-white ring-white/20">Retiro en local</span>
+          <span class="badge bg-white/20 text-white ring-white/20">Stock visible</span>
+        </div>
+      </div>
+
+      <img src="{{ asset('brand/logo.png') }}" onerror="this.style.display='none'" class="h-14 w-14 sm:h-16 sm:w-16 rounded-2xl bg-white/90 p-2 border border-white/30 object-contain" alt="Logo">
     </div>
-    <a href="{{ route('store.index') }}" class="btn-outline">Seguir comprando</a>
   </div>
 
-  @if(empty($cart))
-    <div class="mt-6 card">
-      <div class="card-body">
-        <div class="font-bold text-lg">Tu carrito está vacío</div>
-        <div class="muted mt-1">Elegí algún producto y agregalo al carrito.</div>
-        <div class="mt-4">
-          <a class="btn-primary" href="{{ route('store.index') }}">Ir a la tienda</a>
-        </div>
+  {{-- Categorías (solo cuando NO estás filtrando) --}}
+  @if(!isset($currentCategory))
+    <div class="mt-6">
+      <div class="flex items-center justify-between">
+        <h2 class="text-sm font-semibold text-zinc-900">Categorías</h2>
+        <span class="text-xs text-zinc-500">Elegí una para filtrar</span>
+      </div>
+
+      <div class="mt-3 flex gap-2 overflow-x-auto pb-2">
+        @foreach($categories as $category)
+          <a href="{{ route('store.category', $category->slug) }}"
+             class="shrink-0 rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50">
+            {{ $category->icon ?? '📦' }} {{ $category->name }}
+          </a>
+        @endforeach
       </div>
     </div>
   @else
-    <div class="mt-6 grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
-      {{-- Items --}}
-      <div class="card">
-        <div class="card-header flex items-center justify-between gap-3">
-          <div class="section-title">Productos</div>
-
-          <form action="{{ route('cart.clear') }}" method="POST">
-            @csrf
-            <button type="submit" class="btn-ghost text-rose-600 hover:bg-rose-50">Vaciar carrito</button>
-          </form>
-        </div>
-
-        <div class="card-body">
-          <div class="space-y-3">
-            @foreach($cart as $item)
-              @php
-                $subtotal = ($item['price'] ?? 0) * ($item['quantity'] ?? 0);
-              @endphp
-
-              <div class="rounded-2xl ring-1 ring-zinc-200 p-3 sm:p-4">
-                <div class="flex items-start justify-between gap-3">
-                  <div class="min-w-0">
-                    <div class="font-bold leading-snug">
-                      <a class="hover:underline" href="{{ route('store.product', $item['slug']) }}">
-                        {{ $item['name'] }}
-                      </a>
-                    </div>
-                    <div class="muted mt-1">
-                      Precio: <span class="font-semibold text-zinc-800">${{ number_format($item['price'], 0, ',', '.') }}</span>
-                      · Subtotal: <span class="font-semibold text-zinc-800">${{ number_format($subtotal, 0, ',', '.') }}</span>
-                    </div>
-                  </div>
-
-                  <form action="{{ route('cart.remove', $item['id']) }}" method="POST">
-                    @csrf
-                    <button type="submit" class="btn-ghost px-2 py-1 text-zinc-700 hover:bg-zinc-100" aria-label="Eliminar">✕</button>
-                  </form>
-                </div>
-
-                <div class="mt-3 flex flex-wrap items-end gap-3">
-                  <form action="{{ route('cart.update', $item['id']) }}" method="POST" class="flex items-end gap-2">
-                    @csrf
-                    <div>
-                      <label class="label" for="qty_{{ $item['id'] }}">Cantidad</label>
-                      <input
-                        id="qty_{{ $item['id'] }}"
-                        type="number"
-                        name="quantity"
-                        min="1"
-                        value="{{ $item['quantity'] }}"
-                        class="input w-[120px]"
-                      />
-                    </div>
-
-                    <button type="submit" class="btn-outline h-[42px]">Actualizar</button>
-                  </form>
-                </div>
-              </div>
-            @endforeach
-          </div>
-        </div>
-      </div>
-
-      {{-- Resumen --}}
-      <div class="card h-fit lg:sticky lg:top-20">
-        <div class="card-header">
-          <div class="section-title">Resumen</div>
-          <div class="muted">Total del carrito</div>
-        </div>
-
-        <div class="card-body">
-          <div class="flex items-center justify-between">
-            <div class="muted">Total</div>
-            <div class="text-2xl font-extrabold">
-              ${{ number_format($total, 0, ',', '.') }}
-            </div>
-          </div>
-
-          <div class="mt-4 space-y-2">
-            @auth
-              <a href="{{ route('checkout') }}" class="btn-primary w-full">Finalizar compra</a>
-            @else
-              <div class="rounded-2xl bg-brand-soft ring-1 ring-blue-200 p-3">
-                <div class="font-bold">Ingresá para finalizar</div>
-                <div class="muted mt-1">Tu carrito queda guardado en esta sesión.</div>
-              </div>
-              <a href="{{ route('login') }}" class="btn-primary w-full">Ingresar</a>
-              <a href="{{ route('register') }}" class="btn-outline w-full">Crear cuenta</a>
-            @endauth
-
-            <a href="{{ route('store.index') }}" class="btn-outline w-full">Seguir comprando</a>
-          </div>
-        </div>
-      </div>
+    <div class="mt-6 flex items-center gap-2 text-sm">
+      <a href="{{ route('store.index') }}" class="text-zinc-600 hover:text-zinc-900">Tienda</a>
+      <span class="text-zinc-400">/</span>
+      <span class="font-semibold text-zinc-900">{{ $currentCategory->name }}</span>
     </div>
   @endif
+
+  {{-- Productos --}}
+  <div class="mt-6 space-y-8">
+
+    @foreach($categories as $category)
+      @if(!isset($currentCategory))
+        <div class="flex items-center justify-between gap-3">
+          <h2 class="text-base font-semibold text-zinc-900">{{ $category->name }}</h2>
+          <a class="text-sm font-semibold" href="{{ route('store.category', $category->slug) }}">Ver todo →</a>
+        </div>
+      @endif
+
+      @if($category->products->isEmpty())
+        <div class="card">
+          <div class="card-body text-sm text-zinc-500">
+            No hay productos cargados en esta categoría todavía.
+          </div>
+        </div>
+      @else
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+          @foreach($category->products as $product)
+            <div class="card overflow-hidden">
+              <a href="{{ route('store.product', $product->slug) }}" class="block">
+                <div class="aspect-square bg-zinc-50 border-b border-zinc-100 flex items-center justify-center">
+                  <img
+                    src="{{ asset('img/' . ($product->image ?? 'logo-nicoreparaciones.jpg')) }}"
+                    alt="{{ $product->name }}"
+                    class="h-full w-full object-cover"
+                    loading="lazy"
+                  >
+                </div>
+              </a>
+
+              <div class="card-body">
+                <a href="{{ route('store.product', $product->slug) }}"
+                   class="block text-sm font-semibold text-zinc-900 hover:text-sky-700 line-clamp-2">
+                  {{ $product->name }}
+                </a>
+
+                <div class="mt-2 flex items-center justify-between gap-2">
+                  <div class="text-sm font-extrabold text-zinc-900">
+                    {{ $money($product->price) }}
+                  </div>
+
+                  @if($product->stock > 0)
+                    <span class="badge badge-emerald">En stock</span>
+                  @else
+                    <span class="badge badge-rose">Sin stock</span>
+                  @endif
+                </div>
+
+                <form action="{{ route('cart.add', $product->id) }}" method="POST" class="mt-3">
+                  @csrf
+                  <input type="hidden" name="quantity" value="1">
+                  <button
+                    type="submit"
+                    class="{{ $product->stock > 0 ? 'btn-primary w-full' : 'btn-outline w-full opacity-60 cursor-not-allowed' }}"
+                    {{ $product->stock > 0 ? '' : 'disabled' }}
+                  >
+                    Agregar
+                  </button>
+                </form>
+              </div>
+            </div>
+          @endforeach
+        </div>
+      @endif
+
+      @if(!isset($currentCategory))
+        <div class="h-px bg-zinc-100"></div>
+      @endif
+    @endforeach
+
+    {{-- Destacados (si existe) --}}
+    @if(isset($featuredProducts) && $featuredProducts->count() && !isset($currentCategory))
+      <div class="flex items-center justify-between">
+        <h2 class="text-base font-semibold text-zinc-900">Destacados</h2>
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+        @foreach($featuredProducts as $product)
+          <div class="card overflow-hidden">
+            <a href="{{ route('store.product', $product->slug) }}" class="block">
+              <div class="aspect-square bg-zinc-50 border-b border-zinc-100">
+                <img src="{{ asset('img/' . ($product->image ?? 'logo-nicoreparaciones.jpg')) }}"
+                     alt="{{ $product->name }}"
+                     class="h-full w-full object-cover"
+                     loading="lazy">
+              </div>
+            </a>
+
+            <div class="card-body">
+              <a href="{{ route('store.product', $product->slug) }}"
+                 class="block text-sm font-semibold text-zinc-900 hover:text-sky-700 line-clamp-2">
+                {{ $product->name }}
+              </a>
+
+              <div class="mt-2 flex items-center justify-between gap-2">
+                <div class="text-sm font-extrabold text-zinc-900">{{ $money($product->price) }}</div>
+                <span class="badge {{ $product->stock > 0 ? 'badge-emerald' : 'badge-rose' }}">
+                  {{ $product->stock > 0 ? 'En stock' : 'Sin stock' }}
+                </span>
+              </div>
+
+              <form action="{{ route('cart.add', $product->id) }}" method="POST" class="mt-3">
+                @csrf
+                <input type="hidden" name="quantity" value="1">
+                <button type="submit" class="btn-primary w-full" {{ $product->stock > 0 ? '' : 'disabled' }}>
+                  Agregar
+                </button>
+              </form>
+            </div>
+          </div>
+        @endforeach
+      </div>
+    @endif
+
+  </div>
+</div>
 @endsection

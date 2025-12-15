@@ -1,278 +1,512 @@
 @extends('layouts.app')
 
+@section('title', 'Reparación ' . $repair->code . ' — Admin')
+
 @section('content')
-@if(session('success'))
-  <div style="padding:10px;border:1px solid #9f9;background:#f5fff5;margin-bottom:12px;">
-    {{ session('success') }}
-  </div>
-@endif
+@php
+  $i = "w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-100";
+  $t = "w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-100";
+  $l = "text-sm font-medium text-zinc-800";
+  $h = "text-xs text-zinc-500";
 
-@if($errors->any())
-  <div style="padding:10px;border:1px solid #f99;background:#fff5f5;margin-bottom:12px;">
-    <b>Hay errores:</b>
-    <ul>
-      @foreach($errors->all() as $e)
-        <li>{{ $e }}</li>
-      @endforeach
-    </ul>
-  </div>
-@endif
+  $badge = match($repair->status) {
+    'received' => 'bg-slate-100 text-slate-700 ring-slate-200',
+    'diagnosing' => 'bg-amber-100 text-amber-800 ring-amber-200',
+    'waiting_approval' => 'bg-purple-100 text-purple-800 ring-purple-200',
+    'repairing' => 'bg-sky-100 text-sky-800 ring-sky-200',
+    'ready_pickup' => 'bg-emerald-100 text-emerald-800 ring-emerald-200',
+    'delivered' => 'bg-zinc-900 text-white ring-zinc-900/10',
+    'cancelled' => 'bg-rose-100 text-rose-800 ring-rose-200',
+    default => 'bg-zinc-100 text-zinc-700 ring-zinc-200',
+  };
 
-<h1>Reparación</h1>
-<h3 style="margin-top:6px;">
-  {{ $repair->code ?? ('#'.$repair->id) }}
-  — {{ $statuses[$repair->status] ?? $repair->status }}
-</h3>
+  $money = fn($n) => '$ ' . number_format((float)$n, 0, ',', '.');
 
-<p style="margin-top:10px;">
-  <a href="{{ route('admin.repairs.index') }}">⬅ Volver</a>
-  &nbsp;|&nbsp;
-  <a href="{{ route('admin.repairs.print', $repair) }}">🖨️ Imprimir</a>
-  &nbsp;|&nbsp;
-  @if(!empty($waUrl))
-    <a href="{{ $waUrl }}" target="_blank">WhatsApp</a>
-  @else
-    WhatsApp —
-  @endif
-</p>
+  $parts = (float) ($repair->parts_cost ?? 0);
+  $labor = (float) ($repair->labor_cost ?? 0);
+  $totalCost = $parts + $labor;
 
-<hr>
+  $final = $repair->final_price !== null ? (float)$repair->final_price : null;
+  $paid = (float) ($repair->paid_amount ?? 0);
 
-<h3>Resumen</h3>
+  $balance = ($final ?? 0) - $paid;
+  $profit = ($final ?? 0) - $totalCost;
+@endphp
 
-<div style="display:flex;gap:16px;flex-wrap:wrap;">
-  <div style="min-width:260px;border:1px solid #ddd;padding:12px;border-radius:8px;">
-    <h4>Cliente</h4>
-    <div><b>Nombre:</b> {{ $repair->customer_name }}</div>
-    <div><b>Tel:</b> {{ $repair->customer_phone }}</div>
-    <div><b>Usuario:</b> {{ $linkedUserEmail ?? '—' }}</div>
-  </div>
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
-  <div style="min-width:260px;border:1px solid #ddd;padding:12px;border-radius:8px;">
-    <h4>Equipo</h4>
-    <div><b>Marca/Modelo:</b> {{ trim(($repair->device_brand ?? '').' '.($repair->device_model ?? '')) ?: '—' }}</div>
-    <div><b>Falla:</b> {{ $repair->issue_reported }}</div>
-  </div>
+  {{-- Header --}}
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <div>
+      <div class="flex items-center gap-2 flex-wrap">
+        <h1 class="text-xl sm:text-2xl font-semibold text-zinc-900">
+          Reparación <span class="font-mono">#{{ $repair->code }}</span>
+        </h1>
+        <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset {{ $badge }}">
+          {{ $statuses[$repair->status] ?? $repair->status }}
+        </span>
+      </div>
 
-  <div style="min-width:300px;border:1px solid #ddd;padding:12px;border-radius:8px;">
-    <h4>Finanzas</h4>
-    <div><b>Repuestos:</b> ${{ number_format((float)$repair->parts_cost, 0, ',', '.') }}</div>
-    <div><b>Mano de obra:</b> ${{ number_format((float)$repair->labor_cost, 0, ',', '.') }}</div>
-    <div><b>Costo total:</b> ${{ number_format((float)$repair->total_cost, 0, ',', '.') }}</div>
-    <div><b>Precio final:</b> {{ $repair->final_price !== null ? ('$'.number_format((float)$repair->final_price, 0, ',', '.')) : '—' }}</div>
-    <div><b>Ganancia:</b> ${{ number_format((float)$repair->profit, 0, ',', '.') }}</div>
-    <hr>
-    <div><b>Pagado:</b> ${{ number_format((float)($repair->paid_amount ?? 0), 0, ',', '.') }}</div>
-    <div><b>Saldo:</b> ${{ number_format((float)$repair->balance_due, 0, ',', '.') }}</div>
-    <div><b>Método:</b>
-      @php
-        $pm = $repair->payment_method;
-        $pmLabel = $pm && isset($paymentMethods[$pm]) ? $paymentMethods[$pm] : ($pm ?: '—');
-      @endphp
-      {{ $pmLabel }}
+      <p class="mt-1 text-sm text-zinc-500">
+        {{ $repair->customer_name }} · {{ $repair->customer_phone }}
+        @if(!empty($repair->device_brand) || !empty($repair->device_model))
+          · {{ trim(($repair->device_brand ?? '').' '.($repair->device_model ?? '')) }}
+        @endif
+      </p>
     </div>
-    <div><b>Notas:</b> {{ $repair->payment_notes ?: '—' }}</div>
-  </div>
 
-  <div style="min-width:260px;border:1px solid #ddd;padding:12px;border-radius:8px;">
-    <h4>Garantía</h4>
-    <div><b>Días:</b> {{ ($repair->warranty_days ?? 0) ? ($repair->warranty_days.' días') : '—' }}</div>
-    <div><b>Entregado:</b> {{ $repair->delivered_at ? $repair->delivered_at->format('Y-m-d H:i') : '—' }}</div>
-    <div><b>Vence:</b>
-      @if($repair->warranty_expires_at)
-        {{ $repair->warranty_expires_at->format('Y-m-d') }}
-        {!! $repair->in_warranty ? '<span style="color:green;font-weight:bold;">(EN GARANTÍA)</span>' : '<span style="color:#b00;font-weight:bold;">(VENCIDA)</span>' !!}
-      @else
-        —
+    <div class="flex flex-wrap gap-2">
+      <a href="{{ route('admin.repairs.index') }}"
+         class="inline-flex items-center justify-center rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50">
+        Volver
+      </a>
+
+      <a href="{{ route('admin.repairs.print', $repair) }}" target="_blank"
+         class="inline-flex items-center justify-center rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50">
+        Imprimir
+      </a>
+
+      @if($waUrl)
+        <a href="{{ $waUrl }}" target="_blank"
+           class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-500">
+          Abrir WhatsApp
+        </a>
       @endif
     </div>
   </div>
-</div>
 
-<hr>
-
-<h3>Actualizar estado</h3>
-<form method="POST" action="{{ route('admin.repairs.updateStatus', $repair) }}">
-  @csrf
-  <label>Estado</label><br>
-  <select name="status" style="width:260px;">
-    @foreach($statuses as $k => $label)
-      <option value="{{ $k }}" {{ $repair->status === $k ? 'selected' : '' }}>{{ $label }}</option>
-    @endforeach
-  </select>
-  <br><br>
-
-  <label>Comentario (opcional)</label><br>
-  <input type="text" name="comment" style="width:520px;max-width:100%;" maxlength="500">
-  <br><br>
-
-  <button type="submit">Guardar estado</button>
-</form>
-
-@if(session('wa_after') && !empty(session('wa_after.url')))
-  <div style="margin-top:10px;">
-    <b>Acción rápida:</b>
-    <a href="{{ session('wa_after.url') }}" target="_blank">Abrir WhatsApp con mensaje del nuevo estado</a>
-  </div>
-@endif
-
-<hr>
-
-<h3>WhatsApp</h3>
-<div><b>Estado actual:</b> {{ $statuses[$repair->status] ?? $repair->status }}</div>
-<div>
-  <b>Notificación:</b>
-  @if(!empty($waNotifiedCurrent))
-    ✅ Avisado
-    @if(!empty($waNotifiedAt))
-      ({{ \Illuminate\Support\Carbon::parse($waNotifiedAt)->format('Y-m-d H:i') }})
-    @endif
-  @else
-    Pendiente
+  {{-- Flash --}}
+  @if(session('success'))
+    <div class="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+      {{ session('success') }}
+    </div>
   @endif
+
+  @if($errors->any())
+    <div class="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+      <div class="font-semibold">Hay errores para corregir:</div>
+      <ul class="mt-2 list-disc pl-5 space-y-1">
+        @foreach($errors->all() as $e)
+          <li>{{ $e }}</li>
+        @endforeach
+      </ul>
+    </div>
+  @endif
+
+  {{-- Acción rápida después de cambiar estado --}}
+  @if(session('wa_after') && !empty(session('wa_after.url')))
+    <div class="mt-4 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+      <div class="font-semibold">Acción rápida</div>
+      <div class="mt-1">
+        <a class="underline font-medium" href="{{ session('wa_after.url') }}" target="_blank">
+          Abrir WhatsApp con el mensaje del nuevo estado
+        </a>
+      </div>
+    </div>
+  @endif
+
+  <div class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    {{-- Columna principal --}}
+    <div class="lg:col-span-2 space-y-6">
+
+      {{-- Cambiar estado --}}
+      <section class="rounded-2xl border border-zinc-200 bg-white shadow-sm">
+        <div class="border-b border-zinc-100 px-4 py-3">
+          <h2 class="text-sm font-semibold text-zinc-900">Cambiar estado</h2>
+          <p class="{{ $h }}">Actualiza el progreso de la reparación (y opcionalmente deja un comentario).</p>
+        </div>
+        <div class="p-4">
+          <form method="POST" action="{{ route('admin.repairs.updateStatus', $repair) }}" class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+            @csrf
+            <div class="sm:col-span-1">
+              <label class="{{ $l }}">Estado</label>
+              <select class="{{ $i }}" name="status" required>
+                @foreach($statuses as $k => $label)
+                  <option value="{{ $k }}" {{ $repair->status === $k ? 'selected' : '' }}>{{ $label }}</option>
+                @endforeach
+              </select>
+            </div>
+
+            <div class="sm:col-span-2">
+              <label class="{{ $l }}">Comentario (opcional)</label>
+              <input class="{{ $i }}" type="text" name="comment" maxlength="500" placeholder="Ej: esperando repuesto / aprobado por el cliente...">
+            </div>
+
+            <div class="sm:col-span-3">
+              <button type="submit"
+                      class="inline-flex items-center justify-center rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-zinc-800">
+                Guardar estado
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      {{-- Historial de estados --}}
+      <section class="rounded-2xl border border-zinc-200 bg-white shadow-sm">
+        <div class="border-b border-zinc-100 px-4 py-3">
+          <h2 class="text-sm font-semibold text-zinc-900">Historial</h2>
+          <p class="{{ $h }}">Registro de cambios de estado.</p>
+        </div>
+
+        <div class="p-4">
+          @if($history->isEmpty())
+            <div class="text-sm text-zinc-500">Todavía no hay historial.</div>
+          @else
+            <div class="space-y-3">
+              @foreach($history as $hrow)
+                <div class="rounded-xl border border-zinc-200 p-3">
+                  <div class="flex items-center justify-between gap-2">
+                    <div class="text-sm font-semibold text-zinc-900">
+                      {{ $hrow->changed_at?->format('d/m/Y H:i') ?? '—' }}
+                    </div>
+                    <div class="text-xs text-zinc-600">
+                      {{ $statuses[$hrow->from_status] ?? $hrow->from_status }}
+                      <span class="mx-1">→</span>
+                      {{ $statuses[$hrow->to_status] ?? $hrow->to_status }}
+                    </div>
+                  </div>
+                  <div class="mt-1 text-sm text-zinc-700">
+                    {{ $hrow->comment ?: '—' }}
+                  </div>
+                </div>
+              @endforeach
+            </div>
+          @endif
+        </div>
+      </section>
+
+      {{-- Editar datos --}}
+      <section class="rounded-2xl border border-zinc-200 bg-white shadow-sm">
+        <div class="border-b border-zinc-100 px-4 py-3">
+          <h2 class="text-sm font-semibold text-zinc-900">Editar datos</h2>
+          <p class="{{ $h }}">Cliente, equipo, trabajo, costos, pagos y notas.</p>
+        </div>
+
+        <div class="p-4">
+          <form method="POST" action="{{ route('admin.repairs.update', $repair) }}" class="space-y-6">
+            @csrf
+            @method('PUT')
+
+            {{-- Vínculo usuario --}}
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="sm:col-span-2">
+                <div class="text-sm font-semibold text-zinc-900">Vincular usuario</div>
+                <div class="mt-1 text-sm text-zinc-600">
+                  Actual: <span class="font-medium">{{ $linkedUserEmail ?: '—' }}</span>
+                </div>
+              </div>
+
+              <div class="sm:col-span-2">
+                <label class="{{ $l }}">Email</label>
+                <input class="{{ $i }}" type="email" name="user_email" value="{{ old('user_email') }}" placeholder="cliente@email.com">
+                <p class="{{ $h }} mt-1">Si existe, se vincula. Si no existe, queda sin vínculo.</p>
+              </div>
+
+              <div class="sm:col-span-2">
+                <label class="inline-flex items-center gap-2 text-sm text-zinc-700">
+                  <input type="checkbox" name="unlink_user" value="1" class="rounded border-zinc-300">
+                  Desvincular usuario
+                </label>
+                <p class="{{ $h }} mt-1">Si marcás “Desvincular”, se borra el vínculo aunque pongas un email.</p>
+              </div>
+            </div>
+
+            <hr class="border-zinc-100">
+
+            {{-- Cliente --}}
+            <div>
+              <div class="text-sm font-semibold text-zinc-900">Cliente</div>
+              <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="{{ $l }}">Nombre *</label>
+                  <input class="{{ $i }}" type="text" name="customer_name" required value="{{ old('customer_name', $repair->customer_name) }}">
+                </div>
+                <div>
+                  <label class="{{ $l }}">Teléfono *</label>
+                  <input class="{{ $i }}" type="text" name="customer_phone" required value="{{ old('customer_phone', $repair->customer_phone) }}">
+                </div>
+              </div>
+            </div>
+
+            {{-- Equipo --}}
+            <div>
+              <div class="text-sm font-semibold text-zinc-900">Equipo</div>
+              <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="{{ $l }}">Marca</label>
+                  <input class="{{ $i }}" type="text" name="device_brand" value="{{ old('device_brand', $repair->device_brand) }}">
+                </div>
+                <div>
+                  <label class="{{ $l }}">Modelo</label>
+                  <input class="{{ $i }}" type="text" name="device_model" value="{{ old('device_model', $repair->device_model) }}">
+                </div>
+              </div>
+            </div>
+
+            {{-- Trabajo --}}
+            <div>
+              <div class="text-sm font-semibold text-zinc-900">Trabajo</div>
+              <div class="mt-3 space-y-4">
+                <div>
+                  <label class="{{ $l }}">Falla reportada *</label>
+                  <textarea class="{{ $t }}" name="issue_reported" rows="3" required>{{ old('issue_reported', $repair->issue_reported) }}</textarea>
+                </div>
+                <div>
+                  <label class="{{ $l }}">Diagnóstico</label>
+                  <textarea class="{{ $t }}" name="diagnosis" rows="3">{{ old('diagnosis', $repair->diagnosis) }}</textarea>
+                </div>
+              </div>
+            </div>
+
+            {{-- Costos / precio / garantía --}}
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="{{ $l }}">Repuestos</label>
+                <input class="{{ $i }}" type="number" step="0.01" min="0" name="parts_cost" value="{{ old('parts_cost', $repair->parts_cost) }}">
+              </div>
+              <div>
+                <label class="{{ $l }}">Mano de obra</label>
+                <input class="{{ $i }}" type="number" step="0.01" min="0" name="labor_cost" value="{{ old('labor_cost', $repair->labor_cost) }}">
+              </div>
+              <div>
+                <label class="{{ $l }}">Precio final</label>
+                <input class="{{ $i }}" type="number" step="0.01" min="0" name="final_price" value="{{ old('final_price', $repair->final_price) }}">
+              </div>
+              <div>
+                <label class="{{ $l }}">Garantía (días)</label>
+                <input class="{{ $i }}" type="number" min="0" name="warranty_days" value="{{ old('warranty_days', $repair->warranty_days) }}">
+              </div>
+            </div>
+
+            {{-- Pagos --}}
+            <div>
+              <div class="text-sm font-semibold text-zinc-900">Pagos</div>
+              <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="{{ $l }}">Pagado</label>
+                  <input class="{{ $i }}" type="number" step="0.01" min="0" name="paid_amount" value="{{ old('paid_amount', $repair->paid_amount) }}">
+                </div>
+                <div>
+                  <label class="{{ $l }}">Método</label>
+                  <select class="{{ $i }}" name="payment_method">
+                    <option value="">—</option>
+                    @foreach($paymentMethods as $k => $label)
+                      <option value="{{ $k }}" {{ old('payment_method', $repair->payment_method) === $k ? 'selected' : '' }}>
+                        {{ $label }}
+                      </option>
+                    @endforeach
+                  </select>
+                </div>
+
+                <div class="sm:col-span-2">
+                  <label class="{{ $l }}">Notas de pago</label>
+                  <textarea class="{{ $t }}" name="payment_notes" rows="2">{{ old('payment_notes', $repair->payment_notes) }}</textarea>
+                </div>
+              </div>
+            </div>
+
+            {{-- Notas --}}
+            <div>
+              <label class="{{ $l }}">Notas</label>
+              <textarea class="{{ $t }}" name="notes" rows="3">{{ old('notes', $repair->notes) }}</textarea>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-3">
+              <button type="submit"
+                      class="inline-flex items-center justify-center rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-zinc-800">
+                Guardar cambios
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+    </div>
+
+    {{-- Sidebar --}}
+    <div class="space-y-6">
+
+      {{-- Resumen --}}
+      <section class="rounded-2xl border border-zinc-200 bg-white shadow-sm">
+        <div class="border-b border-zinc-100 px-4 py-3">
+          <h2 class="text-sm font-semibold text-zinc-900">Resumen</h2>
+          <p class="{{ $h }}">Costos, pagos, saldo y garantía.</p>
+        </div>
+        <div class="p-4 space-y-3 text-sm">
+          <div class="flex items-center justify-between">
+            <span class="text-zinc-600">Repuestos</span>
+            <span class="font-semibold text-zinc-900">{{ $money($parts) }}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-zinc-600">Mano de obra</span>
+            <span class="font-semibold text-zinc-900">{{ $money($labor) }}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-zinc-600">Costo total</span>
+            <span class="font-semibold text-zinc-900">{{ $money($totalCost) }}</span>
+          </div>
+
+          <hr class="border-zinc-100">
+
+          <div class="flex items-center justify-between">
+            <span class="text-zinc-600">Precio final</span>
+            <span class="font-semibold text-zinc-900">{{ $final !== null ? $money($final) : '—' }}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-zinc-600">Pagado</span>
+            <span class="font-semibold text-zinc-900">{{ $money($paid) }}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-zinc-600">Saldo</span>
+            <span class="font-semibold {{ $balance <= 0 ? 'text-emerald-700' : 'text-rose-700' }}">
+              {{ $final !== null ? $money($balance) : '—' }}
+            </span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-zinc-600">Ganancia estimada</span>
+            <span class="font-semibold {{ $profit >= 0 ? 'text-emerald-700' : 'text-rose-700' }}">
+              {{ $final !== null ? $money($profit) : '—' }}
+            </span>
+          </div>
+
+          <hr class="border-zinc-100">
+
+          <div class="space-y-1">
+            <div class="text-zinc-600">Fechas</div>
+            <div class="text-zinc-900">
+              Recibido: <span class="font-medium">{{ $repair->received_at?->format('d/m/Y H:i') ?? '—' }}</span>
+            </div>
+            <div class="text-zinc-900">
+              Entregado: <span class="font-medium">{{ $repair->delivered_at?->format('d/m/Y H:i') ?? '—' }}</span>
+            </div>
+
+            @if(($repair->warranty_days ?? 0) > 0)
+              <div class="text-zinc-900">
+                Garantía: <span class="font-medium">{{ (int)$repair->warranty_days }} días</span>
+              </div>
+              <div class="text-zinc-900">
+                Vence: <span class="font-medium">{{ $repair->warranty_expires_at?->format('d/m/Y') ?? '—' }}</span>
+                @if($repair->in_warranty)
+                  <span class="ml-2 inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800">En garantía</span>
+                @endif
+              </div>
+            @endif
+          </div>
+        </div>
+      </section>
+
+      {{-- WhatsApp --}}
+      <section class="rounded-2xl border border-zinc-200 bg-white shadow-sm">
+        <div class="border-b border-zinc-100 px-4 py-3">
+          <h2 class="text-sm font-semibold text-zinc-900">WhatsApp</h2>
+          <p class="{{ $h }}">Mensaje sugerido por estado + registro de envíos.</p>
+        </div>
+
+        <div class="p-4 space-y-4">
+          <div class="text-sm">
+            <div class="text-zinc-600">Estado actual</div>
+            <div class="font-semibold text-zinc-900">{{ $statuses[$repair->status] ?? $repair->status }}</div>
+          </div>
+
+          <div class="text-sm">
+            <div class="text-zinc-600">Notificación</div>
+            @if(!empty($waNotifiedCurrent))
+              <div class="font-semibold text-emerald-700">
+                ✅ Avisado
+                @if(!empty($waNotifiedAt))
+                  <span class="font-normal text-zinc-600">({{ $waNotifiedAt->format('d/m/Y H:i') }})</span>
+                @endif
+              </div>
+            @else
+              <div class="font-semibold text-rose-700">⛔ No registrado</div>
+            @endif
+          </div>
+
+          <div>
+            <label class="{{ $l }}">Mensaje</label>
+            <textarea id="waMessage" class="{{ $t }}" rows="6" readonly>{{ $waMessage }}</textarea>
+          </div>
+
+          <div class="flex flex-wrap gap-2">
+            <button type="button"
+                    data-copy="waMessage"
+                    data-label="Copiar"
+                    class="inline-flex items-center justify-center rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50">
+              Copiar
+            </button>
+
+            @if($waUrl)
+              <a href="{{ $waUrl }}" target="_blank"
+                 class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-500">
+                Abrir WhatsApp
+              </a>
+            @endif
+
+            <form method="POST" action="{{ route('admin.repairs.whatsappLog', $repair) }}">
+              @csrf
+              <button type="submit"
+                      class="inline-flex items-center justify-center rounded-xl bg-zinc-900 px-3 py-2 text-sm font-semibold text-white hover:bg-zinc-800">
+                Registrar envío
+              </button>
+            </form>
+          </div>
+
+          <hr class="border-zinc-100">
+
+          <div>
+            <div class="text-sm font-semibold text-zinc-900">Historial de WhatsApp</div>
+            @if($waLogs->isEmpty())
+              <div class="mt-2 text-sm text-zinc-500">Todavía no hay registros.</div>
+            @else
+              <div class="mt-3 space-y-2">
+                @foreach($waLogs as $log)
+                  <div class="rounded-xl border border-zinc-200 p-3">
+                    <div class="flex items-center justify-between gap-2">
+                      <div class="text-xs text-zinc-500">
+                        {{ $log->sent_at?->format('d/m/Y H:i') ?? '—' }}
+                      </div>
+                      <div class="text-xs font-semibold text-zinc-700">
+                        {{ $statuses[$log->notified_status] ?? $log->notified_status }}
+                      </div>
+                    </div>
+                    <div class="mt-1 text-xs text-zinc-600">
+                      {{ $log->sentBy?->name ? 'Por: '.$log->sentBy->name : '' }}
+                      {{ $log->phone ? ' · '.$log->phone : '' }}
+                    </div>
+                    <div class="mt-2 text-sm text-zinc-800 whitespace-pre-line">{{ $log->message }}</div>
+                  </div>
+                @endforeach
+              </div>
+            @endif
+          </div>
+
+        </div>
+      </section>
+
+    </div>
+  </div>
 </div>
 
-@if(!empty($waUrl))
-  <p style="margin-top:8px;">
-    <a href="{{ $waUrl }}" target="_blank">Abrir WhatsApp</a>
-  </p>
+<script>
+document.addEventListener('click', async (e) => {
+  const btn = e.target.closest('[data-copy]');
+  if (!btn) return;
 
-  <form method="POST" action="{{ route('admin.repairs.whatsappLog', $repair) }}">
-    @csrf
-    <button type="submit">Registrar envío (manual)</button>
-  </form>
-@endif
+  const id = btn.getAttribute('data-copy');
+  const el = document.getElementById(id);
+  if (!el) return;
 
-<h4 style="margin-top:14px;">Mensaje armado</h4>
-<pre style="white-space:pre-wrap;border:1px solid #ddd;padding:10px;border-radius:8px;">{{ $waMessage ?? '' }}</pre>
-
-<h4>Historial de WhatsApp</h4>
-@if($waLogs->isEmpty())
-  <p>No hay envíos registrados.</p>
-@else
-  <ul>
-    @foreach($waLogs as $log)
-      <li>
-        {{ $log->sent_at ? $log->sent_at->format('Y-m-d H:i') : '—' }}
-        — {{ $statuses[$log->notified_status] ?? $log->notified_status }}
-        — {{ $log->sentBy->name ?? '—' }}
-        — {{ $log->phone ?? '—' }}
-      </li>
-    @endforeach
-  </ul>
-@endif
-
-<hr>
-
-<h3>Historial de estados (timeline)</h3>
-@if($history->isEmpty())
-  <p>Sin movimientos aún.</p>
-@else
-  <div style="border-left:3px solid #ddd;padding-left:12px;">
-    @foreach($history as $h)
-      <div style="margin:10px 0;">
-        <div style="color:#555;font-size:12px;">
-          {{ $h->changed_at ? \Illuminate\Support\Carbon::parse($h->changed_at)->format('Y-m-d H:i') : '—' }}
-        </div>
-        <div>
-          <b>
-            {{ $h->from_status ? ($statuses[$h->from_status] ?? $h->from_status) : '—' }}
-            →
-            {{ $statuses[$h->to_status] ?? $h->to_status }}
-          </b>
-        </div>
-        <div style="color:#333;">
-          {{ $h->comment ?? '—' }}
-        </div>
-      </div>
-    @endforeach
-  </div>
-@endif
-
-<hr>
-
-<h3>Editar datos</h3>
-<form method="POST" action="{{ route('admin.repairs.update', $repair) }}">
-  @csrf
-  @method('PUT')
-
-  <h4>Vincular a usuario (opcional)</h4>
-  <label>Email del usuario</label><br>
-  <input type="email" name="user_email" value="{{ old('user_email', $linkedUserEmail) }}" style="width:320px;max-width:100%;"><br><br>
-
-  <label>
-    <input type="checkbox" name="unlink_user" value="1" {{ old('unlink_user') ? 'checked' : '' }}>
-    Desvincular usuario
-  </label>
-  <p style="margin-top:6px;color:#666;">Si marcás “Desvincular”, se borra el vínculo aunque pongas un email.</p>
-
-  <hr>
-
-  <h4>Cliente</h4>
-  <label>Nombre</label><br>
-  <input type="text" name="customer_name" value="{{ old('customer_name', $repair->customer_name) }}" required style="width:320px;max-width:100%;"><br><br>
-
-  <label>Teléfono</label><br>
-  <input type="text" name="customer_phone" value="{{ old('customer_phone', $repair->customer_phone) }}" required style="width:320px;max-width:100%;">
-
-  <hr>
-
-  <h4>Equipo</h4>
-  <label>Marca</label><br>
-  <input type="text" name="device_brand" value="{{ old('device_brand', $repair->device_brand) }}" style="width:320px;max-width:100%;"><br><br>
-
-  <label>Modelo</label><br>
-  <input type="text" name="device_model" value="{{ old('device_model', $repair->device_model) }}" style="width:320px;max-width:100%;">
-
-  <hr>
-
-  <h4>Trabajo</h4>
-  <label>Falla reportada</label><br>
-  <textarea name="issue_reported" rows="3" required style="width:520px;max-width:100%;">{{ old('issue_reported', $repair->issue_reported) }}</textarea><br><br>
-
-  <label>Diagnóstico</label><br>
-  <textarea name="diagnosis" rows="3" style="width:520px;max-width:100%;">{{ old('diagnosis', $repair->diagnosis) }}</textarea>
-
-  <hr>
-
-  <h4>Costos / Precio</h4>
-  <label>Repuestos</label><br>
-  <input type="number" step="0.01" min="0" name="parts_cost" value="{{ old('parts_cost', $repair->parts_cost) }}" style="width:200px;"><br><br>
-
-  <label>Mano de obra</label><br>
-  <input type="number" step="0.01" min="0" name="labor_cost" value="{{ old('labor_cost', $repair->labor_cost) }}" style="width:200px;"><br><br>
-
-  <label>Precio final</label><br>
-  <input type="number" step="0.01" min="0" name="final_price" value="{{ old('final_price', $repair->final_price) }}" style="width:200px;"><br><br>
-
-  <label>Garantía (días)</label><br>
-  <input type="number" min="0" name="warranty_days" value="{{ old('warranty_days', $repair->warranty_days) }}" style="width:200px;">
-
-  <hr>
-
-  <h4>Pagos</h4>
-  <label>Pagado</label><br>
-  <input type="number" step="0.01" min="0" name="paid_amount" value="{{ old('paid_amount', $repair->paid_amount) }}" style="width:200px;"><br><br>
-
-  <label>Método</label><br>
-  <select name="payment_method" style="width:220px;">
-    <option value="">—</option>
-    @foreach(($paymentMethods ?? []) as $k => $label)
-      <option value="{{ $k }}" {{ old('payment_method', $repair->payment_method) === $k ? 'selected' : '' }}>
-        {{ $label }}
-      </option>
-    @endforeach
-  </select><br><br>
-
-  <label>Notas de pago</label><br>
-  <textarea name="payment_notes" rows="2" style="width:520px;max-width:100%;">{{ old('payment_notes', $repair->payment_notes) }}</textarea>
-
-  <hr>
-
-  <h4>Notas</h4>
-  <textarea name="notes" rows="3" style="width:520px;max-width:100%;">{{ old('notes', $repair->notes) }}</textarea>
-
-  <br><br>
-  <button type="submit">Guardar cambios</button>
-</form>
+  const text = (el.value ?? el.textContent ?? '').toString();
+  try {
+    await navigator.clipboard.writeText(text);
+    const original = btn.getAttribute('data-label') || btn.textContent;
+    btn.textContent = 'Copiado ✅';
+    setTimeout(() => (btn.textContent = original), 1200);
+  } catch (_) {
+    alert('No se pudo copiar. Copiá manualmente el texto.');
+  }
+});
+</script>
 @endsection

@@ -1,118 +1,103 @@
 @extends('layouts.app')
 
-@section('title', 'Finalizar pedido - NicoReparaciones')
+@section('title', 'Finalizar pedido — NicoReparaciones')
 
 @section('content')
-  <div class="flex items-center justify-between gap-3">
-    <div>
-      <h1 class="page-title">Finalizar pedido</h1>
-      <p class="muted mt-1">Elegí la forma de pago y confirmá.</p>
-    </div>
-    <a href="{{ route('cart.index') }}" class="btn-outline">Volver al carrito</a>
-  </div>
+@php
+  $money = fn($n) => '$ ' . number_format((float)$n, 0, ',', '.');
+@endphp
+
+<div class="container-page py-6">
+  <h1 class="page-title">Finalizar pedido</h1>
+  <p class="page-subtitle">Confirmá los datos y elegí la forma de pago.</p>
 
   @if($errors->any())
-    <div class="mt-4 card">
-      <div class="card-body">
-        <div class="font-bold text-rose-700">Revisá estos datos:</div>
-        <ul class="mt-2 list-disc pl-5 text-sm text-zinc-700 space-y-1">
-          @foreach($errors->all() as $error)
-            <li>{{ $error }}</li>
-          @endforeach
-        </ul>
-      </div>
+    <div class="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+      <div class="font-semibold">Hay errores para corregir:</div>
+      <ul class="mt-2 list-disc pl-5 space-y-1">
+        @foreach($errors->all() as $error)
+          <li>{{ $error }}</li>
+        @endforeach
+      </ul>
     </div>
   @endif
 
-  <div class="mt-6 grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
-    {{-- Form --}}
-    <div class="card">
-      <div class="card-header">
-        <div class="section-title">Datos del pedido</div>
-        <div class="muted">Pago y retiro</div>
-      </div>
-
-      <div class="card-body">
-        @guest
-          <div class="rounded-2xl bg-brand-soft ring-1 ring-blue-200 p-4">
-            <div class="font-bold">Necesitás ingresar para confirmar el pedido</div>
-            <div class="muted mt-1">Ingresá o creá tu cuenta y luego confirmás en 1 click.</div>
-
-            <div class="mt-3 flex flex-col sm:flex-row gap-2">
-              <a class="btn-primary w-full sm:w-auto" href="{{ route('login') }}">Ingresar</a>
-              <a class="btn-outline w-full sm:w-auto" href="{{ route('register') }}">Crear cuenta</a>
+  <div class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+    {{-- Resumen --}}
+    <div class="lg:col-span-2 space-y-3">
+      @foreach($cart as $item)
+        <div class="card">
+          <div class="card-body">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <div class="text-sm font-semibold text-zinc-900">{{ $item['name'] }}</div>
+                <div class="mt-1 text-sm text-zinc-500">
+                  x {{ $item['quantity'] }} · {{ $money($item['price']) }} c/u
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="text-xs text-zinc-500">Subtotal</div>
+                <div class="text-sm font-extrabold text-zinc-900">
+                  {{ $money($item['price'] * $item['quantity']) }}
+                </div>
+              </div>
             </div>
           </div>
-        @endguest
+        </div>
+      @endforeach
+    </div>
 
-        @auth
-          <form action="{{ route('checkout.confirm') }}" method="POST" class="mt-2 space-y-4">
+    {{-- Form --}}
+    <div class="space-y-3">
+      <div class="card">
+        <div class="card-header">
+          <div class="text-sm font-semibold text-zinc-900">Confirmación</div>
+        </div>
+        <div class="card-body">
+          <div class="flex items-center justify-between mb-4">
+            <span class="text-sm text-zinc-600">Total</span>
+            <span class="text-lg font-extrabold text-zinc-900">{{ $money($total) }}</span>
+          </div>
+
+          <form action="{{ route('checkout.confirm') }}" method="POST" class="space-y-3">
             @csrf
 
             <div>
-              <label class="label" for="payment_method">Método de pago</label>
-              <select id="payment_method" name="payment_method" class="select">
-                <option value="local" {{ old('payment_method') === 'local' ? 'selected' : '' }}>Pago en el local</option>
-                <option value="mercado_pago" {{ old('payment_method') === 'mercado_pago' ? 'selected' : '' }}>Mercado Pago</option>
-                <option value="transferencia" {{ old('payment_method') === 'transferencia' ? 'selected' : '' }}>Transferencia</option>
+              <label class="text-sm font-medium text-zinc-800">Forma de pago</label>
+              <select class="select" name="payment_method" required>
+                <option value="local">Pago en el local</option>
+                <option value="mercado_pago">Mercado Pago</option>
+                <option value="transferencia">Transferencia</option>
               </select>
-              <div class="muted mt-1">Si elegís transferencia/MP, coordinamos el pago por mensaje.</div>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label class="label" for="pickup_name">Nombre (opcional)</label>
-                <input id="pickup_name" name="pickup_name" class="input" value="{{ old('pickup_name') }}" placeholder="Quién retira" />
-              </div>
-              <div>
-                <label class="label" for="pickup_phone">Teléfono (opcional)</label>
-                <input id="pickup_phone" name="pickup_phone" class="input" value="{{ old('pickup_phone') }}" placeholder="WhatsApp/teléfono" />
-              </div>
             </div>
 
             <div>
-              <label class="label" for="notes">Notas (opcional)</label>
-              <textarea id="notes" name="notes" class="textarea" placeholder="Aclaraciones del pedido...">{{ old('notes') }}</textarea>
+              <label class="text-sm font-medium text-zinc-800">Nombre de quien retira (opcional)</label>
+              <input class="input" type="text" name="pickup_name" value="{{ old('pickup_name', auth()->user()->name) }}">
+            </div>
+
+            <div>
+              <label class="text-sm font-medium text-zinc-800">Teléfono de contacto (opcional)</label>
+              <input class="input" type="text" name="pickup_phone" value="{{ old('pickup_phone', auth()->user()->phone) }}">
+            </div>
+
+            <div>
+              <label class="text-sm font-medium text-zinc-800">Notas (opcional)</label>
+              <textarea class="textarea" name="notes" rows="3">{{ old('notes') }}</textarea>
             </div>
 
             <button type="submit" class="btn-primary w-full">Confirmar pedido</button>
           </form>
-        @endauth
-      </div>
-    </div>
 
-    {{-- Resumen --}}
-    <div class="card h-fit lg:sticky lg:top-20">
-      <div class="card-header">
-        <div class="section-title">Resumen</div>
-        <div class="muted">Productos y total</div>
+          <a href="{{ route('cart.index') }}" class="btn-outline w-full mt-3">Volver al carrito</a>
+        </div>
       </div>
 
-      <div class="card-body">
-        <div class="space-y-2">
-          @foreach($cart as $item)
-            @php $sub = ($item['price'] ?? 0) * ($item['quantity'] ?? 0); @endphp
-            <div class="flex items-start justify-between gap-3">
-              <div class="min-w-0">
-                <div class="font-semibold leading-snug truncate">{{ $item['name'] }}</div>
-                <div class="muted">x{{ $item['quantity'] }} · ${{ number_format($sub, 0, ',', '.') }}</div>
-              </div>
-              <a class="btn-ghost px-2 py-1" href="{{ route('store.product', $item['slug']) }}">Ver</a>
-            </div>
-          @endforeach
-        </div>
-
-        <div class="h-px bg-zinc-100 my-4"></div>
-
-        <div class="flex items-center justify-between">
-          <div class="muted">Total</div>
-          <div class="text-2xl font-extrabold">${{ number_format($total, 0, ',', '.') }}</div>
-        </div>
-
-        <div class="mt-4">
-          <a href="{{ route('cart.index') }}" class="btn-outline w-full">Editar carrito</a>
-        </div>
+      <div class="rounded-2xl border border-zinc-200 bg-white p-4 text-sm text-zinc-600">
+        <div class="font-semibold text-zinc-900">Retiro en local</div>
+        <div class="mt-1">Vas a poder coordinar por WhatsApp una vez confirmado el pedido.</div>
       </div>
     </div>
   </div>
+</div>
 @endsection
