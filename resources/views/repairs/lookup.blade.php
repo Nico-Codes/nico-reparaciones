@@ -1,29 +1,81 @@
 @extends('layouts.app')
 
+@section('title', 'Consultar reparación - NicoReparaciones')
+
 @section('content')
-<div class="container">
-    <h1>Consultar reparación</h1>
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+    {{-- Info --}}
+    <div class="card">
+      <div class="card-body">
+        <h1 class="page-title">Consultar reparación</h1>
+        <p class="muted mt-2">
+          Ingresá el <span class="font-semibold text-zinc-900">código</span> y tu <span class="font-semibold text-zinc-900">teléfono</span>
+          para ver el estado actual.
+        </p>
 
-    @if ($errors->any())
-        <div style="margin:12px 0; padding:10px; border:1px solid #f2c; border-radius:8px;">
-            <ul style="margin:0; padding-left:18px;">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
+        <div class="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="rounded-2xl bg-brand-soft ring-1 ring-blue-200 p-4">
+            <div class="font-bold">🔎 Rápido</div>
+            <div class="muted mt-1">Pensado para usar desde el celular.</div>
+          </div>
+          <div class="rounded-2xl bg-brand-soft ring-1 ring-blue-200 p-4">
+            <div class="font-bold">✅ Seguro</div>
+            <div class="muted mt-1">Pedimos teléfono para validar.</div>
+          </div>
+          <div class="rounded-2xl bg-brand-soft ring-1 ring-blue-200 p-4">
+            <div class="font-bold">🧾 Orden</div>
+            <div class="muted mt-1">El código está en tu comprobante.</div>
+          </div>
+          <div class="rounded-2xl bg-brand-soft ring-1 ring-blue-200 p-4">
+            <div class="font-bold">💬 WhatsApp</div>
+            <div class="muted mt-1">Si hay dudas, te contactamos.</div>
+          </div>
         </div>
-    @endif
+      </div>
+    </div>
 
-    <form method="POST" action="{{ route('repairs.lookup.post') }}" style="display:flex; flex-direction:column; gap:10px; max-width:420px;">
-        @csrf
+    {{-- Form --}}
+    <div class="card">
+      <div class="card-header">
+        <div class="section-title">Buscar</div>
+        <div class="muted">Código + teléfono</div>
+      </div>
 
-        <label>Código</label>
-        <input name="code" value="{{ old('code') }}" required placeholder="Ej: R-20251212-00001">
+      <div class="card-body">
+        @if($errors->any())
+          <div class="rounded-2xl bg-rose-50 ring-1 ring-rose-200 p-4 mb-4">
+            <div class="font-bold text-rose-800">Revisá estos datos:</div>
+            <ul class="mt-2 list-disc pl-5 text-sm text-rose-800 space-y-1">
+              @foreach($errors->all() as $error)
+                <li>{{ $error }}</li>
+              @endforeach
+            </ul>
+          </div>
+        @endif
 
-        <label>Teléfono</label>
-        <input name="phone" value="{{ old('phone') }}" required placeholder="Ej: 3411234567">
+        <form action="{{ route('repairs.lookup.post') }}" method="POST" class="space-y-4">
+          @csrf
 
-        <button type="submit">Consultar</button>
-    </form>
-</div>
+          <div>
+            <label class="label" for="code">Código</label>
+            <input id="code" name="code" class="input" value="{{ old('code') }}" required placeholder="Ej: NR-1234" />
+          </div>
+
+          <div>
+            <label class="label" for="phone">Teléfono</label>
+            <input id="phone" name="phone" class="input" value="{{ old('phone') }}" required placeholder="Ej: 341xxxxxxx" />
+          </div>
+
+          <button type="submit" class="btn-primary w-full">Consultar</button>
+
+          @auth
+            <div class="text-sm text-zinc-600">
+              Si tenés cuenta, también podés verlo desde
+              <a class="link text-brand" href="{{ route('repairs.my.index') }}">Mis reparaciones</a>.
+            </div>
+          @endauth
+        </form>
+      </div>
+    </div>
+  </div>
 @endsection

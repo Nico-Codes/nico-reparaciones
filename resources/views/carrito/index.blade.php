@@ -1,127 +1,93 @@
 @extends('layouts.app')
-
 @section('title', 'Carrito - NicoReparaciones')
 
 @section('content')
+  <div class="space-y-4">
+    <div class="flex items-end justify-between gap-3">
+      <div>
+        <h1 class="page-title">Carrito</h1>
+        <p class="text-sm text-zinc-600 mt-1">Revisá los productos antes de finalizar tu pedido.</p>
+      </div>
+      <a class="btn-secondary" href="{{ route('store.index') }}">Seguir comprando</a>
+    </div>
 
-    <section class="hero">
-        <h1 class="hero-title">Carrito</h1>
-        <p class="hero-text">
-            Revisá los productos antes de finalizar tu pedido.
-        </p>
-    </section>
-
-    {{-- Mensajes de éxito --}}
-    @if (session('success'))
-        <div class="alert-success" style="margin-bottom: 1rem;">
-            {{ session('success') }}
-        </div>
-    @endif
-
-    {{-- Si el carrito está vacío --}}
     @if(empty($cart))
-        <p class="hero-text">Tu carrito está vacío.</p>
-
-        <a href="{{ route('store.index') }}" class="btn" style="margin-top: 1rem;">
-            Ir a la tienda
-        </a>
+      <div class="card">
+        <div class="card-body">
+          <div class="text-sm text-zinc-600">Tu carrito está vacío.</div>
+          <div class="mt-3">
+            <a class="btn-primary" href="{{ route('store.index') }}">Ir a la tienda</a>
+          </div>
+        </div>
+      </div>
     @else
-
-        {{-- LISTA DE PRODUCTOS EN EL CARRITO --}}
-        <section class="cart-list">
-            @foreach($cart as $item)
-                <article class="cart-item">
-
-                    {{-- Parte principal del ítem --}}
-                    <div class="cart-item-main">
-
-                        <div>
-                            <h2 class="cart-item-title">
-                                <a href="{{ route('store.product', $item['slug']) }}">
-                                    {{ $item['name'] }}
-                                </a>
-                            </h2>
-
-                            <p class="cart-item-price">
-                                Precio unitario: ${{ number_format($item['price'], 0, ',', '.') }}
-                            </p>
-                        </div>
-
-                        {{-- Actualizar cantidad --}}
-                        <form action="{{ route('cart.update', $item['id']) }}" method="POST" class="cart-item-qty-form">
-                            @csrf
-
-                            <label for="qty-{{ $item['id'] }}">Cant.</label>
-
-                            <input type="number"
-                                   id="qty-{{ $item['id'] }}"
-                                   name="quantity"
-                                   min="1"
-                                   value="{{ $item['quantity'] }}"
-                                   style="width: 60px; padding: 3px; margin-left: .5rem;">
-
-                            <button type="submit" class="btn btn-small" style="margin-left: .5rem;">
-                                Actualizar
-                            </button>
-                        </form>
-
+      <div class="grid gap-4 lg:grid-cols-[1fr_360px]">
+        <div class="space-y-3">
+          @foreach($cart as $item)
+            <div class="card">
+              <div class="card-body">
+                <div class="flex items-start justify-between gap-4">
+                  <div class="min-w-0">
+                    <a class="font-extrabold hover:underline"
+                       href="{{ route('store.product', $item['slug']) }}">
+                      {{ $item['name'] }}
+                    </a>
+                    <div class="text-sm text-zinc-600 mt-1">
+                      Precio unitario: ${{ number_format($item['price'], 0, ',', '.') }}
                     </div>
+                  </div>
 
-                    {{-- Footer del ítem --}}
-                    <div class="cart-item-footer">
-                        <span>Subtotal</span>
-                        <strong>
-                            ${{ number_format($item['price'] * $item['quantity'], 0, ',', '.') }}
-                        </strong>
-
-                        {{-- Botón eliminar producto --}}
-                        <form action="{{ route('cart.remove', $item['id']) }}"
-                              method="POST"
-                              style="margin-left: auto;">
-                            @csrf
-                            <button type="submit"
-                                    class="btn btn-outline btn-small"
-                                    style="padding: .3rem .6rem;">
-                                Quitar
-                            </button>
-                        </form>
+                  <div class="text-right">
+                    <div class="text-sm text-zinc-500">Subtotal</div>
+                    <div class="text-lg font-extrabold">
+                      ${{ number_format($item['price'] * $item['quantity'], 0, ',', '.') }}
                     </div>
+                  </div>
+                </div>
 
-                </article>
-            @endforeach
-        </section>
+                <div class="mt-4 flex flex-col sm:flex-row gap-2 sm:items-end sm:justify-between">
+                  <form class="flex gap-2 items-end" method="POST" action="{{ route('cart.update', $item['id']) }}">
+                    @csrf
+                    <div>
+                      <label class="label" for="q{{ $item['id'] }}">Cant.</label>
+                      <input id="q{{ $item['id'] }}" name="quantity" type="number" min="1"
+                             value="{{ $item['quantity'] }}" class="input w-28">
+                    </div>
+                    <button class="btn-secondary" type="submit">Actualizar</button>
+                  </form>
 
-        {{-- RESUMEN TOTAL DEL CARRITO --}}
-        <section class="cart-summary">
-
-            <div class="cart-summary-row">
-                <span>Total</span>
-                <strong>${{ number_format($total, 0, ',', '.') }}</strong>
+                  <form method="POST" action="{{ route('cart.remove', $item['id']) }}">
+                    @csrf
+                    <button class="btn-ghost px-3 py-2" type="submit">Quitar</button>
+                  </form>
+                </div>
+              </div>
             </div>
+          @endforeach
+        </div>
 
-            {{-- Botón de FINALIZAR PEDIDO --}}
-            <a href="{{ route('checkout') }}" class="btn"
-               style="margin-top: 0.5rem; display: block;">
-                Finalizar pedido
-            </a>
+        <div class="space-y-3">
+          <div class="card">
+            <div class="card-body space-y-3">
+              <div class="flex items-center justify-between">
+                <div class="text-sm text-zinc-600">Total</div>
+                <div class="text-2xl font-extrabold">${{ number_format($total, 0, ',', '.') }}</div>
+              </div>
 
-            {{-- Vaciar carrito --}}
-            <form action="{{ route('cart.clear') }}" method="POST" style="margin-top: 0.5rem;">
+              <a class="btn-primary w-full" href="{{ route('checkout') }}">Finalizar pedido</a>
+
+              <form method="POST" action="{{ route('cart.clear') }}">
                 @csrf
-                <button type="submit" class="btn btn-outline" style="width: 100%;">
-                    Vaciar carrito
-                </button>
-            </form>
+                <button class="btn-secondary w-full" type="submit">Vaciar carrito</button>
+              </form>
 
-            {{-- Seguir comprando --}}
-            <a href="{{ route('store.index') }}"
-               class="btn btn-outline"
-               style="margin-top: 0.5rem; display: block;">
-                Seguir comprando
-            </a>
-
-        </section>
-
+              <div class="text-xs text-zinc-500">
+                Retiro en local. Coordinamos por WhatsApp cuando esté listo.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     @endif
-
+  </div>
 @endsection

@@ -5,7 +5,112 @@
 @source '../**/*.blade.php';
 @source '../**/*.js';
 
-@theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+/* =========================================================
+   NicoReparaciones UI — Tailwind v4 (CSS-first)
+   - Minimalista, moderno, mobile-first
+   - Paleta basada en tu logo
+   ========================================================= */
+
+:root{
+  /* Brand (logo) */
+  --brand: 0 112 208;        /* #0070D0 */
+  --brand-700: 0 92 175;
+  --brand-50: 235 246 255;
+  --brand-100: 214 238 255;
+  --brand-900: 5 47 85;
+
+  --shadow-soft: 0 10px 30px rgba(2, 6, 23, .06);
+}
+
+@layer base{
+  html{ scroll-behavior:smooth; }
+  body{ @apply bg-zinc-50 text-zinc-900 antialiased; }
+  ::selection{ background: rgb(var(--brand)); color: #fff; }
+}
+
+/* Helpers (clases custom, NO usar @apply con estas dentro de otras clases) */
+@layer utilities{
+  .container-page{ @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8; }
+  .tap{ -webkit-tap-highlight-color: transparent; }
+  .shadow-soft{ box-shadow: var(--shadow-soft); }
+
+  .text-brand{ color: rgb(var(--brand)); }
+  .bg-brand{ background-color: rgb(var(--brand)); }
+  .bg-brand-soft{ background-color: rgb(var(--brand-50)); }
+}
+
+/* Componentes */
+@layer components{
+  /* Cards */
+  .card{
+    @apply bg-white rounded-2xl ring-1 ring-zinc-200;
+    box-shadow: var(--shadow-soft);
+  }
+  .card-header{ @apply px-4 sm:px-6 py-4 border-b border-zinc-100; }
+  .card-body{ @apply px-4 sm:px-6 py-4; }
+
+  /* Typography */
+  .page-title{ @apply text-2xl sm:text-3xl font-extrabold tracking-tight; }
+  .section-title{ @apply text-lg font-bold tracking-tight; }
+  .muted{ @apply text-sm text-zinc-600; }
+
+  /* Buttons */
+  .btn, .btn-primary, .btn-outline, .btn-ghost, .btn-danger{
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition active:scale-[0.99];
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .btn-primary{
+    color:#fff;
+    background-color: rgb(var(--brand));
+  }
+  .btn-primary:hover{ background-color: rgb(var(--brand-700)); }
+
+  .btn-outline{ @apply bg-white text-zinc-900 ring-1 ring-zinc-200 hover:bg-zinc-50; }
+  .btn-ghost{ @apply bg-transparent text-zinc-900 hover:bg-zinc-100; }
+  .btn-danger{ @apply bg-rose-600 text-white hover:bg-rose-500; }
+  .btn-disabled{ @apply opacity-50 pointer-events-none; }
+
+  /* Badges */
+  .badge, .badge-blue, .badge-green, .badge-red, .badge-amber, .badge-zinc{
+    @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset;
+  }
+  .badge-blue{
+    background: rgb(var(--brand-50));
+    color: rgb(var(--brand-900));
+    @apply ring-blue-200;
+  }
+  .badge-green{ @apply bg-emerald-50 text-emerald-700 ring-emerald-200; }
+  .badge-red{ @apply bg-rose-50 text-rose-700 ring-rose-200; }
+  .badge-amber{ @apply bg-amber-50 text-amber-800 ring-amber-200; }
+  .badge-zinc{ @apply bg-zinc-50 text-zinc-700 ring-zinc-200; }
+
+  /* Forms */
+  .label{ @apply block text-sm font-semibold text-zinc-800 mb-1; }
+  .input, .select, .textarea{
+    @apply w-full rounded-xl bg-white px-3 py-2 text-sm ring-1 ring-zinc-200 placeholder:text-zinc-400 focus:outline-none focus:ring-2;
+  }
+  .input:focus, .select:focus, .textarea:focus{
+    --tw-ring-color: rgb(var(--brand));
+  }
+  .textarea{ @apply min-h-[110px] py-2.5; }
+
+  /* Tables */
+  .table{ @apply w-full text-left text-sm; }
+  .th{ @apply px-3 py-2 font-semibold text-zinc-700 border-b border-zinc-100 whitespace-nowrap; }
+  .td{ @apply px-3 py-3 align-top border-b border-zinc-50; }
+  .row-hover{ @apply hover:bg-zinc-50 transition; }
+
+  /* Toast */
+  .toast{
+    @apply fixed bottom-4 left-1/2 -translate-x-1/2 z-[60] w-[calc(100%-2rem)] max-w-md;
+  }
+  .toast-card{
+    @apply bg-white rounded-2xl ring-1 ring-zinc-200 px-4 py-3 flex items-start gap-3;
+    box-shadow: var(--shadow-soft);
+  }
+}
+
+@layer base{
+  .link{ @apply font-semibold hover:underline; }
 }

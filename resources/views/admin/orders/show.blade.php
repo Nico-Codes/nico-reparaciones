@@ -4,111 +4,183 @@
 
 @section('content')
 @php
-    $customerName = $order->pickup_name ?: trim(($order->user->name ?? '').' '.($order->user->last_name ?? ''));
-    $customerPhone = $order->pickup_phone ?: ($order->user->phone ?? '');
-    $itemsSummary = $order->items->map(fn($i) => $i->quantity.'x '.$i->product_name)->implode(', ');
-    $notesPrefill = "Generado desde pedido #{$order->id} ({$order->created_at->format('d/m/Y H:i')}).";
-    if ($itemsSummary) {
-        $notesPrefill .= " Productos: {$itemsSummary}.";
-    }
+  $status = (string)($order->status ?? '');
+  $badge = match ($status) {
+    'pendiente' => 'badge-amber',
+    'confirmado', 'preparando' => 'badge-blue',
+    'listo_retirar', 'entregado' => 'badge-green',
+    'cancelado' => 'badge-red',
+    default => 'badge-zinc',
+  };
 
-    $repairCreateUrl = route('admin.repairs.create', [
-        'user_email' => $order->user->email ?? '',
-        'customer_name' => $customerName,
-        'customer_phone' => $customerPhone,
-        'notes' => $notesPrefill,
-    ]);
+  $statusLabel = match ($status) {
+    'pendiente' => 'Pendiente',
+    'confirmado' => 'Confirmado',
+    'preparando' => 'Preparando',
+    'listo_retirar' => 'Listo para retirar',
+    'entregado' => 'Entregado',
+    'cancelado' => 'Cancelado',
+    default => ucfirst(str_replace('_',' ', $status)),
+  };
+
+  $pay = (string)($order->payment_method ?? 'local');
+  $payLabel = match ($pay) {
+    'mercado_pago' => 'Mercado Pago',
+    'transferencia' => 'Transferencia',
+    default => 'Pago en el local',
+  };
+
+  $customerName = $order->pickup_name ?: trim(($order->user->name ?? '').' '.($order->user->last_name ?? ''));
+  $customerPhone = $order->pickup_phone ?: ($order->user->phone ?? '');
+  $customerEmail = $order->user->email ?? '';
+
+  $items = $order->items ?? collect();
+
+  $itemsSummary = $items->map(fn($i) => ($i->quantity ?? 0).'x '.($i->product_name ?? 'Producto'))->implode(', ');
+  $notesPrefill = "Generado desde pedido #{$order->id} ({$order->created_at->format('d/m/Y H:i')}).";
+  if ($itemsSummary) $notesPrefill .= " Productos: {$itemsSummary}.";
+
+  $repairCreateUrl = route('admin.repairs.create', [
+    'user_email' => $customerEmail,
+    'customer_name' => $customerName,
+    'customer_phone' => $customerPhone,
+    'notes' => $notesPrefill,
+  ]);
 @endphp
 
-<div style="display:flex; flex-direction:column; gap:14px;">
-    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
-        <h1 style="margin:0;">Pedido #{{ $order->id }}</h1>
-
-        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-            <a href="{{ route('admin.orders.index') }}" style="text-decoration:none; padding:10px 12px; border:1px solid #eee; border-radius:12px;">
-                ← Volver a pedidos
-            </a>
-
-            <a href="{{ $repairCreateUrl }}" style="text-decoration:none; padding:10px 12px; border:1px solid #111; border-radius:12px;">
-                🛠️ Crear reparación para este cliente
-            </a>
-        </div>
+  <div class="flex items-start justify-between gap-3">
+    <div>
+      <h1 class="page-title">Pedido #{{ $order->id }}</h1>
+      <p class="muted mt-1">{{ $order->created_at->format('d/m/Y H:i') }} · <span class="{{ $badge }}">{{ $statusLabel }}</span></p>
     </div>
 
-    <div style="padding:12px; border:1px solid #eee; border-radius:12px;">
-        <strong>Estado actual:</strong> {{ ucfirst(str_replace('_', ' ', $order->status)) }}
+    <div class="flex flex-col sm:flex-row gap-2">
+      <a class="btn-outline" href="{{ route('admin.orders.index') }}">Volver</a>
+      <a class="btn-primary" href="{{ $repairCreateUrl }}">Crear reparación</a>
+    </div>
+  </div>
+
+  <div class="mt-6 grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6">
+    {{-- Items --}}
+    <div class="card">
+      <div class="card-header flex items-center justify-between gap-3">
+        <div class="section-title">Productos</div>
+        <div class="muted">{{ $items->count() }} item{{ $items->count() === 1 ? '' : 's' }}</div>
+      </div>
+
+      <div class="card-body">
+        @if($items->isEmpty())
+          <div class="muted">No hay items asociados a este pedido.</div>
+        @else
+          <div class="overflow-x-auto">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th class="th">Producto</th>
+                  <th class="th">Precio</th>
+                  <th class="th">Cant.</th>
+                  <th class="th text-right">Subtotal</th>
+                </tr>
+              </thead>
+              <tbody>
+                @foreach($items as $item)
+                  @php
+                    $p = (float)($item->price ?? 0);
+                    $q = (int)($item->quantity ?? 0);
+                    $sub = $p * $q;
+                  @endphp
+                  <tr class="row-hover">
+                    <td class="td">
+                      <div class="font-semibold">{{ $item->product_name ?? 'Producto' }}</div>
+                    </td>
+                    <td class="td">${{ number_format($p, 0, ',', '.') }}</td>
+                    <td class="td">{{ $q }}</td>
+                    <td class="td text-right font-semibold">${{ number_format($sub, 0, ',', '.') }}</td>
+                  </tr>
+                @endforeach
+              </tbody>
+            </table>
+          </div>
+        @endif
+
+        @if(!empty($order->notes))
+          <div class="mt-4 rounded-2xl bg-zinc-50 ring-1 ring-zinc-200 p-3">
+            <div class="font-bold">Notas del cliente</div>
+            <div class="muted mt-1">{{ $order->notes }}</div>
+          </div>
+        @endif
+      </div>
     </div>
 
-    @if(session('success'))
-        <div style="padding:12px; border:1px solid #d1fae5; background:#ecfdf5; border-radius:12px;">
-            {{ session('success') }}
-        </div>
-    @endif
-
-    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:12px;">
-        <div style="padding:12px; border:1px solid #eee; border-radius:12px;">
-            <h3 style="margin:0 0 8px;">Cliente</h3>
-
-            <div><strong>Nombre:</strong> {{ $order->user->name }} {{ $order->user->last_name }}</div>
-            <div><strong>Email:</strong> {{ $order->user->email }}</div>
-
-            @if($order->user->phone)
-                <div><strong>Teléfono:</strong> {{ $order->user->phone }}</div>
-            @endif
+    {{-- Sidebar --}}
+    <div class="space-y-4">
+      {{-- Resumen --}}
+      <div class="card">
+        <div class="card-header">
+          <div class="section-title">Resumen</div>
+          <div class="muted">Cliente / pago / total</div>
         </div>
 
-        <div style="padding:12px; border:1px solid #eee; border-radius:12px;">
-            <h3 style="margin:0 0 8px;">Pedido</h3>
+        <div class="card-body space-y-3">
+          <div class="rounded-2xl bg-zinc-50 ring-1 ring-zinc-200 p-3">
+            <div class="muted">Cliente</div>
+            <div class="font-bold">{{ $customerName ?: '—' }}</div>
+            @if($customerPhone)<div class="muted mt-1">📞 {{ $customerPhone }}</div>@endif
+            @if($customerEmail)<div class="muted">✉️ {{ $customerEmail }}</div>@endif
+          </div>
 
-            <div><strong>Fecha:</strong> {{ $order->created_at->format('d/m/Y H:i') }}</div>
-            <div><strong>Total:</strong> ${{ number_format($order->total, 0, ',', '.') }}</div>
-            <div><strong>Forma de pago:</strong> {{ ucfirst(str_replace('_', ' ', $order->payment_method)) }}</div>
+          <div class="flex items-center justify-between">
+            <div class="muted">Pago</div>
+            <div class="font-semibold">{{ $payLabel }}</div>
+          </div>
 
-            @if($order->pickup_name)
-                <div><strong>Retira:</strong> {{ $order->pickup_name }}</div>
-            @endif
+          <div class="flex items-center justify-between">
+            <div class="muted">Estado</div>
+            <span class="{{ $badge }}">{{ $statusLabel }}</span>
+          </div>
 
-            @if($order->pickup_phone)
-                <div><strong>Teléfono de retiro:</strong> {{ $order->pickup_phone }}</div>
-            @endif
+          <div class="h-px bg-zinc-100"></div>
 
-            @if($order->notes)
-                <div style="margin-top:8px;"><strong>Notas cliente:</strong><br>{{ $order->notes }}</div>
-            @endif
+          <div class="flex items-center justify-between">
+            <div class="muted">Total</div>
+            <div class="text-2xl font-extrabold">${{ number_format($order->total ?? 0, 0, ',', '.') }}</div>
+          </div>
+
+          <a class="btn-primary w-full" href="{{ $repairCreateUrl }}">Crear reparación desde este pedido</a>
         </div>
-    </div>
+      </div>
 
-    <div style="padding:12px; border:1px solid #eee; border-radius:12px;">
-        <h3 style="margin:0 0 10px;">Productos del pedido</h3>
+      {{-- Cambiar estado --}}
+      <div class="card">
+        <div class="card-header">
+          <div class="section-title">Cambiar estado</div>
+          <div class="muted">Actualizá y guardá</div>
+        </div>
 
-        @foreach($order->items as $item)
-            <div style="padding:10px; border:1px solid #f1f1f1; border-radius:12px; margin-bottom:10px;">
-                <div style="font-weight:700;">{{ $item->product_name }}</div>
-                <div style="opacity:.85;">x {{ $item->quantity }} · ${{ number_format($item->price, 0, ',', '.') }} c/u</div>
-                <div style="margin-top:6px;"><strong>Subtotal:</strong> ${{ number_format($item->subtotal, 0, ',', '.') }}</div>
-            </div>
-        @endforeach
-    </div>
-
-    <div style="padding:12px; border:1px solid #eee; border-radius:12px;">
-        <h3 style="margin:0 0 10px;">Actualizar estado</h3>
-
-        <form method="POST" action="{{ route('admin.orders.updateStatus', $order) }}" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+        <div class="card-body">
+          <form action="{{ route('admin.orders.updateStatus', $order->id) }}" method="POST" class="space-y-3">
             @csrf
 
-            <select name="status" style="padding:10px; border-radius:12px; border:1px solid #eee; min-width:220px;">
-                <option value="pendiente" {{ $order->status === 'pendiente' ? 'selected' : '' }}>Pendiente</option>
-                <option value="confirmado" {{ $order->status === 'confirmado' ? 'selected' : '' }}>Confirmado</option>
-                <option value="preparando" {{ $order->status === 'preparando' ? 'selected' : '' }}>Preparando</option>
-                <option value="listo_retirar" {{ $order->status === 'listo_retirar' ? 'selected' : '' }}>Listo para retirar</option>
-                <option value="entregado" {{ $order->status === 'entregado' ? 'selected' : '' }}>Entregado</option>
-                <option value="cancelado" {{ $order->status === 'cancelado' ? 'selected' : '' }}>Cancelado</option>
-            </select>
+            <div>
+              <label class="label" for="status">Estado</label>
+              <select id="status" name="status" class="select">
+                <option value="pendiente" {{ $status === 'pendiente' ? 'selected' : '' }}>Pendiente</option>
+                <option value="confirmado" {{ $status === 'confirmado' ? 'selected' : '' }}>Confirmado</option>
+                <option value="preparando" {{ $status === 'preparando' ? 'selected' : '' }}>Preparando</option>
+                <option value="listo_retirar" {{ $status === 'listo_retirar' ? 'selected' : '' }}>Listo para retirar</option>
+                <option value="entregado" {{ $status === 'entregado' ? 'selected' : '' }}>Entregado</option>
+                <option value="cancelado" {{ $status === 'cancelado' ? 'selected' : '' }}>Cancelado</option>
+              </select>
+            </div>
 
-            <button type="submit" style="padding:10px 14px; border-radius:12px; border:1px solid #111; background:#111; color:#fff; cursor:pointer;">
-                Guardar estado
-            </button>
-        </form>
+            <button type="submit" class="btn-primary w-full">Guardar estado</button>
+          </form>
+
+          <div class="muted mt-3">
+            Tip: si el pedido deriva en una reparación, usá “Crear reparación” para prellenar datos.
+          </div>
+        </div>
+      </div>
     </div>
-</div>
+  </div>
 @endsection

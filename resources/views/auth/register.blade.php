@@ -3,81 +3,92 @@
 @section('title', 'Crear cuenta - NicoReparaciones')
 
 @section('content')
-    <section class="auth-container">
-        <h1 class="hero-title">Crear cuenta</h1>
-        <p class="hero-text">Registrate para hacer pedidos y seguir tus reparaciones.</p>
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+    {{-- Info --}}
+    <div class="card">
+      <div class="card-body">
+        <h1 class="page-title">Crear cuenta</h1>
+        <p class="muted mt-2">
+          Con tu cuenta vas a poder ver tus pedidos y tus reparaciones en un solo lugar.
+        </p>
 
+        <div class="mt-5 rounded-2xl bg-brand-soft ring-1 ring-blue-200 p-4">
+          <div class="font-bold">💡 Tip</div>
+          <div class="muted mt-1">
+            Si no querés crear cuenta, podés usar la consulta por código desde
+            <a class="link text-brand" href="{{ route('repairs.lookup') }}">Consultar reparación</a>.
+          </div>
+        </div>
+
+        <div class="mt-5 text-sm text-zinc-600">
+          ¿Ya tenés cuenta?
+          <a class="link text-brand" href="{{ route('login') }}">Ingresá acá</a>.
+        </div>
+      </div>
+    </div>
+
+    {{-- Form --}}
+    <div class="card">
+      <div class="card-header">
+        <div class="section-title">Registro</div>
+        <div class="muted">Completa tus datos</div>
+      </div>
+
+      <div class="card-body">
         @if($errors->any())
-            <div class="alert-error">
-                <ul>
-                    @foreach($errors->all() as $error)
-                        <li>- {{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
+          <div class="rounded-2xl bg-rose-50 ring-1 ring-rose-200 p-4 mb-4">
+            <div class="font-bold text-rose-800">Revisá estos datos:</div>
+            <ul class="mt-2 list-disc pl-5 text-sm text-rose-800 space-y-1">
+              @foreach($errors->all() as $error)
+                <li>{{ $error }}</li>
+              @endforeach
+            </ul>
+          </div>
         @endif
 
-        <form action="{{ route('register.post') }}" method="POST" class="auth-form">
-            @csrf
+        <form action="{{ route('register.post') }}" method="POST" class="space-y-4">
+          @csrf
 
-            <label for="name">Nombre</label>
-            <input
-                type="text"
-                id="name"
-                name="name"
-                value="{{ old('name') }}"
-                required
-            >
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="label" for="name">Nombre</label>
+              <input id="name" name="name" class="input" value="{{ old('name') }}" required placeholder="Nico" />
+            </div>
+            <div>
+              <label class="label" for="last_name">Apellido (opcional)</label>
+              <input id="last_name" name="last_name" class="input" value="{{ old('last_name') }}" placeholder="Machado" />
+            </div>
+          </div>
 
-            <label for="last_name">Apellido (opcional)</label>
-            <input
-                type="text"
-                id="last_name"
-                name="last_name"
-                value="{{ old('last_name') }}"
-            >
+          <div>
+            <label class="label" for="phone">Teléfono (opcional)</label>
+            <input id="phone" name="phone" class="input" value="{{ old('phone') }}" placeholder="341..." />
+          </div>
 
-            <label for="phone">WhatsApp / Teléfono (opcional)</label>
-            <input
-                type="text"
-                id="phone"
-                name="phone"
-                value="{{ old('phone') }}"
-            >
+          <div>
+            <label class="label" for="email">Correo</label>
+            <input id="email" name="email" type="email" class="input" value="{{ old('email') }}" required placeholder="tu@email.com" />
+          </div>
 
-            <label for="email">Correo electrónico</label>
-            <input
-                type="email"
-                id="email"
-                name="email"
-                value="{{ old('email') }}"
-                required
-            >
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="label" for="password">Contraseña</label>
+              <input id="password" name="password" type="password" class="input" required placeholder="mínimo 6 caracteres" />
+            </div>
+            <div>
+              <label class="label" for="password_confirmation">Confirmar</label>
+              <input id="password_confirmation" name="password_confirmation" type="password" class="input" required placeholder="repetí la contraseña" />
+            </div>
+          </div>
 
-            <label for="password">Contraseña</label>
-            <input
-                type="password"
-                id="password"
-                name="password"
-                required
-            >
+          <button type="submit" class="btn-primary w-full">Crear cuenta</button>
 
-            <label for="password_confirmation">Repetir contraseña</label>
-            <input
-                type="password"
-                id="password_confirmation"
-                name="password_confirmation"
-                required
-            >
-
-            <button type="submit" class="btn" style="margin-top: 1rem;">
-                Crear cuenta
-            </button>
-        </form>
-
-        <p class="hero-text" style="margin-top: 1rem;">
+          <div class="text-sm text-zinc-600">
             ¿Ya tenés cuenta?
-            <a href="{{ route('login') }}">Iniciá sesión acá</a>.
-        </p>
-    </section>
+            <a class="link text-brand" href="{{ route('login') }}">Ingresá</a>.
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
 @endsection
