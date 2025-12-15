@@ -18,6 +18,15 @@
   };
 
   $label = fn(string $s) => ucfirst(str_replace('_',' ',$s));
+
+  $payLabel = function($m) {
+    return match((string)$m) {
+      'local' => 'Pago en el local',
+      'mercado_pago' => 'Mercado Pago',
+      'transferencia' => 'Transferencia',
+      default => $m ?: '—',
+    };
+  };
 @endphp
 
 @section('content')
@@ -52,7 +61,7 @@
             @foreach($order->items as $item)
               <tr class="border-b border-zinc-50">
                 <td class="py-3 font-bold">{{ $item->product_name }}</td>
-                <td class="py-3">{{ $fmt($item->unit_price) }}</td>
+                <td class="py-3">{{ $fmt($item->price) }}</td>
                 <td class="py-3">{{ $item->quantity }}</td>
                 <td class="py-3 text-right font-black">{{ $fmt($item->subtotal) }}</td>
               </tr>
@@ -86,7 +95,7 @@
 
         <div>
           <div class="muted">Pago</div>
-          <div class="font-black">{{ $order->payment_method }}</div>
+          <div class="font-black">{{ $payLabel($order->payment_method) }}</div>
         </div>
 
         @if($order->notes)

@@ -1,35 +1,66 @@
 @extends('layouts.app')
 
-@section('title', 'Consultar reparación')
+@section('title', 'Resultado reparación')
+
+@php
+  $badge = function(string $s) {
+    return match($s) {
+      'received' => 'badge-sky',
+      'diagnosing' => 'badge-indigo',
+      'waiting_approval' => 'badge-amber',
+      'repairing' => 'badge-indigo',
+      'ready_pickup' => 'badge-emerald',
+      'delivered' => 'badge-zinc',
+      'cancelled' => 'badge-rose',
+      default => 'badge-zinc',
+    };
+  };
+@endphp
 
 @section('content')
-  <div class="max-w-md mx-auto">
+  <div class="max-w-2xl mx-auto">
     <div class="page-head">
-      <div class="page-title">Consultar reparación</div>
-      <div class="page-subtitle">Ingresá el código que te dimos y tu teléfono.</div>
+      <div class="page-title">Resultado</div>
+      <div class="page-subtitle">Estado actual de tu reparación.</div>
     </div>
 
     <div class="card">
       <div class="card-body">
-        <form method="POST" action="{{ route('repairs.lookup') }}" class="grid gap-4">
-          @csrf
-
+        <div class="flex items-start justify-between gap-3">
           <div>
-            <label for="code">Código</label>
-            <input id="code" name="code" value="{{ old('code') }}" required>
+            <div class="font-black text-lg">
+              {{ $repair->device_brand }} {{ $repair->device_model }}
+            </div>
+            <div class="muted mt-1">
+              Código: <span class="font-black text-zinc-900">{{ $repair->code }}</span>
+            </div>
           </div>
 
+          <span class="{{ $badge($repair->status) }}">
+            {{ \App\Models\Repair::STATUSES[$repair->status] ?? $repair->status }}
+          </span>
+        </div>
+
+        <hr class="my-4">
+
+        <div class="grid gap-3">
           <div>
-            <label for="phone">Teléfono</label>
-            <input id="phone" name="phone" value="{{ old('phone') }}" required>
+            <div class="muted">Falla reportada</div>
+            <div class="text-sm text-zinc-800">{{ $repair->issue_reported }}</div>
           </div>
 
-          <button class="btn-primary w-full">Buscar</button>
+          @if($repair->diagnosis)
+            <div>
+              <div class="muted">Diagnóstico</div>
+              <div class="text-sm text-zinc-800">{{ $repair->diagnosis }}</div>
+            </div>
+          @endif
+        </div>
 
-          <div class="muted text-center">
-            Tip: escribí el teléfono igual al que dejaste al ingresar el equipo.
-          </div>
-        </form>
+        <div class="mt-5 flex flex-col sm:flex-row gap-2">
+          <a href="{{ route('repairs.lookup') }}" class="btn-outline w-full sm:w-auto">Volver</a>
+          <a href="{{ route('store.index') }}" class="btn-primary w-full sm:w-auto">Ir a la tienda</a>
+        </div>
       </div>
     </div>
   </div>
