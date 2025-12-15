@@ -1,111 +1,92 @@
 @extends('layouts.app')
 
-@section('title', 'Admin - Reparaciones')
+@section('title', 'Admin — Reparaciones')
 
 @section('content')
 @php
-  $q = request()->query('q', '');
-  $current = request()->query('status', '');
+  $money = fn($n) => '$ ' . number_format((float)$n, 0, ',', '.');
 
-  // Ajustá/extendé estos estados si en tu modelo tenés otros.
-  $statuses = [
-    '' => 'Todas',
-    'received' => 'Recibida',
-    'diagnosing' => 'Diagnosticando',
-    'waiting_approval' => 'Esperando aprobación',
-    'repairing' => 'Reparando',
-    'ready_pickup' => 'Listo para retirar',
-    'delivered' => 'Entregada',
-    'cancelled' => 'Cancelada',
-  ];
-
-  $badgeFor = function ($status) {
-    return match ((string)$status) {
-      'received' => 'badge-blue',
-      'diagnosing', 'waiting_approval' => 'badge-amber',
-      'repairing' => 'badge-blue',
-      'ready_pickup', 'delivered' => 'badge-green',
-      'cancelled' => 'badge-red',
-      default => 'badge-zinc',
-    };
+  $statusBadge = fn($s) => match($s) {
+    'received' => 'badge badge-sky',
+    'diagnosing' => 'badge badge-amber',
+    'waiting_approval' => 'badge badge-purple',
+    'repairing' => 'badge badge-amber',
+    'ready_pickup' => 'badge badge-emerald',
+    'delivered' => 'badge bg-zinc-900 text-white ring-zinc-900/10',
+    'cancelled' => 'badge badge-rose',
+    default => 'badge badge-zinc',
   };
 
-  $labelFor = function ($status) use ($statuses) {
-    return $statuses[$status] ?? ucfirst(str_replace('_',' ', (string)$status));
-  };
+  $waBadge = fn($ok) => $ok ? 'badge badge-emerald' : 'badge badge-amber';
 
-  $money = function ($n) {
-    return '$' . number_format((float)($n ?? 0), 0, ',', '.');
-  };
-
-  $payBadge = function ($final, $paid) {
-    $final = (float)($final ?? 0);
-    $paid  = (float)($paid ?? 0);
-
-    if ($final <= 0) return ['badge-zinc', 'Sin precio'];
-    if ($paid >= $final) return ['badge-green', 'Pagado'];
-    if ($paid > 0) return ['badge-amber', 'Parcial'];
-    return ['badge-red', 'Debe'];
-  };
+  $activeStatus = (string)($status ?? '');
+  $activeWa = (string)($wa ?? '');
+  $qv = (string)($q ?? '');
 @endphp
 
-  <div class="flex items-start justify-between gap-3">
+<div class="container-page py-6">
+  <div class="flex items-start justify-between gap-4 flex-wrap">
     <div>
       <h1 class="page-title">Reparaciones</h1>
-      <p class="muted mt-1">Operación del taller: estados, pagos, impresión y WhatsApp.</p>
+      <p class="page-subtitle">Listado, filtros rápidos, WhatsApp y acciones.</p>
     </div>
 
-    <div class="flex flex-col sm:flex-row gap-2">
-      @if(\Illuminate\Support\Facades\Route::has('admin.repairs.create'))
-        <a class="btn-primary" href="{{ route('admin.repairs.create') }}">+ Nueva reparación</a>
-      @endif
-      <a class="btn-outline" href="{{ route('admin.dashboard') }}">Dashboard</a>
+    <div class="flex gap-2 flex-wrap">
+      <a href="{{ route('admin.repairs.create') }}" class="btn-primary">+ Nueva reparación</a>
+      <a href="{{ route('admin.dashboard') }}" class="btn-outline">Volver al panel</a>
     </div>
   </div>
 
+  @if(session('success'))
+    <div class="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+      {{ session('success') }}
+    </div>
+  @endif
+
   {{-- Filtros --}}
-  <div class="mt-4 card">
+  <div class="mt-6 card">
     <div class="card-body">
-      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-        <div class="section-title">Búsqueda y filtros</div>
-
-        <form method="GET" action="{{ route('admin.repairs.index') }}" class="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
-          <input
-            name="q"
-            value="{{ $q }}"
-            class="input sm:w-[320px]"
-            placeholder="Buscar: código, nombre, teléfono, marca, modelo…"
-          />
-
-          <select name="status" class="select sm:w-[220px]">
-            @foreach($statuses as $key => $label)
-              <option value="{{ $key }}" {{ $current === $key ? 'selected' : '' }}>{{ $label }}</option>
+      <form method="GET" action="{{ route('admin.repairs.index') }}" class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+        <div class="md:col-span-3">
+          <label class="label">Estado</label>
+          <select name="status" class="select">
+            <option value="">Todos</option>
+            @foreach($statuses as $k => $label)
+              <option value="{{ $k }}" {{ $activeStatus === $k ? 'selected' : '' }}>{{ $label }}</option>
             @endforeach
           </select>
+        </div>
 
-          <button class="btn-primary" type="submit">Aplicar</button>
+        <div class="md:col-span-3">
+          <label class="label">WhatsApp</label>
+          <select name="wa" class="select">
+            <option value="">Todos</option>
+            <option value="pending" {{ $activeWa === 'pending' ? 'selected' : '' }}>🟡 Pendiente</option>
+            <option value="sent" {{ $activeWa === 'sent' ? 'selected' : '' }}>✅ Avisado</option>
+          </select>
+        </div>
 
-          @if($q || $current)
-            <a class="btn-ghost" href="{{ route('admin.repairs.index') }}">Limpiar</a>
-          @endif
-        </form>
-      </div>
+        <div class="md:col-span-4">
+          <label class="label">Buscar</label>
+          <input class="input" type="text" name="q" value="{{ $qv }}" placeholder="Código, cliente o teléfono">
+        </div>
 
-      {{-- Chips (rápido en mobile) --}}
-      <div class="mt-3 flex gap-2 overflow-x-auto pb-1 tap">
-        @foreach($statuses as $key => $label)
-          @php
-            $active = ($current === $key) || (!$current && $key === '');
-            $params = array_filter([
-              'status' => $key ?: null,
-              'q' => $q ?: null,
-            ], fn($v) => !is_null($v) && $v !== '');
-          @endphp
-          <a
-            href="{{ $key === '' ? route('admin.repairs.index', ['q' => $q]) : route('admin.repairs.index', $params) }}"
-            class="badge-zinc whitespace-nowrap {{ $active ? 'ring-2' : '' }}"
-            style="{{ $active ? 'border-color: rgb(var(--brand)); ring-color: rgb(var(--brand));' : '' }}"
-          >
+        <div class="md:col-span-2 flex gap-2">
+          <button class="btn-primary flex-1" type="submit">Filtrar</button>
+          <a class="btn-outline flex-1" href="{{ route('admin.repairs.index') }}">Limpiar</a>
+        </div>
+      </form>
+
+      {{-- Chips de estado (rápido) --}}
+      <div class="mt-4 flex flex-wrap gap-2">
+        <a href="{{ route('admin.repairs.index', array_filter(['wa'=>$activeWa ?: null, 'q'=>$qv ?: null])) }}"
+           class="{{ $activeStatus==='' ? 'btn-primary' : 'btn-outline' }}">
+          Todos
+        </a>
+
+        @foreach($statuses as $k => $label)
+          <a href="{{ route('admin.repairs.index', array_filter(['status'=>$k, 'wa'=>$activeWa ?: null, 'q'=>$qv ?: null])) }}"
+             class="{{ $activeStatus===$k ? 'btn-primary' : 'btn-outline' }}">
             {{ $label }}
           </a>
         @endforeach
@@ -113,73 +94,89 @@
     </div>
   </div>
 
-  {{-- Lista --}}
   @if($repairs->isEmpty())
     <div class="mt-6 card">
-      <div class="card-body">
-        <div class="font-bold text-lg">No hay reparaciones</div>
-        <div class="muted mt-1">Probá con otro filtro o cargá una nueva reparación.</div>
-        @if(\Illuminate\Support\Facades\Route::has('admin.repairs.create'))
-          <div class="mt-4">
-            <a class="btn-primary" href="{{ route('admin.repairs.create') }}">+ Crear reparación</a>
-          </div>
-        @endif
+      <div class="card-body text-sm text-zinc-600">
+        No hay reparaciones para los filtros seleccionados.
       </div>
     </div>
   @else
     {{-- Mobile cards --}}
     <div class="mt-6 grid grid-cols-1 md:hidden gap-3">
-      @foreach($repairs as $repair)
+      @foreach($repairs as $r)
         @php
-          [$pb, $pl] = $payBadge($repair->final_price, $repair->paid_amount);
-          $customer = $repair->customer_name ?? '—';
-          $phone = $repair->customer_phone ?? '';
+          $waOk = !empty($r->wa_notified_current);
+          $waAt = $r->wa_notified_at ? \Illuminate\Support\Carbon::parse($r->wa_notified_at)->format('d/m/Y H:i') : null;
+
+          $canWa = !empty($r->wa_url) && !empty($r->wa_log_url);
+          $showWaBtn = $canWa && !$waOk;
+
+          $device = trim(($r->device_brand ?? '').' '.($r->device_model ?? ''));
+          $code = $r->code ?? ('#'.$r->id);
         @endphp
 
         <div class="card">
           <div class="card-body">
             <div class="flex items-start justify-between gap-3">
-              <div>
-                <div class="font-extrabold tracking-tight">
-                  {{ $repair->code ?? ('#'.$repair->id) }}
+              <div class="min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <div class="text-sm font-extrabold text-zinc-900">{{ $code }}</div>
+                  <span class="{{ $statusBadge($r->status) }}">{{ $statuses[$r->status] ?? $r->status }}</span>
                 </div>
-                <div class="muted mt-1">
-                  {{ $customer }} @if($phone)· {{ $phone }}@endif
+
+                <div class="mt-2 text-sm text-zinc-800">
+                  <span class="font-semibold">{{ $r->customer_name }}</span>
+                  <span class="text-zinc-500">· {{ $r->customer_phone }}</span>
+                </div>
+
+                <div class="mt-1 text-xs text-zinc-500">
+                  {{ $device ?: '—' }}
                 </div>
               </div>
 
-              <div class="flex flex-col items-end gap-1">
-                <span class="{{ $badgeFor($repair->status) }}">{{ $labelFor($repair->status) }}</span>
-                <span class="{{ $pb }}">{{ $pl }}</span>
+              <div class="text-right">
+                <div class="text-xs text-zinc-500">Final</div>
+                <div class="text-base font-extrabold text-zinc-900">
+                  {{ $r->final_price !== null ? $money($r->final_price) : '—' }}
+                </div>
+                <div class="mt-1 text-xs text-zinc-500">Saldo: {{ $money($r->balance_due ?? 0) }}</div>
               </div>
             </div>
 
-            <div class="mt-3 text-sm text-zinc-700">
-              <div class="font-semibold">
-                {{ $repair->device_brand ?? 'Equipo' }} {{ $repair->device_model ?? '' }}
-              </div>
-              <div class="muted mt-1">
-                Problema: {{ \Illuminate\Support\Str::limit($repair->issue_reported ?? '—', 70) }}
-              </div>
+            <div class="mt-3 flex items-center justify-between gap-2">
+              <span id="wa-pill-{{ $r->id }}" class="{{ $waBadge($waOk) }}">
+                {{ $waOk ? ('✅ Avisado'.($waAt ? ' · '.$waAt : '')) : '🟡 WA Pendiente' }}
+              </span>
+
+              @if($r->in_warranty ?? false)
+                <span class="badge badge-emerald">En garantía</span>
+              @elseif(!empty($r->warranty_expires_at))
+                <span class="badge badge-rose">Garantía vencida</span>
+              @endif
             </div>
 
-            <div class="mt-4 flex items-end justify-between gap-3">
-              <div>
-                <div class="muted">Precio</div>
-                <div class="text-xl font-extrabold">{{ $money($repair->final_price) }}</div>
-              </div>
+            <div class="mt-4 grid grid-cols-2 gap-2">
+              @if($showWaBtn)
+                <a id="wa-btn-{{ $r->id }}"
+                   class="btn-outline"
+                   href="{{ $r->wa_url }}"
+                   target="_blank"
+                   rel="noopener"
+                   onclick="waQuickLog('{{ $r->id }}','{{ $r->wa_log_url }}')">
+                  💬 WhatsApp
+                </a>
+              @else
+                <button class="btn-outline opacity-60" type="button" disabled>
+                  {{ $waOk ? '✅ WhatsApp' : '— WhatsApp' }}
+                </button>
+              @endif
 
-              <div class="flex gap-2">
-                @if(\Illuminate\Support\Facades\Route::has('admin.repairs.show'))
-                  <a class="btn-primary" href="{{ route('admin.repairs.show', $repair->id) }}">Ver</a>
-                @endif
+              <a class="btn-primary" href="{{ route('admin.repairs.show', $r) }}">Ver</a>
 
-                @if(\Illuminate\Support\Facades\Route::has('admin.repairs.print'))
-                  <a class="btn-outline" href="{{ route('admin.repairs.print', $repair->id) }}">Imprimir</a>
-                @endif
-              </div>
+              <a class="btn-outline col-span-2" href="{{ route('admin.repairs.print', $r) }}" target="_blank" rel="noopener">
+                🖨️ Imprimir orden
+              </a>
             </div>
-
           </div>
         </div>
       @endforeach
@@ -187,79 +184,92 @@
 
     {{-- Desktop table --}}
     <div class="mt-6 hidden md:block card overflow-hidden">
-      <div class="card-header flex items-center justify-between">
-        <div class="section-title">Listado</div>
-        <div class="muted">{{ $repairs->count() }} en esta página</div>
-      </div>
-
       <div class="overflow-x-auto">
-        <table class="table">
-          <thead>
-            <tr>
-              <th class="th">Código</th>
-              <th class="th">Cliente</th>
-              <th class="th">Equipo</th>
-              <th class="th">Estado</th>
-              <th class="th">Pago</th>
-              <th class="th text-right">Precio</th>
-              <th class="th text-right">Acciones</th>
+        <table class="w-full text-sm">
+          <thead class="bg-zinc-50 border-b border-zinc-100">
+            <tr class="text-left">
+              <th class="px-4 py-3 font-semibold text-zinc-700">Código</th>
+              <th class="px-4 py-3 font-semibold text-zinc-700">Cliente</th>
+              <th class="px-4 py-3 font-semibold text-zinc-700">Equipo</th>
+              <th class="px-4 py-3 font-semibold text-zinc-700">Estado</th>
+              <th class="px-4 py-3 font-semibold text-zinc-700">WA</th>
+              <th class="px-4 py-3 font-semibold text-zinc-700 text-right">Final</th>
+              <th class="px-4 py-3 font-semibold text-zinc-700 text-right">Saldo</th>
+              <th class="px-4 py-3"></th>
             </tr>
           </thead>
-          <tbody>
-            @foreach($repairs as $repair)
+
+          <tbody class="divide-y divide-zinc-100">
+            @foreach($repairs as $r)
               @php
-                [$pb, $pl] = $payBadge($repair->final_price, $repair->paid_amount);
+                $waOk = !empty($r->wa_notified_current);
+                $waAt = $r->wa_notified_at ? \Illuminate\Support\Carbon::parse($r->wa_notified_at)->format('d/m H:i') : null;
+
+                $canWa = !empty($r->wa_url) && !empty($r->wa_log_url);
+                $showWaBtn = $canWa && !$waOk;
+
+                $device = trim(($r->device_brand ?? '').' '.($r->device_model ?? ''));
+                $code = $r->code ?? ('#'.$r->id);
               @endphp
 
-              <tr class="row-hover">
-                <td class="td">
-                  <div class="font-semibold">{{ $repair->code ?? ('#'.$repair->id) }}</div>
-                  <div class="muted">
-                    {{ optional($repair->received_at ?? $repair->created_at)->format('d/m/Y') }}
+              <tr class="hover:bg-zinc-50/70">
+                <td class="px-4 py-3">
+                  <div class="font-extrabold text-zinc-900">{{ $code }}</div>
+                  <div class="text-xs text-zinc-500">{{ $r->created_at?->format('d/m/Y H:i') ?? '—' }}</div>
+                </td>
+
+                <td class="px-4 py-3">
+                  <div class="font-semibold text-zinc-900">{{ $r->customer_name }}</div>
+                  <div class="text-xs text-zinc-500">{{ $r->customer_phone }}</div>
+                </td>
+
+                <td class="px-4 py-3">
+                  <div class="text-zinc-900">{{ $device ?: '—' }}</div>
+                  <div class="text-xs text-zinc-500 line-clamp-1">{{ $r->issue_reported }}</div>
+                </td>
+
+                <td class="px-4 py-3">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="{{ $statusBadge($r->status) }}">{{ $statuses[$r->status] ?? $r->status }}</span>
+                    @if($r->in_warranty ?? false)
+                      <span class="badge badge-emerald">Garantía</span>
+                    @elseif(!empty($r->warranty_expires_at))
+                      <span class="badge badge-rose">Vencida</span>
+                    @endif
                   </div>
                 </td>
 
-                <td class="td">
-                  <div class="font-semibold">{{ $repair->customer_name ?? '—' }}</div>
-                  @if(!empty($repair->customer_phone))
-                    <div class="muted">{{ $repair->customer_phone }}</div>
-                  @endif
-                </td>
-
-                <td class="td">
-                  <div class="font-semibold">
-                    {{ $repair->device_brand ?? 'Equipo' }} {{ $repair->device_model ?? '' }}
-                  </div>
-                  <div class="muted">
-                    {{ \Illuminate\Support\Str::limit($repair->issue_reported ?? '—', 50) }}
+                <td class="px-4 py-3">
+                  <div id="wa-pill-{{ $r->id }}" class="{{ $waBadge($waOk) }}">
+                    {{ $waOk ? ('✅ Avisado'.($waAt ? ' · '.$waAt : '')) : '🟡 Pendiente' }}
                   </div>
                 </td>
 
-                <td class="td">
-                  <span class="{{ $badgeFor($repair->status) }}">{{ $labelFor($repair->status) }}</span>
+                <td class="px-4 py-3 text-right font-extrabold text-zinc-900">
+                  {{ $r->final_price !== null ? $money($r->final_price) : '—' }}
                 </td>
 
-                <td class="td">
-                  <span class="{{ $pb }}">{{ $pl }}</span>
+                <td class="px-4 py-3 text-right font-semibold text-zinc-800">
+                  {{ $money($r->balance_due ?? 0) }}
                 </td>
 
-                <td class="td text-right font-extrabold">
-                  {{ $money($repair->final_price) }}
-                </td>
-
-                <td class="td text-right">
-                  <div class="flex items-center justify-end gap-2">
-                    @if(\Illuminate\Support\Facades\Route::has('admin.repairs.show'))
-                      <a class="btn-outline" href="{{ route('admin.repairs.show', $repair->id) }}">Ver</a>
+                <td class="px-4 py-3 text-right whitespace-nowrap">
+                  <div class="inline-flex items-center gap-2">
+                    @if($showWaBtn)
+                      <a id="wa-btn-{{ $r->id }}"
+                         class="btn-outline"
+                         href="{{ $r->wa_url }}"
+                         target="_blank"
+                         rel="noopener"
+                         onclick="waQuickLog('{{ $r->id }}','{{ $r->wa_log_url }}')">
+                        💬
+                      </a>
+                    @else
+                      <span class="btn-outline opacity-60 select-none" title="{{ $waOk ? 'Ya avisado' : 'No disponible' }}">—</span>
                     @endif
 
-                    @if(\Illuminate\Support\Facades\Route::has('admin.repairs.edit'))
-                      <a class="btn-ghost" href="{{ route('admin.repairs.edit', $repair->id) }}">Editar</a>
-                    @endif
-
-                    @if(\Illuminate\Support\Facades\Route::has('admin.repairs.print'))
-                      <a class="btn-ghost" href="{{ route('admin.repairs.print', $repair->id) }}">Imprimir</a>
-                    @endif
+                    <a class="btn-primary" href="{{ route('admin.repairs.show', $r) }}">Ver</a>
+                    <a class="btn-outline" href="{{ route('admin.repairs.print', $r) }}" target="_blank" rel="noopener">Imprimir</a>
                   </div>
                 </td>
               </tr>
@@ -267,10 +277,45 @@
           </tbody>
         </table>
       </div>
+    </div>
 
-      <div class="card-body">
-        {{ $repairs->appends(request()->query())->links() }}
-      </div>
+    <div class="mt-4">
+      {{ $repairs->links() }}
     </div>
   @endif
+</div>
+
+<script>
+  function waQuickLog(repairId, logUrl) {
+    const token = @json(csrf_token());
+
+    fetch(logUrl, {
+      method: 'POST',
+      headers: {
+        'X-CSRF-TOKEN': token,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ source: 'list_quick' }),
+      keepalive: true
+    })
+    .then(r => r.json().catch(() => null))
+    .then(data => {
+      if (!data || !data.ok) return;
+
+      const pill = document.getElementById('wa-pill-' + repairId);
+      if (pill) {
+        pill.className = 'badge badge-emerald';
+        pill.textContent = '✅ Avisado';
+      }
+
+      const btn = document.getElementById('wa-btn-' + repairId);
+      if (btn) {
+        btn.classList.add('opacity-60');
+        btn.setAttribute('aria-disabled', 'true');
+      }
+    })
+    .catch(() => {});
+  }
+</script>
 @endsection

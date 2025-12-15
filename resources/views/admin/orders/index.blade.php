@@ -1,174 +1,159 @@
 @extends('layouts.app')
 
-@section('title', 'Admin - Pedidos')
+@section('title', 'Admin — Pedidos')
 
 @section('content')
 @php
-  $current = request()->query('status');
+  $money = fn($n) => '$ ' . number_format((float)$n, 0, ',', '.');
 
-  $statuses = [
-    '' => 'Todos',
+  $statusLabel = fn($s) => match($s) {
     'pendiente' => 'Pendiente',
     'confirmado' => 'Confirmado',
     'preparando' => 'Preparando',
     'listo_retirar' => 'Listo para retirar',
     'entregado' => 'Entregado',
     'cancelado' => 'Cancelado',
+    default => ucfirst(str_replace('_', ' ', (string)$s)),
+  };
+
+  $statusBadge = fn($s) => match($s) {
+    'pendiente' => 'badge badge-amber',
+    'confirmado' => 'badge badge-sky',
+    'preparando' => 'badge badge-purple',
+    'listo_retirar' => 'badge badge-emerald',
+    'entregado' => 'badge bg-zinc-900 text-white ring-zinc-900/10',
+    'cancelado' => 'badge badge-rose',
+    default => 'badge badge-zinc',
+  };
+
+  $chips = [
+    '' => 'Todos',
+    'pendiente' => 'Pendientes',
+    'confirmado' => 'Confirmados',
+    'preparando' => 'Preparando',
+    'listo_retirar' => 'Listos retiro',
+    'entregado' => 'Entregados',
+    'cancelado' => 'Cancelados',
   ];
-
-  $badgeFor = function ($status) {
-    return match ((string)$status) {
-      'pendiente' => 'badge-amber',
-      'confirmado', 'preparando' => 'badge-blue',
-      'listo_retirar', 'entregado' => 'badge-green',
-      'cancelado' => 'badge-red',
-      default => 'badge-zinc',
-    };
-  };
-
-  $labelFor = function ($status) use ($statuses) {
-    return $statuses[$status] ?? ucfirst(str_replace('_',' ', (string)$status));
-  };
 @endphp
 
-  <div class="flex items-start justify-between gap-3">
+<div class="container-page py-6">
+  <div class="flex items-start justify-between gap-4">
     <div>
       <h1 class="page-title">Pedidos</h1>
-      <p class="muted mt-1">Listado general de pedidos (con filtros por estado).</p>
+      <p class="page-subtitle">Listado de pedidos de clientes y estados.</p>
     </div>
-
-    <a class="btn-outline" href="{{ route('store.index') }}">Ver sitio</a>
+    <a href="{{ route('admin.dashboard') }}" class="btn-outline">Volver al panel</a>
   </div>
 
-  {{-- Filtros --}}
-  <div class="mt-4 card">
+  @if(session('success'))
+    <div class="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+      {{ session('success') }}
+    </div>
+  @endif
+
+  {{-- filtros --}}
+  <div class="mt-6 card">
     <div class="card-body">
       <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div class="section-title">Filtro por estado</div>
+        <div class="flex flex-wrap gap-2">
+          @foreach($chips as $key => $label)
+            @php $active = ((string)$currentStatus === (string)$key); @endphp
+            <a href="{{ route('admin.orders.index', $key ? ['status'=>$key] : []) }}"
+               class="{{ $active ? 'btn-primary' : 'btn-outline' }}">
+              {{ $label }}
+            </a>
+          @endforeach
+        </div>
 
         <form method="GET" action="{{ route('admin.orders.index') }}" class="flex items-center gap-2">
-          <select name="status" class="select w-[220px]">
-            @foreach($statuses as $key => $label)
-              <option value="{{ $key }}" {{ $current === $key ? 'selected' : '' }}>{{ $label }}</option>
-            @endforeach
+          <select name="status" class="select w-56" onchange="this.form.submit()">
+            <option value="">Todos</option>
+            <option value="pendiente" {{ $currentStatus === 'pendiente' ? 'selected' : '' }}>Pendiente</option>
+            <option value="confirmado" {{ $currentStatus === 'confirmado' ? 'selected' : '' }}>Confirmado</option>
+            <option value="preparando" {{ $currentStatus === 'preparando' ? 'selected' : '' }}>Preparando</option>
+            <option value="listo_retirar" {{ $currentStatus === 'listo_retirar' ? 'selected' : '' }}>Listo para retirar</option>
+            <option value="entregado" {{ $currentStatus === 'entregado' ? 'selected' : '' }}>Entregado</option>
+            <option value="cancelado" {{ $currentStatus === 'cancelado' ? 'selected' : '' }}>Cancelado</option>
           </select>
-          <button class="btn-primary" type="submit">Aplicar</button>
-
-          @if($current)
-            <a class="btn-ghost" href="{{ route('admin.orders.index') }}">Limpiar</a>
-          @endif
+          <noscript><button class="btn-primary" type="submit">Filtrar</button></noscript>
         </form>
-      </div>
-
-      {{-- Chips (rápido en mobile) --}}
-      <div class="mt-3 flex gap-2 overflow-x-auto pb-1 tap">
-        @foreach($statuses as $key => $label)
-          @php
-            $active = ($current === $key) || (!$current && $key === '');
-          @endphp
-          <a
-            href="{{ $key === '' ? route('admin.orders.index') : route('admin.orders.index', ['status' => $key]) }}"
-            class="badge-zinc whitespace-nowrap {{ $active ? 'ring-2' : '' }}"
-            style="{{ $active ? 'border-color: rgb(var(--brand)); ring-color: rgb(var(--brand));' : '' }}"
-          >
-            {{ $label }}
-          </a>
-        @endforeach
       </div>
     </div>
   </div>
 
-  {{-- Lista --}}
   @if($orders->isEmpty())
     <div class="mt-6 card">
-      <div class="card-body">
-        <div class="font-bold text-lg">No hay pedidos</div>
-        <div class="muted mt-1">
-          Probá cambiando el filtro o esperá a que entren nuevos pedidos.
-        </div>
-      </div>
+      <div class="card-body text-sm text-zinc-600">No hay pedidos para mostrar.</div>
     </div>
   @else
-    {{-- Mobile cards --}}
+    {{-- mobile cards --}}
     <div class="mt-6 grid grid-cols-1 md:hidden gap-3">
       @foreach($orders as $order)
-        @php
-          $customer = $order->pickup_name
-            ?: trim(($order->user->name ?? '').' '.($order->user->last_name ?? ''));
-
-          $phone = $order->pickup_phone ?: ($order->user->phone ?? '');
-        @endphp
-
         <div class="card">
           <div class="card-body">
             <div class="flex items-start justify-between gap-3">
-              <div>
-                <div class="font-extrabold tracking-tight">Pedido #{{ $order->id }}</div>
-                <div class="muted mt-1">{{ $order->created_at->format('d/m/Y H:i') }}</div>
+              <div class="min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <div class="text-sm font-extrabold text-zinc-900">Pedido #{{ $order->id }}</div>
+                  <span class="{{ $statusBadge($order->status) }}">{{ $statusLabel($order->status) }}</span>
+                </div>
+
+                <div class="mt-2 text-xs text-zinc-500">
+                  {{ $order->created_at?->format('d/m/Y H:i') ?? '—' }}
+                </div>
+
+                <div class="mt-2 text-sm text-zinc-700">
+                  <span class="font-semibold">{{ $order->user->name ?? '—' }}</span>
+                  <span class="text-zinc-500">· {{ $order->user->email ?? '' }}</span>
+                </div>
               </div>
-              <span class="{{ $badgeFor($order->status) }}">{{ $labelFor($order->status) }}</span>
+
+              <div class="text-right">
+                <div class="text-xs text-zinc-500">Total</div>
+                <div class="text-base font-extrabold text-zinc-900">{{ $money($order->total) }}</div>
+              </div>
             </div>
 
-            <div class="mt-3 text-sm text-zinc-700">
-              <div><span class="font-semibold">Cliente:</span> {{ $customer ?: '—' }}</div>
-              @if($phone)<div><span class="font-semibold">Tel:</span> {{ $phone }}</div>@endif
-            </div>
-
-            <div class="mt-4 flex items-end justify-between gap-3">
-              <div>
-                <div class="muted">Total</div>
-                <div class="text-xl font-extrabold">${{ number_format($order->total ?? 0, 0, ',', '.') }}</div>
-              </div>
-              <a class="btn-primary" href="{{ route('admin.orders.show', $order->id) }}">Ver</a>
-            </div>
+            <a href="{{ route('admin.orders.show', $order->id) }}" class="btn-primary w-full mt-4">
+              Ver detalle
+            </a>
           </div>
         </div>
       @endforeach
     </div>
 
-    {{-- Desktop table --}}
+    {{-- desktop table --}}
     <div class="mt-6 hidden md:block card overflow-hidden">
-      <div class="card-header flex items-center justify-between">
-        <div class="section-title">Listado</div>
-        <div class="muted">{{ $orders->count() }} en esta página</div>
-      </div>
-
       <div class="overflow-x-auto">
-        <table class="table">
-          <thead>
-            <tr>
-              <th class="th">Pedido</th>
-              <th class="th">Cliente</th>
-              <th class="th">Estado</th>
-              <th class="th text-right">Total</th>
-              <th class="th text-right">Acciones</th>
+        <table class="w-full text-sm">
+          <thead class="bg-zinc-50 border-b border-zinc-100">
+            <tr class="text-left">
+              <th class="px-4 py-3 font-semibold text-zinc-700">Pedido</th>
+              <th class="px-4 py-3 font-semibold text-zinc-700">Cliente</th>
+              <th class="px-4 py-3 font-semibold text-zinc-700">Estado</th>
+              <th class="px-4 py-3 font-semibold text-zinc-700 text-right">Total</th>
+              <th class="px-4 py-3"></th>
             </tr>
           </thead>
-          <tbody>
+          <tbody class="divide-y divide-zinc-100">
             @foreach($orders as $order)
-              @php
-                $customer = $order->pickup_name
-                  ?: trim(($order->user->name ?? '').' '.($order->user->last_name ?? ''));
-
-                $phone = $order->pickup_phone ?: ($order->user->phone ?? '');
-              @endphp
-
-              <tr class="row-hover">
-                <td class="td">
-                  <div class="font-semibold">#{{ $order->id }}</div>
-                  <div class="muted">{{ $order->created_at->format('d/m/Y H:i') }}</div>
+              <tr class="hover:bg-zinc-50/70">
+                <td class="px-4 py-3">
+                  <div class="font-semibold text-zinc-900">#{{ $order->id }}</div>
+                  <div class="text-xs text-zinc-500">{{ $order->created_at?->format('d/m/Y H:i') ?? '—' }}</div>
                 </td>
-                <td class="td">
-                  <div class="font-semibold">{{ $customer ?: '—' }}</div>
-                  @if($phone)<div class="muted">{{ $phone }}</div>@endif
+                <td class="px-4 py-3">
+                  <div class="font-semibold text-zinc-900">{{ $order->user->name ?? '—' }}</div>
+                  <div class="text-xs text-zinc-500">{{ $order->user->email ?? '' }}</div>
                 </td>
-                <td class="td">
-                  <span class="{{ $badgeFor($order->status) }}">{{ $labelFor($order->status) }}</span>
+                <td class="px-4 py-3">
+                  <span class="{{ $statusBadge($order->status) }}">{{ $statusLabel($order->status) }}</span>
                 </td>
-                <td class="td text-right font-extrabold">
-                  ${{ number_format($order->total ?? 0, 0, ',', '.') }}
+                <td class="px-4 py-3 text-right font-extrabold text-zinc-900">
+                  {{ $money($order->total) }}
                 </td>
-                <td class="td text-right">
+                <td class="px-4 py-3 text-right">
                   <a class="btn-outline" href="{{ route('admin.orders.show', $order->id) }}">Ver</a>
                 </td>
               </tr>
@@ -176,10 +161,7 @@
           </tbody>
         </table>
       </div>
-
-      <div class="card-body">
-        {{ $orders->appends(request()->query())->links() }}
-      </div>
     </div>
   @endif
+</div>
 @endsection

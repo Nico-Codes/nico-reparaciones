@@ -1,132 +1,143 @@
 @extends('layouts.app')
 
-@section('title', 'Pedido #' . $order->id . ' - NicoReparaciones')
+@section('title', 'Pedido #' . $order->id . ' — NicoReparaciones')
 
 @section('content')
-  @php
-    $status = (string) $order->status;
+@php
+  $money = fn($n) => '$ ' . number_format((float)$n, 0, ',', '.');
 
-    $badge = match ($status) {
-      'pending' => 'badge-amber',
-      'confirmed', 'preparing' => 'badge-blue',
-      'ready', 'delivered' => 'badge-green',
-      'cancelled', 'canceled' => 'badge-red',
-      default => 'badge-zinc',
-    };
+  $statusLabel = fn($s) => match($s) {
+    'pendiente' => 'Pendiente',
+    'confirmado' => 'Confirmado',
+    'preparando' => 'Preparando',
+    'listo_retirar' => 'Listo para retirar',
+    'entregado' => 'Entregado',
+    'cancelado' => 'Cancelado',
+    default => ucfirst(str_replace('_', ' ', (string)$s)),
+  };
 
-    $statusLabel = ucfirst(str_replace('_', ' ', $status));
+  $statusBadge = fn($s) => match($s) {
+    'pendiente' => 'badge badge-amber',
+    'confirmado' => 'badge badge-sky',
+    'preparando' => 'badge badge-purple',
+    'listo_retirar' => 'badge badge-emerald',
+    'entregado' => 'badge bg-zinc-900 text-white ring-zinc-900/10',
+    'cancelado' => 'badge badge-rose',
+    default => 'badge badge-zinc',
+  };
 
-    $payLabel = match ((string)($order->payment_method ?? 'local')) {
-      'mercado_pago' => 'Mercado Pago',
-      'transferencia' => 'Transferencia',
-      default => 'Pago en el local',
-    };
+  $payLabel = fn($p) => match($p) {
+    'local' => 'Pago en el local',
+    'mercado_pago' => 'Mercado Pago',
+    'transferencia' => 'Transferencia',
+    default => ucfirst(str_replace('_', ' ', (string)$p)),
+  };
+@endphp
 
-    $items = $order->items ?? collect();
-  @endphp
-
-  <div class="flex items-start justify-between gap-3">
+<div class="container-page py-6">
+  <div class="flex items-start justify-between gap-4">
     <div>
-      <h1 class="page-title">Pedido #{{ $order->id }}</h1>
-      <p class="muted mt-1">Detalle del pedido y productos.</p>
+      <div class="flex items-center gap-2 flex-wrap">
+        <h1 class="page-title">Pedido #{{ $order->id }}</h1>
+        <span class="{{ $statusBadge($order->status) }}">{{ $statusLabel($order->status) }}</span>
+      </div>
+      <p class="page-subtitle">Detalle del pedido y productos comprados.</p>
     </div>
+
     <a href="{{ route('orders.index') }}" class="btn-outline">Volver</a>
   </div>
 
-  <div class="mt-6 grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
+  @if(session('success'))
+    <div class="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+      {{ session('success') }}
+    </div>
+  @endif
+
+  <div class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+
     {{-- Items --}}
-    <div class="card">
-      <div class="card-header flex items-center justify-between gap-3">
-        <div class="section-title">Productos</div>
-        <span class="muted">{{ $items->count() }} item{{ $items->count() === 1 ? '' : 's' }}</span>
-      </div>
-
-      <div class="card-body">
-        @if($items->isEmpty())
-          <div class="muted">No hay items asociados a este pedido.</div>
-        @else
-          <div class="overflow-x-auto">
-            <table class="table">
-              <thead>
-                <tr>
-                  <th class="th">Producto</th>
-                  <th class="th">Precio</th>
-                  <th class="th">Cant.</th>
-                  <th class="th text-right">Subtotal</th>
-                </tr>
-              </thead>
-              <tbody>
-                @foreach($items as $item)
-                  @php
-                    $sub = (float)($item->price ?? 0) * (int)($item->quantity ?? 0);
-                  @endphp
-                  <tr class="row-hover">
-                    <td class="td">
-                      <div class="font-semibold">{{ $item->product_name ?? 'Producto' }}</div>
-                    </td>
-                    <td class="td">${{ number_format($item->price ?? 0, 0, ',', '.') }}</td>
-                    <td class="td">{{ $item->quantity ?? 0 }}</td>
-                    <td class="td text-right font-semibold">${{ number_format($sub, 0, ',', '.') }}</td>
-                  </tr>
-                @endforeach
-              </tbody>
-            </table>
-          </div>
-        @endif
-      </div>
-    </div>
-
-    {{-- Summary --}}
-    <div class="card h-fit lg:sticky lg:top-20">
-      <div class="card-header">
-        <div class="section-title">Resumen</div>
-        <div class="muted">Estado y total</div>
-      </div>
-
-      <div class="card-body space-y-3">
-        <div class="flex items-center justify-between">
-          <div class="muted">Estado</div>
-          <span class="{{ $badge }}">{{ $statusLabel }}</span>
+    <div class="lg:col-span-2 space-y-3">
+      <div class="card">
+        <div class="card-header">
+          <div class="text-sm font-semibold text-zinc-900">Productos</div>
+          <div class="text-xs text-zinc-500">Cantidad, precio y subtotal.</div>
         </div>
-
-        <div class="flex items-center justify-between">
-          <div class="muted">Pago</div>
-          <div class="font-semibold">{{ $payLabel }}</div>
-        </div>
-
-        @if(!empty($order->pickup_name) || !empty($order->pickup_phone))
-          <div class="rounded-2xl bg-zinc-50 ring-1 ring-zinc-200 p-3">
-            <div class="font-bold">Retiro</div>
-            <div class="muted mt-1">
-              @if(!empty($order->pickup_name))
-                <div><span class="font-semibold text-zinc-800">Retira:</span> {{ $order->pickup_name }}</div>
-              @endif
-              @if(!empty($order->pickup_phone))
-                <div><span class="font-semibold text-zinc-800">Tel:</span> {{ $order->pickup_phone }}</div>
-              @endif
+        <div class="card-body space-y-3">
+          @foreach($order->items as $item)
+            <div class="rounded-2xl border border-zinc-200 bg-white p-4">
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <div class="text-sm font-semibold text-zinc-900">{{ $item->product_name }}</div>
+                  <div class="mt-1 text-sm text-zinc-500">
+                    x {{ $item->quantity }} · {{ $money($item->price) }} c/u
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div class="text-xs text-zinc-500">Subtotal</div>
+                  <div class="text-sm font-extrabold text-zinc-900">{{ $money($item->subtotal) }}</div>
+                </div>
+              </div>
             </div>
-          </div>
-        @endif
-
-        @if(!empty($order->notes))
-          <div class="rounded-2xl bg-zinc-50 ring-1 ring-zinc-200 p-3">
-            <div class="font-bold">Notas</div>
-            <div class="muted mt-1">{{ $order->notes }}</div>
-          </div>
-        @endif
-
-        <div class="h-px bg-zinc-100"></div>
-
-        <div class="flex items-center justify-between">
-          <div class="muted">Total</div>
-          <div class="text-2xl font-extrabold">${{ number_format($order->total, 0, ',', '.') }}</div>
-        </div>
-
-        <div class="pt-2 space-y-2">
-          <a href="{{ route('store.index') }}" class="btn-outline w-full">Seguir comprando</a>
-          <a href="{{ route('orders.index') }}" class="btn-primary w-full">Volver a mis pedidos</a>
+          @endforeach
         </div>
       </div>
     </div>
+
+    {{-- Resumen --}}
+    <div class="space-y-6">
+      <div class="card">
+        <div class="card-header">
+          <div class="text-sm font-semibold text-zinc-900">Resumen</div>
+        </div>
+        <div class="card-body space-y-3 text-sm">
+          <div class="flex items-center justify-between">
+            <span class="text-zinc-600">Fecha</span>
+            <span class="font-semibold text-zinc-900">{{ $order->created_at?->format('d/m/Y H:i') ?? '—' }}</span>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <span class="text-zinc-600">Total</span>
+            <span class="font-extrabold text-zinc-900">{{ $money($order->total) }}</span>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <span class="text-zinc-600">Pago</span>
+            <span class="font-semibold text-zinc-900">{{ $payLabel($order->payment_method) }}</span>
+          </div>
+
+          @if($order->pickup_name)
+            <div class="flex items-center justify-between">
+              <span class="text-zinc-600">Retira</span>
+              <span class="font-semibold text-zinc-900">{{ $order->pickup_name }}</span>
+            </div>
+          @endif
+
+          @if($order->pickup_phone)
+            <div class="flex items-center justify-between">
+              <span class="text-zinc-600">Teléfono</span>
+              <span class="font-semibold text-zinc-900">{{ $order->pickup_phone }}</span>
+            </div>
+          @endif
+
+          @if($order->notes)
+            <div class="h-px bg-zinc-100"></div>
+            <div>
+              <div class="text-xs text-zinc-500">Notas</div>
+              <div class="mt-1 text-sm text-zinc-800 whitespace-pre-line">{{ $order->notes }}</div>
+            </div>
+          @endif
+        </div>
+      </div>
+
+      <div class="rounded-2xl border border-sky-200 bg-sky-50 p-4">
+        <div class="text-sm font-semibold text-sky-900">¿Tenés una reparación?</div>
+        <div class="mt-1 text-sm text-sky-800/90">
+          Podés consultar el estado con código + teléfono.
+        </div>
+        <a href="{{ route('repairs.lookup') }}" class="btn-primary w-full mt-3">Consultar reparación</a>
+      </div>
+    </div>
+
   </div>
+</div>
 @endsection
