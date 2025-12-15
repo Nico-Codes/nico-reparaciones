@@ -8,60 +8,79 @@ use Illuminate\Http\Request;
 
 class StoreController extends Controller
 {
-    /**
-     * Página principal de tienda:
-     * - Muestra categorías
-     * - Muestra algunos productos destacados
-     */
-    public function index()
+    public function index(Request $request)
     {
-        // Traemos todas las categorías con sus productos (limite de productos por categoría opcional)
-        $categories = Category::with(['products' => function ($q) {
-            $q->orderBy('featured', 'desc')
-              ->orderBy('name');
-        }])->orderBy('name')->get();
+        $q = trim((string) $request->query('q', ''));
 
-        // También podríamos mostrar productos destacados sueltos
-        $featuredProducts = Product::where('featured', true)
+        $categories = Category::query()
             ->orderBy('name')
+            ->get();
+
+        $productsQuery = Product::query()
+            ->with('category')
+            ->orderByDesc('id');
+
+        if ($q !== '') {
+            $productsQuery->where('name', 'like', "%{$q}%");
+        }
+
+        $products = $productsQuery->paginate(18)->withQueryString();
+
+        $featuredProducts = Product::query()
+            ->with('category')
+            ->where('featured', true)
+            ->orderByDesc('id')
             ->take(8)
             ->get();
 
         return view('tienda.index', [
             'categories'       => $categories,
+            'products'         => $products,
             'featuredProducts' => $featuredProducts,
+            'category'         => null,
+            'q'                => $q,
         ]);
     }
 
-    /**
-     * Listar productos de una categoría por slug.
-     */
-    public function category(string $slug)
+    public function category(Request $request, string $slug)
     {
-        $category = Category::where('slug', $slug)
-            ->with(['products' => function ($q) {
-                $q->orderBy('name');
-            }])
+        $q = trim((string) $request->query('q', ''));
+
+        $category = Category::query()
+            ->where('slug', $slug)
             ->firstOrFail();
+
+        $categories = Category::query()
+            ->orderBy('name')
+            ->get();
+
+        $productsQuery = Product::query()
+            ->with('category')
+            ->where('category_id', $category->id)
+            ->orderByDesc('id');
+
+        if ($q !== '') {
+            $productsQuery->where('name', 'like', "%{$q}%");
+        }
+
+        $products = $productsQuery->paginate(18)->withQueryString();
 
         return view('tienda.index', [
-            'categories'       => collect([$category]), // reusamos la vista de index
-            'featuredProducts' => collect(),            // vacío en este caso
-            'currentCategory'  => $category,
+            'categories'       => $categories,
+            'products'         => $products,
+            'category'         => $category,
+            'q'                => $q,
+            'featuredProducts' => collect(),
         ]);
     }
 
-    /**
-     * Detalle de un producto por slug.
-     */
     public function product(string $slug)
     {
-        $product = Product::where('slug', $slug)
+        $product = Product::query()
             ->with('category')
+            ->where('slug', $slug)
             ->firstOrFail();
 
-        return view('tienda.producto', [
-            'product' => $product,
-        ]);
+        return view('tienda.producto', compact('product'));
     }
 }

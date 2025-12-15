@@ -34,7 +34,8 @@
             <div>
               <div class="font-black">Pedido #{{ $order->id }}</div>
               <div class="muted mt-1">
-                {{ $order->created_at?->format('d/m/Y H:i') }} · Total: <span class="font-black text-zinc-900">{{ $fmt($order->total) }}</span>
+                {{ $order->created_at?->format('d/m/Y H:i') }}
+                · Total: <span class="font-black text-zinc-900">{{ $fmt($order->total) }}</span>
               </div>
             </div>
             <span class="{{ $badge($order->status) }}">{{ $label($order->status) }}</span>
@@ -54,7 +55,10 @@
     @endforelse
   </div>
 
-  <div class="mt-6">
-    {{ $orders->links() }}
-  </div>
+  {{-- Paginación SOLO si $orders es paginator --}}
+  @if(is_object($orders) && method_exists($orders, 'links'))
+    <div class="mt-6">
+      {{ $orders->links() }}
+    </div>
+  @endif
 @endsection

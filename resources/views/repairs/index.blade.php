@@ -25,7 +25,7 @@
 
   <div class="grid gap-3">
     @forelse($repairs as $repair)
-      <a href="{{ route('repairs.show', $repair) }}" class="card hover:shadow-md transition">
+      <a href="{{ route('repairs.my.show', $repair) }}" class="card hover:shadow-md transition">
         <div class="card-body">
           <div class="flex items-start justify-between gap-3">
             <div>
@@ -50,14 +50,17 @@
           <div class="font-black">No tenés reparaciones asociadas.</div>
           <div class="muted mt-1">Si te pasamos un código, también podés consultarla sin cuenta.</div>
           <div class="mt-4">
-            <a href="{{ route('repairs.lookup.form') }}" class="btn-primary">Consultar por código</a>
+            <a href="{{ route('repairs.lookup') }}" class="btn-primary">Consultar por código</a>
           </div>
         </div>
       </div>
     @endforelse
   </div>
 
-  <div class="mt-6">
-    {{ $repairs->links() }}
-  </div>
+  {{-- Paginación SOLO si $repairs es paginator --}}
+  @if(is_object($repairs) && method_exists($repairs, 'links'))
+    <div class="mt-6">
+      {{ $repairs->links() }}
+    </div>
+  @endif
 @endsection

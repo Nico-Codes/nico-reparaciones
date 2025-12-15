@@ -1,23 +1,33 @@
 @import 'tailwindcss';
 
+/* Asegura que Tailwind escanee tus blades y la paginación de Laravel */
+@source "../../resources/views/**/*.blade.php";
+@source "../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php";
+
 /* =========================
-   Base (look & feel global)
+   Base (global)
    ========================= */
 @layer base {
+  :root{
+    --brand: 0 112 208;        /* #0070D0 */
+    --brand-700: 0 80 192;     /* #0050C0 */
+    --brand-800: 0 64 176;     /* #0040B0 */
+    --brand-soft: 224 241 255; /* azul muy claro */
+  }
+
   html { -webkit-text-size-adjust: 100%; }
   body { @apply bg-zinc-50 text-zinc-900 antialiased; }
 
-  a { @apply text-sky-700 hover:text-sky-800; }
+  a { @apply text-[rgb(var(--brand))] hover:text-[rgb(var(--brand-700))]; }
   hr { @apply border-zinc-100; }
 
   /* Forms */
   input, textarea, select {
     @apply w-full rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-sm
-           outline-none focus:ring-4 focus:ring-sky-100 focus:border-sky-400;
+           outline-none focus:ring-4 focus:ring-[rgba(var(--brand),.14)] focus:border-[rgba(var(--brand),.55)];
   }
   textarea { @apply min-h-24; }
-
-  label { @apply text-sm font-bold text-zinc-800; }
+  label { @apply text-sm font-black text-zinc-800; }
 
   /* Tables */
   table { @apply w-full border-collapse; }
@@ -29,7 +39,7 @@
    Components (reusable)
    ========================= */
 @layer components {
-  .container-page { @apply max-w-6xl mx-auto px-4; }
+  .container-page { @apply max-w-6xl mx-auto px-4 sm:px-6 lg:px-8; }
 
   .page-head { @apply flex flex-col gap-1 mb-5; }
   .page-title { @apply text-xl md:text-2xl font-black tracking-tight; }
@@ -40,42 +50,54 @@
   .card-body { @apply px-4 py-4; }
   .card-foot { @apply px-4 py-3 border-t border-zinc-100; }
 
-  .btn { @apply inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-2 text-sm font-extrabold
-                transition active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed; }
-  .btn-primary { @apply btn bg-sky-600 text-white hover:bg-sky-700; }
-  .btn-outline { @apply btn bg-white text-zinc-900 border border-zinc-200 hover:bg-zinc-50; }
-  .btn-ghost { @apply btn bg-transparent text-zinc-900 hover:bg-zinc-100; }
-  .btn-danger { @apply btn bg-rose-600 text-white hover:bg-rose-700; }
+  /* Buttons (IMPORTANTE: NO usar @apply con clases custom como "btn") */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-2 text-sm font-extrabold
+           transition active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed
+           bg-[rgb(var(--brand))] text-white hover:bg-[rgb(var(--brand-700))]
+           shadow-sm shadow-[rgba(var(--brand),.18)];
+  }
+  .btn-outline {
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-2 text-sm font-extrabold
+           transition active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed
+           bg-white text-zinc-900 border border-zinc-200 hover:bg-zinc-50;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-2 text-sm font-extrabold
+           transition active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed
+           bg-transparent text-zinc-900 hover:bg-zinc-100;
+  }
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-2 text-sm font-extrabold
+           transition active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed
+           bg-rose-600 text-white hover:bg-rose-700;
+  }
   .btn-sm { @apply px-3 py-1.5 text-xs rounded-xl; }
 
-  .badge { @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-black border; }
-  .badge-sky { @apply badge bg-sky-50 text-sky-700 border-sky-200; }
-  .badge-emerald { @apply badge bg-emerald-50 text-emerald-700 border-emerald-200; }
-  .badge-amber { @apply badge bg-amber-50 text-amber-800 border-amber-200; }
-  .badge-rose { @apply badge bg-rose-50 text-rose-700 border-rose-200; }
-  .badge-zinc { @apply badge bg-zinc-50 text-zinc-700 border-zinc-200; }
-  .badge-indigo { @apply badge bg-indigo-50 text-indigo-700 border-indigo-200; }
+  /* Badges (mismo fix: no @apply badge) */
+  .badge-sky { @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-black border bg-[rgba(var(--brand-soft),1)] text-[rgb(var(--brand-800))] border-[rgba(var(--brand),.20)]; }
+  .badge-emerald { @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-black border bg-emerald-50 text-emerald-700 border-emerald-200; }
+  .badge-amber { @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-black border bg-amber-50 text-amber-800 border-amber-200; }
+  .badge-rose { @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-black border bg-rose-50 text-rose-700 border-rose-200; }
+  .badge-zinc { @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-black border bg-zinc-50 text-zinc-700 border-zinc-200; }
+  .badge-indigo { @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-black border bg-indigo-50 text-indigo-700 border-indigo-200; }
 
+  /* Nav */
   .nav-link {
     @apply inline-flex items-center gap-2 rounded-2xl px-3 py-2 text-sm font-extrabold
            text-zinc-800 hover:bg-zinc-100 hover:text-zinc-900;
   }
-  .nav-link.active { @apply bg-sky-50 text-sky-800; }
+  .nav-link.active { @apply bg-[rgba(var(--brand-soft),1)] text-[rgb(var(--brand-800))]; }
 
+  /* Dropdown */
   .dropdown-menu { @apply absolute right-0 mt-2 w-56 rounded-2xl border border-zinc-100 bg-white shadow-lg overflow-hidden; }
   .dropdown-item { @apply block w-full text-left px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50; }
 
+  /* Alerts */
   .alert-success { @apply rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-800; }
   .alert-error { @apply rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-800; }
 
   .muted { @apply text-sm text-zinc-600; }
-
-  /* Legacy helpers (por si quedó markup viejo) */
-  .hero { @apply card; }
-  .hero-title { @apply page-title; }
-  .hero-text { @apply page-subtitle; }
-  .orders-list { @apply grid gap-3; }
-  .order-card { @apply card p-4; }
 }
 
 /* =========================

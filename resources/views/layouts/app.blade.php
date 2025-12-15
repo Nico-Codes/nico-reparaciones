@@ -14,6 +14,8 @@
   $cart = session('cart', []);
   $cartCount = 0;
   foreach ($cart as $i) { $cartCount += (int)($i['quantity'] ?? 0); }
+
+  $logo = asset('brand/logo.png');
 @endphp
 
 <body class="min-h-screen flex flex-col">
@@ -22,15 +24,13 @@
       <div class="h-14 flex items-center justify-between gap-3">
         {{-- Left --}}
         <div class="flex items-center gap-3">
-          <button class="tap md:hidden btn-ghost px-3 py-2" data-toggle="mobile-menu" aria-label="Menú">☰</button>
+          <button class="tap md:hidden btn-ghost px-3 py-2" data-toggle="mobile-menu" aria-label="Menú" aria-expanded="false">☰</button>
 
           <a href="{{ $isAdmin ? route('admin.dashboard') : route('store.index') }}" class="flex items-center gap-2">
-            <img src="{{ asset('brand/logo.png') }}"
-                 class="h-9 w-9 rounded-xl ring-1 ring-zinc-100 bg-white object-contain"
-                 alt="NicoReparaciones">
+            <img src="{{ $logo }}" class="h-9 w-9 rounded-xl ring-1 ring-zinc-100 bg-white object-contain" alt="NicoReparaciones">
             <div class="leading-tight">
               <div class="font-black tracking-tight text-zinc-900">
-                Nico<span class="text-sky-600">Reparaciones</span>
+                Nico<span class="text-[rgb(var(--brand))]">Reparaciones</span>
               </div>
               <div class="text-[11px] text-zinc-500 -mt-0.5">Tienda + Reparaciones</div>
             </div>
@@ -39,7 +39,7 @@
 
         {{-- Desktop nav --}}
         <nav class="hidden md:flex items-center gap-1">
-          <a class="nav-link {{ request()->routeIs('store.index','store.category','store.product','home') ? 'active' : '' }}"
+          <a class="nav-link {{ request()->routeIs('home','store.index','store.category','store.product') ? 'active' : '' }}"
              href="{{ route('store.index') }}">
             Tienda
           </a>
@@ -55,6 +55,7 @@
               Mis pedidos
             </a>
 
+            {{-- IMPORTANTE: tus rutas se llaman repairs.my.* (aunque las vistas estén en repairs/) --}}
             <a class="nav-link {{ request()->routeIs('repairs.my.index','repairs.my.show') ? 'active' : '' }}"
                href="{{ route('repairs.my.index') }}">
               Mis reparaciones
@@ -83,11 +84,11 @@
             <a href="{{ route('register') }}" class="btn-primary px-3 py-2">Crear cuenta</a>
           @else
             <div class="relative">
-              <button class="btn-ghost px-3 py-2" data-toggle="user-menu">
+              <button class="btn-ghost px-3 py-2" data-menu="userMenu" aria-expanded="false">
                 {{ auth()->user()->name ?? 'Mi cuenta' }} ▾
               </button>
 
-              <div class="dropdown-menu hidden" data-menu="user-menu">
+              <div id="userMenu" class="dropdown-menu hidden">
                 <a class="dropdown-item" href="{{ route('orders.index') }}">Mis pedidos</a>
                 <a class="dropdown-item" href="{{ route('repairs.my.index') }}">Mis reparaciones</a>
 
@@ -151,8 +152,8 @@
       <div class="grid gap-6 md:grid-cols-3">
         <div>
           <div class="flex items-center gap-2">
-            <img src="{{ asset('brand/logo.png') }}" class="h-9 w-9 rounded-xl ring-1 ring-zinc-100 bg-white object-contain" alt="NicoReparaciones">
-            <div class="font-black tracking-tight">Nico<span class="text-sky-600">Reparaciones</span></div>
+            <img src="{{ $logo }}" class="h-9 w-9 rounded-xl ring-1 ring-zinc-100 bg-white object-contain" alt="NicoReparaciones">
+            <div class="font-black tracking-tight">Nico<span class="text-[rgb(var(--brand))]">Reparaciones</span></div>
           </div>
           <p class="muted mt-2">Plataforma propia para tienda + gestión de reparaciones.</p>
         </div>
@@ -174,7 +175,7 @@
               <a href="{{ route('repairs.my.index') }}">Mis reparaciones</a>
               <form method="POST" action="{{ route('logout') }}">
                 @csrf
-                <button class="text-left text-rose-700 hover:text-rose-800 font-bold">Cerrar sesión</button>
+                <button class="text-left text-rose-700 hover:text-rose-800 font-black">Cerrar sesión</button>
               </form>
             @else
               <a href="{{ route('login') }}">Ingresar</a>

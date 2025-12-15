@@ -1,29 +1,59 @@
 import './bootstrap';
 
-function toggleEl(el) {
-  if (!el) return;
-  el.classList.toggle('hidden');
-}
+document.addEventListener('DOMContentLoaded', () => {
+  // Menú mobile (header)
+  const btnMobile = document.querySelector('[data-toggle="mobile-menu"]');
+  const mobileMenu = document.getElementById('mobileMenu');
 
-document.addEventListener('click', (e) => {
-  // Mobile menu
-  const mobileBtn = e.target.closest('[data-toggle="mobile-menu"]');
-  if (mobileBtn) {
-    toggleEl(document.getElementById('mobileMenu'));
-    return;
-  }
+  const closeMobile = () => {
+    if (!mobileMenu) return;
+    mobileMenu.classList.add('hidden');
+    btnMobile?.setAttribute('aria-expanded', 'false');
+  };
 
-  // User menu
-  const userBtn = e.target.closest('[data-toggle="user-menu"]');
-  const userMenu = document.querySelector('[data-menu="user-menu"]');
+  btnMobile?.addEventListener('click', () => {
+    if (!mobileMenu) return;
+    const isHidden = mobileMenu.classList.contains('hidden');
+    mobileMenu.classList.toggle('hidden');
+    btnMobile.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
+  });
 
-  if (userBtn) {
-    toggleEl(userMenu);
-    return;
-  }
+  // Dropdown genérico
+  document.querySelectorAll('[data-menu]').forEach((btn) => {
+    const id = btn.getAttribute('data-menu');
+    if (!id) return;
+    const panel = document.getElementById(id);
+    if (!panel) return;
 
-  // Click outside closes dropdown
-  if (userMenu && !userMenu.contains(e.target)) {
-    userMenu.classList.add('hidden');
-  }
+    const close = () => {
+      panel.classList.add('hidden');
+      btn.setAttribute('aria-expanded', 'false');
+    };
+
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const isHidden = panel.classList.contains('hidden');
+      document.querySelectorAll('.js-dropdown').forEach((p) => p.classList.add('hidden'));
+      if (isHidden) {
+        panel.classList.remove('hidden');
+        btn.setAttribute('aria-expanded', 'true');
+      } else {
+        close();
+      }
+    });
+
+    panel.classList.add('js-dropdown');
+
+    document.addEventListener('click', (e) => {
+      if (!panel.contains(e.target) && !btn.contains(e.target)) close();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') close();
+    });
+  });
+
+  window.addEventListener('resize', () => {
+    if (window.innerWidth >= 768) closeMobile();
+  });
 });
