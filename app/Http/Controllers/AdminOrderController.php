@@ -14,36 +14,40 @@ class AdminOrderController extends Controller
 {
     public function index(Request $request)
     {
-        $status = $request->query('status');
+        $status = $request->query('status'); // puede ser null
         $q = trim((string) $request->query('q', ''));
 
-        $query = Order::with('user')->latest();
+        // Base para métricas (aplicamos solo búsqueda, sin filtrar por status)
+        $countBase = Order::query();
+        $this->applySearch($countBase, $q);
+
+        $totalMatching = (clone $countBase)->count();
+
+        $statusCounts = (clone $countBase)
+            ->selectRaw('status, COUNT(*) as aggregate')
+            ->groupBy('status')
+            ->pluck('aggregate', 'status');
+
+        // Query principal para listado
+        $listQuery = Order::with('user');
+        $this->applySearch($listQuery, $q);
 
         if ($status) {
-            $query->where('status', $status);
+            $listQuery->where('status', $status);
         }
 
-        if ($q !== '') {
-            $query->where(function ($qq) use ($q) {
-                if (ctype_digit($q)) {
-                    $qq->orWhere('id', (int) $q);
-                }
-
-                $qq->orWhere('pickup_name', 'like', "%{$q}%")
-                   ->orWhere('pickup_phone', 'like', "%{$q}%")
-                   ->orWhereHas('user', function ($u) use ($q) {
-                       $u->where('name', 'like', "%{$q}%")
-                         ->orWhere('email', 'like', "%{$q}%");
-                   });
-            });
-        }
-
-        $orders = $query->paginate(25)->withQueryString();
+        $orders = $listQuery
+            ->latest()
+            ->paginate(25)
+            ->withQueryString();
 
         return view('admin.orders.index', [
             'orders' => $orders,
             'currentStatus' => $status,
             'q' => $q,
+            'totalMatching' => $totalMatching,
+            'statusCounts' => $statusCounts,
+            'statuses' => Order::STATUSES,
         ]);
     }
 
@@ -102,7 +106,7 @@ class AdminOrderController extends Controller
 
         OrderStatusHistory::create([
             'order_id'    => $order->id,
-            'from_status' => $from !== $to ? $from : $from,
+            'from_status' => $from,
             'to_status'   => $to,
             'changed_by'  => Auth::id(),
             'changed_at'  => now(),
@@ -114,9 +118,10 @@ class AdminOrderController extends Controller
             ->with('success', 'Estado / historial actualizado.');
     }
 
-    // ✅ Compat: log manual (si lo querés)
     public function whatsappLog(Order $order)
     {
+        $order->load('items', 'user');
+
         $waPhone = $this->normalizeWhatsappPhone((string)($order->pickup_phone ?? ''));
         $waMessage = $this->buildWhatsappMessage($order);
 
@@ -132,9 +137,10 @@ class AdminOrderController extends Controller
         );
     }
 
-    // ✅ Log por AJAX al abrir WhatsApp (sin recargar)
     public function whatsappLogAjax(Request $request, Order $order)
     {
+        $order->load('items', 'user');
+
         $waPhone = $this->normalizeWhatsappPhone((string)($order->pickup_phone ?? ''));
         $waMessage = $this->buildWhatsappMessage($order);
 
@@ -162,12 +168,12 @@ class AdminOrderController extends Controller
         }
 
         OrderWhatsappLog::create([
-            'order_id'       => $order->id,
-            'notified_status'=> $order->status,
-            'phone'          => $waPhone,
-            'message'        => $waMessage,
-            'sent_by'        => auth()->id(),
-            'sent_at'        => now(),
+            'order_id'        => $order->id,
+            'notified_status' => $order->status,
+            'phone'           => $waPhone,
+            'message'         => $waMessage,
+            'sent_by'         => auth()->id(),
+            'sent_at'         => now(),
         ]);
 
         return true;
@@ -255,5 +261,23 @@ class AdminOrderController extends Controller
         $base .= "NicoReparaciones";
 
         return $base;
+    }
+
+    private function applySearch($query, string $q): void
+    {
+        if ($q === '') return;
+
+        $query->where(function ($qq) use ($q) {
+            if (ctype_digit($q)) {
+                $qq->orWhere('id', (int) $q);
+            }
+
+            $qq->orWhere('pickup_name', 'like', "%{$q}%")
+                ->orWhere('pickup_phone', 'like', "%{$q}%")
+                ->orWhereHas('user', function ($u) use ($q) {
+                    $u->where('name', 'like', "%{$q}%")
+                      ->orWhere('email', 'like', "%{$q}%");
+                });
+        });
     }
 }

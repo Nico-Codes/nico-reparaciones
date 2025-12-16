@@ -5,14 +5,9 @@
 @php
   $money = fn($n) => '$ ' . number_format((float)($n ?? 0), 0, ',', '.');
 
-  $statusMap = [
-    'pendiente' => 'Pendiente',
-    'confirmado' => 'Confirmado',
-    'preparando' => 'Preparando',
-    'listo_retirar' => 'Listo para retirar',
-    'entregado' => 'Entregado',
-    'cancelado' => 'Cancelado',
-  ];
+  $statusMap = $statuses ?? \App\Models\Order::STATUSES;
+
+  $paymentMap = \App\Models\Order::PAYMENT_METHODS;
 
   $badge = function(string $st) {
     return match($st) {
@@ -25,131 +20,209 @@
       default => 'bg-zinc-100 text-zinc-800 border-zinc-200',
     };
   };
+
+  $currentStatus = $currentStatus ?? null;
+  $q = $q ?? '';
+  $statusCounts = $statusCounts ?? collect();
+  $totalMatching = $totalMatching ?? ($orders->total() ?? 0);
+
+  $tabClass = function($active) {
+    return $active
+      ? 'bg-zinc-900 text-white border-zinc-900'
+      : 'bg-white text-zinc-700 border-zinc-200 hover:bg-zinc-50';
+  };
 @endphp
 
 @section('content')
-<div class="mx-auto w-full max-w-6xl px-4 py-6">
-  <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-    <div>
-      <h1 class="text-xl font-black tracking-tight">Pedidos</h1>
-      <p class="mt-1 text-sm text-zinc-600">Listado de pedidos de la tienda. Filtrá por estado y abrí el detalle.</p>
+<div class="space-y-5">
+  <div class="page-head mb-0">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <div class="page-title">Pedidos</div>
+        <div class="page-subtitle">
+          Gestión de pedidos. Buscá por ID, nombre, email o teléfono.
+        </div>
+      </div>
+
+      <div class="flex gap-2 flex-wrap">
+        <a href="{{ route('admin.orders.index') }}" class="btn-outline">Ver todo</a>
+        <a href="{{ route('admin.dashboard') }}" class="btn-outline">Dashboard</a>
+      </div>
     </div>
-
-    <form method="GET" class="flex flex-col gap-2 sm:flex-row sm:items-center">
-      <select name="status"
-              class="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100 sm:w-64">
-        <option value="">Todos los estados</option>
-        @foreach($statusMap as $k => $label)
-          <option value="{{ $k }}" @selected(($currentStatus ?? '') === $k)>{{ $label }}</option>
-        @endforeach
-      </select>
-
-      <input
-        type="text"
-        name="q"
-        value="{{ $q ?? '' }}"
-        placeholder="Buscar: #pedido, nombre, teléfono, email…"
-        class="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100 sm:w-80"
-      />
-
-      <button class="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800">
-        Filtrar
-      </button>
-    </form>
   </div>
 
-  @if (session('success'))
-    <div class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-      {{ session('success') }}
+  {{-- Métricas rápidas --}}
+  <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+      <div class="text-xs font-bold text-zinc-500 uppercase">Resultados</div>
+      <div class="mt-1 text-2xl font-black">{{ (int)$totalMatching }}</div>
+      <div class="text-xs text-zinc-500 mt-1">Coinciden con la búsqueda</div>
     </div>
-  @endif
 
-  {{-- Mobile cards --}}
-  <div class="mt-5 grid gap-3 md:hidden">
-    @forelse($orders as $order)
-      <a href="{{ route('admin.orders.show', $order) }}"
-         class="block rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm hover:bg-zinc-50">
-        <div class="flex items-start justify-between gap-3">
-          <div>
-            <div class="text-xs text-zinc-500">Pedido</div>
-            <div class="font-black">#{{ $order->id }}</div>
-            <div class="mt-1 text-sm text-zinc-700">
-              <span class="font-semibold">{{ $order->pickup_name ?: ($order->user?->name ?? '—') }}</span>
-              <span class="text-zinc-400">·</span>
-              <span class="text-zinc-600">{{ $order->pickup_phone ?: ($order->user?->email ?? '—') }}</span>
-            </div>
-            <div class="mt-1 text-sm text-zinc-600">
-              {{ $order->created_at?->format('d/m/Y H:i') }}
-            </div>
+    <div class="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+      <div class="text-xs font-bold text-zinc-500 uppercase">Pendientes</div>
+      <div class="mt-1 text-2xl font-black">{{ (int)($statusCounts['pendiente'] ?? 0) }}</div>
+      <div class="text-xs text-zinc-500 mt-1">A confirmar</div>
+    </div>
+
+    <div class="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+      <div class="text-xs font-bold text-zinc-500 uppercase">Preparando</div>
+      <div class="mt-1 text-2xl font-black">{{ (int)($statusCounts['preparando'] ?? 0) }}</div>
+      <div class="text-xs text-zinc-500 mt-1">En proceso</div>
+    </div>
+
+    <div class="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+      <div class="text-xs font-bold text-zinc-500 uppercase">Listo retirar</div>
+      <div class="mt-1 text-2xl font-black">{{ (int)($statusCounts['listo_retirar'] ?? 0) }}</div>
+      <div class="text-xs text-zinc-500 mt-1">Para entregar</div>
+    </div>
+  </div>
+
+  {{-- Tabs por estado --}}
+  <div class="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+    <div class="flex flex-wrap gap-2">
+      <a href="{{ route('admin.orders.index', array_filter(['q' => $q])) }}"
+         class="inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold {{ $tabClass($currentStatus === null) }}">
+        Todos
+        <span class="text-xs opacity-80">{{ (int)$totalMatching }}</span>
+      </a>
+
+      @foreach($statusMap as $key => $label)
+        @php $count = (int)($statusCounts[$key] ?? 0); @endphp
+        <a href="{{ route('admin.orders.index', array_filter(['status' => $key, 'q' => $q])) }}"
+           class="inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold {{ $tabClass($currentStatus === $key) }}">
+          {{ $label }}
+          <span class="text-xs opacity-80">{{ $count }}</span>
+        </a>
+      @endforeach
+    </div>
+
+    {{-- Búsqueda --}}
+    <form method="GET" action="{{ route('admin.orders.index') }}" class="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+      @if($currentStatus)
+        <input type="hidden" name="status" value="{{ $currentStatus }}">
+      @endif
+
+      <div class="flex-1">
+        <input
+          name="q"
+          value="{{ $q }}"
+          placeholder="Buscar: ID, nombre, email, teléfono…"
+          class="w-full rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
+        />
+      </div>
+
+      <div class="flex gap-2">
+        <button class="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800">
+          Buscar
+        </button>
+
+        <a href="{{ route('admin.orders.index', array_filter(['status' => $currentStatus])) }}"
+           class="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold hover:bg-zinc-50">
+          Limpiar
+        </a>
+      </div>
+    </form>
+
+    <div class="mt-3 text-xs text-zinc-500">
+      Tip: si ponés un número, intenta buscar por <span class="font-bold">ID</span> también.
+    </div>
+  </div>
+
+  {{-- Tabla --}}
+  <div class="rounded-2xl border border-zinc-200 bg-white shadow-sm overflow-hidden">
+    <div class="flex items-center justify-between gap-2 p-4 border-b border-zinc-100">
+      <div class="text-sm font-black">Listado</div>
+      <div class="text-xs text-zinc-500">
+        Mostrando {{ $orders->count() }} de {{ $orders->total() }}
+      </div>
+    </div>
+
+    @if($orders->isEmpty())
+      <div class="p-6">
+        <div class="rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
+          <div class="font-black text-zinc-900">No hay pedidos para mostrar.</div>
+          <div class="mt-1 text-sm text-zinc-600">
+            Probá cambiar el estado o limpiar la búsqueda.
           </div>
-
-          <div class="flex flex-col items-end gap-2">
-            <span class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold {{ $badge($order->status) }}">
-              {{ $statusMap[$order->status] ?? $order->status }}
-            </span>
-            <div class="text-sm font-black">{{ $money($order->total) }}</div>
+          <div class="mt-4 flex gap-2 flex-wrap">
+            <a href="{{ route('admin.orders.index') }}" class="btn-primary">Ver todos</a>
+            @if($currentStatus)
+              <a href="{{ route('admin.orders.index', ['status' => $currentStatus]) }}" class="btn-outline">Mantener estado</a>
+            @endif
           </div>
         </div>
-      </a>
-    @empty
-      <div class="rounded-2xl border border-zinc-200 bg-white p-6 text-sm text-zinc-600">
-        No hay pedidos todavía.
       </div>
-    @endforelse
-  </div>
-
-  {{-- Desktop table --}}
-  <div class="mt-5 hidden overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm md:block">
-    <div class="overflow-x-auto">
-      <table class="w-full text-sm">
-        <thead class="bg-zinc-50 text-xs uppercase text-zinc-500">
-          <tr>
-            <th class="px-4 py-3 text-left">Pedido</th>
-            <th class="px-4 py-3 text-left">Cliente</th>
-            <th class="px-4 py-3 text-left">Contacto</th>
-            <th class="px-4 py-3 text-left">Estado</th>
-            <th class="px-4 py-3 text-left">Fecha</th>
-            <th class="px-4 py-3 text-right">Total</th>
-            <th class="px-4 py-3 text-right">Acción</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-zinc-100">
-          @forelse($orders as $order)
-            <tr class="hover:bg-zinc-50/70">
-              <td class="px-4 py-3 font-black">#{{ $order->id }}</td>
-              <td class="px-4 py-3">
-                <div class="font-semibold">{{ $order->pickup_name ?: ($order->user?->name ?? '—') }}</div>
-                <div class="text-xs text-zinc-500">{{ $order->user?->email ?? '—' }}</div>
-              </td>
-              <td class="px-4 py-3 text-zinc-700">{{ $order->pickup_phone ?: '—' }}</td>
-              <td class="px-4 py-3">
-                <span class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold {{ $badge($order->status) }}">
-                  {{ $statusMap[$order->status] ?? $order->status }}
-                </span>
-              </td>
-              <td class="px-4 py-3 text-zinc-700">{{ $order->created_at?->format('d/m/Y H:i') }}</td>
-              <td class="px-4 py-3 text-right font-black">{{ $money($order->total) }}</td>
-              <td class="px-4 py-3 text-right">
-                <a href="{{ route('admin.orders.show', $order) }}"
-                   class="inline-flex rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold hover:bg-zinc-50">
-                  Ver
-                </a>
-              </td>
-            </tr>
-          @empty
+    @else
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-zinc-50 text-xs uppercase text-zinc-500">
             <tr>
-              <td colspan="7" class="px-4 py-8 text-center text-zinc-500">No hay pedidos.</td>
+              <th class="px-4 py-3 text-left">Pedido</th>
+              <th class="px-4 py-3 text-left">Cliente</th>
+              <th class="px-4 py-3 text-left">Teléfono</th>
+              <th class="px-4 py-3 text-left">Pago</th>
+              <th class="px-4 py-3 text-right">Total</th>
+              <th class="px-4 py-3 text-left">Estado</th>
+              <th class="px-4 py-3 text-right">Acciones</th>
             </tr>
-          @endforelse
-        </tbody>
-      </table>
-    </div>
-  </div>
+          </thead>
+          <tbody class="divide-y divide-zinc-100">
+            @foreach($orders as $order)
+              @php
+                $st = (string)($order->status ?? 'pendiente');
+                $customer = $order->pickup_name ?: ($order->user?->name ?? '—');
+                $phone = $order->pickup_phone ?: '—';
+                $pay = $paymentMap[$order->payment_method] ?? ($order->payment_method ?: '—');
+              @endphp
 
-  @if($orders->hasPages())
-    <div class="mt-6">
-      {{ $orders->links() }}
-    </div>
-  @endif
+              <tr class="hover:bg-zinc-50/70">
+                <td class="px-4 py-3">
+                  <div class="font-black text-zinc-900">#{{ $order->id }}</div>
+                  <div class="text-xs text-zinc-500">{{ $order->created_at?->format('d/m/Y H:i') }}</div>
+                </td>
+
+                <td class="px-4 py-3">
+                  <div class="font-semibold text-zinc-900">{{ $customer }}</div>
+                  <div class="text-xs text-zinc-500">{{ $order->user?->email ?? '—' }}</div>
+                </td>
+
+                <td class="px-4 py-3">
+                  <div class="font-semibold text-zinc-900">{{ $phone }}</div>
+                </td>
+
+                <td class="px-4 py-3">
+                  <div class="text-zinc-800">{{ $pay }}</div>
+                </td>
+
+                <td class="px-4 py-3 text-right">
+                  <div class="font-black text-zinc-900">{{ $money($order->total) }}</div>
+                </td>
+
+                <td class="px-4 py-3">
+                  <span class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold {{ $badge($st) }}">
+                    {{ $statusMap[$st] ?? $st }}
+                  </span>
+                </td>
+
+                <td class="px-4 py-3 text-right">
+                  <a href="{{ route('admin.orders.show', $order) }}"
+                     class="rounded-xl bg-zinc-900 px-3 py-2 text-xs font-bold text-white hover:bg-zinc-800">
+                    Ver
+                  </a>
+                </td>
+              </tr>
+            @endforeach
+          </tbody>
+        </table>
+      </div>
+
+      @if(method_exists($orders, 'hasPages') && $orders->hasPages())
+        <div class="p-4 border-t border-zinc-100">
+          {{ $orders->links() }}
+        </div>
+      @endif
+    @endif
+  </div>
 </div>
 @endsection
