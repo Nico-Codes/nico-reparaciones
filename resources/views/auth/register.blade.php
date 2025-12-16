@@ -3,59 +3,75 @@
 @section('title', 'Crear cuenta')
 
 @section('content')
-  <div class="max-w-md mx-auto">
-    <div class="page-head">
-      <div class="page-title">Crear cuenta</div>
-      <div class="page-subtitle">En 1 minuto y ya podés comprar y seguir reparaciones.</div>
-    </div>
-
-    <div class="card">
-      <div class="card-body">
-        <form method="POST" action="{{ route('register.post') }}" class="grid gap-4">
-          @csrf
-
-          <div class="grid gap-3 sm:grid-cols-2">
-            <div>
-              <label for="name">Nombre</label>
-              <input id="name" name="name" value="{{ old('name') }}" required placeholder="Nico">
-            </div>
-
-            <div>
-              <label for="last_name">Apellido (opcional)</label>
-              <input id="last_name" name="last_name" value="{{ old('last_name') }}" placeholder="Machado">
-            </div>
-          </div>
-
-          <div>
-            <label for="phone">Teléfono (opcional)</label>
-            <input id="phone" name="phone" value="{{ old('phone') }}" placeholder="Ej: 341 555-0000">
-          </div>
-
-          <div>
-            <label for="email">Email</label>
-            <input id="email" name="email" type="email" value="{{ old('email') }}" required placeholder="tu@email.com">
-          </div>
-
-          <div class="grid gap-3 sm:grid-cols-2">
-            <div>
-              <label for="password">Contraseña</label>
-              <input id="password" name="password" type="password" required placeholder="mínimo 6">
-            </div>
-
-            <div>
-              <label for="password_confirmation">Repetir contraseña</label>
-              <input id="password_confirmation" name="password_confirmation" type="password" required placeholder="••••••••">
-            </div>
-          </div>
-
-          <button class="btn-primary w-full" type="submit">Crear cuenta</button>
-
-          <div class="muted text-center">
-            ¿Ya tenés cuenta?
-            <a class="font-black" href="{{ route('login') }}">Ingresar</a>
-          </div>
-        </form>
+<div class="mx-auto w-full max-w-md px-4 py-8">
+  <div class="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
+    <div class="flex items-center gap-3">
+      <div class="h-11 w-11 overflow-hidden rounded-2xl border border-zinc-200 bg-white">
+        <img src="{{ asset('images/logo-nico.png') }}" alt="NicoReparaciones" class="h-full w-full object-contain">
+      </div>
+      <div>
+        <h1 class="text-xl font-black tracking-tight">Crear cuenta</h1>
+        <p class="mt-0.5 text-sm text-zinc-600">En 30 segundos para comprar y seguir reparaciones.</p>
       </div>
     </div>
+
+    @if ($errors->any())
+      <div class="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+        <div class="font-bold">Revisá estos errores:</div>
+        <ul class="mt-2 list-disc pl-5">
+          @foreach($errors->all() as $e)
+            <li>{{ $e }}</li>
+          @endforeach
+        </ul>
+      </div>
+    @endif
+
+    <form method="POST" action="{{ route('register') }}" class="mt-5 space-y-4">
+      @csrf
+
+      <div>
+        <label class="text-xs font-semibold text-zinc-700">Nombre</label>
+        <input type="text" name="name" value="{{ old('name') }}" required
+               class="mt-1 w-full rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
+               placeholder="Nico">
+      </div>
+
+      <div>
+        <label class="text-xs font-semibold text-zinc-700">Email</label>
+        <input type="email" name="email" value="{{ old('email') }}" required
+               class="mt-1 w-full rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
+               placeholder="tu@email.com">
+      </div>
+
+      <div>
+        <label class="text-xs font-semibold text-zinc-700">Contraseña</label>
+        <input type="password" name="password" required
+               class="mt-1 w-full rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
+               placeholder="••••••••">
+      </div>
+
+      <div>
+        <label class="text-xs font-semibold text-zinc-700">Repetir contraseña</label>
+        <input type="password" name="password_confirmation" required
+               class="mt-1 w-full rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
+               placeholder="••••••••">
+      </div>
+
+      <button class="w-full rounded-2xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-sky-700 active:scale-[.99]">
+        Crear cuenta
+      </button>
+    </form>
+
+    <div class="mt-5 text-center text-sm text-zinc-600">
+      ¿Ya tenés cuenta?
+      <a href="{{ route('login') }}" class="font-semibold text-sky-700 hover:text-sky-800">
+        Ingresar
+      </a>
+    </div>
+
+    <div class="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-xs text-zinc-600">
+      Al registrarte vas a poder ver “Mis pedidos” y “Mis reparaciones”.
+    </div>
   </div>
+</div>
 @endsection

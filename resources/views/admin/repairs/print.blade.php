@@ -3,139 +3,96 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Orden de reparación #{{ $repair->code }}</title>
+  <title>Orden de reparación — {{ $repair->code }}</title>
   <style>
     *{ box-sizing:border-box; }
-    body{ font-family: Arial, Helvetica, sans-serif; margin:0; background:#f5f5f5; color:#111; }
-    .page{ max-width: 860px; margin: 24px auto; background:#fff; border:1px solid #e5e5e5; border-radius:14px; padding:20px; }
+    body{ font-family: Arial, Helvetica, sans-serif; color:#111; margin:0; padding:24px; }
+    .box{ border:1px solid #ddd; border-radius:12px; padding:16px; }
     .row{ display:flex; gap:16px; }
     .col{ flex:1; }
+    h1{ margin:0; font-size:18px; }
     .muted{ color:#666; font-size:12px; }
-    .h{ font-size:12px; color:#444; font-weight:700; margin:0 0 6px; }
-    .v{ font-size:14px; margin:0; white-space:pre-line; }
-    .box{ border:1px solid #e6e6e6; border-radius:12px; padding:12px; }
-    .top{ display:flex; justify-content:space-between; align-items:flex-start; gap:16px; }
-    .brand{ display:flex; gap:12px; align-items:center; }
-    .logo{ width:56px; height:56px; object-fit:contain; }
-    .title{ font-size:18px; font-weight:800; margin:0; }
-    .pill{ display:inline-block; padding:6px 10px; border-radius:999px; background:#0f172a; color:#fff; font-size:12px; font-weight:700; }
-    .grid{ display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
-    .grid3{ display:grid; grid-template-columns: 1fr 1fr 1fr; gap:12px; }
-    .hr{ height:1px; background:#eee; margin:16px 0; }
-    .sign{ display:flex; gap:16px; margin-top:16px; }
-    .line{ flex:1; border-top:1px solid #bbb; padding-top:8px; font-size:12px; color:#555; text-align:center; }
-    @media print{
-      body{ background:#fff; }
-      .page{ border:none; margin:0; border-radius:0; padding:0; }
-    }
+    .kv{ margin-top:10px; font-size:13px; }
+    .kv b{ display:inline-block; min-width:140px; }
+    .hr{ height:1px; background:#eee; margin:14px 0; }
+    .sign{ margin-top:28px; display:flex; gap:18px; }
+    .line{ flex:1; border-top:1px solid #aaa; padding-top:6px; font-size:12px; color:#333; text-align:center; }
+    .mini{ font-size:11px; color:#666; }
+    .logo{ height:36px; width:auto; }
+    @media print { body{ padding:0; } .box{ border:none; } }
   </style>
 </head>
 <body>
 @php
-  $money = fn($n) => '$ ' . number_format((float)$n, 0, ',', '.');
-  $parts = (float) ($repair->parts_cost ?? 0);
-  $labor = (float) ($repair->labor_cost ?? 0);
-  $totalCost = $parts + $labor;
-  $final = $repair->final_price !== null ? (float)$repair->final_price : null;
-  $paid = (float) ($repair->paid_amount ?? 0);
-  $balance = ($final ?? 0) - $paid;
+  $money = fn($n) => '$ ' . number_format((float)($n ?? 0), 0, ',', '.');
+  $device = trim(($repair->device_brand ?? '').' '.($repair->device_model ?? ''));
+  $totalCost = (float) ($repair->total_cost ?? ((float)($repair->parts_cost ?? 0) + (float)($repair->labor_cost ?? 0)));
+  $balance = (float) ($repair->balance_due ?? ((float)($repair->final_price ?? 0) - (float)($repair->paid_amount ?? 0)));
+  if ($balance < 0) $balance = 0;
 @endphp
 
-<div class="page">
-  <div class="top">
-    <div class="brand">
-      {{-- Poné tu logo en: public/brand/logo.png --}}
-      <img class="logo" src="{{ asset('brand/logo.png') }}" alt="NicoReparaciones" onerror="this.style.display='none'">
+<div class="box">
+  <div class="row" style="align-items:center; justify-content:space-between;">
+    <div class="row" style="align-items:center; gap:12px;">
+      <img src="{{ asset('brand/logo.png') }}" class="logo" alt="NicoReparaciones">
       <div>
-        <p class="title">NicoReparaciones</p>
-        <p class="muted" style="margin:4px 0 0;">Orden de reparación — Comprobante</p>
+        <h1>Orden de reparación</h1>
+        <div class="muted">Código: <b>{{ $repair->code }}</b> · Fecha: {{ now()->format('d/m/Y H:i') }}</div>
       </div>
     </div>
+    <div class="mini">NicoReparaciones · Taller & Tienda</div>
+  </div>
 
-    <div style="text-align:right;">
-      <div class="pill">#{{ $repair->code }}</div>
-      <p class="muted" style="margin:8px 0 0;">Fecha: {{ now()->format('d/m/Y H:i') }}</p>
+  <div class="hr"></div>
+
+  <div class="row">
+    <div class="col">
+      <div class="kv"><b>Cliente:</b> {{ $repair->customer_name }}</div>
+      <div class="kv"><b>Teléfono:</b> {{ $repair->customer_phone }}</div>
+      <div class="kv"><b>Equipo:</b> {{ $device ?: '—' }}</div>
+    </div>
+    <div class="col">
+      <div class="kv"><b>Estado:</b> {{ \App\Models\Repair::STATUSES[$repair->status] ?? $repair->status }}</div>
+      <div class="kv"><b>Recibido:</b> {{ $repair->received_at?->format('d/m/Y H:i') ?? '—' }}</div>
+      <div class="kv"><b>Garantía (días):</b> {{ (int)($repair->warranty_days ?? 0) }}</div>
     </div>
   </div>
 
   <div class="hr"></div>
 
-  <div class="grid">
-    <div class="box">
-      <p class="h">Cliente</p>
-      <p class="v">{{ $repair->customer_name }}</p>
-      <p class="muted" style="margin:8px 0 0;">Tel: {{ $repair->customer_phone }}</p>
-    </div>
+  <div class="kv"><b>Falla reportada:</b><br>{{ $repair->issue_reported }}</div>
 
-    <div class="box">
-      <p class="h">Equipo</p>
-      <p class="v">{{ trim(($repair->device_brand ?? '').' '.($repair->device_model ?? '')) ?: '—' }}</p>
-      <p class="muted" style="margin:8px 0 0;">Estado: {{ $repair->status }}</p>
-    </div>
-  </div>
+  @if($repair->diagnosis)
+    <div class="kv" style="margin-top:12px;"><b>Diagnóstico:</b><br>{{ $repair->diagnosis }}</div>
+  @endif
 
   <div class="hr"></div>
 
-  <div class="box">
-    <p class="h">Falla reportada</p>
-    <p class="v">{{ $repair->issue_reported }}</p>
-
-    <div class="hr"></div>
-
-    <p class="h">Diagnóstico</p>
-    <p class="v">{{ $repair->diagnosis ?: '—' }}</p>
-  </div>
-
-  <div class="hr"></div>
-
-  <div class="grid3">
-    <div class="box">
-      <p class="h">Repuestos</p>
-      <p class="v">{{ $money($parts) }}</p>
+  <div class="row">
+    <div class="col">
+      <div class="kv"><b>Repuestos:</b> {{ $money($repair->parts_cost) }}</div>
+      <div class="kv"><b>Mano de obra:</b> {{ $money($repair->labor_cost) }}</div>
+      <div class="kv"><b>Costo total:</b> {{ $money($totalCost) }}</div>
     </div>
-    <div class="box">
-      <p class="h">Mano de obra</p>
-      <p class="v">{{ $money($labor) }}</p>
+    <div class="col">
+      <div class="kv"><b>Precio final:</b> {{ $money($repair->final_price) }}</div>
+      <div class="kv"><b>Pagado:</b> {{ $money($repair->paid_amount) }}</div>
+      <div class="kv"><b>Saldo:</b> {{ $money($balance) }}</div>
     </div>
-    <div class="box">
-      <p class="h">Precio final</p>
-      <p class="v">{{ $final !== null ? $money($final) : '—' }}</p>
-    </div>
-  </div>
-
-  <div class="grid3" style="margin-top:12px;">
-    <div class="box">
-      <p class="h">Pagado</p>
-      <p class="v">{{ $money($paid) }}</p>
-      <p class="muted" style="margin:6px 0 0;">Método: {{ $repair->payment_method ?: '—' }}</p>
-    </div>
-    <div class="box">
-      <p class="h">Saldo</p>
-      <p class="v">{{ $final !== null ? $money($balance) : '—' }}</p>
-      <p class="muted" style="margin:6px 0 0;">Costo total: {{ $money($totalCost) }}</p>
-    </div>
-    <div class="box">
-      <p class="h">Garantía</p>
-      <p class="v">{{ (int)($repair->warranty_days ?? 0) }} días</p>
-      <p class="muted" style="margin:6px 0 0;">(Inicia al entregar)</p>
-    </div>
-  </div>
-
-  <div class="hr"></div>
-
-  <div class="box">
-    <p class="h">Notas</p>
-    <p class="v">{{ $repair->notes ?: '—' }}</p>
   </div>
 
   <div class="sign">
     <div class="line">Firma cliente</div>
-    <div class="line">Firma NicoReparaciones</div>
+    <div class="line">Firma responsable</div>
   </div>
 
-  <p class="muted" style="margin-top:12px;">
-    * Este comprobante es un registro interno de la reparación. Consultas por WhatsApp o en el local.
-  </p>
+  <div class="mini" style="margin-top:10px;">
+    * Guardá este comprobante. Para consultar el estado: ingresá a la web y usá el código <b>{{ $repair->code }}</b>.
+  </div>
 </div>
+
+<script>
+  window.print();
+</script>
 </body>
 </html>

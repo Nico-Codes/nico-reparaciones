@@ -1,21 +1,25 @@
 @extends('layouts.app')
 
-@section('title', 'Admin — Crear producto')
+@section('title', 'Admin — Nuevo producto')
 
 @section('content')
-<div class="container-page py-6">
-  <div class="flex items-start justify-between gap-4 flex-wrap">
+<div class="mx-auto w-full max-w-4xl px-4 py-6">
+  <div class="flex items-start justify-between gap-3">
     <div>
-      <h1 class="page-title">Crear producto</h1>
-      <p class="page-subtitle">Nombre, categoría, precio, stock, descripción e imagen.</p>
+      <h1 class="text-xl font-black tracking-tight">Nuevo producto</h1>
+      <p class="mt-1 text-sm text-zinc-600">Creá un producto con nombre, precio, stock, categoría e imagen.</p>
     </div>
-    <a href="{{ route('admin.products.index') }}" class="btn-outline">← Volver</a>
+
+    <a href="{{ route('admin.products.index') }}"
+       class="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold hover:bg-zinc-50">
+      Volver
+    </a>
   </div>
 
-  @if($errors->any())
-    <div class="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
-      <div class="font-semibold">Revisá estos errores:</div>
-      <ul class="list-disc pl-5 mt-2 space-y-1">
+  @if ($errors->any())
+    <div class="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+      <div class="font-bold">Revisá estos errores:</div>
+      <ul class="mt-2 list-disc pl-5">
         @foreach($errors->all() as $e)
           <li>{{ $e }}</li>
         @endforeach
@@ -23,67 +27,65 @@
     </div>
   @endif
 
-  <form class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6"
-        method="POST"
-        action="{{ route('admin.products.store') }}"
-        enctype="multipart/form-data">
+  <form method="POST" action="{{ route('admin.products.store') }}" enctype="multipart/form-data" class="mt-5 space-y-4">
     @csrf
 
-    <div class="lg:col-span-2 space-y-6">
-      <div class="card">
-        <div class="card-header">
-          <div class="text-sm font-semibold text-zinc-900">Datos</div>
-          <div class="text-xs text-zinc-500">Lo básico para vender.</div>
+    <div class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div class="sm:col-span-2">
+          <label class="text-xs font-semibold text-zinc-700">Nombre *</label>
+          <input name="name" required value="{{ old('name') }}"
+                 class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100">
         </div>
-        <div class="card-body grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="md:col-span-2">
-            <label class="label">Nombre *</label>
-            <input class="input" name="name" value="{{ old('name') }}" required>
-          </div>
 
-          <div>
-            <label class="label">Categoría *</label>
-            <select class="select" name="category_id" required>
-              <option value="">— Seleccionar —</option>
-              @foreach($categories as $c)
-                <option value="{{ $c->id }}" @selected(old('category_id') == $c->id)>{{ $c->name }}</option>
-              @endforeach
-            </select>
-          </div>
+        <div>
+          <label class="text-xs font-semibold text-zinc-700">Slug (opcional)</label>
+          <input name="slug" value="{{ old('slug') }}" placeholder="Se genera si lo dejás vacío"
+                 class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100">
+        </div>
 
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="label">Precio *</label>
-              <input class="input" type="number" step="0.01" min="0" name="price" value="{{ old('price') }}" required>
-            </div>
-            <div>
-              <label class="label">Stock *</label>
-              <input class="input" type="number" min="0" name="stock" value="{{ old('stock', 0) }}" required>
-            </div>
-          </div>
+        <div>
+          <label class="text-xs font-semibold text-zinc-700">Categoría *</label>
+          <select name="category_id" required
+                  class="mt-1 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100">
+            <option value="">Seleccionar…</option>
+            @foreach($categories as $c)
+              <option value="{{ $c->id }}" @selected((string)old('category_id') === (string)$c->id)>{{ $c->name }}</option>
+            @endforeach
+          </select>
+        </div>
 
-          <div class="md:col-span-2">
-            <label class="label">Descripción</label>
-            <textarea class="textarea" rows="4" name="description">{{ old('description') }}</textarea>
-          </div>
+        <div>
+          <label class="text-xs font-semibold text-zinc-700">Precio *</label>
+          <input name="price" required value="{{ old('price') }}" inputmode="decimal"
+                 class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100">
+        </div>
+
+        <div>
+          <label class="text-xs font-semibold text-zinc-700">Stock *</label>
+          <input name="stock" required value="{{ old('stock', 0) }}" inputmode="numeric"
+                 class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100">
+        </div>
+
+        <div class="sm:col-span-2">
+          <label class="text-xs font-semibold text-zinc-700">Descripción (opcional)</label>
+          <textarea name="description" rows="4"
+                    class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100">{{ old('description') }}</textarea>
+        </div>
+
+        <div class="sm:col-span-2">
+          <label class="text-xs font-semibold text-zinc-700">Imagen (opcional)</label>
+          <input name="image" type="file" accept="image/*"
+                 class="mt-1 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm">
+          <p class="mt-1 text-xs text-zinc-500">Recomendado: cuadrada, buena luz, JPG/PNG.</p>
         </div>
       </div>
     </div>
 
-    <div class="space-y-6">
-      <div class="card">
-        <div class="card-header">
-          <div class="text-sm font-semibold text-zinc-900">Imagen</div>
-          <div class="text-xs text-zinc-500">JPG/PNG/WEBP (máx 4MB).</div>
-        </div>
-        <div class="card-body">
-          <input class="input" type="file" name="image" accept="image/*">
-          <p class="helper">Recomendado: 800×800 o cuadrada.</p>
-
-          <button class="btn-primary w-full mt-4" type="submit">Guardar</button>
-          <a class="btn-outline w-full text-center mt-2" href="{{ route('admin.products.index') }}">Cancelar</a>
-        </div>
-      </div>
+    <div class="flex justify-end">
+      <button class="rounded-xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700">
+        Crear producto
+      </button>
     </div>
   </form>
 </div>

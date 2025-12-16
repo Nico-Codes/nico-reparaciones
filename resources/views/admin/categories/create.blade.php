@@ -1,21 +1,25 @@
 @extends('layouts.app')
 
-@section('title', 'Admin — Crear categoría')
+@section('title', 'Admin — Nueva categoría')
 
 @section('content')
-<div class="container-page py-6">
-  <div class="flex items-start justify-between gap-4 flex-wrap">
+<div class="mx-auto w-full max-w-3xl px-4 py-6">
+  <div class="flex items-start justify-between gap-3">
     <div>
-      <h1 class="page-title">Crear categoría</h1>
-      <p class="page-subtitle">Nombre y slug amigable (si no lo ponés, se genera).</p>
+      <h1 class="text-xl font-black tracking-tight">Nueva categoría</h1>
+      <p class="mt-1 text-sm text-zinc-600">Creá una categoría para ordenar el catálogo.</p>
     </div>
-    <a href="{{ route('admin.categories.index') }}" class="btn-outline">← Volver</a>
+
+    <a href="{{ route('admin.categories.index') }}"
+       class="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold hover:bg-zinc-50">
+      Volver
+    </a>
   </div>
 
-  @if($errors->any())
-    <div class="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
-      <div class="font-semibold">Revisá estos errores:</div>
-      <ul class="list-disc pl-5 mt-2 space-y-1">
+  @if ($errors->any())
+    <div class="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+      <div class="font-bold">Revisá estos errores:</div>
+      <ul class="mt-2 list-disc pl-5">
         @foreach($errors->all() as $e)
           <li>{{ $e }}</li>
         @endforeach
@@ -23,40 +27,42 @@
     </div>
   @endif
 
-  <form class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6" method="POST" action="{{ route('admin.categories.store') }}">
+  <form method="POST" action="{{ route('admin.categories.store') }}" class="mt-5 space-y-4">
     @csrf
 
-    <div class="lg:col-span-2 space-y-6">
-      <div class="card">
-        <div class="card-header">
-          <div class="text-sm font-semibold text-zinc-900">Datos</div>
-          <div class="text-xs text-zinc-500">Usá un nombre claro (ej: Fundas / Cargadores).</div>
+    <div class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div class="sm:col-span-2">
+          <label class="text-xs font-semibold text-zinc-700">Nombre *</label>
+          <input name="name" required value="{{ old('name') }}"
+                 class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100">
         </div>
-        <div class="card-body grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="md:col-span-2">
-            <label class="label">Nombre *</label>
-            <input class="input" name="name" value="{{ old('name') }}" required placeholder="Ej: Fundas">
-          </div>
 
-          <div class="md:col-span-2">
-            <label class="label">Slug</label>
-            <input class="input" name="slug" value="{{ old('slug') }}" placeholder="Ej: fundas (opcional)">
-            <p class="helper">Si lo dejás vacío, se genera automáticamente.</p>
-          </div>
+        <div>
+          <label class="text-xs font-semibold text-zinc-700">Slug (opcional)</label>
+          <input name="slug" value="{{ old('slug') }}" placeholder="Ej: fundas-iphone"
+                 class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100">
+          <p class="mt-1 text-xs text-zinc-500">Si lo dejás vacío, se genera automáticamente.</p>
+        </div>
+
+        <div>
+          <label class="text-xs font-semibold text-zinc-700">Icono (opcional)</label>
+          <input name="icon" value="{{ old('icon') }}" placeholder="Ej: 📱"
+                 class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100">
+        </div>
+
+        <div class="sm:col-span-2">
+          <label class="text-xs font-semibold text-zinc-700">Descripción (opcional)</label>
+          <input name="description" value="{{ old('description') }}" placeholder="Ej: Fundas, templados, cargadores…"
+                 class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100">
         </div>
       </div>
     </div>
 
-    <div class="space-y-6">
-      <div class="card">
-        <div class="card-header">
-          <div class="text-sm font-semibold text-zinc-900">Acciones</div>
-        </div>
-        <div class="card-body">
-          <button class="btn-primary w-full" type="submit">Guardar</button>
-          <a class="btn-outline w-full text-center mt-2" href="{{ route('admin.categories.index') }}">Cancelar</a>
-        </div>
-      </div>
+    <div class="flex justify-end">
+      <button class="rounded-xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700">
+        Crear categoría
+      </button>
     </div>
   </form>
 </div>

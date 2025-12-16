@@ -2,160 +2,139 @@
 
 @section('title', 'Admin — Pedidos')
 
-@section('content')
 @php
-  $money = fn($n) => '$ ' . number_format((float)$n, 0, ',', '.');
+  $money = fn($n) => '$ ' . number_format((float)($n ?? 0), 0, ',', '.');
 
-  $statusLabel = fn($s) => match($s) {
+  $statusMap = [
     'pendiente' => 'Pendiente',
     'confirmado' => 'Confirmado',
     'preparando' => 'Preparando',
     'listo_retirar' => 'Listo para retirar',
     'entregado' => 'Entregado',
     'cancelado' => 'Cancelado',
-    default => ucfirst(str_replace('_', ' ', (string)$s)),
-  };
-
-  $statusBadge = fn($s) => match($s) {
-    'pendiente' => 'badge-amber',
-    'confirmado' => 'badge-sky',
-    'preparando' => 'badge-indigo',
-    'listo_retirar' => 'badge-emerald',
-    'entregado' => 'badge-zinc',
-    'cancelado' => 'badge-rose',
-    default => 'badge-zinc',
-  };
-
-  $chips = [
-    '' => 'Todos',
-    'pendiente' => 'Pendientes',
-    'confirmado' => 'Confirmados',
-    'preparando' => 'Preparando',
-    'listo_retirar' => 'Listos retiro',
-    'entregado' => 'Entregados',
-    'cancelado' => 'Cancelados',
   ];
+
+  $badge = function(string $st) {
+    return match($st) {
+      'pendiente' => 'bg-amber-100 text-amber-900 border-amber-200',
+      'confirmado' => 'bg-sky-100 text-sky-800 border-sky-200',
+      'preparando' => 'bg-indigo-100 text-indigo-800 border-indigo-200',
+      'listo_retirar' => 'bg-emerald-100 text-emerald-800 border-emerald-200',
+      'entregado' => 'bg-zinc-100 text-zinc-800 border-zinc-200',
+      'cancelado' => 'bg-rose-100 text-rose-800 border-rose-200',
+      default => 'bg-zinc-100 text-zinc-800 border-zinc-200',
+    };
+  };
 @endphp
 
-<div class="space-y-6">
-  <div class="flex items-start justify-between gap-4 flex-wrap">
-    <div class="page-head mb-0">
-      <h1 class="page-title">Pedidos</h1>
-      <p class="page-subtitle">Listado de pedidos y estados. Optimizado para usar desde el celu.</p>
+@section('content')
+<div class="mx-auto w-full max-w-6xl px-4 py-6">
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <h1 class="text-xl font-black tracking-tight">Pedidos</h1>
+      <p class="mt-1 text-sm text-zinc-600">Listado de pedidos de la tienda. Filtrá por estado y abrí el detalle.</p>
     </div>
-    <a href="{{ route('admin.dashboard') }}" class="btn-outline">Volver al panel</a>
+
+    <form method="GET" class="flex flex-col gap-2 sm:flex-row sm:items-center">
+      <select name="status"
+              class="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100 sm:w-64">
+        <option value="">Todos los estados</option>
+        @foreach($statusMap as $k => $label)
+          <option value="{{ $k }}" @selected(($currentStatus ?? '') === $k)>{{ $label }}</option>
+        @endforeach
+      </select>
+      <button class="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800">
+        Filtrar
+      </button>
+    </form>
   </div>
 
-  {{-- filtros --}}
-  <div class="card">
-    <div class="card-body">
-      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div class="flex flex-wrap gap-2">
-          @foreach($chips as $key => $label)
-            @php $active = ((string)$currentStatus === (string)$key); @endphp
-            <a href="{{ route('admin.orders.index', $key ? ['status'=>$key] : []) }}"
-               class="{{ $active ? 'btn-primary btn-sm' : 'btn-outline btn-sm' }}">
-              {{ $label }}
-            </a>
-          @endforeach
-        </div>
-
-        <form method="GET" action="{{ route('admin.orders.index') }}" class="flex items-center gap-2">
-          <select name="status" class="w-56" onchange="this.form.submit()">
-            <option value="">Todos</option>
-            <option value="pendiente" {{ $currentStatus === 'pendiente' ? 'selected' : '' }}>Pendiente</option>
-            <option value="confirmado" {{ $currentStatus === 'confirmado' ? 'selected' : '' }}>Confirmado</option>
-            <option value="preparando" {{ $currentStatus === 'preparando' ? 'selected' : '' }}>Preparando</option>
-            <option value="listo_retirar" {{ $currentStatus === 'listo_retirar' ? 'selected' : '' }}>Listo para retirar</option>
-            <option value="entregado" {{ $currentStatus === 'entregado' ? 'selected' : '' }}>Entregado</option>
-            <option value="cancelado" {{ $currentStatus === 'cancelado' ? 'selected' : '' }}>Cancelado</option>
-          </select>
-          <noscript><button class="btn-primary" type="submit">Filtrar</button></noscript>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  @if($orders->isEmpty())
-    <div class="card">
-      <div class="card-body text-sm text-zinc-600">No hay pedidos para mostrar.</div>
-    </div>
-  @else
-    {{-- mobile cards --}}
-    <div class="grid grid-cols-1 md:hidden gap-3">
-      @foreach($orders as $order)
-        <div class="card">
-          <div class="card-body">
-            <div class="flex items-start justify-between gap-3">
-              <div class="min-w-0">
-                <div class="flex items-center gap-2 flex-wrap">
-                  <div class="text-sm font-extrabold text-zinc-900">Pedido #{{ $order->id }}</div>
-                  <span class="{{ $statusBadge($order->status) }}">{{ $statusLabel($order->status) }}</span>
-                </div>
-
-                <div class="mt-2 text-xs text-zinc-500">
-                  {{ $order->created_at?->format('d/m/Y H:i') ?? '—' }}
-                </div>
-
-                <div class="mt-2 text-sm text-zinc-700">
-                  <span class="font-semibold">{{ $order->user->name ?? '—' }}</span>
-                  <span class="text-zinc-500">· {{ $order->user->email ?? '' }}</span>
-                </div>
-              </div>
-
-              <div class="text-right">
-                <div class="text-xs text-zinc-500">Total</div>
-                <div class="text-base font-extrabold text-zinc-900">{{ $money($order->total) }}</div>
-              </div>
-            </div>
-
-            <a href="{{ route('admin.orders.show', $order->id) }}" class="btn-primary w-full mt-4">
-              Ver detalle
-            </a>
-          </div>
-        </div>
-      @endforeach
-    </div>
-
-    {{-- desktop table --}}
-    <div class="hidden md:block card overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="w-full text-sm">
-          <thead class="bg-zinc-50 border-b border-zinc-100">
-            <tr class="text-left">
-              <th class="px-4 py-3 font-semibold text-zinc-700">Pedido</th>
-              <th class="px-4 py-3 font-semibold text-zinc-700">Cliente</th>
-              <th class="px-4 py-3 font-semibold text-zinc-700">Estado</th>
-              <th class="px-4 py-3 font-semibold text-zinc-700 text-right">Total</th>
-              <th class="px-4 py-3"></th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-zinc-100">
-            @foreach($orders as $order)
-              <tr class="hover:bg-zinc-50/70">
-                <td class="px-4 py-3">
-                  <div class="font-semibold text-zinc-900">#{{ $order->id }}</div>
-                  <div class="text-xs text-zinc-500">{{ $order->created_at?->format('d/m/Y H:i') ?? '—' }}</div>
-                </td>
-                <td class="px-4 py-3">
-                  <div class="font-semibold text-zinc-900">{{ $order->user->name ?? '—' }}</div>
-                  <div class="text-xs text-zinc-500">{{ $order->user->email ?? '' }}</div>
-                </td>
-                <td class="px-4 py-3">
-                  <span class="{{ $statusBadge($order->status) }}">{{ $statusLabel($order->status) }}</span>
-                </td>
-                <td class="px-4 py-3 text-right font-extrabold text-zinc-900">
-                  {{ $money($order->total) }}
-                </td>
-                <td class="px-4 py-3 text-right">
-                  <a class="btn-outline btn-sm" href="{{ route('admin.orders.show', $order->id) }}">Ver</a>
-                </td>
-              </tr>
-            @endforeach
-          </tbody>
-        </table>
-      </div>
+  @if (session('success'))
+    <div class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+      {{ session('success') }}
     </div>
   @endif
+
+  {{-- Mobile cards --}}
+  <div class="mt-5 grid gap-3 md:hidden">
+    @forelse($orders as $order)
+      <a href="{{ route('admin.orders.show', $order) }}"
+         class="block rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm hover:bg-zinc-50">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <div class="text-xs text-zinc-500">Pedido</div>
+            <div class="font-black">#{{ $order->id }}</div>
+            <div class="mt-1 text-sm text-zinc-700">
+              <span class="font-semibold">{{ $order->pickup_name ?: ($order->user?->name ?? '—') }}</span>
+              <span class="text-zinc-400">·</span>
+              <span class="text-zinc-600">{{ $order->pickup_phone ?: ($order->user?->email ?? '—') }}</span>
+            </div>
+            <div class="mt-1 text-sm text-zinc-600">
+              {{ $order->created_at?->format('d/m/Y H:i') }}
+            </div>
+          </div>
+
+          <div class="flex flex-col items-end gap-2">
+            <span class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold {{ $badge($order->status) }}">
+              {{ $statusMap[$order->status] ?? $order->status }}
+            </span>
+            <div class="text-sm font-black">{{ $money($order->total) }}</div>
+          </div>
+        </div>
+      </a>
+    @empty
+      <div class="rounded-2xl border border-zinc-200 bg-white p-6 text-sm text-zinc-600">
+        No hay pedidos todavía.
+      </div>
+    @endforelse
+  </div>
+
+  {{-- Desktop table --}}
+  <div class="mt-5 hidden overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm md:block">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-zinc-50 text-xs uppercase text-zinc-500">
+          <tr>
+            <th class="px-4 py-3 text-left">Pedido</th>
+            <th class="px-4 py-3 text-left">Cliente</th>
+            <th class="px-4 py-3 text-left">Contacto</th>
+            <th class="px-4 py-3 text-left">Estado</th>
+            <th class="px-4 py-3 text-left">Fecha</th>
+            <th class="px-4 py-3 text-right">Total</th>
+            <th class="px-4 py-3 text-right">Acción</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-zinc-100">
+          @forelse($orders as $order)
+            <tr class="hover:bg-zinc-50/70">
+              <td class="px-4 py-3 font-black">#{{ $order->id }}</td>
+              <td class="px-4 py-3">
+                <div class="font-semibold">{{ $order->pickup_name ?: ($order->user?->name ?? '—') }}</div>
+                <div class="text-xs text-zinc-500">{{ $order->user?->email ?? '—' }}</div>
+              </td>
+              <td class="px-4 py-3 text-zinc-700">{{ $order->pickup_phone ?: '—' }}</td>
+              <td class="px-4 py-3">
+                <span class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold {{ $badge($order->status) }}">
+                  {{ $statusMap[$order->status] ?? $order->status }}
+                </span>
+              </td>
+              <td class="px-4 py-3 text-zinc-700">{{ $order->created_at?->format('d/m/Y H:i') }}</td>
+              <td class="px-4 py-3 text-right font-black">{{ $money($order->total) }}</td>
+              <td class="px-4 py-3 text-right">
+                <a href="{{ route('admin.orders.show', $order) }}"
+                   class="inline-flex rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold hover:bg-zinc-50">
+                  Ver
+                </a>
+              </td>
+            </tr>
+          @empty
+            <tr>
+              <td colspan="7" class="px-4 py-8 text-center text-zinc-500">No hay pedidos.</td>
+            </tr>
+          @endforelse
+        </tbody>
+      </table>
+    </div>
+  </div>
 </div>
 @endsection

@@ -10,13 +10,28 @@ use Illuminate\Support\Str;
 
 class AdminProductController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $products = Product::with('category')
-            ->orderByDesc('id')
-            ->paginate(20);
+        $q = trim((string) $request->query('q', ''));
 
-        return view('admin.products.index', compact('products'));
+        $query = Product::with('category')
+            ->orderByDesc('id');
+
+        if ($q !== '') {
+            $query->where(function ($qq) use ($q) {
+                $qq->where('name', 'like', "%{$q}%")
+                   ->orWhere('slug', 'like', "%{$q}%");
+            });
+        }
+
+        $products = $query->paginate(20)->appends([
+            'q' => $q,
+        ]);
+
+        return view('admin.products.index', [
+            'products' => $products,
+            'q' => $q,
+        ]);
     }
 
     public function create()
@@ -29,6 +44,7 @@ class AdminProductController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
+            'slug' => ['nullable', 'string', 'max:255'],
             'category_id' => ['required', 'exists:categories,id'],
             'price' => ['required', 'numeric', 'min:0'],
             'stock' => ['required', 'integer', 'min:0'],
@@ -36,7 +52,10 @@ class AdminProductController extends Controller
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
         ]);
 
-        $data['slug'] = $this->uniqueSlug($data['name']);
+        $seed = trim((string) ($data['slug'] ?? ''));
+        if ($seed === '') $seed = $data['name'];
+
+        $data['slug'] = $this->uniqueSlug($seed);
 
         if ($request->hasFile('image')) {
             $data['image_path'] = $request->file('image')->store('products', 'public');
@@ -44,7 +63,9 @@ class AdminProductController extends Controller
 
         Product::create($data);
 
-        return redirect()->route('admin.products.index')->with('success', 'Producto creado.');
+        return redirect()
+            ->route('admin.products.index')
+            ->with('success', 'Producto creado.');
     }
 
     public function edit(Product $product)
@@ -57,6 +78,7 @@ class AdminProductController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
+            'slug' => ['nullable', 'string', 'max:255'],
             'category_id' => ['required', 'exists:categories,id'],
             'price' => ['required', 'numeric', 'min:0'],
             'stock' => ['required', 'integer', 'min:0'],
@@ -65,12 +87,11 @@ class AdminProductController extends Controller
             'remove_image' => ['nullable', 'boolean'],
         ]);
 
-        // Si cambió el nombre, regeneramos slug único.
-        if ($data['name'] !== $product->name) {
-            $data['slug'] = $this->uniqueSlug($data['name'], $product->id);
-        } else {
-            $data['slug'] = $product->slug;
-        }
+        // Slug editable (si lo dejan vacío, deriva del nombre)
+        $seed = trim((string) ($data['slug'] ?? ''));
+        if ($seed === '') $seed = $data['name'];
+
+        $data['slug'] = $this->uniqueSlug($seed, $product->id);
 
         // Quitar imagen actual
         if ($request->boolean('remove_image')) {
@@ -95,7 +116,9 @@ class AdminProductController extends Controller
 
         $product->update($data);
 
-        return redirect()->route('admin.products.index')->with('success', 'Producto actualizado.');
+        return redirect()
+            ->route('admin.products.index')
+            ->with('success', 'Producto actualizado.');
     }
 
     public function destroy(Product $product)
@@ -106,12 +129,16 @@ class AdminProductController extends Controller
 
         $product->delete();
 
-        return redirect()->route('admin.products.index')->with('success', 'Producto eliminado.');
+        return redirect()
+            ->route('admin.products.index')
+            ->with('success', 'Producto eliminado.');
     }
 
-    private function uniqueSlug(string $name, ?int $ignoreId = null): string
+    private function uniqueSlug(string $seed, ?int $ignoreId = null): string
     {
-        $base = Str::slug($name);
+        $base = Str::slug($seed);
+        if ($base === '') $base = 'producto';
+
         $slug = $base;
         $i = 2;
 

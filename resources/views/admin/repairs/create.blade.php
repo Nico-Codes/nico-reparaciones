@@ -2,253 +2,166 @@
 
 @section('title', 'Admin — Nueva reparación')
 
-@section('content')
 @php
-  $prefill = [
-    'user_email'      => request('user_email'),
-    'customer_name'   => request('customer_name'),
-    'customer_phone'  => request('customer_phone'),
-    'device_brand'    => request('device_brand'),
-    'device_model'    => request('device_model'),
-    'issue_reported'  => request('issue_reported'),
-    'diagnosis'       => request('diagnosis'),
-
-    'parts_cost'      => request('parts_cost'),
-    'labor_cost'      => request('labor_cost'),
-    'final_price'     => request('final_price'),
-
-    'paid_amount'     => request('paid_amount'),
-    'payment_method'  => request('payment_method'),
-    'payment_notes'   => request('payment_notes'),
-
-    'status'          => request('status', 'received'),
-    'warranty_days'   => request('warranty_days'),
-    'notes'           => request('notes'),
-  ];
+  $oldStatus = old('status', 'received');
 @endphp
 
-<div class="container-page py-6">
-  <div class="flex items-start justify-between gap-4 flex-wrap">
+@section('content')
+<div class="mx-auto w-full max-w-4xl px-4 py-6">
+  <div class="flex items-start justify-between gap-3">
     <div>
-      <h1 class="page-title">Nueva reparación</h1>
-      <p class="page-subtitle">Cargá los datos básicos + finanzas + pago + garantía.</p>
+      <h1 class="text-xl font-black tracking-tight">Nueva reparación</h1>
+      <p class="mt-1 text-sm text-zinc-600">Cargá los datos básicos. Después podés editar todo desde el detalle.</p>
     </div>
-    <a href="{{ route('admin.repairs.index') }}" class="btn-outline">← Volver</a>
+
+    <a href="{{ route('admin.repairs.index') }}"
+       class="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold hover:bg-zinc-50">
+      Volver
+    </a>
   </div>
 
-  @if($errors->any())
-    <div class="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
-      <div class="font-semibold">Revisá estos errores:</div>
-      <ul class="list-disc pl-5 mt-2 space-y-1">
-        @foreach($errors->all() as $error)
-          <li>{{ $error }}</li>
+  @if ($errors->any())
+    <div class="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+      <div class="font-bold">Revisá estos errores:</div>
+      <ul class="mt-2 list-disc pl-5">
+        @foreach($errors->all() as $e)
+          <li>{{ $e }}</li>
         @endforeach
       </ul>
     </div>
   @endif
 
-  <form method="POST" action="{{ route('admin.repairs.store') }}" class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <form method="POST" action="{{ route('admin.repairs.store') }}" class="mt-5 space-y-4">
     @csrf
 
-    {{-- Columna principal --}}
-    <div class="lg:col-span-2 space-y-6">
-
-      <div class="card">
-        <div class="card-header">
-          <div class="text-sm font-semibold text-zinc-900">Cliente</div>
-          <div class="text-xs text-zinc-500">Nombre y teléfono (obligatorio).</div>
+    <div class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div class="sm:col-span-2">
+          <label class="text-xs font-semibold text-zinc-700">Email de usuario (opcional, para asociar)</label>
+          <input name="user_email" value="{{ old('user_email') }}" placeholder="cliente@email.com"
+                 class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100">
+          <p class="mt-1 text-xs text-zinc-500">Si lo dejás vacío, queda como reparación “sin cuenta”.</p>
         </div>
-        <div class="card-body grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="label">Nombre *</label>
-            <input class="input" type="text" name="customer_name" required value="{{ old('customer_name', $prefill['customer_name']) }}">
-          </div>
-          <div>
-            <label class="label">Teléfono *</label>
-            <input class="input" type="text" name="customer_phone" required value="{{ old('customer_phone', $prefill['customer_phone']) }}" placeholder="Ej: 341xxxxxxx">
-            <p class="helper">Se normaliza a solo números al guardar.</p>
-          </div>
-        </div>
-      </div>
 
-      <div class="card">
-        <div class="card-header">
-          <div class="text-sm font-semibold text-zinc-900">Equipo y trabajo</div>
-          <div class="text-xs text-zinc-500">Marca/modelo + falla/diagnóstico.</div>
+        <div>
+          <label class="text-xs font-semibold text-zinc-700">Nombre del cliente *</label>
+          <input name="customer_name" value="{{ old('customer_name') }}" required
+                 class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100">
         </div>
-        <div class="card-body grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="label">Marca</label>
-            <input class="input" type="text" name="device_brand" value="{{ old('device_brand', $prefill['device_brand']) }}">
-          </div>
-          <div>
-            <label class="label">Modelo</label>
-            <input class="input" type="text" name="device_model" value="{{ old('device_model', $prefill['device_model']) }}">
-          </div>
 
-          <div class="md:col-span-2">
-            <label class="label">Problema reportado *</label>
-            <textarea class="textarea" rows="3" name="issue_reported" required>{{ old('issue_reported', $prefill['issue_reported']) }}</textarea>
-          </div>
-
-          <div class="md:col-span-2">
-            <label class="label">Diagnóstico</label>
-            <textarea class="textarea" rows="3" name="diagnosis">{{ old('diagnosis', $prefill['diagnosis']) }}</textarea>
-          </div>
+        <div>
+          <label class="text-xs font-semibold text-zinc-700">Teléfono (WhatsApp) *</label>
+          <input name="customer_phone" value="{{ old('customer_phone') }}" required placeholder="Ej: 341xxxxxxx"
+                 class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100">
         </div>
-      </div>
 
-      <div class="card">
-        <div class="card-header">
-          <div class="text-sm font-semibold text-zinc-900">Finanzas</div>
-          <div class="text-xs text-zinc-500">Costos, precio y cálculo automático.</div>
+        <div>
+          <label class="text-xs font-semibold text-zinc-700">Marca</label>
+          <input name="device_brand" value="{{ old('device_brand') }}" placeholder="Samsung / iPhone / Xiaomi…"
+                 class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100">
         </div>
-        <div class="card-body grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label class="label">Repuestos</label>
-            <input id="parts_cost" class="input" type="number" step="0.01" min="0" name="parts_cost" value="{{ old('parts_cost', $prefill['parts_cost']) }}">
-          </div>
-          <div>
-            <label class="label">Mano de obra</label>
-            <input id="labor_cost" class="input" type="number" step="0.01" min="0" name="labor_cost" value="{{ old('labor_cost', $prefill['labor_cost']) }}">
-          </div>
-          <div>
-            <label class="label">Precio final</label>
-            <input id="final_price" class="input" type="number" step="0.01" min="0" name="final_price" value="{{ old('final_price', $prefill['final_price']) }}">
-          </div>
 
-          <div class="md:col-span-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-            <div class="grid grid-cols-3 gap-3 text-sm">
-              <div>
-                <div class="text-zinc-500">Costo total</div>
-                <div class="font-extrabold text-zinc-900">$ <span id="ui_total_cost">0</span></div>
-              </div>
-              <div>
-                <div class="text-zinc-500">Ganancia</div>
-                <div class="font-extrabold text-zinc-900">$ <span id="ui_profit">0</span></div>
-              </div>
-              <div>
-                <div class="text-zinc-500">Saldo</div>
-                <div class="font-extrabold text-zinc-900">$ <span id="ui_balance_due">0</span></div>
-              </div>
-            </div>
-          </div>
+        <div>
+          <label class="text-xs font-semibold text-zinc-700">Modelo</label>
+          <input name="device_model" value="{{ old('device_model') }}" placeholder="A13 / 12 Pro Max / Note…"
+                 class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100">
         </div>
-      </div>
 
-      <div class="card">
-        <div class="card-header">
-          <div class="text-sm font-semibold text-zinc-900">Pago</div>
-          <div class="text-xs text-zinc-500">Pagado, método y notas.</div>
+        <div class="sm:col-span-2">
+          <label class="text-xs font-semibold text-zinc-700">Falla reportada *</label>
+          <textarea name="issue_reported" required rows="3"
+                    class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100">{{ old('issue_reported') }}</textarea>
         </div>
-        <div class="card-body grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="label">Pagado</label>
-            <input id="paid_amount" class="input" type="number" step="0.01" min="0" name="paid_amount" value="{{ old('paid_amount', $prefill['paid_amount']) }}">
-          </div>
-          <div>
-            <label class="label">Método</label>
-            <select class="select" name="payment_method">
-              <option value="">—</option>
-              @foreach(($paymentMethods ?? []) as $k => $label)
-                <option value="{{ $k }}" {{ old('payment_method', $prefill['payment_method']) === $k ? 'selected' : '' }}>
-                  {{ $label }}
-                </option>
-              @endforeach
-            </select>
-          </div>
 
-          <div class="md:col-span-2">
-            <label class="label">Notas de pago</label>
-            <textarea class="textarea" rows="2" name="payment_notes">{{ old('payment_notes', $prefill['payment_notes']) }}</textarea>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-header">
-          <div class="text-sm font-semibold text-zinc-900">Notas internas</div>
-          <div class="text-xs text-zinc-500">Lo que querés guardar para vos.</div>
-        </div>
-        <div class="card-body">
-          <textarea class="textarea" rows="3" name="notes">{{ old('notes', $prefill['notes']) }}</textarea>
+        <div class="sm:col-span-2">
+          <label class="text-xs font-semibold text-zinc-700">Diagnóstico (opcional)</label>
+          <textarea name="diagnosis" rows="3"
+                    class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100">{{ old('diagnosis') }}</textarea>
         </div>
       </div>
     </div>
 
-    {{-- Sidebar --}}
-    <div class="space-y-6">
-      <div class="card">
-        <div class="card-header">
-          <div class="text-sm font-semibold text-zinc-900">Vincular usuario</div>
-          <div class="text-xs text-zinc-500">Opcional (por email).</div>
+    <div class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+      <h2 class="text-sm font-black">Costos, cobro y garantía</h2>
+      <div class="mt-3 grid gap-4 sm:grid-cols-3">
+        <div>
+          <label class="text-xs font-semibold text-zinc-700">Costo repuestos</label>
+          <input name="parts_cost" value="{{ old('parts_cost') }}" inputmode="decimal" placeholder="0"
+                 class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100">
         </div>
-        <div class="card-body">
-          <label class="label">Email del usuario</label>
-          <input class="input" type="email" name="user_email" value="{{ old('user_email', $prefill['user_email']) }}" placeholder="cliente@email.com">
-          <p class="helper">Si existe en users, queda vinculado.</p>
+
+        <div>
+          <label class="text-xs font-semibold text-zinc-700">Mano de obra</label>
+          <input name="labor_cost" value="{{ old('labor_cost') }}" inputmode="decimal" placeholder="0"
+                 class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100">
+        </div>
+
+        <div>
+          <label class="text-xs font-semibold text-zinc-700">Precio final al cliente</label>
+          <input name="final_price" value="{{ old('final_price') }}" inputmode="decimal" placeholder="0"
+                 class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100">
+        </div>
+
+        <div>
+          <label class="text-xs font-semibold text-zinc-700">Pagado</label>
+          <input name="paid_amount" value="{{ old('paid_amount') }}" inputmode="decimal" placeholder="0"
+                 class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100">
+        </div>
+
+        <div>
+          <label class="text-xs font-semibold text-zinc-700">Método de pago</label>
+          <select name="payment_method"
+                  class="mt-1 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100">
+            <option value="">—</option>
+            @foreach($paymentMethods as $k => $label)
+              <option value="{{ $k }}" @selected(old('payment_method') === $k)>{{ $label }}</option>
+            @endforeach
+          </select>
+        </div>
+
+        <div>
+          <label class="text-xs font-semibold text-zinc-700">Garantía (días)</label>
+          <input name="warranty_days" value="{{ old('warranty_days', 0) }}" inputmode="numeric"
+                 class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100">
+        </div>
+
+        <div class="sm:col-span-3">
+          <label class="text-xs font-semibold text-zinc-700">Notas de pago</label>
+          <input name="payment_notes" value="{{ old('payment_notes') }}" placeholder="Ej: señal, transferencia, etc."
+                 class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100">
         </div>
       </div>
+    </div>
 
-      <div class="card">
-        <div class="card-header">
-          <div class="text-sm font-semibold text-zinc-900">Estado y garantía</div>
-          <div class="text-xs text-zinc-500">Seteá el flujo de trabajo.</div>
+    <div class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label class="text-xs font-semibold text-zinc-700">Estado *</label>
+          <select name="status" required
+                  class="mt-1 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100">
+            @foreach($statuses as $k => $label)
+              <option value="{{ $k }}" @selected($oldStatus === $k)>{{ $label }}</option>
+            @endforeach
+          </select>
         </div>
-        <div class="card-body space-y-4">
-          <div>
-            <label class="label">Estado *</label>
-            @php $selected = old('status', $prefill['status'] ?? 'received'); @endphp
-            <select class="select" name="status" required>
-              @foreach($statuses as $key => $label)
-                <option value="{{ $key }}" {{ $selected === $key ? 'selected' : '' }}>{{ $label }}</option>
-              @endforeach
-            </select>
-          </div>
 
-          <div>
-            <label class="label">Garantía (días)</label>
-            <input class="input" type="number" min="0" name="warranty_days" value="{{ old('warranty_days', $prefill['warranty_days']) }}" placeholder="Ej: 30">
-          </div>
-
-          <button class="btn-primary w-full" type="submit">Crear reparación</button>
-          <a class="btn-outline w-full text-center" href="{{ route('admin.repairs.index') }}">Cancelar</a>
+        <div class="sm:col-span-2">
+          <label class="text-xs font-semibold text-zinc-700">Notas internas</label>
+          <textarea name="notes" rows="3"
+                    class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100">{{ old('notes') }}</textarea>
         </div>
       </div>
+    </div>
+
+    <div class="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
+      <a href="{{ route('admin.repairs.index') }}"
+         class="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold hover:bg-zinc-50">
+        Cancelar
+      </a>
+      <button class="rounded-xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700">
+        Crear reparación
+      </button>
     </div>
   </form>
 </div>
-
-<script>
-(function(){
-  function n(v){ v = parseFloat(v); return isNaN(v) ? 0 : v; }
-  function fmt(v){ return Math.round(v).toLocaleString('es-AR'); }
-
-  function recalc(){
-    const parts = n(document.getElementById('parts_cost')?.value);
-    const labor = n(document.getElementById('labor_cost')?.value);
-    const finalp = n(document.getElementById('final_price')?.value);
-    const paid  = n(document.getElementById('paid_amount')?.value);
-
-    const total = parts + labor;
-    const profit = finalp - total;
-    const balance = Math.max(0, finalp - paid);
-
-    const tc = document.getElementById('ui_total_cost');
-    const pr = document.getElementById('ui_profit');
-    const bd = document.getElementById('ui_balance_due');
-
-    if (tc) tc.textContent = fmt(total);
-    if (pr) pr.textContent = fmt(profit);
-    if (bd) bd.textContent = fmt(balance);
-  }
-
-  ['parts_cost','labor_cost','final_price','paid_amount'].forEach(id=>{
-    const el = document.getElementById(id);
-    if (el) el.addEventListener('input', recalc);
-  });
-
-  recalc();
-})();
-</script>
 @endsection

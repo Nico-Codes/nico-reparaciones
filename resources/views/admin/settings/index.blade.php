@@ -3,61 +3,90 @@
 @section('title', 'Admin — Configuración')
 
 @section('content')
-<div class="space-y-6">
-  <div class="flex items-start justify-between gap-4 flex-wrap">
-    <div class="page-head mb-0">
-      <h1 class="page-title">Configuración del negocio</h1>
-      <p class="page-subtitle">Datos que se usan en WhatsApp y en mensajes al cliente.</p>
+<div class="mx-auto w-full max-w-5xl px-4 py-6">
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <h1 class="text-xl font-black tracking-tight">Configuración</h1>
+      <p class="mt-1 text-sm text-zinc-600">Ajustes del negocio, links rápidos y parámetros generales.</p>
     </div>
 
-    <div class="flex gap-2 flex-wrap">
-      <a class="btn-outline" href="{{ route('admin.whatsapp_templates.index') }}">Plantillas WhatsApp</a>
-      <a class="btn-outline" href="{{ route('admin.dashboard') }}">Volver</a>
-    </div>
+    <a href="{{ route('admin.dashboard') }}"
+       class="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold hover:bg-zinc-50">
+      Volver al panel
+    </a>
   </div>
 
-  <div class="card">
-    <div class="card-head">
-      <div>
-        <div class="font-extrabold text-zinc-900">Placeholders nuevos</div>
-        <div class="text-xs text-zinc-500">Se reemplazan automáticamente en los mensajes.</div>
+  <div class="mt-5 grid gap-4 lg:grid-cols-3">
+    <div class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+      <div class="text-sm font-black">Identidad</div>
+      <p class="mt-1 text-sm text-zinc-600">Logo, colores y nombre comercial.</p>
+
+      <div class="mt-4 flex items-center gap-3">
+        <div class="h-14 w-14 overflow-hidden rounded-2xl border border-zinc-200 bg-white">
+          <img src="{{ asset('images/logo-nico.png') }}" alt="Logo" class="h-full w-full object-contain">
+        </div>
+        <div class="min-w-0">
+          <div class="truncate font-semibold">NicoReparaciones</div>
+          <div class="text-xs text-zinc-500">Paleta basada en azul/celeste del logo</div>
+        </div>
+      </div>
+
+      <div class="mt-4 rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-xs text-zinc-600">
+        (Etapa siguiente) Acá podemos agregar editor: WhatsApp del local, dirección, horarios, etc.
       </div>
     </div>
-    <div class="card-body text-sm">
-      <ul class="list-disc pl-5 space-y-1">
-        <li><code>{shop_address}</code> — Dirección del local</li>
-        <li><code>{shop_hours}</code> — Horarios</li>
+
+    <div class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+      <div class="text-sm font-black">Links rápidos</div>
+      <p class="mt-1 text-sm text-zinc-600">Accesos directos para operar más rápido.</p>
+
+      <div class="mt-4 grid gap-2">
+        <a href="{{ route('admin.repairs.index') }}"
+           class="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold hover:bg-zinc-50">
+          Reparaciones
+        </a>
+        <a href="{{ route('admin.orders.index') }}"
+           class="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold hover:bg-zinc-50">
+          Pedidos
+        </a>
+        <a href="{{ route('admin.products.index') }}"
+           class="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold hover:bg-zinc-50">
+          Productos
+        </a>
+        <a href="{{ route('admin.categories.index') }}"
+           class="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold hover:bg-zinc-50">
+          Categorías
+        </a>
+      </div>
+    </div>
+
+    <div class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+      <div class="text-sm font-black">Operación</div>
+      <p class="mt-1 text-sm text-zinc-600">Tareas recomendadas y controles.</p>
+
+      <ul class="mt-4 space-y-2 text-sm text-zinc-700">
+        <li class="flex gap-2">
+          <span class="mt-0.5">✅</span>
+          <span>Frontend mobile-first unificado</span>
+        </li>
+        <li class="flex gap-2">
+          <span class="mt-0.5">✅</span>
+          <span>CRUD completo: productos/categorías/pedidos/reparaciones</span>
+        </li>
+        <li class="flex gap-2">
+          <span class="mt-0.5">⏭️</span>
+          <span>(Siguiente etapa) Plantillas WhatsApp por estado + editor simple</span>
+        </li>
+        <li class="flex gap-2">
+          <span class="mt-0.5">⏭️</span>
+          <span>(Siguiente etapa) Timeline visual usando repair_status_histories</span>
+        </li>
       </ul>
-      <p class="muted mt-3">
-        Tip: en “Listo para retirar” conviene incluir Dirección/Horarios para que el cliente tenga todo en 1 mensaje.
-      </p>
+
+      <div class="mt-4 rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-xs text-zinc-600">
+        Si querés, acá sumamos “checklist de apertura/cierre” del local.
+      </div>
     </div>
   </div>
-
-  <form method="POST" action="{{ route('admin.settings.update') }}" class="grid gap-4 lg:grid-cols-2">
-    @csrf
-
-    <div class="card">
-      <div class="card-head">
-        <div class="font-extrabold text-zinc-900">Dirección del local</div>
-      </div>
-      <div class="card-body">
-        <textarea name="shop_address" rows="4" placeholder="Ej: San Martín 123, Carcarañá">{{ old('shop_address', $shopAddress) }}</textarea>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-head">
-        <div class="font-extrabold text-zinc-900">Horarios</div>
-      </div>
-      <div class="card-body">
-        <textarea name="shop_hours" rows="4" placeholder="Ej: Lun a Vie 9:00–12:30 / 16:00–20:00 | Sáb 9:00–13:00">{{ old('shop_hours', $shopHours) }}</textarea>
-      </div>
-    </div>
-
-    <div class="lg:col-span-2 flex justify-end">
-      <button type="submit" class="btn-primary">Guardar configuración</button>
-    </div>
-  </form>
 </div>
 @endsection
