@@ -43,6 +43,15 @@
           <option value="{{ $k }}" @selected(($currentStatus ?? '') === $k)>{{ $label }}</option>
         @endforeach
       </select>
+
+      <input
+        type="text"
+        name="q"
+        value="{{ $q ?? '' }}"
+        placeholder="Buscar: #pedido, nombre, teléfono, email…"
+        class="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100 sm:w-80"
+      />
+
       <button class="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800">
         Filtrar
       </button>
@@ -136,5 +145,11 @@
       </table>
     </div>
   </div>
+
+  @if($orders->hasPages())
+    <div class="mt-6">
+      {{ $orders->links() }}
+    </div>
+  @endif
 </div>
 @endsection

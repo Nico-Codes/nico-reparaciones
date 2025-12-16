@@ -13,6 +13,7 @@ class AdminOrderController extends Controller
     public function index(Request $request)
     {
         $status = $request->query('status'); // filtro opcional
+        $q = trim((string) $request->query('q', ''));
 
         $query = Order::with('user')->latest();
 
@@ -20,11 +21,27 @@ class AdminOrderController extends Controller
             $query->where('status', $status);
         }
 
-        $orders = $query->get();
+        if ($q !== '') {
+            $query->where(function ($qq) use ($q) {
+                if (ctype_digit($q)) {
+                    $qq->orWhere('id', (int) $q);
+                }
+
+                $qq->orWhere('pickup_name', 'like', "%{$q}%")
+                    ->orWhere('pickup_phone', 'like', "%{$q}%")
+                    ->orWhereHas('user', function ($u) use ($q) {
+                        $u->where('name', 'like', "%{$q}%")
+                            ->orWhere('email', 'like', "%{$q}%");
+                    });
+            });
+        }
+
+        $orders = $query->paginate(25)->withQueryString();
 
         return view('admin.orders.index', [
             'orders' => $orders,
             'currentStatus' => $status,
+            'q' => $q,
         ]);
     }
 

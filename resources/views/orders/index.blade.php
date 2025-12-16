@@ -55,8 +55,7 @@
     @endforelse
   </div>
 
-  {{-- Paginación SOLO si $orders es paginator --}}
-  @if(is_object($orders) && method_exists($orders, 'links'))
+  @if($orders->hasPages())
     <div class="mt-6">
       {{ $orders->links() }}
     </div>

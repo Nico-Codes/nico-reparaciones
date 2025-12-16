@@ -83,7 +83,8 @@ class OrderController extends Controller
         $orders = Auth::user()
             ->orders()
             ->latest()
-            ->get();
+            ->paginate(10)
+            ->withQueryString();
 
         return view('orders.index', [
             'orders' => $orders,
