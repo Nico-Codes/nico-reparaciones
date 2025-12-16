@@ -26,6 +26,14 @@ class RepairLookupController extends Controller
             ->where('customer_phone', $phone)
             ->first();
 
+        if (!$repair) {
+            return back()
+                ->withErrors([
+                    'code' => 'No encontramos una reparación con ese código y teléfono. Verificá los datos e intentá de nuevo.',
+                ])
+                ->withInput();
+        }
+
         return view('repairs.lookup_result', [
             'repair' => $repair,
             'statuses' => Repair::STATUSES,

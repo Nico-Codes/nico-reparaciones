@@ -9,6 +9,7 @@ use App\Models\OrderWhatsappLog;
 use App\Models\OrderWhatsappTemplate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 
 class AdminOrderController extends Controller
 {
@@ -17,7 +18,14 @@ class AdminOrderController extends Controller
         $status = $request->query('status'); // puede ser null
         $q = trim((string) $request->query('q', ''));
 
-        // Base para métricas (aplicamos solo búsqueda, sin filtrar por status)
+        $wa = (string) $request->query('wa', '');
+        if (!in_array($wa, ['pending', 'sent'], true)) {
+            $wa = null;
+        }
+
+        $activeOrderStatuses = array_values(array_diff(array_keys(Order::STATUSES), ['entregado', 'cancelado']));
+
+        // Base para métricas por estado (aplicamos solo búsqueda, sin filtrar por status)
         $countBase = Order::query();
         $this->applySearch($countBase, $q);
 
@@ -28,12 +36,68 @@ class AdminOrderController extends Controller
             ->groupBy('status')
             ->pluck('aggregate', 'status');
 
+        // ✅ Conteos para el filtro WhatsApp (sobre búsqueda + (status si aplica))
+        $waCounts = [
+            'pending' => 0,
+            'sent' => 0,
+            'all' => 0,
+        ];
+
+        if (Schema::hasTable('order_whatsapp_logs')) {
+            $waBase = Order::query();
+            $this->applySearch($waBase, $q);
+
+            if ($status) {
+                $waBase->where('status', $status);
+                $scopeStatuses = [$status];
+            } else {
+                // si no elegiste status, WA se calcula sobre activos (igual que el KPI del dashboard)
+                $scopeStatuses = $activeOrderStatuses;
+            }
+
+            $waCounts['all'] = (clone $waBase)
+                ->whereIn('status', $scopeStatuses)
+                ->count();
+
+            $waCounts['pending'] = (clone $waBase)
+                ->whereIn('status', $scopeStatuses)
+                ->whereDoesntHave('whatsappLogs', function ($q) {
+                    $q->whereColumn('order_whatsapp_logs.notified_status', 'orders.status');
+                })
+                ->count();
+
+            $waCounts['sent'] = (clone $waBase)
+                ->whereIn('status', $scopeStatuses)
+                ->whereHas('whatsappLogs', function ($q) {
+                    $q->whereColumn('order_whatsapp_logs.notified_status', 'orders.status');
+                })
+                ->count();
+        }
+
         // Query principal para listado
         $listQuery = Order::with('user');
         $this->applySearch($listQuery, $q);
 
         if ($status) {
             $listQuery->where('status', $status);
+        }
+
+        // ✅ Filtro WhatsApp
+        if ($wa && Schema::hasTable('order_whatsapp_logs')) {
+            // si no hay status seleccionado, restringimos a activos (para que el filtro tenga sentido)
+            if (!$status) {
+                $listQuery->whereIn('status', $activeOrderStatuses);
+            }
+
+            if ($wa === 'pending') {
+                $listQuery->whereDoesntHave('whatsappLogs', function ($q) {
+                    $q->whereColumn('order_whatsapp_logs.notified_status', 'orders.status');
+                });
+            } elseif ($wa === 'sent') {
+                $listQuery->whereHas('whatsappLogs', function ($q) {
+                    $q->whereColumn('order_whatsapp_logs.notified_status', 'orders.status');
+                });
+            }
         }
 
         $orders = $listQuery
@@ -44,9 +108,11 @@ class AdminOrderController extends Controller
         return view('admin.orders.index', [
             'orders' => $orders,
             'currentStatus' => $status,
+            'currentWa' => $wa,
             'q' => $q,
             'totalMatching' => $totalMatching,
             'statusCounts' => $statusCounts,
+            'waCounts' => $waCounts,
             'statuses' => Order::STATUSES,
         ]);
     }

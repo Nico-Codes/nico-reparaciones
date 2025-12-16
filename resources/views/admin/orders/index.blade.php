@@ -6,7 +6,6 @@
   $money = fn($n) => '$ ' . number_format((float)($n ?? 0), 0, ',', '.');
 
   $statusMap = $statuses ?? \App\Models\Order::STATUSES;
-
   $paymentMap = \App\Models\Order::PAYMENT_METHODS;
 
   $badge = function(string $st) {
@@ -22,14 +21,36 @@
   };
 
   $currentStatus = $currentStatus ?? null;
+  $currentWa = $currentWa ?? null; // pending|sent|null
   $q = $q ?? '';
+
   $statusCounts = $statusCounts ?? collect();
   $totalMatching = $totalMatching ?? ($orders->total() ?? 0);
+
+  $waCounts = $waCounts ?? ['pending' => 0, 'sent' => 0, 'all' => 0];
 
   $tabClass = function($active) {
     return $active
       ? 'bg-zinc-900 text-white border-zinc-900'
       : 'bg-white text-zinc-700 border-zinc-200 hover:bg-zinc-50';
+  };
+
+  $pillClass = function($active) {
+    return $active
+      ? 'bg-emerald-600 text-white border-emerald-600'
+      : 'bg-white text-zinc-700 border-zinc-200 hover:bg-zinc-50';
+  };
+
+  $params = function(array $override = []) use ($currentStatus, $currentWa, $q) {
+    $base = [
+      'status' => $currentStatus,
+      'wa' => $currentWa,
+      'q' => $q,
+    ];
+
+    $merged = array_merge($base, $override);
+
+    return array_filter($merged, fn($v) => $v !== null && $v !== '');
   };
 @endphp
 
@@ -78,10 +99,11 @@
     </div>
   </div>
 
-  {{-- Tabs por estado --}}
+  {{-- Filtros --}}
   <div class="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+    {{-- Tabs por estado --}}
     <div class="flex flex-wrap gap-2">
-      <a href="{{ route('admin.orders.index', array_filter(['q' => $q])) }}"
+      <a href="{{ route('admin.orders.index', array_filter(['q' => $q, 'wa' => $currentWa])) }}"
          class="inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold {{ $tabClass($currentStatus === null) }}">
         Todos
         <span class="text-xs opacity-80">{{ (int)$totalMatching }}</span>
@@ -89,7 +111,7 @@
 
       @foreach($statusMap as $key => $label)
         @php $count = (int)($statusCounts[$key] ?? 0); @endphp
-        <a href="{{ route('admin.orders.index', array_filter(['status' => $key, 'q' => $q])) }}"
+        <a href="{{ route('admin.orders.index', array_filter(['status' => $key, 'q' => $q, 'wa' => $currentWa])) }}"
            class="inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold {{ $tabClass($currentStatus === $key) }}">
           {{ $label }}
           <span class="text-xs opacity-80">{{ $count }}</span>
@@ -97,10 +119,41 @@
       @endforeach
     </div>
 
+    {{-- WhatsApp pills --}}
+    <div class="mt-4 flex flex-wrap items-center gap-2">
+      <div class="text-xs font-black uppercase text-zinc-500 mr-1">WhatsApp</div>
+
+      <a href="{{ route('admin.orders.index', $params(['wa' => null])) }}"
+         class="inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold {{ $pillClass($currentWa === null) }}">
+        Todos
+        <span class="text-xs opacity-80">{{ (int)($waCounts['all'] ?? 0) }}</span>
+      </a>
+
+      <a href="{{ route('admin.orders.index', $params(['wa' => 'pending'])) }}"
+         class="inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold {{ $pillClass($currentWa === 'pending') }}">
+        Pendientes
+        <span class="text-xs opacity-80">{{ (int)($waCounts['pending'] ?? 0) }}</span>
+      </a>
+
+      <a href="{{ route('admin.orders.index', $params(['wa' => 'sent'])) }}"
+         class="inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold {{ $pillClass($currentWa === 'sent') }}">
+        Enviados
+        <span class="text-xs opacity-80">{{ (int)($waCounts['sent'] ?? 0) }}</span>
+      </a>
+
+      <div class="text-xs text-zinc-500 ml-auto">
+        (WA pendiente/enviado se calcula según el estado actual del pedido)
+      </div>
+    </div>
+
     {{-- Búsqueda --}}
     <form method="GET" action="{{ route('admin.orders.index') }}" class="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
       @if($currentStatus)
         <input type="hidden" name="status" value="{{ $currentStatus }}">
+      @endif
+
+      @if($currentWa)
+        <input type="hidden" name="wa" value="{{ $currentWa }}">
       @endif
 
       <div class="flex-1">
@@ -117,9 +170,9 @@
           Buscar
         </button>
 
-        <a href="{{ route('admin.orders.index', array_filter(['status' => $currentStatus])) }}"
+        <a href="{{ route('admin.orders.index', array_filter(['status' => $currentStatus, 'wa' => $currentWa])) }}"
            class="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold hover:bg-zinc-50">
-          Limpiar
+          Limpiar búsqueda
         </a>
       </div>
     </form>
@@ -143,7 +196,7 @@
         <div class="rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
           <div class="font-black text-zinc-900">No hay pedidos para mostrar.</div>
           <div class="mt-1 text-sm text-zinc-600">
-            Probá cambiar el estado o limpiar la búsqueda.
+            Probá cambiar el estado, el filtro WhatsApp o limpiar la búsqueda.
           </div>
           <div class="mt-4 flex gap-2 flex-wrap">
             <a href="{{ route('admin.orders.index') }}" class="btn-primary">Ver todos</a>

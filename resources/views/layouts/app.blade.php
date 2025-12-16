@@ -3,93 +3,129 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <title>@yield('title', config('app.name', 'NicoReparaciones'))</title>
 
-  <title>@yield('title', 'NicoReparaciones')</title>
+  @php
+    $hasVite = file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot'));
+  @endphp
 
-  @vite(['resources/css/app.css', 'resources/js/app.js'])
+  @if($hasVite)
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+  @else
+    {{-- fallback mínimo --}}
+    <style>
+      body{margin:0;font-family:system-ui,Segoe UI,Roboto,Arial;background:#fafafa;color:#09090b}
+      a{text-decoration:none;color:inherit}
+      .container-page{max-width:1100px;margin:0 auto;padding:0 16px}
+    </style>
+  @endif
 </head>
 
 @php
-  $isAuth = auth()->check();
+  $isAuth  = auth()->check();
   $isAdmin = $isAuth && ((auth()->user()->role ?? null) === 'admin' || (auth()->user()->is_admin ?? false));
 
   $cart = session('cart', []);
   $cartCount = 0;
-  foreach ($cart as $item) {
-    $cartCount += (int)($item['quantity'] ?? 0);
-  }
+  foreach ($cart as $i) { $cartCount += (int)($i['quantity'] ?? 0); }
 
-  $logoPath = 'logo.png';
-  $logoExists = \Illuminate\Support\Facades\Storage::disk('public')->exists($logoPath);
+  $logoRel = 'brand/logo.png';
+  $logoExists = file_exists(public_path($logoRel));
+
+  $has = fn($name) => \Illuminate\Support\Facades\Route::has($name);
+
+  $brandHref = $isAdmin && $has('admin.dashboard')
+    ? route('admin.dashboard')
+    : ($has('store.index') ? route('store.index') : '/');
 @endphp
 
-<body class="min-h-screen bg-zinc-50 text-zinc-900">
-  <header class="sticky top-0 z-50 border-b border-zinc-100 bg-white/90 backdrop-blur">
+<body class="min-h-screen flex flex-col">
+  {{-- ✅ FIX: navbar sólido en mobile, blur/transparencia solo en md+ --}}
+  <header class="sticky top-0 z-40 bg-white border-b border-zinc-200 shadow-sm md:bg-white/90 md:backdrop-blur">
     <div class="container-page">
-      <div class="flex items-center justify-between py-3 gap-3">
+      <div class="h-14 flex items-center justify-between gap-3">
+        {{-- Left: mobile toggle + brand --}}
+        <div class="flex items-center gap-3 min-w-0">
+          <button
+            class="icon-btn md:hidden"
+            data-toggle="sidebar"
+            aria-label="Abrir menú"
+            aria-expanded="false"
+            type="button"
+          >☰</button>
 
-        {{-- Left --}}
-        <div class="flex items-center gap-3">
-          <a href="{{ route('store.index') }}" class="flex items-center gap-2 font-black tracking-tight">
-            <span class="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-zinc-900 text-white">N</span>
-            <span class="hidden sm:inline">NicoReparaciones</span>
-          </a>
-
-          <nav class="hidden md:flex items-center gap-1">
-            <a class="nav-link {{ request()->routeIs('store.*') || request()->routeIs('home') ? 'nav-link-active' : '' }}"
-               href="{{ route('store.index') }}">Tienda</a>
-
-            <a class="nav-link {{ request()->routeIs('repairs.lookup*') ? 'nav-link-active' : '' }}"
-               href="{{ route('repairs.lookup') }}">Consultar reparación</a>
-
-            @if($isAuth)
-              <a class="nav-link {{ request()->routeIs('orders.*') ? 'nav-link-active' : '' }}"
-                 href="{{ route('orders.index') }}">Mis pedidos</a>
-
-              <a class="nav-link {{ request()->routeIs('repairs.my.*') ? 'nav-link-active' : '' }}"
-                 href="{{ route('repairs.my.index') }}">Mis reparaciones</a>
+          <a href="{{ $brandHref }}" class="flex items-center gap-2 min-w-0">
+            @if($logoExists)
+              <img src="{{ asset($logoRel) }}" class="h-9 w-9 rounded-xl ring-1 ring-zinc-100 bg-white object-contain" alt="NicoReparaciones">
+            @else
+              <div class="h-9 w-9 rounded-xl ring-1 ring-zinc-100 bg-white flex items-center justify-center font-black text-sky-700">NR</div>
             @endif
-          </nav>
+
+            <div class="leading-tight min-w-0">
+              <div class="font-black tracking-tight text-zinc-900 truncate">
+                Nico<span class="text-sky-600">Reparaciones</span>
+              </div>
+              <div class="hidden sm:block text-[11px] text-zinc-500 -mt-0.5 truncate">Tienda + Reparaciones</div>
+            </div>
+          </a>
         </div>
 
-        {{-- Right --}}
-        <div class="flex items-center gap-2">
-          <a href="{{ route('cart.index') }}" class="btn-ghost px-3 py-2 relative">
-            🛒 <span class="hidden sm:inline">Carrito</span>
-            @if($cartCount > 0)
-              <span class="absolute -top-1 -right-1 badge-sky">{{ $cartCount }}</span>
-            @endif
-          </a>
+        {{-- Desktop nav (simple) --}}
+        <nav class="hidden md:flex items-center gap-1">
+          @if($has('store.index'))
+            <a class="nav-link {{ request()->routeIs('store.index','store.category','store.product','home') ? 'active' : '' }}"
+               href="{{ route('store.index') }}">Tienda</a>
+          @endif
 
-          <button class="btn-ghost px-3 py-2 md:hidden" onclick="document.getElementById('mobileMenu').classList.toggle('hidden')">
-            ☰
-          </button>
+          @if($has('repairs.lookup'))
+            <a class="nav-link {{ request()->routeIs('repairs.lookup','repairs.lookup.post') ? 'active' : '' }}"
+               href="{{ route('repairs.lookup') }}">Reparación</a>
+          @endif
+
+          @if($isAdmin && $has('admin.dashboard'))
+            <a class="nav-link {{ request()->is('admin*') ? 'active' : '' }}"
+               href="{{ route('admin.dashboard') }}">Admin</a>
+          @endif
+        </nav>
+
+        {{-- Right: cart + account --}}
+        <div class="flex items-center gap-2">
+          @if($has('cart.index'))
+            <a href="{{ route('cart.index') }}" class="icon-btn relative" aria-label="Carrito">
+              🛒
+              @if($cartCount > 0)
+                <span class="absolute -top-1 -right-1 badge-sky">{{ $cartCount }}</span>
+              @endif
+            </a>
+          @endif
 
           @if(!$isAuth)
-            <a href="{{ route('login') }}" class="btn-outline px-3 py-2">Ingresar</a>
-            <a href="{{ route('register') }}" class="btn-primary px-3 py-2">Crear cuenta</a>
+            @if($has('login'))
+              <a href="{{ route('login') }}" class="btn-outline hidden sm:inline-flex">Ingresar</a>
+              <a href="{{ route('login') }}" class="btn-primary sm:hidden">Ingresar</a>
+            @endif
+            @if($has('register'))
+              <a href="{{ route('register') }}" class="btn-primary hidden sm:inline-flex">Crear cuenta</a>
+            @endif
           @else
             <div class="relative">
-              <button class="btn-ghost px-3 py-2" data-toggle="user-menu">
-                {{ auth()->user()->name ?? 'Mi cuenta' }} ▾
+              <button class="btn-ghost px-3 py-2" data-menu="accountMenu" aria-expanded="false" type="button">
+                <span class="sm:hidden">👤</span>
+                <span class="hidden sm:inline max-w-[12rem] truncate">{{ auth()->user()->name ?? 'Cuenta' }}</span>
+                <span class="hidden sm:inline">▾</span>
               </button>
 
-              <div class="dropdown-menu hidden" data-menu="user-menu">
-                <a class="dropdown-item" href="{{ route('orders.index') }}">Mis pedidos</a>
-                <a class="dropdown-item" href="{{ route('repairs.my.index') }}">Mis reparaciones</a>
+              <div id="accountMenu" class="dropdown-menu hidden">
+                @if($has('orders.index')) <a class="dropdown-item" href="{{ route('orders.index') }}">Mis pedidos</a> @endif
+                @if($has('repairs.my.index')) <a class="dropdown-item" href="{{ route('repairs.my.index') }}">Mis reparaciones</a> @endif
+                @if($isAdmin && $has('admin.dashboard')) <a class="dropdown-item" href="{{ route('admin.dashboard') }}">Panel admin</a> @endif
 
-                @if($isAdmin)
-                  <a class="dropdown-item" href="{{ route('admin.dashboard') }}">Panel admin</a>
-                  <a class="dropdown-item" href="{{ route('admin.settings.index') }}">Configuración</a>
-                  <a class="dropdown-item" href="{{ route('admin.whatsapp_templates.index') }}">WhatsApp (Reparaciones)</a>
-                  <a class="dropdown-item" href="{{ route('admin.orders_whatsapp_templates.index') }}">WhatsApp (Pedidos)</a>
+                @if($has('logout'))
+                  <form method="POST" action="{{ route('logout') }}">
+                    @csrf
+                    <button type="submit" class="dropdown-item text-rose-700">Cerrar sesión</button>
+                  </form>
                 @endif
-
-                <form method="POST" action="{{ route('logout') }}">
-                  @csrf
-                  <button type="submit" class="dropdown-item text-rose-700">Cerrar sesión</button>
-                </form>
               </div>
             </div>
           @endif
@@ -97,55 +133,121 @@
       </div>
     </div>
 
-    {{-- Mobile menu --}}
-    <div class="md:hidden hidden" id="mobileMenu">
-      <div class="border-t border-zinc-100 bg-white">
-        <div class="container-page py-3 flex flex-col gap-1">
-          <a class="nav-link" href="{{ route('store.index') }}">Tienda</a>
-          <a class="nav-link" href="{{ route('repairs.lookup') }}">Consultar reparación</a>
+    {{-- Mobile sidebar --}}
+    <div id="appSidebarOverlay" class="fixed inset-0 z-50 hidden bg-zinc-950/40 md:hidden" data-close="sidebar" aria-hidden="true"></div>
 
-          @if($isAuth)
-            <a class="nav-link" href="{{ route('orders.index') }}">Mis pedidos</a>
-            <a class="nav-link" href="{{ route('repairs.my.index') }}">Mis reparaciones</a>
-          @endif
+    <aside
+      id="appSidebar"
+      class="fixed left-0 top-0 z-50 h-full w-[86%] max-w-xs -translate-x-full transform bg-white shadow-xl transition-transform duration-200 ease-out md:hidden"
+      aria-label="Menú">
 
-          @if($isAdmin)
-            <a class="nav-link" href="{{ route('admin.dashboard') }}">Panel admin</a>
-            <a class="nav-link" href="{{ route('admin.settings.index') }}">Configuración</a>
-            <a class="nav-link" href="{{ route('admin.whatsapp_templates.index') }}">WhatsApp (Reparaciones)</a>
-            <a class="nav-link" href="{{ route('admin.orders_whatsapp_templates.index') }}">WhatsApp (Pedidos)</a>
+      <div class="h-14 px-4 flex items-center justify-between border-b border-zinc-100">
+        <div class="flex items-center gap-2">
+          @if($logoExists)
+            <img src="{{ asset($logoRel) }}" class="h-8 w-8 rounded-xl ring-1 ring-zinc-100 bg-white object-contain" alt="NicoReparaciones">
+          @else
+            <div class="h-8 w-8 rounded-xl ring-1 ring-zinc-100 bg-white flex items-center justify-center font-black text-sky-700">NR</div>
           @endif
+          <div class="font-black text-zinc-900">Menú</div>
         </div>
+
+        <button class="icon-btn" data-close="sidebar" aria-label="Cerrar menú" type="button">✕</button>
       </div>
-    </div>
 
-    {{-- Admin quickbar (solo admin) --}}
+      <div class="p-4 space-y-6">
+        @if($isAuth)
+          <div class="card">
+            <div class="card-body">
+              <div class="font-black text-zinc-900 truncate">{{ auth()->user()->name ?? 'Usuario' }}</div>
+              <div class="sidebar-sub truncate">{{ auth()->user()->email ?? '' }}</div>
+            </div>
+          </div>
+        @endif
+
+        <div class="space-y-2">
+          <div class="sidebar-title">Navegación</div>
+          <div class="grid gap-1">
+            @if($has('store.index'))
+              <a class="sidebar-link {{ request()->routeIs('store.index','store.category','store.product','home') ? 'active' : '' }}"
+                 href="{{ route('store.index') }}">🛍️ Tienda</a>
+            @endif
+
+            @if($has('repairs.lookup'))
+              <a class="sidebar-link {{ request()->routeIs('repairs.lookup','repairs.lookup.post') ? 'active' : '' }}"
+                 href="{{ route('repairs.lookup') }}">🧾 Consultar reparación</a>
+            @endif
+
+            @if($has('cart.index'))
+              <a class="sidebar-link {{ request()->routeIs('cart.index') ? 'active' : '' }}"
+                 href="{{ route('cart.index') }}">🛒 Carrito</a>
+            @endif
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <div class="sidebar-title">Cuenta</div>
+          <div class="grid gap-1">
+            @if($isAuth)
+              @if($has('orders.index')) <a class="sidebar-link {{ request()->routeIs('orders.index') ? 'active' : '' }}" href="{{ route('orders.index') }}">📦 Mis pedidos</a> @endif
+              @if($has('repairs.my.index')) <a class="sidebar-link {{ request()->routeIs('repairs.my.index') ? 'active' : '' }}" href="{{ route('repairs.my.index') }}">🛠️ Mis reparaciones</a> @endif
+
+              @if($has('logout'))
+                <form method="POST" action="{{ route('logout') }}">
+                  @csrf
+                  <button type="submit" class="sidebar-link text-rose-700 hover:text-rose-800">🚪 Cerrar sesión</button>
+                </form>
+              @endif
+            @else
+              @if($has('login')) <a class="sidebar-link" href="{{ route('login') }}">Ingresar</a> @endif
+              @if($has('register')) <a class="sidebar-link" href="{{ route('register') }}">Crear cuenta</a> @endif
+            @endif
+          </div>
+        </div>
+
+        @if($isAdmin)
+          <div class="space-y-2">
+            <div class="sidebar-title">Admin</div>
+            <div class="grid gap-1">
+              @if($has('admin.dashboard')) <a class="sidebar-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" href="{{ route('admin.dashboard') }}">📊 Dashboard</a> @endif
+              @if($has('admin.orders.index')) <a class="sidebar-link {{ request()->routeIs('admin.orders.*') ? 'active' : '' }}" href="{{ route('admin.orders.index') }}">🧾 Pedidos</a> @endif
+              @if($has('admin.repairs.index')) <a class="sidebar-link {{ request()->routeIs('admin.repairs.*') ? 'active' : '' }}" href="{{ route('admin.repairs.index') }}">🛠️ Reparaciones</a> @endif
+              @if($has('admin.products.index')) <a class="sidebar-link {{ request()->routeIs('admin.products.*') ? 'active' : '' }}" href="{{ route('admin.products.index') }}">📦 Productos</a> @endif
+              @if($has('admin.settings.index')) <a class="sidebar-link {{ request()->routeIs('admin.settings.*') ? 'active' : '' }}" href="{{ route('admin.settings.index') }}">⚙️ Configuración</a> @endif
+            </div>
+          </div>
+        @endif
+      </div>
+    </aside>
+
+    {{-- Admin quickbar minimal --}}
     @if($isAdmin && request()->is('admin*'))
-      <div class="bg-white border-t border-zinc-100">
-        <div class="container-page py-2 flex items-center gap-2 overflow-x-auto">
-          <a class="{{ request()->routeIs('admin.dashboard') ? 'btn-primary btn-sm' : 'btn-outline btn-sm' }}"
-             href="{{ route('admin.dashboard') }}">Dashboard</a>
+      <div class="hidden md:block bg-white border-t border-zinc-100">
+        <div class="container-page py-2 flex items-center gap-2">
+          @if($has('admin.dashboard'))
+            <a class="{{ request()->routeIs('admin.dashboard') ? 'btn-primary btn-sm' : 'btn-outline btn-sm' }}"
+               href="{{ route('admin.dashboard') }}">Dashboard</a>
+          @endif
+          @if($has('admin.orders.index'))
+            <a class="{{ request()->routeIs('admin.orders.*') ? 'btn-primary btn-sm' : 'btn-outline btn-sm' }}"
+               href="{{ route('admin.orders.index') }}">Pedidos</a>
+          @endif
+          @if($has('admin.repairs.index'))
+            <a class="{{ request()->routeIs('admin.repairs.*') ? 'btn-primary btn-sm' : 'btn-outline btn-sm' }}"
+               href="{{ route('admin.repairs.index') }}">Reparaciones</a>
+          @endif
+          @if($has('admin.products.index'))
+            <a class="{{ request()->routeIs('admin.products.*') ? 'btn-primary btn-sm' : 'btn-outline btn-sm' }}"
+               href="{{ route('admin.products.index') }}">Productos</a>
+          @endif
 
-          <a class="{{ request()->routeIs('admin.orders.*') ? 'btn-primary btn-sm' : 'btn-outline btn-sm' }}"
-             href="{{ route('admin.orders.index') }}">Pedidos</a>
-
-          <a class="{{ request()->routeIs('admin.repairs.*') ? 'btn-primary btn-sm' : 'btn-outline btn-sm' }}"
-             href="{{ route('admin.repairs.index') }}">Reparaciones</a>
-
-          <a class="{{ request()->routeIs('admin.products.*') ? 'btn-primary btn-sm' : 'btn-outline btn-sm' }}"
-             href="{{ route('admin.products.index') }}">Productos</a>
-
-          <a class="{{ request()->routeIs('admin.categories.*') ? 'btn-primary btn-sm' : 'btn-outline btn-sm' }}"
-             href="{{ route('admin.categories.index') }}">Categorías</a>
-
-          <a class="{{ request()->routeIs('admin.settings.*') ? 'btn-primary btn-sm' : 'btn-outline btn-sm' }}"
-             href="{{ route('admin.settings.index') }}">Configuración</a>
-
-          <a class="{{ request()->routeIs('admin.whatsapp_templates.*') ? 'btn-primary btn-sm' : 'btn-outline btn-sm' }}"
-             href="{{ route('admin.whatsapp_templates.index') }}">WA Reparaciones</a>
-
-          <a class="{{ request()->routeIs('admin.orders_whatsapp_templates.*') ? 'btn-primary btn-sm' : 'btn-outline btn-sm' }}"
-             href="{{ route('admin.orders_whatsapp_templates.index') }}">WA Pedidos</a>
+          <div class="ml-auto relative">
+            <button class="btn-outline btn-sm" data-menu="adminMoreMenu" aria-expanded="false" type="button">Más ▾</button>
+            <div id="adminMoreMenu" class="dropdown-menu hidden">
+              @if($has('admin.settings.index')) <a class="dropdown-item" href="{{ route('admin.settings.index') }}">Configuración</a> @endif
+              @if($has('admin.categories.index')) <a class="dropdown-item" href="{{ route('admin.categories.index') }}">Categorías</a> @endif
+              @if($has('admin.whatsapp_templates.index')) <a class="dropdown-item" href="{{ route('admin.whatsapp_templates.index') }}">WhatsApp</a> @endif
+            </div>
+          </div>
         </div>
       </div>
     @endif
@@ -177,65 +279,49 @@
         <div>
           <div class="flex items-center gap-2">
             @if($logoExists)
-              <img src="{{ asset('storage/' . $logoPath) }}" class="h-10 w-10 rounded-2xl object-cover" alt="Logo">
+              <img src="{{ asset($logoRel) }}" class="h-9 w-9 rounded-xl ring-1 ring-zinc-100 bg-white object-contain" alt="NicoReparaciones">
             @else
-              <span class="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-zinc-900 text-white font-black">N</span>
+              <div class="h-9 w-9 rounded-xl ring-1 ring-zinc-100 bg-white flex items-center justify-center font-black text-sky-700">NR</div>
             @endif
-            <div>
-              <div class="font-black">NicoReparaciones</div>
-              <div class="text-xs text-zinc-500">Reparación y accesorios</div>
-            </div>
+            <div class="font-black tracking-tight">Nico<span class="text-sky-600">Reparaciones</span></div>
           </div>
+          <p class="muted mt-2">Tienda simple + consulta de reparaciones.</p>
+        </div>
 
-          <div class="mt-3 text-sm text-zinc-600">
-            Atención personalizada · Presupuestos rápidos · Garantía
+        <div class="text-sm">
+          <div class="font-black text-zinc-900 mb-2">Accesos</div>
+          <div class="grid gap-1">
+            @if($has('store.index')) <a href="{{ route('store.index') }}">Tienda</a> @endif
+            @if($has('cart.index')) <a href="{{ route('cart.index') }}">Carrito</a> @endif
+            @if($has('repairs.lookup')) <a href="{{ route('repairs.lookup') }}">Consultar reparación</a> @endif
           </div>
         </div>
 
-        <div>
-          <div class="font-black">Secciones</div>
-          <div class="mt-2 flex flex-col gap-1 text-sm">
-            <a class="hover:underline" href="{{ route('store.index') }}">Tienda</a>
-            <a class="hover:underline" href="{{ route('repairs.lookup') }}">Consultar reparación</a>
+        <div class="text-sm">
+          <div class="font-black text-zinc-900 mb-2">Cuenta</div>
+          <div class="grid gap-1">
             @if($isAuth)
-              <a class="hover:underline" href="{{ route('orders.index') }}">Mis pedidos</a>
-              <a class="hover:underline" href="{{ route('repairs.my.index') }}">Mis reparaciones</a>
+              @if($has('orders.index')) <a href="{{ route('orders.index') }}">Mis pedidos</a> @endif
+              @if($has('repairs.my.index')) <a href="{{ route('repairs.my.index') }}">Mis reparaciones</a> @endif
+              @if($has('logout'))
+                <form method="POST" action="{{ route('logout') }}">
+                  @csrf
+                  <button class="text-left text-rose-700 hover:text-rose-800 font-bold">Cerrar sesión</button>
+                </form>
+              @endif
+            @else
+              @if($has('login')) <a href="{{ route('login') }}">Ingresar</a> @endif
+              @if($has('register')) <a href="{{ route('register') }}">Registrarme</a> @endif
             @endif
-          </div>
-        </div>
-
-        <div>
-          <div class="font-black">Contacto</div>
-          <div class="mt-2 text-sm text-zinc-600">
-            WhatsApp y consultas en el local.
           </div>
         </div>
       </div>
 
-      <div class="mt-6 text-xs text-zinc-500">
-        © {{ date('Y') }} NicoReparaciones. Todos los derechos reservados.
+      <div class="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-zinc-500">
+        <div>© {{ date('Y') }} NicoReparaciones</div>
+        <div class="text-zinc-400">Hecho con Laravel</div>
       </div>
     </div>
   </footer>
-
-  <script>
-    // dropdown simple
-    document.querySelectorAll('[data-toggle]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const id = btn.getAttribute('data-toggle');
-        const menu = document.querySelector(`[data-menu="${id}"]`);
-        if (menu) menu.classList.toggle('hidden');
-      });
-    });
-
-    document.addEventListener('click', (e) => {
-      document.querySelectorAll('.dropdown-menu').forEach(menu => {
-        const toggle = document.querySelector(`[data-toggle="${menu.getAttribute('data-menu')}"]`);
-        if (!menu.contains(e.target) && toggle && !toggle.contains(e.target)) {
-          menu.classList.add('hidden');
-        }
-      });
-    });
-  </script>
 </body>
 </html>

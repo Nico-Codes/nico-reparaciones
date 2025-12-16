@@ -1,65 +1,57 @@
 @extends('layouts.app')
 
-@section('title', 'Resultado reparación')
-
-@php
-  $badge = function(string $s) {
-    return match($s) {
-      'received' => 'badge-sky',
-      'diagnosing' => 'badge-indigo',
-      'waiting_approval' => 'badge-amber',
-      'repairing' => 'badge-indigo',
-      'ready_pickup' => 'badge-emerald',
-      'delivered' => 'badge-zinc',
-      'cancelled' => 'badge-rose',
-      default => 'badge-zinc',
-    };
-  };
-@endphp
+@section('title', 'Consultar reparación')
 
 @section('content')
-  <div class="max-w-2xl mx-auto">
+  <div class="max-w-xl mx-auto space-y-5">
     <div class="page-head">
-      <div class="page-title">Resultado</div>
-      <div class="page-subtitle">Estado actual de tu reparación.</div>
+      <div class="page-title">Consultar reparación</div>
+      <div class="page-subtitle">Ingresá tu código y tu teléfono para ver el estado actual.</div>
     </div>
 
     <div class="card">
       <div class="card-body">
-        <div class="flex items-start justify-between gap-3">
+        <form method="POST" action="{{ route('repairs.lookup.post') }}" class="space-y-4">
+          @csrf
+
           <div>
-            <div class="font-black text-lg">
-              {{ $repair->device_brand }} {{ $repair->device_model }}
-            </div>
-            <div class="muted mt-1">
-              Código: <span class="font-black text-zinc-900">{{ $repair->code }}</span>
-            </div>
+            <label class="block text-sm font-black text-zinc-900 mb-1">Código</label>
+            <input
+              name="code"
+              value="{{ old('code') }}"
+              placeholder="Ej: NR-1234"
+              class="w-full rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
+              autocomplete="off"
+            >
+            <div class="mt-1 text-xs text-zinc-500">Es el código que te dimos cuando dejaste el equipo.</div>
           </div>
 
-          <span class="{{ $badge($repair->status) }}">
-            {{ \App\Models\Repair::STATUSES[$repair->status] ?? $repair->status }}
-          </span>
-        </div>
-
-        <hr class="my-4">
-
-        <div class="grid gap-3">
           <div>
-            <div class="muted">Falla reportada</div>
-            <div class="text-sm text-zinc-800">{{ $repair->issue_reported }}</div>
+            <label class="block text-sm font-black text-zinc-900 mb-1">Teléfono</label>
+            <input
+              name="phone"
+              value="{{ old('phone') }}"
+              placeholder="Ej: 341 555 1234"
+              class="w-full rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
+              autocomplete="tel"
+            >
+            <div class="mt-1 text-xs text-zinc-500">Usá el mismo teléfono que dejaste al ingresar el equipo.</div>
           </div>
 
-          @if($repair->diagnosis)
-            <div>
-              <div class="muted">Diagnóstico</div>
-              <div class="text-sm text-zinc-800">{{ $repair->diagnosis }}</div>
-            </div>
-          @endif
+          <button class="btn-primary w-full">Consultar estado</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <div class="font-black text-zinc-900">¿No encontrás tu código?</div>
+        <div class="mt-1 text-sm text-zinc-600">
+          Escribinos o acercate al local y te ayudamos. (Para proteger tu información, pedimos código + teléfono).
         </div>
 
-        <div class="mt-5 flex flex-col sm:flex-row gap-2">
-          <a href="{{ route('repairs.lookup') }}" class="btn-outline w-full sm:w-auto">Volver</a>
-          <a href="{{ route('store.index') }}" class="btn-primary w-full sm:w-auto">Ir a la tienda</a>
+        <div class="mt-4 flex flex-col sm:flex-row gap-2">
+          <a href="{{ route('store.index') }}" class="btn-outline w-full sm:w-auto">Ir a la tienda</a>
         </div>
       </div>
     </div>
