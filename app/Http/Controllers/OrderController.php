@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\OrderStatusHistory;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -23,7 +24,6 @@ class OrderController extends Controller
                 ->with('success', 'Tu carrito está vacío.');
         }
 
-        // Validar datos del formulario de checkout
         $data = $request->validate([
             'payment_method' => ['required', 'in:local,mercado_pago,transferencia'],
             'pickup_name'    => ['nullable', 'string', 'max:255'],
@@ -31,24 +31,31 @@ class OrderController extends Controller
             'notes'          => ['nullable', 'string'],
         ]);
 
-        // Calcular total
         $total = 0;
         foreach ($cart as $item) {
             $total += $item['price'] * $item['quantity'];
         }
 
-        // Crear pedido
         $order = Order::create([
-            'user_id'       => Auth::id(),
-            'status'        => 'pendiente',
-            'payment_method'=> $data['payment_method'],
-            'total'         => $total,
-            'pickup_name'   => $data['pickup_name'] ?: Auth::user()->name,
-            'pickup_phone'  => $data['pickup_phone'] ?: Auth::user()->phone,
-            'notes'         => $data['notes'] ?? null,
+            'user_id'        => Auth::id(),
+            'status'         => 'pendiente',
+            'payment_method' => $data['payment_method'],
+            'total'          => $total,
+            'pickup_name'    => $data['pickup_name'] ?: Auth::user()->name,
+            'pickup_phone'   => $data['pickup_phone'] ?: (Auth::user()->phone ?? null),
+            'notes'          => $data['notes'] ?? null,
         ]);
 
-        // Crear items del pedido y, si querés, actualizar stock
+        // Historial inicial
+        OrderStatusHistory::create([
+            'order_id'    => $order->id,
+            'from_status' => null,
+            'to_status'   => 'pendiente',
+            'changed_by'  => Auth::id(),
+            'changed_at'  => now(),
+            'comment'     => 'Pedido creado',
+        ]);
+
         foreach ($cart as $item) {
             OrderItem::create([
                 'order_id'     => $order->id,
@@ -59,7 +66,6 @@ class OrderController extends Controller
                 'subtotal'     => $item['price'] * $item['quantity'],
             ]);
 
-            // Descontar stock (opcional)
             $product = Product::find($item['id']);
             if ($product && $product->stock >= $item['quantity']) {
                 $product->stock -= $item['quantity'];
@@ -67,7 +73,6 @@ class OrderController extends Controller
             }
         }
 
-        // Vaciar carrito
         $request->session()->forget('cart');
 
         return redirect()
@@ -96,12 +101,11 @@ class OrderController extends Controller
      */
     public function show(Order $order)
     {
-        // Asegurarnos que el usuario solo vea sus pedidos
         if ($order->user_id !== Auth::id()) {
             abort(403);
         }
 
-        $order->load('items');
+        $order->load(['items', 'statusHistories']);
 
         return view('orders.show', [
             'order' => $order,

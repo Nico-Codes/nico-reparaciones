@@ -4,10 +4,26 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Order extends Model
 {
     use HasFactory;
+
+    public const STATUSES = [
+        'pendiente'     => 'Pendiente',
+        'confirmado'    => 'Confirmado',
+        'preparando'    => 'Preparando',
+        'listo_retirar' => 'Listo para retirar',
+        'entregado'     => 'Entregado',
+        'cancelado'     => 'Cancelado',
+    ];
+
+    public const PAYMENT_METHODS = [
+        'local'         => 'Pago en el local',
+        'mercado_pago'  => 'Mercado Pago',
+        'transferencia' => 'Transferencia',
+    ];
 
     protected $fillable = [
         'user_id',
@@ -19,19 +35,29 @@ class Order extends Model
         'notes',
     ];
 
-    /**
-     * Pedido pertenece a un usuario (cliente).
-     */
+    // Normaliza teléfono a "solo números" al guardar
+    public function setPickupPhoneAttribute($value): void
+    {
+        $this->attributes['pickup_phone'] = preg_replace('/\D+/', '', (string) $value);
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Items del pedido.
-     */
-    public function items()
+    public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    public function statusHistories(): HasMany
+    {
+        return $this->hasMany(OrderStatusHistory::class)->orderByDesc('changed_at');
+    }
+
+    public function whatsappLogs(): HasMany
+    {
+        return $this->hasMany(OrderWhatsappLog::class)->orderByDesc('sent_at');
     }
 }

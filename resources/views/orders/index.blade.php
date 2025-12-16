@@ -55,7 +55,7 @@
     @endforelse
   </div>
 
-  @if($orders->hasPages())
+  @if(method_exists($orders, 'hasPages') && $orders->hasPages())
     <div class="mt-6">
       {{ $orders->links() }}
     </div>
