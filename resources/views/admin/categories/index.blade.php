@@ -3,125 +3,121 @@
 @section('title', 'Admin — Categorías')
 
 @section('content')
-@php
-  $count = $categories->count();
-@endphp
-
 <div class="mx-auto w-full max-w-6xl px-4 py-6">
-  <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-    <div>
-      <h1 class="text-xl font-black tracking-tight">Categorías</h1>
-      <p class="mt-1 text-sm text-zinc-600">Organizá tu catálogo. Total: <span class="font-semibold">{{ $count }}</span></p>
-    </div>
-
-    <a href="{{ route('admin.categories.create') }}"
-       class="inline-flex items-center justify-center rounded-xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 active:scale-[.99]">
-      + Nueva categoría
-    </a>
+  <div class="page-head">
+    <div class="page-title">Categorías</div>
+    <div class="page-subtitle">Organizá el catálogo de la tienda por categorías.</div>
   </div>
 
-  @if (session('success'))
-    <div class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-      {{ session('success') }}
-    </div>
+  @if(session('success'))
+    <div class="alert-success mb-4">{{ session('success') }}</div>
+  @endif
+  @if(session('error'))
+    <div class="alert-error mb-4">{{ session('error') }}</div>
   @endif
 
-  <div class="mt-5 grid gap-3 md:hidden">
+  <div class="flex items-center justify-between mb-4">
+    <div class="text-sm text-zinc-600">
+      Total: <span class="font-black text-zinc-900">{{ is_countable($categories) ? count($categories) : 0 }}</span>
+    </div>
+
+    <a href="{{ route('admin.categories.create') }}" class="btn-primary">+ Nueva</a>
+  </div>
+
+  {{-- MOBILE: cards --}}
+  <div class="grid gap-3 md:hidden">
     @forelse($categories as $c)
-      <div class="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-        <div class="flex items-start justify-between gap-3">
-          <div>
-            <div class="text-xs text-zinc-500">Categoría</div>
-            <div class="flex items-center gap-2">
-              @if($c->icon)
-                <span class="text-lg">{{ $c->icon }}</span>
-              @endif
-              <div class="font-black">{{ $c->name }}</div>
+      <div class="card">
+        <div class="card-body">
+          <div class="flex items-start justify-between gap-2">
+            <div class="min-w-0">
+              <div class="font-black text-zinc-900 truncate">{{ $c->name }}</div>
+              <div class="text-xs text-zinc-500 mt-1 truncate">
+                Slug: <span class="font-bold text-zinc-800">{{ $c->slug }}</span>
+              </div>
+              <div class="mt-2">
+                <span class="badge-sky">{{ (int)($c->products_count ?? 0) }} productos</span>
+              </div>
             </div>
-            <div class="mt-1 text-sm text-zinc-600">
-              <span class="text-zinc-500">Slug:</span> <span class="font-semibold">{{ $c->slug }}</span>
+
+            <div class="relative">
+              <button class="btn-ghost btn-sm" type="button" data-menu="catMenuM-{{ $c->id }}" aria-expanded="false">⋯</button>
+              <div id="catMenuM-{{ $c->id }}" class="dropdown-menu hidden">
+                <a href="{{ route('admin.categories.edit', $c) }}" class="dropdown-item">Editar</a>
+
+                <form method="POST" action="{{ route('admin.categories.destroy', $c) }}"
+                      onsubmit="return confirm('¿Eliminar esta categoría?');">
+                  @csrf
+                  @method('DELETE')
+                  <button type="submit" class="dropdown-item">Eliminar</button>
+                </form>
+              </div>
             </div>
-            @if($c->description)
-              <div class="mt-1 text-sm text-zinc-600">{{ $c->description }}</div>
-            @endif
           </div>
 
-          <div class="text-right">
-            <div class="text-xs text-zinc-500">Productos</div>
-            <div class="font-black">{{ $c->products_count ?? 0 }}</div>
+          @if(!empty($c->description))
+            <div class="mt-3 text-sm text-zinc-700">
+              {{ $c->description }}
+            </div>
+          @endif
+
+          <div class="mt-4 flex gap-2">
+            <a href="{{ route('admin.categories.edit', $c) }}" class="btn-outline btn-sm">Editar</a>
           </div>
-        </div>
-
-        <div class="mt-4 flex gap-2">
-          <a href="{{ route('admin.categories.edit', $c) }}"
-             class="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold hover:bg-zinc-50">
-            Editar
-          </a>
-
-          <form method="POST" action="{{ route('admin.categories.destroy', $c) }}"
-                onsubmit="return confirm('¿Eliminar categoría? Esto puede afectar el catálogo.');">
-            @csrf
-            @method('DELETE')
-            <button class="rounded-xl bg-rose-600 px-3 py-2 text-sm font-semibold text-white hover:bg-rose-700">
-              Eliminar
-            </button>
-          </form>
         </div>
       </div>
     @empty
-      <div class="rounded-2xl border border-zinc-200 bg-white p-6 text-sm text-zinc-600">
-        No hay categorías todavía.
+      <div class="card">
+        <div class="card-body">
+          <div class="font-black">No hay categorías.</div>
+          <div class="muted mt-1">Creá categorías para ordenar la tienda.</div>
+          <div class="mt-4">
+            <a href="{{ route('admin.categories.create') }}" class="btn-primary">+ Nueva categoría</a>
+          </div>
+        </div>
       </div>
     @endforelse
   </div>
 
-  <div class="mt-5 hidden overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm md:block">
+  {{-- DESKTOP: table --}}
+  <div class="hidden md:block overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
     <div class="overflow-x-auto">
-      <table class="w-full text-sm">
-        <thead class="bg-zinc-50 text-xs uppercase text-zinc-500">
-          <tr>
-            <th class="px-4 py-3 text-left">Nombre</th>
-            <th class="px-4 py-3 text-left">Slug</th>
-            <th class="px-4 py-3 text-left">Descripción</th>
-            <th class="px-4 py-3 text-right">Productos</th>
+      <table class="min-w-[820px] w-full text-sm">
+        <thead class="bg-zinc-50">
+          <tr class="text-left">
+            <th class="px-4 py-3">Nombre</th>
+            <th class="px-4 py-3">Slug</th>
+            <th class="px-4 py-3">Productos</th>
             <th class="px-4 py-3 text-right">Acciones</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-zinc-100">
+        <tbody>
           @forelse($categories as $c)
-            <tr class="hover:bg-zinc-50/70">
+            <tr class="border-t border-zinc-100 hover:bg-zinc-50">
+              <td class="px-4 py-3 font-black text-zinc-900">{{ $c->name }}</td>
+              <td class="px-4 py-3 text-zinc-700">{{ $c->slug }}</td>
               <td class="px-4 py-3">
-                <div class="flex items-center gap-2">
-                  @if($c->icon)
-                    <span class="text-lg">{{ $c->icon }}</span>
-                  @endif
-                  <div class="font-black">{{ $c->name }}</div>
-                </div>
+                <span class="badge-sky">{{ (int)($c->products_count ?? 0) }}</span>
               </td>
-              <td class="px-4 py-3 font-semibold text-zinc-700">{{ $c->slug }}</td>
-              <td class="px-4 py-3 text-zinc-700">{{ $c->description ?: '—' }}</td>
-              <td class="px-4 py-3 text-right font-black">{{ $c->products_count ?? 0 }}</td>
-              <td class="px-4 py-3">
-                <div class="flex justify-end gap-2">
-                  <a href="{{ route('admin.categories.edit', $c) }}"
-                     class="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold hover:bg-zinc-50">
-                    Editar
-                  </a>
+              <td class="px-4 py-3 text-right">
+                <div class="relative inline-block text-left">
+                  <button class="btn-ghost btn-sm" type="button" data-menu="catMenu-{{ $c->id }}" aria-expanded="false">⋯</button>
+                  <div id="catMenu-{{ $c->id }}" class="dropdown-menu hidden">
+                    <a href="{{ route('admin.categories.edit', $c) }}" class="dropdown-item">Editar</a>
 
-                  <form method="POST" action="{{ route('admin.categories.destroy', $c) }}"
-                        onsubmit="return confirm('¿Eliminar categoría? Esto puede afectar el catálogo.');">
-                    @csrf
-                    @method('DELETE')
-                    <button class="rounded-xl bg-rose-600 px-3 py-2 text-sm font-semibold text-white hover:bg-rose-700">
-                      Eliminar
-                    </button>
-                  </form>
+                    <form method="POST" action="{{ route('admin.categories.destroy', $c) }}"
+                          onsubmit="return confirm('¿Eliminar esta categoría?');">
+                      @csrf
+                      @method('DELETE')
+                      <button type="submit" class="dropdown-item">Eliminar</button>
+                    </form>
+                  </div>
                 </div>
               </td>
             </tr>
           @empty
             <tr>
-              <td colspan="5" class="px-4 py-8 text-center text-zinc-500">No hay categorías.</td>
+              <td colspan="4" class="px-4 py-10 text-center text-zinc-500">No hay categorías.</td>
             </tr>
           @endforelse
         </tbody>

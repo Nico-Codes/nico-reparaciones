@@ -2,57 +2,67 @@
 
 @section('title', 'Consultar reparación')
 
+@php
+  $has = fn($name) => \Illuminate\Support\Facades\Route::has($name);
+@endphp
+
 @section('content')
-  <div class="max-w-xl mx-auto space-y-5">
+  <div class="max-w-xl mx-auto">
     <div class="page-head">
       <div class="page-title">Consultar reparación</div>
-      <div class="page-subtitle">Ingresá tu código y tu teléfono para ver el estado actual.</div>
+      <div class="page-subtitle">Ingresá el código y el teléfono que dejaste en el local.</div>
     </div>
 
     <div class="card">
       <div class="card-body">
-        <form method="POST" action="{{ route('repairs.lookup.post') }}" class="space-y-4">
+        <div class="rounded-2xl border border-zinc-100 bg-zinc-50 p-3 text-sm text-zinc-700">
+          <span class="font-black text-zinc-900">Tip:</span> el teléfono puede ir con espacios o guiones, lo normalizamos automáticamente.
+        </div>
+
+        <form method="POST" action="{{ route('repairs.lookup.post') }}" class="mt-4 grid gap-4">
           @csrf
 
           <div>
-            <label class="block text-sm font-black text-zinc-900 mb-1">Código</label>
+            <label for="code">Código</label>
             <input
+              id="code"
               name="code"
               value="{{ old('code') }}"
-              placeholder="Ej: NR-1234"
-              class="w-full rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
+              placeholder="Ej: NR-8F2K1"
               autocomplete="off"
-            >
-            <div class="mt-1 text-xs text-zinc-500">Es el código que te dimos cuando dejaste el equipo.</div>
+              required>
+            <div class="text-xs text-zinc-500 mt-1">Te lo damos en el comprobante / WhatsApp.</div>
           </div>
 
           <div>
-            <label class="block text-sm font-black text-zinc-900 mb-1">Teléfono</label>
+            <label for="phone">Teléfono</label>
             <input
+              id="phone"
               name="phone"
               value="{{ old('phone') }}"
-              placeholder="Ej: 341 555 1234"
-              class="w-full rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
+              placeholder="Ej: 341 555-0000"
+              inputmode="tel"
               autocomplete="tel"
-            >
-            <div class="mt-1 text-xs text-zinc-500">Usá el mismo teléfono que dejaste al ingresar el equipo.</div>
+              required>
+            <div class="text-xs text-zinc-500 mt-1">Debe coincidir con el que registramos en el ingreso.</div>
           </div>
 
-          <button class="btn-primary w-full">Consultar estado</button>
+          <div class="grid gap-2">
+            <button class="btn-primary w-full" type="submit">Buscar</button>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              @if($has('store.index'))
+                <a href="{{ route('store.index') }}" class="btn-outline w-full">Ir a la tienda</a>
+              @endif
+
+              @auth
+                @if($has('repairs.my.index'))
+                  <a href="{{ route('repairs.my.index') }}" class="btn-ghost w-full">Mis reparaciones</a>
+                @endif
+              @endauth
+            </div>
+          </div>
         </form>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-body">
-        <div class="font-black text-zinc-900">¿No encontrás tu código?</div>
-        <div class="mt-1 text-sm text-zinc-600">
-          Escribinos o acercate al local y te ayudamos. (Para proteger tu información, pedimos código + teléfono).
-        </div>
-
-        <div class="mt-4 flex flex-col sm:flex-row gap-2">
-          <a href="{{ route('store.index') }}" class="btn-outline w-full sm:w-auto">Ir a la tienda</a>
-        </div>
       </div>
     </div>
   </div>
