@@ -17,113 +17,139 @@
     };
   };
 
-  $label = fn(string $s) => ucfirst(str_replace('_',' ',$s));
-
-  $payLabel = function($m) {
-    return match((string)$m) {
-      'local' => 'Pago en el local',
-      'mercado_pago' => 'Mercado Pago',
-      'transferencia' => 'Transferencia',
-      default => $m ?: '—',
-    };
+  $label = fn(string $s) => match($s) {
+    'listo_retirar' => 'Listo para retirar',
+    default => ucfirst(str_replace('_',' ',$s)),
   };
 
+  $payLabel = fn(?string $m) => match($m) {
+    'local' => 'Pago en el local',
+    'mercado_pago' => 'Mercado Pago',
+    'transferencia' => 'Transferencia',
+    default => $m ? ucfirst(str_replace('_',' ',$m)) : '—',
+  };
+
+  $items = $order->items ?? collect();
+
+  $steps = ['pendiente', 'confirmado', 'preparando', 'listo_retirar', 'entregado'];
   $status = (string)($order->status ?? 'pendiente');
-  $isCanceled = ($status === 'cancelado');
+  $isCancelled = $status === 'cancelado';
 
-  $steps = [
-    'pendiente'     => 'Pendiente',
-    'confirmado'    => 'Confirmado',
-    'preparando'    => 'Preparando',
+  $stepIndex = array_search($status, $steps, true);
+  if ($stepIndex === false) $stepIndex = 0;
+
+  $stepName = fn($s) => match($s) {
+    'pendiente' => 'Pendiente',
+    'confirmado' => 'Confirmado',
+    'preparando' => 'Preparando',
     'listo_retirar' => 'Listo',
-    'entregado'     => 'Entregado',
-  ];
+    'entregado' => 'Entregado',
+    default => ucfirst(str_replace('_',' ',$s)),
+  };
 
-  $stepKeys = array_keys($steps);
-  $currentIndex = array_search($status, $stepKeys, true);
-  if ($currentIndex === false) $currentIndex = 0;
+  $statusHint = match($status) {
+    'pendiente' => 'Recibimos tu pedido. En breve lo confirmamos.',
+    'confirmado' => 'Pedido confirmado. Lo estamos preparando.',
+    'preparando' => 'Estamos preparando tu pedido.',
+    'listo_retirar' => '¡Listo! Podés pasar a retirarlo por el local.',
+    'entregado' => 'Pedido entregado. ¡Gracias!',
+    'cancelado' => 'Este pedido fue cancelado.',
+    default => 'Estado actualizado.',
+  };
 
-  $histories = $order->statusHistories ?? collect();
+  $has = fn($name) => \Illuminate\Support\Facades\Route::has($name);
 @endphp
 
 @section('content')
   <div class="flex items-start justify-between gap-3 mb-5">
-    <div>
+    <div class="min-w-0">
       <div class="page-title">Pedido #{{ $order->id }}</div>
       <div class="page-subtitle">
         {{ $order->created_at?->format('d/m/Y H:i') }}
       </div>
     </div>
-    <span class="{{ $badge($order->status) }}">{{ $label($order->status) }}</span>
+
+    <span class="{{ $badge($status) }}">{{ $label($status) }}</span>
   </div>
 
-  {{-- Progreso --}}
-  <div class="card mb-4">
-    <div class="card-head">
-      <div class="font-black">Progreso</div>
-      @if($isCanceled)
-        <span class="badge-rose">Cancelado</span>
-      @else
-        <span class="badge-sky">En curso</span>
-      @endif
+  {{-- Estado / hint --}}
+  <div class="rounded-2xl border border-zinc-200 bg-white p-4 mb-5">
+    <div class="text-sm text-zinc-700">
+      <span class="font-black text-zinc-900">Estado:</span> {{ $statusHint }}
     </div>
-    <div class="card-body">
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        @foreach($steps as $k => $t)
-          @php
-            $i = array_search($k, $stepKeys, true);
-            $done = (!$isCanceled && $i !== false && $i < $currentIndex);
-            $current = (!$isCanceled && $i !== false && $i === $currentIndex);
 
-            $dot = $done ? 'bg-emerald-600' : ($current ? 'bg-zinc-900' : 'bg-zinc-200');
-            $text = $done ? 'text-emerald-700' : ($current ? 'text-zinc-900' : 'text-zinc-500');
+    @if($isCancelled)
+      <div class="mt-3 rounded-2xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
+        Si necesitás ayuda, escribinos y lo resolvemos.
+      </div>
+    @else
+      <div class="mt-4 grid gap-2 sm:grid-cols-5">
+        @foreach($steps as $i => $s)
+          @php
+            $done = $i <= $stepIndex;
           @endphp
-          <div class="flex items-center gap-3">
-            <div class="h-3 w-3 rounded-full {{ $dot }}"></div>
-            <div class="text-sm font-bold {{ $text }}">{{ $t }}</div>
+          <div class="flex items-center gap-2">
+            <div class="h-7 w-7 rounded-full border flex items-center justify-center
+                        {{ $done ? 'bg-sky-600 border-sky-600 text-white' : 'bg-white border-zinc-200 text-zinc-400' }}">
+              <span class="text-xs font-black">{{ $i+1 }}</span>
+            </div>
+            <div class="text-xs {{ $done ? 'text-zinc-900 font-black' : 'text-zinc-500 font-bold' }}">
+              {{ $stepName($s) }}
+            </div>
           </div>
-          @if(!$loop->last)
-            <div class="hidden sm:block flex-1 h-px bg-zinc-200 mx-3"></div>
-          @endif
         @endforeach
       </div>
-
-      @if($isCanceled)
-        <div class="alert-danger mt-4">
-          Este pedido fue cancelado.
-        </div>
-      @endif
-    </div>
+    @endif
   </div>
 
   <div class="grid gap-4 lg:grid-cols-3">
+    {{-- Ítems --}}
     <div class="lg:col-span-2 card">
       <div class="card-head">
         <div class="font-black">Ítems</div>
-        <span class="badge-sky">{{ $order->items->count() }} productos</span>
+        <span class="badge-sky">{{ $items->count() }} producto{{ $items->count() === 1 ? '' : 's' }}</span>
       </div>
 
-      <div class="card-body overflow-x-auto">
-        <table class="min-w-[520px]">
-          <thead>
-            <tr class="border-b border-zinc-100">
-              <th class="py-2">Producto</th>
-              <th class="py-2">Precio</th>
-              <th class="py-2">Cant.</th>
-              <th class="py-2 text-right">Subtotal</th>
-            </tr>
-          </thead>
-          <tbody>
-            @foreach($order->items as $item)
-              <tr class="border-b border-zinc-50">
-                <td class="py-3 font-bold">{{ $item->product_name }}</td>
-                <td class="py-3">{{ $fmt($item->price) }}</td>
-                <td class="py-3">{{ $item->quantity }}</td>
-                <td class="py-3 text-right font-black">{{ $fmt($item->subtotal) }}</td>
+      <div class="card-body">
+        {{-- Mobile: lista --}}
+        <div class="grid gap-3 md:hidden">
+          @foreach($items as $item)
+            <div class="rounded-2xl border border-zinc-100 bg-zinc-50 p-3">
+              <div class="font-black text-zinc-900">{{ $item->product_name }}</div>
+              <div class="text-xs text-zinc-500 mt-1">
+                {{ $fmt($item->price) }} · x{{ (int)$item->quantity }}
+              </div>
+              <div class="mt-2 flex items-center justify-between">
+                <div class="text-xs text-zinc-500">Subtotal</div>
+                <div class="font-black text-zinc-900">{{ $fmt($item->subtotal) }}</div>
+              </div>
+            </div>
+          @endforeach
+        </div>
+
+        {{-- Desktop: tabla --}}
+        <div class="hidden md:block overflow-x-auto">
+          <table class="min-w-[640px]">
+            <thead>
+              <tr class="border-b border-zinc-100">
+                <th class="py-2">Producto</th>
+                <th class="py-2">Precio</th>
+                <th class="py-2">Cant.</th>
+                <th class="py-2 text-right">Subtotal</th>
               </tr>
-            @endforeach
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              @foreach($items as $item)
+                <tr class="border-b border-zinc-50">
+                  <td class="py-3 font-bold">{{ $item->product_name }}</td>
+                  <td class="py-3">{{ $fmt($item->price) }}</td>
+                  <td class="py-3">{{ (int)$item->quantity }}</td>
+                  <td class="py-3 text-right font-black">{{ $fmt($item->subtotal) }}</td>
+                </tr>
+              @endforeach
+            </tbody>
+          </table>
+        </div>
 
         <div class="mt-4 flex items-center justify-between">
           <div class="muted">Total</div>
@@ -132,6 +158,7 @@
       </div>
     </div>
 
+    {{-- Detalles --}}
     <div class="card h-fit">
       <div class="card-head">
         <div class="font-black">Detalles</div>
@@ -150,7 +177,7 @@
         </div>
 
         <div>
-          <div class="muted">Pago</div>
+          <div class="muted">Método de pago</div>
           <div class="font-black">{{ $payLabel($order->payment_method) }}</div>
         </div>
 
@@ -161,42 +188,13 @@
           </div>
         @endif
 
-        <a href="{{ route('orders.index') }}" class="btn-outline w-full">Volver</a>
-      </div>
-    </div>
-  </div>
-
-  {{-- Historial --}}
-  <div class="card mt-4">
-    <div class="card-head">
-      <div class="font-black">Historial</div>
-      <span class="badge-zinc">{{ $histories->count() }} cambios</span>
-    </div>
-
-    <div class="card-body">
-      @if($histories->isEmpty())
-        <div class="muted">Todavía no hay historial para este pedido.</div>
-      @else
-        <div class="grid gap-3">
-          @foreach($histories->sortByDesc('changed_at') as $h)
-            <div class="rounded-2xl border border-zinc-200 p-4">
-              <div class="flex items-start justify-between gap-3">
-                <div>
-                  <div class="font-black">
-                    {{ $label($h->to_status) }}
-                    <span class="text-zinc-400">·</span>
-                    <span class="muted">{{ $h->changed_at?->format('d/m/Y H:i') }}</span>
-                  </div>
-                  @if($h->comment)
-                    <div class="mt-2 text-sm text-zinc-800 whitespace-pre-wrap">{{ $h->comment }}</div>
-                  @endif
-                </div>
-                <span class="{{ $badge($h->to_status) }}">{{ $label($h->to_status) }}</span>
-              </div>
-            </div>
-          @endforeach
+        <div class="grid gap-2 mt-2">
+          <a href="{{ route('orders.index') }}" class="btn-outline w-full">Volver</a>
+          @if($has('store.index'))
+            <a href="{{ route('store.index') }}" class="btn-primary w-full">Ir a la tienda</a>
+          @endif
         </div>
-      @endif
+      </div>
     </div>
   </div>
 @endsection
