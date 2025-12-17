@@ -7,160 +7,154 @@
 @endphp
 
 @section('content')
-<div class="mx-auto w-full max-w-4xl px-4 py-6">
-  <div class="flex items-start justify-between gap-3">
-    <div>
-      <h1 class="text-xl font-black tracking-tight">Nueva reparación</h1>
-      <p class="mt-1 text-sm text-zinc-600">Cargá los datos básicos. Después podés editar todo desde el detalle.</p>
+<div class="mx-auto w-full max-w-4xl">
+  <div class="flex items-start justify-between gap-3 mb-5">
+    <div class="page-head mb-0">
+      <div class="page-title">Nueva reparación</div>
+      <div class="page-subtitle">Cargá lo básico. Después podés editar todo desde el detalle.</div>
     </div>
 
-    <a href="{{ route('admin.repairs.index') }}"
-       class="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold hover:bg-zinc-50">
-      Volver
-    </a>
+    <a href="{{ route('admin.repairs.index') }}" class="btn-outline">Volver</a>
   </div>
 
-  @if ($errors->any())
-    <div class="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
-      <div class="font-bold">Revisá estos errores:</div>
-      <ul class="mt-2 list-disc pl-5">
-        @foreach($errors->all() as $e)
-          <li>{{ $e }}</li>
-        @endforeach
-      </ul>
-    </div>
-  @endif
-
-  <form method="POST" action="{{ route('admin.repairs.store') }}" class="mt-5 space-y-4">
+  <form method="POST" action="{{ route('admin.repairs.store') }}" class="space-y-4">
     @csrf
 
-    <div class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-      <div class="grid gap-4 sm:grid-cols-2">
-        <div class="sm:col-span-2">
-          <label class="text-xs font-semibold text-zinc-700">Email de usuario (opcional, para asociar)</label>
-          <input name="user_email" value="{{ old('user_email') }}" placeholder="cliente@email.com"
-                 class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100">
-          <p class="mt-1 text-xs text-zinc-500">Si lo dejás vacío, queda como reparación “sin cuenta”.</p>
-        </div>
+    <div class="card">
+      <div class="card-head">
+        <div class="font-black">Cliente y equipo</div>
+        <span class="badge-zinc">Datos</span>
+      </div>
+      <div class="card-body">
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div class="sm:col-span-2 space-y-1">
+            <label>Email de usuario (opcional, para asociar)</label>
+            <input name="user_email" value="{{ old('user_email') }}" placeholder="cliente@email.com" />
+            <div class="text-xs text-zinc-500">Si lo dejás vacío, queda como reparación “sin cuenta”.</div>
+          </div>
 
-        <div>
-          <label class="text-xs font-semibold text-zinc-700">Nombre del cliente *</label>
-          <input name="customer_name" value="{{ old('customer_name') }}" required
-                 class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100">
-        </div>
+          <div class="space-y-1">
+            <label>Nombre del cliente *</label>
+            <input name="customer_name" value="{{ old('customer_name') }}" required placeholder="Nombre y apellido" />
+          </div>
 
-        <div>
-          <label class="text-xs font-semibold text-zinc-700">Teléfono (WhatsApp) *</label>
-          <input name="customer_phone" value="{{ old('customer_phone') }}" required placeholder="Ej: 341xxxxxxx"
-                 class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100">
-        </div>
+          <div class="space-y-1">
+            <label>Teléfono (WhatsApp) *</label>
+            <input name="customer_phone" value="{{ old('customer_phone') }}" required inputmode="numeric" placeholder="Ej: 341xxxxxxx" />
+            <div class="text-xs text-zinc-500">Tip: podés pegarlo con o sin +54, se normaliza solo.</div>
+          </div>
 
-        <div>
-          <label class="text-xs font-semibold text-zinc-700">Marca</label>
-          <input name="device_brand" value="{{ old('device_brand') }}" placeholder="Samsung / iPhone / Xiaomi…"
-                 class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100">
-        </div>
+          <div class="space-y-1">
+            <label>Marca</label>
+            <input name="device_brand" value="{{ old('device_brand') }}" placeholder="Samsung / iPhone / Xiaomi…" />
+          </div>
 
-        <div>
-          <label class="text-xs font-semibold text-zinc-700">Modelo</label>
-          <input name="device_model" value="{{ old('device_model') }}" placeholder="A13 / 12 Pro Max / Note…"
-                 class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100">
-        </div>
-
-        <div class="sm:col-span-2">
-          <label class="text-xs font-semibold text-zinc-700">Falla reportada *</label>
-          <textarea name="issue_reported" required rows="3"
-                    class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100">{{ old('issue_reported') }}</textarea>
-        </div>
-
-        <div class="sm:col-span-2">
-          <label class="text-xs font-semibold text-zinc-700">Diagnóstico (opcional)</label>
-          <textarea name="diagnosis" rows="3"
-                    class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100">{{ old('diagnosis') }}</textarea>
+          <div class="space-y-1">
+            <label>Modelo</label>
+            <input name="device_model" value="{{ old('device_model') }}" placeholder="A13 / 12 Pro Max / Note…" />
+          </div>
         </div>
       </div>
     </div>
 
-    <div class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-      <h2 class="text-sm font-black">Costos, cobro y garantía</h2>
-      <div class="mt-3 grid gap-4 sm:grid-cols-3">
-        <div>
-          <label class="text-xs font-semibold text-zinc-700">Costo repuestos</label>
-          <input name="parts_cost" value="{{ old('parts_cost') }}" inputmode="decimal" placeholder="0"
-                 class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100">
-        </div>
+    <div class="card">
+      <div class="card-head">
+        <div class="font-black">Falla y diagnóstico</div>
+        <span class="badge-zinc">Taller</span>
+      </div>
+      <div class="card-body">
+        <div class="grid gap-4">
+          <div class="space-y-1">
+            <label>Falla reportada *</label>
+            <textarea name="issue_reported" required rows="3" placeholder="Qué le pasa al equipo (según el cliente)…">{{ old('issue_reported') }}</textarea>
+          </div>
 
-        <div>
-          <label class="text-xs font-semibold text-zinc-700">Mano de obra</label>
-          <input name="labor_cost" value="{{ old('labor_cost') }}" inputmode="decimal" placeholder="0"
-                 class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100">
-        </div>
+          <div class="space-y-1">
+            <label>Diagnóstico (opcional)</label>
+            <textarea name="diagnosis" rows="3" placeholder="Diagnóstico técnico (si ya lo tenés)…">{{ old('diagnosis') }}</textarea>
+          </div>
 
-        <div>
-          <label class="text-xs font-semibold text-zinc-700">Precio final al cliente</label>
-          <input name="final_price" value="{{ old('final_price') }}" inputmode="decimal" placeholder="0"
-                 class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100">
-        </div>
-
-        <div>
-          <label class="text-xs font-semibold text-zinc-700">Pagado</label>
-          <input name="paid_amount" value="{{ old('paid_amount') }}" inputmode="decimal" placeholder="0"
-                 class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100">
-        </div>
-
-        <div>
-          <label class="text-xs font-semibold text-zinc-700">Método de pago</label>
-          <select name="payment_method"
-                  class="mt-1 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100">
-            <option value="">—</option>
-            @foreach($paymentMethods as $k => $label)
-              <option value="{{ $k }}" @selected(old('payment_method') === $k)>{{ $label }}</option>
-            @endforeach
-          </select>
-        </div>
-
-        <div>
-          <label class="text-xs font-semibold text-zinc-700">Garantía (días)</label>
-          <input name="warranty_days" value="{{ old('warranty_days', 0) }}" inputmode="numeric"
-                 class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100">
-        </div>
-
-        <div class="sm:col-span-3">
-          <label class="text-xs font-semibold text-zinc-700">Notas de pago</label>
-          <input name="payment_notes" value="{{ old('payment_notes') }}" placeholder="Ej: señal, transferencia, etc."
-                 class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100">
+          <div class="space-y-1">
+            <label>Notas internas</label>
+            <textarea name="notes" rows="3" placeholder="Notas para el taller (no visibles para el cliente)…">{{ old('notes') }}</textarea>
+          </div>
         </div>
       </div>
     </div>
 
-    <div class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-      <div class="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label class="text-xs font-semibold text-zinc-700">Estado *</label>
-          <select name="status" required
-                  class="mt-1 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100">
-            @foreach($statuses as $k => $label)
-              <option value="{{ $k }}" @selected($oldStatus === $k)>{{ $label }}</option>
-            @endforeach
-          </select>
-        </div>
+    <div class="card">
+      <div class="card-head">
+        <div class="font-black">Costos, cobro y estado</div>
+        <span class="badge-zinc">Finanzas</span>
+      </div>
+      <div class="card-body">
+        <div class="grid gap-4 sm:grid-cols-3">
+          <div class="space-y-1">
+            <label>Costo repuestos</label>
+            <input name="parts_cost" value="{{ old('parts_cost') }}" inputmode="decimal" placeholder="0" />
+          </div>
 
-        <div class="sm:col-span-2">
-          <label class="text-xs font-semibold text-zinc-700">Notas internas</label>
-          <textarea name="notes" rows="3"
-                    class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100">{{ old('notes') }}</textarea>
+          <div class="space-y-1">
+            <label>Mano de obra</label>
+            <input name="labor_cost" value="{{ old('labor_cost') }}" inputmode="decimal" placeholder="0" />
+          </div>
+
+          <div class="space-y-1">
+            <label>Precio final al cliente</label>
+            <input name="final_price" value="{{ old('final_price') }}" inputmode="decimal" placeholder="0" />
+          </div>
+
+          <div class="space-y-1">
+            <label>Pagado</label>
+            <input name="paid_amount" value="{{ old('paid_amount') }}" inputmode="decimal" placeholder="0" />
+          </div>
+
+          <div class="space-y-1">
+            <label>Método de pago</label>
+            <select name="payment_method">
+              <option value="">—</option>
+              @foreach($paymentMethods as $k => $label)
+                <option value="{{ $k }}" @selected(old('payment_method') === $k)>{{ $label }}</option>
+              @endforeach
+            </select>
+          </div>
+
+          <div class="space-y-1">
+            <label>Garantía (días)</label>
+            <input name="warranty_days" value="{{ old('warranty_days', 0) }}" inputmode="numeric" placeholder="0" />
+          </div>
+
+          <div class="sm:col-span-3 space-y-1">
+            <label>Notas de pago</label>
+            <input name="payment_notes" value="{{ old('payment_notes') }}" placeholder="Ej: señal, transferencia, etc." />
+          </div>
+
+          <div class="sm:col-span-3">
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div class="space-y-1">
+                <label>Estado *</label>
+                <select name="status" required>
+                  @foreach($statuses as $k => $label)
+                    <option value="{{ $k }}" @selected($oldStatus === $k)>{{ $label }}</option>
+                  @endforeach
+                </select>
+              </div>
+
+              <div class="rounded-2xl border border-zinc-100 bg-zinc-50 p-4">
+                <div class="text-sm font-black">Tip rápido</div>
+                <div class="mt-1 text-sm text-zinc-700">
+                  Si ponés <span class="font-black">Entregado</span>, se guarda la fecha de entrega y la garantía empieza a contar desde ahí.
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
     <div class="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
-      <a href="{{ route('admin.repairs.index') }}"
-         class="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold hover:bg-zinc-50">
-        Cancelar
-      </a>
-      <button class="rounded-xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700">
-        Crear reparación
-      </button>
+      <a href="{{ route('admin.repairs.index') }}" class="btn-outline">Cancelar</a>
+      <button class="btn-primary" type="submit">Crear reparación</button>
     </div>
   </form>
 </div>
