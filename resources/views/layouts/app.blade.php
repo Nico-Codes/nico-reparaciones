@@ -6,11 +6,59 @@
   <title>@yield('title', config('app.name', 'NicoReparaciones'))</title>
 
   @php
-    $hasVite = file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot'));
+    $hotPath = public_path('hot');
+    $manifestPath = public_path('build/manifest.json');
+
+    $useHot = file_exists($hotPath);
+    $useManifest = file_exists($manifestPath);
+
+    // ✅ En build: generamos tags con rutas RELATIVAS (/build/...)
+    $manifestCss = [];
+    $manifestJs  = [];
+
+    if ($useManifest) {
+      $manifest = json_decode(@file_get_contents($manifestPath), true) ?: [];
+
+      $entries = [
+        'resources/js/app.js',
+        'resources/css/app.css',
+      ];
+
+      foreach ($entries as $entry) {
+        if (!isset($manifest[$entry])) continue;
+
+        $data = $manifest[$entry];
+
+        // file puede ser .js o .css
+        if (!empty($data['file']) && is_string($data['file'])) {
+          if (str_ends_with($data['file'], '.js')) $manifestJs[] = $data['file'];
+          if (str_ends_with($data['file'], '.css')) $manifestCss[] = $data['file'];
+        }
+
+        // css asociado a la entry (muy común en app.js)
+        if (!empty($data['css']) && is_array($data['css'])) {
+          foreach ($data['css'] as $cssFile) {
+            if (is_string($cssFile)) $manifestCss[] = $cssFile;
+          }
+        }
+      }
+
+      $manifestCss = array_values(array_unique($manifestCss));
+      $manifestJs  = array_values(array_unique($manifestJs));
+    }
   @endphp
 
-  @if($hasVite)
+  @if($useHot)
+    {{-- DEV (solo PC / misma red). Para túnel remoto NO sirve porque apunta a localhost:5173 --}}
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+  @elseif($useManifest)
+    {{-- ✅ BUILD (túnel remoto): rutas relativas SIEMPRE funcionan --}}
+    @foreach($manifestCss as $css)
+      <link rel="stylesheet" href="/build/{{ $css }}">
+    @endforeach
+    @foreach($manifestJs as $js)
+      <script type="module" src="/build/{{ $js }}"></script>
+    @endforeach
   @else
     {{-- fallback mínimo --}}
     <style>
@@ -37,14 +85,14 @@
   $brandHref = $isAdmin && $has('admin.dashboard')
     ? route('admin.dashboard')
     : ($has('store.index') ? route('store.index') : '/');
+
+  $cartAdded = session('cart_added'); // ['product_name' => ..., 'quantity' => ...]
 @endphp
 
 <body class="min-h-screen flex flex-col">
-  {{-- ✅ FIX: navbar sólido en mobile, blur/transparencia solo en md+ --}}
   <header class="sticky top-0 z-40 bg-white border-b border-zinc-200 shadow-sm md:bg-white/90 md:backdrop-blur">
     <div class="container-page">
       <div class="h-14 flex items-center justify-between gap-3">
-        {{-- Left: mobile toggle + brand --}}
         <div class="flex items-center gap-3 min-w-0">
           <button
             class="icon-btn md:hidden"
@@ -56,7 +104,7 @@
 
           <a href="{{ $brandHref }}" class="flex items-center gap-2 min-w-0">
             @if($logoExists)
-              <img src="{{ asset($logoRel) }}" class="h-9 w-9 rounded-xl ring-1 ring-zinc-100 bg-white object-contain" alt="NicoReparaciones">
+              <img src="/{{ $logoRel }}" class="h-9 w-9 rounded-xl ring-1 ring-zinc-100 bg-white object-contain" alt="NicoReparaciones">
             @else
               <div class="h-9 w-9 rounded-xl ring-1 ring-zinc-100 bg-white flex items-center justify-center font-black text-sky-700">NR</div>
             @endif
@@ -70,7 +118,6 @@
           </a>
         </div>
 
-        {{-- Desktop nav (simple) --}}
         <nav class="hidden md:flex items-center gap-1">
           @if($has('store.index'))
             <a class="nav-link {{ request()->routeIs('store.index','store.category','store.product','home') ? 'active' : '' }}"
@@ -88,7 +135,6 @@
           @endif
         </nav>
 
-        {{-- Right: cart + account --}}
         <div class="flex items-center gap-2">
           @if($has('cart.index'))
             <a href="{{ route('cart.index') }}" class="icon-btn relative" aria-label="Carrito">
@@ -133,7 +179,6 @@
       </div>
     </div>
 
-    {{-- Mobile sidebar --}}
     <div id="appSidebarOverlay" class="fixed inset-0 z-50 hidden bg-zinc-950/40 md:hidden" data-close="sidebar" aria-hidden="true"></div>
 
     <aside
@@ -144,7 +189,7 @@
       <div class="h-14 px-4 flex items-center justify-between border-b border-zinc-100">
         <div class="flex items-center gap-2">
           @if($logoExists)
-            <img src="{{ asset($logoRel) }}" class="h-8 w-8 rounded-xl ring-1 ring-zinc-100 bg-white object-contain" alt="NicoReparaciones">
+            <img src="/{{ $logoRel }}" class="h-8 w-8 rounded-xl ring-1 ring-zinc-100 bg-white object-contain" alt="NicoReparaciones">
           @else
             <div class="h-8 w-8 rounded-xl ring-1 ring-zinc-100 bg-white flex items-center justify-center font-black text-sky-700">NR</div>
           @endif
@@ -218,39 +263,6 @@
         @endif
       </div>
     </aside>
-
-    {{-- Admin quickbar minimal --}}
-    @if($isAdmin && request()->is('admin*'))
-      <div class="hidden md:block bg-white border-t border-zinc-100">
-        <div class="container-page py-2 flex items-center gap-2">
-          @if($has('admin.dashboard'))
-            <a class="{{ request()->routeIs('admin.dashboard') ? 'btn-primary btn-sm' : 'btn-outline btn-sm' }}"
-               href="{{ route('admin.dashboard') }}">Dashboard</a>
-          @endif
-          @if($has('admin.orders.index'))
-            <a class="{{ request()->routeIs('admin.orders.*') ? 'btn-primary btn-sm' : 'btn-outline btn-sm' }}"
-               href="{{ route('admin.orders.index') }}">Pedidos</a>
-          @endif
-          @if($has('admin.repairs.index'))
-            <a class="{{ request()->routeIs('admin.repairs.*') ? 'btn-primary btn-sm' : 'btn-outline btn-sm' }}"
-               href="{{ route('admin.repairs.index') }}">Reparaciones</a>
-          @endif
-          @if($has('admin.products.index'))
-            <a class="{{ request()->routeIs('admin.products.*') ? 'btn-primary btn-sm' : 'btn-outline btn-sm' }}"
-               href="{{ route('admin.products.index') }}">Productos</a>
-          @endif
-
-          <div class="ml-auto relative">
-            <button class="btn-outline btn-sm" data-menu="adminMoreMenu" aria-expanded="false" type="button">Más ▾</button>
-            <div id="adminMoreMenu" class="dropdown-menu hidden">
-              @if($has('admin.settings.index')) <a class="dropdown-item" href="{{ route('admin.settings.index') }}">Configuración</a> @endif
-              @if($has('admin.categories.index')) <a class="dropdown-item" href="{{ route('admin.categories.index') }}">Categorías</a> @endif
-              @if($has('admin.whatsapp_templates.index')) <a class="dropdown-item" href="{{ route('admin.whatsapp_templates.index') }}">WhatsApp</a> @endif
-            </div>
-          </div>
-        </div>
-      </div>
-    @endif
   </header>
 
   <main class="flex-1">
@@ -279,7 +291,7 @@
         <div>
           <div class="flex items-center gap-2">
             @if($logoExists)
-              <img src="{{ asset($logoRel) }}" class="h-9 w-9 rounded-xl ring-1 ring-zinc-100 bg-white object-contain" alt="NicoReparaciones">
+              <img src="/{{ $logoRel }}" class="h-9 w-9 rounded-xl ring-1 ring-zinc-100 bg-white object-contain" alt="NicoReparaciones">
             @else
               <div class="h-9 w-9 rounded-xl ring-1 ring-zinc-100 bg-white flex items-center justify-center font-black text-sky-700">NR</div>
             @endif
@@ -323,5 +335,50 @@
       </div>
     </div>
   </footer>
+
+  {{-- Bottom-sheet “Agregado al carrito” --}}
+  @if(is_array($cartAdded))
+    <div id="cartAddedOverlay" class="fixed inset-0 z-[60] hidden" aria-hidden="true" data-cart-added="1">
+      <div id="cartAddedBackdrop"
+           class="absolute inset-0 bg-zinc-950/40 opacity-0 transition-opacity duration-300 ease-out"
+           data-cart-added-close></div>
+
+      <div id="cartAddedSheet"
+           class="absolute bottom-0 left-0 right-0 mx-auto max-w-xl translate-y-full opacity-0 transition duration-300 ease-out will-change-transform">
+        <div class="bg-white rounded-t-3xl border border-zinc-200 shadow-2xl ring-1 ring-zinc-900/5 pb-[calc(env(safe-area-inset-bottom)+12px)]">
+          <div class="px-4 pt-3 pb-2 flex items-center justify-between">
+            <div class="h-1.5 w-12 rounded-full bg-zinc-200 mx-auto"></div>
+          </div>
+
+          <div class="px-4 pb-4">
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex items-start gap-3 min-w-0">
+                <div class="mt-0.5 h-10 w-10 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center">
+                  <span class="text-emerald-700 font-black">✓</span>
+                </div>
+
+                <div class="min-w-0">
+                  <div class="font-black text-zinc-900">Agregaste a tu carrito</div>
+                  <div class="text-sm text-zinc-600 truncate">
+                    {{ $cartAdded['product_name'] ?? 'Producto' }}
+                  </div>
+                  <div class="text-xs text-zinc-500 mt-0.5">
+                    {{ (int)($cartAdded['quantity'] ?? 1) }} unidad{{ ((int)($cartAdded['quantity'] ?? 1) === 1) ? '' : 'es' }}
+                  </div>
+                </div>
+              </div>
+
+              <button type="button" class="icon-btn" data-cart-added-close aria-label="Cerrar">✕</button>
+            </div>
+
+            <div class="mt-4 grid gap-2">
+              <a href="{{ route('cart.index') }}" class="btn-primary w-full">Ir al carrito</a>
+              <button type="button" class="btn-outline w-full" data-cart-added-close>Seguir comprando</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  @endif
 </body>
 </html>

@@ -2,6 +2,51 @@ import './bootstrap';
 
 document.addEventListener('DOMContentLoaded', () => {
   // =============================
+  // ✅ Guardar/Restaurar scroll (para "Agregar al carrito")
+  // =============================
+  const SCROLL_KEY_PATH = 'nr_scroll_path';
+  const SCROLL_KEY_Y = 'nr_scroll_y';
+
+  const saveScrollForNextLoad = () => {
+    try {
+      sessionStorage.setItem(SCROLL_KEY_PATH, window.location.pathname + window.location.search);
+      sessionStorage.setItem(SCROLL_KEY_Y, String(window.scrollY || 0));
+    } catch (_) {}
+  };
+
+  const restoreScrollIfNeeded = () => {
+    try {
+      const savedPath = sessionStorage.getItem(SCROLL_KEY_PATH);
+      const savedY = Number(sessionStorage.getItem(SCROLL_KEY_Y));
+      const currentPath = window.location.pathname + window.location.search;
+
+      if (savedPath && savedPath === currentPath && Number.isFinite(savedY) && savedY > 0) {
+        // Espera un frame para que pinte y después restaura
+        requestAnimationFrame(() => {
+          window.scrollTo({ top: savedY, left: 0, behavior: 'auto' });
+        });
+
+        sessionStorage.removeItem(SCROLL_KEY_PATH);
+        sessionStorage.removeItem(SCROLL_KEY_Y);
+      }
+    } catch (_) {}
+  };
+
+  // Guardamos scroll SOLO para POST /carrito/agregar/*
+  document.addEventListener('submit', (e) => {
+    const form = e.target;
+    if (!(form instanceof HTMLFormElement)) return;
+
+    const action = form.getAttribute('action') || '';
+    if (action.includes('/carrito/agregar/')) {
+      saveScrollForNextLoad();
+    }
+  }, true);
+
+  // Restaurar scroll apenas carga
+  restoreScrollIfNeeded();
+
+  // =============================
   // Offcanvas sidebar (mobile)
   // =============================
   const btnSidebar = document.querySelector('[data-toggle="sidebar"]');
@@ -50,7 +95,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // cerrar al tocar cualquier link dentro del sidebar
   sidebar?.querySelectorAll('a').forEach((a) => {
     a.addEventListener('click', () => closeSidebar());
   });
@@ -95,12 +139,74 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // =============================
+  // Bottom-sheet: “Agregado al carrito” (smooth)
+  // =============================
+  const cartAddedOverlay = document.getElementById('cartAddedOverlay');
+  const cartAddedSheet = document.getElementById('cartAddedSheet');
+  const cartAddedBackdrop = document.getElementById('cartAddedBackdrop');
+
+  const ANIM_MS = 300;
+  let autoCloseTimer = null;
+
+  const openCartAdded = () => {
+    if (!cartAddedOverlay || !cartAddedSheet || !cartAddedBackdrop) return;
+
+    cartAddedOverlay.classList.remove('hidden');
+    document.body.classList.add('overflow-hidden');
+
+    cartAddedBackdrop.classList.remove('opacity-100');
+    cartAddedSheet.classList.remove('translate-y-0', 'opacity-100');
+
+    requestAnimationFrame(() => {
+      cartAddedBackdrop.classList.add('opacity-100');
+      cartAddedSheet.classList.remove('translate-y-full');
+      cartAddedSheet.classList.add('translate-y-0', 'opacity-100');
+    });
+
+    clearTimeout(autoCloseTimer);
+    autoCloseTimer = window.setTimeout(() => {
+      closeCartAdded();
+    }, 6500);
+  };
+
+  const closeCartAdded = () => {
+    if (!cartAddedOverlay || !cartAddedSheet || !cartAddedBackdrop) return;
+
+    cartAddedBackdrop.classList.remove('opacity-100');
+    cartAddedSheet.classList.add('translate-y-full');
+    cartAddedSheet.classList.remove('translate-y-0', 'opacity-100');
+
+    document.body.classList.remove('overflow-hidden');
+
+    window.setTimeout(() => {
+      cartAddedOverlay.classList.add('hidden');
+    }, ANIM_MS);
+  };
+
+  if (cartAddedOverlay?.dataset.cartAdded === '1') {
+    // abrir después de restaurar scroll (ya se llamó arriba)
+    openCartAdded();
+
+    cartAddedOverlay.querySelectorAll('[data-cart-added-close]').forEach((el) => {
+      el.addEventListener('click', (e) => {
+        e.preventDefault();
+        closeCartAdded();
+      });
+    });
+
+    cartAddedSheet?.addEventListener('pointerdown', () => {
+      clearTimeout(autoCloseTimer);
+    });
+  }
+
+  // =============================
   // ESC + resize
   // =============================
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       closeSidebar();
       closeAllDropdowns();
+      closeCartAdded();
     }
   });
 
