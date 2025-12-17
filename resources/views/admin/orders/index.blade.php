@@ -27,6 +27,7 @@
   };
 
   $currentStatus = $currentStatus ?? '';
+  $q = $q ?? '';
 @endphp
 
 @section('content')
@@ -42,23 +43,33 @@
     </div>
   </div>
 
-  @if (session('success'))
-    <div class="alert-success">{{ session('success') }}</div>
-  @endif
-
   <div class="card">
     <div class="card-body">
-      <form method="GET" class="flex flex-col sm:flex-row gap-2">
-        <select name="status" class="sm:w-64">
-          <option value="">Todos los estados</option>
-          @foreach($statusMap as $k => $label)
-            <option value="{{ $k }}" @selected($currentStatus === $k)>{{ $label }}</option>
-          @endforeach
-        </select>
-        <button class="btn-outline sm:w-40" type="submit">Filtrar</button>
-        @if($currentStatus)
-          <a class="btn-ghost sm:w-40" href="{{ route('admin.orders.index') }}">Limpiar</a>
-        @endif
+      <form method="GET" class="grid gap-3 sm:grid-cols-6">
+        <div class="sm:col-span-2">
+          <label>Buscar</label>
+          <input name="q" value="{{ $q }}" placeholder="ID, nombre, teléfono, email…" />
+        </div>
+
+        <div class="sm:col-span-2">
+          <label>Estado</label>
+          <select name="status">
+            <option value="">Todos los estados</option>
+            @foreach($statusMap as $k => $label)
+              <option value="{{ $k }}" @selected($currentStatus === $k)>{{ $label }}</option>
+            @endforeach
+          </select>
+        </div>
+
+        <div class="sm:col-span-2 flex items-end gap-2">
+          <button class="btn-outline w-full" type="submit">Aplicar</button>
+        </div>
+
+        <div class="sm:col-span-6">
+          @if($currentStatus || $q !== '')
+            <a class="btn-ghost" href="{{ route('admin.orders.index') }}">Limpiar filtros</a>
+          @endif
+        </div>
       </form>
     </div>
   </div>
@@ -131,6 +142,10 @@
         </tbody>
       </table>
     </div>
+  </div>
+
+  <div>
+    {{ $orders->links() }}
   </div>
 </div>
 @endsection

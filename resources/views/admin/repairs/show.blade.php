@@ -4,12 +4,16 @@
 
 @php
   $money = fn($n) => '$ ' . number_format((float)($n ?? 0), 0, ',', '.');
-  $statusLabel = $statuses[$repair->status] ?? $repair->status;
+
+  $statusKey = (string)($repair->status ?? '');
+  $statusLabel = $statuses[$statusKey] ?? ($statusKey !== '' ? $statusKey : '—');
 
   $device = trim(($repair->device_brand ?? '') . ' ' . ($repair->device_model ?? ''));
   $device = $device !== '' ? $device : null;
 
-  $badge = function(string $st) {
+  // ✅ IMPORTANTE: tolera null (evita TypeError)
+  $badge = function($st) {
+    $st = (string)($st ?? '');
     return match($st) {
       'received'         => 'badge-sky',
       'diagnosing'       => 'badge-indigo',
@@ -38,7 +42,7 @@
   <div class="page-head">
     <div>
       <div class="flex flex-wrap items-center gap-2">
-        <h1 class="page-title">{{ $repair->code }}</h1>
+        <h1 class="page-title">{{ $repair->code ?? '—' }}</h1>
         <span class="{{ $badge($repair->status) }}">{{ $statusLabel }}</span>
 
         @if($repair->delivered_at && $wExp)
@@ -49,9 +53,9 @@
       </div>
 
       <p class="page-subtitle mt-1">
-        <span class="font-extrabold">{{ $repair->customer_name }}</span>
+        <span class="font-extrabold">{{ $repair->customer_name ?? '—' }}</span>
         <span class="text-zinc-400">·</span>
-        <span class="font-semibold">{{ $repair->customer_phone }}</span>
+        <span class="font-semibold">{{ $repair->customer_phone ?? '—' }}</span>
         <span class="text-zinc-400">·</span>
         <span>{{ $device ?: '—' }}</span>
       </p>
@@ -61,8 +65,9 @@
       <a href="{{ route('admin.repairs.index') }}" class="btn-ghost btn-sm">Volver</a>
       <a href="{{ route('admin.repairs.print', $repair) }}" class="btn-outline btn-sm" target="_blank" rel="noopener">Imprimir</a>
 
-      @if($waUrl)
-        <a href="{{ $waUrl }}" class="btn-primary btn-sm" target="_blank" rel="noopener" data-wa-open
+      @if(!empty($waUrl))
+        <a href="{{ $waUrl }}" class="btn-primary btn-sm" target="_blank" rel="noopener"
+           data-wa-open
            data-wa-ajax="{{ route('admin.repairs.whatsappLogAjax', $repair) }}">
           WhatsApp
         </a>
@@ -98,7 +103,7 @@
       <div class="card">
         <div class="card-head">
           <div class="font-black">Resumen</div>
-          <span class="badge-zinc">Código: {{ $repair->code }}</span>
+          <span class="badge-zinc">Código: {{ $repair->code ?? '—' }}</span>
         </div>
         <div class="card-body">
           <div class="text-sm text-zinc-700 space-y-2">
@@ -128,12 +133,12 @@
             <div class="pt-2 border-t border-zinc-100">
               <div class="flex items-start justify-between gap-3">
                 <span class="text-zinc-500">Usuario asociado</span>
-                <span class="font-extrabold text-right">{{ $linkedUserEmail ?: '—' }}</span>
+                <span class="font-extrabold text-right">{{ $linkedUserEmail ?? '—' }}</span>
               </div>
             </div>
           </div>
 
-          @if($repair->notes)
+          @if(!empty($repair->notes))
             <div class="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-3 text-sm">
               <div class="text-xs font-black uppercase text-zinc-500">Notas internas</div>
               <div class="mt-1 whitespace-pre-wrap font-semibold text-zinc-800">{{ $repair->notes }}</div>
@@ -172,7 +177,7 @@
       <div class="card">
         <div class="card-head">
           <div class="font-black">WhatsApp</div>
-          @if($waNotifiedAt)
+          @if(!empty($waNotifiedAt))
             <span class="badge-zinc">Último: {{ $waNotifiedAt->format('d/m/Y H:i') }}</span>
           @else
             <span class="badge-zinc">Sin envíos</span>
@@ -186,20 +191,20 @@
             </div>
             <div class="flex items-start justify-between gap-3">
               <span class="text-zinc-500">Estado notificado</span>
-              <span class="{{ $waNotifiedCurrent ? 'badge-emerald' : 'badge-amber' }}">
-                {{ $waNotifiedCurrent ? 'Al día' : 'Pendiente' }}
+              <span class="{{ !empty($waNotifiedCurrent) ? 'badge-emerald' : 'badge-amber' }}">
+                {{ !empty($waNotifiedCurrent) ? 'Al día' : 'Pendiente' }}
               </span>
             </div>
           </div>
 
-          @if($waMessage)
+          @if(!empty($waMessage))
             <div class="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-3 text-sm">
               <div class="text-xs font-black uppercase text-zinc-500">Mensaje</div>
               <div class="mt-1 whitespace-pre-wrap font-semibold text-zinc-800">{{ $waMessage }}</div>
             </div>
           @endif
 
-          @if($waUrl)
+          @if(!empty($waUrl))
             <a href="{{ $waUrl }}" target="_blank" rel="noopener"
                class="btn-primary w-full mt-4"
                data-wa-open
@@ -207,7 +212,7 @@
               Abrir WhatsApp
             </a>
             <p class="mt-2 text-xs text-zinc-500">
-              Nota: se registra el envío y se evita duplicar si ya se envió el mismo estado recientemente.
+              Se registra el envío y se evita duplicar si ya se envió el mismo estado recientemente.
             </p>
           @else
             <div class="mt-4 text-sm text-rose-700 font-extrabold">
@@ -231,12 +236,12 @@
                   <div class="mt-1 h-2.5 w-2.5 rounded-full bg-zinc-300"></div>
                   <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
-                      <span class="{{ $badge($h->status) }}">{{ $statuses[$h->status] ?? $h->status }}</span>
+                      <span class="{{ $badge($h->status) }}">{{ $statuses[(string)($h->status ?? '')] ?? ((string)($h->status ?? '—')) }}</span>
                       <span class="text-xs text-zinc-500 font-semibold">
                         {{ $h->created_at?->format('d/m/Y H:i') ?? '—' }}
                       </span>
                     </div>
-                    @if($h->note)
+                    @if(!empty($h->note))
                       <div class="mt-1 text-sm font-semibold text-zinc-800 whitespace-pre-wrap">{{ $h->note }}</div>
                     @endif
                   </div>
@@ -262,7 +267,7 @@
                 <div class="flex items-start justify-between gap-3 rounded-2xl border border-zinc-200 bg-white p-3">
                   <div class="min-w-0">
                     <div class="font-extrabold text-zinc-900">
-                      {{ $statuses[$l->notified_status] ?? $l->notified_status }}
+                      {{ $statuses[(string)($l->notified_status ?? '')] ?? ((string)($l->notified_status ?? '—')) }}
                     </div>
                     <div class="text-xs text-zinc-500 font-semibold">
                       {{ $l->sent_at?->format('d/m/Y H:i') ?? ($l->created_at?->format('d/m/Y H:i') ?? '—') }}
@@ -291,11 +296,10 @@
             @csrf
             @method('PUT')
 
-            {{-- Asociación de usuario --}}
             <div class="grid gap-3 md:grid-cols-2">
               <div>
                 <label for="user_email" class="block mb-1">Vincular por email (opcional)</label>
-                <input id="user_email" name="user_email" type="email" value="{{ old('user_email', $linkedUserEmail) }}" placeholder="cliente@correo.com">
+                <input id="user_email" name="user_email" type="email" value="{{ old('user_email', $linkedUserEmail ?? '') }}" placeholder="cliente@correo.com">
                 <p class="mt-1 text-xs text-zinc-500">
                   Si existe un usuario con ese email, se asocia la reparación a su cuenta.
                 </p>
@@ -310,7 +314,6 @@
 
             <hr>
 
-            {{-- Cliente / Equipo --}}
             <div class="grid gap-3 md:grid-cols-2">
               <div>
                 <label for="customer_name" class="block mb-1">Nombre cliente</label>
@@ -344,7 +347,6 @@
 
             <hr>
 
-            {{-- Finanzas --}}
             <div class="grid gap-3 md:grid-cols-3">
               <div>
                 <label for="parts_cost" class="block mb-1">Repuestos</label>
@@ -437,9 +439,8 @@
     if (!a) return;
     e.preventDefault();
 
-    // Abrimos WhatsApp primero para evitar bloqueos.
     const url = a.getAttribute('href');
-    window.open(url, '_blank', 'noopener');
+    if (url) window.open(url, '_blank', 'noopener');
 
     const ajaxUrl = a.dataset.waAjax;
     if (!ajaxUrl) return;
