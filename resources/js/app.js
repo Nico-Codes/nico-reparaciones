@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (_) {}
   };
 
+  // ⬅️ ahora devuelve boolean: si programó restore o no
   const restoreScrollIfNeeded = () => {
     try {
       const savedPath = sessionStorage.getItem(SCROLL_KEY_PATH);
@@ -21,30 +22,36 @@ document.addEventListener('DOMContentLoaded', () => {
       const currentPath = window.location.pathname + window.location.search;
 
       if (savedPath && savedPath === currentPath && Number.isFinite(savedY) && savedY > 0) {
-        // Espera un frame para que pinte y después restaura
         requestAnimationFrame(() => {
           window.scrollTo({ top: savedY, left: 0, behavior: 'auto' });
         });
 
         sessionStorage.removeItem(SCROLL_KEY_PATH);
         sessionStorage.removeItem(SCROLL_KEY_Y);
+
+        return true;
       }
     } catch (_) {}
+
+    return false;
   };
 
   // Guardamos scroll SOLO para POST /carrito/agregar/*
-  document.addEventListener('submit', (e) => {
-    const form = e.target;
-    if (!(form instanceof HTMLFormElement)) return;
+  document.addEventListener(
+    'submit',
+    (e) => {
+      const form = e.target;
+      if (!(form instanceof HTMLFormElement)) return;
 
-    const action = form.getAttribute('action') || '';
-    if (action.includes('/carrito/agregar/')) {
-      saveScrollForNextLoad();
-    }
-  }, true);
+      const action = form.getAttribute('action') || '';
+      if (action.includes('/carrito/agregar/')) {
+        saveScrollForNextLoad();
+      }
+    },
+    true
+  );
 
-  // Restaurar scroll apenas carga
-  restoreScrollIfNeeded();
+  const didScheduleScrollRestore = restoreScrollIfNeeded();
 
   // =============================
   // Offcanvas sidebar (mobile)
@@ -71,7 +78,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     sidebar.classList.add('-translate-x-full');
     sidebar.classList.remove('translate-x-0');
-
     document.body.classList.remove('overflow-hidden');
     btnSidebar?.setAttribute('aria-expanded', 'false');
 
@@ -123,8 +129,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     btn.addEventListener('click', (e) => {
       e.preventDefault();
+
       const isHidden = panel.classList.contains('hidden');
       closeAllDropdowns();
+
       if (isHidden) {
         panel.classList.remove('hidden');
         btn.setAttribute('aria-expanded', 'true');
@@ -148,18 +156,49 @@ document.addEventListener('DOMContentLoaded', () => {
   const ANIM_MS = 300;
   let autoCloseTimer = null;
 
+    // Lock scroll sin “zoom”: compensa el ancho real de la scrollbar
+  const lockScroll = () => {
+    const sbw = window.innerWidth - document.documentElement.clientWidth;
+    document.documentElement.style.setProperty('--nr-sbw', sbw > 0 ? `${sbw}px` : '0px');
+    document.body.classList.add('nr-scroll-lock');
+    };
+
+  const unlockScroll = () => {
+    document.body.classList.remove('nr-scroll-lock');
+    document.documentElement.style.removeProperty('--nr-sbw');
+    };
+
   const openCartAdded = () => {
     if (!cartAddedOverlay || !cartAddedSheet || !cartAddedBackdrop) return;
 
     cartAddedOverlay.classList.remove('hidden');
-    document.body.classList.add('overflow-hidden');
+
+    // ✅ Preparar estado "cerrado" SIN transición (evita el flash)
+    cartAddedBackdrop.classList.add('nr-no-transition');
+    cartAddedSheet.classList.add('nr-no-transition');
 
     cartAddedBackdrop.classList.remove('opacity-100');
-    cartAddedSheet.classList.remove('translate-y-0', 'opacity-100');
+    cartAddedBackdrop.classList.add('opacity-0');
 
+    cartAddedSheet.classList.remove('translate-y-0', 'opacity-100');
+    cartAddedSheet.classList.add('translate-y-full', 'opacity-0');
+
+    // Forzamos reflow para que el browser "asiente" el estado sin transición
+    void cartAddedSheet.offsetHeight;
+
+    cartAddedBackdrop.classList.remove('nr-no-transition');
+    cartAddedSheet.classList.remove('nr-no-transition');
+
+    // Lock scroll (cuando ya está todo listo)
+    lockScroll();
+
+
+    // ✅ Ahora sí: animación de entrada
     requestAnimationFrame(() => {
+      cartAddedBackdrop.classList.remove('opacity-0');
       cartAddedBackdrop.classList.add('opacity-100');
-      cartAddedSheet.classList.remove('translate-y-full');
+
+      cartAddedSheet.classList.remove('translate-y-full', 'opacity-0');
       cartAddedSheet.classList.add('translate-y-0', 'opacity-100');
     });
 
@@ -172,20 +211,29 @@ document.addEventListener('DOMContentLoaded', () => {
   const closeCartAdded = () => {
     if (!cartAddedOverlay || !cartAddedSheet || !cartAddedBackdrop) return;
 
-    cartAddedBackdrop.classList.remove('opacity-100');
-    cartAddedSheet.classList.add('translate-y-full');
-    cartAddedSheet.classList.remove('translate-y-0', 'opacity-100');
+    clearTimeout(autoCloseTimer);
 
-    document.body.classList.remove('overflow-hidden');
+    cartAddedBackdrop.classList.remove('opacity-100');
+    cartAddedBackdrop.classList.add('opacity-0');
+
+    cartAddedSheet.classList.remove('translate-y-0', 'opacity-100');
+    cartAddedSheet.classList.add('translate-y-full', 'opacity-0');
 
     window.setTimeout(() => {
       cartAddedOverlay.classList.add('hidden');
+      unlockScroll();
+
     }, ANIM_MS);
   };
 
+  // ✅ Si viene de "agregar al carrito"
   if (cartAddedOverlay?.dataset.cartAdded === '1') {
-    // abrir después de restaurar scroll (ya se llamó arriba)
-    openCartAdded();
+    // 🔥 CLAVE: si hubo restore de scroll, abrimos 1 frame después para que no se pisen
+    if (didScheduleScrollRestore) {
+      requestAnimationFrame(() => requestAnimationFrame(() => openCartAdded()));
+    } else {
+      requestAnimationFrame(() => openCartAdded());
+    }
 
     cartAddedOverlay.querySelectorAll('[data-cart-added-close]').forEach((el) => {
       el.addEventListener('click', (e) => {
