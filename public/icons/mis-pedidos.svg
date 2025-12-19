@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <title>Mis Pedidos - Paquete Azul</title>
+  <path fill="#64B5F6" d="M12 2l10 4-10 4-10-4z"/>
+  <path fill="#1976D2" d="M12 10l10-4v9l-10 5z"/>
+  <path fill="#1565C0" d="M2 6l10 4v9l-10-5z"/>
+  <path fill="#FFFFFF" d="M14 13l5-2v3l-5 2z" opacity="0.8"/>
+</svg>
