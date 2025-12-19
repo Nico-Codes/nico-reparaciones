@@ -119,27 +119,43 @@
           </a>
         </div>
 
-        <nav class="hidden md:flex items-center gap-1">
+        <nav class="hidden md:flex items-center gap-1   rounded-full bg-zinc-100/80 p-1 ring-1 ring-zinc-200">
           @if($has('store.index'))
-            <a class="nav-link {{ request()->routeIs('store.index','store.category','store.product','home') ? 'active' : '' }}"
-               href="{{ route('store.index') }}">Tienda</a>
+            <a href="{{ route('store.index') }}"
+              class="inline-flex items-center rounded-full px-4 py-2 text-sm font-extrabold transition
+                      {{ request()->routeIs('store.index','store.category','store.product','home')
+                          ? 'bg-white text-sky-700 shadow-sm ring-1 ring-sky-200'
+                          : 'text-zinc-700 hover:text-zinc-900 hover:bg-white/70' }}">
+              Tienda
+            </a>
           @endif
 
           @if($has('repairs.lookup'))
-            <a class="nav-link {{ request()->routeIs('repairs.lookup','repairs.lookup.post') ? 'active' : '' }}"
-               href="{{ route('repairs.lookup') }}">Reparación</a>
+            <a href="{{ route('repairs.lookup') }}"
+              class="inline-flex items-center rounded-full px-4 py-2 text-sm font-extrabold transition
+                      {{ request()->routeIs('repairs.lookup','repairs.lookup.post')
+                          ? 'bg-white text-sky-700 shadow-sm ring-1 ring-sky-200'
+                          : 'text-zinc-700 hover:text-zinc-900 hover:bg-white/70' }}">
+              Reparación
+            </a>
           @endif
 
           @if($isAdmin && $has('admin.dashboard'))
-            <a class="nav-link {{ request()->is('admin*') ? 'active' : '' }}"
-               href="{{ route('admin.dashboard') }}">Admin</a>
+            <a href="{{ route('admin.dashboard') }}"
+              class="inline-flex items-center rounded-full px-4 py-2 text-sm font-extrabold transition
+                      {{ request()->is('admin*')
+                          ? 'bg-white text-sky-700 shadow-sm ring-1 ring-sky-200'
+                          : 'text-zinc-700 hover:text-zinc-900 hover:bg-white/70' }}">
+              Admin
+            </a>
           @endif
         </nav>
+
 
         <div class="flex items-center gap-2">
           @if($has('cart.index'))
           <a href="{{ route('cart.index') }}"
-            class="relative inline-flex items-center justify-center bg-transparent border-0 p-0 rounded-none hover:bg-transparent text-zinc-800 hover:text-sky-700 transition-colors"
+            class="relative inline-flex items-center justify-center bg-transparent border-0 p-0 rounded-none hover:bg-transparent text-zinc-800 hover:text-sky-700 transition-colors mr-2"
             aria-label="Carrito">
 
             <svg xmlns="http://www.w3.org/2000/svg"
