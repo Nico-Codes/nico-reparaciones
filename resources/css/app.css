@@ -1,196 +1,225 @@
 @import "tailwindcss";
 
-/* Tailwind v4 content sources (para que detecte clases en Blade y JS) */
+/* Tailwind v4 content sources (Blade + JS) */
 @source "../views/**/*.blade.php";
 @source "../js/**/*.js";
 
-/* Tailwind v4 + clases utilitarias para toda la app */
-
 @layer base {
-  body {
-    @apply bg-zinc-50 text-zinc-900;
-  }
-  a {
-    @apply text-zinc-900;
-  }
-  label {
-    @apply text-sm font-extrabold text-zinc-700;
-  }
+  body { @apply bg-zinc-50 text-zinc-900; }
+  a { @apply text-zinc-900; }
+
+  label { @apply text-sm font-extrabold text-zinc-700; }
+
   input,
   select,
   textarea {
-    @apply w-full rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-300;
+    @apply w-full rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none
+      focus:ring-2 focus:ring-sky-200 focus:border-sky-300;
   }
 }
 
 @layer components {
-  /* Containers */
-  .container-page {
-    @apply mx-auto max-w-6xl px-4;
-  }
+  /* =========================
+     Layout / Containers
+  ========================== */
+  .container-page { @apply mx-auto max-w-6xl px-4; }
 
-  /* Page */
-  .page-head {
-    @apply flex flex-col gap-2 md:flex-row md:items-end md:justify-between mb-4;
-  }
-  .page-title {
-    @apply text-xl md:text-2xl font-black tracking-tight;
-  }
-  .page-subtitle {
-    @apply text-sm text-zinc-600;
-  }
+  .page-head { @apply flex flex-col gap-2 md:flex-row md:items-end md:justify-between mb-4; }
+  .page-title { @apply text-xl md:text-2xl font-black tracking-tight; }
+  .page-subtitle { @apply text-sm text-zinc-600; }
 
-  /* Cards */
-  .card {
-    @apply bg-white border border-zinc-100 rounded-2xl shadow-sm;
-  }
-  .card-head {
-    @apply px-4 py-3 border-b border-zinc-100 flex items-center justify-between gap-2;
-  }
-  .card-body {
-    @apply p-4;
-  }
+  /* =========================
+     Cards
+  ========================== */
+  .card { @apply bg-white border border-zinc-100 rounded-2xl shadow-sm; }
+  .card-head { @apply px-4 py-3 border-b border-zinc-100 flex items-center justify-between gap-2; }
+  .card-body { @apply p-4; }
 
-  /* Buttons */
-  .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-2 text-sm font-extrabold border border-transparent transition active:scale-[0.99];
-  }
-  .btn-sm {
-    @apply px-3 py-1.5 text-xs rounded-xl;
-  }
-  .btn-primary {
-    @apply btn bg-sky-600 text-white hover:bg-sky-700;
-  }
-  .btn-outline {
-    @apply btn bg-white border-zinc-200 hover:bg-zinc-50;
-  }
+  /* =========================
+     Buttons
+     (Tailwind v4: NO @apply a clases custom como "btn")
+  ========================== */
+  .btn,
+  .btn-primary,
+  .btn-outline,
   .btn-ghost {
-    @apply btn bg-transparent hover:bg-zinc-100;
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-2 text-sm font-extrabold
+      border border-transparent transition active:scale-[0.99];
   }
 
-  /* Badges */
-  .badge {
+  .btn-sm { @apply px-3 py-1.5 text-xs rounded-xl; }
+
+  .btn-primary { @apply bg-sky-600 text-white hover:bg-sky-700; }
+  .btn-outline { @apply bg-white border-zinc-200 hover:bg-zinc-50; }
+  .btn-ghost { @apply bg-transparent hover:bg-zinc-100; }
+
+  /* Icon buttons (base) */
+  .icon-btn,
+  .btn-cart {
+    @apply inline-flex items-center justify-center h-10 w-10 rounded-xl border border-zinc-200 bg-white hover:bg-zinc-50 transition;
+  }
+
+  /* btn-cart (tienda) */
+  .btn-cart {
+    @apply text-sky-700 hover:text-sky-800;
+  }
+  .btn-cart svg {
+    width: 20px;
+    height: 20px;
+    display: block;
+  }
+  .btn-cart.is-disabled {
+    @apply opacity-50 cursor-not-allowed hover:bg-white hover:text-sky-700;
+  }
+
+  /* =========================
+     Badges
+     (Tailwind v4: NO @apply a "badge")
+  ========================== */
+  .badge,
+  .badge-zinc,
+  .badge-sky,
+  .badge-amber,
+  .badge-emerald,
+  .badge-rose,
+  .badge-indigo {
     @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-black border;
   }
-  .badge-zinc {
-    @apply badge bg-zinc-50 text-zinc-800 border-zinc-200;
+
+  .badge-zinc { @apply bg-zinc-50 text-zinc-800 border-zinc-200; }
+  .badge-sky { @apply bg-sky-50 text-sky-900 border-sky-200; }
+  .badge-amber { @apply bg-amber-50 text-amber-900 border-amber-200; }
+  .badge-emerald { @apply bg-emerald-50 text-emerald-900 border-emerald-200; }
+  .badge-rose { @apply bg-rose-50 text-rose-900 border-rose-200; }
+  .badge-indigo { @apply bg-indigo-50 text-indigo-900 border-indigo-200; }
+
+  /* Badge stock (tienda) */
+  .badge-stock {
+    @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-black border;
   }
-  .badge-sky {
-    @apply badge bg-sky-50 text-sky-900 border-sky-200;
+  .badge-stock.is-in {
+    @apply bg-emerald-50 text-emerald-900 border-emerald-200;
   }
-  .badge-amber {
-    @apply badge bg-amber-50 text-amber-900 border-amber-200;
-  }
-  .badge-emerald {
-    @apply badge bg-emerald-50 text-emerald-900 border-emerald-200;
-  }
-  .badge-rose {
-    @apply badge bg-rose-50 text-rose-900 border-rose-200;
-  }
-  .badge-indigo {
-    @apply badge bg-indigo-50 text-indigo-900 border-indigo-200;
+  .badge-stock.is-out {
+    @apply bg-rose-50 text-rose-900 border-rose-200;
   }
 
-  /* Alerts */
-  .alert {
+  /* =========================
+     Alerts
+     (Tailwind v4: NO @apply a "alert")
+  ========================== */
+  .alert,
+  .alert-success,
+  .alert-error {
     @apply rounded-2xl border px-4 py-3 text-sm font-semibold;
   }
-  .alert-success {
-    @apply alert bg-emerald-50 text-emerald-900 border-emerald-200;
-  }
-  .alert-error {
-    @apply alert bg-rose-50 text-rose-900 border-rose-200;
-  }
 
-  /* Text helpers */
-  .muted {
-    @apply text-sm text-zinc-600;
-  }
+  .alert-success { @apply bg-emerald-50 text-emerald-900 border-emerald-200; }
+  .alert-error { @apply bg-rose-50 text-rose-900 border-rose-200; }
 
-  /* Tables */
-  .table-wrap {
-    @apply overflow-x-auto;
-  }
-  .table {
-    @apply w-full text-sm;
-  }
-  .table thead {
-    @apply bg-zinc-50 text-xs uppercase text-zinc-500;
-  }
-  .table th {
-    @apply px-3 py-2 text-left font-black;
-  }
-  .table td {
-    @apply px-3 py-2;
-  }
-  .table tbody {
-    @apply divide-y divide-zinc-100;
-  }
+  /* =========================
+     Tables
+  ========================== */
+  .table-wrap { @apply overflow-x-auto; }
+  .table { @apply w-full text-sm; }
+  .table thead { @apply bg-zinc-50 text-xs uppercase text-zinc-500; }
+  .table th { @apply px-3 py-2 text-left font-black; }
+  .table td { @apply px-3 py-2; }
+  .table tbody { @apply divide-y divide-zinc-100; }
 
-  /* Navbar links */
-  .nav-link {
-    @apply text-sm font-extrabold text-zinc-700 hover:text-zinc-900;
-  }
+  /* =========================
+     Navbar / Pills
+  ========================== */
+  .nav-link { @apply text-sm font-extrabold text-zinc-700 hover:text-zinc-900; }
+
   .nav-pill {
-    @apply inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-black border border-zinc-200 bg-white hover:bg-zinc-50;
+    @apply inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-black
+      border border-zinc-200 bg-white hover:bg-zinc-50;
+  }
+  .nav-pill-active {
+    @apply border-sky-300 bg-sky-50 text-sky-900;
   }
 
-  /* Dropdown */
-  .dropdown {
-    @apply relative;
-  }
-  .dropdown-menu {
-    @apply absolute right-0 mt-2 w-48 rounded-2xl border border-zinc-200 bg-white shadow-lg p-2 hidden;
-  }
-  .dropdown.open .dropdown-menu {
-    @apply block;
-  }
-  .dropdown-item {
-    @apply block px-3 py-2 rounded-xl text-sm font-semibold hover:bg-zinc-100;
+  /* =========================
+     Dropdown
+  ========================== */
+  .dropdown { @apply relative; }
+  .dropdown-menu { @apply absolute right-0 mt-2 w-48 rounded-2xl border border-zinc-200 bg-white shadow-lg p-2 hidden; }
+  .dropdown.open .dropdown-menu { @apply block; }
+  .dropdown-item { @apply block px-3 py-2 rounded-xl text-sm font-semibold hover:bg-zinc-100; }
+
+  /* =========================
+     TIENDA — Product Card UI (lo que faltaba)
+  ========================== */
+  .product-card {
+    @apply flex flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition
+      hover:shadow-md;
   }
 
-  /* Legacy helpers (por si quedó markup viejo) */
-  .hero {
-    @apply bg-white border border-zinc-100 rounded-2xl shadow-sm;
+  .product-image {
+    @apply block w-full bg-zinc-50 overflow-hidden;
+    /* una altura consistente sin depender de plugins */
+    height: 210px;
   }
-  .hero-title {
-    @apply text-xl md:text-2xl font-black tracking-tight;
-  }
-  .hero-text {
-    @apply text-sm text-zinc-600;
-  }
-  .orders-list {
-    @apply grid gap-3;
-  }
-  .order-card {
-    @apply bg-white border border-zinc-100 rounded-2xl shadow-sm p-4;
+  .product-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
   }
 
-  /* =============================
-     Motion helpers (toast smooth)
-     ============================= */
-  .nr-no-transition {
-    transition: none !important;
+  .product-image-placeholder {
+    @apply h-full w-full flex items-center justify-center text-sm font-extrabold text-zinc-500 bg-zinc-100;
   }
 
-  #cartAddedBackdrop {
-    will-change: opacity;
+  .product-body {
+    @apply p-4 flex flex-col gap-2;
   }
 
-  #cartAddedSheet {
-    will-change: transform, opacity;
+  .product-title {
+    @apply font-black text-zinc-900 leading-snug hover:underline;
   }
 
-  /* Evita “zoom” cuando se bloquea el scroll (mantiene el layout estable) */
+  .product-meta {
+    @apply text-xs font-semibold text-zinc-500;
+  }
+
+  .product-row {
+    @apply mt-2 flex items-center justify-between gap-2;
+  }
+
+  .product-price {
+    @apply text-lg font-black text-zinc-900;
+  }
+
+  .product-actions {
+    @apply flex items-center gap-2;
+  }
+
+  /* =========================
+     Helpers / Legacy
+  ========================== */
+  .muted { @apply text-sm text-zinc-600; }
+
+  .hero { @apply bg-white border border-zinc-100 rounded-2xl shadow-sm; }
+  .hero-title { @apply text-xl md:text-2xl font-black tracking-tight; }
+  .hero-text { @apply text-sm text-zinc-600; }
+
+  .orders-list { @apply grid gap-3; }
+  .order-card { @apply bg-white border border-zinc-100 rounded-2xl shadow-sm p-4; }
+
+  /* =========================
+     Scroll lock / Toast smooth
+  ========================== */
   html { scrollbar-gutter: stable both-edges; }
 
   html.nr-scroll-lock,
-  body.nr-scroll-lock {
-    overflow: hidden;
-  }
+  body.nr-scroll-lock { overflow: hidden; }
 
   body.nr-scroll-lock {
     padding-right: var(--nr-sbw, 0px);
     touch-action: none;
   }
+
+  .nr-no-transition { transition: none !important; }
 }

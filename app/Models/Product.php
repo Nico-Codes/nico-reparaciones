@@ -11,15 +11,21 @@ class Product extends Model
         'category_id',
         'name',
         'slug',
+        'brand',
+        'quality',
         'price',
         'stock',
+        'short_description',
         'description',
-        'image_path',
+        'image',       // legado
+        'image_path',  // actual (public disk)
+        'featured',
     ];
 
     protected $casts = [
-        'price' => 'decimal:2',
+        'price' => 'integer',
         'stock' => 'integer',
+        'featured' => 'boolean',
     ];
 
     public function category(): BelongsTo
@@ -28,14 +34,24 @@ class Product extends Model
     }
 
     /**
-     * URL pública de la imagen (usa tu ruta storage.local).
-     * En blades podés usar: $product->image_url
+     * URL lista para usar en <img>.
+     * Prioriza `image_path` (nuevo) y cae a `image` (legacy).
      */
     public function getImageUrlAttribute(): ?string
     {
-        if (!$this->image_path) return null;
+        if (!empty($this->image_path)) {
+            return route('storage.local', $this->image_path);
+        }
 
-        // Si existe la route storage.local en tu proyecto (ya aparece en tu route:list), esto funciona siempre.
-        return route('storage.local', $this->image_path);
+        if (!empty($this->image)) {
+            // legacy: si viene solo el filename, asumimos carpeta products/
+            $path = str_contains($this->image, '/')
+                ? $this->image
+                : ('products/' . ltrim($this->image, '/'));
+
+            return route('storage.local', $path);
+        }
+
+        return null;
     }
 }

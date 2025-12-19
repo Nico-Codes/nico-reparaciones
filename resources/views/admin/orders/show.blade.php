@@ -14,7 +14,7 @@
     'cancelado'     => 'Cancelado',
   ];
 
-  $badge = function(string $st) {
+  $badge = function (?string $st) {
     return match($st) {
       'pendiente'     => 'badge-amber',
       'confirmado'    => 'badge-sky',
@@ -26,21 +26,38 @@
     };
   };
 
-  $customerName = $order->pickup_name ?: ($order->user?->name ?? '—');
-  $customerPhone = $order->pickup_phone ?: '—';
+  $customerName  = $order->pickup_name ?: ($order->user?->name ?? '—');
+  $customerPhone = $order->pickup_phone ?: ($order->user?->phone ?? '—');
+
+  $waUrl          = $waUrl ?? null;
+  $waPhone        = $waPhone ?? null;
+  $waLastForStatus = $waLastForStatus ?? null;
 @endphp
 
 @section('content')
 <div class="container-page py-6">
-  <div class="page-head">
-    <div class="flex flex-wrap items-center gap-2">
-      <h1 class="page-title">Pedido #{{ $order->id }}</h1>
-      <span class="{{ $badge($order->status) }}">{{ $statusMap[$order->status] ?? $order->status }}</span>
-      <span class="badge-zinc">Total: {{ $money($order->total) }}</span>
+  <div class="flex items-start justify-between gap-4 mb-4">
+    <div class="min-w-0">
+      <div class="flex items-center gap-2">
+        <a href="{{ route('admin.orders.index') }}" class="btn-ghost">← Volver</a>
+        <div class="min-w-0">
+          <div class="text-xl font-black text-zinc-900">Pedido #{{ $order->id }}</div>
+          <div class="text-sm text-zinc-500">
+            Creado {{ $order->created_at?->format('d/m/Y H:i') ?? '—' }}
+            @if($order->user)
+              · Usuario: <span class="font-semibold">{{ $order->user->email }}</span>
+            @endif
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div class="flex flex-wrap gap-2">
-      <a href="{{ route('admin.orders.index') }}" class="btn-ghost btn-sm">Volver</a>
+    <div class="shrink-0 text-right">
+      <div class="inline-flex items-center gap-2 justify-end">
+        <span class="{{ $badge($order->status) }}">{{ $statusMap[$order->status] ?? $order->status }}</span>
+      </div>
+      <div class="mt-1 text-sm text-zinc-500">Total</div>
+      <div class="text-xl font-black text-zinc-900">{{ $money($order->total) }}</div>
     </div>
   </div>
 
@@ -60,12 +77,12 @@
   @endif
 
   <div class="grid gap-4 lg:grid-cols-3">
-    {{-- Columna izquierda: cliente + estado --}}
+    {{-- Columna izquierda --}}
     <div class="space-y-4 lg:col-span-1">
       <div class="card">
         <div class="card-head">
           <div class="font-black">Cliente</div>
-          <span class="badge-zinc">{{ $order->created_at?->format('d/m/Y H:i') ?? '—' }}</span>
+          <span class="badge-zinc">{{ $order->payment_method ?: '—' }}</span>
         </div>
         <div class="card-body">
           <div class="text-sm text-zinc-700 space-y-2">
@@ -81,10 +98,6 @@
               <span class="text-zinc-500">Email</span>
               <span class="font-extrabold text-right">{{ $order->user?->email ?? '—' }}</span>
             </div>
-            <div class="flex items-start justify-between gap-3">
-              <span class="text-zinc-500">Pago</span>
-              <span class="font-extrabold text-right">{{ $order->payment_method ?: '—' }}</span>
-            </div>
           </div>
 
           @if($order->notes)
@@ -98,7 +111,7 @@
 
       <div class="card">
         <div class="card-head">
-          <div class="font-black">Estado</div>
+          <div class="font-black">Actualizar estado</div>
           <span class="{{ $badge($order->status) }}">{{ $statusMap[$order->status] ?? $order->status }}</span>
         </div>
         <div class="card-body">
@@ -114,12 +127,87 @@
               </select>
             </div>
 
-            <button class="btn-primary w-full">Guardar estado</button>
+            <div>
+              <label for="comment" class="block mb-1">Comentario (opcional)</label>
+              <textarea id="comment" name="comment" rows="3" placeholder="Ej: Avisado por WhatsApp, paga al retirar, etc.">{{ old('comment') }}</textarea>
+            </div>
+
+            <button class="btn-primary w-full" type="submit">Guardar estado</button>
 
             <p class="text-xs text-zinc-500">
               Tip: “Listo para retirar” es ideal para avisar al cliente.
             </p>
           </form>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div class="font-black">WhatsApp</div>
+          @if($waLastForStatus)
+            <span class="badge-zinc">Último: {{ $waLastForStatus->sent_at?->format('d/m/Y H:i') ?? '—' }}</span>
+          @else
+            <span class="badge-zinc">Sin log</span>
+          @endif
+        </div>
+
+        <div class="card-body">
+          @if($waUrl)
+            <a
+              href="{{ $waUrl }}"
+              target="_blank"
+              rel="noopener"
+              class="btn-outline w-full"
+              data-wa-ajax="{{ route('admin.orders.whatsappLogAjax', $order->id) }}"
+            >
+              Abrir WhatsApp (y registrar log)
+            </a>
+
+            <p class="mt-2 text-xs text-zinc-500">
+              Se registra el envío (audit). El botón abre WhatsApp en otra pestaña.
+            </p>
+          @else
+            <div class="text-sm text-zinc-600">
+              No hay teléfono válido para WhatsApp. Cargá <span class="font-bold">pickup_phone</span> o un teléfono en el usuario.
+            </div>
+          @endif
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div class="font-black">Historial</div>
+          <span class="badge-zinc">{{ $order->statusHistories?->count() ?? 0 }} cambios</span>
+        </div>
+
+        <div class="card-body">
+          @if(($order->statusHistories?->count() ?? 0) > 0)
+            <ol class="space-y-3">
+              @foreach($order->statusHistories as $h)
+                <li class="flex items-start gap-3">
+                  <span class="mt-2 h-2 w-2 rounded-full bg-sky-500"></span>
+                  <div class="min-w-0">
+                    <div class="font-extrabold text-zinc-900">
+                      {{ $statusMap[$h->from_status] ?? $h->from_status }}
+                      →
+                      {{ $statusMap[$h->to_status] ?? $h->to_status }}
+                    </div>
+                    <div class="text-xs text-zinc-500">
+                      {{ $h->changed_at?->format('d/m/Y H:i') ?? '—' }}
+                      @if($h->changer)
+                        · {{ $h->changer->name ?? $h->changer->email }}
+                      @endif
+                    </div>
+                    @if($h->comment)
+                      <div class="mt-1 text-sm text-zinc-700 whitespace-pre-wrap">{{ $h->comment }}</div>
+                    @endif
+                  </div>
+                </li>
+              @endforeach
+            </ol>
+          @else
+            <div class="text-sm text-zinc-600">Todavía no hay historial registrado.</div>
+          @endif
         </div>
       </div>
     </div>
@@ -173,4 +261,38 @@
     </div>
   </div>
 </div>
+
+{{-- Toast simple (solo para el log de WhatsApp) --}}
+<div id="waToast" class="fixed bottom-4 right-4 z-[80] hidden rounded-xl bg-zinc-900 px-4 py-3 text-sm text-white shadow-xl"></div>
+
+<script>
+(function () {
+  const waBtn = document.querySelector('[data-wa-ajax]');
+  if (!waBtn) return;
+
+  const toast = document.getElementById('waToast');
+  const showToast = (msg) => {
+    if (!toast) return;
+    toast.textContent = msg;
+    toast.classList.remove('hidden');
+    setTimeout(() => toast.classList.add('hidden'), 1800);
+  };
+
+  waBtn.addEventListener('click', () => {
+    const url = waBtn.getAttribute('data-wa-ajax');
+    if (!url) return;
+
+    fetch(url, {
+      method: 'POST',
+      headers: {
+        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+        'Accept': 'application/json',
+      },
+    })
+      .then(r => r.ok ? r.json() : Promise.reject(r))
+      .then(() => showToast('Log de WhatsApp registrado ✅'))
+      .catch(() => showToast('No se pudo registrar el log ⚠️'));
+  });
+})();
+</script>
 @endsection

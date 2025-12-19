@@ -14,22 +14,49 @@ document.addEventListener('DOMContentLoaded', () => {
   // ----------------------------
   // Mobile menu toggle
   // ----------------------------
-  const menuBtn = document.querySelector('[data-mobile-menu-btn]');
-  const menu = document.querySelector('[data-mobile-menu]');
+  // Mobile menu (sidebar offcanvas / fallback)
+  const sidebarBtn = document.querySelector('[data-toggle="sidebar"], [data-mobile-menu-btn]');
+  const sidebar = document.getElementById('appSidebar') || document.querySelector('[data-mobile-menu]');
+  const sidebarOverlay = document.getElementById('appSidebarOverlay');
 
-  if (menuBtn && menu) {
-    const close = () => {
-      menu.classList.add('hidden');
-      menuBtn.setAttribute('aria-expanded', 'false');
+  if (sidebarBtn && sidebar) {
+    const isOffcanvas = sidebar.id === 'appSidebar';
+
+    const isOpen = () => {
+      if (isOffcanvas) return !sidebar.classList.contains('-translate-x-full');
+      return !sidebar.classList.contains('hidden');
     };
+
     const open = () => {
-      menu.classList.remove('hidden');
-      menuBtn.setAttribute('aria-expanded', 'true');
+      if (isOffcanvas) {
+        sidebar.classList.remove('-translate-x-full');
+        sidebar.classList.add('translate-x-0');
+        if (sidebarOverlay) sidebarOverlay.classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+      } else {
+        sidebar.classList.remove('hidden');
+      }
+      sidebarBtn.setAttribute('aria-expanded', 'true');
     };
 
-    menuBtn.addEventListener('click', () => {
-      const isOpen = !menu.classList.contains('hidden');
-      isOpen ? close() : open();
+    const close = () => {
+      if (isOffcanvas) {
+        sidebar.classList.add('-translate-x-full');
+        sidebar.classList.remove('translate-x-0');
+        if (sidebarOverlay) sidebarOverlay.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+      } else {
+        sidebar.classList.add('hidden');
+      }
+      sidebarBtn.setAttribute('aria-expanded', 'false');
+    };
+
+    sidebarBtn.addEventListener('click', () => {
+      isOpen() ? close() : open();
+    });
+
+    document.querySelectorAll('[data-close="sidebar"]').forEach((el) => {
+      el.addEventListener('click', close);
     });
 
     document.addEventListener('keydown', (e) => {
@@ -49,8 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const lockScroll = () => {
     const docEl = document.documentElement;
     const sbw = window.innerWidth - docEl.clientWidth;
-    document.body.style.setProperty('--nr-sbw', sbw > 0 ? `${sbw}px` : '0px');
-
+    document.body.style.setProperty('--nr-sbw', `${sbw}px`);
     docEl.classList.add('nr-scroll-lock');
     document.body.classList.add('nr-scroll-lock');
   };
@@ -67,39 +93,33 @@ document.addEventListener('DOMContentLoaded', () => {
     if (overlay && sheet) return;
 
     // Si no existe en el HTML, lo creamos (solo para AJAX)
-    const div = document.createElement('div');
-    div.innerHTML = `
+    const html = `
       <div id="cartAddedOverlay"
-           class="fixed inset-0 z-[60] opacity-0 pointer-events-none transition-opacity duration-300 ease-out"
-           aria-hidden="true">
+          class="fixed inset-0 z-[60] opacity-0 pointer-events-none transition-opacity duration-300 ease-out"
+          aria-hidden="true">
         <div class="absolute inset-0 bg-zinc-950/40" data-cart-added-close></div>
-
         <div id="cartAddedSheet"
-             class="absolute bottom-0 left-0 right-0 mx-auto max-w-xl translate-y-full transition-transform duration-300 ease-out will-change-transform">
+            class="absolute bottom-0 left-0 right-0 mx-auto w-full max-w-lg translate-y-full transform transition-transform duration-300 ease-out will-change-transform">
           <div class="rounded-t-3xl bg-white p-4 shadow-2xl">
             <div class="flex items-start justify-between gap-3">
               <div class="min-w-0">
-                <div id="cartAddedTitle" class="text-base font-black">Agregado al carrito</div>
-                <div id="cartAddedName" class="mt-0.5 text-sm text-zinc-600 truncate"></div>
+                <div class="font-black text-zinc-900">Agregado al carrito ✅</div>
+                <div class="text-sm text-zinc-600 mt-1 truncate">
+                  <span id="cartAddedName">Producto</span>
+                </div>
               </div>
-
-              <button type="button" class="icon-btn" data-cart-added-close aria-label="Cerrar">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+              <button type="button" class="icon-btn" data-cart-added-close aria-label="Cerrar">✕</button>
             </div>
 
             <div class="mt-4 flex gap-2">
-              <a href="/carrito" class="btn btn-primary flex-1 justify-center">Ver carrito</a>
-              <button type="button" class="btn btn-outline flex-1 justify-center" data-cart-added-close>Seguir</button>
+              <a href="/carrito" class="btn-primary flex-1 justify-center">Ver carrito</a>
+              <button type="button" class="btn-outline flex-1 justify-center" data-cart-added-close>Seguir</button>
             </div>
           </div>
         </div>
       </div>
-    `.trim();
-
-    document.body.appendChild(div.firstElementChild);
+    `;
+    document.body.insertAdjacentHTML('beforeend', html);
 
     overlay = document.getElementById('cartAddedOverlay');
     sheet = document.getElementById('cartAddedSheet');
@@ -118,35 +138,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const openToast = (productName = 'Producto') => {
     ensureToast();
-    if (!overlay || !sheet) return;
 
     const nameEl = document.getElementById('cartAddedName');
-    if (nameEl) nameEl.textContent = productName || 'Producto';
+    if (nameEl) nameEl.textContent = productName;
 
-    window.clearTimeout(autoCloseTimer);
-    window.clearTimeout(unlockTimer);
+    lockScroll();
 
-    // Estado base cerrado
-    overlay.setAttribute('aria-hidden', 'false');
-    overlay.classList.add('opacity-0', 'pointer-events-none');
-    overlay.classList.remove('opacity-100', 'pointer-events-auto');
-    sheet.classList.add('translate-y-full');
-    sheet.classList.remove('translate-y-0');
+    overlay.classList.remove('pointer-events-none', 'opacity-0');
+    overlay.classList.add('pointer-events-auto', 'opacity-100');
 
     afterPaint(() => {
-      overlay.classList.add('nr-no-transition');
-      sheet.classList.add('nr-no-transition');
-
-      overlay.getBoundingClientRect();
-      sheet.getBoundingClientRect();
-
-      overlay.classList.remove('nr-no-transition');
-      sheet.classList.remove('nr-no-transition');
-
-      lockScroll();
-
-      overlay.classList.remove('opacity-0', 'pointer-events-none');
-      overlay.classList.add('opacity-100', 'pointer-events-auto');
       sheet.classList.remove('translate-y-full');
       sheet.classList.add('translate-y-0');
 
@@ -165,36 +166,32 @@ document.addEventListener('DOMContentLoaded', () => {
     sheet.classList.add('translate-y-full');
     sheet.classList.remove('translate-y-0');
 
-    overlay.setAttribute('aria-hidden', 'true');
-
-    unlockTimer = window.setTimeout(() => {
-      unlockScroll();
-    }, 320);
+    unlockTimer = window.setTimeout(unlockScroll, 260);
   };
 
   // ----------------------------
   // Update cart badge (UI)
   // ----------------------------
   const bumpCartBadge = (delta = 1) => {
-    // Busca el badge existente
-    let badge = document.querySelector('.cart-badge');
-    if (!badge) {
-      // intenta crear uno en el botón del carrito
-      const cartBtn =
-        document.querySelector('a[aria-label="Carrito"]') ||
-        document.querySelector('a.cart-btn') ||
-        document.querySelector('a[href*="carrito"]');
+    // Header cart icon link (layout: <a aria-label="Carrito">🛒 <span class="badge-sky">..</span>)
+    const cartLink = document.querySelector('a[aria-label="Carrito"]');
+    if (!cartLink) return;
 
-      if (!cartBtn) return;
+    let badge = cartLink.querySelector('.badge-sky');
+    const current = badge ? (parseInt(badge.textContent || '0', 10) || 0) : 0;
+    const next = Math.max(0, current + (parseInt(delta, 10) || 0));
 
-      badge = document.createElement('span');
-      badge.className = 'cart-badge';
-      badge.textContent = '0';
-      cartBtn.appendChild(badge);
+    if (next <= 0) {
+      badge?.remove();
+      return;
     }
 
-    const current = parseInt(badge.textContent || '0', 10) || 0;
-    const next = Math.max(0, current + (parseInt(delta, 10) || 0));
+    if (!badge) {
+      badge = document.createElement('span');
+      badge.className = 'absolute -top-1 -right-1 badge-sky';
+      cartLink.appendChild(badge);
+    }
+
     badge.textContent = String(next);
   };
 
@@ -215,13 +212,11 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const getProductNameFromContext = (form) => {
-    // Intento 1: data-product-name en el botón
     const btn = form.querySelector('button.btn-cart');
     const dn = btn?.getAttribute('data-product-name');
     if (dn) return dn;
 
-    // Intento 2: dentro de la card, un .product-title
-    const card = form.closest('.product-card');
+    const card = form.closest('.product-card, .card');
     const title = card?.querySelector('.product-title')?.textContent?.trim();
     if (title) return title;
 
@@ -237,9 +232,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const setBtnLoading = (btn, loading) => {
     if (!btn) return;
     btn.disabled = !!loading;
-    btn.setAttribute('aria-busy', loading ? 'true' : 'false');
-    if (loading) btn.classList.add('opacity-60');
-    else btn.classList.remove('opacity-60');
+    btn.classList.toggle('is-loading', !!loading);
   };
 
   document.addEventListener(
@@ -248,7 +241,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const form = e.target;
       if (!isAddToCartForm(form)) return;
 
-      // Evita recarga => NO vuelve arriba
       e.preventDefault();
 
       const btn = form.querySelector('button[type="submit"]');
@@ -270,9 +262,7 @@ document.addEventListener('DOMContentLoaded', () => {
           },
         });
 
-        // Laravel puede responder 302 y fetch lo sigue (OK igual)
         if (!res.ok) {
-          // 419 = CSRF/session expirada
           if (res.status === 419) {
             openToast('Sesión expirada. Reintentá.');
           } else {
@@ -282,7 +272,6 @@ document.addEventListener('DOMContentLoaded', () => {
           return;
         }
 
-        // Éxito: actualizamos badge y mostramos toast
         bumpCartBadge(qty);
         openToast(productName);
       } catch (_) {
@@ -300,7 +289,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // ----------------------------
   const serverOverlay = document.getElementById('cartAddedOverlay');
   if (serverOverlay?.dataset?.cartAdded === '1') {
-    // Si vino por backend, abrimos sin tocar scroll (ya estás en la página nueva)
     afterPaint(() => openToast(document.getElementById('cartAddedName')?.textContent?.trim() || 'Producto'));
   }
 });
