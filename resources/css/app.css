@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* Tailwind v4 content sources (para que detecte clases en Blade y JS) */
+@source "../views/**/*.blade.php";
+@source "../js/**/*.js";
+
 /* Tailwind v4 + clases utilitarias para toda la app */
 
 @layer base {
@@ -176,12 +180,17 @@
   #cartAddedSheet {
     will-change: transform, opacity;
   }
+
   /* Evita “zoom” cuando se bloquea el scroll (mantiene el layout estable) */
-    html { scrollbar-gutter: stable; }
+  html { scrollbar-gutter: stable both-edges; }
 
-    body.nr-scroll-lock{
+  html.nr-scroll-lock,
+  body.nr-scroll-lock {
     overflow: hidden;
-    padding-right: var(--nr-sbw, 0px);
-}
+  }
 
+  body.nr-scroll-lock {
+    padding-right: var(--nr-sbw, 0px);
+    touch-action: none;
+  }
 }

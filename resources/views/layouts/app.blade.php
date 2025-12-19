@@ -338,43 +338,34 @@
 
   {{-- Bottom-sheet “Agregado al carrito” --}}
   @if(is_array($cartAdded))
-    <div id="cartAddedOverlay" class="fixed inset-0 z-[60] hidden" aria-hidden="true" data-cart-added="1">
-      <div id="cartAddedBackdrop"
-           class="absolute inset-0 bg-zinc-950/40 opacity-0 transition-opacity duration-300 ease-out"
-           data-cart-added-close></div>
+    <div id="cartAddedOverlay"
+         class="fixed inset-0 z-[60] opacity-0 pointer-events-none transition-opacity duration-300 ease-out"
+         data-cart-added="1"
+         aria-hidden="true">
+
+      <div class="absolute inset-0 bg-zinc-950/40" data-cart-added-close></div>
 
       <div id="cartAddedSheet"
-           class="absolute bottom-0 left-0 right-0 mx-auto max-w-xl translate-y-full opacity-0 transition duration-300 ease-out will-change-transform">
-        <div class="bg-white rounded-t-3xl border border-zinc-200 shadow-2xl ring-1 ring-zinc-900/5 pb-[calc(env(safe-area-inset-bottom)+12px)]">
-          <div class="px-4 pt-3 pb-2 flex items-center justify-between">
-            <div class="h-1.5 w-12 rounded-full bg-zinc-200 mx-auto"></div>
+           class="absolute bottom-0 left-0 right-0 mx-auto max-w-xl translate-y-full transition-transform duration-300 ease-out will-change-transform">
+        <div class="rounded-t-3xl bg-white p-4 shadow-2xl">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <div class="text-base font-black">Agregado al carrito</div>
+              @if(!empty($cartAdded['product_name']))
+                <div class="mt-0.5 text-sm text-zinc-600">{{ $cartAdded['product_name'] }}</div>
+              @endif
+            </div>
+
+            <button type="button" class="icon-btn" data-cart-added-close aria-label="Cerrar">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M18 6 6 18M6 6l12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </button>
           </div>
 
-          <div class="px-4 pb-4">
-            <div class="flex items-start justify-between gap-3">
-              <div class="flex items-start gap-3 min-w-0">
-                <div class="mt-0.5 h-10 w-10 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center">
-                  <span class="text-emerald-700 font-black">✓</span>
-                </div>
-
-                <div class="min-w-0">
-                  <div class="font-black text-zinc-900">Agregaste a tu carrito</div>
-                  <div class="text-sm text-zinc-600 truncate">
-                    {{ $cartAdded['product_name'] ?? 'Producto' }}
-                  </div>
-                  <div class="text-xs text-zinc-500 mt-0.5">
-                    {{ (int)($cartAdded['quantity'] ?? 1) }} unidad{{ ((int)($cartAdded['quantity'] ?? 1) === 1) ? '' : 'es' }}
-                  </div>
-                </div>
-              </div>
-
-              <button type="button" class="icon-btn" data-cart-added-close aria-label="Cerrar">✕</button>
-            </div>
-
-            <div class="mt-4 grid gap-2">
-              <a href="{{ route('cart.index') }}" class="btn-primary w-full">Ir al carrito</a>
-              <button type="button" class="btn-outline w-full" data-cart-added-close>Seguir comprando</button>
-            </div>
+          <div class="mt-4 flex gap-2">
+            <a href="{{ route('cart.index') }}" class="btn btn-primary flex-1 justify-center">Ver carrito</a>
+            <button type="button" class="btn btn-outline flex-1 justify-center" data-cart-added-close>Seguir</button>
           </div>
         </div>
       </div>
