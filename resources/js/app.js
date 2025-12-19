@@ -74,12 +74,25 @@ document.addEventListener('DOMContentLoaded', () => {
   let unlockTimer = null;
 
   const lockScroll = () => {
-    const docEl = document.documentElement;
+  const docEl = document.documentElement;
+
+  // Si el navegador soporta scrollbar-gutter, NO compensamos con padding-right
+  const hasStableGutter =
+    typeof CSS !== 'undefined' &&
+    typeof CSS.supports === 'function' &&
+    (CSS.supports('scrollbar-gutter: stable') || CSS.supports('scrollbar-gutter: stable both-edges'));
+
+  if (!hasStableGutter) {
     const sbw = window.innerWidth - docEl.clientWidth;
     document.body.style.setProperty('--nr-sbw', `${sbw}px`);
-    docEl.classList.add('nr-scroll-lock');
-    document.body.classList.add('nr-scroll-lock');
+  } else {
+    document.body.style.removeProperty('--nr-sbw');
+  }
+
+  docEl.classList.add('nr-scroll-lock');
+  document.body.classList.add('nr-scroll-lock');
   };
+
 
   const unlockScroll = () => {
     document.documentElement.classList.remove('nr-scroll-lock');
