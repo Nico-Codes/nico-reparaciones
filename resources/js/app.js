@@ -186,11 +186,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // Update cart badge (UI)
   // ----------------------------
   const bumpCartBadge = (delta = 1) => {
-    // Header cart icon link (layout: <a aria-label="Carrito">🛒 <span class="badge-sky">..</span>)
     const cartLink = document.querySelector('a[aria-label="Carrito"]');
     if (!cartLink) return;
 
-    let badge = cartLink.querySelector('.badge-sky');
+    let badge = cartLink.querySelector('[data-cart-count]');
     const current = badge ? (parseInt(badge.textContent || '0', 10) || 0) : 0;
     const next = Math.max(0, current + (parseInt(delta, 10) || 0));
 
@@ -201,12 +200,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!badge) {
       badge = document.createElement('span');
-      badge.className = 'absolute -top-1 -right-1 badge-sky';
+      badge.setAttribute('data-cart-count', '1');
+      badge.className =
+        'absolute -top-2 -right-2 min-w-5 h-5 px-1 rounded-full bg-sky-600 text-white text-[11px] leading-5 font-black flex items-center justify-center ring-2 ring-white';
       cartLink.appendChild(badge);
     }
 
     badge.textContent = String(next);
   };
+
 
   // ----------------------------
   // AJAX Add to cart (sin reload)
