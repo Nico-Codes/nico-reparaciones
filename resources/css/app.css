@@ -178,20 +178,31 @@
     display: block;
   }
 
-  .product-card-grid .product-body{
-    padding: 10px;           /* menos relleno */
-    gap: 6px;                /* menos separación */
+ .product-card-grid{
+    height: 100%;
   }
 
-  .product-card-grid .product-title{
-    font-size: 13px;         /* más compacto */
-    line-height: 1.2;
-    display: -webkit-box;    /* clamp */
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;   /* máximo 2 líneas */
-    overflow: hidden;
-    margin: 0;
+  .product-card-grid .product-body{
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    padding: 10px;
+    gap: 6px;
   }
+
+
+  .product-card-grid .product-title{
+    font-size: 13px;
+    line-height: 1.2;
+
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+
+    min-height: calc(1.2em * 2); /* ✅ reserva siempre 2 líneas */
+  }
+
 
   .product-card-grid .product-meta{
     font-size: 11px;
@@ -199,12 +210,30 @@
   }
 
   .product-card-grid .product-row{
-    margin-top: 6px;         /* menos aire */
+    margin-top: auto;          /* ✅ se va al fondo */
+    padding-top: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch;   /* ✅ hace que los hijos puedan ocupar todo el ancho */
+    width: 100%;
+    
   }
+
+  .product-card-grid .product-actions{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+
 
   .product-card-grid .product-price{
     font-size: 15px;
     font-weight: 800;
+    text-align: left;
+    align-self: flex-start;
   }
 
   .product-card-grid .badge-stock{
