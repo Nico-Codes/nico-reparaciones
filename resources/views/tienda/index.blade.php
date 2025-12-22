@@ -111,7 +111,8 @@
   {{-- Productos --}}
   <div class="mt-8" id="productos">
     @if(($products ?? collect())->count())
-      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div class="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+
         @foreach($products as $product)
           @php
             $hasStock = (int)($product->stock ?? 0) > 0;
@@ -124,7 +125,8 @@
             }
           @endphp
 
-          <div class="product-card">
+          <div class="product-card product-card-grid">
+
             <a class="product-image" href="{{ route('store.product', $product->slug) }}">
               @if($img)
                 <img src="{{ $img }}" alt="{{ $product->name }}">
