@@ -161,6 +161,68 @@
     /* una altura consistente sin depender de plugins */
     height: 210px;
   }
+  /* =========================
+   TIENDA — Destacados (compacto para carrusel)
+   Pisa la card normal SOLO cuando tiene .product-card-featured
+========================== */
+  .product-card-featured .product-image{
+    /* anula el height fijo de 210px SOLO en destacados */
+    height: auto;
+    aspect-ratio: 1 / 1;      /* ✅ cuadrado */
+  }
+
+  .product-card-featured .product-image img{
+    width: 100%;
+    height: 100%;
+    object-fit: cover;        /* ✅ llena el cuadrado sin deformar */
+    display: block;
+  }
+
+  .product-card-featured .product-body{
+    padding: 10px;            /* menos padding */
+    gap: 6px;                 /* menos separación */
+  }
+
+  .product-card-featured .product-title{
+    font-size: 13px;          /* más chico */
+    line-height: 1.2;
+    display: -webkit-box;     /* clamp */
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;    /* máximo 2 líneas */
+    overflow: hidden;
+    margin: 0;
+  }
+
+  .product-card-featured .product-row{
+    margin-top: 4px;          /* menos aire */
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .product-card-featured .product-price{
+    font-size: 15px;          /* más compacto que text-lg */
+    font-weight: 800;
+  }
+
+  .product-card-featured .badge-stock{
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 9999px;
+  }
+
+  .product-card-featured .btn-cart{
+    height: 34px;
+    width: 34px;
+    border-radius: 12px;
+  }
+
+  .product-card-featured .btn-cart svg{
+    width: 18px;
+    height: 18px;
+  }
+
   .product-image img {
     width: 100%;
     height: 100%;
@@ -222,4 +284,60 @@
   }
 
   .nr-no-transition { transition: none !important; }
+
+  /* =========================
+   TIENDA — Destacados (card compacta para carrusel)
+========================== */
+.product-card-featured .product-image{
+  /* pisa el height fijo de 210px SOLO en destacados */
+  height: auto;
+  aspect-ratio: 1 / 1; /* cuadrada: queda mucho más prolija en carrusel */
+}
+
+.product-card-featured .product-body{
+  padding: 12px; /* más compacta */
+  gap: 8px;
+}
+
+.product-card-featured .product-title{
+  font-size: 14px;
+  line-height: 1.2;
+  /* clamp 2 líneas para que no despareje alturas */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: calc(1.2em * 2);
+}
+
+.product-card-featured .product-price{
+  font-size: 16px; /* baja un poco vs text-lg */
+}
+
+.product-card-featured .product-row{
+  margin-top: auto;            /* empuja “precio/acciones” al fondo */
+  display: flex;
+  flex-direction: column;      /* evita apretujón horizontal */
+  align-items: stretch;
+  gap: 8px;
+}
+
+.product-card-featured .product-actions{
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* badge a la izq, botón a la der */
+}
+
+.product-card-featured .btn-cart{
+  height: 36px;
+  width: 36px;
+  border-radius: 12px;
+}
+
+.product-card-featured .btn-cart svg{
+  width: 18px;
+  height: 18px;
+}
+
 }

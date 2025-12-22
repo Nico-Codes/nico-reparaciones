@@ -39,7 +39,11 @@
       </div>
 
       <div class="card-body">
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="grid grid-flow-col gap-4 overflow-x-auto overscroll-x-contain scroll-smooth pb-2 pr-4
+              items-start snap-x snap-mandatory
+              auto-cols-[calc((100%-2rem)/2.5)]
+              md:auto-cols-[calc((100%-3rem)/4)]
+              lg:auto-cols-[calc((100%-5rem)/6)]">
           @foreach($featuredProducts as $product)
             @php
               $hasStock = (int)($product->stock ?? 0) > 0;
@@ -52,7 +56,7 @@
               }
             @endphp
 
-            <div class="product-card">
+            <div class="product-card product-card-featured">
               <a class="product-image" href="{{ route('store.product', $product->slug) }}">
                 @if($img)
                   <img src="{{ $img }}" alt="{{ $product->name }}">
