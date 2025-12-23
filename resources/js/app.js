@@ -416,4 +416,83 @@ document.addEventListener('DOMContentLoaded', () => {
       if (loading) loading.classList.add('inline-flex');
     });
   }
+    // ---------------------------------------------
+  // Preserve scroll para POSTs (carrito, etc.)
+  // ---------------------------------------------
+  const SCROLL_KEY = 'nr_preserve_scroll';
+
+  const saveScroll = () => {
+    try {
+      sessionStorage.setItem(SCROLL_KEY, JSON.stringify({
+        path: location.pathname,
+        y: window.scrollY
+      }));
+    } catch (_) {}
+  };
+
+  const restoreScroll = () => {
+    try {
+      const raw = sessionStorage.getItem(SCROLL_KEY);
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      sessionStorage.removeItem(SCROLL_KEY);
+      if (data?.path === location.pathname && Number.isFinite(data?.y)) {
+        window.scrollTo(0, data.y);
+      }
+    } catch (_) {}
+  };
+
+  restoreScroll();
+
+  document.addEventListener('submit', (e) => {
+    const form = e.target;
+    if (form?.dataset?.preserveScroll === '1') saveScroll();
+  }, true);
+
+  // ---------------------------------------------
+  // Carrito: control de cantidad (− / input / +)
+  //  - auto-submit al tocar botones o tipear
+  // ---------------------------------------------
+  document.querySelectorAll('form[data-cart-qty]').forEach((form) => {
+    const input = form.querySelector('[data-qty-input]');
+    const minus = form.querySelector('[data-qty-minus]');
+    const plus  = form.querySelector('[data-qty-plus]');
+    if (!input) return;
+
+    const clamp = (n) => Math.max(1, Math.min(999, n));
+    const getVal = () => clamp(parseInt(input.value, 10) || 1);
+    const setVal = (n) => { input.value = String(clamp(n)); };
+
+    const doSubmit = () => {
+      // dispara submit event => preserva scroll si data-preserve-scroll="1"
+      if (typeof form.requestSubmit === 'function') form.requestSubmit();
+      else form.submit();
+    };
+
+    minus?.addEventListener('click', (e) => {
+      e.preventDefault();
+      setVal(getVal() - 1);
+      doSubmit();
+    });
+
+    plus?.addEventListener('click', (e) => {
+      e.preventDefault();
+      setVal(getVal() + 1);
+      doSubmit();
+    });
+
+    let t = null;
+    input.addEventListener('input', () => {
+      clearTimeout(t);
+      t = setTimeout(() => {
+        setVal(getVal());
+        doSubmit();
+      }, 450);
+    });
+
+    input.addEventListener('blur', () => {
+      setVal(getVal());
+    });
+  });
+
 });

@@ -77,51 +77,53 @@
                 </div>
 
                 {{-- Qty controls + subtotal --}}
-                <div class="mt-4 flex flex-col sm:flex-row sm:items-center gap-3">
-                  <div class="flex items-center gap-2">
-                    {{-- - --}}
-                    <form method="POST" action="{{ route('cart.update', $item['id']) }}">
-                      @csrf
-                      <input type="hidden" name="quantity" value="{{ $decQty }}">
-                      <button class="btn-outline btn-sm px-3" type="submit" {{ $qty <= 1 ? 'disabled' : '' }} aria-label="Restar">
-                        −
-                      </button>
-                    </form>
+                <div class="mt-4 flex items-center justify-between gap-3">
+                  <form
+                    method="POST"
+                    action="{{ route('cart.update', $item['id']) }}"
+                    class="inline-flex items-center gap-2"
+                    data-cart-qty
+                    data-preserve-scroll="1"
+                  >
+                    @csrf
 
-                    {{-- input + actualizar --}}
-                    <form method="POST" action="{{ route('cart.update', $item['id']) }}" class="flex items-center gap-2">
-                      @csrf
-                      <label class="sr-only" for="qty_{{ $item['id'] }}">Cantidad</label>
-                      <input
-                        id="qty_{{ $item['id'] }}"
-                        type="number"
-                        name="quantity"
-                        min="1"
-                        inputmode="numeric"
-                        value="{{ $qty }}"
-                        class="w-20 text-center">
-                      <button class="btn-outline btn-sm" type="submit">Actualizar</button>
-                    </form>
+                    <button
+                      type="button"
+                      class="btn-outline btn-sm px-3"
+                      data-qty-minus
+                      {{ $qty <= 1 ? 'disabled' : '' }}
+                      aria-label="Restar"
+                    >−</button>
 
-                    {{-- + --}}
-                    <form method="POST" action="{{ route('cart.update', $item['id']) }}">
-                      @csrf
-                      <input type="hidden" name="quantity" value="{{ $incQty }}">
-                      <button class="btn-outline btn-sm px-3" type="submit" aria-label="Sumar">
-                        +
-                      </button>
-                    </form>
-                  </div>
+                    <label class="sr-only" for="qty_{{ $item['id'] }}">Cantidad</label>
+                    <input
+                      id="qty_{{ $item['id'] }}"
+                      type="number"
+                      name="quantity"
+                      min="1"
+                      inputmode="numeric"
+                      value="{{ $qty }}"
+                      class="w-20 text-center"
+                      data-qty-input
+                    >
 
-                  <div class="sm:ml-auto text-right">
-                    <div class="text-xs text-zinc-500">Subtotal</div>
+                    <button
+                      type="button"
+                      class="btn-outline btn-sm px-3"
+                      data-qty-plus
+                      aria-label="Sumar"
+                    >+</button>
+                  </form>
+
+                  <div class="text-right leading-tight">
+                    <div class="text-[11px] text-zinc-500">Subtotal</div>
                     <div class="font-black text-zinc-900">{{ $fmt($subtotal) }}</div>
                   </div>
                 </div>
 
-                <div class="mt-3">
-                  <a href="{{ route('store.index') }}" class="btn-ghost btn-sm">Seguir comprando</a>
-                </div>
+
+
+               
               </div>
             </div>
           </div>
