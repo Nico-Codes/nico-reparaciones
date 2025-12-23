@@ -3,109 +3,165 @@ import '../css/app.css';
 
 /**
  * NicoReparaciones Web
- * - Mobile menu
- * - Add to cart por AJAX (sin recargar -> NO vuelve arriba)
+ * - Sidebar móvil (hamburguesa)
+ * - Dropdown cuenta
+ * - Add to cart AJAX + badge
  * - Toast/bottom-sheet "Agregado al carrito" (sin parpadeo/zoom)
+ * - Checkout: resumen colapsable en móvil + sticky en desktop
+ * - Checkout: anti doble submit + loading
  */
 
 const afterPaint = (fn) => requestAnimationFrame(() => requestAnimationFrame(fn));
 
+const $ = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+
 document.addEventListener('DOMContentLoaded', () => {
   // ----------------------------
-  // Mobile menu toggle
+  // Scroll lock (shared) — evita “zoom” por scrollbar
   // ----------------------------
-  // Mobile menu (sidebar offcanvas / fallback)
-  const sidebarBtn = document.querySelector('[data-toggle="sidebar"], [data-mobile-menu-btn]');
-  const sidebar = document.getElementById('appSidebar') || document.querySelector('[data-mobile-menu]');
-  const sidebarOverlay = document.getElementById('appSidebarOverlay');
+  const scrollLocks = new Set();
 
-  if (sidebarBtn && sidebar) {
-    const isOffcanvas = sidebar.id === 'appSidebar';
+  const applyScrollLock = () => {
+    const docEl = document.documentElement;
 
-    const isOpen = () => {
-      if (isOffcanvas) return !sidebar.classList.contains('-translate-x-full');
-      return !sidebar.classList.contains('hidden');
-    };
+    const hasStableGutter =
+      typeof CSS !== 'undefined' &&
+      typeof CSS.supports === 'function' &&
+      (CSS.supports('scrollbar-gutter: stable') || CSS.supports('scrollbar-gutter: stable both-edges'));
 
-    const open = () => {
-      if (isOffcanvas) {
-        sidebar.classList.remove('-translate-x-full');
-        sidebar.classList.add('translate-x-0');
-        if (sidebarOverlay) sidebarOverlay.classList.remove('hidden');
-        document.body.classList.add('overflow-hidden');
-      } else {
-        sidebar.classList.remove('hidden');
-      }
-      sidebarBtn.setAttribute('aria-expanded', 'true');
-    };
+    if (!hasStableGutter) {
+      const sbw = window.innerWidth - docEl.clientWidth;
+      document.body.style.setProperty('--nr-sbw', `${sbw}px`);
+    } else {
+      document.body.style.removeProperty('--nr-sbw');
+    }
 
-    const close = () => {
-      if (isOffcanvas) {
-        sidebar.classList.add('-translate-x-full');
-        sidebar.classList.remove('translate-x-0');
-        if (sidebarOverlay) sidebarOverlay.classList.add('hidden');
-        document.body.classList.remove('overflow-hidden');
-      } else {
-        sidebar.classList.add('hidden');
-      }
-      sidebarBtn.setAttribute('aria-expanded', 'false');
-    };
-
-    sidebarBtn.addEventListener('click', () => {
-      isOpen() ? close() : open();
-    });
-
-    document.querySelectorAll('[data-close="sidebar"]').forEach((el) => {
-      el.addEventListener('click', close);
-    });
-
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') close();
-    });
-  }
-
-  // ----------------------------
-  // Toast (bottom-sheet)
-  // ----------------------------
-  let overlay = document.getElementById('cartAddedOverlay');
-  let sheet = document.getElementById('cartAddedSheet');
-
-  let autoCloseTimer = null;
-  let unlockTimer = null;
-
-  const lockScroll = () => {
-  const docEl = document.documentElement;
-
-  // Si el navegador soporta scrollbar-gutter, NO compensamos con padding-right
-  const hasStableGutter =
-    typeof CSS !== 'undefined' &&
-    typeof CSS.supports === 'function' &&
-    (CSS.supports('scrollbar-gutter: stable') || CSS.supports('scrollbar-gutter: stable both-edges'));
-
-  if (!hasStableGutter) {
-    const sbw = window.innerWidth - docEl.clientWidth;
-    document.body.style.setProperty('--nr-sbw', `${sbw}px`);
-  } else {
-    document.body.style.removeProperty('--nr-sbw');
-  }
-
-  docEl.classList.add('nr-scroll-lock');
-  document.body.classList.add('nr-scroll-lock');
+    docEl.classList.add('nr-scroll-lock');
+    document.body.classList.add('nr-scroll-lock');
   };
 
-
-  const unlockScroll = () => {
+  const removeScrollLock = () => {
     document.documentElement.classList.remove('nr-scroll-lock');
     document.body.classList.remove('nr-scroll-lock');
     document.body.style.removeProperty('--nr-sbw');
   };
 
+  const lockScroll = (key) => {
+    scrollLocks.add(key);
+    if (scrollLocks.size === 1) applyScrollLock();
+  };
+
+  const unlockScroll = (key) => {
+    scrollLocks.delete(key);
+    if (scrollLocks.size === 0) removeScrollLock();
+  };
+
+  // ----------------------------
+  // Sidebar móvil (hamburguesa)
+  // ----------------------------
+  const sidebarBtn = $('[data-toggle="sidebar"], [data-mobile-menu-btn]');
+  const sidebar = $('#appSidebar') || $('[data-mobile-menu]');
+  const sidebarOverlay = $('#appSidebarOverlay');
+
+  const sidebarIsOffcanvas = () => sidebar && sidebar.id === 'appSidebar';
+
+  const sidebarIsOpen = () => {
+    if (!sidebar) return false;
+    if (sidebarIsOffcanvas()) return !sidebar.classList.contains('-translate-x-full');
+    return !sidebar.classList.contains('hidden');
+  };
+
+  const sidebarOpen = () => {
+    if (!sidebar || !sidebarBtn) return;
+
+    if (sidebarIsOffcanvas()) {
+      sidebar.classList.remove('-translate-x-full');
+      sidebar.classList.add('translate-x-0');
+      sidebarOverlay?.classList.remove('hidden');
+      lockScroll('sidebar');
+    } else {
+      sidebar.classList.remove('hidden');
+    }
+
+    sidebarBtn.setAttribute('aria-expanded', 'true');
+  };
+
+  const sidebarClose = () => {
+    if (!sidebar || !sidebarBtn) return;
+
+    if (sidebarIsOffcanvas()) {
+      sidebar.classList.add('-translate-x-full');
+      sidebar.classList.remove('translate-x-0');
+      sidebarOverlay?.classList.add('hidden');
+      unlockScroll('sidebar');
+    } else {
+      sidebar.classList.add('hidden');
+    }
+
+    sidebarBtn.setAttribute('aria-expanded', 'false');
+  };
+
+  if (sidebarBtn && sidebar) {
+    sidebarBtn.addEventListener('click', () => (sidebarIsOpen() ? sidebarClose() : sidebarOpen()));
+    $$('[data-close="sidebar"]').forEach((el) => el.addEventListener('click', sidebarClose));
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') sidebarClose();
+    });
+  }
+
+  // ----------------------------
+  // Dropdown cuenta (data-menu="id")
+  // ----------------------------
+  const initDropdowns = () => {
+    $$('[data-menu]').forEach((btn) => {
+      const id = btn.getAttribute('data-menu');
+      const menu = id ? document.getElementById(id) : null;
+      if (!menu) return;
+
+      const close = () => {
+        menu.classList.add('hidden');
+        btn.setAttribute('aria-expanded', 'false');
+      };
+
+      const open = () => {
+        menu.classList.remove('hidden');
+        btn.setAttribute('aria-expanded', 'true');
+      };
+
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const isOpen = !menu.classList.contains('hidden');
+        isOpen ? close() : open();
+      });
+
+      document.addEventListener('click', (e) => {
+        if (btn.contains(e.target)) return;
+        if (menu.contains(e.target)) return;
+        close();
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') close();
+      });
+    });
+  };
+  initDropdowns();
+
+  // ----------------------------
+  // Toast (bottom-sheet)
+  // ----------------------------
+  let overlay = $('#cartAddedOverlay');
+  let sheet = $('#cartAddedSheet');
+  let autoCloseTimer = null;
+  let unlockTimer = null;
+
   const ensureToast = () => {
-    overlay = document.getElementById('cartAddedOverlay');
-    sheet = document.getElementById('cartAddedSheet');
+    overlay = $('#cartAddedOverlay');
+    sheet = $('#cartAddedSheet');
     if (overlay && sheet) return;
 
-    // Si no existe en el HTML, lo creamos (solo para AJAX)
     const html = `
       <div id="cartAddedOverlay"
           class="fixed inset-0 z-[60] opacity-0 pointer-events-none transition-opacity duration-300 ease-out"
@@ -134,10 +190,10 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
     document.body.insertAdjacentHTML('beforeend', html);
 
-    overlay = document.getElementById('cartAddedOverlay');
-    sheet = document.getElementById('cartAddedSheet');
+    overlay = $('#cartAddedOverlay');
+    sheet = $('#cartAddedSheet');
 
-    overlay.querySelectorAll('[data-cart-added-close]').forEach((el) => {
+    $$('[data-cart-added-close]', overlay).forEach((el) => {
       el.addEventListener('click', (e) => {
         e.preventDefault();
         closeToast();
@@ -152,10 +208,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const openToast = (productName = 'Producto') => {
     ensureToast();
 
-    const nameEl = document.getElementById('cartAddedName');
+    const nameEl = $('#cartAddedName');
     if (nameEl) nameEl.textContent = productName;
 
-    lockScroll();
+    lockScroll('toast');
 
     overlay.classList.remove('pointer-events-none', 'opacity-0');
     overlay.classList.add('pointer-events-auto', 'opacity-100');
@@ -163,7 +219,6 @@ document.addEventListener('DOMContentLoaded', () => {
     afterPaint(() => {
       sheet.classList.remove('translate-y-full');
       sheet.classList.add('translate-y-0');
-
       autoCloseTimer = window.setTimeout(closeToast, 4500);
     });
   };
@@ -179,17 +234,17 @@ document.addEventListener('DOMContentLoaded', () => {
     sheet.classList.add('translate-y-full');
     sheet.classList.remove('translate-y-0');
 
-    unlockTimer = window.setTimeout(unlockScroll, 260);
+    unlockTimer = window.setTimeout(() => unlockScroll('toast'), 260);
   };
 
   // ----------------------------
-  // Update cart badge (UI)
+  // Cart badge (UI)
   // ----------------------------
   const bumpCartBadge = (delta = 1) => {
-    const cartLink = document.querySelector('a[aria-label="Carrito"]');
+    const cartLink = $('a[aria-label="Carrito"]');
     if (!cartLink) return;
 
-    let badge = cartLink.querySelector('[data-cart-count]');
+    let badge = $('[data-cart-count]', cartLink);
     const current = badge ? (parseInt(badge.textContent || '0', 10) || 0) : 0;
     const next = Math.max(0, current + (parseInt(delta, 10) || 0));
 
@@ -209,19 +264,15 @@ document.addEventListener('DOMContentLoaded', () => {
     badge.textContent = String(next);
   };
 
-
   // ----------------------------
   // AJAX Add to cart (sin reload)
   // ----------------------------
   const isAddToCartForm = (form) => {
     if (!(form instanceof HTMLFormElement)) return false;
-
-    // Señal 1: botón con clase .btn-cart dentro del form
     if (form.querySelector('button.btn-cart, .btn-cart')) return true;
 
-    // Señal 2: action parece de carrito
     const action = (form.getAttribute('action') || '').toLowerCase();
-    if (action.includes('cart.add') || action.includes('/carrito') || action.includes('/cart')) return true;
+    if (action.includes('/carrito/agregar') || action.includes('/cart/add') || action.includes('/carrito')) return true;
 
     return false;
   };
@@ -247,6 +298,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const setBtnLoading = (btn, loading) => {
     if (!btn) return;
     btn.disabled = !!loading;
+    btn.setAttribute('aria-busy', loading ? 'true' : 'false');
     btn.classList.toggle('is-loading', !!loading);
   };
 
@@ -278,12 +330,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         if (!res.ok) {
-          if (res.status === 419) {
-            openToast('Sesión expirada. Reintentá.');
-          } else {
-            openToast('No se pudo agregar. Reintentá.');
-          }
-          setBtnLoading(btn, false);
+          if (res.status === 419) openToast('Sesión expirada. Reintentá.');
+          else openToast('No se pudo agregar. Reintentá.');
           return;
         }
 
@@ -298,12 +346,74 @@ document.addEventListener('DOMContentLoaded', () => {
     true
   );
 
-  // ----------------------------
-  // Si tu backend todavía renderiza el toast por session (post-redirect),
-  // lo abrimos también (por compatibilidad).
-  // ----------------------------
-  const serverOverlay = document.getElementById('cartAddedOverlay');
+  // Compatibilidad: toast por session renderizado por backend
+  const serverOverlay = $('#cartAddedOverlay');
   if (serverOverlay?.dataset?.cartAdded === '1') {
-    afterPaint(() => openToast(document.getElementById('cartAddedName')?.textContent?.trim() || 'Producto'));
+    afterPaint(() => openToast($('#cartAddedName')?.textContent?.trim() || 'Producto'));
+  }
+
+  // ----------------------------
+  // Checkout: resumen colapsable móvil + siempre abierto desktop
+  // ----------------------------
+  const sumBtn = $('[data-summary-toggle]');
+  const sumBody = $('[data-summary-body]');
+  const sumIcon = $('[data-summary-icon]');
+
+  const isDesktop = () => window.matchMedia('(min-width: 1024px)').matches;
+
+  const setSummaryOpen = (open) => {
+    if (!sumBtn || !sumBody) return;
+
+    sumBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    sumBody.style.display = open ? 'block' : 'none';
+    if (sumIcon) sumIcon.textContent = open ? '▴' : '▾';
+  };
+
+  const syncSummary = () => {
+    if (!sumBtn || !sumBody) return;
+
+    if (isDesktop()) {
+      sumBody.style.display = 'block';
+      sumBtn.setAttribute('aria-expanded', 'true');
+    } else {
+      setSummaryOpen(false); // móvil cerrado por defecto
+    }
+  };
+
+  if (sumBtn && sumBody) {
+    syncSummary();
+    window.addEventListener('resize', syncSummary);
+
+    sumBtn.addEventListener('click', () => {
+      if (isDesktop()) return;
+      const expanded = sumBtn.getAttribute('aria-expanded') === 'true';
+      setSummaryOpen(!expanded);
+    });
+  }
+
+  // ----------------------------
+  // Checkout: anti doble submit + loading
+  // ----------------------------
+  const checkoutForm = $('[data-checkout-form]');
+  if (checkoutForm) {
+    checkoutForm.addEventListener('submit', (e) => {
+      const btn = $('[data-checkout-submit]', checkoutForm);
+      if (!btn) return;
+
+      // si ya está “busy”, cancelamos
+      if (btn.disabled || btn.getAttribute('aria-busy') === 'true') {
+        e.preventDefault();
+        return;
+      }
+
+      btn.disabled = true;
+      btn.setAttribute('aria-busy', 'true');
+
+      const label = $('[data-checkout-label]', btn);
+      const loading = $('[data-checkout-loading]', btn);
+      if (label) label.classList.add('hidden');
+      if (loading) loading.classList.remove('hidden');
+      if (loading) loading.classList.add('inline-flex');
+    });
   }
 });
