@@ -242,8 +242,9 @@
 
     <aside
       id="appSidebar"
-      class="fixed left-0 top-0 z-50 h-full w-[86%] max-w-xs -translate-x-full transform bg-white shadow-xl transition-transform duration-200 ease-out md:hidden"
+      class="fixed left-0 top-0 z-50 h-full w-[86%] max-w-xs -translate-x-full transform bg-white shadow-xl transition-transform duration-200 ease-out md:hidden flex flex-col"
       aria-label="Menú">
+
 
       <div class="h-14 px-4 flex items-center justify-between border-b border-zinc-100">
         <div class="flex items-center gap-2">
@@ -266,7 +267,7 @@
 
       </div>
 
-      <div class="p-4 space-y-6">
+      <div class="p-4 space-y-4 flex-1 overflow-y-auto">
         @if($isAuth)
           <div class="card">
             <div class="card-body">
@@ -276,9 +277,10 @@
           </div>
         @endif
 
-        <div class="space-y-2">
+        <div class="sidebar-section space-y-2">
           <div class="sidebar-title">Navegación</div>
-          <div class="grid gap-1">
+          <div class="sidebar-links">
+
             @if($has('store.index'))
               <a class="sidebar-link {{ request()->routeIs('store.index','store.category','store.product','home') ? 'active' : '' }}"
                 href="{{ route('store.index') }}">
@@ -311,9 +313,10 @@
           </div>
         </div>
 
-        <div class="space-y-2">
+        <div class="sidebar-section space-y-2">
           <div class="sidebar-title">Cuenta</div>
-          <div class="grid gap-1">
+          <div class="sidebar-links">
+
             @if($isAuth)
               @if($has('orders.index'))
                 <a class="sidebar-link {{ request()->routeIs('orders.index') ? 'active' : '' }}"
@@ -354,9 +357,10 @@
         </div>
 
         @if($isAdmin)
-          <div class="space-y-2">
+          <div class="sidebar-section space-y-2">
             <div class="sidebar-title">Admin</div>
-            <div class="grid gap-1">
+            <div class="sidebar-links">
+
               @if($has('admin.dashboard'))
                 <a class="sidebar-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}"
                   href="{{ route('admin.dashboard') }}">

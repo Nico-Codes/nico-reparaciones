@@ -60,9 +60,7 @@
   }
 
   /* btn-cart (tienda) */
-  .btn-cart {
-    @apply text-sky-700 hover:text-sky-800;
-  }
+  .btn-cart { @apply text-sky-700 hover:text-sky-800; }
   .btn-cart svg {
     width: 20px;
     height: 20px;
@@ -97,12 +95,8 @@
   .badge-stock {
     @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-black border;
   }
-  .badge-stock.is-in {
-    @apply bg-emerald-50 text-emerald-900 border-emerald-200;
-  }
-  .badge-stock.is-out {
-    @apply bg-rose-50 text-rose-900 border-rose-200;
-  }
+  .badge-stock.is-in { @apply bg-emerald-50 text-emerald-900 border-emerald-200; }
+  .badge-stock.is-out { @apply bg-rose-50 text-rose-900 border-rose-200; }
 
   /* =========================
      Alerts
@@ -136,9 +130,7 @@
     @apply inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-black
       border border-zinc-200 bg-white hover:bg-zinc-50;
   }
-  .nav-pill-active {
-    @apply border-sky-300 bg-sky-50 text-sky-900;
-  }
+  .nav-pill-active { @apply border-sky-300 bg-sky-50 text-sky-900; }
 
   /* =========================
      Dropdown
@@ -149,37 +141,80 @@
   .dropdown-item { @apply block px-3 py-2 rounded-xl text-sm font-semibold hover:bg-zinc-100; }
 
   /* =========================
-     TIENDA — Product Card UI (lo que faltaba)
+     SIDEBAR MOBILE (Hamburguesa) — Moderno y ordenado
+  ========================== */
+  .sidebar-sub { @apply text-xs text-zinc-500; }
+
+  .sidebar-title {
+    @apply px-1 text-[11px] font-black uppercase tracking-wider text-zinc-500;
+  }
+
+  .sidebar-section {
+    @apply rounded-3xl bg-zinc-50/80 ring-1 ring-zinc-200 p-2;
+  }
+
+  .sidebar-links { @apply grid gap-1; }
+
+  .sidebar-link {
+    @apply w-full flex items-center rounded-2xl px-3 py-2 text-sm font-extrabold text-zinc-800
+      hover:bg-white/80 hover:text-zinc-900 transition-colors
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-200 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-50;
+  }
+
+  .sidebar-link.active {
+    @apply bg-white text-sky-700 ring-1 ring-sky-200 shadow-sm;
+  }
+
+  .sidebar-link img { @apply w-5 h-5 shrink-0; }
+  .sidebar-link.text-rose-700:hover { @apply bg-rose-50; }
+
+  /* =========================
+     TIENDA — Product Card UI
   ========================== */
   .product-card {
-    @apply flex flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition
-      hover:shadow-md;
+    @apply flex flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition hover:shadow-md;
   }
 
   .product-image {
     @apply block w-full bg-zinc-50 overflow-hidden;
-    /* una altura consistente sin depender de plugins */
     height: 210px;
   }
 
+  .product-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .product-image-placeholder {
+    @apply h-full w-full flex items-center justify-center text-sm font-extrabold text-zinc-500 bg-zinc-100;
+  }
+
+  .product-body { @apply p-4 flex flex-col gap-2; }
+  .product-title { @apply font-black text-zinc-900 leading-snug hover:underline; }
+  .product-meta { @apply text-xs font-semibold text-zinc-500; }
+
+  .product-row { @apply mt-2 flex items-center justify-between gap-2; }
+  .product-price { @apply text-lg font-black text-zinc-900; }
+  .product-actions { @apply flex items-center gap-2; }
+
   /* =========================
-   TIENDA — Cards en grilla (compactas)
-   Para: productos comunes (2 cols móvil / 5 cols desktop)
-========================== */
+     TIENDA — Cards en grilla (compactas)
+     Para: productos comunes (2 cols móvil / 5 cols desktop)
+  ========================== */
+  .product-card-grid { height: 100%; }
+
   .product-card-grid .product-image{
-    height: auto;            /* pisa height:210px */
-    aspect-ratio: 1 / 1;     /* ✅ imagen cuadrada */
+    height: auto;
+    aspect-ratio: 1 / 1;
   }
 
   .product-card-grid .product-image img{
     width: 100%;
     height: 100%;
-    object-fit: cover;       /* ✅ sin deformar (recorta si hace falta) */
+    object-fit: cover;
     display: block;
-  }
-
- .product-card-grid{
-    height: 100%;
   }
 
   .product-card-grid .product-body{
@@ -190,19 +225,15 @@
     gap: 6px;
   }
 
-
   .product-card-grid .product-title{
     font-size: 13px;
     line-height: 1.2;
-
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
     overflow: hidden;
-
-    min-height: calc(1.2em * 2); /* ✅ reserva siempre 2 líneas */
+    min-height: calc(1.2em * 2);
   }
-
 
   .product-card-grid .product-meta{
     font-size: 11px;
@@ -210,24 +241,22 @@
   }
 
   .product-card-grid .product-row{
-    margin-top: auto;          /* ✅ se va al fondo */
+    margin-top: auto;
     padding-top: 6px;
     display: flex;
     flex-direction: column;
     gap: 8px;
-    align-items: stretch;   /* ✅ hace que los hijos puedan ocupar todo el ancho */
+    align-items: stretch;
     width: 100%;
-    
   }
 
   .product-card-grid .product-actions{
     display: flex;
+    width: 100%;
     align-items: center;
     justify-content: space-between;
     gap: 8px;
   }
-
-
 
   .product-card-grid .product-price{
     font-size: 15px;
@@ -253,48 +282,48 @@
   }
 
   /* =========================
-   TIENDA — Destacados (compacto para carrusel)
-   Pisa la card normal SOLO cuando tiene .product-card-featured
-========================== */
+     TIENDA — Destacados (compacto para carrusel) — CONSOLIDADO
+     (mantiene el look actual y evita duplicados)
+  ========================== */
   .product-card-featured .product-image{
-    /* anula el height fijo de 210px SOLO en destacados */
     height: auto;
-    aspect-ratio: 1 / 1;      /* ✅ cuadrado */
-  }
-
-  .product-card-featured .product-image img{
-    width: 100%;
-    height: 100%;
-    object-fit: cover;        /* ✅ llena el cuadrado sin deformar */
-    display: block;
+    aspect-ratio: 1 / 1;
   }
 
   .product-card-featured .product-body{
-    padding: 10px;            /* menos padding */
-    gap: 6px;                 /* menos separación */
-  }
-
-  .product-card-featured .product-title{
-    font-size: 13px;          /* más chico */
-    line-height: 1.2;
-    display: -webkit-box;     /* clamp */
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;    /* máximo 2 líneas */
-    overflow: hidden;
-    margin: 0;
-  }
-
-  .product-card-featured .product-row{
-    margin-top: 4px;          /* menos aire */
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    padding: 12px;
     gap: 8px;
   }
 
+  .product-card-featured .product-title{
+    font-size: 14px;
+    line-height: 1.2;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    min-height: calc(1.2em * 2);
+    margin: 0;
+  }
+
   .product-card-featured .product-price{
-    font-size: 15px;          /* más compacto que text-lg */
+    font-size: 16px;
     font-weight: 800;
+  }
+
+  .product-card-featured .product-row{
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .product-card-featured .product-actions{
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
   }
 
   .product-card-featured .badge-stock{
@@ -304,49 +333,14 @@
   }
 
   .product-card-featured .btn-cart{
-    height: 34px;
-    width: 34px;
+    height: 36px;
+    width: 36px;
     border-radius: 12px;
   }
 
   .product-card-featured .btn-cart svg{
     width: 18px;
     height: 18px;
-  }
-
-  .product-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-  }
-
-  .product-image-placeholder {
-    @apply h-full w-full flex items-center justify-center text-sm font-extrabold text-zinc-500 bg-zinc-100;
-  }
-
-  .product-body {
-    @apply p-4 flex flex-col gap-2;
-  }
-
-  .product-title {
-    @apply font-black text-zinc-900 leading-snug hover:underline;
-  }
-
-  .product-meta {
-    @apply text-xs font-semibold text-zinc-500;
-  }
-
-  .product-row {
-    @apply mt-2 flex items-center justify-between gap-2;
-  }
-
-  .product-price {
-    @apply text-lg font-black text-zinc-900;
-  }
-
-  .product-actions {
-    @apply flex items-center gap-2;
   }
 
   /* =========================
@@ -375,60 +369,4 @@
   }
 
   .nr-no-transition { transition: none !important; }
-
-  /* =========================
-   TIENDA — Destacados (card compacta para carrusel)
-========================== */
-.product-card-featured .product-image{
-  /* pisa el height fijo de 210px SOLO en destacados */
-  height: auto;
-  aspect-ratio: 1 / 1; /* cuadrada: queda mucho más prolija en carrusel */
-}
-
-.product-card-featured .product-body{
-  padding: 12px; /* más compacta */
-  gap: 8px;
-}
-
-.product-card-featured .product-title{
-  font-size: 14px;
-  line-height: 1.2;
-  /* clamp 2 líneas para que no despareje alturas */
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  min-height: calc(1.2em * 2);
-}
-
-.product-card-featured .product-price{
-  font-size: 16px; /* baja un poco vs text-lg */
-}
-
-.product-card-featured .product-row{
-  margin-top: auto;            /* empuja “precio/acciones” al fondo */
-  display: flex;
-  flex-direction: column;      /* evita apretujón horizontal */
-  align-items: stretch;
-  gap: 8px;
-}
-
-.product-card-featured .product-actions{
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between; /* badge a la izq, botón a la der */
-}
-
-.product-card-featured .btn-cart{
-  height: 36px;
-  width: 36px;
-  border-radius: 12px;
-}
-
-.product-card-featured .btn-cart svg{
-  width: 18px;
-  height: 18px;
-}
-
 }
