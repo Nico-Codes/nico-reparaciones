@@ -129,10 +129,11 @@ class OrderController extends Controller
         $waText =
             "Hola! Soy {$order->pickup_name}.\n" .
             "Hice el pedido #{$order->id}.\n" .
-            "Pago: " . $payLabel($order->payment_method) . "\n" .
+            "¿Me confirmás cuando esté listo para retirar?\n\n" .
             "Items:\n- " . implode("\n- ", $lines) . "\n" .
             "Total: $" . number_format((float)$order->total, 0, ',', '.') . "\n" .
             "Gracias!";
+
 
         return view('orders.show', [
             'order' => $order,
@@ -170,10 +171,11 @@ class OrderController extends Controller
         $waText =
             "Hola! Soy {$order->pickup_name}.\n" .
             "Hice el pedido #{$order->id}.\n" .
-            "Pago: " . $payLabel($order->payment_method) . "\n" .
+            "¿Me confirmás cuando esté listo para retirar?\n\n" .
             "Items:\n- " . implode("\n- ", $lines) . "\n" .
             "Total: $" . number_format((float)$order->total, 0, ',', '.') . "\n" .
             "Gracias!";
+
 
         return view('orders.thankyou', [
             'order' => $order,

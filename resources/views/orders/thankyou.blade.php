@@ -11,6 +11,38 @@
     'transferencia' => 'Transferencia',
     default => $m ? ucfirst(str_replace('_',' ',$m)) : '—',
   };
+    $status = (string)($order->status ?? 'pendiente');
+  $isCancelled = $status === 'cancelado';
+
+  $steps = ['pendiente', 'confirmado', 'preparando', 'listo_retirar', 'entregado'];
+
+  $stepIndex = array_search($status, $steps, true);
+  if ($stepIndex === false) $stepIndex = 0;
+
+  $label = fn(string $s) => match($s) {
+    'listo_retirar' => 'Listo para retirar',
+    default => ucfirst(str_replace('_',' ',$s)),
+  };
+
+  $stepName = fn($s) => match($s) {
+    'pendiente' => 'Pendiente',
+    'confirmado' => 'Confirmado',
+    'preparando' => 'Preparando',
+    'listo_retirar' => 'Listo',
+    'entregado' => 'Entregado',
+    default => ucfirst(str_replace('_',' ',$s)),
+  };
+
+  $statusHint = match($status) {
+    'pendiente' => 'Recibimos tu pedido. En breve lo confirmamos.',
+    'confirmado' => 'Pedido confirmado. Lo estamos preparando.',
+    'preparando' => 'Estamos preparando tu pedido.',
+    'listo_retirar' => '¡Listo! Podés pasar a retirarlo por el local.',
+    'entregado' => 'Pedido entregado. ¡Gracias!',
+    'cancelado' => 'Este pedido fue cancelado.',
+    default => 'Estado actualizado.',
+  };
+
 @endphp
 
 @section('content')
@@ -37,7 +69,11 @@
         <div class="rounded-2xl border border-zinc-100 bg-zinc-50 p-4 text-sm text-zinc-700">
           <div class="font-black text-zinc-900">¡Listo!</div>
           <div class="mt-1">
-            Tu pedido quedó en estado <span class="font-black">Pendiente</span>. En breve lo confirmamos.
+            <span class="font-black text-zinc-900">Estado:</span>
+            <span class="font-black">{{ $label($status) }}</span>
+            <span class="text-zinc-500">·</span>
+            {{ $statusHint }}
+
           </div>
         </div>
 
@@ -91,7 +127,7 @@
             <a class="btn-ghost w-full sm:w-auto"
                 target="_blank" rel="noopener"
                 href="https://wa.me/{{ $waNumber }}?text={{ rawurlencode($waText) }}">
-                Escribir por WhatsApp
+                Consultar por WhatsApp
             </a>
 
             <button type="button"
@@ -102,9 +138,10 @@
             </button>
             @else
             <span class="text-xs text-zinc-500 sm:self-center">
-                (Configurar WhatsApp en Admin → Configuración)
+                WhatsApp no disponible por el momento.
             </span>
             @endif
+
 
         </div>
       </div>
@@ -114,20 +151,29 @@
       <div class="card-head">
         <div class="font-black">Próximos pasos</div>
       </div>
-      <div class="card-body grid gap-3 text-sm text-zinc-700">
-        <div class="flex items-center gap-2">
-          <span class="badge-sky">1</span> Recibido (Pendiente)
-        </div>
-        <div class="flex items-center gap-2">
-          <span class="badge-zinc">2</span> Confirmación
-        </div>
-        <div class="flex items-center gap-2">
-          <span class="badge-zinc">3</span> Preparación
-        </div>
-        <div class="flex items-center gap-2">
-          <span class="badge-zinc">4</span> Listo para retirar
-        </div>
-      </div>
+            <div class="card-body grid gap-3 text-sm text-zinc-700">
+            @if($isCancelled)
+                <div class="rounded-2xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
+                Este pedido fue cancelado. Si necesitás ayuda, escribinos y lo resolvemos.
+                </div>
+            @else
+                @foreach($steps as $i => $s)
+                @php $done = $i <= $stepIndex; @endphp
+
+                <div class="flex items-center gap-2">
+                    <div class="h-7 w-7 rounded-full border flex items-center justify-center
+                                {{ $done ? 'bg-sky-600 border-sky-600 text-white' : 'bg-white border-zinc-200 text-zinc-400' }}">
+                    <span class="text-xs font-black">{{ $i+1 }}</span>
+                    </div>
+
+                    <div class="text-xs {{ $done ? 'text-zinc-900 font-black' : 'text-zinc-500 font-bold' }}">
+                    {{ $stepName($s) }}
+                    </div>
+                </div>
+                @endforeach
+            @endif
+            </div>
+
     </div>
   </div>
 @endsection

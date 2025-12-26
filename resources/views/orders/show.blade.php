@@ -195,7 +195,7 @@
             <a class="btn-ghost w-full"
               target="_blank" rel="noopener"
               href="https://wa.me/{{ $waNumber }}?text={{ rawurlencode($waText) }}">
-              Escribir por WhatsApp
+              Consultar por WhatsApp
             </a>
 
             <button type="button"
