@@ -13,6 +13,11 @@
 
   // UX: por defecto “Pago en el local”
   $pm = old('payment_method', 'local');
+
+  $u = auth()->user();
+  $fullName = $u ? trim(($u->name ?? '') . ' ' . ($u->last_name ?? '')) : '';
+  $needsProfile = !$u || empty($u->last_name) || empty($u->phone);
+
 @endphp
 
 @section('content')
@@ -157,26 +162,32 @@
 
             </div>
 
-            {{-- Datos de retiro --}}
-            <div class="grid gap-3 sm:grid-cols-2">
-              <div>
-                <label for="pickup_name">Nombre (opcional)</label>
-                <input
-                  id="pickup_name"
-                  name="pickup_name"
-                  value="{{ old('pickup_name', auth()->user()->name ?? '') }}"
-                  placeholder="Nombre para el retiro">
+            {{-- Tus datos (desde perfil) --}}
+            <div class="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <div class="font-black text-zinc-900">Tus datos</div>
+
+                  <div class="mt-2 grid gap-1 text-sm text-zinc-700">
+                    <div><span class="font-black">Nombre:</span> {{ $fullName ?: '—' }}</div>
+                    <div><span class="font-black">Teléfono:</span> {{ $u->phone ?? '—' }}</div>
+                    <div class="truncate"><span class="font-black">Email:</span> {{ $u->email ?? '—' }}</div>
+                  </div>
+
+                  <div class="muted text-xs mt-2">Se usan para asociar el pedido y contactarte.</div>
+                </div>
+
+                <a href="{{ route('account.edit') }}" class="btn-ghost btn-sm shrink-0">Editar</a>
               </div>
 
-              <div>
-                <label for="pickup_phone">Teléfono (opcional)</label>
-                <input
-                  id="pickup_phone"
-                  name="pickup_phone"
-                  value="{{ old('pickup_phone', auth()->user()->phone ?? '') }}"
-                  placeholder="Ej: 341 555-0000">
-              </div>
+              @if($needsProfile)
+                <div class="mt-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                  <div class="font-black">Falta completar tu perfil.</div>
+                  <div class="mt-1">Agregá tu apellido y teléfono para poder confirmar pedidos.</div>
+                </div>
+              @endif
             </div>
+
 
             <div>
               <label for="notes">Notas (opcional)</label>
@@ -184,9 +195,11 @@
             </div>
 
             <div class="flex flex-col sm:flex-row gap-2">
-              <button class="btn-primary w-full sm:w-auto"
+              <button class="btn-primary w-full sm:w-auto {{ $needsProfile ? 'opacity-50 cursor-not-allowed' : '' }}"
                       type="submit"
-                      data-checkout-submit>
+                      data-checkout-submit
+                      {{ $needsProfile ? 'disabled' : '' }}>
+
                 <span data-checkout-label>Confirmar pedido</span>
                 <span class="hidden items-center gap-2" data-checkout-loading>
                   <svg class="animate-spin" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">

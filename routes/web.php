@@ -57,8 +57,8 @@ Route::post('/carrito/actualizar/{product}', [CartController::class, 'update'])-
 Route::post('/carrito/eliminar/{product}', [CartController::class, 'remove'])->name('cart.remove');
 Route::post('/carrito/vaciar', [CartController::class, 'clear'])->name('cart.clear');
 
-Route::get('/checkout', [CartController::class, 'checkout'])->name('checkout');
-Route::post('/checkout/confirmar', [OrderController::class, 'confirm'])->name('checkout.confirm');
+Route::get('/checkout', [CartController::class, 'checkout'])->middleware('auth')->name('checkout');
+Route::post('/checkout/confirmar', [OrderController::class, 'confirm'])->middleware('auth')->name('checkout.confirm');
 
 /*
 |--------------------------------------------------------------------------

@@ -26,12 +26,20 @@ class OrderController extends Controller
                 ->with('success', 'Tu carrito está vacío.');
         }
 
+        $user = Auth::user();
+
+        if (!$user || empty($user->last_name) || empty($user->phone)) {
+            return redirect()
+                ->route('account.edit')
+                ->withErrors(['profile' => 'Completá tu apellido y teléfono para poder confirmar pedidos.']);
+        }
+
+
         $data = $request->validate([
             'payment_method' => ['required', 'in:local,mercado_pago,transferencia'],
-            'pickup_name'    => ['nullable', 'string', 'max:255'],
-            'pickup_phone'   => ['nullable', 'string', 'max:50'],
             'notes'          => ['nullable', 'string'],
         ]);
+
 
         $total = 0;
         foreach ($cart as $item) {
@@ -43,8 +51,8 @@ class OrderController extends Controller
             'status'         => 'pendiente',
             'payment_method' => $data['payment_method'],
             'total'          => $total,
-            'pickup_name'    => $data['pickup_name'] ?: Auth::user()->name,
-            'pickup_phone'   => $data['pickup_phone'] ?: (Auth::user()->phone ?? null),
+            'pickup_name'    => trim($user->name . ' ' . $user->last_name),
+            'pickup_phone'   => $user->phone,
             'notes'          => $data['notes'] ?? null,
         ]);
 
