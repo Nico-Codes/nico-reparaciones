@@ -67,9 +67,14 @@ Route::post('/checkout/confirmar', [OrderController::class, 'confirm'])->name('c
 Route::middleware(['auth'])->group(function () {
     Route::get('/mis-pedidos', [OrderController::class, 'index'])->name('orders.index');
     Route::get('/mis-pedidos/{order}', [OrderController::class, 'show'])->name('orders.show');
+    Route::get('/mis-pedidos/{order}/recibido', [OrderController::class, 'thankYou'])
+    ->name('orders.thankyou');
 
     Route::get('/mis-reparaciones', [UserRepairController::class, 'index'])->name('repairs.my.index');
     Route::get('/mis-reparaciones/{repair}', [UserRepairController::class, 'show'])->name('repairs.my.show');
+
+    
+
 });
 
 /*

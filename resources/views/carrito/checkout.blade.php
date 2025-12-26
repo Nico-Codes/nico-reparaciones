@@ -34,6 +34,17 @@
     <span class="inline-flex items-center rounded-full px-2 py-1 text-[11px] font-black bg-zinc-100 text-zinc-700">3</span>
     <span class="text-zinc-600">Pedido</span>
   </div>
+    @if ($errors->any())
+      <div class="alert-error mb-4">
+        <div class="font-black">Revisá estos datos:</div>
+        <ul class="mt-2 list-disc pl-5">
+          @foreach($errors->all() as $e)
+            <li>{{ $e }}</li>
+          @endforeach
+        </ul>
+      </div>
+    @endif
+
 
   @guest
     <div class="card">
@@ -140,6 +151,10 @@
               <div class="text-xs text-zinc-500">
                 El pedido queda “pendiente” hasta que lo confirmemos.
               </div>
+              @error('payment_method')
+                <div class="text-xs font-bold text-rose-600">{{ $message }}</div>
+              @enderror
+
             </div>
 
             {{-- Datos de retiro --}}

@@ -82,6 +82,18 @@
           @csrf
 
           <div class="grid gap-2">
+            <label>WhatsApp del local (opcional)</label>
+            <input
+              name="shop_phone"
+              value="{{ old('shop_phone', $shopPhone ?? '') }}"
+              placeholder="Ej: +54 341 5550000 (solo números también sirve)">
+            <div class="text-xs text-zinc-500">
+              Se usa para el botón “Escribir por WhatsApp” en el checkout/pedido.
+            </div>
+          </div>
+
+
+          <div class="grid gap-2">
             <label>Dirección del local (opcional)</label>
             <textarea name="shop_address" rows="4" placeholder="Ej: Av. San Martín 123, Carcarañá">{{ old('shop_address', $shopAddress ?? '') }}</textarea>
             <div class="text-xs text-zinc-500">Ejemplo de placeholder: <code>{shop_address}</code></div>

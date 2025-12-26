@@ -8,6 +8,8 @@ use App\Models\OrderStatusHistory;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Models\BusinessSetting;
+
 
 class OrderController extends Controller
 {
@@ -76,8 +78,9 @@ class OrderController extends Controller
         $request->session()->forget('cart');
 
         return redirect()
-            ->route('orders.show', $order->id)
-            ->with('success', 'Pedido realizado correctamente. Te vamos avisando el estado.');
+            ->route('orders.thankyou', $order->id)
+            ->with('success', 'Pedido realizado correctamente.');
+
     }
 
     /**
@@ -111,4 +114,46 @@ class OrderController extends Controller
             'order' => $order,
         ]);
     }
+
+    public function thankYou(Order $order)
+    {
+        if ($order->user_id !== Auth::id()) {
+            abort(403);
+        }
+
+        $order->load(['items']);
+
+        // Teléfono del local para WhatsApp (solo números)
+        $shopPhoneRaw = BusinessSetting::getValue('shop_phone', '');
+        $waNumber = preg_replace('/\D+/', '', (string) $shopPhoneRaw);
+
+        $payLabel = fn(?string $m) => match($m) {
+            'local' => 'Pago en el local',
+            'mercado_pago' => 'Mercado Pago',
+            'transferencia' => 'Transferencia',
+            default => $m ? ucfirst(str_replace('_',' ',$m)) : '—',
+        };
+
+        // Mensaje prearmado
+        $lines = [];
+        foreach ($order->items as $it) {
+            $lines[] = ((int)$it->quantity) . 'x ' . $it->product_name;
+        }
+
+        $waText =
+            "Hola! Soy {$order->pickup_name}.\n" .
+            "Hice el pedido #{$order->id}.\n" .
+            "Pago: " . $payLabel($order->payment_method) . "\n" .
+            "Items:\n- " . implode("\n- ", $lines) . "\n" .
+            "Total: $" . number_format((float)$order->total, 0, ',', '.') . "\n" .
+            "Gracias!";
+
+        return view('orders.thankyou', [
+            'order' => $order,
+            'waNumber' => $waNumber,
+            'waText' => $waText,
+        ]);
+    }
+
+
 }
