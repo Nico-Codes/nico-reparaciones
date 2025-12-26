@@ -572,6 +572,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const cartGrid = document.querySelector('[data-cart-grid]');
   if (cartGrid) {
     const storeUrl = cartGrid.dataset.storeUrl || '/tienda';
+    const renderEmptyCart = () => {
+      cartGrid.innerHTML = `
+        <div class="card">
+          <div class="card-body">
+            <div class="font-black">Tu carrito está vacío.</div>
+            <div class="muted" style="margin-top:4px">Agregá productos desde la tienda.</div>
+            <div style="margin-top:14px">
+              <a href="${storeUrl}" class="btn-primary">Ir a la tienda</a>
+            </div>
+          </div>
+        </div>
+      `;
+    };
 
     cartGrid.querySelectorAll('form[data-cart-remove]').forEach((form) => {
       form.addEventListener('submit', async (ev) => {
@@ -617,18 +630,9 @@ document.addEventListener('DOMContentLoaded', () => {
           showMiniToast(data.message || 'Carrito actualizado.');
 
           if (data.empty) {
-            cartGrid.innerHTML = `
-              <div class="card">
-                <div class="card-body">
-                  <div class="font-black">Tu carrito está vacío.</div>
-                  <div class="muted" style="margin-top:4px">Agregá productos desde la tienda.</div>
-                  <div style="margin-top:14px">
-                    <a href="${storeUrl}" class="btn-primary">Ir a la tienda</a>
-                  </div>
-                </div>
-              </div>
-            `;
+            renderEmptyCart();
           }
+
         } catch (err) {
           // Fallback seguro: si algo falla, usamos el comportamiento clásico con reload
           if (btn) btn.disabled = false;
@@ -636,6 +640,73 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
     });
+
+    const clearForm = cartGrid.querySelector('form[data-cart-clear]');
+    if (clearForm) {
+      const btn = clearForm.querySelector('button[type="submit"]');
+
+
+      clearForm.addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+
+
+
+        if (btn) btn.disabled = true;
+
+        try {
+          const res = await fetch(clearForm.action, {
+            method: 'POST',
+            headers: {
+              'X-Requested-With': 'XMLHttpRequest',
+              Accept: 'application/json',
+            },
+            body: new FormData(clearForm),
+          });
+
+          if (!res.ok) throw new Error('bad response');
+          const data = await res.json();
+          if (!data?.ok) throw new Error('bad json');
+
+          // Animación rápida: fade de items + resumen
+          const itemsWrap = cartGrid.querySelector('[data-cart-items-wrap]');
+          const summaryWrap = cartGrid.querySelector('[data-cart-summary-wrap]');
+
+          const fadeOut = (el) =>
+            new Promise((resolve) => {
+              if (!el) return resolve();
+              el.style.willChange = 'opacity, transform';
+              el.style.transition = 'opacity 180ms ease, transform 180ms ease';
+              el.style.opacity = '1';
+              el.style.transform = 'translateY(0)';
+              requestAnimationFrame(() => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(6px)';
+              });
+              window.setTimeout(resolve, 190);
+            });
+
+          await Promise.all([fadeOut(itemsWrap), fadeOut(summaryWrap)]);
+
+          // Totales + navbar
+          const itemsCountEl = document.querySelector('[data-cart-items-count]');
+          const totalEl = document.querySelector('[data-cart-total]');
+
+          if (itemsCountEl) itemsCountEl.textContent = '0 ítems';
+          if (totalEl) totalEl.textContent = formatARS(0);
+
+          setNavbarCartCount(0);
+
+          showMiniToast(data.message || 'Carrito vaciado.');
+
+          renderEmptyCart();
+        } catch (err) {
+          if (btn) btn.disabled = false;
+          // fallback clásico
+          clearForm.submit();
+        }
+      });
+    }
+
   }
 
   // ---------------------------------------------

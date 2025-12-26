@@ -195,14 +195,27 @@ class CartController extends Controller
     /**
      * Vaciar todo el carrito.
      */
-    public function clear(Request $request)
-    {
-        $request->session()->forget('cart');
+        public function clear(Request $request)
+        {
+            $request->session()->forget('cart');
 
-        return redirect()
-            ->route('cart.index')
-            ->with('success', 'Carrito vaciado.');
-    }
+            // AJAX/Fetch: devolvemos totales para actualizar UI sin recargar
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'ok'         => true,
+                    'cartCount'  => 0,
+                    'itemsCount' => 0,
+                    'total'      => 0,
+                    'empty'      => true,
+                    'message'    => 'Carrito vaciado.',
+                ]);
+            }
+
+            return redirect()
+                ->route('cart.index')
+                ->with('success', 'Carrito vaciado.');
+        }
+
 
     public function checkout(Request $request)
     {

@@ -19,7 +19,8 @@
   </div>
 
   @if(empty($cart))
-    <div class="card" data-cart-item data-item-id="{{ $item['id'] }}">
+    
+    <div class="card">
       <div class="card-body">
         <div class="font-black">Tu carrito está vacío.</div>
         <div class="muted mt-1">Agregá productos desde la tienda.</div>
@@ -152,10 +153,11 @@
           <div class="grid gap-2">
             <a href="{{ route('checkout') }}" class="btn-primary w-full">Finalizar compra</a>
 
-            <form method="POST" action="{{ route('cart.clear') }}">
+            <form method="POST" action="{{ route('cart.clear') }}" data-cart-clear>
               @csrf
               <button class="btn-outline w-full" type="submit">Vaciar carrito</button>
             </form>
+
 
             <a href="{{ route('store.index') }}" class="btn-ghost w-full">Volver a la tienda</a>
           </div>
@@ -167,4 +169,6 @@
       </div>
     </div>
   </div>
+
+
 @endsection
