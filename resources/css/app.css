@@ -259,6 +259,7 @@
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     overflow: hidden;
     min-height: calc(1.2em * 2);
   }
@@ -329,6 +330,7 @@
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     overflow: hidden;
     min-height: calc(1.2em * 2);
     margin: 0;
