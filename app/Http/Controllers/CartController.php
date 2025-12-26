@@ -14,7 +14,6 @@ class CartController extends Controller
     {
         $cart = $request->session()->get('cart', []);
 
-        // Calcular total
         $total = 0;
         foreach ($cart as $item) {
             $total += $item['price'] * $item['quantity'];
@@ -29,7 +28,7 @@ class CartController extends Controller
     /**
      * Agrega un producto al carrito.
      */
-        public function add(Request $request, Product $product)
+    public function add(Request $request, Product $product)
     {
         $cart = $request->session()->get('cart', []);
 
@@ -44,7 +43,7 @@ class CartController extends Controller
         }
 
         if (isset($cart[$product->id])) {
-            // Ya existe: sumamos cantidad
+            // Ya existe, sumo cantidad
             $newQuantity = $cart[$product->id]['quantity'] + $quantity;
 
             if ($product->stock > 0 && $newQuantity > $product->stock) {
@@ -65,15 +64,36 @@ class CartController extends Controller
 
         $request->session()->put('cart', $cart);
 
-        // 🔴 ANTES: redirigía al carrito
-        // return redirect()->route('cart.index')->with('success', 'Producto agregado al carrito.');
+        // Si es AJAX/Fetch: devolvemos JSON (por si en el futuro lo usás sin recarga)
+        if ($request->expectsJson()) {
+            $cartCount = 0;
+            foreach ($cart as $it) {
+                $q = (int) ($it['quantity'] ?? 1);
+                if ($q < 1) {
+                    $q = 1;
+                }
+                $cartCount += $q;
+            }
 
-        // ✅ AHORA: volvemos a la página anterior y mostramos POPUP tipo MercadoLibre
-        return redirect()
-            ->back()
+            return response()->json([
+                'ok' => true,
+                'added' => [
+                    'id'       => $product->id,
+                    'name'     => $product->name,
+                    'quantity' => $quantity,
+                    'subtotal' => (float) $product->price * $quantity,
+                ],
+                'cartCount' => $cartCount,
+            ]);
+        }
+
+        // Normal: volvemos atrás y disparamos el bottom-sheet “Agregado al carrito”
+        return back()
+            ->with('success', 'Producto agregado al carrito.')
             ->with('cart_added', [
-                'product_name' => $product->name,
-                'quantity'     => $quantity,
+                'name'     => $product->name,
+                'quantity' => $quantity,
+                'subtotal' => (float) $product->price * $quantity,
             ]);
     }
 
@@ -97,6 +117,33 @@ class CartController extends Controller
 
         $request->session()->put('cart', $cart);
 
+        // AJAX/Fetch: devolvemos datos para actualizar UI sin recargar
+        if ($request->expectsJson()) {
+            $itemsCount = 0;
+            $total = 0.0;
+
+            foreach ($cart as $it) {
+                $q = (int) ($it['quantity'] ?? 1);
+                if ($q < 1) $q = 1;
+
+                $p = (float) ($it['price'] ?? 0);
+                $itemsCount += $q;
+                $total += ($p * $q);
+            }
+
+            $lineSubtotal = (float) ($cart[$product->id]['price'] ?? 0) * (int) ($cart[$product->id]['quantity'] ?? 1);
+
+            return response()->json([
+                'ok'          => true,
+                'productId'   => $product->id,
+                'quantity'    => (int) $cart[$product->id]['quantity'],
+                'lineSubtotal'=> $lineSubtotal,
+                'cartCount'   => $itemsCount,
+                'itemsCount'  => $itemsCount,
+                'total'       => $total,
+            ]);
+        }
+
         return redirect()
             ->route('cart.index')
             ->with('success', 'Cantidad actualizada.');
@@ -108,9 +155,36 @@ class CartController extends Controller
     public function remove(Request $request, Product $product)
     {
         $cart = $request->session()->get('cart', []);
+
         if (isset($cart[$product->id])) {
             unset($cart[$product->id]);
             $request->session()->put('cart', $cart);
+        }
+
+        // AJAX/Fetch: devolvemos totales para actualizar UI sin recargar
+        if ($request->expectsJson()) {
+            $itemsCount = 0;
+            $total = 0.0;
+
+            foreach ($cart as $it) {
+                $q = (int) ($it['quantity'] ?? 1);
+                if ($q < 1) {
+                    $q = 1;
+                }
+
+                $p = (float) ($it['price'] ?? 0);
+                $itemsCount += $q;
+                $total += ($p * $q);
+            }
+
+            return response()->json([
+                'ok'         => true,
+                'cartCount'  => $itemsCount,
+                'itemsCount' => $itemsCount,
+                'total'      => $total,
+                'empty'      => ($itemsCount <= 0),
+                'message'    => 'Producto eliminado del carrito.',
+            ]);
         }
 
         return redirect()
@@ -153,5 +227,4 @@ class CartController extends Controller
             'total' => $total,
         ]);
     }
-
 }

@@ -269,12 +269,13 @@ document.addEventListener('DOMContentLoaded', () => {
   // ----------------------------
   const isAddToCartForm = (form) => {
     if (!(form instanceof HTMLFormElement)) return false;
-    if (form.querySelector('button.btn-cart, .btn-cart')) return true;
 
+    // Marca opcional futura
+    if (form.dataset.addToCart === '1') return true;
+
+    // Solo forms que realmente agregan (evita capturar actualizar/eliminar/vaciar)
     const action = (form.getAttribute('action') || '').toLowerCase();
-    if (action.includes('/carrito/agregar') || action.includes('/cart/add') || action.includes('/carrito')) return true;
-
-    return false;
+    return action.includes('/carrito/agregar') || action.includes('/cart/add');
   };
 
   const getProductNameFromContext = (form) => {
@@ -416,17 +417,21 @@ document.addEventListener('DOMContentLoaded', () => {
       if (loading) loading.classList.add('inline-flex');
     });
   }
-    // ---------------------------------------------
+
+  // ---------------------------------------------
   // Preserve scroll para POSTs (carrito, etc.)
   // ---------------------------------------------
   const SCROLL_KEY = 'nr_preserve_scroll';
 
   const saveScroll = () => {
     try {
-      sessionStorage.setItem(SCROLL_KEY, JSON.stringify({
-        path: location.pathname,
-        y: window.scrollY
-      }));
+      sessionStorage.setItem(
+        SCROLL_KEY,
+        JSON.stringify({
+          path: location.pathname,
+          y: window.scrollY,
+        })
+      );
     } catch (_) {}
   };
 
@@ -444,10 +449,194 @@ document.addEventListener('DOMContentLoaded', () => {
 
   restoreScroll();
 
-  document.addEventListener('submit', (e) => {
-    const form = e.target;
-    if (form?.dataset?.preserveScroll === '1') saveScroll();
-  }, true);
+  document.addEventListener(
+    'submit',
+    (e) => {
+      const form = e.target;
+      if (form?.dataset?.preserveScroll === '1') saveScroll();
+    },
+    true
+  );
+
+  // ---------------------------------------------
+  // Carrito: eliminar ítem sin recargar (fade + collapse)
+  // ---------------------------------------------
+  const formatARS = (value) => {
+    const n = Number(value || 0);
+    try {
+      return new Intl.NumberFormat('es-AR', {
+        style: 'currency',
+        currency: 'ARS',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      }).format(n);
+    } catch {
+      return `$ ${Math.round(n)}`;
+    }
+  };
+
+  const showMiniToast = (msg) => {
+    const t = document.createElement('div');
+    t.className = 'alert-success';
+    t.textContent = msg;
+
+    t.style.position = 'fixed';
+    t.style.left = '50%';
+    t.style.bottom = '14px';
+    t.style.transform = 'translateX(-50%) translateY(8px)';
+    t.style.zIndex = '9999';
+    t.style.maxWidth = 'calc(100% - 24px)';
+    t.style.opacity = '0';
+    t.style.transition = 'opacity 160ms ease, transform 160ms ease';
+
+    document.body.appendChild(t);
+
+    requestAnimationFrame(() => {
+      t.style.opacity = '1';
+      t.style.transform = 'translateX(-50%) translateY(0)';
+    });
+
+    window.setTimeout(() => {
+      t.style.opacity = '0';
+      t.style.transform = 'translateX(-50%) translateY(8px)';
+      window.setTimeout(() => t.remove(), 220);
+    }, 1600);
+  };
+
+  const setNavbarCartCount = (count) => {
+    const cartLink = document.querySelector('a[aria-label="Carrito"]');
+    if (!cartLink) return;
+
+    const next = Math.max(0, parseInt(count, 10) || 0);
+    let badge = cartLink.querySelector('[data-cart-count]');
+
+    if (next <= 0) {
+      badge?.remove();
+      return;
+    }
+
+    if (!badge) {
+      badge = document.createElement('span');
+      badge.setAttribute('data-cart-count', '1');
+
+      // estilos inline (no dependemos de clases purgadas)
+      badge.style.position = 'absolute';
+      badge.style.top = '-0.5rem';
+      badge.style.right = '-0.5rem';
+      badge.style.minWidth = '1rem';
+      badge.style.height = '1rem';
+      badge.style.padding = '0 0.25rem';
+      badge.style.borderRadius = '9999px';
+      badge.style.background = '#0284c7';
+      badge.style.color = '#fff';
+      badge.style.fontSize = '10px';
+      badge.style.lineHeight = '1rem';
+      badge.style.fontWeight = '800';
+      badge.style.display = 'flex';
+      badge.style.alignItems = 'center';
+      badge.style.justifyContent = 'center';
+      badge.style.border = '2px solid #fff';
+
+      cartLink.appendChild(badge);
+    }
+
+    badge.textContent = String(next);
+  };
+
+  const animateCollapseRemove = (el) =>
+    new Promise((resolve) => {
+      if (!el) return resolve();
+
+      el.style.overflow = 'hidden';
+      el.style.willChange = 'height, opacity';
+      const h = el.offsetHeight;
+      el.style.height = `${h}px`;
+      el.style.opacity = '1';
+      el.style.transition = 'height 220ms ease, opacity 180ms ease';
+
+      requestAnimationFrame(() => {
+        el.style.opacity = '0';
+        el.style.height = '0px';
+      });
+
+      el.addEventListener(
+        'transitionend',
+        () => {
+          el.remove();
+          resolve();
+        },
+        { once: true }
+      );
+    });
+
+  const cartGrid = document.querySelector('[data-cart-grid]');
+  if (cartGrid) {
+    const storeUrl = cartGrid.dataset.storeUrl || '/tienda';
+
+    cartGrid.querySelectorAll('form[data-cart-remove]').forEach((form) => {
+      form.addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+
+        const btn = form.querySelector('button[type="submit"]');
+        if (btn) btn.disabled = true;
+
+        const card = form.closest('[data-cart-item]');
+
+        try {
+          const res = await fetch(form.action, {
+            method: 'POST',
+            headers: {
+              'X-Requested-With': 'XMLHttpRequest',
+              Accept: 'application/json',
+            },
+            body: new FormData(form),
+          });
+
+          if (!res.ok) throw new Error('bad response');
+          const data = await res.json();
+          if (!data?.ok) throw new Error('bad json');
+
+          await animateCollapseRemove(card);
+
+          const itemsCountEl = document.querySelector('[data-cart-items-count]');
+          const totalEl = document.querySelector('[data-cart-total]');
+
+          if (itemsCountEl && typeof data.itemsCount !== 'undefined') {
+            const n = parseInt(data.itemsCount, 10) || 0;
+            itemsCountEl.textContent = `${n} ítem${n === 1 ? '' : 's'}`;
+          }
+
+          if (totalEl && typeof data.total !== 'undefined') {
+            totalEl.textContent = formatARS(data.total);
+          }
+
+          if (typeof data.cartCount !== 'undefined') {
+            setNavbarCartCount(data.cartCount);
+          }
+
+          showMiniToast(data.message || 'Carrito actualizado.');
+
+          if (data.empty) {
+            cartGrid.innerHTML = `
+              <div class="card">
+                <div class="card-body">
+                  <div class="font-black">Tu carrito está vacío.</div>
+                  <div class="muted" style="margin-top:4px">Agregá productos desde la tienda.</div>
+                  <div style="margin-top:14px">
+                    <a href="${storeUrl}" class="btn-primary">Ir a la tienda</a>
+                  </div>
+                </div>
+              </div>
+            `;
+          }
+        } catch (err) {
+          // Fallback seguro: si algo falla, usamos el comportamiento clásico con reload
+          if (btn) btn.disabled = false;
+          form.submit();
+        }
+      });
+    });
+  }
 
   // ---------------------------------------------
   // Carrito: control de cantidad (− / input / +)
@@ -456,17 +645,77 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('form[data-cart-qty]').forEach((form) => {
     const input = form.querySelector('[data-qty-input]');
     const minus = form.querySelector('[data-qty-minus]');
-    const plus  = form.querySelector('[data-qty-plus]');
+    const plus = form.querySelector('[data-qty-plus]');
     if (!input) return;
 
     const clamp = (n) => Math.max(1, Math.min(999, n));
     const getVal = () => clamp(parseInt(input.value, 10) || 1);
-    const setVal = (n) => { input.value = String(clamp(n)); };
+    const setVal = (n) => {
+      input.value = String(clamp(n));
+    };
 
-    const doSubmit = () => {
-      // dispara submit event => preserva scroll si data-preserve-scroll="1"
-      if (typeof form.requestSubmit === 'function') form.requestSubmit();
-      else form.submit();
+    const postFormJson = async (form) => {
+      const res = await fetch(form.action, {
+        method: 'POST',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          Accept: 'application/json',
+        },
+        body: new FormData(form),
+      });
+
+      if (!res.ok) throw new Error('bad response');
+      return await res.json();
+    };
+
+    let inFlight = false;
+
+    const doSubmit = async () => {
+      if (inFlight) return;
+      inFlight = true;
+
+      // Intento AJAX primero (sin recargar)
+      try {
+        const data = await postFormJson(form);
+        if (!data?.ok) throw new Error('bad json');
+
+        // Ajustar input si server clampleó por stock/min
+        if (typeof data.quantity !== 'undefined') {
+          input.value = String(data.quantity);
+        }
+
+        // Subtotal de la línea (si existe)
+        const card = form.closest('[data-cart-item]');
+        const lineEl = card?.querySelector('[data-line-subtotal]');
+        if (lineEl && typeof data.lineSubtotal !== 'undefined') {
+          lineEl.textContent = formatARS(data.lineSubtotal);
+        }
+
+        // Total + items count
+        const itemsCountEl = document.querySelector('[data-cart-items-count]');
+        const totalEl = document.querySelector('[data-cart-total]');
+
+        if (itemsCountEl && typeof data.itemsCount !== 'undefined') {
+          const n = parseInt(data.itemsCount, 10) || 0;
+          itemsCountEl.textContent = `${n} ítem${n === 1 ? '' : 's'}`;
+        }
+        if (totalEl && typeof data.total !== 'undefined') {
+          totalEl.textContent = formatARS(data.total);
+        }
+
+        // Navbar badge
+        if (typeof data.cartCount !== 'undefined') {
+          setNavbarCartCount(data.cartCount);
+        }
+
+        showMiniToast(data.message || 'Carrito actualizado.');
+      } catch (e) {
+        // Fallback clásico (recarga) si falla AJAX
+        if (typeof form.requestSubmit === 'function') form.requestSubmit();
+        else form.submit();
+      } finally {
+        inFlight = false;
+      }
     };
 
     minus?.addEventListener('click', (e) => {
@@ -494,5 +743,4 @@ document.addEventListener('DOMContentLoaded', () => {
       setVal(getVal());
     });
   });
-
 });

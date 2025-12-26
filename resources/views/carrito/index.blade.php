@@ -19,7 +19,7 @@
   </div>
 
   @if(empty($cart))
-    <div class="card">
+    <div class="card" data-cart-item data-item-id="{{ $item['id'] }}">
       <div class="card-body">
         <div class="font-black">Tu carrito está vacío.</div>
         <div class="muted mt-1">Agregá productos desde la tienda.</div>
@@ -31,9 +31,9 @@
     @return
   @endif
 
-  <div class="grid gap-4 lg:grid-cols-3">
+  <div class="grid gap-4 lg:grid-cols-3" data-cart-grid data-store-url="{{ route('store.index') }}">
     {{-- Items --}}
-    <div class="lg:col-span-2 grid gap-3">
+    <div class="lg:col-span-2 grid gap-3" data-cart-items-wrap>
       @foreach($cart as $item)
         @php
           $qty = (int)($item['quantity'] ?? 1);
@@ -49,7 +49,7 @@
           $incQty = $qty + 1;
         @endphp
 
-        <div class="card">
+        <div class="card" data-cart-item data-item-id="{{ $item['id'] }}">
           <div class="card-body">
             <div class="flex items-start gap-3">
               {{-- Thumb simple --}}
@@ -70,7 +70,7 @@
                     </div>
                   </div>
 
-                  <form method="POST" action="{{ route('cart.remove', $item['id']) }}">
+                  <form method="POST" action="{{ route('cart.remove', $item['id']) }}" data-cart-remove>
                     @csrf
                     <button class="btn-ghost btn-sm px-3" type="submit" aria-label="Eliminar del carrito">🗑️</button>
                   </form>
@@ -117,7 +117,7 @@
 
                   <div class="text-right leading-tight">
                     <div class="text-[11px] text-zinc-500">Subtotal</div>
-                    <div class="font-black text-zinc-900">{{ $fmt($subtotal) }}</div>
+                    <div class="font-black text-zinc-900" data-line-subtotal>{{ $fmt($subtotal) }}</div>
                   </div>
                 </div>
 
@@ -132,17 +132,17 @@
     </div>
 
     {{-- Summary --}}
-    <div class="lg:col-span-1">
+    <div class="lg:col-span-1" data-cart-summary-wrap>
       <div class="card h-fit">
         <div class="card-head">
           <div class="font-black">Resumen</div>
-          <span class="badge-sky">{{ $itemsCount }} ítems</span>
+          <span class="badge-sky" data-cart-items-count>{{ $itemsCount }} ítems</span>
         </div>
 
         <div class="card-body grid gap-3">
           <div class="flex items-center justify-between">
             <div class="muted">Total</div>
-            <div class="text-xl font-black">{{ $fmt($total) }}</div>
+            <div class="text-xl font-black" data-cart-total>{{ $fmt($total) }}</div>
           </div>
 
           <div class="text-xs text-zinc-500">
