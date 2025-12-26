@@ -162,6 +162,30 @@
             >
               Abrir WhatsApp (y registrar log)
             </a>
+              {{-- texto oculto para copiar --}}
+            <textarea id="nrAdminOrderWaText" class="hidden" readonly>{{ $waMessage }}</textarea>
+
+            <button type="button"
+                    class="btn-ghost w-full mt-2"
+                    data-copy-target="#nrAdminOrderWaText"
+                    data-copy-toast="Mensaje copiado ✅">
+              Copiar mensaje
+            </button>
+
+            <details class="mt-3">
+              <summary class="text-xs font-black text-zinc-600 cursor-pointer select-none">
+                Ver mensaje
+              </summary>
+              <textarea readonly rows="8" class="mt-2">{{ $waMessage }}</textarea>
+            </details>
+
+            <div class="mt-3 text-xs text-zinc-500">
+              Plantillas:
+              <a class="underline font-bold"
+                href="{{ route('admin.orders_whatsapp_templates.index') }}">
+                Editar WhatsApp pedidos
+              </a>
+            </div>
 
             <p class="mt-2 text-xs text-zinc-500">
               Se registra el envío (audit). El botón abre WhatsApp en otra pestaña.

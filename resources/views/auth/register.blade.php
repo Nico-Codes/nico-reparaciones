@@ -29,12 +29,29 @@
     <form method="POST" action="{{ route('register') }}" class="mt-5 space-y-4">
       @csrf
 
-      <div>
-        <label class="text-xs font-semibold text-zinc-700">Nombre</label>
-        <input type="text" name="name" value="{{ old('name') }}" required
-               class="mt-1 w-full rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
-               placeholder="Nico">
+      <div class="grid gap-3 sm:grid-cols-2">
+        <div>
+          <label class="text-xs font-semibold text-zinc-700">Nombre</label>
+          <input type="text" name="name" value="{{ old('name') }}" required
+                class="mt-1 w-full rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
+                placeholder="Nico">
+        </div>
+
+        <div>
+          <label class="text-xs font-semibold text-zinc-700">Apellido</label>
+          <input type="text" name="last_name" value="{{ old('last_name') }}" required
+                class="mt-1 w-full rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
+                placeholder="Machado">
+        </div>
       </div>
+
+      <div>
+        <label class="text-xs font-semibold text-zinc-700">Teléfono / WhatsApp</label>
+        <input type="text" name="phone" value="{{ old('phone') }}" required
+              class="mt-1 w-full rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
+              placeholder="Ej: 341 555-0000">
+      </div>
+
 
       <div>
         <label class="text-xs font-semibold text-zinc-700">Email</label>

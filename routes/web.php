@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 
+use App\Http\Controllers\AccountController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CartController;
@@ -65,6 +66,9 @@ Route::post('/checkout/confirmar', [OrderController::class, 'confirm'])->name('c
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth'])->group(function () {
+    Route::get('/mi-cuenta', [AccountController::class, 'edit'])->name('account.edit');
+    Route::put('/mi-cuenta', [AccountController::class, 'update'])->name('account.update');
+
     Route::get('/mis-pedidos', [OrderController::class, 'index'])->name('orders.index');
     Route::get('/mis-pedidos/{order}', [OrderController::class, 'show'])->name('orders.show');
     Route::get('/mis-pedidos/{order}/recibido', [OrderController::class, 'thankYou'])

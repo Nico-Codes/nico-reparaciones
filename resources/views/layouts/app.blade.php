@@ -237,6 +237,17 @@
 
 
               <div id="accountMenu" class="dropdown-menu hidden">
+                @if($has('account.edit')) <a class="dropdown-item" href="{{ route('account.edit') }}">Mi cuenta</a> @endif
+                @if($has('account.edit'))
+                  <a class="sidebar-link {{ request()->routeIs('account.*') ? 'active' : '' }}"
+                    href="{{ route('account.edit') }}">
+                    <span class="inline-flex items-center gap-2">
+                      <img src="/icons/settings.svg" alt="" class="w-5 h-5" loading="lazy" decoding="async">
+                      <span>Mi cuenta</span>
+                    </span>
+                  </a>
+                @endif
+
                 @if($has('orders.index')) <a class="dropdown-item" href="{{ route('orders.index') }}">Mis pedidos</a> @endif
                 @if($has('repairs.my.index')) <a class="dropdown-item" href="{{ route('repairs.my.index') }}">Mis reparaciones</a> @endif
                 @if($isAdmin && $has('admin.dashboard')) <a class="dropdown-item" href="{{ route('admin.dashboard') }}">Panel admin</a> @endif
