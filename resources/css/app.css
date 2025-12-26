@@ -5,7 +5,13 @@
 @source "../js/**/*.js";
 
 @layer base {
-  body { @apply bg-zinc-50 text-zinc-900; }
+  body {
+    font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    @apply bg-zinc-50 text-zinc-900;
+  }
+
   a { @apply text-zinc-900; }
 
   label { @apply text-sm font-extrabold text-zinc-700; }
@@ -16,6 +22,14 @@
     @apply w-full rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none
       focus:ring-2 focus:ring-sky-200 focus:border-sky-300;
   }
+  /* Anti-jitter SIN romper el sidebar:
+    NO usar transform en el header (afecta a los fixed del overlay/sidebar) */
+  body > header.sticky > .container-page{
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+
+
 }
 
 @layer components {
@@ -23,6 +37,20 @@
      Layout / Containers
   ========================== */
   .container-page { @apply mx-auto max-w-6xl px-4; }
+
+  /* Mobile: más ancho útil (menos “margen” a los lados) */
+  @media (max-width: 640px){
+    .container-page{
+      padding-left: 5px;
+      padding-right: 5px;
+    }
+  }
+  /* Desktop: apenas más ancho que max-w-6xl (72rem) */
+  @media (min-width: 1024px){
+    .container-page{
+      max-width: 76rem;
+    }
+  }
 
   .page-head { @apply flex flex-col gap-2 md:flex-row md:items-end md:justify-between mb-4; }
   .page-title { @apply text-xl md:text-2xl font-black tracking-tight; }
@@ -136,7 +164,7 @@
      Dropdown
   ========================== */
   .dropdown { @apply relative; }
-  .dropdown-menu { @apply absolute right-0 mt-2 w-48 rounded-2xl border border-zinc-200 bg-white shadow-lg p-2 hidden; }
+  .dropdown-menu { @apply absolute right-0 mt-2 w-48 rounded-2xl border border-zinc-200 bg-white shadow-lg p-2 z-50; }
   .dropdown.open .dropdown-menu { @apply block; }
   .dropdown-item { @apply block px-3 py-2 rounded-xl text-sm font-semibold hover:bg-zinc-100; }
 
@@ -323,8 +351,39 @@
     width: 100%;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: nowrap; /* clave: no bajar a otra línea */
   }
+
+  .product-card-featured .product-actions .badge-stock{
+    flex: 0 1 auto;      /* NO ocupa todo el ancho */
+    white-space: nowrap; /* no parte "Stock" */
+    max-width: calc(100% - 44px); /* deja espacio al botón */
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+    @media (max-width: 640px){
+    .product-card-featured .product-actions .badge-stock{
+      display: none;
+    }
+  }
+
+
+
+  /* El form no debe estirarse ni empujar */
+  .product-card-featured .product-actions form{
+    flex: 0 0 auto;
+    margin: 0;
+    margin-left: auto; /* clave: manda el carrito a la esquina derecha */
+  }
+
+
+  /* El botón queda siempre adentro y alineado a la derecha */
+  .product-card-featured .product-actions .btn-cart{
+    flex: 0 0 auto;
+    margin-left: auto;
+  }
+
 
   .product-card-featured .badge-stock{
     font-size: 10px;

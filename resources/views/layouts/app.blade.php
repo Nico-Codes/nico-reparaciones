@@ -10,6 +10,10 @@
   <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('apple-touch-icon.png') }}">
   <link rel="manifest" href="{{ asset('site.webmanifest') }}">
   <meta name="theme-color" content="#0ea5e9">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap">
+
 
 
   @php
@@ -69,7 +73,7 @@
   @else
     {{-- fallback mínimo --}}
     <style>
-      body{margin:0;font-family:system-ui,Segoe UI,Roboto,Arial;background:#fafafa;color:#09090b}
+      body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;background:#fafafa;color:#09090b}
       a{text-decoration:none;color:inherit}
       .container-page{max-width:1100px;margin:0 auto;padding:0 16px}
     </style>
@@ -126,11 +130,23 @@
 
 
             <div class="leading-tight min-w-0">
-              <div class="font-black tracking-tight text-zinc-900 truncate">
+              {{-- Desktop (una línea) --}}
+              <div class="hidden sm:block font-black tracking-tight text-zinc-900 truncate">
                 Nico<span class="text-sky-600">Reparaciones</span>
               </div>
-              <div class="hidden sm:block text-[11px] text-zinc-500 -mt-0.5 truncate">Servicio Tecnico Profesional y Tienda de Electronica</div>
+
+              {{-- Mobile (dos líneas) --}}
+              <div class="sm:hidden font-black tracking-tight leading-none flex flex-col gap-0">
+                <span class="text-[13px] text-zinc-900 leading-none block">Nico</span>
+                <span class="text-[13px] text-sky-600 leading-none block">Reparaciones</span>
+              </div>
+
+
+              <div class="hidden sm:block text-[11px] text-zinc-500 -mt-0.5 truncate">
+                Servicio Tecnico Profesional y Tienda de Electronica
+              </div>
             </div>
+
           </a>
         </div>
 
