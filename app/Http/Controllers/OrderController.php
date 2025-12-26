@@ -86,18 +86,53 @@ class OrderController extends Controller
     /**
      * Listado de pedidos del usuario logueado.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $orders = Auth::user()
+        $tab = (string) $request->query('tab', 'activos');
+        $q   = trim((string) $request->query('q', ''));
+
+        $query = Auth::user()
             ->orders()
-            ->latest()
-            ->paginate(10)
-            ->withQueryString();
+            ->withCount('items')
+            ->with(['items' => function ($q) {
+                $q->select('id', 'order_id', 'product_name', 'quantity');
+            }])
+            ->latest();
+
+        // Tabs: activos vs historial
+        if ($tab === 'historial') {
+            $query->whereIn('status', ['entregado', 'cancelado']);
+        } else {
+            $tab = 'activos';
+            $query->whereNotIn('status', ['entregado', 'cancelado']);
+        }
+
+        // Búsqueda: por #id, nombre o teléfono
+        if ($q !== '') {
+            $digits = preg_replace('/\D+/', '', $q);
+
+            $query->where(function ($sub) use ($q, $digits) {
+                if (ctype_digit($q)) {
+                    $sub->orWhere('id', (int) $q);
+                }
+
+                $sub->orWhere('pickup_name', 'like', "%{$q}%");
+
+                if ($digits !== '') {
+                    $sub->orWhere('pickup_phone', 'like', "%{$digits}%");
+                }
+            });
+        }
+
+        $orders = $query->paginate(10)->withQueryString();
 
         return view('orders.index', [
             'orders' => $orders,
+            'tab'    => $tab,
+            'q'      => $q,
         ]);
     }
+
 
     /**
      * Detalle de un pedido del usuario.
