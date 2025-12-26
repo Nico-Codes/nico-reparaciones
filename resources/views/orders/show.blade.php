@@ -189,11 +189,30 @@
         @endif
 
         <div class="grid gap-2 mt-2">
-          <a href="{{ route('orders.index') }}" class="btn-outline w-full">Volver</a>
+          @if(!empty($waNumber))
+            <textarea id="nrOrderWaText" class="hidden" readonly>{{ $waText }}</textarea>
+
+            <a class="btn-ghost w-full"
+              target="_blank" rel="noopener"
+              href="https://wa.me/{{ $waNumber }}?text={{ rawurlencode($waText) }}">
+              Escribir por WhatsApp
+            </a>
+
+            <button type="button"
+                    class="btn-outline w-full"
+                    data-copy-target="#nrOrderWaText"
+                    data-copy-toast="Mensaje copiado ✅">
+              Copiar mensaje
+            </button>
+          @endif
+
           @if($has('store.index'))
             <a href="{{ route('store.index') }}" class="btn-primary w-full">Ir a la tienda</a>
           @endif
+
+          <a href="{{ route('orders.index') }}" class="btn-outline w-full">Volver</a>
         </div>
+
       </div>
     </div>
   </div>

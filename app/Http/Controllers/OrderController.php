@@ -110,9 +110,36 @@ class OrderController extends Controller
 
         $order->load(['items', 'statusHistories']);
 
+        // Teléfono del local para WhatsApp (solo números)
+        $shopPhoneRaw = BusinessSetting::getValue('shop_phone', '');
+        $waNumber = preg_replace('/\D+/', '', (string) $shopPhoneRaw);
+
+        $payLabel = fn(?string $m) => match($m) {
+            'local' => 'Pago en el local',
+            'mercado_pago' => 'Mercado Pago',
+            'transferencia' => 'Transferencia',
+            default => $m ? ucfirst(str_replace('_',' ',$m)) : '—',
+        };
+
+        $lines = [];
+        foreach ($order->items as $it) {
+            $lines[] = ((int)$it->quantity) . 'x ' . $it->product_name;
+        }
+
+        $waText =
+            "Hola! Soy {$order->pickup_name}.\n" .
+            "Hice el pedido #{$order->id}.\n" .
+            "Pago: " . $payLabel($order->payment_method) . "\n" .
+            "Items:\n- " . implode("\n- ", $lines) . "\n" .
+            "Total: $" . number_format((float)$order->total, 0, ',', '.') . "\n" .
+            "Gracias!";
+
         return view('orders.show', [
             'order' => $order,
+            'waNumber' => $waNumber,
+            'waText' => $waText,
         ]);
+
     }
 
     public function thankYou(Order $order)

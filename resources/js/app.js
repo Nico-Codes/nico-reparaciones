@@ -503,6 +503,56 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 1600);
   };
 
+  // ---------------------------------------------
+  // Copy to clipboard (para WhatsApp, etc.)
+  // ---------------------------------------------
+  const copyToClipboard = async (text) => {
+    const str = String(text ?? '');
+    if (!str) return false;
+
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(str);
+        return true;
+      }
+    } catch (_) {}
+
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = str;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.top = '-9999px';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand('copy');
+      ta.remove();
+      return ok;
+    } catch (_) {
+      return false;
+    }
+  };
+
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-copy-target]');
+    if (!btn) return;
+
+    e.preventDefault();
+
+    const sel = btn.getAttribute('data-copy-target');
+    if (!sel) return;
+
+    const el = document.querySelector(sel);
+    if (!el) return;
+
+    const text = (typeof el.value === 'string') ? el.value : (el.textContent || '');
+    const ok = await copyToClipboard(text);
+
+    showMiniToast(ok ? (btn.getAttribute('data-copy-toast') || 'Copiado ✅') : 'No se pudo copiar');
+  });
+
+
   const setNavbarCartCount = (count) => {
     const cartLink = document.querySelector('a[aria-label="Carrito"]');
     if (!cartLink) return;

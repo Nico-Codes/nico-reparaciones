@@ -85,17 +85,27 @@
           <a class="btn-outline w-full sm:w-auto" href="{{ route('orders.show', $order->id) }}">Ver detalle</a>
           <a class="btn-primary w-full sm:w-auto" href="{{ route('store.index') }}">Seguir comprando</a>
 
-          @if(!empty($waNumber))
+            @if(!empty($waNumber))
+            <textarea id="nrWaText" class="hidden" readonly>{{ $waText }}</textarea>
+
             <a class="btn-ghost w-full sm:w-auto"
-               target="_blank" rel="noopener"
-               href="https://wa.me/{{ $waNumber }}?text={{ rawurlencode($waText) }}">
-              Escribir por WhatsApp
+                target="_blank" rel="noopener"
+                href="https://wa.me/{{ $waNumber }}?text={{ rawurlencode($waText) }}">
+                Escribir por WhatsApp
             </a>
-          @else
+
+            <button type="button"
+                    class="btn-outline w-full sm:w-auto"
+                    data-copy-target="#nrWaText"
+                    data-copy-toast="Mensaje copiado ✅">
+                Copiar mensaje
+            </button>
+            @else
             <span class="text-xs text-zinc-500 sm:self-center">
-              (Configurar WhatsApp en Admin → Configuración)
+                (Configurar WhatsApp en Admin → Configuración)
             </span>
-          @endif
+            @endif
+
         </div>
       </div>
     </div>
