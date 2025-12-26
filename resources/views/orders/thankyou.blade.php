@@ -86,6 +86,18 @@
             <div class="muted">Teléfono</div>
             <div class="font-black">{{ $order->pickup_phone ?: '—' }}</div>
           </div>
+          @if($order->pickup_delegate_name || $order->pickup_delegate_phone)
+            <div class="sm:col-span-2">
+                <div class="muted">Retira</div>
+                <div class="font-black">
+                {{ $order->pickup_delegate_name ?: '—' }}
+                @if($order->pickup_delegate_phone)
+                    <span class="muted font-normal">({{ $order->pickup_delegate_phone }})</span>
+                @endif
+                </div>
+            </div>
+            @endif
+
           <div>
             <div class="muted">Pago</div>
             <div class="font-black">{{ $payLabel($order->payment_method) }}</div>

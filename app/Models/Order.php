@@ -32,7 +32,10 @@ class Order extends Model
         'total',
         'pickup_name',
         'pickup_phone',
+        'pickup_delegate_name',
+        'pickup_delegate_phone',
         'notes',
+
     ];
 
     // Normaliza teléfono a "solo números" al guardar
@@ -40,6 +43,12 @@ class Order extends Model
     {
         $this->attributes['pickup_phone'] = preg_replace('/\D+/', '', (string) $value);
     }
+
+    public function setPickupDelegatePhoneAttribute($value): void
+    {
+        $this->attributes['pickup_delegate_phone'] = preg_replace('/\D+/', '', (string) $value);
+    }
+
 
     public function user()
     {

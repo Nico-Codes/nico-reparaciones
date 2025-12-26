@@ -188,6 +188,36 @@
               @endif
             </div>
 
+            {{-- Retira otra persona (opcional) --}}
+            <details class="rounded-2xl border border-zinc-200 bg-white p-4">
+              <summary class="cursor-pointer select-none font-black">
+                ¿Retira otra persona?
+                <span class="muted font-normal"> (opcional)</span>
+              </summary>
+
+              <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label for="pickup_delegate_name">Nombre de quien retira</label>
+                  <input id="pickup_delegate_name"
+                        name="pickup_delegate_name"
+                        value="{{ old('pickup_delegate_name') }}"
+                        placeholder="Ej: Juan Pérez">
+                </div>
+
+                <div>
+                  <label for="pickup_delegate_phone">Teléfono de quien retira</label>
+                  <input id="pickup_delegate_phone"
+                        name="pickup_delegate_phone"
+                        value="{{ old('pickup_delegate_phone') }}"
+                        placeholder="Ej: 341 555-0000">
+                </div>
+              </div>
+
+              <div class="muted mt-3 text-xs">
+                El pedido sigue asociado a tu cuenta (tu teléfono). Esto solo es para identificar quién retira.
+              </div>
+            </details>
+
 
             <div>
               <label for="notes">Notas (opcional)</label>

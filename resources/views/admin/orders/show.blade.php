@@ -90,10 +90,24 @@
               <span class="text-zinc-500">Nombre</span>
               <span class="font-extrabold text-right">{{ $customerName }}</span>
             </div>
+
             <div class="flex items-start justify-between gap-3">
               <span class="text-zinc-500">Teléfono</span>
               <span class="font-extrabold text-right">{{ $customerPhone }}</span>
             </div>
+
+            @if($order->pickup_delegate_name || $order->pickup_delegate_phone)
+              <div class="flex items-start justify-between gap-3">
+                <span class="text-zinc-500">Retira</span>
+                <span class="font-extrabold text-right">
+                  {{ $order->pickup_delegate_name ?: '—' }}
+                  @if($order->pickup_delegate_phone)
+                    <span class="text-zinc-500 font-normal">({{ $order->pickup_delegate_phone }})</span>
+                  @endif
+                </span>
+              </div>
+            @endif
+
             <div class="flex items-start justify-between gap-3">
               <span class="text-zinc-500">Email</span>
               <span class="font-extrabold text-right">{{ $order->user?->email ?? '—' }}</span>
