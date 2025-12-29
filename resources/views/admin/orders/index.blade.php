@@ -1,21 +1,12 @@
 @extends('layouts.app')
 
-@section('title', 'Admin — Pedidos')
+@section('title', 'Mis pedidos')
 
 @php
-  $money = fn($n) => '$ ' . number_format((float)($n ?? 0), 0, ',', '.');
+  $fmt = fn($n) => '$ ' . number_format((float)$n, 0, ',', '.');
 
-  $statusMap = [
-    'pendiente' => 'Pendiente',
-    'confirmado' => 'Confirmado',
-    'preparando' => 'Preparando',
-    'listo_retirar' => 'Listo para retirar',
-    'entregado' => 'Entregado',
-    'cancelado' => 'Cancelado',
-  ];
-
-  $badge = function(string $st) {
-    return match($st) {
+  $badge = function(string $s) {
+    return match($s) {
       'pendiente' => 'badge-amber',
       'confirmado' => 'badge-sky',
       'preparando' => 'badge-indigo',
@@ -26,126 +17,157 @@
     };
   };
 
-  $currentStatus = $currentStatus ?? '';
-  $q = $q ?? '';
+  $label = fn(string $s) => match($s) {
+    'listo_retirar' => 'Listo para retirar',
+    default => ucfirst(str_replace('_',' ',$s)),
+  };
+
+  $tab = $tab ?? request('tab', 'activos');
+  $q   = $q ?? request('q', '');
+
+  $payLabel = fn(?string $m) => match($m) {
+    'local' => 'Pago en el local',
+    'mercado_pago' => 'Mercado Pago',
+    'transferencia' => 'Transferencia',
+    default => $m ? ucfirst(str_replace('_',' ',$m)) : '—',
+  };
+
+  $has = fn($name) => \Illuminate\Support\Facades\Route::has($name);
+
+  $tabUrl = function(string $t) use ($q) {
+    return route('orders.index', [
+      'tab' => $t,
+      'q'   => $q !== '' ? $q : null,
+    ]);
+  };
+
+  $ringFor = function(string $s) {
+    return match($s) {
+      'listo_retirar' => 'ring-2 ring-emerald-200',
+      'cancelado' => 'ring-2 ring-rose-200',
+      default => 'ring-1 ring-zinc-100',
+    };
+  };
 @endphp
 
 @section('content')
-<div class="space-y-6">
-  <div class="flex items-start justify-between gap-4 flex-wrap">
-    <div class="page-head mb-0">
-      <div class="page-title">Pedidos</div>
-      <div class="page-subtitle">Listado global de pedidos de la tienda.</div>
-    </div>
-
-    <div class="flex gap-2 flex-wrap">
-      <a class="btn-outline" href="{{ route('admin.dashboard') }}">Volver</a>
+  <div class="page-head">
+    <div>
+      <div class="page-title">Mis pedidos</div>
+      <div class="page-subtitle">Acá podés ver el estado y el detalle de cada pedido.</div>
     </div>
   </div>
 
-  <div class="card">
-    <div class="card-body">
-      <form method="GET" class="grid gap-3 sm:grid-cols-6">
-        <div class="sm:col-span-2">
-          <label>Buscar</label>
-          <input name="q" value="{{ $q }}" placeholder="ID, nombre, teléfono, email…" />
-        </div>
+  <div class="card mb-4">
+    <div class="card-body flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      {{-- Tabs --}}
+      <div class="flex flex-wrap gap-2">
+        <a href="{{ $tabUrl('activos') }}"
+           class="nav-pill {{ $tab === 'activos' ? 'nav-pill-active' : '' }}">
+          Activos
+        </a>
 
-        <div class="sm:col-span-2">
-          <label>Estado</label>
-          <select name="status">
-            <option value="">Todos los estados</option>
-            @foreach($statusMap as $k => $label)
-              <option value="{{ $k }}" @selected($currentStatus === $k)>{{ $label }}</option>
-            @endforeach
-          </select>
-        </div>
+        <a href="{{ $tabUrl('historial') }}"
+           class="nav-pill {{ $tab === 'historial' ? 'nav-pill-active' : '' }}">
+          Historial
+        </a>
+      </div>
 
-        <div class="sm:col-span-2 flex items-end gap-2">
-          <button class="btn-outline w-full" type="submit">Aplicar</button>
-        </div>
+      {{-- Search --}}
+      <form method="GET" action="{{ route('orders.index') }}" class="flex gap-2 w-full md:w-auto">
+        <input type="hidden" name="tab" value="{{ $tab }}">
+        <input name="q" value="{{ $q }}" placeholder="Buscar #pedido, nombre o teléfono…" class="w-full md:w-80">
+        <button class="btn-primary btn-sm shrink-0" type="submit">Buscar</button>
 
-        <div class="sm:col-span-6">
-          @if($currentStatus || $q !== '')
-            <a class="btn-ghost" href="{{ route('admin.orders.index') }}">Limpiar filtros</a>
-          @endif
-        </div>
+        @if($q)
+          <a class="btn-ghost btn-sm shrink-0" href="{{ route('orders.index', ['tab' => $tab]) }}">Limpiar</a>
+        @endif
       </form>
     </div>
   </div>
 
-  {{-- Mobile (cards) --}}
-  <div class="grid gap-3 md:hidden">
+  <div class="flex flex-col sm:flex-row gap-2 mb-5">
+    @if($has('store.index'))
+      <a href="{{ route('store.index') }}" class="btn-primary w-full sm:w-auto">Ir a la tienda</a>
+    @endif
+    @if($has('repairs.my.index'))
+      <a href="{{ route('repairs.my.index') }}" class="btn-outline w-full sm:w-auto">Mis reparaciones</a>
+    @endif
+  </div>
+
+  <div class="grid gap-3">
     @forelse($orders as $order)
-      <a href="{{ route('admin.orders.show', $order) }}" class="card hover:border-zinc-200 transition">
+      @php
+        $itemsCount = (int)($order->items_count ?? ($order->items?->count() ?? 0));
+        $preview = $order->items ? $order->items->take(2) : collect();
+        $more = max(0, $itemsCount - $preview->count());
+        $ring = $ringFor($order->status);
+      @endphp
+
+      <a href="{{ route('orders.show', $order) }}" class="card group hover:shadow-md transition {{ $ring }}">
         <div class="card-body">
           <div class="flex items-start justify-between gap-3">
-            <div>
-              <div class="text-xs text-zinc-500">Pedido</div>
-              <div class="font-black text-zinc-900">#{{ $order->id }}</div>
-              <div class="mt-1 text-sm text-zinc-700">
-                <span class="font-semibold">{{ $order->pickup_name ?: ($order->user?->name ?? '—') }}</span>
-                <span class="text-zinc-400">·</span>
-                <span class="text-zinc-600">{{ $order->pickup_phone ?: ($order->user?->email ?? '—') }}</span>
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <div class="font-black text-zinc-900">Pedido #{{ $order->id }}</div>
+                <span class="{{ $badge($order->status) }}">{{ $label($order->status) }}</span>
               </div>
-              <div class="mt-1 text-xs text-zinc-500">{{ $order->created_at?->format('d/m/Y H:i') }}</div>
+
+              <div class="mt-2 flex flex-wrap items-center gap-2 text-xs text-zinc-500">
+                <span>{{ $order->created_at?->format('d/m/Y H:i') }}</span>
+                <span>·</span>
+                <span>{{ $itemsCount }} ítem{{ $itemsCount === 1 ? '' : 's' }}</span>
+                <span>·</span>
+                <span class="badge-zinc">{{ $payLabel($order->payment_method) }}</span>
+              </div>
             </div>
 
-            <div class="flex flex-col items-end gap-2">
-              <span class="{{ $badge($order->status) }}">{{ $statusMap[$order->status] ?? $order->status }}</span>
-              <div class="text-lg font-black">{{ $money($order->total) }}</div>
+            <div class="text-right shrink-0">
+              <div class="text-xs text-zinc-500">Total</div>
+              <div class="font-black text-zinc-900">{{ $fmt($order->total) }}</div>
             </div>
           </div>
 
-          <div class="mt-3">
-            <span class="btn-ghost btn-sm">Ver detalle</span>
+          @if($preview->count())
+            <div class="mt-3 grid gap-1">
+              @foreach($preview as $it)
+                <div class="text-sm text-zinc-700 truncate">
+                  <span class="font-black text-zinc-900">{{ (int)$it->quantity }}x</span>
+                  {{ $it->product_name }}
+                </div>
+              @endforeach
+
+              @if($more > 0)
+                <div class="text-xs text-zinc-500">+{{ $more }} más</div>
+              @endif
+            </div>
+          @endif
+
+          <div class="mt-4 flex items-center justify-between">
+            <span class="text-xs text-zinc-500">Ver detalle</span>
+            <span class="text-zinc-400 group-hover:text-zinc-600 transition">›</span>
           </div>
         </div>
       </a>
     @empty
-      <div class="card"><div class="card-body text-sm text-zinc-600">No hay pedidos.</div></div>
+      <div class="card">
+        <div class="card-body">
+          <div class="font-black">Todavía no tenés pedidos.</div>
+          <div class="muted mt-1">Cuando compres algo, van a aparecer acá con su estado.</div>
+          <div class="mt-4">
+            @if($has('store.index'))
+              <a href="{{ route('store.index') }}" class="btn-primary">Ir a la tienda</a>
+            @endif
+          </div>
+        </div>
+      </div>
     @endforelse
   </div>
 
-  {{-- Desktop (table) --}}
-  <div class="card hidden md:block">
-    <div class="table-wrap">
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Pedido</th>
-            <th>Cliente</th>
-            <th>Fecha</th>
-            <th>Estado</th>
-            <th class="text-right">Total</th>
-            <th class="text-right">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          @forelse($orders as $order)
-            <tr>
-              <td class="font-black">#{{ $order->id }}</td>
-              <td>
-                <div class="font-semibold text-zinc-900">{{ $order->pickup_name ?: ($order->user?->name ?? '—') }}</div>
-                <div class="text-xs text-zinc-500">{{ $order->pickup_phone ?: ($order->user?->email ?? '—') }}</div>
-              </td>
-              <td class="text-zinc-700">{{ $order->created_at?->format('d/m/Y H:i') }}</td>
-              <td><span class="{{ $badge($order->status) }}">{{ $statusMap[$order->status] ?? $order->status }}</span></td>
-              <td class="text-right font-black">{{ $money($order->total) }}</td>
-              <td class="text-right">
-                <a class="btn-outline btn-sm" href="{{ route('admin.orders.show', $order) }}">Ver</a>
-              </td>
-            </tr>
-          @empty
-            <tr><td colspan="6" class="py-8 text-center text-zinc-500">No hay pedidos.</td></tr>
-          @endforelse
-        </tbody>
-      </table>
+  {{-- Paginación SOLO si $orders es paginator --}}
+  @if(is_object($orders) && method_exists($orders, 'links'))
+    <div class="mt-6">
+      {{ $orders->links() }}
     </div>
-  </div>
-
-  <div>
-    {{ $orders->links() }}
-  </div>
-</div>
+  @endif
 @endsection

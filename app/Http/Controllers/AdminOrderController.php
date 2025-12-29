@@ -108,8 +108,8 @@ class AdminOrderController extends Controller
 
         if ($from === $to) {
             return redirect()
-                ->route('admin.orders.show', $order->id)
-                ->with('success', 'El pedido ya estaba en ese estado.');
+              ->back()
+             ->with('success', 'El pedido ya estaba en ese estado.');
         }
 
         $order->status = $to;
@@ -125,8 +125,8 @@ class AdminOrderController extends Controller
         ]);
 
         return redirect()
-            ->route('admin.orders.show', $order->id)
-            ->with('success', 'Estado del pedido actualizado.');
+            ->back()
+            ->with('success', 'Estado actualizado.');
     }
 
     /**
