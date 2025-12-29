@@ -27,7 +27,7 @@
   };
 
   $tabs = [
-    ''             => 'Todos',
+    ''              => 'Todos',
     'pendiente'     => 'Pendiente',
     'confirmado'    => 'Confirmado',
     'preparando'    => 'Preparando',
@@ -41,7 +41,8 @@
 @endphp
 
 @section('content')
-<div class="container-page py-6">
+<div class="container-page py-6"
+     data-admin-orders-filter="{{ $currentStatus === '' ? 'all' : $currentStatus }}">
   <div class="page-head">
     <div class="min-w-0">
       <div class="page-title">Pedidos (Admin)</div>
@@ -81,16 +82,20 @@
         $count = ($key === '')
           ? ($totalCount ?? 0)
           : (int) (($statusCounts[$key] ?? 0));
+
+        $countKey = $key === '' ? 'all' : (string)$key;
       @endphp
 
       <a href="{{ $href }}" class="nav-pill {{ $isActive ? 'nav-pill-active' : '' }}">
         <span>{{ $label }}</span>
-        <span class="inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-black
-                    ring-1 ring-zinc-200 bg-white/70 text-zinc-700">
+        <span
+          class="inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-black
+                ring-1 ring-zinc-200 bg-white/70 text-zinc-700"
+          data-admin-orders-count="{{ $countKey }}"
+        >
           {{ $count }}
         </span>
       </a>
-
     @endforeach
   </div>
 
@@ -110,7 +115,8 @@
   @endif
 
   {{-- List --}}
-  <div class="mt-4 grid gap-3">
+  <div class="mt-4 grid gap-3" data-admin-orders-list>
+
     @forelse($orders as $order)
       @php
         $customerName  = $order->pickup_name ?: ($order->user?->name ?? '—');
@@ -252,9 +258,8 @@
                   @csrf
                 </form>
               </div>
-
-
             </div>
+
           </div>
         </div>
       </div>

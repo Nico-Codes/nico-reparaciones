@@ -4,8 +4,6 @@ import '../css/app.css';
 window.NR_APP_VERSION = 'admin-status-quick-v1';
 console.log('[NR] app.js cargado:', window.NR_APP_VERSION);
 
-
-
 /**
  * NicoReparaciones Web
  * - Sidebar móvil (hamburguesa)
@@ -274,11 +272,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // ----------------------------
   const isAddToCartForm = (form) => {
     if (!(form instanceof HTMLFormElement)) return false;
-
-    // Marca opcional futura
     if (form.dataset.addToCart === '1') return true;
 
-    // Solo forms que realmente agregan (evita capturar actualizar/eliminar/vaciar)
     const action = (form.getAttribute('action') || '').toLowerCase();
     return action.includes('/carrito/agregar') || action.includes('/cart/add');
   };
@@ -352,7 +347,6 @@ document.addEventListener('DOMContentLoaded', () => {
     true
   );
 
-  // Compatibilidad: toast por session renderizado por backend
   const serverOverlay = $('#cartAddedOverlay');
   if (serverOverlay?.dataset?.cartAdded === '1') {
     afterPaint(() => openToast($('#cartAddedName')?.textContent?.trim() || 'Producto'));
@@ -382,7 +376,7 @@ document.addEventListener('DOMContentLoaded', () => {
       sumBody.style.display = 'block';
       sumBtn.setAttribute('aria-expanded', 'true');
     } else {
-      setSummaryOpen(false); // móvil cerrado por defecto
+      setSummaryOpen(false);
     }
   };
 
@@ -406,7 +400,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const btn = $('[data-checkout-submit]', checkoutForm);
       if (!btn) return;
 
-      // si ya está “busy”, cancelamos
       if (btn.disabled || btn.getAttribute('aria-busy') === 'true') {
         e.preventDefault();
         return;
@@ -557,7 +550,6 @@ document.addEventListener('DOMContentLoaded', () => {
     showMiniToast(ok ? (btn.getAttribute('data-copy-toast') || 'Copiado ✅') : 'No se pudo copiar');
   });
 
-
   const setNavbarCartCount = (count) => {
     const cartLink = document.querySelector('a[aria-label="Carrito"]');
     if (!cartLink) return;
@@ -574,7 +566,6 @@ document.addEventListener('DOMContentLoaded', () => {
       badge = document.createElement('span');
       badge.setAttribute('data-cart-count', '1');
 
-      // estilos inline (no dependemos de clases purgadas)
       badge.style.position = 'absolute';
       badge.style.top = '-0.5rem';
       badge.style.right = '-0.5rem';
@@ -689,7 +680,6 @@ document.addEventListener('DOMContentLoaded', () => {
           }
 
         } catch (err) {
-          // Fallback seguro: si algo falla, usamos el comportamiento clásico con reload
           if (btn) btn.disabled = false;
           form.submit();
         }
@@ -700,11 +690,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (clearForm) {
       const btn = clearForm.querySelector('button[type="submit"]');
 
-
       clearForm.addEventListener('submit', async (ev) => {
         ev.preventDefault();
-
-
 
         if (btn) btn.disabled = true;
 
@@ -722,7 +709,6 @@ document.addEventListener('DOMContentLoaded', () => {
           const data = await res.json();
           if (!data?.ok) throw new Error('bad json');
 
-          // Animación rápida: fade de items + resumen
           const itemsWrap = cartGrid.querySelector('[data-cart-items-wrap]');
           const summaryWrap = cartGrid.querySelector('[data-cart-summary-wrap]');
 
@@ -742,7 +728,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
           await Promise.all([fadeOut(itemsWrap), fadeOut(summaryWrap)]);
 
-          // Totales + navbar
           const itemsCountEl = document.querySelector('[data-cart-items-count]');
           const totalEl = document.querySelector('[data-cart-total]');
 
@@ -756,17 +741,14 @@ document.addEventListener('DOMContentLoaded', () => {
           renderEmptyCart();
         } catch (err) {
           if (btn) btn.disabled = false;
-          // fallback clásico
           clearForm.submit();
         }
       });
     }
-
   }
 
   // ---------------------------------------------
   // Carrito: control de cantidad (− / input / +)
-  //  - auto-submit al tocar botones o tipear
   // ---------------------------------------------
   document.querySelectorAll('form[data-cart-qty]').forEach((form) => {
     const input = form.querySelector('[data-qty-input]');
@@ -776,11 +758,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const clamp = (n) => Math.max(1, Math.min(999, n));
     const getVal = () => clamp(parseInt(input.value, 10) || 1);
-    const setVal = (n) => {
-      input.value = String(clamp(n));
-    };
+    const setVal = (n) => { input.value = String(clamp(n)); };
 
-    const postFormJson = async (form) => {
+    const postFormJsonQty = async (form) => {
       const res = await fetch(form.action, {
         method: 'POST',
         headers: {
@@ -800,24 +780,20 @@ document.addEventListener('DOMContentLoaded', () => {
       if (inFlight) return;
       inFlight = true;
 
-      // Intento AJAX primero (sin recargar)
       try {
-        const data = await postFormJson(form);
+        const data = await postFormJsonQty(form);
         if (!data?.ok) throw new Error('bad json');
 
-        // Ajustar input si server clampleó por stock/min
         if (typeof data.quantity !== 'undefined') {
           input.value = String(data.quantity);
         }
 
-        // Subtotal de la línea (si existe)
         const card = form.closest('[data-cart-item]');
         const lineEl = card?.querySelector('[data-line-subtotal]');
         if (lineEl && typeof data.lineSubtotal !== 'undefined') {
           lineEl.textContent = formatARS(data.lineSubtotal);
         }
 
-        // Total + items count
         const itemsCountEl = document.querySelector('[data-cart-items-count]');
         const totalEl = document.querySelector('[data-cart-total]');
 
@@ -829,14 +805,12 @@ document.addEventListener('DOMContentLoaded', () => {
           totalEl.textContent = formatARS(data.total);
         }
 
-        // Navbar badge
         if (typeof data.cartCount !== 'undefined') {
           setNavbarCartCount(data.cartCount);
         }
 
         showMiniToast(data.message || 'Carrito actualizado.');
       } catch (e) {
-        // Fallback clásico (recarga) si falla AJAX
         if (typeof form.requestSubmit === 'function') form.requestSubmit();
         else form.submit();
       } finally {
@@ -868,12 +842,9 @@ document.addEventListener('DOMContentLoaded', () => {
     input.addEventListener('blur', () => {
       setVal(getVal());
     });
-
-    
-
   });
 
-    // ---------------------------------------------
+  // ---------------------------------------------
   // Admin pedidos: cambio rápido de estado + WhatsApp opcional
   // ---------------------------------------------
   const adminBadgeClass = (st) => {
@@ -990,12 +961,93 @@ document.addEventListener('DOMContentLoaded', () => {
     return data;
   };
 
-const setValueOrText = (el, value) => {
-  if (!el) return;
-  const v = String(value ?? '');
-  if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) el.value = v;
-  else el.textContent = v;
-};
+  const setValueOrText = (el, value) => {
+    if (!el) return;
+    const v = String(value ?? '');
+    if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) el.value = v;
+    else el.textContent = v;
+  };
+
+  const getAdminOrdersFilter = () => {
+    // 1) Preferimos lo que viene del Blade (más confiable)
+    const root = document.querySelector('[data-admin-orders-filter]');
+    const domVal = (root?.getAttribute('data-admin-orders-filter') || '').trim();
+    if (domVal && domVal !== 'all') return domVal;
+
+    // 2) Fallback por URL
+    const params = new URLSearchParams(window.location.search);
+    const qVal = (params.get('status') || '').trim();
+    return qVal && qVal !== 'all' ? qVal : '';
+  };
+
+  const bumpAdminOrdersTab = (st, delta) => {
+    const key = String(st || '').trim();
+    if (!key) return;
+
+    const el = document.querySelector(`[data-admin-orders-count="${key}"]`);
+    if (!el) return;
+
+    const curr = parseInt((el.textContent || '0').trim(), 10) || 0;
+    const next = Math.max(0, curr + (parseInt(delta, 10) || 0));
+    el.textContent = String(next);
+  };
+
+  const syncStatusOptions = (card, currentStatus) => {
+    card.querySelectorAll('[data-admin-order-set-status]').forEach((b) => {
+      const isCur = b.getAttribute('data-status') === currentStatus;
+
+      b.classList.toggle('bg-zinc-100', isCur);
+      b.disabled = isCur;
+      b.classList.toggle('opacity-60', isCur);
+      b.classList.toggle('cursor-not-allowed', isCur);
+    });
+  };
+
+  const ensureAdminOrdersEmpty = () => {
+    const list = document.querySelector('[data-admin-orders-list]');
+    if (!list) return;
+
+    if (list.querySelector('[data-admin-order-card]')) return;
+
+    list.innerHTML = `
+      <div class="card">
+        <div class="card-body">
+          <div class="font-black text-zinc-900">No hay pedidos</div>
+          <div class="muted mt-1">Probá cambiar el estado o ajustar la búsqueda.</div>
+        </div>
+      </div>
+    `;
+  };
+
+  // Animación "más visible" para admin (fade + slide + collapse)
+  const animateAdminOut = (el) =>
+    new Promise((resolve) => {
+      if (!el) return resolve();
+
+      el.style.overflow = 'hidden';
+      el.style.willChange = 'height, opacity, transform';
+
+      const h = el.offsetHeight;
+      el.style.height = `${h}px`;
+      el.style.opacity = '1';
+      el.style.transform = 'translateY(0)';
+      el.style.transition = 'height 260ms ease, opacity 220ms ease, transform 220ms ease';
+
+      requestAnimationFrame(() => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(8px)';
+        el.style.height = '0px';
+      });
+
+      el.addEventListener(
+        'transitionend',
+        () => {
+          el.remove();
+          resolve();
+        },
+        { once: true }
+      );
+    });
 
   document.querySelectorAll('[data-admin-order-card]').forEach((card) => {
     const statusForm = card.querySelector('form[data-admin-order-status-form]');
@@ -1034,11 +1086,17 @@ const setValueOrText = (el, value) => {
         const next = btn.getAttribute('data-status');
         if (!next || !statusForm) return;
 
-        // cerrar dropdown
+        if (btn.disabled) return;
+
+        if (card.dataset.busy === '1') return;
+        card.dataset.busy = '1';
+        if (menuBtn) menuBtn.disabled = true;
+
         menu?.classList.add('hidden');
         menuBtn?.setAttribute('aria-expanded', 'false');
 
-        // set hidden inputs
+        const prevSt = String(card.dataset.status || '').trim();
+
         const stInput = statusForm.querySelector('input[name="status"]');
         const cmInput = statusForm.querySelector('input[name="comment"]');
         if (stInput) stInput.value = next;
@@ -1050,24 +1108,29 @@ const setValueOrText = (el, value) => {
           const newSt = data.status || next;
           card.dataset.status = newSt;
 
+          // contadores
+          if (prevSt && newSt && prevSt !== newSt) {
+            bumpAdminOrdersTab(prevSt, -1);
+            bumpAdminOrdersTab(newSt, +1);
+          }
+
+          // dropdown: activo + disable current
+          syncStatusOptions(card, newSt);
+
           // UI: badges (puede haber 1 o más en la vista)
           badgeEls.forEach((el) => {
             setValueOrText(el, data.status_label || newSt);
             el.className = adminBadgeClass(newSt);
           });
 
-          // Sync del select clásico (si existe en /admin/pedidos/{id})
-          const statusSelect = card.querySelector('select[name="status"]');
-          if (statusSelect) statusSelect.value = newSt;
-
-          // marcar activo en el dropdown
+          // marcar activo visual
           card.querySelectorAll('[data-admin-order-set-status]').forEach((b) => {
             b.classList.toggle('bg-zinc-100', b.getAttribute('data-status') === newSt);
           });
 
           showMiniToast('Estado actualizado ✅');
 
-          // WhatsApp: link + mensaje (vista detalle)
+          // WhatsApp (si backend devuelve wa.url/message)
           const waUrl = data?.wa?.url || null;
           const waMsg = data?.wa?.message || '';
 
@@ -1085,7 +1148,7 @@ const setValueOrText = (el, value) => {
             waMsgEls.forEach((el) => setValueOrText(el, waMsg));
           }
 
-          // Confirmación opcional (como en el index)
+          // Si hay WA, confirmamos si notificar (como ya venías haciendo)
           if (waUrl) {
             const confirmUI = ensureAdminConfirm();
             const ok = await confirmUI.open({
@@ -1108,13 +1171,24 @@ const setValueOrText = (el, value) => {
               }
             }
           }
+
+          // ✅ Remover del listado SOLO AL FINAL (para que se vea la animación)
+          const filter = getAdminOrdersFilter();
+          const shouldRemoveFromList = (filter && prevSt === filter && newSt !== filter);
+
+          if (shouldRemoveFromList) {
+            await animateAdminOut(card);
+            ensureAdminOrdersEmpty();
+            return;
+          }
+
         } catch (_) {
-          statusForm.submit(); // fallback recarga
+          statusForm.submit();
+        } finally {
+          card.dataset.busy = '0';
+          if (menuBtn) menuBtn.disabled = false;
         }
       });
     });
   });
-
-
-
 });
