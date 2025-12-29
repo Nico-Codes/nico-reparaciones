@@ -990,15 +990,42 @@ document.addEventListener('DOMContentLoaded', () => {
     return data;
   };
 
+const setValueOrText = (el, value) => {
+  if (!el) return;
+  const v = String(value ?? '');
+  if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) el.value = v;
+  else el.textContent = v;
+};
+
   document.querySelectorAll('[data-admin-order-card]').forEach((card) => {
     const statusForm = card.querySelector('form[data-admin-order-status-form]');
     const waForm = card.querySelector('form[data-admin-order-wa-form]');
-    const badgeEl = card.querySelector('[data-admin-order-status-badge]');
+    const badgeEls = card.querySelectorAll('[data-admin-order-status-badge]');
     const waLink = card.querySelector('[data-admin-order-wa-link]');
+    const waOpenBtn = card.querySelector('[data-admin-order-wa-open]');
+    const waMsgEls = card.querySelectorAll('[data-admin-order-wa-message]');
 
     const menuBtn = card.querySelector('[data-admin-order-status-btn]');
     const menuId = menuBtn?.getAttribute('data-menu');
     const menu = menuId ? document.getElementById(menuId) : null;
+
+    // Botón WhatsApp en el detalle: abrir WA y registrar log (sin confirm)
+    if (waOpenBtn && waForm) {
+      waOpenBtn.addEventListener('click', async (e) => {
+        const href = waLink?.getAttribute('href') || waOpenBtn.getAttribute('href');
+        if (!href) return;
+
+        e.preventDefault();
+        window.open(href, '_blank', 'noopener');
+
+        try {
+          await postFormJson(waForm);
+          showMiniToast('Log WhatsApp registrado ✅');
+        } catch (_) {
+          showMiniToast('No se pudo registrar el log ⚠️');
+        }
+      });
+    }
 
     card.querySelectorAll('[data-admin-order-set-status]').forEach((btn) => {
       btn.addEventListener('click', async (e) => {
@@ -1020,14 +1047,18 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
           const data = await postFormJson(statusForm);
 
-          // UI: badge + dataset
           const newSt = data.status || next;
           card.dataset.status = newSt;
 
-          if (badgeEl) {
-            badgeEl.textContent = data.status_label || newSt;
-            badgeEl.className = adminBadgeClass(newSt);
-          }
+          // UI: badges (puede haber 1 o más en la vista)
+          badgeEls.forEach((el) => {
+            setValueOrText(el, data.status_label || newSt);
+            el.className = adminBadgeClass(newSt);
+          });
+
+          // Sync del select clásico (si existe en /admin/pedidos/{id})
+          const statusSelect = card.querySelector('select[name="status"]');
+          if (statusSelect) statusSelect.value = newSt;
 
           // marcar activo en el dropdown
           card.querySelectorAll('[data-admin-order-set-status]').forEach((b) => {
@@ -1036,10 +1067,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
           showMiniToast('Estado actualizado ✅');
 
-          // Si backend devolvió wa.url, actualizamos el botón WA y preguntamos si notificar
+          // WhatsApp: link + mensaje (vista detalle)
           const waUrl = data?.wa?.url || null;
-          if (waLink && waUrl) waLink.href = waUrl;
+          const waMsg = data?.wa?.message || '';
 
+          if (waLink) {
+            if (waUrl) {
+              waLink.href = waUrl;
+              waLink.classList.remove('pointer-events-none', 'opacity-50');
+            } else {
+              waLink.removeAttribute('href');
+              waLink.classList.add('pointer-events-none', 'opacity-50');
+            }
+          }
+
+          if (waMsgEls?.length) {
+            waMsgEls.forEach((el) => setValueOrText(el, waMsg));
+          }
+
+          // Confirmación opcional (como en el index)
           if (waUrl) {
             const confirmUI = ensureAdminConfirm();
             const ok = await confirmUI.open({
@@ -1052,7 +1098,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (ok) {
               window.open(waUrl, '_blank', 'noopener');
 
-              // log (si hay form)
               if (waForm) {
                 try {
                   await postFormJson(waForm);
@@ -1064,12 +1109,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
           }
         } catch (_) {
-          // fallback: submit clásico (recarga)
-          statusForm.submit();
+          statusForm.submit(); // fallback recarga
         }
       });
     });
   });
+
 
 
 });

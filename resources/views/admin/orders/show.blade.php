@@ -35,7 +35,11 @@
 @endphp
 
 @section('content')
-<div class="container-page py-6">
+<div class="container-page py-6"
+     data-admin-order-card
+     data-order-id="{{ $order->id }}"
+     data-status="{{ (string)($order->status ?? 'pendiente') }}">
+
   <div class="flex items-start justify-between gap-4 mb-4">
     <div class="min-w-0">
       <div class="flex items-center gap-2">
@@ -54,11 +58,58 @@
 
     <div class="shrink-0 text-right">
       <div class="inline-flex items-center gap-2 justify-end">
-        <span class="{{ $badge($order->status) }}">{{ $statusMap[$order->status] ?? $order->status }}</span>
+        <span class="{{ $badge($order->status) }}" data-admin-order-status-badge>
+          {{ $statusMap[$order->status] ?? $order->status }}
+        </span>
+
+        {{-- Botón fijo Estado + dropdown (cambio rápido) --}}
+        <div class="dropdown">
+          <button
+            type="button"
+            class="btn-primary btn-sm"
+            data-menu="orderStatusMenu-{{ $order->id }}"
+            data-admin-order-status-btn
+          >
+            Estado
+          </button>
+
+          <div id="orderStatusMenu-{{ $order->id }}" class="dropdown-menu hidden">
+            @foreach($statusMap as $k => $label)
+              <button
+                type="button"
+                class="dropdown-item {{ $k === (string)($order->status ?? 'pendiente') ? 'bg-zinc-100' : '' }}"
+                data-admin-order-set-status
+                data-status="{{ $k }}"
+              >
+                {{ $label }}
+              </button>
+            @endforeach
+          </div>
+        </div>
+
+        {{-- Form oculto: updateStatus (AJAX) --}}
+        <form method="POST"
+              action="{{ route('admin.orders.updateStatus', $order->id) }}"
+              class="hidden"
+              data-admin-order-status-form>
+          @csrf
+          <input type="hidden" name="status" value="">
+          <input type="hidden" name="comment" value="">
+        </form>
+
+        {{-- Form oculto: whatsapp log (AJAX) --}}
+        <form method="POST"
+              action="{{ route('admin.orders.whatsappLogAjax', $order->id) }}"
+              class="hidden"
+              data-admin-order-wa-form>
+          @csrf
+        </form>
       </div>
+
       <div class="mt-1 text-sm text-zinc-500">Total</div>
       <div class="text-xl font-black text-zinc-900">{{ $money($order->total) }}</div>
     </div>
+
   </div>
 
   @if (session('success'))
@@ -126,7 +177,10 @@
       <div class="card">
         <div class="card-head">
           <div class="font-black">Actualizar estado</div>
-          <span class="{{ $badge($order->status) }}">{{ $statusMap[$order->status] ?? $order->status }}</span>
+          <span class="{{ $badge($order->status) }}" data-admin-order-status-badge>
+            {{ $statusMap[$order->status] ?? $order->status }}
+          </span>
+
         </div>
         <div class="card-body">
           <form method="POST" action="{{ route('admin.orders.updateStatus', $order->id) }}" class="space-y-3">
@@ -172,12 +226,14 @@
               target="_blank"
               rel="noopener"
               class="btn-outline w-full"
-              data-wa-ajax="{{ route('admin.orders.whatsappLogAjax', $order->id) }}"
+              data-admin-order-wa-link
+              data-admin-order-wa-open
             >
               Abrir WhatsApp (y registrar log)
             </a>
+
               {{-- texto oculto para copiar --}}
-            <textarea id="nrAdminOrderWaText" class="hidden" readonly>{{ $waMessage }}</textarea>
+            <textarea id="nrAdminOrderWaText" class="hidden" readonly data-admin-order-wa-message>{{ $waMessage }}</textarea>
 
             <button type="button"
                     class="btn-ghost w-full mt-2"
@@ -190,7 +246,7 @@
               <summary class="text-xs font-black text-zinc-600 cursor-pointer select-none">
                 Ver mensaje
               </summary>
-              <textarea readonly rows="8" class="mt-2">{{ $waMessage }}</textarea>
+              <textarea readonly rows="8" class="mt-2" data-admin-order-wa-message>{{ $waMessage }}</textarea>
             </details>
 
             <div class="mt-3 text-xs text-zinc-500">
