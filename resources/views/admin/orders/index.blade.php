@@ -121,13 +121,13 @@
         $stLabel = $statusMap[$st] ?? $st;
       @endphp
 
-      <div class="card">
+      <div class="card" data-admin-order-card data-order-id="{{ $order->id }}" data-status="{{ $st }}">
         <div class="card-body">
           <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
             <div class="min-w-0">
               <div class="flex flex-wrap items-center gap-2">
                 <div class="font-black text-zinc-900">Pedido #{{ $order->id }}</div>
-                <span class="{{ $badge($st) }}">{{ $stLabel }}</span>
+                <span class="{{ $badge($st) }}" data-admin-order-status-badge>{{ $stLabel }}</span>
                 @if($order->payment_method)
                   <span class="badge-zinc">{{ $order->payment_method }}</span>
                 @endif
@@ -203,49 +203,56 @@
                     target="_blank"
                     rel="noopener"
                     title="Enviar WhatsApp"
+                    data-admin-order-wa-link
                   >
                     WhatsApp
                   </a>
                 @endif
 
-                {{-- Acciones rápidas (1 click) según estado --}}
-                @if($st === 'pendiente')
-                  <form method="POST" action="{{ route('admin.orders.updateStatus', $order->id) }}">
-                    @csrf
-                    <input type="hidden" name="status" value="confirmado">
-                    <input type="hidden" name="comment" value="">
-                    <button class="btn-primary btn-sm" type="submit">Confirmar</button>
-                  </form>
+                {{-- Botón fijo Estado + dropdown --}}
+                <div class="dropdown">
+                  <button
+                    type="button"
+                    class="btn-primary btn-sm"
+                    data-menu="orderStatusMenu-{{ $order->id }}"
+                    data-admin-order-status-btn
+                  >
+                    Estado
+                  </button>
 
-                  <form method="POST" action="{{ route('admin.orders.updateStatus', $order->id) }}">
-                    @csrf
-                    <input type="hidden" name="status" value="cancelado">
-                    <input type="hidden" name="comment" value="">
-                    <button class="btn-outline btn-sm" type="submit">Cancelar</button>
-                  </form>
-                @elseif($st === 'confirmado')
-                  <form method="POST" action="{{ route('admin.orders.updateStatus', $order->id) }}">
-                    @csrf
-                    <input type="hidden" name="status" value="preparando">
-                    <input type="hidden" name="comment" value="">
-                    <button class="btn-primary btn-sm" type="submit">Preparando</button>
-                  </form>
-                @elseif($st === 'preparando')
-                  <form method="POST" action="{{ route('admin.orders.updateStatus', $order->id) }}">
-                    @csrf
-                    <input type="hidden" name="status" value="listo_retirar">
-                    <input type="hidden" name="comment" value="">
-                    <button class="btn-primary btn-sm" type="submit">Listo</button>
-                  </form>
-                @elseif($st === 'listo_retirar')
-                  <form method="POST" action="{{ route('admin.orders.updateStatus', $order->id) }}">
-                    @csrf
-                    <input type="hidden" name="status" value="entregado">
-                    <input type="hidden" name="comment" value="">
-                    <button class="btn-primary btn-sm" type="submit">Entregado</button>
-                  </form>
-                @endif
+                  <div id="orderStatusMenu-{{ $order->id }}" class="dropdown-menu hidden">
+                    @foreach($statusMap as $k => $label)
+                      <button
+                        type="button"
+                        class="dropdown-item {{ $k === $st ? 'bg-zinc-100' : '' }}"
+                        data-admin-order-set-status
+                        data-status="{{ $k }}"
+                      >
+                        {{ $label }}
+                      </button>
+                    @endforeach
+                  </div>
+                </div>
+
+                {{-- Form oculto: updateStatus (AJAX) --}}
+                <form method="POST"
+                      action="{{ route('admin.orders.updateStatus', $order->id) }}"
+                      class="hidden"
+                      data-admin-order-status-form>
+                  @csrf
+                  <input type="hidden" name="status" value="">
+                  <input type="hidden" name="comment" value="">
+                </form>
+
+                {{-- Form oculto: whatsapp log (AJAX) --}}
+                <form method="POST"
+                      action="{{ route('admin.orders.whatsappLogAjax', $order->id) }}"
+                      class="hidden"
+                      data-admin-order-wa-form>
+                  @csrf
+                </form>
               </div>
+
 
             </div>
           </div>

@@ -1,6 +1,11 @@
 import './bootstrap';
 import '../css/app.css';
 
+window.NR_APP_VERSION = 'admin-status-quick-v1';
+console.log('[NR] app.js cargado:', window.NR_APP_VERSION);
+
+
+
 /**
  * NicoReparaciones Web
  * - Sidebar móvil (hamburguesa)
@@ -863,5 +868,208 @@ document.addEventListener('DOMContentLoaded', () => {
     input.addEventListener('blur', () => {
       setVal(getVal());
     });
+
+    
+
   });
+
+    // ---------------------------------------------
+  // Admin pedidos: cambio rápido de estado + WhatsApp opcional
+  // ---------------------------------------------
+  const adminBadgeClass = (st) => {
+    switch (st) {
+      case 'pendiente': return 'badge-amber';
+      case 'confirmado': return 'badge-sky';
+      case 'preparando': return 'badge-indigo';
+      case 'listo_retirar': return 'badge-emerald';
+      case 'entregado': return 'badge-zinc';
+      case 'cancelado': return 'badge-rose';
+      default: return 'badge-zinc';
+    }
+  };
+
+  // Bottom-sheet confirm (reutiliza el estilo del toast)
+  let adminConfirm = null;
+
+  const ensureAdminConfirm = () => {
+    if (adminConfirm) return adminConfirm;
+
+    const html = `
+      <div id="nrAdminConfirmOverlay"
+           class="fixed inset-0 z-[70] opacity-0 pointer-events-none transition-opacity duration-300 ease-out">
+        <div class="absolute inset-0 bg-zinc-950/40" data-admin-confirm-cancel></div>
+
+        <div id="nrAdminConfirmSheet"
+             class="absolute bottom-0 left-0 right-0 mx-auto w-full max-w-lg translate-y-full transform transition-transform duration-300 ease-out will-change-transform">
+          <div class="rounded-t-3xl bg-white p-4 shadow-2xl">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <div class="font-black text-zinc-900" id="nrAdminConfirmTitle">¿Notificar?</div>
+                <div class="text-sm text-zinc-600 mt-1" id="nrAdminConfirmMsg">—</div>
+              </div>
+              <button type="button" class="icon-btn" data-admin-confirm-cancel aria-label="Cerrar">✕</button>
+            </div>
+
+            <div class="mt-4 flex gap-2">
+              <button type="button" class="btn-primary flex-1 justify-center" data-admin-confirm-ok>
+                Abrir WhatsApp
+              </button>
+              <button type="button" class="btn-outline flex-1 justify-center" data-admin-confirm-cancel>
+                Ahora no
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', html);
+
+    const overlay = document.getElementById('nrAdminConfirmOverlay');
+    const sheet = document.getElementById('nrAdminConfirmSheet');
+    const titleEl = document.getElementById('nrAdminConfirmTitle');
+    const msgEl = document.getElementById('nrAdminConfirmMsg');
+    const okBtn = overlay.querySelector('[data-admin-confirm-ok]');
+
+    let resolver = null;
+
+    const close = (val) => {
+      overlay.classList.add('pointer-events-none', 'opacity-0');
+      overlay.classList.remove('pointer-events-auto', 'opacity-100');
+      sheet.classList.add('translate-y-full');
+
+      unlockScroll('admin-confirm');
+
+      const r = resolver;
+      resolver = null;
+      if (typeof r === 'function') r(val);
+    };
+
+    overlay.querySelectorAll('[data-admin-confirm-cancel]').forEach((el) => {
+      el.addEventListener('click', (e) => { e.preventDefault(); close(false); });
+    });
+
+    okBtn.addEventListener('click', (e) => { e.preventDefault(); close(true); });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && resolver) close(false);
+    });
+
+    adminConfirm = {
+      open: ({ title, message, okText, cancelText }) =>
+        new Promise((resolve) => {
+          resolver = resolve;
+
+          if (titleEl) titleEl.textContent = title || '¿Notificar por WhatsApp?';
+          if (msgEl) msgEl.textContent = message || '';
+          if (okText) okBtn.textContent = okText;
+
+          const cancelBtn = overlay.querySelector('button[data-admin-confirm-cancel].btn-outline');
+          if (cancelBtn && cancelText) cancelBtn.textContent = cancelText;
+
+          lockScroll('admin-confirm');
+
+          overlay.classList.remove('pointer-events-none', 'opacity-0');
+          overlay.classList.add('pointer-events-auto', 'opacity-100');
+
+          afterPaint(() => sheet.classList.remove('translate-y-full'));
+        }),
+    };
+
+    return adminConfirm;
+  };
+
+  const postFormJson = async (form) => {
+    const res = await fetch(form.action, {
+      method: 'POST',
+      headers: { 'X-Requested-With': 'XMLHttpRequest', Accept: 'application/json' },
+      body: new FormData(form),
+    });
+    if (!res.ok) throw new Error('bad response');
+    const data = await res.json();
+    if (!data?.ok) throw new Error('bad json');
+    return data;
+  };
+
+  document.querySelectorAll('[data-admin-order-card]').forEach((card) => {
+    const statusForm = card.querySelector('form[data-admin-order-status-form]');
+    const waForm = card.querySelector('form[data-admin-order-wa-form]');
+    const badgeEl = card.querySelector('[data-admin-order-status-badge]');
+    const waLink = card.querySelector('[data-admin-order-wa-link]');
+
+    const menuBtn = card.querySelector('[data-admin-order-status-btn]');
+    const menuId = menuBtn?.getAttribute('data-menu');
+    const menu = menuId ? document.getElementById(menuId) : null;
+
+    card.querySelectorAll('[data-admin-order-set-status]').forEach((btn) => {
+      btn.addEventListener('click', async (e) => {
+        e.preventDefault();
+
+        const next = btn.getAttribute('data-status');
+        if (!next || !statusForm) return;
+
+        // cerrar dropdown
+        menu?.classList.add('hidden');
+        menuBtn?.setAttribute('aria-expanded', 'false');
+
+        // set hidden inputs
+        const stInput = statusForm.querySelector('input[name="status"]');
+        const cmInput = statusForm.querySelector('input[name="comment"]');
+        if (stInput) stInput.value = next;
+        if (cmInput) cmInput.value = '';
+
+        try {
+          const data = await postFormJson(statusForm);
+
+          // UI: badge + dataset
+          const newSt = data.status || next;
+          card.dataset.status = newSt;
+
+          if (badgeEl) {
+            badgeEl.textContent = data.status_label || newSt;
+            badgeEl.className = adminBadgeClass(newSt);
+          }
+
+          // marcar activo en el dropdown
+          card.querySelectorAll('[data-admin-order-set-status]').forEach((b) => {
+            b.classList.toggle('bg-zinc-100', b.getAttribute('data-status') === newSt);
+          });
+
+          showMiniToast('Estado actualizado ✅');
+
+          // Si backend devolvió wa.url, actualizamos el botón WA y preguntamos si notificar
+          const waUrl = data?.wa?.url || null;
+          if (waLink && waUrl) waLink.href = waUrl;
+
+          if (waUrl) {
+            const confirmUI = ensureAdminConfirm();
+            const ok = await confirmUI.open({
+              title: '¿Notificar por WhatsApp?',
+              message: `Pedido #${data.order_id} → ${data.status_label || newSt}`,
+              okText: 'Abrir WhatsApp',
+              cancelText: 'Ahora no',
+            });
+
+            if (ok) {
+              window.open(waUrl, '_blank', 'noopener');
+
+              // log (si hay form)
+              if (waForm) {
+                try {
+                  await postFormJson(waForm);
+                  showMiniToast('Log WhatsApp registrado ✅');
+                } catch (_) {
+                  showMiniToast('No se pudo registrar el log ⚠️');
+                }
+              }
+            }
+          }
+        } catch (_) {
+          // fallback: submit clásico (recarga)
+          statusForm.submit();
+        }
+      });
+    });
+  });
+
+
 });

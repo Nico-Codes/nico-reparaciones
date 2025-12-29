@@ -119,28 +119,73 @@ class AdminOrderController extends Controller
         $from = (string) $order->status;
         $to = (string) $data['status'];
 
+        $isAjax = $request->expectsJson()
+            || $request->wantsJson()
+            || $request->header('X-Requested-With') === 'XMLHttpRequest';
+
         if ($from === $to) {
+            if ($isAjax) {
+                return response()->json([
+                    'ok' => true,
+                    'changed' => false,
+                    'message' => 'El pedido ya estaba en ese estado.',
+                    'order_id' => $order->id,
+                    'status' => $from,
+                    'status_label' => \App\Models\Order::STATUSES[$from] ?? $from,
+                ]);
+            }
+
             return redirect()
-              ->back()
-             ->with('success', 'El pedido ya estaba en ese estado.');
+                ->back()
+                ->with('success', 'El pedido ya estaba en ese estado.');
         }
 
         $order->status = $to;
         $order->save();
 
-        OrderStatusHistory::create([
+        \App\Models\OrderStatusHistory::create([
             'order_id' => $order->id,
             'from_status' => $from,
             'to_status' => $to,
-            'changed_by' => Auth::id(),
+            'changed_by' => \Illuminate\Support\Facades\Auth::id(),
             'changed_at' => now(),
             'comment' => $data['comment'] ?? null,
         ]);
+
+        if ($isAjax) {
+            $order->load(['user', 'items']);
+
+            $rawPhone = (string) ($order->pickup_phone ?: ($order->user?->phone ?? ''));
+            $waPhone = $this->normalizeWhatsappPhone($rawPhone);
+            $waMessage = $this->buildWhatsappMessage($order);
+
+            $waUrl = $waPhone
+                ? ('https://wa.me/' . $waPhone . '?text=' . urlencode($waMessage))
+                : null;
+
+            return response()->json([
+                'ok' => true,
+                'changed' => true,
+                'message' => 'Estado actualizado.',
+                'order_id' => $order->id,
+                'from_status' => $from,
+                'to_status' => $to,
+                'status' => $to,
+                'status_label' => \App\Models\Order::STATUSES[$to] ?? $to,
+                'wa' => [
+                    'phone' => $waPhone,
+                    'message' => $waMessage,
+                    'url' => $waUrl,
+                    'log_ajax_url' => route('admin.orders.whatsappLogAjax', $order->id),
+                ],
+            ]);
+        }
 
         return redirect()
             ->back()
             ->with('success', 'Estado actualizado.');
     }
+
 
     /**
      * Compat: registra el envío de WhatsApp (POST clásico).
