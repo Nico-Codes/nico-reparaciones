@@ -20,18 +20,12 @@ class AdminOrderController extends Controller
         $status = (string) $request->query('status', '');
         $q = trim((string) $request->query('q', ''));
 
-        $query = Order::query()
-            ->with('user')
-            ->latest();
-
-        if ($status !== '') {
-            $query->where('status', $status);
-        }
+        $baseQuery = Order::query()->with('user');
 
         if ($q !== '') {
             $qDigits = preg_replace('/\D+/', '', $q);
 
-            $query->where(function ($sub) use ($q, $qDigits) {
+            $baseQuery->where(function ($sub) use ($q, $qDigits) {
                 // ID exacto si es numérico
                 if (ctype_digit($q)) {
                     $sub->orWhere('id', (int) $q);
@@ -46,9 +40,25 @@ class AdminOrderController extends Controller
 
                 $sub->orWhereHas('user', function ($u) use ($q) {
                     $u->where('name', 'like', "%{$q}%")
-                      ->orWhere('email', 'like', "%{$q}%");
+                    ->orWhere('email', 'like', "%{$q}%");
                 });
             });
+        }
+
+        // ✅ Contadores por estado (respetan q)
+        $statusCounts = (clone $baseQuery)
+            ->selectRaw('status, COUNT(*) as c')
+            ->groupBy('status')
+            ->pluck('c', 'status')
+            ->toArray();
+
+        $totalCount = (int) array_sum($statusCounts);
+
+        // ✅ Listado (aplica status + orden)
+        $query = (clone $baseQuery)->latest();
+
+        if ($status !== '') {
+            $query->where('status', $status);
         }
 
         $orders = $query->paginate(20)->withQueryString();
@@ -57,7 +67,10 @@ class AdminOrderController extends Controller
             'orders' => $orders,
             'currentStatus' => $status,
             'q' => $q,
+            'statusCounts' => $statusCounts,
+            'totalCount' => $totalCount,
         ]);
+
     }
 
     /**
