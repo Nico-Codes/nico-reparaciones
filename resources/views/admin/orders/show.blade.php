@@ -58,9 +58,17 @@
 
     <div class="shrink-0 text-right">
       <div class="inline-flex items-center gap-2 justify-end">
+        <a class="btn-outline btn-sm"
+          href="{{ route('admin.orders.print', $order->id) }}"
+          target="_blank"
+          rel="noopener">
+          Imprimir
+        </a>
+
         <span class="{{ $badge($order->status) }}" data-admin-order-status-badge>
           {{ $statusMap[$order->status] ?? $order->status }}
         </span>
+
 
         {{-- Botón fijo Estado + dropdown (cambio rápido) --}}
         <div class="dropdown">

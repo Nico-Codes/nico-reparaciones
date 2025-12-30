@@ -16,6 +16,8 @@ use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AdminOrderController;
 use App\Http\Controllers\AdminRepairController;
 use App\Http\Controllers\AdminRepairPrintController;
+use App\Http\Controllers\AdminOrderPrintController;
+
 use App\Http\Controllers\AdminCategoryController;
 use App\Http\Controllers\AdminProductController;
 use App\Http\Controllers\AdminBusinessSettingsController;
@@ -146,7 +148,9 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     Route::post('/reparaciones/{repair}/whatsapp', [AdminRepairController::class, 'whatsappLog'])->name('admin.repairs.whatsappLog');
     Route::post('/reparaciones/{repair}/whatsapp-ajax', [AdminRepairController::class, 'whatsappLogAjax'])->name('admin.repairs.whatsappLogAjax');
 
-    Route::get('/reparaciones/{repair}/imprimir', [AdminRepairPrintController::class, '__invoke'])->name('admin.repairs.print');
+    Route::get('/reparaciones/{repair}/imprimir', AdminRepairPrintController::class)->name('admin.repairs.print');
+
+    Route::get('/pedidos/{order}/imprimir', AdminOrderPrintController::class)->name('admin.orders.print');
 
     // Categorías
     Route::get('/categorias', [AdminCategoryController::class, 'index'])->name('admin.categories.index');

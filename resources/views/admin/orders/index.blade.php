@@ -196,6 +196,11 @@
                   Abrir
                 </a>
 
+                <a class="btn-outline btn-sm" href="{{ route('admin.orders.print', $order->id) }}" target="_blank" rel="noopener">
+                  Imprimir
+                </a>
+
+
                 <span class="{{ $waBadgeClass }}"
                       data-admin-order-wa-badge
                       data-wa-state="{{ $waState }}">
