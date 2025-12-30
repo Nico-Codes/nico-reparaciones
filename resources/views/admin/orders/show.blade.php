@@ -209,15 +209,30 @@
         </div>
       </div>
 
-      <div class="card">
-        <div class="card-head">
-          <div class="font-black">WhatsApp</div>
-          @if($waLastForStatus)
-            <span class="badge-zinc">Último: {{ $waLastForStatus->sent_at?->format('d/m/Y H:i') ?? '—' }}</span>
-          @else
-            <span class="badge-zinc">Sin log</span>
-          @endif
-        </div>
+      @php
+        $waState = !$waUrl ? 'no_phone' : ($waLastForStatus ? 'ok' : 'pending');
+        $waStateBadge = $waState === 'ok' ? 'badge-emerald' : ($waState === 'pending' ? 'badge-amber' : 'badge-zinc');
+        $waStateText = $waState === 'ok' ? 'WA OK' : ($waState === 'pending' ? 'WA pendiente' : 'Sin teléfono');
+
+        $waLastAt = $waLastForStatus?->sent_at?->format('d/m/Y H:i') ?? '—';
+        $waLastBy = $waLastForStatus?->sentBy?->name
+          ?? $waLastForStatus?->sentBy?->email
+          ?? '—';
+      @endphp
+
+      <div class="card-head">
+        <div class="font-black">WhatsApp</div>
+
+        <span class="{{ $waStateBadge }}" data-admin-order-wa-badge>{{ $waStateText }}</span>
+
+        <span class="badge-zinc" data-admin-wa-last>
+          Último:
+          <span data-admin-wa-last-at>{{ $waLastAt }}</span>
+          ·
+          <span data-admin-wa-last-by>{{ $waLastBy }}</span>
+        </span>
+      </div>
+
 
         <div class="card-body">
           @if($waUrl)
@@ -260,6 +275,41 @@
             <p class="mt-2 text-xs text-zinc-500">
               Se registra el envío (audit). El botón abre WhatsApp en otra pestaña.
             </p>
+
+            <div class="mt-4 border-t border-zinc-200 pt-3">
+              <div class="text-xs font-black uppercase text-zinc-500">Envíos registrados</div>
+
+              <ol class="mt-2 space-y-2" data-admin-wa-log-list>
+                @foreach(($order->whatsappLogs ?? collect())->take(5) as $log)
+                  <li class="rounded-xl border border-zinc-200 p-3">
+                    <div class="flex items-center justify-between gap-2">
+                      <div class="font-extrabold text-zinc-900">
+                        {{ $statusMap[$log->notified_status] ?? $log->notified_status }}
+                      </div>
+                      <div class="text-xs text-zinc-500">
+                        {{ $log->sent_at?->format('d/m/Y H:i') ?? '—' }}
+                      </div>
+                    </div>
+
+                    <div class="text-xs text-zinc-500 mt-1">
+                      {{ $log->sentBy?->name ?? $log->sentBy?->email ?? '—' }}
+                    </div>
+
+                    <details class="mt-2">
+                      <summary class="text-xs font-black text-zinc-600 cursor-pointer select-none">Ver mensaje</summary>
+                      <div class="mt-2 text-xs whitespace-pre-wrap text-zinc-700">{{ $log->message }}</div>
+                    </details>
+                  </li>
+                @endforeach
+              </ol>
+
+              @if(($order->whatsappLogs?->count() ?? 0) === 0)
+                <div class="mt-2 text-sm text-zinc-600" data-admin-wa-log-empty>
+                  Sin envíos registrados para este pedido.
+                </div>
+              @endif
+            </div>
+
           @else
             <div class="text-sm text-zinc-600">
               No hay teléfono válido para WhatsApp. Cargá <span class="font-bold">pickup_phone</span> o un teléfono en el usuario.

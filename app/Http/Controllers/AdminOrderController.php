@@ -222,17 +222,31 @@ class AdminOrderController extends Controller
     {
         $order->load(['user', 'items']);
 
-        $rawPhone = (string) ($order->pickup_phone ?: ($order->user?->phone ?? ''));
-        $waPhone = $this->normalizeWhatsappPhone($rawPhone);
+        $rawPhone  = (string) ($order->pickup_phone ?: ($order->user?->phone ?? ''));
+        $waPhone   = $this->normalizeWhatsappPhone($rawPhone);
         $waMessage = $this->buildWhatsappMessage($order);
 
         $created = $this->createWhatsappLogIfNotDuplicate($order, $waPhone, $waMessage);
 
+        $log = \App\Models\OrderWhatsappLog::with('sentBy')
+            ->where('order_id', $order->id)
+            ->where('notified_status', $order->status)
+            ->orderByDesc('sent_at')
+            ->first();
+
         return response()->json([
             'ok' => true,
             'created' => $created,
+            'log' => $log ? [
+                'status'       => (string) $log->notified_status,
+                'status_label' => \App\Models\Order::STATUSES[$log->notified_status] ?? (string) $log->notified_status,
+                'sent_at'      => $log->sent_at?->format('d/m/Y H:i'),
+                'sent_by'      => $log->sentBy?->name ?? $log->sentBy?->email,
+                'message'      => (string) $log->message,
+            ] : null,
         ]);
     }
+
 
     private function buildWhatsappMessage(Order $order): string
     {

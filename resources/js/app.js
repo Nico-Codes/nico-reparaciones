@@ -1099,12 +1099,73 @@ document.addEventListener('DOMContentLoaded', () => {
         window.open(href, '_blank', 'noopener');
 
         try {
-          await postFormJson(waForm);
-          setWaBadgeState(waBadge, 'ok');
-          showMiniToast('Log WhatsApp registrado ✅');
+          const data = await postFormJson(waForm);
+          showMiniToast(data?.created ? 'Log WhatsApp registrado ✅' : 'Ya había un log reciente ✅');
+
+          if (waBadge) {
+            waBadge.textContent = 'WA OK';
+            waBadge.className = 'badge-emerald';
+            waBadge.dataset.waState = 'ok';
+          }
+
+          // actualizar "Último"
+          if (data?.log) {
+            const lastAt = card.querySelector('[data-admin-wa-last-at]');
+            const lastBy = card.querySelector('[data-admin-wa-last-by]');
+            if (lastAt && data.log.sent_at) lastAt.textContent = data.log.sent_at;
+            if (lastBy && data.log.sent_by) lastBy.textContent = data.log.sent_by;
+
+            // agregar item al listado (si existe en esta vista)
+            const list = card.querySelector('[data-admin-wa-log-list]');
+            if (list) {
+              card.querySelector('[data-admin-wa-log-empty]')?.remove();
+
+              const li = document.createElement('li');
+              li.className = 'rounded-xl border border-zinc-200 p-3';
+
+              const title = document.createElement('div');
+              title.className = 'flex items-center justify-between gap-2';
+
+              const st = document.createElement('div');
+              st.className = 'font-extrabold text-zinc-900';
+              st.textContent = data.log.status_label || data.log.status || '—';
+
+              const at = document.createElement('div');
+              at.className = 'text-xs text-zinc-500';
+              at.textContent = data.log.sent_at || '—';
+
+              title.appendChild(st);
+              title.appendChild(at);
+
+              const by = document.createElement('div');
+              by.className = 'text-xs text-zinc-500 mt-1';
+              by.textContent = data.log.sent_by || '—';
+
+              const details = document.createElement('details');
+              details.className = 'mt-2';
+
+              const summary = document.createElement('summary');
+              summary.className = 'text-xs font-black text-zinc-600 cursor-pointer select-none';
+              summary.textContent = 'Ver mensaje';
+
+              const msg = document.createElement('div');
+              msg.className = 'mt-2 text-xs whitespace-pre-wrap text-zinc-700';
+              msg.textContent = data.log.message || '';
+
+              details.appendChild(summary);
+              details.appendChild(msg);
+
+              li.appendChild(title);
+              li.appendChild(by);
+              li.appendChild(details);
+
+              list.prepend(li);
+            }
+          }
         } catch (_) {
           showMiniToast('No se pudo registrar el log ⚠️');
         }
+
 
       });
     }
