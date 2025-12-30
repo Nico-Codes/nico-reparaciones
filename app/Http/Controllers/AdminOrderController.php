@@ -377,7 +377,7 @@ class AdminOrderController extends Controller
     }
 
     /**
-     * Evita duplicar el log si ya se registró el mismo status recientemente (10 min).
+     * Evita duplicar el log si ya se registro el mismo status recientemente (10 min).
      */
     private function createWhatsappLogIfNotDuplicate(Order $order, ?string $waPhone, string $message): bool
     {
@@ -403,3 +403,4 @@ class AdminOrderController extends Controller
         return true;
     }
 }
+  
