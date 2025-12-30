@@ -980,6 +980,35 @@ document.addEventListener('DOMContentLoaded', () => {
     return qVal && qVal !== 'all' ? qVal : '';
   };
 
+  const getAdminOrdersWaFilter = () => {
+    const params = new URLSearchParams(window.location.search);
+    const v = (params.get('wa') || '').trim();
+    return ['pending','sent','no_phone'].includes(v) ? v : '';
+  };
+
+  const waStateToTabKey = (state) => {
+    if (state === 'ok') return 'sent';
+    if (state === 'pending') return 'pending';
+    if (state === 'no_phone') return 'no_phone';
+    return '';
+  };
+
+  const matchesWaFilter = (filter, state) => {
+    if (!filter) return true;
+    if (filter === 'pending') return state === 'pending';
+    if (filter === 'sent') return state === 'ok';
+    if (filter === 'no_phone') return state === 'no_phone';
+    return true;
+  };
+
+  const bumpAdminOrdersWaTab = (key, delta) => {
+    const el = document.querySelector(`[data-admin-orders-wa-count="${key}"]`);
+    if (!el) return;
+    const curr = parseInt(el.textContent || '0', 10) || 0;
+    el.textContent = String(Math.max(0, curr + (parseInt(delta,10)||0)));
+  };
+
+
   const bumpAdminOrdersTab = (st, delta) => {
     const key = String(st || '').trim();
     if (!key) return;
@@ -1258,9 +1287,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
               if (waForm) {
                 try {
-                  await postFormJson(waForm);
+                  const prevState = waBadge?.dataset?.waState || 'no_phone';
+                  const prevKey = waStateToTabKey(prevState);
+
+                  const data = await postFormJson(waForm);
+
                   setWaBadgeState(waBadge, 'ok');
-                  showMiniToast('Log WhatsApp registrado ✅');
+                  if (waLastBadge) waLastBadge.textContent = data?.sent_at_label || 'recién';
+
+                  const nextKey = waStateToTabKey('ok');
+                  if (prevKey && nextKey && prevKey !== nextKey) {
+                    bumpAdminOrdersWaTab(prevKey, -1);
+                    bumpAdminOrdersWaTab(nextKey, +1);
+                  }
+
+                  showMiniToast(data?.created ? 'Log WhatsApp registrado ✅' : 'Ya había un log reciente ✅');
+
+                  const waFilter = getAdminOrdersWaFilter();
+                  if (waFilter && !matchesWaFilter(waFilter, 'ok')) {
+                    await animateAdminOut(card);
+                    ensureAdminOrdersEmpty();
+                    return;
+                  }
+
                 } catch (_) {
                   showMiniToast('No se pudo registrar el log ⚠️');
                 }
@@ -1269,15 +1318,39 @@ document.addEventListener('DOMContentLoaded', () => {
             }
           }
 
-          // ✅ Remover del listado SOLO AL FINAL (para que se vea la animación)
-          const filter = getAdminOrdersFilter();
-          const shouldRemoveFromList = (filter && prevSt === filter && newSt !== filter);
+          const nextWaState = String(data?.wa?.state || (waUrl ? 'pending' : 'no_phone'));
+          setWaBadgeState(waBadge, nextWaState);
+          if (waLastBadge) waLastBadge.textContent = data?.wa?.notified_at_label || '—';
+
+          // si permanece en el status actual, ajusto contadores por cambio de estado WA
+          if (!leavingStatusGroup) {
+            const prevKey = waStateToTabKey(prevWaState);
+            const nextKey = waStateToTabKey(nextWaState);
+            if (prevKey && nextKey && prevKey !== nextKey) {
+              bumpAdminOrdersWaTab(prevKey, -1);
+              bumpAdminOrdersWaTab(nextKey, +1);
+            }
+          }
+
+          // Remoción final por filtros
+          const waFilter = getAdminOrdersWaFilter();
+          const finalWaState = waBadge?.dataset?.waState || nextWaState;
+          const removeByWa = !!(waFilter && !matchesWaFilter(waFilter, finalWaState));
+
+          const shouldRemoveFromList = leavingStatusGroup || removeByWa;
 
           if (shouldRemoveFromList) {
+            if (leavingStatusGroup) {
+              bumpAdminOrdersWaTab('all', -1);
+              const prevKey = waStateToTabKey(prevWaState);
+              if (prevKey) bumpAdminOrdersWaTab(prevKey, -1);
+            }
+
             await animateAdminOut(card);
             ensureAdminOrdersEmpty();
             return;
           }
+
 
         } catch (_) {
           statusForm.submit();

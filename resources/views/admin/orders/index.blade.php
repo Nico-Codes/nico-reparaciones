@@ -38,6 +38,16 @@
 
   $currentStatus = $currentStatus ?? '';
   $q = $q ?? '';
+
+  $currentWa = $currentWa ?? '';
+
+  $waTabs = [
+    ''        => 'WhatsApp: Todos',
+    'pending' => 'WA pendiente',
+    'sent'    => 'WA enviado',
+    'no_phone'=> 'Sin teléfono',
+  ];
+
 @endphp
 
 @section('content')
@@ -53,6 +63,11 @@
       @if($currentStatus !== '')
         <input type="hidden" name="status" value="{{ $currentStatus }}">
       @endif
+
+      @if($currentWa !== '')
+        <input type="hidden" name="wa" value="{{ $currentWa }}">
+      @endif
+
 
       <input
         type="text"
@@ -74,8 +89,9 @@
       @php
         $isActive = ((string)$currentStatus === (string)$key);
         $href = $key === ''
-          ? route('admin.orders.index', $q !== '' ? ['q' => $q] : [])
-          : route('admin.orders.index', array_filter(['status' => $key, 'q' => $q], fn($v) => $v !== ''));
+        ? route('admin.orders.index', array_filter(['q' => $q, 'wa' => $currentWa], fn($v) => $v !== ''))
+        : route('admin.orders.index', array_filter(['status' => $key, 'q' => $q, 'wa' => $currentWa], fn($v) => $v !== ''));
+
       @endphp
 
       @php
@@ -288,6 +304,34 @@
         </div>
       </div>
     @endforelse
+
+     <div class="mt-2 flex items-center gap-2 overflow-x-auto pb-1">
+      @foreach($waTabs as $key => $label)
+        @php
+          $isActiveWa = ((string)$currentWa === (string)$key);
+
+          $href = route('admin.orders.index', array_filter([
+            'status' => $currentStatus ?: null,
+            'wa'     => $key ?: null,
+            'q'      => $q ?: null,
+          ], fn($v) => $v !== null && $v !== ''));
+
+          $count = $key === '' ? ($waCounts['all'] ?? $orders->total()) : (int)($waCounts[$key] ?? 0);
+          $countKey = $key === '' ? 'all' : (string)$key;
+        @endphp
+
+        <a href="{{ $href }}" class="nav-pill {{ $isActiveWa ? 'nav-pill-active' : '' }}">
+          <span>{{ $label }}</span>
+          <span class="inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-black
+                ring-1 ring-zinc-200 bg-white/70 text-zinc-700"
+                data-admin-orders-wa-count="{{ $countKey }}">
+            {{ $count }}
+          </span>
+        </a>
+      @endforeach
+    </div>
+              
+
   </div>
 
   @if(method_exists($orders, 'links'))

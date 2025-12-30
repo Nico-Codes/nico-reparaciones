@@ -19,6 +19,10 @@ class AdminOrderController extends Controller
     public function index(Request $request)
     {
         $status = (string) $request->query('status', '');
+
+        $wa = (string) $request->query('wa', '');
+        $wa = in_array($wa, ['pending', 'sent', 'no_phone'], true) ? $wa : '';
+
         $q = trim((string) $request->query('q', ''));
 
         $baseQuery = Order::query()->with('user');
@@ -27,7 +31,6 @@ class AdminOrderController extends Controller
             $qDigits = preg_replace('/\D+/', '', $q);
 
             $baseQuery->where(function ($sub) use ($q, $qDigits) {
-                // ID exacto si es numérico
                 if (ctype_digit($q)) {
                     $sub->orWhere('id', (int) $q);
                 }
@@ -41,7 +44,7 @@ class AdminOrderController extends Controller
 
                 $sub->orWhereHas('user', function ($u) use ($q) {
                     $u->where('name', 'like', "%{$q}%")
-                    ->orWhere('email', 'like', "%{$q}%");
+                      ->orWhere('email', 'like', "%{$q}%");
                 });
             });
         }
@@ -55,18 +58,63 @@ class AdminOrderController extends Controller
 
         $totalCount = (int) array_sum($statusCounts);
 
-        // ✅ Listado (aplica status + orden)
+        // Helpers WA (para filtros + counts)
+        $logForCurrentStatus = function ($q) {
+            $q->whereColumn('order_whatsapp_logs.order_id', 'orders.id')
+              ->whereColumn('order_whatsapp_logs.notified_status', 'orders.status');
+        };
+
+        $phoneExists = function ($q) {
+            $q->where(function ($sub) {
+                $sub->whereNotNull('pickup_phone')->where('pickup_phone', '!=', '')
+                    ->orWhereHas('user', function ($u) {
+                        $u->whereNotNull('phone')->where('phone', '!=', '');
+                    });
+            });
+        };
+
+        $noPhone = function ($q) {
+            $q->where(function ($sub) {
+                $sub->where(function ($x) {
+                    $x->whereNull('pickup_phone')->orWhere('pickup_phone', '=', '');
+                })->whereDoesntHave('user', function ($u) {
+                    $u->whereNotNull('phone')->where('phone', '!=', '');
+                });
+            });
+        };
+
+        // ✅ Counts WA (respetan q y status si está filtrado)
+        $waBase = clone $baseQuery;
+        if ($status !== '') $waBase->where('status', $status);
+
+        $waCounts = [
+            'all'      => (clone $waBase)->count(),
+            'pending'  => (clone $waBase)->where($phoneExists)->whereDoesntHave('whatsappLogs', $logForCurrentStatus)->count(),
+            'sent'     => (clone $waBase)->where($phoneExists)->whereHas('whatsappLogs', $logForCurrentStatus)->count(),
+            'no_phone' => (clone $waBase)->where($noPhone)->count(),
+        ];
+
+        // ✅ Listado
         $query = (clone $baseQuery)->latest()
             ->addSelect([
                 'wa_notified_current' => OrderWhatsappLog::query()
-                ->selectRaw('COUNT(*)')
-                ->whereColumn('order_whatsapp_logs.order_id', 'orders.id')
-                ->whereColumn('order_whatsapp_logs.notified_status', 'orders.status'),
+                    ->selectRaw('COUNT(*)')
+                    ->whereColumn('order_whatsapp_logs.order_id', 'orders.id')
+                    ->whereColumn('order_whatsapp_logs.notified_status', 'orders.status'),
             ]);
-
 
         if ($status !== '') {
             $query->where('status', $status);
+        }
+
+        if ($wa === 'pending') {
+            $query->where($phoneExists)
+                  ->whereDoesntHave('whatsappLogs', $logForCurrentStatus);
+        } elseif ($wa === 'sent') {
+            $query->where($phoneExists)
+                  ->whereHas('whatsappLogs', $logForCurrentStatus);
+        } elseif ($wa === 'no_phone') {
+            $query->where($noPhone);
         }
 
         $orders = $query->paginate(20)->withQueryString();
@@ -74,11 +122,12 @@ class AdminOrderController extends Controller
         return view('admin.orders.index', [
             'orders' => $orders,
             'currentStatus' => $status,
+            'currentWa' => $wa,
             'q' => $q,
             'statusCounts' => $statusCounts,
             'totalCount' => $totalCount,
+            'waCounts' => $waCounts,
         ]);
-
     }
 
     /**
@@ -151,11 +200,11 @@ class AdminOrderController extends Controller
         $order->status = $to;
         $order->save();
 
-        \App\Models\OrderStatusHistory::create([
+        OrderStatusHistory::create([
             'order_id' => $order->id,
             'from_status' => $from,
             'to_status' => $to,
-            'changed_by' => \Illuminate\Support\Facades\Auth::id(),
+            'changed_by' => Auth::id(),
             'changed_at' => now(),
             'comment' => $data['comment'] ?? null,
         ]);
@@ -171,6 +220,16 @@ class AdminOrderController extends Controller
                 ? ('https://wa.me/' . $waPhone . '?text=' . urlencode($waMessage))
                 : null;
 
+            // ✅ ESTO TIENE QUE IR AFUERA DEL ARRAY
+            $lastLog = OrderWhatsappLog::where('order_id', $order->id)
+                ->where('notified_status', $to)
+                ->orderByDesc('sent_at')
+                ->first();
+
+            $waNotifiedCurrent = (bool) $lastLog;
+            $waNotifiedAtLabel = $lastLog?->sent_at?->format('d/m/Y H:i') ?? '—';
+            $waState = !$waPhone ? 'no_phone' : ($waNotifiedCurrent ? 'ok' : 'pending');
+
             return response()->json([
                 'ok' => true,
                 'changed' => true,
@@ -180,11 +239,15 @@ class AdminOrderController extends Controller
                 'to_status' => $to,
                 'status' => $to,
                 'status_label' => \App\Models\Order::STATUSES[$to] ?? $to,
+
                 'wa' => [
                     'phone' => $waPhone,
                     'message' => $waMessage,
                     'url' => $waUrl,
                     'log_ajax_url' => route('admin.orders.whatsappLogAjax', $order->id),
+                    'state' => $waState,
+                    'notified_current' => $waNotifiedCurrent,
+                    'notified_at_label' => $waNotifiedAtLabel,
                 ],
             ]);
         }
@@ -193,7 +256,6 @@ class AdminOrderController extends Controller
             ->back()
             ->with('success', 'Estado actualizado.');
     }
-
 
     /**
      * Compat: registra el envío de WhatsApp (POST clásico).
@@ -228,15 +290,21 @@ class AdminOrderController extends Controller
 
         $created = $this->createWhatsappLogIfNotDuplicate($order, $waPhone, $waMessage);
 
-        $log = \App\Models\OrderWhatsappLog::with('sentBy')
+        $log = OrderWhatsappLog::with('sentBy')
             ->where('order_id', $order->id)
             ->where('notified_status', $order->status)
             ->orderByDesc('sent_at')
             ->first();
 
+        $waState = $waPhone ? 'ok' : 'no_phone';
+
         return response()->json([
             'ok' => true,
             'created' => $created,
+            'wa' => [
+                'state' => $waState,
+            ],
+            'sent_at_label' => now()->format('d/m/Y H:i'),
             'log' => $log ? [
                 'status'       => (string) $log->notified_status,
                 'status_label' => \App\Models\Order::STATUSES[$log->notified_status] ?? (string) $log->notified_status,
@@ -246,7 +314,6 @@ class AdminOrderController extends Controller
             ] : null,
         ]);
     }
-
 
     private function buildWhatsappMessage(Order $order): string
     {
@@ -268,7 +335,6 @@ class AdminOrderController extends Controller
         $template = OrderWhatsappTemplate::where('status', $order->status)->value('template');
 
         if (!$template) {
-            // Fallback por defecto
             $template = "Hola {customer_name} 👋\n\n"
                 . "Te escribimos por tu pedido #{order_id}.\n"
                 . "Estado: {status_label}\n"
@@ -309,7 +375,6 @@ class AdminOrderController extends Controller
     {
         return WhatsApp::normalizePhoneAR($raw);
     }
-
 
     /**
      * Evita duplicar el log si ya se registró el mismo status recientemente (10 min).
