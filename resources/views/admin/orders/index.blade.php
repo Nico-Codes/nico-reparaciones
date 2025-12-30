@@ -200,6 +200,14 @@
                   Imprimir
                 </a>
 
+                <a class="btn-outline btn-sm"
+                  href="{{ route('admin.orders.ticket', $order->id) }}?autoprint=1"
+                  target="_blank"
+                  rel="noopener">
+                  Ticket
+                </a>
+
+
 
                 <span class="{{ $waBadgeClass }}"
                       data-admin-order-wa-badge

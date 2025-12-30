@@ -17,6 +17,8 @@ use App\Http\Controllers\AdminOrderController;
 use App\Http\Controllers\AdminRepairController;
 use App\Http\Controllers\AdminRepairPrintController;
 use App\Http\Controllers\AdminOrderPrintController;
+use App\Http\Controllers\AdminOrderTicketController;
+
 
 use App\Http\Controllers\AdminCategoryController;
 use App\Http\Controllers\AdminProductController;
@@ -151,6 +153,7 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     Route::get('/reparaciones/{repair}/imprimir', AdminRepairPrintController::class)->name('admin.repairs.print');
 
     Route::get('/pedidos/{order}/imprimir', AdminOrderPrintController::class)->name('admin.orders.print');
+    Route::get('/pedidos/{order}/ticket', AdminOrderTicketController::class)->name('admin.orders.ticket');
 
     // Categorías
     Route::get('/categorias', [AdminCategoryController::class, 'index'])->name('admin.categories.index');

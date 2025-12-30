@@ -65,6 +65,14 @@
           Imprimir
         </a>
 
+        <a class="btn-outline btn-sm"
+          href="{{ route('admin.orders.ticket', $order->id) }}?autoprint=1"
+          target="_blank"
+          rel="noopener">
+          Ticket
+        </a>
+
+
         <span class="{{ $badge($order->status) }}" data-admin-order-status-badge>
           {{ $statusMap[$order->status] ?? $order->status }}
         </span>

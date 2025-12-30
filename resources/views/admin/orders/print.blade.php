@@ -123,9 +123,10 @@
         <tbody>
           @foreach($order->items as $it)
             @php
-              $name = $it->name_snapshot ?: ($it->product?->name ?? 'Producto');
-              $qty = (int)($it->quantity ?? 1);
-              $price = (float)($it->price ?? 0);
+              $name = $it->product_name ?: ($it->product?->name ?? 'Producto');
+                $qty = (int)($it->quantity ?? 1);
+                $price = (float)($it->price ?? 0);
+
               $sub = $qty * $price;
             @endphp
             <tr>
