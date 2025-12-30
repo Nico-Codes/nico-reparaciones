@@ -1049,12 +1049,40 @@ document.addEventListener('DOMContentLoaded', () => {
       );
     });
 
+    const waBadgeClass = (state) => {
+      switch (state) {
+        case 'ok': return 'badge-emerald';
+        case 'pending': return 'badge-amber';
+        case 'no_phone': return 'badge-zinc';
+        default: return 'badge-zinc';
+      }
+    };
+
+    const waBadgeText = (state) => {
+      switch (state) {
+        case 'ok': return 'WA OK';
+        case 'pending': return 'WA pendiente';
+        case 'no_phone': return 'Sin tel';
+        default: return 'WA';
+      }
+    };
+
+    const setWaBadgeState = (el, state) => {
+      if (!el) return;
+      el.dataset.waState = state;
+      el.className = waBadgeClass(state);
+      el.textContent = waBadgeText(state);
+    };
+
+
   document.querySelectorAll('[data-admin-order-card]').forEach((card) => {
     const statusForm = card.querySelector('form[data-admin-order-status-form]');
     const waForm = card.querySelector('form[data-admin-order-wa-form]');
     const badgeEls = card.querySelectorAll('[data-admin-order-status-badge]');
     const waLink = card.querySelector('[data-admin-order-wa-link]');
     const waOpenBtn = card.querySelector('[data-admin-order-wa-open]');
+    const waBadge = card.querySelector('[data-admin-order-wa-badge]');
+
     const waMsgEls = card.querySelectorAll('[data-admin-order-wa-message]');
 
     const menuBtn = card.querySelector('[data-admin-order-status-btn]');
@@ -1072,10 +1100,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
           await postFormJson(waForm);
+          setWaBadgeState(waBadge, 'ok');
           showMiniToast('Log WhatsApp registrado ✅');
         } catch (_) {
           showMiniToast('No se pudo registrar el log ⚠️');
         }
+
       });
     }
 
@@ -1144,6 +1174,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
           }
 
+          // WA badge: si hay URL, queda pendiente (hasta notificar); si no, sin tel
+          setWaBadgeState(waBadge, waUrl ? 'pending' : 'no_phone');
+
+
           if (waMsgEls?.length) {
             waMsgEls.forEach((el) => setValueOrText(el, waMsg));
           }
@@ -1164,11 +1198,13 @@ document.addEventListener('DOMContentLoaded', () => {
               if (waForm) {
                 try {
                   await postFormJson(waForm);
+                  setWaBadgeState(waBadge, 'ok');
                   showMiniToast('Log WhatsApp registrado ✅');
                 } catch (_) {
                   showMiniToast('No se pudo registrar el log ⚠️');
                 }
               }
+
             }
           }
 

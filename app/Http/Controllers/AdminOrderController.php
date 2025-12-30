@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\OrderStatusHistory;
 use App\Models\OrderWhatsappLog;
 use App\Models\OrderWhatsappTemplate;
+use App\Support\WhatsApp;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -55,7 +56,14 @@ class AdminOrderController extends Controller
         $totalCount = (int) array_sum($statusCounts);
 
         // ✅ Listado (aplica status + orden)
-        $query = (clone $baseQuery)->latest();
+        $query = (clone $baseQuery)->latest()
+            ->addSelect([
+                'wa_notified_current' => OrderWhatsappLog::query()
+                ->selectRaw('COUNT(*)')
+                ->whereColumn('order_whatsapp_logs.order_id', 'orders.id')
+                ->whereColumn('order_whatsapp_logs.notified_status', 'orders.status'),
+            ]);
+
 
         if ($status !== '') {
             $query->where('status', $status);
@@ -285,19 +293,9 @@ class AdminOrderController extends Controller
 
     private function normalizeWhatsappPhone(string $raw): ?string
     {
-        $digits = preg_replace('/\D+/', '', (string) $raw);
-        if (!$digits) return null;
-
-        if (str_starts_with($digits, '54')) {
-            return $digits;
-        }
-
-        if (strlen($digits) < 8) {
-            return null;
-        }
-
-        return '54' . $digits;
+        return WhatsApp::normalizePhoneAR($raw);
     }
+
 
     /**
      * Evita duplicar el log si ya se registró el mismo status recientemente (10 min).

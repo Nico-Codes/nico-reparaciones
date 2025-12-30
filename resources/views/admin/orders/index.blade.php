@@ -166,41 +166,41 @@
               </div>
 
               @php
-                // Teléfono del pedido (prioridad pickup_phone, sino phone del user)
                 $rawPhone = (string)($order->pickup_phone ?: ($order->user?->phone ?? ''));
 
-                // Normalización simple (AR): solo dígitos + prefijos
-                $digits = preg_replace('/\D+/', '', $rawPhone) ?: '';
-                if (str_starts_with($digits, '0'))  $digits = ltrim($digits, '0');     // 0341... -> 341...
-                if (str_starts_with($digits, '15')) $digits = substr($digits, 2);      // 15xxxx -> xxxx
+                $waMsg = "Hola {$customerName} 👋\n"
+                  . "Tu pedido #{$order->id} está: {$stLabel}.\n\n"
+                  . "Cualquier cosa respondeme por acá.";
 
-                // Heurística Argentina:
-                // - si ya viene con 54..., lo dejamos
-                // - si viene sin país, le prefijamos 549 (WhatsApp suele ser móvil)
-                if ($digits !== '') {
-                  if (str_starts_with($digits, '54')) {
-                    // si es 54 pero no 549, insertamos 9 (móvil). Si ya es 549, no tocamos.
-                    if (!str_starts_with($digits, '549')) {
-                      $digits = '549' . substr($digits, 2);
-                    }
-                  } else {
-                    $digits = '549' . $digits;
-                  }
-                }
+                $waHref = \App\Support\WhatsApp::waMeUrlFromRaw($rawPhone, $waMsg);
 
-                $waText = rawurlencode(
-                  "Hola {$customerName} 👋\n" .
-                  "Tu pedido #{$order->id} está: {$stLabel}.\n\n" .
-                  "Cualquier cosa respondeme por acá."
-                );
+                $waNotified = (int)($order->wa_notified_current ?? 0) > 0;
+                $waState = !$waHref ? 'no_phone' : ($waNotified ? 'ok' : 'pending');
 
-                $waHref = $digits !== '' ? "https://wa.me/{$digits}?text={$waText}" : null;
+                $waBadgeClass = match($waState) {
+                  'ok' => 'badge-emerald',
+                  'pending' => 'badge-amber',
+                  default => 'badge-zinc',
+                };
+
+                $waBadgeText = match($waState) {
+                  'ok' => 'WA OK',
+                  'pending' => 'WA pendiente',
+                  default => 'Sin tel',
+                };
               @endphp
+
 
               <div class="flex flex-wrap items-center justify-end gap-2">
                 <a class="btn-outline btn-sm" href="{{ route('admin.orders.show', $order->id) }}">
                   Abrir
                 </a>
+
+                <span class="{{ $waBadgeClass }}"
+                      data-admin-order-wa-badge
+                      data-wa-state="{{ $waState }}">
+                  {{ $waBadgeText }}
+                </span>
 
                 @if($waHref)
                   <a
@@ -210,10 +210,12 @@
                     rel="noopener"
                     title="Enviar WhatsApp"
                     data-admin-order-wa-link
+                    data-admin-order-wa-open
                   >
                     WhatsApp
                   </a>
                 @endif
+
 
                 {{-- Botón fijo Estado + dropdown --}}
                 <div class="dropdown">
