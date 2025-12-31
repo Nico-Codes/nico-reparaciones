@@ -81,7 +81,9 @@
             <option value="">Todos</option>
             <option value="pending" @selected($wa === 'pending')>Pendiente</option>
             <option value="sent" @selected($wa === 'sent')>Enviado (OK)</option>
+            <option value="no_phone" @selected($wa === 'no_phone')>Sin teléfono</option>
           </select>
+
         </div>
 
         <div class="sm:col-span-6 flex flex-col sm:flex-row gap-2">

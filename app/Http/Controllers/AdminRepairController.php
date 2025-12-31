@@ -40,16 +40,29 @@ class AdminRepairController extends Controller
             $query->where('status', $status);
         }
 
+        
         // Filtro WA
-        if ($wa === 'pending') {
-            $query->whereDoesntHave('whatsappLogs', function ($q) {
+        if ($wa === 'no_phone') {
+            $query->where(function ($q) {
+                $q->whereNull('customer_phone')
+                ->orWhere('customer_phone', '');
+            });
+        } elseif ($wa === 'pending') {
+            $query->where(function ($q) {
+                $q->whereNotNull('customer_phone')
+                ->where('customer_phone', '!=', '');
+            })->whereDoesntHave('whatsappLogs', function ($q) {
                 $q->whereColumn('repair_whatsapp_logs.notified_status', 'repairs.status');
             });
         } elseif ($wa === 'sent') {
-            $query->whereHas('whatsappLogs', function ($q) {
+            $query->where(function ($q) {
+                $q->whereNotNull('customer_phone')
+                ->where('customer_phone', '!=', '');
+            })->whereHas('whatsappLogs', function ($q) {
                 $q->whereColumn('repair_whatsapp_logs.notified_status', 'repairs.status');
             });
         }
+
 
         if ($q !== '') {
             $qDigits = preg_replace('/\D+/', '', $q);

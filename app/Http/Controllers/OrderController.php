@@ -28,74 +28,125 @@ class OrderController extends Controller
 
         $user = Auth::user();
 
+        // Requerimos datos mínimos del perfil para evitar pedidos "incompletos"
         if (!$user || empty($user->last_name) || empty($user->phone)) {
             return redirect()
                 ->route('account.edit')
                 ->withErrors(['profile' => 'Completá tu apellido y teléfono para poder confirmar pedidos.']);
         }
 
-
         $data = $request->validate([
-            'payment_method' => ['required', 'in:local,mercado_pago,transferencia'],
-            'notes'          => ['nullable', 'string'],
+            'payment_method'        => ['required', 'in:local,mercado_pago,transferencia'],
+            'notes'                 => ['nullable', 'string'],
             'pickup_delegate_name'  => ['nullable', 'string', 'max:255', 'required_with:pickup_delegate_phone'],
             'pickup_delegate_phone' => ['nullable', 'string', 'max:50', 'required_with:pickup_delegate_name'],
-
         ]);
 
+        try {
+            $order = null;
 
-        $total = 0;
-        foreach ($cart as $item) {
-            $total += $item['price'] * $item['quantity'];
+            DB::transaction(function () use (&$order, $cart, $data, $user) {
+                // 1) Productos actualizados + lock para evitar overselling
+                $productIds = collect($cart)->pluck('id')->filter()->unique()->values()->all();
+
+                $products = Product::query()
+                    ->whereIn('id', $productIds)
+                    ->lockForUpdate()
+                    ->get()
+                    ->keyBy('id');
+
+                $itemsToCreate = [];
+                $total = 0;
+
+                foreach ($cart as $item) {
+                    $productId = (int)($item['id'] ?? 0);
+                    $qty = (int)($item['quantity'] ?? 1);
+                    if ($qty < 1) $qty = 1;
+
+                    $product = $products->get($productId);
+
+                    if (!$product) {
+                        throw ValidationException::withMessages([
+                            'cart' => 'Uno o más productos ya no existen o fueron eliminados. Volvé a armar el carrito.',
+                        ]);
+                    }
+
+                    // Nota: hoy el proyecto usa "stock = 0" como "sin control".
+                    // Si querés que 0 signifique "sin stock", lo ajustamos aparte.
+                    if ($product->stock > 0 && $qty > $product->stock) {
+                        throw ValidationException::withMessages([
+                            'cart' => "Stock insuficiente para \"{$product->name}\". Disponible: {$product->stock}.",
+                        ]);
+                    }
+
+                    // Precio real de BD (evita manipulación del precio en sesión)
+                    $unitPrice = (int)$product->price;
+                    $subtotal = $unitPrice * $qty;
+
+                    $total += $subtotal;
+
+                    $itemsToCreate[] = [
+                        'product_id'   => $product->id,
+                        'product_name' => $product->name,
+                        'unit_price'   => $unitPrice,
+                        'quantity'     => $qty,
+                        'subtotal'     => $subtotal,
+                    ];
+                }
+
+                // 2) Pedido + historia inicial
+                $order = Order::create([
+                    'user_id'               => Auth::id(),
+                    'status'                => 'pendiente',
+                    'payment_method'        => $data['payment_method'],
+                    'total'                 => $total,
+                    'pickup_name'           => trim($user->name . ' ' . $user->last_name),
+                    'pickup_phone'          => $user->phone,
+                    'notes'                 => $data['notes'] ?? null,
+                    'pickup_delegate_name'  => $data['pickup_delegate_name'] ?? null,
+                    'pickup_delegate_phone' => $data['pickup_delegate_phone'] ?? null,
+                ]);
+
+                OrderStatusHistory::create([
+                    'order_id'    => $order->id,
+                    'from_status' => null,
+                    'to_status'   => 'pendiente',
+                    'changed_by'  => Auth::id(),
+                    'changed_at'  => now(),
+                    'comment'     => 'Pedido creado',
+                ]);
+
+                // 3) Items + descuento de stock (cuando aplica)
+                foreach ($itemsToCreate as $it) {
+                    OrderItem::create([
+                        'order_id'     => $order->id,
+                        'product_id'   => $it['product_id'],
+                        'product_name' => $it['product_name'],
+                        'unit_price'   => $it['unit_price'],
+                        'quantity'     => $it['quantity'],
+                        'subtotal'     => $it['subtotal'],
+                    ]);
+
+                    $product = $products->get($it['product_id']);
+                    if ($product && $product->stock > 0) {
+                        $product->decrement('stock', $it['quantity']);
+                    }
+                }
+            });
+
+            // 4) Si salió bien, vaciamos carrito
+            $request->session()->forget('cart');
+
+            return redirect()
+                ->route('orders.thankyou', $order->id)
+                ->with('success', '¡Pedido confirmado!');
+        } catch (ValidationException $e) {
+            return redirect()
+                ->route('carrito.index')
+                ->withErrors($e->errors());
         }
-
-        $order = Order::create([
-            'user_id'        => Auth::id(),
-            'status'         => 'pendiente',
-            'payment_method' => $data['payment_method'],
-            'total'          => $total,
-            'pickup_name'    => trim($user->name . ' ' . $user->last_name),
-            'pickup_phone'   => $user->phone,
-            'notes'          => $data['notes'] ?? null,
-            'pickup_delegate_name'  => $data['pickup_delegate_name'] ?? null,
-            'pickup_delegate_phone' => $data['pickup_delegate_phone'] ?? null,
-
-        ]);
-
-        // Historial inicial
-        OrderStatusHistory::create([
-            'order_id'    => $order->id,
-            'from_status' => null,
-            'to_status'   => 'pendiente',
-            'changed_by'  => Auth::id(),
-            'changed_at'  => now(),
-            'comment'     => 'Pedido creado',
-        ]);
-
-        foreach ($cart as $item) {
-            OrderItem::create([
-                'order_id'     => $order->id,
-                'product_id'   => $item['id'],
-                'product_name' => $item['name'],
-                'price'        => $item['price'],
-                'quantity'     => $item['quantity'],
-                'subtotal'     => $item['price'] * $item['quantity'],
-            ]);
-
-            $product = Product::find($item['id']);
-            if ($product && $product->stock >= $item['quantity']) {
-                $product->stock -= $item['quantity'];
-                $product->save();
-            }
-        }
-
-        $request->session()->forget('cart');
-
-        return redirect()
-            ->route('orders.thankyou', $order->id)
-            ->with('success', 'Pedido realizado correctamente.');
-
     }
+
 
     /**
      * Listado de pedidos del usuario logueado.
