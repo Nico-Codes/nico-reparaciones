@@ -11,8 +11,9 @@
   ];
 
   $companyName = $settings->get('company_name', config('app.name'));
-  $companyAddress = $settings->get('company_address', '');
-  $companyPhone = $settings->get('company_phone', '');
+  $companyAddress = $settings->get('shop_address', '');
+  $companyPhone   = $settings->get('shop_phone', '');
+
 
   $customerName  = $order->pickup_name ?: ($order->user?->name ?? '—');
   $customerPhone = $order->pickup_phone ?: ($order->user?->phone ?? '—');
