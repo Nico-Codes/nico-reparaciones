@@ -16,6 +16,7 @@
   };
 
   $q = $q ?? '';
+  $stock = $stock ?? '';
 @endphp
 
 @section('content')
@@ -40,11 +41,20 @@
     <div class="card-body">
       <form method="GET" class="flex flex-col sm:flex-row gap-2">
         <input name="q" value="{{ $q }}" placeholder="Buscar por nombre o slug…" />
-        <button class="btn-outline sm:w-40" type="submit">Buscar</button>
-        @if($q !== '')
+
+        <select name="stock" class="sm:w-48">
+          <option value="" @selected($stock==='')>Stock: Todos</option>
+          <option value="out" @selected($stock==='out')>Sin stock</option>
+          <option value="low" @selected($stock==='low')>Stock bajo (≤ 5)</option>
+        </select>
+
+        <button class="btn-outline sm:w-40" type="submit">Filtrar</button>
+
+        @if($q !== '' || $stock !== '')
           <a class="btn-ghost sm:w-40" href="{{ route('admin.products.index') }}">Limpiar</a>
         @endif
       </form>
+
     </div>
   </div>
 

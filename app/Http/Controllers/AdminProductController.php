@@ -12,26 +12,35 @@ class AdminProductController extends Controller
 {
     public function index(Request $request)
     {
-        $q = trim((string) $request->query('q', ''));
+        $q = trim((string)$request->query('q', ''));
+        $stockFilter = (string)$request->query('stock', ''); // '', 'out', 'low'
+
 
         $query = Product::with('category')
             ->orderByDesc('id');
 
         if ($q !== '') {
-            $query->where(function ($qq) use ($q) {
-                $qq->where('name', 'like', "%{$q}%")
-                   ->orWhere('slug', 'like', "%{$q}%");
+            $query->where(function($sub) use ($q) {
+                $sub->where('name', 'like', "%{$q}%")
+                    ->orWhere('slug', 'like', "%{$q}%");
             });
         }
 
-        $products = $query->paginate(20)->appends([
-            'q' => $q,
-        ]);
+        if ($stockFilter === 'out') {
+            $query->where('stock', '<=', 0)->orderBy('stock', 'asc');
+        } elseif ($stockFilter === 'low') {
+            $query->where('stock', '>', 0)->where('stock', '<=', 5)->orderBy('stock', 'asc');
+        }
+
+
+        $products = $query->orderByDesc('id')->paginate(20)->withQueryString();
 
         return view('admin.products.index', [
             'products' => $products,
             'q' => $q,
+            'stock' => $stockFilter,
         ]);
+
     }
 
     public function create()
