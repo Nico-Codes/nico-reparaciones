@@ -133,6 +133,9 @@
 
             <div class="flex items-center gap-2">
               <a class="btn-outline btn-sm" href="{{ route('admin.repairs.show', $repair) }}">Ver</a>
+              <a class="btn-outline btn-sm" href="{{ route('admin.repairs.print', $repair) }}" target="_blank" rel="noopener">Imprimir</a>
+              <a class="btn-outline btn-sm" href="{{ route('admin.repairs.ticket', $repair) }}?autoprint=1" target="_blank" rel="noopener">Ticket</a>
+
               @if($repair->wa_url)
                 <a href="{{ $repair->wa_url }}" target="_blank" rel="noopener"
                    class="btn-sm inline-flex items-center justify-center rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700 active:scale-[.99]">

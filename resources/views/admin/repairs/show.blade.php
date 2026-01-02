@@ -64,6 +64,8 @@
     <div class="flex flex-wrap gap-2">
       <a href="{{ route('admin.repairs.index') }}" class="btn-ghost btn-sm">Volver</a>
       <a href="{{ route('admin.repairs.print', $repair) }}" class="btn-outline btn-sm" target="_blank" rel="noopener">Imprimir</a>
+      <a href="{{ route('admin.repairs.ticket', $repair) }}" class="btn-outline btn-sm" target="_blank" rel="noopener">Ticket</a>
+
 
       @if(!empty($waUrl))
         <a href="{{ $waUrl }}" class="btn-primary btn-sm" target="_blank" rel="noopener"
