@@ -77,6 +77,8 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/mis-pedidos', [OrderController::class, 'index'])->name('orders.index');
     Route::get('/mis-pedidos/{order}', [OrderController::class, 'show'])->name('orders.show');
+    Route::get('/pedido/{order}', [OrderController::class, 'thankYou'])->name('orders.thankyou');
+
     Route::get('/mis-pedidos/{order}/recibido', [OrderController::class, 'thankYou'])
     ->name('orders.thankyou');
 

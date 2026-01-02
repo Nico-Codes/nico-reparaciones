@@ -145,7 +145,7 @@ class OrderController extends Controller
                 ->with('success', '¡Pedido confirmado!');
         } catch (ValidationException $e) {
             return redirect()
-                ->route('carrito.index')
+                ->route('cart.index')
                 ->withErrors($e->errors());
         }
     }
