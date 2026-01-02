@@ -138,10 +138,12 @@
         $customerName  = $order->pickup_name ?: ($order->user?->name ?? '—');
         $customerPhone = $order->pickup_phone ?: ($order->user?->phone ?? '—');
         $created = $order->created_at?->format('d/m/Y H:i') ?? '—';
+        $age = $order->created_at ? $order->created_at->locale('es')->diffForHumans() : null;
 
         $st = (string)($order->status ?? 'pendiente');
         $stLabel = $statusMap[$st] ?? $st;
       @endphp
+
 
       <div class="card" data-admin-order-card data-order-id="{{ $order->id }}" data-status="{{ $st }}">
         <div class="card-body">
@@ -161,6 +163,12 @@
                 <span class="font-semibold">{{ $customerPhone }}</span>
                 <span class="text-zinc-400">·</span>
                 <span>{{ $created }}</span>
+
+                @if($age)
+                  <span class="text-zinc-400">·</span>
+                  <span class="text-xs font-bold text-zinc-600">{{ $age }}</span>
+                @endif
+
                 @if($order->user?->email)
                   <span class="text-zinc-400">·</span>
                   <span class="truncate">{{ $order->user->email }}</span>

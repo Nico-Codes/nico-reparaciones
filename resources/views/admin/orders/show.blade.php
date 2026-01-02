@@ -146,6 +146,78 @@
   <div class="grid gap-4 lg:grid-cols-3">
     {{-- Columna izquierda --}}
     <div class="space-y-4 lg:col-span-1">
+      {{-- Acciones rápidas --}}
+      @php
+        $isFinal = in_array((string)$order->status, ['entregado','cancelado'], true);
+      @endphp
+
+      <div class="card">
+        <div class="card-head">
+          <div class="font-black">Acciones rápidas</div>
+          <span class="badge-zinc">Pedido #{{ $order->id }}</span>
+        </div>
+
+        <div class="card-body space-y-2">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <a class="btn-outline w-full"
+              href="{{ route('admin.orders.print', $order->id) }}"
+              target="_blank"
+              rel="noopener">
+              Imprimir
+            </a>
+
+            <a class="btn-outline w-full"
+              href="{{ route('admin.orders.ticket', $order->id) }}?autoprint=1"
+              target="_blank"
+              rel="noopener">
+              Ticket
+            </a>
+          </div>
+
+          @if($waUrl)
+            <a class="btn-outline w-full"
+              href="{{ $waUrl }}"
+              target="_blank"
+              rel="noopener"
+              data-admin-order-wa-open>
+              Abrir WhatsApp
+            </a>
+          @else
+            <button type="button" class="btn-outline w-full opacity-50" disabled>
+              WhatsApp (sin teléfono)
+            </button>
+          @endif
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-zinc-200">
+            <form method="POST" action="{{ route('admin.orders.updateStatus', $order->id) }}"
+                  onsubmit="return confirm('¿Marcar como ENTREGADO el pedido #{{ $order->id }}?');">
+              @csrf
+              <input type="hidden" name="status" value="entregado">
+              <input type="hidden" name="comment" value="Acción rápida: marcado como entregado">
+              <button class="btn-primary w-full" type="submit" {{ $isFinal ? 'disabled' : '' }}>
+                Marcar entregado
+              </button>
+            </form>
+
+            <form method="POST" action="{{ route('admin.orders.updateStatus', $order->id) }}"
+                  onsubmit="return confirm('¿Cancelar el pedido #{{ $order->id }}? Esto devuelve stock.');">
+              @csrf
+              <input type="hidden" name="status" value="cancelado">
+              <input type="hidden" name="comment" value="Acción rápida: pedido cancelado">
+              <button class="btn-outline w-full" type="submit" {{ $isFinal ? 'disabled' : '' }}>
+                Cancelar pedido
+              </button>
+            </form>
+          </div>
+
+          @if($isFinal)
+            <p class="text-xs text-zinc-500">
+              Este pedido ya está en un estado final (entregado/cancelado).
+            </p>
+          @endif
+        </div>
+      </div>
+
       <div class="card">
         <div class="card-head">
           <div class="font-black">Cliente</div>
@@ -160,33 +232,36 @@
 
             <div class="flex items-start justify-between gap-3">
               <span class="text-zinc-500">Teléfono</span>
-              <span class="font-extrabold text-right">{{ $customerPhone }}</span>
+              <span class="font-extrabold text-right">{{ $customerPhone ?: '—' }}</span>
             </div>
 
             @if($order->pickup_delegate_name || $order->pickup_delegate_phone)
-              <div class="flex items-start justify-between gap-3">
-                <span class="text-zinc-500">Retira</span>
-                <span class="font-extrabold text-right">
-                  {{ $order->pickup_delegate_name ?: '—' }}
-                  @if($order->pickup_delegate_phone)
-                    <span class="text-zinc-500 font-normal">({{ $order->pickup_delegate_phone }})</span>
+              <div class="pt-2 border-t border-zinc-200">
+                <div class="text-xs font-black text-zinc-700">Retira otra persona</div>
+                <div class="mt-2 space-y-1">
+                  @if($order->pickup_delegate_name)
+                    <div class="flex items-start justify-between gap-3">
+                      <span class="text-zinc-500">Nombre</span>
+                      <span class="font-extrabold text-right">{{ $order->pickup_delegate_name }}</span>
+                    </div>
                   @endif
-                </span>
+                  @if($order->pickup_delegate_phone)
+                    <div class="flex items-start justify-between gap-3">
+                      <span class="text-zinc-500">Teléfono</span>
+                      <span class="font-extrabold text-right">{{ $order->pickup_delegate_phone }}</span>
+                    </div>
+                  @endif
+                </div>
               </div>
             @endif
 
-            <div class="flex items-start justify-between gap-3">
-              <span class="text-zinc-500">Email</span>
-              <span class="font-extrabold text-right">{{ $order->user?->email ?? '—' }}</span>
-            </div>
+            @if($order->notes)
+              <div class="pt-2 border-t border-zinc-200">
+                <div class="text-xs font-black text-zinc-700">Notas</div>
+                <div class="mt-1 text-sm text-zinc-700 whitespace-pre-line">{{ $order->notes }}</div>
+              </div>
+            @endif
           </div>
-
-          @if($order->notes)
-            <div class="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-3 text-sm">
-              <div class="text-xs font-black uppercase text-zinc-500">Notas</div>
-              <div class="mt-1 whitespace-pre-wrap font-semibold text-zinc-800">{{ $order->notes }}</div>
-            </div>
-          @endif
         </div>
       </div>
 
@@ -203,171 +278,102 @@
             @csrf
 
             <div>
-              <label for="status" class="block mb-1">Nuevo estado</label>
-              <select id="status" name="status">
-                @foreach($statusMap as $k => $label)
-                  <option value="{{ $k }}" @selected(old('status', $order->status) === $k)>{{ $label }}</option>
+              <label class="label">Estado</label>
+              <select name="status" class="w-full">
+                @foreach($statusMap as $key => $label)
+                  <option value="{{ $key }}" @selected($order->status === $key)>{{ $label }}</option>
                 @endforeach
               </select>
             </div>
 
             <div>
-              <label for="comment" class="block mb-1">Comentario (opcional)</label>
-              <textarea id="comment" name="comment" rows="3" placeholder="Ej: Avisado por WhatsApp, paga al retirar, etc.">{{ old('comment') }}</textarea>
+              <label class="label">Comentario (opcional)</label>
+              <input type="text" name="comment" placeholder="Ej: listo para retirar" />
             </div>
 
             <button class="btn-primary w-full" type="submit">Guardar estado</button>
-
-            <p class="text-xs text-zinc-500">
-              Tip: “Listo para retirar” es ideal para avisar al cliente.
-            </p>
           </form>
-        </div>
-      </div>
-
-      @php
-        $waState = !$waUrl ? 'no_phone' : ($waLastForStatus ? 'ok' : 'pending');
-        $waStateBadge = $waState === 'ok' ? 'badge-emerald' : ($waState === 'pending' ? 'badge-amber' : 'badge-zinc');
-        $waStateText = $waState === 'ok' ? 'WA OK' : ($waState === 'pending' ? 'WA pendiente' : 'Sin teléfono');
-
-        $waLastAt = $waLastForStatus?->sent_at?->format('d/m/Y H:i') ?? '—';
-        $waLastBy = $waLastForStatus?->sentBy?->name
-          ?? $waLastForStatus?->sentBy?->email
-          ?? '—';
-      @endphp
-
-      <div class="card-head">
-        <div class="font-black">WhatsApp</div>
-
-        <span class="{{ $waStateBadge }}" data-admin-order-wa-badge>{{ $waStateText }}</span>
-
-        <span class="badge-zinc" data-admin-wa-last>
-          Último:
-          <span data-admin-wa-last-at>{{ $waLastAt }}</span>
-          ·
-          <span data-admin-wa-last-by>{{ $waLastBy }}</span>
-        </span>
-      </div>
-
-
-        <div class="card-body">
-          @if($waUrl)
-            <a
-              href="{{ $waUrl }}"
-              target="_blank"
-              rel="noopener"
-              class="btn-outline w-full"
-              data-admin-order-wa-link
-              data-admin-order-wa-open
-            >
-              Abrir WhatsApp (y registrar log)
-            </a>
-
-              {{-- texto oculto para copiar --}}
-            <textarea id="nrAdminOrderWaText" class="hidden" readonly data-admin-order-wa-message>{{ $waMessage }}</textarea>
-
-            <button type="button"
-                    class="btn-ghost w-full mt-2"
-                    data-copy-target="#nrAdminOrderWaText"
-                    data-copy-toast="Mensaje copiado ✅">
-              Copiar mensaje
-            </button>
-
-            <details class="mt-3">
-              <summary class="text-xs font-black text-zinc-600 cursor-pointer select-none">
-                Ver mensaje
-              </summary>
-              <textarea readonly rows="8" class="mt-2" data-admin-order-wa-message>{{ $waMessage }}</textarea>
-            </details>
-
-            <div class="mt-3 text-xs text-zinc-500">
-              Plantillas:
-              <a class="underline font-bold"
-                href="{{ route('admin.orders_whatsapp_templates.index') }}">
-                Editar WhatsApp pedidos
-              </a>
-            </div>
-
-            <p class="mt-2 text-xs text-zinc-500">
-              Se registra el envío (audit). El botón abre WhatsApp en otra pestaña.
-            </p>
-
-            <div class="mt-4 border-t border-zinc-200 pt-3">
-              <div class="text-xs font-black uppercase text-zinc-500">Envíos registrados</div>
-
-              <ol class="mt-2 space-y-2" data-admin-wa-log-list>
-                @foreach(($order->whatsappLogs ?? collect())->take(5) as $log)
-                  <li class="rounded-xl border border-zinc-200 p-3">
-                    <div class="flex items-center justify-between gap-2">
-                      <div class="font-extrabold text-zinc-900">
-                        {{ $statusMap[$log->notified_status] ?? $log->notified_status }}
-                      </div>
-                      <div class="text-xs text-zinc-500">
-                        {{ $log->sent_at?->format('d/m/Y H:i') ?? '—' }}
-                      </div>
-                    </div>
-
-                    <div class="text-xs text-zinc-500 mt-1">
-                      {{ $log->sentBy?->name ?? $log->sentBy?->email ?? '—' }}
-                    </div>
-
-                    <details class="mt-2">
-                      <summary class="text-xs font-black text-zinc-600 cursor-pointer select-none">Ver mensaje</summary>
-                      <div class="mt-2 text-xs whitespace-pre-wrap text-zinc-700">{{ $log->message }}</div>
-                    </details>
-                  </li>
-                @endforeach
-              </ol>
-
-              @if(($order->whatsappLogs?->count() ?? 0) === 0)
-                <div class="mt-2 text-sm text-zinc-600" data-admin-wa-log-empty>
-                  Sin envíos registrados para este pedido.
-                </div>
-              @endif
-            </div>
-
-          @else
-            <div class="text-sm text-zinc-600">
-              No hay teléfono válido para WhatsApp. Cargá <span class="font-bold">pickup_phone</span> o un teléfono en el usuario.
-            </div>
-          @endif
         </div>
       </div>
 
       <div class="card">
         <div class="card-head">
-          <div class="font-black">Historial</div>
-          <span class="badge-zinc">{{ $order->statusHistories?->count() ?? 0 }} cambios</span>
+          <div class="font-black">WhatsApp</div>
+          <span class="badge-zinc">{{ $waPhone ?: '—' }}</span>
         </div>
 
-        <div class="card-body">
-          @if(($order->statusHistories?->count() ?? 0) > 0)
-            <ol class="space-y-3">
-              @foreach($order->statusHistories as $h)
-                <li class="flex items-start gap-3">
-                  <span class="mt-2 h-2 w-2 rounded-full bg-sky-500"></span>
-                  <div class="min-w-0">
-                    <div class="font-extrabold text-zinc-900">
-                      {{ $statusMap[$h->from_status] ?? $h->from_status }}
-                      →
-                      {{ $statusMap[$h->to_status] ?? $h->to_status }}
-                    </div>
-                    <div class="text-xs text-zinc-500">
-                      {{ $h->changed_at?->format('d/m/Y H:i') ?? '—' }}
-                      @if($h->changer)
-                        · {{ $h->changer->name ?? $h->changer->email }}
+        <div class="card-body space-y-3">
+          <div class="text-sm text-zinc-700">
+            <div class="text-xs text-zinc-500 font-black mb-1">Mensaje</div>
+            <div class="whitespace-pre-line leading-relaxed">{{ $waMessage ?: '—' }}</div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            @if($waUrl)
+              <a class="btn-outline w-full"
+                href="{{ $waUrl }}"
+                target="_blank"
+                rel="noopener"
+                data-admin-order-wa-open>
+                Abrir WhatsApp
+              </a>
+            @else
+              <button type="button" class="btn-outline w-full opacity-50" disabled>
+                Sin teléfono
+              </button>
+            @endif
+
+            <form method="POST" action="{{ route('admin.orders.whatsappLog', $order->id) }}"
+                  class="space-y-0"
+                  data-admin-order-wa-log
+                  data-wa-log-url="{{ route('admin.orders.whatsappLogAjax', $order->id) }}"
+                  data-wa-phone="{{ $waPhone }}"
+                  data-wa-message="{{ $waMessage }}">
+              @csrf
+              <button class="btn-primary w-full" type="submit" {{ $waUrl ? '' : 'disabled' }}>
+                Marcar como enviado
+              </button>
+            </form>
+          </div>
+
+          <div>
+            <div class="text-xs text-zinc-500 font-black mb-2">Historial de envíos</div>
+
+            <div class="space-y-2">
+              @if($waLogs->count())
+                <ol class="space-y-2">
+                  @foreach($waLogs as $log)
+                    <li class="rounded-2xl border border-zinc-200 bg-white px-3 py-2">
+                      <div class="flex items-start justify-between gap-3">
+                        <div class="text-xs font-black text-zinc-900">
+                          {{ $statusMap[$log->notified_status] ?? $log->notified_status }}
+                        </div>
+                        <div class="text-xs text-zinc-500">
+                          {{ optional($log->sent_at)->format('d/m/Y H:i') }}
+                        </div>
+                      </div>
+
+                      <div class="mt-1 text-xs text-zinc-600">
+                        <span class="font-bold">Tel:</span> {{ $log->phone }}
+                        @if($log->sent_by)
+                          <span class="text-zinc-300">•</span>
+                          <span class="font-bold">Por:</span> {{ $log->sent_by?->name ?? '—' }}
+                        @endif
+                      </div>
+
+                      @if($log->message)
+                        <div class="mt-2 text-xs text-zinc-700 whitespace-pre-line">
+                          {{ $log->message }}
+                        </div>
                       @endif
-                    </div>
-                    @if($h->comment)
-                      <div class="mt-1 text-sm text-zinc-700 whitespace-pre-wrap">{{ $h->comment }}</div>
-                    @endif
-                  </div>
-                </li>
-              @endforeach
-            </ol>
-          @else
-            <div class="text-sm text-zinc-600">Todavía no hay historial registrado.</div>
-          @endif
+                    </li>
+                  @endforeach
+                </ol>
+              @else
+                <div class="text-sm text-zinc-500">Sin envíos registrados para este pedido.</div>
+              @endif
+            </div>
+          </div>
         </div>
       </div>
     </div>
