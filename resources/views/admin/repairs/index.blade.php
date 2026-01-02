@@ -26,6 +26,10 @@
   $status = $status ?? '';
   $wa = $wa ?? '';
   $q = $q ?? '';
+
+  $tabs = ['' => 'Todos'] + ($statuses ?? []);
+  $statusCounts = $statusCounts ?? [];
+  $totalCount = $totalCount ?? 0;
 @endphp
 
 @section('content')
@@ -35,6 +39,41 @@
       <div class="page-title">Reparaciones</div>
       <div class="page-subtitle">Gestioná estados, impresión y WhatsApp. Todo 100% mobile-first.</div>
     </div>
+
+    {{-- Tabs por estado (con contadores) --}}
+    <div class="flex items-center gap-2 overflow-x-auto pb-1">
+      @foreach($tabs as $key => $label)
+        @php
+          $isActive = ($status ?? '') === (string)$key;
+
+          $params = array_filter([
+            'q' => $q ?? '',
+            'wa' => $wa ?? '',
+            'status' => $key,
+          ], fn($v) => $v !== '' && $v !== null);
+
+          // Para "Todos", no mandamos status
+          if ($key === '') unset($params['status']);
+
+          $href = route('admin.repairs.index', $params);
+
+          $count = $key === '' ? (int)$totalCount : (int)($statusCounts[$key] ?? 0);
+          $countKey = $key === '' ? 'all' : (string)$key;
+        @endphp
+
+        <a href="{{ $href }}" class="nav-pill {{ $isActive ? 'nav-pill-active' : '' }}">
+          <span>{{ $label }}</span>
+          <span
+            class="inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-black
+                  ring-1 ring-zinc-200 bg-white/70 text-zinc-700"
+            data-admin-repairs-count="{{ $countKey }}"
+          >
+            {{ $count }}
+          </span>
+        </a>
+      @endforeach
+    </div>
+
 
     <div class="flex gap-2 flex-wrap">
       <a class="btn-primary" href="{{ route('admin.repairs.create') }}">+ Nueva reparación</a>

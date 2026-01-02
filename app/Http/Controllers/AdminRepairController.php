@@ -18,6 +18,50 @@ class AdminRepairController extends Controller
         $wa = $request->get('wa'); // pending | sent | null
         $q = trim((string) $request->get('q', ''));
 
+        // ✅ Counts por estado (respeta q + wa, ignora filtro status)
+        $countQuery = Repair::query();
+
+        // Filtro WA (mismo criterio que el listado)
+        if ($wa === 'no_phone') {
+            $countQuery->where(function ($q) {
+                $q->whereNull('customer_phone')->orWhere('customer_phone', '');
+            });
+        } elseif ($wa === 'pending') {
+            $countQuery->where(function ($q) {
+                $q->whereNotNull('customer_phone')->where('customer_phone', '!=', '');
+            })->whereDoesntHave('whatsappLogs', function ($q) {
+                $q->whereColumn('repair_whatsapp_logs.notified_status', 'repairs.status');
+            });
+        } elseif ($wa === 'sent') {
+            $countQuery->where(function ($q) {
+                $q->whereNotNull('customer_phone')->where('customer_phone', '!=', '');
+            })->whereHas('whatsappLogs', function ($q) {
+                $q->whereColumn('repair_whatsapp_logs.notified_status', 'repairs.status');
+            });
+        }
+
+        // Búsqueda
+        if ($q !== '') {
+            $qDigits = preg_replace('/\D+/', '', $q);
+            $countQuery->where(function ($sub) use ($q, $qDigits) {
+                $sub->where('code', 'like', '%' . $q . '%')
+                    ->orWhere('customer_name', 'like', '%' . $q . '%');
+
+                if ($qDigits !== '') {
+                    $sub->orWhere('customer_phone', 'like', '%' . $qDigits . '%');
+                }
+            });
+        }
+
+        $statusCounts = (clone $countQuery)
+            ->selectRaw('status, COUNT(*) as c')
+            ->groupBy('status')
+            ->pluck('c', 'status')
+            ->toArray();
+
+        $totalCount = (int) array_sum($statusCounts);
+
+
         $query = Repair::query()
             ->select('repairs.*')
             // Flags para el listado (sin N+1)
@@ -131,12 +175,17 @@ class AdminRepairController extends Controller
         );
 
         return view('admin.repairs.index', [
-            'repairs'   => $repairs,
-            'statuses'  => Repair::STATUSES,
-            'status'    => $status,
-            'wa'        => $wa,
-            'q'         => $q,
-        ]);
+            'repairs' => $repairs,
+            'statuses' => Repair::STATUSES,
+            'status' => $status,
+            'wa' => $wa,
+            'q' => $q,
+
+            // ✅ NUEVO
+            'statusCounts' => $statusCounts,
+            'totalCount' => $totalCount,
+            ]);
+
     }
 
     public function create()
