@@ -49,7 +49,8 @@ class OrderController extends Controller
             $order = null;
 
             DB::transaction(function () use (&$order, $cart, $data, $user) {
-                // 1) Productos actualizados + lock para evitar overselling
+
+                // Productos actualizados + lock para evitar overselling
                 $productIds = collect($cart)->pluck('id')->filter()->unique()->values()->all();
 
                 $products = Product::query()
@@ -74,9 +75,8 @@ class OrderController extends Controller
                         ]);
                     }
 
-                    // Nota: hoy el proyecto usa "stock = 0" como "sin control".
-                    // Si querés que 0 signifique "sin stock", lo ajustamos aparte.
-                    if ($product->stock > 0 && $qty > $product->stock) {
+                    // ✅ Stock real (0 = sin stock)
+                    if ($qty > (int)$product->stock) {
                         throw ValidationException::withMessages([
                             'cart' => "Stock insuficiente para \"{$product->name}\". Disponible: {$product->stock}.",
                         ]);
@@ -91,14 +91,13 @@ class OrderController extends Controller
                     $itemsToCreate[] = [
                         'product_id'   => $product->id,
                         'product_name' => $product->name,
-                        'price'        => $unitPrice,   // 👈 la columna real
+                        'price'        => $unitPrice, // columna real en order_items
                         'quantity'     => $qty,
                         'subtotal'     => $subtotal,
                     ];
-
                 }
 
-                // 2) Pedido + historia inicial
+                // Pedido + historia inicial
                 $order = Order::create([
                     'user_id'               => Auth::id(),
                     'status'                => 'pendiente',
@@ -120,25 +119,25 @@ class OrderController extends Controller
                     'comment'     => 'Pedido creado',
                 ]);
 
-                // 3) Items + descuento de stock (cuando aplica)
+                // Items + descuento de stock
                 foreach ($itemsToCreate as $it) {
                     OrderItem::create([
-                    'order_id'     => $order->id,
-                    'product_id'   => $it['product_id'],
-                    'product_name' => $it['product_name'],
-                    'price'        => $it['price'],   // 👈 la columna real
-                    'quantity'     => $it['quantity'],
-                    'subtotal'     => $it['subtotal'],
+                        'order_id'     => $order->id,
+                        'product_id'   => $it['product_id'],
+                        'product_name' => $it['product_name'],
+                        'price'        => $it['price'],
+                        'quantity'     => $it['quantity'],
+                        'subtotal'     => $it['subtotal'],
                     ]);
 
                     $product = $products->get($it['product_id']);
-                    if ($product && $product->stock > 0) {
-                        $product->decrement('stock', $it['quantity']);
+                    if ($product) {
+                        $product->decrement('stock', (int)$it['quantity']);
                     }
                 }
             });
 
-            // 4) Si salió bien, vaciamos carrito
+            // Si salió bien, vaciamos carrito
             $request->session()->forget('cart');
 
             return redirect()
@@ -150,6 +149,7 @@ class OrderController extends Controller
                 ->withErrors($e->errors());
         }
     }
+
 
 
     /**

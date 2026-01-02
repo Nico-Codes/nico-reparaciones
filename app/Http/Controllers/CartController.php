@@ -37,18 +37,28 @@ class CartController extends Controller
             $quantity = 1;
         }
 
-        // No permitir más que el stock disponible
-        if ($product->stock > 0 && $quantity > $product->stock) {
-            $quantity = $product->stock;
+        // ✅ Stock real: 0 = sin stock
+        if ((int)$product->stock <= 0) {
+            return back()->withErrors([
+                'stock' => 'Este producto está sin stock.',
+            ]);
         }
+
+
+        // No permitir más que el stock disponible
+        if ($quantity > $product->stock) {
+            $quantity = (int) $product->stock;
+        }
+
 
         if (isset($cart[$product->id])) {
             // Ya existe, sumo cantidad
             $newQuantity = $cart[$product->id]['quantity'] + $quantity;
 
-            if ($product->stock > 0 && $newQuantity > $product->stock) {
-                $newQuantity = $product->stock;
+            if ($newQuantity > $product->stock) {
+                $newQuantity = (int) $product->stock;
             }
+
 
             $cart[$product->id]['quantity'] = $newQuantity;
         } else {
@@ -109,11 +119,22 @@ class CartController extends Controller
             $quantity = 1;
         }
 
-        if ($product->stock > 0 && $quantity > $product->stock) {
-            $quantity = $product->stock;
+        // ✅ Si quedó sin stock, lo sacamos del carrito
+        if ((int)$product->stock <= 0) {
+            unset($cart[$product->id]);
+            $request->session()->put('cart', $cart);
+
+            return redirect()
+                ->route('cart.index')
+                ->withErrors(['stock' => 'Un producto del carrito se quedó sin stock y fue eliminado.']);
+        }
+
+        if ($quantity > $product->stock) {
+            $quantity = (int) $product->stock;
         }
 
         $cart[$product->id]['quantity'] = $quantity;
+
 
         $request->session()->put('cart', $cart);
 
