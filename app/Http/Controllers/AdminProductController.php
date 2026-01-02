@@ -46,8 +46,9 @@ class AdminProductController extends Controller
             'name' => ['required', 'string', 'max:120'],
             'slug' => ['nullable', 'string', 'max:255'],
             'category_id' => ['required', 'exists:categories,id'],
-            'price' => ['required', 'numeric', 'min:0'],
+            'price' => ['required', 'integer', 'min:0'],
             'stock' => ['required', 'integer', 'min:0'],
+
             'description' => ['nullable', 'string', 'max:2000'],
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
         ]);
@@ -80,8 +81,9 @@ class AdminProductController extends Controller
             'name' => ['required', 'string', 'max:120'],
             'slug' => ['nullable', 'string', 'max:255'],
             'category_id' => ['required', 'exists:categories,id'],
-            'price' => ['required', 'numeric', 'min:0'],
+            'price' => ['required', 'integer', 'min:0'],
             'stock' => ['required', 'integer', 'min:0'],
+
             'description' => ['nullable', 'string', 'max:2000'],
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
             'remove_image' => ['nullable', 'boolean'],
