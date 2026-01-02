@@ -102,11 +102,82 @@
   <div class="grid gap-4 lg:grid-cols-3">
     {{-- Columna izquierda: resumen + estado + whatsapp --}}
     <div class="space-y-4 lg:col-span-1">
+      @php
+        $isFinal = in_array((string)$repair->status, ['delivered','cancelled'], true);
+      @endphp
+
+      {{-- Acciones rápidas --}}
+      <div class="card">
+        <div class="card-head">
+          <div class="font-black">Acciones rápidas</div>
+          <span class="badge-zinc">{{ $repair->code ?? '—' }}</span>
+        </div>
+
+        <div class="card-body space-y-2">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <a class="btn-outline w-full"
+              href="{{ route('admin.repairs.print', $repair) }}"
+              target="_blank"
+              rel="noopener">
+              Imprimir
+            </a>
+
+            <a class="btn-outline w-full"
+              href="{{ route('admin.repairs.ticket', $repair) }}?autoprint=1"
+              target="_blank"
+              rel="noopener">
+              Ticket
+            </a>
+          </div>
+
+          @if(!empty($waUrl))
+            <a href="{{ $waUrl }}" class="btn-outline w-full" target="_blank" rel="noopener"
+              data-wa-open
+              data-wa-ajax="{{ route('admin.repairs.whatsappLogAjax', $repair) }}">
+              Abrir WhatsApp
+            </a>
+          @else
+            <button type="button" class="btn-outline w-full opacity-50" disabled>
+              WhatsApp (sin teléfono)
+            </button>
+          @endif
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-zinc-200">
+            <form method="POST" action="{{ route('admin.repairs.updateStatus', $repair) }}"
+                  onsubmit="return confirm('¿Marcar como ENTREGADA la reparación {{ $repair->code ?? '' }}?');">
+              @csrf
+              <input type="hidden" name="status" value="delivered">
+              <input type="hidden" name="comment" value="Acción rápida: marcada como entregada">
+              <button class="btn-primary w-full" type="submit" {{ $isFinal ? 'disabled' : '' }}>
+                Marcar entregada
+              </button>
+            </form>
+
+            <form method="POST" action="{{ route('admin.repairs.updateStatus', $repair) }}"
+                  onsubmit="return confirm('¿Cancelar la reparación {{ $repair->code ?? '' }}?');">
+              @csrf
+              <input type="hidden" name="status" value="cancelled">
+              <input type="hidden" name="comment" value="Acción rápida: reparación cancelada">
+              <button class="btn-outline w-full" type="submit" {{ $isFinal ? 'disabled' : '' }}>
+                Cancelar
+              </button>
+            </form>
+          </div>
+
+          @if($isFinal)
+            <p class="text-xs text-zinc-500">
+              Esta reparación ya está en un estado final (entregada/cancelada).
+            </p>
+          @endif
+        </div>
+      </div>
+
       <div class="card">
         <div class="card-head">
           <div class="font-black">Resumen</div>
           <span class="badge-zinc">Código: {{ $repair->code ?? '—' }}</span>
         </div>
+
         <div class="card-body">
           <div class="text-sm text-zinc-700 space-y-2">
             <div class="flex items-start justify-between gap-3">
@@ -153,9 +224,7 @@
         <div class="card-head">
           <div class="font-black">Cambiar estado</div>
           <span class="{{ $badge($repair->status) }}">{{ $statusLabel }}</span>
-          @php
-            $isFinal = in_array($repair->status, ['delivered','cancelled'], true);
-          @endphp
+          
         </div>
         <div class="card-body">
           <form method="POST" action="{{ route('admin.repairs.updateStatus', $repair) }}" class="space-y-3">

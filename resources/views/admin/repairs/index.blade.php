@@ -144,24 +144,39 @@
             <div class="min-w-0">
               <div class="text-xs text-zinc-500">Código</div>
               <div class="font-black text-zinc-900">{{ $repair->code }}</div>
-              <div class="mt-1 text-sm text-zinc-700">
-                <span class="font-semibold">{{ $repair->customer_name }}</span>
-                <span class="text-zinc-400">·</span>
-                <span class="text-zinc-600">{{ $repair->customer_phone }}</span>
-              </div>
-              <div class="mt-1 text-sm text-zinc-600">
-                {{ trim(($repair->device_brand ?? '').' '.($repair->device_model ?? '')) ?: '—' }}
-              </div>
-            </div>
 
-            <div class="flex flex-col items-end gap-2">
-              <span class="{{ $badge($repair->status) }}">
-                {{ $statuses[$repair->status] ?? $repair->status }}
-              </span>
-              <span class="{{ $waChip($repair) }}">
-                WA: {{ ($repair->wa_notified_current ?? false) ? 'OK' : 'Pend.' }}
-              </span>
-            </div>
+              @php
+                $rcv = $repair->received_at ?: $repair->created_at;
+                $rcvText = $rcv ? $rcv->format('d/m/Y H:i') : '—';
+                $rcvAge  = $rcv ? $rcv->locale('es')->diffForHumans() : null;
+              @endphp
+              <div class="mt-1 text-xs text-zinc-500">
+                Recibido: <span class="font-semibold text-zinc-700">{{ $rcvText }}</span>
+                @if($rcvAge)
+                  <span class="text-zinc-400">·</span>
+                  <span class="font-bold text-zinc-600">{{ $rcvAge }}</span>
+                @endif
+              </div>
+
+              <div class="mt-1 text-sm text-zinc-700">
+
+                  <span class="font-semibold">{{ $repair->customer_name }}</span>
+                  <span class="text-zinc-400">·</span>
+                  <span class="text-zinc-600">{{ $repair->customer_phone }}</span>
+                </div>
+                <div class="mt-1 text-sm text-zinc-600">
+                  {{ trim(($repair->device_brand ?? '').' '.($repair->device_model ?? '')) ?: '—' }}
+                </div>
+              </div>
+
+              <div class="flex flex-col items-end gap-2">
+                <span class="{{ $badge($repair->status) }}">
+                  {{ $statuses[$repair->status] ?? $repair->status }}
+                </span>
+                <span class="{{ $waChip($repair) }}">
+                  WA: {{ ($repair->wa_notified_current ?? false) ? 'OK' : 'Pend.' }}
+                </span>
+              </div>
           </div>
 
           <div class="mt-4 flex items-center justify-between gap-2">
@@ -208,7 +223,18 @@
         <tbody>
           @forelse($repairs as $repair)
             <tr>
-              <td class="font-black">{{ $repair->code }}</td>
+              <td>
+                <div class="font-black">{{ $repair->code }}</div>
+                @php
+                  $rcv = $repair->received_at ?: $repair->created_at;
+                  $rcvText = $rcv ? $rcv->format('d/m/Y H:i') : '—';
+                  $rcvAge  = $rcv ? $rcv->locale('es')->diffForHumans() : null;
+                @endphp
+                <div class="text-xs text-zinc-500">
+                  Recibido: {{ $rcvText }}@if($rcvAge) · <span class="font-bold text-zinc-600">{{ $rcvAge }}</span>@endif
+                </div>
+              </td>
+
               <td>
                 <div class="font-semibold text-zinc-900">{{ $repair->customer_name }}</div>
                 <div class="text-xs text-zinc-500">{{ $repair->customer_phone }}</div>

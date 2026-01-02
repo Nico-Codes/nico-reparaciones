@@ -64,11 +64,6 @@
         <input type="hidden" name="status" value="{{ $currentStatus }}">
       @endif
 
-      @if($currentWa !== '')
-        <input type="hidden" name="wa" value="{{ $currentWa }}">
-      @endif
-
-
       <input
         type="text"
         name="q"
@@ -76,11 +71,23 @@
         placeholder="Buscar: #id, nombre, teléfono, email…"
         class="w-full md:w-[320px]"
       >
-      <button class="btn-primary" type="submit">Buscar</button>
-      @if($q !== '')
-        <a class="btn-outline" href="{{ route('admin.orders.index', $currentStatus ? ['status' => $currentStatus] : []) }}">Limpiar</a>
+
+      <select name="wa" class="md:w-52">
+        @foreach($waTabs as $key => $label)
+          <option value="{{ $key }}" @selected((string)$currentWa === (string)$key)>{{ $label }}</option>
+        @endforeach
+      </select>
+
+      <button class="btn-primary" type="submit">Filtrar</button>
+
+      @if($q !== '' || $currentWa !== '')
+        <a class="btn-outline"
+          href="{{ route('admin.orders.index', array_filter(['status' => $currentStatus, 'wa' => $currentWa], fn($v) => $v !== '')) }}">
+          Limpiar
+        </a>
       @endif
     </form>
+
   </div>
 
   {{-- Tabs --}}
