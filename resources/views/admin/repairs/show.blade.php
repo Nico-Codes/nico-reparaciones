@@ -153,6 +153,9 @@
         <div class="card-head">
           <div class="font-black">Cambiar estado</div>
           <span class="{{ $badge($repair->status) }}">{{ $statusLabel }}</span>
+          @php
+            $isFinal = in_array($repair->status, ['delivered','cancelled'], true);
+          @endphp
         </div>
         <div class="card-body">
           <form method="POST" action="{{ route('admin.repairs.updateStatus', $repair) }}" class="space-y-3">
@@ -160,14 +163,20 @@
 
             <div>
               <label for="status" class="block mb-1">Nuevo estado</label>
-              <select id="status" name="status">
+              <select id="status" name="status" @disabled($isFinal)>
                 @foreach($statuses as $k => $label)
                   <option value="{{ $k }}" @selected(old('status', $repair->status) === $k)>{{ $label }}</option>
                 @endforeach
               </select>
             </div>
 
-            <button class="btn-primary w-full">Guardar estado</button>
+            <button class="btn-primary w-full" @disabled($isFinal)>Guardar estado</button>
+
+            @if($isFinal)
+              <p class="text-xs text-zinc-500 mt-2">
+                Este estado es final y no puede modificarse.
+              </p>
+            @endif
 
             <p class="text-xs text-zinc-500">
               Si marcás “Entregado”, la garantía (si tiene días) se calcula desde la fecha de entrega.

@@ -9,6 +9,8 @@ use App\Models\RepairWhatsappLog;
 use App\Models\RepairWhatsappTemplate;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+
 
 class AdminRepairController extends Controller
 {
@@ -382,35 +384,100 @@ class AdminRepairController extends Controller
     public function updateStatus(Request $request, Repair $repair)
     {
         $request->validate([
-            'status'   => 'required|string|in:' . implode(',', array_keys(Repair::STATUSES)),
-            'comment'  => 'nullable|string|max:500',
+            'status'  => 'required|string|in:' . implode(',', array_keys(Repair::STATUSES)),
+            'comment' => 'nullable|string|max:500',
         ]);
 
-        $from = $repair->status;
-        $to = $request->input('status');
+        $from = (string) $repair->status;
+        $to   = (string) $request->input('status');
+
+        $isAjax = $request->expectsJson()
+            || $request->wantsJson()
+            || $request->header('X-Requested-With') === 'XMLHttpRequest';
 
         if ($from === $to) {
+            if ($isAjax) {
+                return response()->json([
+                    'ok' => true,
+                    'changed' => false,
+                    'message' => 'El estado ya era ese.',
+                    'status' => $from,
+                    'status_label' => Repair::STATUSES[$from] ?? $from,
+                ]);
+            }
+
             return back()->with('success', 'El estado ya era ese.');
         }
 
-        $repair->status = $to;
-        if ($to === 'delivered' && !$repair->delivered_at) {
-            $repair->delivered_at = now();
+        // ✅ Cancelado es final (no se puede “des-cancelar”)
+        if ($from === 'cancelled' && $to !== 'cancelled') {
+            $msg = 'Una reparación cancelada no puede volver a otro estado.';
+            if ($isAjax) {
+                return response()->json([
+                    'ok' => false,
+                    'changed' => false,
+                    'message' => $msg,
+                    'status' => $from,
+                    'status_label' => Repair::STATUSES[$from] ?? $from,
+                ], 422);
+            }
+            return back()->withErrors(['status' => $msg]);
         }
-        $repair->save();
 
-        RepairStatusHistory::create([
-            'repair_id'   => $repair->id,
-            'from_status' => $from,
-            'to_status'   => $to,
-            'changed_by'  => auth()->id(),
-            'changed_at'  => now(),
-            'comment'     => $request->input('comment'),
-        ]);
+        // ✅ Entregado es final (evita romper garantía/fechas)
+        if ($from === 'delivered' && $to !== 'delivered') {
+            $msg = 'Una reparación entregada no puede cambiar de estado.';
+            if ($isAjax) {
+                return response()->json([
+                    'ok' => false,
+                    'changed' => false,
+                    'message' => $msg,
+                    'status' => $from,
+                    'status_label' => Repair::STATUSES[$from] ?? $from,
+                ], 422);
+            }
+            return back()->withErrors(['status' => $msg]);
+        }
 
-        $waPhone = $this->normalizeWhatsappPhone((string)$repair->customer_phone);
+        DB::transaction(function () use ($request, $repair, $from, $to) {
+            $repair->status = $to;
+
+            if ($to === 'delivered' && !$repair->delivered_at) {
+                $repair->delivered_at = now();
+            }
+
+            $repair->save();
+
+            RepairStatusHistory::create([
+                'repair_id'   => $repair->id,
+                'from_status' => $from,
+                'to_status'   => $to,
+                'changed_by'  => auth()->id(),
+                'changed_at'  => now(),
+                'comment'     => $request->input('comment'),
+            ]);
+        });
+
+        $waPhone   = $this->normalizeWhatsappPhone((string) $repair->customer_phone);
         $waMessage = $this->buildWhatsappMessage($repair);
-        $waUrl = $waPhone ? ('https://wa.me/' . $waPhone . '?text=' . urlencode($waMessage)) : null;
+        $waUrl     = $waPhone ? ('https://wa.me/' . $waPhone . '?text=' . urlencode($waMessage)) : null;
+
+        if ($isAjax) {
+            return response()->json([
+                'ok' => true,
+                'changed' => true,
+                'message' => 'Estado actualizado.',
+                'from_status' => $from,
+                'to_status' => $to,
+                'status' => $to,
+                'status_label' => Repair::STATUSES[$to] ?? $to,
+                'wa' => [
+                    'phone' => $waPhone,
+                    'message' => $waMessage,
+                    'url' => $waUrl,
+                ],
+            ]);
+        }
 
         return redirect()
             ->route('admin.repairs.show', $repair)
@@ -421,6 +488,7 @@ class AdminRepairController extends Controller
                 'url'     => $waUrl,
             ]);
     }
+
 
     // ✅ Compat con rutas actuales
     public function whatsappLog(Repair $repair)

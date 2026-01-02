@@ -21,7 +21,7 @@ use App\Http\Controllers\AdminOrderTicketController;
 use App\Http\Controllers\AdminRepairTicketController;
 
 
-
+use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\AdminCategoryController;
 use App\Http\Controllers\AdminProductController;
 use App\Http\Controllers\AdminBusinessSettingsController;
@@ -171,6 +171,12 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     Route::get('/productos/{product}/editar', [AdminProductController::class, 'edit'])->name('admin.products.edit');
     Route::put('/productos/{product}', [AdminProductController::class, 'update'])->name('admin.products.update');
     Route::delete('/productos/{product}', [AdminProductController::class, 'destroy'])->name('admin.products.destroy');
+
+    // Usuarios
+    Route::get('/usuarios', [AdminUserController::class, 'index'])->name('admin.users.index');
+    Route::get('/usuarios/{user}', [AdminUserController::class, 'show'])->name('admin.users.show');
+    Route::post('/usuarios/{user}/rol', [AdminUserController::class, 'updateRole'])->name('admin.users.updateRole');
+
 
     // Configuración negocio
     Route::get('/configuracion', [AdminBusinessSettingsController::class, 'index'])->name('admin.settings.index');
