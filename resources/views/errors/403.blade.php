@@ -1,22 +1,19 @@
 @extends('layouts.app')
 
-@section('title', 'Acceso denegado')
+@section('title', 'Acceso restringido')
 
 @section('content')
-<div class="card">
-  <div class="card-body">
-    <div class="flex flex-col gap-2">
-      <div class="text-xs font-black text-zinc-500">Error 403</div>
-      <h1 class="text-2xl md:text-3xl font-black tracking-tight">No tenés permiso para ver esto</h1>
-      <p class="text-sm text-zinc-600">
-        Si creés que esto es un error, iniciá sesión con la cuenta correcta o volvé al inicio.
+  <div class="card max-w-xl mx-auto">
+    <div class="card-body">
+      <div class="text-lg font-black text-zinc-900">Acceso restringido</div>
+      <p class="text-sm text-zinc-600 mt-2">
+        {{ isset($exception) && $exception->getMessage() ? $exception->getMessage() : 'No tenés permisos para acceder a esta sección.' }}
       </p>
 
-      <div class="mt-3 flex flex-col sm:flex-row gap-2">
-        <a href="{{ route('store.index') }}" class="btn-primary">Ir a la tienda</a>
-        <a href="{{ route('login') }}" class="btn-outline">Iniciar sesión</a>
+      <div class="mt-4 flex gap-2 flex-wrap">
+        <a class="btn-outline" href="{{ url()->previous() }}">Volver</a>
+        <a class="btn-primary" href="{{ route('store.index') }}">Ir a la tienda</a>
       </div>
     </div>
   </div>
-</div>
 @endsection

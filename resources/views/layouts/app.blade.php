@@ -250,15 +250,15 @@
                 @if($has('orders.index')) <a class="dropdown-item" href="{{ route('orders.index') }}">Mis pedidos</a> @endif
                 @if($has('repairs.my.index')) <a class="dropdown-item" href="{{ route('repairs.my.index') }}">Mis reparaciones</a> @endif
                 @if($isAdmin && $has('admin.dashboard')) <a class="dropdown-item" href="{{ route('admin.dashboard') }}">Panel admin</a> @endif
-                @if(auth()->check() && auth()->user()->role === 'admin' && $has('admin.users.index'))
-                  <a class="sidebar-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}"
-                    href="{{ route('admin.users.index') }}">
+                @if($isAdmin && $has('admin.users.index'))
+                  <a class="dropdown-item" href="{{ route('admin.users.index') }}">
                     <span class="inline-flex items-center gap-2">
                       <img src="/icons/settings.svg" alt="" class="w-5 h-5" loading="lazy" decoding="async">
                       <span>Usuarios</span>
                     </span>
                   </a>
                 @endif
+
 
 
                 @if($has('logout'))
@@ -446,6 +446,17 @@
                   </span>
                 </a>
               @endif
+
+              @if($has('admin.users.index'))
+                <a class="sidebar-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}"
+                  href="{{ route('admin.users.index') }}">
+                  <span class="inline-flex items-center gap-2">
+                    <img src="/icons/settings.svg" alt="" class="w-5 h-5" loading="lazy" decoding="async">
+                    <span>Usuarios</span>
+                  </span>
+                </a>
+              @endif
+
             </div>
           </div>
   @endif
