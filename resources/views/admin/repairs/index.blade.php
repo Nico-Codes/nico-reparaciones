@@ -30,6 +30,11 @@
   $tabs = ['' => 'Todos'] + ($statuses ?? []);
   $statusCounts = $statusCounts ?? [];
   $totalCount = $totalCount ?? 0;
+
+    // ✅ Urgentes
+  $urgentHoursRepairs = 72;
+  $finalRepairStatuses = ['delivered','cancelled'];
+
 @endphp
 
 @section('content')
@@ -170,12 +175,25 @@
               </div>
 
               <div class="flex flex-col items-end gap-2">
+                @php
+                  $rcv = $repair->received_at ?: $repair->created_at;
+                  $isUrgentRepair = $rcv
+                    && !in_array((string)$repair->status, $finalRepairStatuses, true)
+                    && $rcv->lte(now()->subHours($urgentHoursRepairs));
+                @endphp
+
                 <span class="{{ $badge($repair->status) }}">
                   {{ $statuses[$repair->status] ?? $repair->status }}
                 </span>
+
+                @if($isUrgentRepair)
+                  <span class="badge-rose" title="Más de {{ $urgentHoursRepairs }}h sin cerrar">URGENTE</span>
+                @endif
+
                 <span class="{{ $waChip($repair) }}">
                   WA: {{ ($repair->wa_notified_current ?? false) ? 'OK' : 'Pend.' }}
                 </span>
+
               </div>
           </div>
 
@@ -240,7 +258,22 @@
                 <div class="text-xs text-zinc-500">{{ $repair->customer_phone }}</div>
               </td>
               <td class="text-zinc-700">{{ trim(($repair->device_brand ?? '').' '.($repair->device_model ?? '')) ?: '—' }}</td>
-              <td><span class="{{ $badge($repair->status) }}">{{ $statuses[$repair->status] ?? $repair->status }}</span></td>
+              <td>
+                @php
+                  $rcv = $repair->received_at ?: $repair->created_at;
+                  $isUrgentRepair = $rcv
+                    && !in_array((string)$repair->status, $finalRepairStatuses, true)
+                    && $rcv->lte(now()->subHours($urgentHoursRepairs));
+                @endphp
+
+                <div class="inline-flex items-center gap-2">
+                  <span class="{{ $badge($repair->status) }}">{{ $statuses[$repair->status] ?? $repair->status }}</span>
+                  @if($isUrgentRepair)
+                    <span class="badge-rose" title="Más de {{ $urgentHoursRepairs }}h sin cerrar">URGENTE</span>
+                  @endif
+                </div>
+              </td>
+
               <td><span class="{{ $waChip($repair) }}">{{ ($repair->wa_notified_current ?? false) ? 'OK' : 'Pendiente' }}</span></td>
               <td class="text-right font-black">{{ $money($repair->final_price) }}</td>
               <td class="text-right">

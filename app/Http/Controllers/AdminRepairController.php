@@ -66,7 +66,6 @@ class AdminRepairController extends Controller
 
         $query = Repair::query()
             ->select('repairs.*')
-            // Flags para el listado (sin N+1)
             ->addSelect([
                 'wa_notified_current' => RepairWhatsappLog::selectRaw('1')
                     ->whereColumn('repair_id', 'repairs.id')
@@ -79,8 +78,8 @@ class AdminRepairController extends Controller
                     ->whereColumn('notified_status', 'repairs.status')
                     ->orderByDesc('sent_at')
                     ->limit(1),
-            ])
-            ->latest();
+            ]);
+
 
         if ($status) {
             $query->where('status', $status);
@@ -121,6 +120,14 @@ class AdminRepairController extends Controller
                 }
             });
         }
+
+        // ✅ Si estás filtrando por estado y NO es final, mostramos primero las más viejas
+        if ($status && !in_array((string)$status, ['delivered', 'cancelled'], true)) {
+            $query->orderByRaw('COALESCE(received_at, created_at) ASC');
+        } else {
+            $query->latest();
+        }
+
 
         $repairs = $query->paginate(20)->withQueryString();
 

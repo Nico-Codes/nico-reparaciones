@@ -48,6 +48,11 @@
     'no_phone'=> 'Sin teléfono',
   ];
 
+    // ✅ Urgentes
+    $urgentHoursOrders = 24;
+    $urgentOrderStatuses = ['pendiente','confirmado']; // ajustable
+
+
 @endphp
 
 @section('content')
@@ -149,7 +154,12 @@
 
         $st = (string)($order->status ?? 'pendiente');
         $stLabel = $statusMap[$st] ?? $st;
+
+        $isUrgent = $order->created_at
+          && in_array($st, $urgentOrderStatuses, true)
+          && $order->created_at->lte(now()->subHours($urgentHoursOrders));
       @endphp
+
 
 
       <div class="card" data-admin-order-card data-order-id="{{ $order->id }}" data-status="{{ $st }}">
@@ -159,6 +169,10 @@
               <div class="flex flex-wrap items-center gap-2">
                 <div class="font-black text-zinc-900">Pedido #{{ $order->id }}</div>
                 <span class="{{ $badge($st) }}" data-admin-order-status-badge>{{ $stLabel }}</span>
+                @if($isUrgent)
+                  <span class="badge-rose" title="Más de {{ $urgentHoursOrders }}h en {{ $stLabel }}">URGENTE</span>
+                @endif
+
                 @if($order->payment_method)
                   <span class="badge-zinc">{{ $order->payment_method }}</span>
                 @endif

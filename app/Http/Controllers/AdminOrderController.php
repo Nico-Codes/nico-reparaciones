@@ -86,7 +86,13 @@ class AdminOrderController extends Controller
             });
         }
 
-        $orders = $query->latest()->paginate(20)->withQueryString();
+        if ($status === 'pendiente') {
+            // ✅ Pendientes: mostrar primero los más viejos
+            $orders = $query->orderBy('created_at', 'asc')->paginate(20)->withQueryString();
+        } else {
+            $orders = $query->latest()->paginate(20)->withQueryString();
+        }
+
 
         // Contadores por status (para tabs)
         $statusCounts = Order::query()
