@@ -172,10 +172,23 @@ class AdminOrderController extends Controller
 
         // ✅ Evita devolver stock por error en pedidos ya entregados
         if ($to === 'cancelado' && $from === 'entregado') {
+
+            if ($isAjax) {
+                return response()->json([
+                    'ok' => false,
+                    'changed' => false,
+                    'message' => 'No podés cancelar un pedido ya entregado.',
+                    'order_id' => $order->id,
+                    'status' => $from,
+                    'status_label' => \App\Models\Order::STATUSES[$from] ?? $from,
+                ], 422);
+            }
+
             return redirect()->back()->withErrors([
                 'status' => 'No podés cancelar un pedido ya entregado.',
             ]);
         }
+
 
         // ✅ Simple: si está cancelado, no se puede volver atrás (evita stocks inconsistentes)
         if ($from === 'cancelado' && $to !== 'cancelado') {

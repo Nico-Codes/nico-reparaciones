@@ -132,8 +132,20 @@ class OrderController extends Controller
 
                     $product = $products->get($it['product_id']);
                     if ($product) {
-                        $product->decrement('stock', (int)$it['quantity']);
+                        $qty = (int) $it['quantity'];
+
+                        $affected = Product::query()
+                            ->whereKey($product->id)
+                            ->where('stock', '>=', $qty)
+                            ->decrement('stock', $qty);
+
+                        if ($affected === 0) {
+                            throw ValidationException::withMessages([
+                                'cart' => "No se pudo confirmar: el stock de \"{$product->name}\" cambió. Volvé a intentar.",
+                            ]);
+                        }
                     }
+
                 }
             });
 
