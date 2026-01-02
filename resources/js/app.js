@@ -758,7 +758,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const clamp = (n) => Math.max(1, Math.min(999, n));
     const getVal = () => clamp(parseInt(input.value, 10) || 1);
-    const setVal = (n) => { input.value = String(clamp(n)); };
+    const syncButtons = () => {
+      const v = getVal();
+      if (minus) minus.disabled = v <= 1;
+    };
+
+    const setVal = (n) => {
+      input.value = String(clamp(n));
+      syncButtons();
+    };
+
+    // Inicial (por si vino disabled desde Blade)
+    syncButtons();
 
     const postFormJsonQty = async (form) => {
       const res = await fetch(form.action, {
@@ -786,7 +797,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (typeof data.quantity !== 'undefined') {
           input.value = String(data.quantity);
+          syncButtons();
         }
+
 
         const card = form.closest('[data-cart-item]');
         const lineEl = card?.querySelector('[data-line-subtotal]');
