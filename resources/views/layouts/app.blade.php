@@ -237,10 +237,9 @@
 
 
               <div id="accountMenu" class="dropdown-menu hidden">
-                @if($has('account.edit')) <a class="dropdown-item" href="{{ route('account.edit') }}">Mi cuenta</a> @endif
+              
                 @if($has('account.edit'))
-                  <a class="sidebar-link {{ request()->routeIs('account.*') ? 'active' : '' }}"
-                    href="{{ route('account.edit') }}">
+                  <a class="dropdown-item" href="{{ route('account.edit') }}">
                     <span class="inline-flex items-center gap-2">
                       <img src="/icons/settings.svg" alt="" class="w-5 h-5" loading="lazy" decoding="async">
                       <span>Mi cuenta</span>
