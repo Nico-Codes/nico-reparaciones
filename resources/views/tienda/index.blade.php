@@ -76,8 +76,8 @@
                   <div class="product-actions">
                     <span class="badge-stock {{ $hasStock ? 'is-in' : 'is-out' }}">
                       {{ $hasStock ? ('Stock: ' . (int)$product->stock) : 'Sin stock' }}
-
                     </span>
+
 
                     <form method="POST" action="{{ route('cart.add', $product) }}">
                       @csrf
@@ -150,8 +150,9 @@
 
                 <div class="product-actions">
                   <span class="badge-stock {{ $hasStock ? 'is-in' : 'is-out' }}">
-                    {{ $hasStock ? 'Stock' : 'Sin stock' }}
+                    {{ $hasStock ? ('Stock: ' . (int)$product->stock) : 'Sin stock' }}
                   </span>
+
 
                   <form method="POST" action="{{ route('cart.add', $product) }}">
                     @csrf
