@@ -165,7 +165,7 @@ class OrderController extends Controller
 
 
     /**
-     * Listado de pedidos del usuario logueado.
+     * Listado de pedidos del usuario logueado..
      */
     public function index(Request $request)
     {
