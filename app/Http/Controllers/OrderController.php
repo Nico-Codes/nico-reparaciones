@@ -91,10 +91,11 @@ class OrderController extends Controller
                     $itemsToCreate[] = [
                         'product_id'   => $product->id,
                         'product_name' => $product->name,
-                        'unit_price'   => $unitPrice,
+                        'price'        => $unitPrice,   // 👈 la columna real
                         'quantity'     => $qty,
                         'subtotal'     => $subtotal,
                     ];
+
                 }
 
                 // 2) Pedido + historia inicial
@@ -122,12 +123,12 @@ class OrderController extends Controller
                 // 3) Items + descuento de stock (cuando aplica)
                 foreach ($itemsToCreate as $it) {
                     OrderItem::create([
-                        'order_id'     => $order->id,
-                        'product_id'   => $it['product_id'],
-                        'product_name' => $it['product_name'],
-                        'unit_price'   => $it['unit_price'],
-                        'quantity'     => $it['quantity'],
-                        'subtotal'     => $it['subtotal'],
+                    'order_id'     => $order->id,
+                    'product_id'   => $it['product_id'],
+                    'product_name' => $it['product_name'],
+                    'price'        => $it['price'],   // 👈 la columna real
+                    'quantity'     => $it['quantity'],
+                    'subtotal'     => $it['subtotal'],
                     ]);
 
                     $product = $products->get($it['product_id']);
