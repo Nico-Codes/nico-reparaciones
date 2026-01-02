@@ -756,12 +756,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const plus = form.querySelector('[data-qty-plus]');
     if (!input) return;
 
-    const clamp = (n) => Math.max(1, Math.min(999, n));
+    const getMax = () => {
+      const m = parseInt(input.getAttribute('max') || '', 10);
+      return Number.isFinite(m) && m > 0 ? m : 999;
+    };
+
+    const clamp = (n) => Math.max(1, Math.min(getMax(), n));
     const getVal = () => clamp(parseInt(input.value, 10) || 1);
+
     const syncButtons = () => {
       const v = getVal();
+      const max = getMax();
       if (minus) minus.disabled = v <= 1;
+      if (plus) plus.disabled = v >= max;
     };
+
 
     const setVal = (n) => {
       input.value = String(clamp(n));
@@ -799,6 +808,18 @@ document.addEventListener('DOMContentLoaded', () => {
           input.value = String(data.quantity);
           syncButtons();
         }
+
+        if (typeof data.maxStock !== 'undefined') {
+          const m = parseInt(data.maxStock, 10);
+          if (Number.isFinite(m) && m > 0) {
+            input.setAttribute('max', String(m));
+            const card = form.closest('[data-cart-item]');
+            const stockEl = card?.querySelector('[data-stock-available]');
+            if (stockEl) stockEl.textContent = String(m);
+          }
+          syncButtons();
+        }
+
 
 
         const card = form.closest('[data-cart-item]');
@@ -839,9 +860,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     plus?.addEventListener('click', (e) => {
       e.preventDefault();
-      setVal(getVal() + 1);
+      const max = getMax();
+      const v = getVal();
+
+      if (v >= max) {
+        syncButtons();
+        showMiniToast('Máximo stock disponible.');
+        return;
+      }
+
+      setVal(v + 1);
       doSubmit();
     });
+
 
     let t = null;
     input.addEventListener('input', () => {
@@ -855,6 +886,9 @@ document.addEventListener('DOMContentLoaded', () => {
     input.addEventListener('blur', () => {
       setVal(getVal());
     });
+
+    
+
   });
 
   // ---------------------------------------------

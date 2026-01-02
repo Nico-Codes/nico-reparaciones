@@ -37,10 +37,9 @@
 
         <div class="mt-2 flex flex-wrap items-center gap-2">
           @if(($product->stock ?? 0) > 0)
-            <span class="badge-emerald">En stock</span>
-          @else
-            <span class="badge-rose">Sin stock</span>
+            <span class="badge-zinc">Disponible: {{ (int)$product->stock }}</span>
           @endif
+
 
           @if(!empty($product->brand))
             <span class="badge-zinc">Marca: {{ $product->brand }}</span>

@@ -7,6 +7,8 @@
 
   $cart  = $cart ?? [];
   $total = $total ?? 0;
+  $stock = (int)($item['stock'] ?? 0);
+  $maxQty = $stock > 0 ? $stock : 999;
 
   $itemsCount = 0;
   foreach ($cart as $i) { $itemsCount += (int)($i['quantity'] ?? 0); }
@@ -66,9 +68,16 @@
                       {{ $item['name'] ?? 'Producto' }}
                     </a>
 
-                    <div class="text-xs text-zinc-500 mt-1">
-                      Precio unitario: <span class="font-black text-zinc-900">{{ $fmt($price) }}</span>
+                    <div class="text-xs text-zinc-500 mt-1 flex flex-wrap gap-x-2 gap-y-1">
+                      <span>
+                        Precio unitario: <span class="font-black text-zinc-900">{{ $fmt($price) }}</span>
+                      </span>
+                      <span class="text-zinc-300">•</span>
+                      <span>
+                        Disponible: <span class="font-black text-zinc-900" data-stock-available>{{ $stock }}</span>
+                      </span>
                     </div>
+
                   </div>
 
                   <form method="POST" action="{{ route('cart.remove', $item['id']) }}" data-cart-remove>
@@ -106,9 +115,12 @@
                       value="{{ $qty }}"
                       class="w-20 text-center"
                       data-qty-input
+                      max="{{ $maxQty }}"
+
                     >
 
                     <button
+                      {{ ($qty >= $maxQty) ? 'disabled' : '' }}
                       type="button"
                       class="btn-outline btn-sm px-3"
                       data-qty-plus

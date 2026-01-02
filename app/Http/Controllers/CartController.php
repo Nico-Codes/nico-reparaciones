@@ -15,13 +15,16 @@ class CartController extends Controller
         $cart = $request->session()->get('cart', []);
         $sync = $this->syncCartWithDb($cart);
 
-        if ($sync['changed']) {
+        if ($sync['dirty']) {
             $cart = $sync['cart'];
             $request->session()->put('cart', $cart);
 
-            // Usamos success como “info” (simple, sin agregar estilos nuevos)
-            $request->session()->flash('success', $sync['message']);
+            // Mostramos mensaje SOLO si hubo cambios importantes
+            if ($sync['changed'] && !empty($sync['message'])) {
+                $request->session()->flash('success', $sync['message']);
+            }
         }
+
 
 
         $total = 0;
@@ -71,15 +74,18 @@ class CartController extends Controller
 
 
             $cart[$product->id]['quantity'] = $newQuantity;
+            $cart[$product->id]['stock'] = (int) $product->stock;
         } else {
             // Nuevo ítem
             $cart[$product->id] = [
-                'id'       => $product->id,
-                'name'     => $product->name,
-                'price'    => $product->price,
-                'quantity' => $quantity,
-                'slug'     => $product->slug,
+            'id'       => $product->id,
+            'name'     => $product->name,
+            'price'    => $product->price,
+            'quantity' => $quantity,
+            'slug'     => $product->slug,
+            'stock'    => (int) $product->stock,
             ];
+
         }
 
         $request->session()->put('cart', $cart);
@@ -139,11 +145,16 @@ class CartController extends Controller
                 ->withErrors(['stock' => 'Un producto del carrito se quedó sin stock y fue eliminado.']);
         }
 
+        $clamped = false;
+
         if ($quantity > $product->stock) {
             $quantity = (int) $product->stock;
+            $clamped = true;
         }
 
         $cart[$product->id]['quantity'] = $quantity;
+        $cart[$product->id]['stock'] = (int) $product->stock;
+
 
 
         $request->session()->put('cart', $cart);
@@ -172,6 +183,9 @@ class CartController extends Controller
                 'cartCount'   => $itemsCount,
                 'itemsCount'  => $itemsCount,
                 'total'       => $total,
+                'maxStock' => (int) $product->stock,
+                'message'  => $clamped ? 'Ajustamos la cantidad al stock disponible.' : null,
+
             ]);
         }
 
@@ -253,14 +267,19 @@ class CartController extends Controller
         $cart = $request->session()->get('cart', []);
         $sync = $this->syncCartWithDb($cart);
 
-        if ($sync['changed']) {
+        // Si solo cambió snapshot (stock/nombre/slug) NO redirigimos
+        if ($sync['dirty']) {
             $cart = $sync['cart'];
             $request->session()->put('cart', $cart);
+        }
 
+        // Si hubo cambios importantes, sí: volvemos al carrito
+        if ($sync['changed']) {
             return redirect()
                 ->route('cart.index')
-                ->with('success', $sync['message'] . ' Revisá el carrito y volvé a finalizar.');
+                ->with('success', trim(($sync['message'] ?? '') . ' Revisá el carrito y volvé a finalizar.'));
         }
+
 
 
         if (empty($cart)) {
@@ -286,7 +305,7 @@ class CartController extends Controller
     private function syncCartWithDb(array $cart): array
     {
         if (empty($cart)) {
-            return ['cart' => $cart, 'changed' => false, 'message' => ''];
+            return ['cart' => $cart, 'dirty' => false, 'changed' => false, 'message' => ''];
         }
 
         $ids = [];
@@ -300,7 +319,11 @@ class CartController extends Controller
             ->get()
             ->keyBy('id');
 
+        // dirty = hubo cambios de snapshot (stock/nombre/slug/id)
+        // changed = hubo cambios importantes (removido/ajuste qty/cambio precio)
+        $dirty = false;
         $changed = false;
+
         $removed = 0;
         $adjusted = 0;
         $updatedPrice = 0;
@@ -312,6 +335,7 @@ class CartController extends Controller
             // Producto eliminado o inexistente
             if (!$p) {
                 unset($cart[$pid]);
+                $dirty = true;
                 $changed = true;
                 $removed++;
                 continue;
@@ -320,6 +344,7 @@ class CartController extends Controller
             // Sin stock => sacarlo
             if ((int)$p->stock <= 0) {
                 unset($cart[$pid]);
+                $dirty = true;
                 $changed = true;
                 $removed++;
                 continue;
@@ -332,24 +357,33 @@ class CartController extends Controller
             if ($qty > (int)$p->stock) {
                 $qty = (int)$p->stock;
                 $cart[$pid]['quantity'] = $qty;
+                $dirty = true;
                 $changed = true;
                 $adjusted++;
             }
 
-            // Actualizar snapshot (nombre/precio/slug) por si cambió
+            // Precio (si cambia, es cambio importante)
             if ((int)($cart[$pid]['price'] ?? 0) !== (int)$p->price) {
                 $cart[$pid]['price'] = (int)$p->price;
+                $dirty = true;
                 $changed = true;
                 $updatedPrice++;
             }
 
-            $cart[$pid]['name'] = (string)$p->name;
-            $cart[$pid]['slug'] = (string)$p->slug;
-            $cart[$pid]['id']   = (int)$p->id;
+            // Snapshots “no importantes” (no deberían forzar redirect)
+            $newName  = (string)$p->name;
+            $newSlug  = (string)$p->slug;
+            $newId    = (int)$p->id;
+            $newStock = (int)$p->stock;
+
+            if (($cart[$pid]['name'] ?? null) !== $newName)  { $cart[$pid]['name'] = $newName;  $dirty = true; }
+            if (($cart[$pid]['slug'] ?? null) !== $newSlug)  { $cart[$pid]['slug'] = $newSlug;  $dirty = true; }
+            if ((int)($cart[$pid]['id'] ?? 0) !== $newId)     { $cart[$pid]['id']   = $newId;    $dirty = true; }
+            if ((int)($cart[$pid]['stock'] ?? -1) !== $newStock) { $cart[$pid]['stock'] = $newStock; $dirty = true; }
         }
 
-        if (!$changed) {
-            return ['cart' => $cart, 'changed' => false, 'message' => ''];
+        if (!$dirty) {
+            return ['cart' => $cart, 'dirty' => false, 'changed' => false, 'message' => ''];
         }
 
         $parts = [];
@@ -359,9 +393,11 @@ class CartController extends Controller
 
         return [
             'cart' => $cart,
-            'changed' => true,
-            'message' => implode(' ', $parts),
+            'dirty' => true,
+            'changed' => $changed,
+            'message' => implode(' ', $parts), // puede venir vacío si solo cambió snapshot
         ];
     }
+
 
 }
