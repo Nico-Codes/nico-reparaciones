@@ -102,9 +102,6 @@ Route::post('/reparacion', [RepairLookupController::class, 'lookup'])->name('rep
 |--------------------------------------------------------------------------
 */
 Route::get('/storage/{path}', function (string $path) {
-    if (app()->environment('production')) {
-        abort(404);
-    }
 
     $path = ltrim($path, '/');
 
