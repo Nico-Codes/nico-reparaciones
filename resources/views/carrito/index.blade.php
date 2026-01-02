@@ -7,12 +7,11 @@
 
   $cart  = $cart ?? [];
   $total = $total ?? 0;
-  $stock = (int)($item['stock'] ?? 0);
-  $maxQty = $stock > 0 ? $stock : 999;
 
   $itemsCount = 0;
   foreach ($cart as $i) { $itemsCount += (int)($i['quantity'] ?? 0); }
 @endphp
+
 
 @section('content')
   <div class="page-head">
@@ -48,9 +47,10 @@
           $slug = $item['slug'] ?? null;
           $productUrl = $slug ? route('store.product', $slug) : route('store.index');
 
-          $decQty = max(1, $qty - 1);
-          $incQty = $qty + 1;
+          $stock  = (int)($item['stock'] ?? 0);
+          $maxQty = $stock > 0 ? $stock : 999;
         @endphp
+
 
         <div class="card" data-cart-item data-item-id="{{ $item['id'] }}">
           <div class="card-body">
