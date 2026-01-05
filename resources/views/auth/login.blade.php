@@ -32,19 +32,22 @@
       </div>
     @endif
 
-    <form method="POST" action="{{ route('login') }}" class="mt-5 space-y-4">
+    <form method="POST" action="{{ route('login.post') }}" class="mt-5 space-y-4">
+
       @csrf
 
       <div>
         <label class="text-xs font-semibold text-zinc-700">Email</label>
-        <input type="email" name="email" value="{{ old('email') }}" required autofocus
+        <input type="email" name="email" value="{{ old('email') }}" required autofocus autocomplete="email"
+
                class="mt-1 w-full rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
                placeholder="tu@email.com">
       </div>
 
       <div>
         <label class="text-xs font-semibold text-zinc-700">Contraseña</label>
-        <input type="password" name="password" required
+        <input type="password" name="password" required autocomplete="current-password"
+
                class="mt-1 w-full rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
                placeholder="••••••••">
       </div>

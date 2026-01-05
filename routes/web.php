@@ -44,13 +44,17 @@ Route::get('/producto/{slug}', [StoreController::class, 'product'])->name('store
 | Auth
 |--------------------------------------------------------------------------
 */
-Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-Route::post('/login', [AuthController::class, 'login'])->name('login.post');
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+    Route::post('/login', [AuthController::class, 'login'])->name('login.post');
 
-Route::get('/registro', [AuthController::class, 'showRegister'])->name('register');
-Route::post('/registro', [AuthController::class, 'register'])->name('register.post');
+    Route::get('/registro', [AuthController::class, 'showRegister'])->name('register');
+    Route::post('/registro', [AuthController::class, 'register'])->name('register.post');
+});
 
-Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+Route::post('/logout', [AuthController::class, 'logout'])
+    ->middleware('auth')
+    ->name('logout');
 
 /*
 |--------------------------------------------------------------------------
