@@ -51,4 +51,65 @@
       </form>
     </div>
   </div>
+    <div class="card max-w-2xl mt-4" id="security">
+
+    <div class="card-head">
+      <div class="font-black">Seguridad</div>
+      <span class="badge-zinc">Contraseña</span>
+    </div>
+
+    <div class="card-body">
+
+      @if($errors->hasAny(['current_password','password','password_confirmation']))
+        <div class="mb-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+          <div class="font-bold">Revisá esto:</div>
+          <ul class="mt-2 list-disc pl-5">
+            @foreach (['current_password','password','password_confirmation'] as $f)
+              @foreach ($errors->get($f) as $msg)
+                <li>{{ $msg }}</li>
+              @endforeach
+            @endforeach
+          </ul>
+        </div>
+      @endif
+
+    
+      <form method="POST" action="{{ route('account.password') }}" class="grid gap-4">
+        @csrf
+        @method('PUT')
+
+        <div>
+          <label for="current_password">Contraseña actual</label>
+          <input id="current_password" name="current_password" type="password" required autocomplete="current-password">
+          @error('current_password')
+            <p class="mt-1 text-xs font-semibold text-rose-700">{{ $message }}</p>
+          @enderror
+        </div>
+
+        <div class="grid gap-3 sm:grid-cols-2">
+          <div>
+            <label for="password">Nueva contraseña</label>
+            <input id="password" name="password" type="password" required autocomplete="new-password">
+            @error('password')
+              <p class="mt-1 text-xs font-semibold text-rose-700">{{ $message }}</p>
+            @enderror
+            <div class="muted text-xs mt-1">Mínimo 8 caracteres.</div>
+          </div>
+
+          <div>
+            <label for="password_confirmation">Repetir nueva contraseña</label>
+            <input id="password_confirmation" name="password_confirmation" type="password" required autocomplete="new-password">
+            @error('password_confirmation')
+              <p class="mt-1 text-xs font-semibold text-rose-700">{{ $message }}</p>
+            @enderror
+          </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-2">
+          <button class="btn-primary w-full sm:w-auto" type="submit">Actualizar contraseña</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
 @endsection
