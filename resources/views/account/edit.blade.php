@@ -16,6 +16,14 @@
 
     <div class="card-body">
 
+      @if(auth()->user()->google_id && (!auth()->user()->phone || trim(auth()->user()->phone) === ''))
+        <div class="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <div class="font-bold">Completá tu teléfono</div>
+          <div class="mt-1">Es necesario para asociar compras y recibir avisos por WhatsApp.</div>
+        </div>
+      @endif
+
+
       @if(auth()->user()->phone === null || trim(auth()->user()->phone) === '')
         <div class="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           <div class="font-bold">Te falta completar el teléfono</div>
@@ -87,13 +95,24 @@
         @csrf
         @method('PUT')
 
-        <div>
-          <label for="current_password">Contraseña actual</label>
-          <input id="current_password" name="current_password" type="password" required autocomplete="current-password">
-          @error('current_password')
-            <p class="mt-1 text-xs font-semibold text-rose-700">{{ $message }}</p>
-          @enderror
-        </div>
+        @php
+          $isGoogle = (bool) (auth()->user()->google_id ?? false);
+        @endphp
+
+        @if(!$isGoogle)
+          <div>
+            <label for="current_password">Contraseña actual</label>
+            <input id="current_password" name="current_password" type="password" required autocomplete="current-password">
+            @error('current_password')
+              <p class="mt-1 text-xs font-semibold text-rose-700">{{ $message }}</p>
+            @enderror
+          </div>
+        @else
+          <div class="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700">
+            Estás ingresando con Google. Podés establecer una contraseña nueva sin ingresar la actual.
+          </div>
+        @endif
+
 
         <div class="grid gap-3 sm:grid-cols-2">
           <div>

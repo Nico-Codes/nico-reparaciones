@@ -41,37 +41,46 @@ class AccountController extends Controller
     public function updatePassword(Request $request)
     {
         $user = Auth::user();
+        $isGoogle = !empty($user->google_id);
 
-        $validator = Validator::make(
-            $request->all(),
-            [
-                'current_password' => ['required', 'string'],
-                'password'         => ['required', 'string', 'min:8', 'confirmed'],
-            ],
-            [
-                // Mensajes en español (solo para este form)
-                'current_password.required' => 'Ingresá tu contraseña actual.',
-                'password.required'         => 'Ingresá una nueva contraseña.',
-                'password.min'              => 'La nueva contraseña debe tener al menos :min caracteres.',
-                'password.confirmed'        => 'La repetición de la contraseña no coincide.',
-            ]
-        );
+        // ✅ Reglas: si NO es Google, pedimos contraseña actual.
+        // Si es Google, permitimos setear una nueva sin current_password.
+        $rules = [
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ];
+
+        if (!$isGoogle) {
+            $rules['current_password'] = ['required', 'string'];
+        }
+
+        $messages = [
+            'current_password.required' => 'Ingresá tu contraseña actual.',
+            'password.required'         => 'Ingresá una nueva contraseña.',
+            'password.min'              => 'La nueva contraseña debe tener al menos :min caracteres.',
+            'password.confirmed'        => 'La repetición de la contraseña no coincide.',
+        ];
+
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), $rules, $messages);
 
         if ($validator->fails()) {
             return back()
                 ->withErrors($validator)
                 ->withInput()
-                ->withFragment('security'); // ✅ vuelve scrolleado a Seguridad
+                ->withFragment('security');
         }
 
         $data = $validator->validated();
 
-        if (!Hash::check($data['current_password'], $user->password)) {
-            return back()
-                ->withErrors(['current_password' => 'La contraseña actual no es correcta.'])
-                ->withFragment('security');
+        // ✅ Si NO es Google, verificamos contraseña actual
+        if (!$isGoogle) {
+            if (!Hash::check($data['current_password'], $user->password)) {
+                return back()
+                    ->withErrors(['current_password' => 'La contraseña actual no es correcta.'])
+                    ->withFragment('security');
+            }
         }
 
+        // ✅ Setear nueva contraseña
         $user->password = Hash::make($data['password']);
         $user->save();
 
@@ -81,7 +90,8 @@ class AccountController extends Controller
             ->route('account.edit')
             ->with('success', 'Contraseña actualizada.')
             ->withFragment('security');
-    }
+}
+
 
 
 
