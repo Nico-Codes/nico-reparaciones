@@ -32,6 +32,20 @@
       </div>
     @endif
 
+    @if (config('services.google.client_id'))
+      <a href="{{ route('auth.google.redirect') }}"
+        class="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
+        Continuar con Google
+      </a>
+
+      <div class="my-4 flex items-center gap-3">
+        <div class="h-px flex-1 bg-zinc-200"></div>
+        <div class="text-xs text-zinc-500">o</div>
+        <div class="h-px flex-1 bg-zinc-200"></div>
+      </div>
+    @endif
+
+
     <form method="POST" action="{{ route('login.post') }}" class="mt-5 space-y-4">
 
       @csrf

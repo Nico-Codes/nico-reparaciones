@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
+use Laravel\Socialite\Facades\Socialite;
 
 class AuthController extends Controller
 {
@@ -114,4 +115,70 @@ class AuthController extends Controller
         return redirect()->route('home')
             ->with('success', 'Sesión cerrada.');
     }
+
+    public function googleRedirect()
+    {
+        return Socialite::driver('google')->redirect();
+    }
+
+    public function googleCallback(Request $request)
+    {
+        try {
+            $g = Socialite::driver('google')->user();
+        } catch (\Throwable $e) {
+            return redirect()
+                ->route('login')
+                ->withErrors(['email' => 'No se pudo iniciar sesión con Google. Intentá de nuevo.']);
+        }
+
+        $googleId = $g->getId();
+        $email    = Str::lower(trim((string) $g->getEmail()));
+        $fullName = trim((string) ($g->getName() ?: $g->getNickname() ?: ''));
+
+        $first = 'Usuario';
+        $last  = null;
+
+        if ($fullName !== '') {
+            $parts = preg_split('/\s+/', $fullName);
+            $first = $parts[0] ?? 'Usuario';
+            $last  = isset($parts[1]) ? implode(' ', array_slice($parts, 1)) : null;
+        }
+
+        // 1) Buscar por google_id
+        $user = User::where('google_id', $googleId)->first();
+
+        // 2) Si no existe, buscar por email y linkear
+        if (!$user && $email) {
+            $user = User::where('email', $email)->first();
+            if ($user && !$user->google_id) {
+                $user->google_id = $googleId;
+                $user->save();
+            }
+        }
+
+        // 3) Si no existe, crear usuario
+        if (!$user) {
+            $user = User::create([
+                'name'      => $first,
+                'last_name' => $last,
+                'phone'     => null,
+                'email'     => $email ?: ("google_{$googleId}@example.local"),
+                'google_id' => $googleId,
+                'password'  => Hash::make(Str::random(40)),
+                'role'      => 'user',
+            ]);
+        }
+
+        Auth::login($user, true);
+        $request->session()->regenerate();
+
+        $fallback = ($user->role ?? 'user') === 'admin'
+            ? route('admin.dashboard')
+            : route('home');
+
+        return redirect()->intended($fallback)
+            ->with('success', 'Sesión iniciada con Google.');
+    }
+
+
 }
