@@ -118,8 +118,15 @@ class AuthController extends Controller
 
     public function googleRedirect()
     {
+        if (!config('services.google.client_id') || !config('services.google.client_secret')) {
+            return redirect()->route('login')->withErrors([
+                'email' => 'Login con Google no está configurado.',
+            ]);
+        }
+
         return Socialite::driver('google')->redirect();
     }
+
 
     public function googleCallback(Request $request)
     {
