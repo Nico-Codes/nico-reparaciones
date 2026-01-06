@@ -793,6 +793,34 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!res.ok) throw new Error('bad response');
       return await res.json();
     };
+    const collapseRemoveCard = (card) =>
+      new Promise((resolve) => {
+        if (!card) return resolve();
+
+        card.style.willChange = 'max-height, opacity, margin, padding';
+        card.style.overflow = 'hidden';
+        card.style.maxHeight = card.scrollHeight + 'px';
+        card.style.opacity = '1';
+        card.style.transition = 'max-height 220ms ease, opacity 180ms ease, margin 220ms ease, padding 220ms ease';
+
+        requestAnimationFrame(() => {
+          card.style.opacity = '0';
+          card.style.maxHeight = '0px';
+          card.style.marginTop = '0px';
+          card.style.marginBottom = '0px';
+          card.style.paddingTop = '0px';
+          card.style.paddingBottom = '0px';
+        });
+
+        card.addEventListener(
+          'transitionend',
+          () => {
+            card.remove();
+            resolve();
+          },
+          { once: true }
+        );
+      });
 
     let inFlight = false;
 
@@ -804,6 +832,50 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = await postFormJsonQty(form);
         if (!data?.ok) throw new Error('bad json');
 
+        const card = form.closest('[data-cart-item]');
+
+        // ✅ Si el backend avisó que el producto quedó sin stock y se eliminó:
+        if (data.removed) {
+          await collapseRemoveCard(card);
+
+          const itemsCountEl = document.querySelector('[data-cart-items-count]');
+          const totalEl = document.querySelector('[data-cart-total]');
+
+          if (itemsCountEl && typeof data.itemsCount !== 'undefined') {
+            const n = parseInt(data.itemsCount, 10) || 0;
+            itemsCountEl.textContent = `${n} ítem${n === 1 ? '' : 's'}`;
+          }
+          if (totalEl && typeof data.total !== 'undefined') {
+            totalEl.textContent = formatARS(data.total);
+          }
+
+          if (typeof data.cartCount !== 'undefined') {
+            setNavbarCartCount(data.cartCount);
+          }
+
+          if (data.empty) {
+            const cartGrid = document.querySelector('[data-cart-grid]');
+            const storeUrl = cartGrid?.dataset?.storeUrl || '/tienda';
+
+            if (cartGrid) {
+              cartGrid.innerHTML = `
+                <div class="card">
+                  <div class="card-body">
+                    <div class="font-black">Tu carrito está vacío.</div>
+                    <div class="muted" style="margin-top:4px">Agregá productos desde la tienda.</div>
+                    <div style="margin-top:14px">
+                      <a href="${storeUrl}" class="btn-primary">Ir a la tienda</a>
+                    </div>
+                  </div>
+                </div>
+              `;
+            }
+          }
+
+          showMiniToast(data.message || 'Producto eliminado del carrito.');
+          return;
+        }
+
         if (typeof data.quantity !== 'undefined') {
           input.value = String(data.quantity);
           syncButtons();
@@ -813,16 +885,12 @@ document.addEventListener('DOMContentLoaded', () => {
           const m = parseInt(data.maxStock, 10);
           if (Number.isFinite(m) && m > 0) {
             input.setAttribute('max', String(m));
-            const card = form.closest('[data-cart-item]');
             const stockEl = card?.querySelector('[data-stock-available]');
             if (stockEl) stockEl.textContent = String(m);
           }
           syncButtons();
         }
 
-
-
-        const card = form.closest('[data-cart-item]');
         const lineEl = card?.querySelector('[data-line-subtotal]');
         if (lineEl && typeof data.lineSubtotal !== 'undefined') {
           lineEl.textContent = formatARS(data.lineSubtotal);
@@ -851,6 +919,7 @@ document.addEventListener('DOMContentLoaded', () => {
         inFlight = false;
       }
     };
+
 
     minus?.addEventListener('click', (e) => {
       e.preventDefault();

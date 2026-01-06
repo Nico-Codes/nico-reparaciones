@@ -128,7 +128,16 @@ class CartController extends Controller
     public function update(Request $request, Product $product)
     {
         $cart = $request->session()->get('cart', []);
+
         if (!isset($cart[$product->id])) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'ok'      => false,
+                    'reload'  => true,
+                    'message' => 'El producto ya no está en el carrito.',
+                ], 404);
+            }
+
             return redirect()->route('cart.index');
         }
 
@@ -138,9 +147,34 @@ class CartController extends Controller
         }
 
         // ✅ Si quedó sin stock, lo sacamos del carrito
-        if ((int)$product->stock <= 0) {
+        if ((int) $product->stock <= 0) {
             unset($cart[$product->id]);
             $request->session()->put('cart', $cart);
+
+            if ($request->expectsJson()) {
+                $itemsCount = 0;
+                $total = 0.0;
+
+                foreach ($cart as $it) {
+                    $q = (int) ($it['quantity'] ?? 1);
+                    if ($q < 1) $q = 1;
+
+                    $p = (float) ($it['price'] ?? 0);
+                    $itemsCount += $q;
+                    $total += ($p * $q);
+                }
+
+                return response()->json([
+                    'ok'         => true,
+                    'removed'    => true,
+                    'productId'  => $product->id,
+                    'cartCount'  => $itemsCount,
+                    'itemsCount' => $itemsCount,
+                    'total'      => $total,
+                    'empty'      => ($itemsCount <= 0),
+                    'message'    => 'Un producto del carrito se quedó sin stock y fue eliminado.',
+                ]);
+            }
 
             return redirect()
                 ->route('cart.index')
@@ -156,8 +190,6 @@ class CartController extends Controller
 
         $cart[$product->id]['quantity'] = $quantity;
         $cart[$product->id]['stock'] = (int) $product->stock;
-
-
 
         $request->session()->put('cart', $cart);
 
@@ -185,9 +217,9 @@ class CartController extends Controller
                 'cartCount'   => $itemsCount,
                 'itemsCount'  => $itemsCount,
                 'total'       => $total,
-                'maxStock' => (int) $product->stock,
-                'message'  => $clamped ? 'Ajustamos la cantidad al stock disponible.' : null,
-
+                'maxStock'    => (int) $product->stock,
+                'message'     => $clamped ? 'Ajustamos la cantidad al stock disponible.' : null,
+                'empty'       => ($itemsCount <= 0),
             ]);
         }
 
@@ -195,6 +227,7 @@ class CartController extends Controller
             ->route('cart.index')
             ->with('success', 'Cantidad actualizada.');
     }
+
 
     /**
      * Eliminar un producto del carrito.
