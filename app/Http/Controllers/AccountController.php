@@ -25,12 +25,25 @@ class AccountController extends Controller
     {
         $user = Auth::user();
 
-        $data = $request->validate([
-            'name'      => ['required', 'string', 'max:255'],
-            'last_name' => ['required', 'string', 'max:255'],
-            'phone'     => ['required', 'string', 'max:30'],
-            'email'     => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
-        ]);
+            $data = $request->validate([
+                'name'      => ['required', 'string', 'max:255'],
+                'last_name' => ['required', 'string', 'max:255'],
+                'phone'     => ['required', 'string', 'max:30', 'regex:/^[0-9+()\s-]{8,30}$/'],
+                'email'     => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+            ], [
+                'name.required'       => 'Ingresá tu nombre.',
+                'name.max'            => 'El nombre no puede superar :max caracteres.',
+                'last_name.required'  => 'Ingresá tu apellido.',
+                'last_name.max'       => 'El apellido no puede superar :max caracteres.',
+                'phone.required'      => 'Ingresá tu teléfono/WhatsApp.',
+                'phone.regex'         => 'Ingresá un teléfono válido (solo números, espacios, +, -, paréntesis).',
+                'phone.max'           => 'El teléfono no puede superar :max caracteres.',
+                'email.required'      => 'Ingresá tu email.',
+                'email.email'         => 'Ingresá un email válido.',
+                'email.unique'        => 'Este email ya está registrado.',
+                'email.max'           => 'El email no puede superar :max caracteres.',
+            ]);
+
 
             $data['name']      = trim($data['name']);
             $data['last_name'] = trim($data['last_name']);
