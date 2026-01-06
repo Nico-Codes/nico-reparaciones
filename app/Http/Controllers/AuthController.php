@@ -28,7 +28,12 @@ class AuthController extends Controller
         $credentials = $request->validate([
             'email'    => ['required', 'email'],
             'password' => ['required'],
+        ], [
+            'email.required'    => 'Ingresá tu email.',
+            'email.email'       => 'Ingresá un email válido.',
+            'password.required' => 'Ingresá tu contraseña.',
         ]);
+
 
         // Normalización
         $credentials['email'] = Str::lower(trim($credentials['email']));
@@ -83,7 +88,26 @@ class AuthController extends Controller
             'phone'     => ['required', 'string', 'max:30', 'regex:/^[0-9+()\s-]{8,30}$/'],
             'email'     => ['required', 'email', 'max:255', 'unique:users,email'],
             'password'  => ['required', 'string', 'min:8', 'confirmed'],
+        ], [
+            'name.required'       => 'Ingresá tu nombre.',
+            'name.max'            => 'El nombre no puede superar :max caracteres.',
+            'last_name.required'  => 'Ingresá tu apellido.',
+            'last_name.max'       => 'El apellido no puede superar :max caracteres.',
+
+            'phone.required'      => 'Ingresá tu teléfono/WhatsApp.',
+            'phone.regex'         => 'Ingresá un teléfono válido (solo números, espacios, +, -, paréntesis).',
+            'phone.max'           => 'El teléfono no puede superar :max caracteres.',
+
+            'email.required'      => 'Ingresá tu email.',
+            'email.email'         => 'Ingresá un email válido.',
+            'email.unique'        => 'Este email ya está registrado. Probá ingresar.',
+            'email.max'           => 'El email no puede superar :max caracteres.',
+
+            'password.required'   => 'Ingresá una contraseña.',
+            'password.min'        => 'La contraseña debe tener al menos :min caracteres.',
+            'password.confirmed'  => 'Las contraseñas no coinciden.',
         ]);
+
 
         $user = User::create([
             'name'      => trim($data['name']),

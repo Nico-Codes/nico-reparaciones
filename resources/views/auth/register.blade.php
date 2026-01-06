@@ -17,14 +17,10 @@
 
     @if ($errors->any())
       <div class="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
-        <div class="font-bold">Revisá estos errores:</div>
-        <ul class="mt-2 list-disc pl-5">
-          @foreach($errors->all() as $e)
-            <li>{{ $e }}</li>
-          @endforeach
-        </ul>
+        Revisá los campos marcados.
       </div>
     @endif
+
 
     <form method="POST" action="{{ route('register.post') }}" class="mt-5 space-y-4">
       @csrf
@@ -38,9 +34,15 @@
             value="{{ old('name') }}"
             required
             autocomplete="given-name"
-            class="mt-1 w-full rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
-            placeholder="Nico"
+            class="mt-1 w-full rounded-2xl border bg-white px-3 py-2 text-sm outline-none focus:ring-2
+                  border-zinc-200 focus:border-sky-300 focus:ring-sky-100
+                  @error('name') border-rose-300 focus:border-rose-300 focus:ring-rose-100 @enderror"
+            placeholder="Juan"
           >
+          @error('name')
+            <div class="mt-1 text-xs font-semibold text-rose-700">{{ $message }}</div>
+          @enderror
+
         </div>
 
         <div>
@@ -51,9 +53,15 @@
             value="{{ old('last_name') }}"
             required
             autocomplete="family-name"
-            class="mt-1 w-full rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
-            placeholder="Machado"
+            class="mt-1 w-full rounded-2xl border bg-white px-3 py-2 text-sm outline-none focus:ring-2
+                  border-zinc-200 focus:border-sky-300 focus:ring-sky-100
+                  @error('last_name') border-rose-300 focus:border-rose-300 focus:ring-rose-100 @enderror"
+            placeholder="Fernandez"
           >
+          @error('last_name')
+            <div class="mt-1 text-xs font-semibold text-rose-700">{{ $message }}</div>
+          @enderror
+
         </div>
       </div>
 
@@ -65,9 +73,15 @@
           value="{{ old('phone') }}"
           required
           autocomplete="tel"
-          class="mt-1 w-full rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
+          class="mt-1 w-full rounded-2xl border bg-white px-3 py-2 text-sm outline-none focus:ring-2
+                border-zinc-200 focus:border-sky-300 focus:ring-sky-100
+                @error('phone') border-rose-300 focus:border-rose-300 focus:ring-rose-100 @enderror"
           placeholder="Ej: 341 555-0000"
         >
+        @error('phone')
+          <div class="mt-1 text-xs font-semibold text-rose-700">{{ $message }}</div>
+        @enderror
+
       </div>
 
       <div>
@@ -78,9 +92,15 @@
           value="{{ old('email') }}"
           required
           autocomplete="email"
-          class="mt-1 w-full rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
+          class="mt-1 w-full rounded-2xl border bg-white px-3 py-2 text-sm outline-none focus:ring-2
+                border-zinc-200 focus:border-sky-300 focus:ring-sky-100
+                @error('email') border-rose-300 focus:border-rose-300 focus:ring-rose-100 @enderror"
           placeholder="tu@email.com"
         >
+        @error('email')
+          <div class="mt-1 text-xs font-semibold text-rose-700">{{ $message }}</div>
+        @enderror
+
       </div>
 
       <div>
