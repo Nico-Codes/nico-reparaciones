@@ -465,19 +465,25 @@
 
   <main class="flex-1">
     <div class="container-page py-6">
-      @if (session('success'))
-        <div class="alert-success mb-4">{{ session('success') }}</div>
-      @endif
+        @hasSection('suppress_global_alerts')
+          {{-- En estas vistas mostramos los mensajes dentro del card --}}
+        @else
+          @if (session('success'))
+            <div class="alert-success mb-4">{{ session('success') }}</div>
+          @endif
 
-      @if ($errors->any())
-        <div class="alert-error mb-4">
-          <ul class="list-disc pl-5 space-y-1">
-            @foreach ($errors->all() as $error)
-              <li>{{ $error }}</li>
-            @endforeach
-          </ul>
-        </div>
-      @endif
+          @if ($errors->any())
+            <div class="alert-error mb-4">
+              <ul class="list-disc pl-5 space-y-1">
+                @foreach ($errors->all() as $error)
+                  <li>{{ $error }}</li>
+                @endforeach
+              </ul>
+            </div>
+          @endif
+        @endif
+
+
 
       @yield('content')
     </div>

@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Ingresar')
+@section('suppress_global_alerts', '1')
 
 @section('content')
 <div class="mx-auto w-full max-w-md px-4 py-8">

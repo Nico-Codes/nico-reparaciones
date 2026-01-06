@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Mi cuenta')
+@section('suppress_global_alerts', '1')
 
 @section('content')
   <div class="page-head">
@@ -16,10 +17,17 @@
 
     <div class="card-body">
 
+      @if (session('success'))
+        <div class="mb-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+          {{ session('success') }}
+        </div>
+      @endif
+
           @php
             $missingLast  = !$user->last_name || trim($user->last_name) === '';
             $missingPhone = !$user->phone || trim($user->phone) === '';
           @endphp
+
 
           @if($missingLast || $missingPhone)
             <div class="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
