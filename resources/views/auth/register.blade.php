@@ -110,10 +110,17 @@
           name="password"
           required
           autocomplete="new-password"
-          class="mt-1 w-full rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
+          class="mt-1 w-full rounded-2xl border bg-white px-3 py-2 text-sm outline-none focus:ring-2
+                border-zinc-200 focus:border-sky-300 focus:ring-sky-100
+                @error('password') border-rose-300 focus:border-rose-300 focus:ring-rose-100 @enderror"
           placeholder="••••••••"
         >
+        @error('password')
+          <div class="mt-1 text-xs font-semibold text-rose-700">{{ $message }}</div>
+        @enderror
+        <div class="mt-1 text-xs text-zinc-500">Mínimo 8 caracteres.</div>
       </div>
+
 
       <div>
         <label class="text-xs font-semibold text-zinc-700">Repetir contraseña</label>
@@ -122,10 +129,16 @@
           name="password_confirmation"
           required
           autocomplete="new-password"
-          class="mt-1 w-full rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
+          class="mt-1 w-full rounded-2xl border bg-white px-3 py-2 text-sm outline-none focus:ring-2
+                border-zinc-200 focus:border-sky-300 focus:ring-sky-100
+                @error('password_confirmation') border-rose-300 focus:border-rose-300 focus:ring-rose-100 @enderror"
           placeholder="••••••••"
         >
+        @error('password_confirmation')
+          <div class="mt-1 text-xs font-semibold text-rose-700">{{ $message }}</div>
+        @enderror
       </div>
+
 
       <button class="w-full rounded-2xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-sky-700 active:scale-[.99]">
         Crear cuenta

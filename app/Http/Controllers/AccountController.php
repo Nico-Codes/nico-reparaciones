@@ -117,8 +117,9 @@ class AccountController extends Controller
 
         return redirect()
             ->route('account.edit')
-            ->with('success', 'Contraseña actualizada.')
+            ->with('password_success', 'Contraseña actualizada.')
             ->withFragment('security');
+
 }
 
 

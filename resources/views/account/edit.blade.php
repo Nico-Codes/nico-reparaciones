@@ -139,18 +139,18 @@
 
     <div class="card-body">
 
-      @if($errors->hasAny(['current_password','password','password_confirmation']))
-        <div class="mb-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
-          <div class="font-bold">Revisá esto:</div>
-          <ul class="mt-2 list-disc pl-5">
-            @foreach (['current_password','password','password_confirmation'] as $f)
-              @foreach ($errors->get($f) as $msg)
-                <li>{{ $msg }}</li>
-              @endforeach
-            @endforeach
-          </ul>
+      @if (session('password_success'))
+        <div class="mb-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+          {{ session('password_success') }}
         </div>
       @endif
+
+      @if($errors->hasAny(['current_password','password','password_confirmation']))
+        <div class="mb-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+          Revisá los campos marcados.
+        </div>
+      @endif
+
 
     
       <form method="POST" action="{{ route('account.password') }}" class="grid gap-4">
@@ -164,10 +164,21 @@
         @if(!$isGoogle)
           <div>
             <label for="current_password">Contraseña actual</label>
-            <input id="current_password" name="current_password" type="password" required autocomplete="current-password">
+            <input
+              id="current_password"
+              name="current_password"
+              type="password"
+              required
+              autocomplete="current-password"
+              class="mt-1 w-full rounded-2xl border bg-white px-3 py-2 text-sm outline-none focus:ring-2
+                    border-zinc-200 focus:border-sky-300 focus:ring-sky-100
+                    @error('current_password') border-rose-300 focus:border-rose-300 focus:ring-rose-100 @enderror"
+              placeholder="••••••••"
+            >
             @error('current_password')
               <p class="mt-1 text-xs font-semibold text-rose-700">{{ $message }}</p>
             @enderror
+
           </div>
         @else
           <div class="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700">
@@ -179,19 +190,41 @@
         <div class="grid gap-3 sm:grid-cols-2">
           <div>
             <label for="password">Nueva contraseña</label>
-            <input id="password" name="password" type="password" required autocomplete="new-password">
+            <input
+              id="password"
+              name="password"
+              type="password"
+              required
+              autocomplete="new-password"
+              class="mt-1 w-full rounded-2xl border bg-white px-3 py-2 text-sm outline-none focus:ring-2
+                    border-zinc-200 focus:border-sky-300 focus:ring-sky-100
+                    @error('password') border-rose-300 focus:border-rose-300 focus:ring-rose-100 @enderror"
+              placeholder="••••••••"
+            >
             @error('password')
               <p class="mt-1 text-xs font-semibold text-rose-700">{{ $message }}</p>
             @enderror
+
             <div class="muted text-xs mt-1">Mínimo 8 caracteres.</div>
           </div>
 
           <div>
             <label for="password_confirmation">Repetir nueva contraseña</label>
-            <input id="password_confirmation" name="password_confirmation" type="password" required autocomplete="new-password">
+            <input
+              id="password_confirmation"
+              name="password_confirmation"
+              type="password"
+              required
+              autocomplete="new-password"
+              class="mt-1 w-full rounded-2xl border bg-white px-3 py-2 text-sm outline-none focus:ring-2
+                    border-zinc-200 focus:border-sky-300 focus:ring-sky-100
+                    @error('password_confirmation') border-rose-300 focus:border-rose-300 focus:ring-rose-100 @enderror"
+              placeholder="••••••••"
+            >
             @error('password_confirmation')
               <p class="mt-1 text-xs font-semibold text-rose-700">{{ $message }}</p>
             @enderror
+
           </div>
         </div>
 
