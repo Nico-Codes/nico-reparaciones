@@ -32,7 +32,10 @@
   $waUrl          = $waUrl ?? null;
   $waPhone        = $waPhone ?? null;
   $waLastForStatus = $waLastForStatus ?? null;
+
+  $isFinal = in_array((string)($order->status ?? ''), ['entregado','cancelado'], true);
 @endphp
+
 
 @section('content')
 <div class="container-page py-6"
@@ -78,16 +81,18 @@
         </span>
 
 
-        {{-- Botón fijo Estado + dropdown (cambio rápido) --}}
-        <div class="dropdown">
-          <button
-            type="button"
-            class="btn-primary btn-sm"
-            data-menu="orderStatusMenu-{{ $order->id }}"
-            data-admin-order-status-btn
-          >
-            Estado
-          </button>
+          {{-- Botón fijo Estado + dropdown (cambio rápido) --}}
+          <div class="dropdown">
+            <button
+              type="button"
+              class="btn-primary btn-sm {{ $isFinal ? 'opacity-60 cursor-not-allowed' : '' }}"
+              data-menu="orderStatusMenu-{{ $order->id }}"
+              data-admin-order-status-btn
+              {{ $isFinal ? 'disabled' : '' }}
+            >
+              Estado
+            </button>
+
 
           <div id="orderStatusMenu-{{ $order->id }}" class="dropdown-menu hidden">
             @foreach($statusMap as $k => $label)
@@ -146,10 +151,7 @@
   <div class="grid gap-4 lg:grid-cols-3">
     {{-- Columna izquierda --}}
     <div class="space-y-4 lg:col-span-1">
-      {{-- Acciones rápidas --}}
-      @php
-        $isFinal = in_array((string)$order->status, ['entregado','cancelado'], true);
-      @endphp
+      
 
       <div class="card">
         <div class="card-head">

@@ -147,6 +147,21 @@ class AdminOrderController extends Controller
      */
     public function updateStatus(Request $request, Order $order)
     {
+        $finalStatuses = ['entregado', 'cancelado'];
+
+        if (in_array($order->status, $finalStatuses, true)) {
+            // Si es AJAX devolvemos JSON, si no, volvemos con error
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'ok' => false,
+                    'message' => 'Este pedido ya está finalizado y no puede cambiar de estado.',
+                ], 422);
+            }
+
+            return back()->with('error', 'Este pedido ya está finalizado y no puede cambiar de estado.');
+        }
+
+
         $data = $request->validate([
             'status' => ['required', 'in:pendiente,confirmado,preparando,listo_retirar,entregado,cancelado'],
             'comment' => ['nullable', 'string', 'max:500'],
@@ -196,25 +211,43 @@ class AdminOrderController extends Controller
         }
 
 
-        // ✅ Simple: si está cancelado, no se puede volver atrás (evita stocks inconsistentes)
-        if ($from === 'cancelado' && $to !== 'cancelado') {
-            if ($isAjax) {
-                return response()->json([
-                    'ok' => false,
-                    'changed' => false,
-                    'message' => 'Un pedido cancelado no puede volver a otro estado.',
-                    'order_id' => $order->id,
-                    'status' => $from,
-                    'status_label' => \App\Models\Order::STATUSES[$from] ?? $from,
-                ], 422);
+                // ✅ Simple: si está cancelado, no se puede volver atrás (evita stocks inconsistentes)
+            if ($from === 'cancelado' && $to !== 'cancelado') {
+                if ($isAjax) {
+                    return response()->json([
+                        'ok' => false,
+                        'changed' => false,
+                        'message' => 'Un pedido cancelado no puede volver a otro estado.',
+                        'order_id' => $order->id,
+                        'status' => $from,
+                        'status_label' => \App\Models\Order::STATUSES[$from] ?? $from,
+                    ], 422);
+                }
+
+                return redirect()
+                    ->back()
+                    ->withErrors(['status' => 'Un pedido cancelado no puede volver a otro estado.']);
             }
 
-            return redirect()
-                ->back()
-                ->withErrors(['status' => 'Un pedido cancelado no puede volver a otro estado.']);
-        }
+            // ✅ Si ya está ENTREGADO, no permitimos volver a otros estados
+            if ($from === 'entregado' && $to !== 'entregado') {
+                if ($isAjax) {
+                    return response()->json([
+                        'ok' => false,
+                        'changed' => false,
+                        'message' => 'Un pedido entregado no puede volver a otro estado.',
+                        'order_id' => $order->id,
+                        'status' => $from,
+                        'status_label' => \App\Models\Order::STATUSES[$from] ?? $from,
+                    ], 422);
+                }
 
-        DB::transaction(function () use ($order, $from, $to, $data) {
+                return redirect()
+                    ->back()
+                    ->withErrors(['status' => 'Un pedido entregado no puede volver a otro estado.']);
+            }
+
+            DB::transaction(function () use ($order, $from, $to, $data) {
 
             // ✅ Si pasa a cancelado, devolvemos stock (una sola vez)
             if ($to === 'cancelado' && $from !== 'cancelado') {

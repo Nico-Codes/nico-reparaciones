@@ -155,9 +155,12 @@
         $st = (string)($order->status ?? 'pendiente');
         $stLabel = $statusMap[$st] ?? $st;
 
+        $isFinal = in_array($st, ['entregado','cancelado'], true);
+
         $isUrgent = $order->created_at
           && in_array($st, $urgentOrderStatuses, true)
           && $order->created_at->lte(now()->subHours($urgentHoursOrders));
+
       @endphp
 
 
@@ -275,16 +278,18 @@
                 @endif
 
 
-                {{-- Botón fijo Estado + dropdown --}}
-                <div class="dropdown">
-                  <button
-                    type="button"
-                    class="btn-primary btn-sm"
-                    data-menu="orderStatusMenu-{{ $order->id }}"
-                    data-admin-order-status-btn
-                  >
-                    Estado
-                  </button>
+                  {{-- Botón fijo Estado + dropdown --}}
+                  <div class="dropdown">
+                    <button
+                      type="button"
+                      class="btn-primary btn-sm {{ $isFinal ? 'opacity-60 cursor-not-allowed' : '' }}"
+                      data-menu="orderStatusMenu-{{ $order->id }}"
+                      data-admin-order-status-btn
+                      {{ $isFinal ? 'disabled' : '' }}
+                    >
+                      Estado
+                    </button>
+
 
                   <div id="orderStatusMenu-{{ $order->id }}" class="dropdown-menu hidden">
                     @foreach($statusMap as $k => $label)

@@ -996,17 +996,29 @@ document.addEventListener('DOMContentLoaded', () => {
     return adminConfirm;
   };
 
-  const postFormJson = async (form) => {
-    const res = await fetch(form.action, {
-      method: 'POST',
-      headers: { 'X-Requested-With': 'XMLHttpRequest', Accept: 'application/json' },
-      body: new FormData(form),
-    });
-    if (!res.ok) throw new Error('bad response');
-    const data = await res.json();
-    if (!data?.ok) throw new Error('bad json');
-    return data;
-  };
+    const postFormJson = async (form) => {
+      const res = await fetch(form.action, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest', Accept: 'application/json' },
+        body: new FormData(form),
+      });
+
+      let data = null;
+      try { data = await res.json(); } catch (_) {}
+
+      if (res.ok && data?.ok) return data;
+
+      const msg =
+        (data && (data.message || data.error)) ||
+        (data && data.errors && Object.values(data.errors).flat().join(' ')) ||
+        'No se pudo completar la acción.';
+
+      const err = new Error(msg);
+      err.status = res.status;
+      err.data = data;
+      throw err;
+    };
+
 
   const setValueOrText = (el, value) => {
     if (!el) return;
@@ -1399,12 +1411,17 @@ document.addEventListener('DOMContentLoaded', () => {
           }
 
 
-        } catch (_) {
-          statusForm.submit();
-        } finally {
-          card.dataset.busy = '0';
-          if (menuBtn) menuBtn.disabled = false;
-        }
+          } catch (err) {
+            if (err && err.status === 422) {
+              showMiniToast(err.message || 'No se pudo actualizar el estado ⚠️');
+            } else {
+              statusForm.submit();
+            }
+          } finally {
+            card.dataset.busy = '0';
+            if (menuBtn) menuBtn.disabled = false;
+          }
+
       });
     });
   });
