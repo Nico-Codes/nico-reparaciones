@@ -187,30 +187,31 @@
           </div>
 
           <div class="grid gap-2">
-             @if(!$hasStockIssue)
-                <a href="{{ route('checkout') }}" class="btn-primary w-full">Finalizar compra</a>
-              @else
-                <a href="{{ route('checkout') }}"
-                  class="btn-primary w-full opacity-50 pointer-events-none"
-                  aria-disabled="true"
-                  tabindex="-1">
-                  Finalizar compra
-                </a>
+            <a
+              href="{{ route('checkout') }}"
+              data-checkout-btn
+              class="btn-primary w-full {{ $hasStockIssue ? 'opacity-50 pointer-events-none' : '' }}"
+              aria-disabled="{{ $hasStockIssue ? 'true' : 'false' }}"
+              tabindex="{{ $hasStockIssue ? '-1' : '0' }}"
+            >
+              Finalizar compra
+            </a>
 
-                <div class="mt-2 text-xs text-rose-700 font-semibold">
-                  Hay productos sin stock o con cantidad mayor al stock. Ajustá el carrito para continuar.
-                </div>
-              @endif
-
+            <div
+              data-stock-warning
+              class="mt-2 text-xs text-rose-700 font-semibold {{ $hasStockIssue ? '' : 'hidden' }}"
+            >
+              Hay productos sin stock o con cantidad mayor al stock. Ajustá el carrito para continuar.
+            </div>
 
             <form method="POST" action="{{ route('cart.clear') }}" data-cart-clear>
               @csrf
               <button class="btn-outline w-full" type="submit">Vaciar carrito</button>
             </form>
 
-
             <a href="{{ route('store.index') }}" class="btn-ghost w-full">Volver a la tienda</a>
           </div>
+
 
           <div class="muted text-xs">
             Al confirmar, el pedido queda asociado a tu cuenta y lo ves en “Mis pedidos”.

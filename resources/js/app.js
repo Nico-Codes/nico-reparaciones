@@ -473,38 +473,84 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  const showMiniToast = (msg) => {
-    const t = document.createElement('div');
-    t.className = 'alert-success';
-    t.textContent = msg;
+    const showMiniToast = (msg) => {
+      const t = document.createElement('div');
+      t.className = 'alert-success';
+      t.textContent = msg;
 
-    t.style.position = 'fixed';
-    t.style.left = '50%';
-    t.style.bottom = '14px';
-    t.style.transform = 'translateX(-50%) translateY(8px)';
-    t.style.zIndex = '9999';
-    t.style.maxWidth = 'calc(100% - 24px)';
-    t.style.opacity = '0';
-    t.style.transition = 'opacity 160ms ease, transform 160ms ease';
-
-    document.body.appendChild(t);
-
-    requestAnimationFrame(() => {
-      t.style.opacity = '1';
-      t.style.transform = 'translateX(-50%) translateY(0)';
-    });
-
-    window.setTimeout(() => {
-      t.style.opacity = '0';
+      t.style.position = 'fixed';
+      t.style.left = '50%';
+      t.style.bottom = '14px';
       t.style.transform = 'translateX(-50%) translateY(8px)';
-      window.setTimeout(() => t.remove(), 220);
-    }, 1600);
-  };
+      t.style.zIndex = '9999';
+      t.style.maxWidth = 'calc(100% - 24px)';
+      t.style.opacity = '0';
+      t.style.transition = 'opacity 160ms ease, transform 160ms ease';
 
-  // ---------------------------------------------
-  // Copy to clipboard (para WhatsApp, etc.)
-  // ---------------------------------------------
-  const copyToClipboard = async (text) => {
+      document.body.appendChild(t);
+
+      requestAnimationFrame(() => {
+        t.style.opacity = '1';
+        t.style.transform = 'translateX(-50%) translateY(0)';
+      });
+
+      window.setTimeout(() => {
+        t.style.opacity = '0';
+        t.style.transform = 'translateX(-50%) translateY(8px)';
+        window.setTimeout(() => t.remove(), 220);
+      }, 1600);
+    };
+
+    // ---------------------------------------------
+    // Carrito: habilitar/deshabilitar checkout según stock (sin recargar)
+    // ---------------------------------------------
+    const updateCartCheckoutState = () => {
+      const btn = document.querySelector('[data-checkout-btn]');
+      const warn = document.querySelector('[data-stock-warning]');
+      if (!btn) return;
+
+      let hasIssue = false;
+
+      document.querySelectorAll('form[data-cart-qty] [data-qty-input]').forEach((input) => {
+        if (hasIssue) return;
+
+        const max = parseInt(input.getAttribute('max') || '0', 10);
+        const val = parseInt(input.value || '0', 10);
+
+        // si está disabled (sin stock) => bloquea checkout
+        if (input.disabled) {
+          hasIssue = true;
+          return;
+        }
+
+        if (!Number.isFinite(max) || max <= 0) {
+          hasIssue = true;
+          return;
+        }
+
+        if (Number.isFinite(val) && val > max) {
+          hasIssue = true;
+        }
+      });
+
+      if (hasIssue) {
+        btn.classList.add('opacity-50', 'pointer-events-none');
+        btn.setAttribute('aria-disabled', 'true');
+        btn.setAttribute('tabindex', '-1');
+        if (warn) warn.classList.remove('hidden');
+      } else {
+        btn.classList.remove('opacity-50', 'pointer-events-none');
+        btn.setAttribute('aria-disabled', 'false');
+        btn.setAttribute('tabindex', '0');
+        if (warn) warn.classList.add('hidden');
+      }
+    };
+
+    // ---------------------------------------------
+    // Copy to clipboard (para WhatsApp, etc.)
+    // ---------------------------------------------
+    const copyToClipboard = async (text) => {
+
     const str = String(text ?? '');
     if (!str) return false;
 
@@ -822,21 +868,89 @@ document.addEventListener('DOMContentLoaded', () => {
         );
       });
 
-    let inFlight = false;
+      let inFlight = false;
+      let pending = false;
 
-    const doSubmit = async () => {
-      if (inFlight) return;
-      inFlight = true;
+      const requestSubmit = () => {
+        if (inFlight) {
+          pending = true;
+          return;
+        }
+        doSubmit();
+      };
 
-      try {
-        const data = await postFormJsonQty(form);
-        if (!data?.ok) throw new Error('bad json');
+      const doSubmit = async () => {
+        if (inFlight) return;
+        inFlight = true;
+        pending = false;
 
-        const card = form.closest('[data-cart-item]');
+        try {
+          const data = await postFormJsonQty(form);
+          if (!data?.ok) throw new Error('bad json');
 
-        // ✅ Si el backend avisó que el producto quedó sin stock y se eliminó:
-        if (data.removed) {
-          await collapseRemoveCard(card);
+          const card = form.closest('[data-cart-item]');
+
+          // ✅ Si el backend avisó que el producto quedó sin stock y se eliminó:
+          if (data.removed) {
+            await collapseRemoveCard(card);
+
+            const itemsCountEl = document.querySelector('[data-cart-items-count]');
+            const totalEl = document.querySelector('[data-cart-total]');
+
+            if (itemsCountEl && typeof data.itemsCount !== 'undefined') {
+              const n = parseInt(data.itemsCount, 10) || 0;
+              itemsCountEl.textContent = `${n} ítem${n === 1 ? '' : 's'}`;
+            }
+            if (totalEl && typeof data.total !== 'undefined') {
+              totalEl.textContent = formatARS(data.total);
+            }
+
+            if (typeof data.cartCount !== 'undefined') {
+              setNavbarCartCount(data.cartCount);
+            }
+
+            if (data.empty) {
+              const cartGrid = document.querySelector('[data-cart-grid]');
+              const storeUrl = cartGrid?.dataset?.storeUrl || '/tienda';
+
+              if (cartGrid) {
+                cartGrid.innerHTML = `
+                  <div class="card">
+                    <div class="card-body">
+                      <div class="font-black">Tu carrito está vacío.</div>
+                      <div class="muted" style="margin-top:4px">Agregá productos desde la tienda.</div>
+                      <div style="margin-top:14px">
+                        <a href="${storeUrl}" class="btn-primary">Ir a la tienda</a>
+                      </div>
+                    </div>
+                  </div>
+                `;
+              }
+            }
+
+            showMiniToast(data.message || 'Producto eliminado del carrito.');
+            return;
+          }
+
+          if (typeof data.quantity !== 'undefined') {
+            input.value = String(data.quantity);
+            syncButtons();
+          }
+
+          if (typeof data.maxStock !== 'undefined') {
+            const m = parseInt(data.maxStock, 10);
+            if (Number.isFinite(m) && m > 0) {
+              input.setAttribute('max', String(m));
+              const stockEl = card?.querySelector('[data-stock-available]');
+              if (stockEl) stockEl.textContent = String(m);
+            }
+            syncButtons();
+          }
+
+          const lineEl = card?.querySelector('[data-line-subtotal]');
+          if (lineEl && typeof data.lineSubtotal !== 'undefined') {
+            lineEl.textContent = formatARS(data.lineSubtotal);
+          }
 
           const itemsCountEl = document.querySelector('[data-cart-items-count]');
           const totalEl = document.querySelector('[data-cart-total]');
@@ -853,108 +967,63 @@ document.addEventListener('DOMContentLoaded', () => {
             setNavbarCartCount(data.cartCount);
           }
 
-          if (data.empty) {
-            const cartGrid = document.querySelector('[data-cart-grid]');
-            const storeUrl = cartGrid?.dataset?.storeUrl || '/tienda';
+          showMiniToast(data.message || 'Carrito actualizado.');
+        } catch (e) {
+          if (typeof form.requestSubmit === 'function') form.requestSubmit();
+          else form.submit();
+        } finally {
+          inFlight = false;
 
-            if (cartGrid) {
-              cartGrid.innerHTML = `
-                <div class="card">
-                  <div class="card-body">
-                    <div class="font-black">Tu carrito está vacío.</div>
-                    <div class="muted" style="margin-top:4px">Agregá productos desde la tienda.</div>
-                    <div style="margin-top:14px">
-                      <a href="${storeUrl}" class="btn-primary">Ir a la tienda</a>
-                    </div>
-                  </div>
-                </div>
-              `;
-            }
+          // ✅ actualiza el “Finalizar compra” sin recargar
+          updateCartCheckoutState();
+
+          // ✅ si el usuario apretó varias veces durante el request, reenviamos el último estado
+          if (pending && form.isConnected) {
+            pending = false;
+            requestSubmit();
           }
+        }
+      };
 
-          showMiniToast(data.message || 'Producto eliminado del carrito.');
+
+      minus?.addEventListener('click', (e) => {
+        e.preventDefault();
+        setVal(getVal() - 1);
+        requestSubmit();
+      });
+
+      plus?.addEventListener('click', (e) => {
+        e.preventDefault();
+        const max = getMax();
+        const v = getVal();
+
+        if (v >= max) {
+          syncButtons();
+          showMiniToast('Máximo stock disponible.');
           return;
         }
 
-        if (typeof data.quantity !== 'undefined') {
-          input.value = String(data.quantity);
-          syncButtons();
-        }
-
-        if (typeof data.maxStock !== 'undefined') {
-          const m = parseInt(data.maxStock, 10);
-          if (Number.isFinite(m) && m > 0) {
-            input.setAttribute('max', String(m));
-            const stockEl = card?.querySelector('[data-stock-available]');
-            if (stockEl) stockEl.textContent = String(m);
-          }
-          syncButtons();
-        }
-
-        const lineEl = card?.querySelector('[data-line-subtotal]');
-        if (lineEl && typeof data.lineSubtotal !== 'undefined') {
-          lineEl.textContent = formatARS(data.lineSubtotal);
-        }
-
-        const itemsCountEl = document.querySelector('[data-cart-items-count]');
-        const totalEl = document.querySelector('[data-cart-total]');
-
-        if (itemsCountEl && typeof data.itemsCount !== 'undefined') {
-          const n = parseInt(data.itemsCount, 10) || 0;
-          itemsCountEl.textContent = `${n} ítem${n === 1 ? '' : 's'}`;
-        }
-        if (totalEl && typeof data.total !== 'undefined') {
-          totalEl.textContent = formatARS(data.total);
-        }
-
-        if (typeof data.cartCount !== 'undefined') {
-          setNavbarCartCount(data.cartCount);
-        }
-
-        showMiniToast(data.message || 'Carrito actualizado.');
-      } catch (e) {
-        if (typeof form.requestSubmit === 'function') form.requestSubmit();
-        else form.submit();
-      } finally {
-        inFlight = false;
-      }
-    };
+        setVal(v + 1);
+        requestSubmit();
+      });
 
 
-    minus?.addEventListener('click', (e) => {
-      e.preventDefault();
-      setVal(getVal() - 1);
-      doSubmit();
-    });
+      let t = null;
+      input.addEventListener('input', () => {
+        clearTimeout(t);
+        t = setTimeout(() => {
+          setVal(getVal());
+          requestSubmit();
+        }, 450);
+      });
 
-    plus?.addEventListener('click', (e) => {
-      e.preventDefault();
-      const max = getMax();
-      const v = getVal();
-
-      if (v >= max) {
-        syncButtons();
-        showMiniToast('Máximo stock disponible.');
-        return;
-      }
-
-      setVal(v + 1);
-      doSubmit();
-    });
-
-
-    let t = null;
-    input.addEventListener('input', () => {
-      clearTimeout(t);
-      t = setTimeout(() => {
+      input.addEventListener('blur', () => {
         setVal(getVal());
-        doSubmit();
-      }, 450);
-    });
+      });
 
-    input.addEventListener('blur', () => {
-      setVal(getVal());
-    });
+      // Inicial
+      updateCartCheckoutState();
+
 
     
 
