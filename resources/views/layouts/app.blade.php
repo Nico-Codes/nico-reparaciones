@@ -216,10 +216,8 @@
               <a href="{{ route('login') }}" class="btn-outline hidden sm:inline-flex">Ingresar</a>
               <a href="{{ route('login') }}" class="btn-primary sm:hidden">Ingresar</a>
             @endif
-            @if($has('register'))
-              <a href="{{ route('register') }}" class="btn-primary hidden sm:inline-flex">Crear cuenta</a>
-            @endif
           @else
+
             <div class="relative">
               <button class="btn-ghost px-3 py-2" data-menu="accountMenu" aria-expanded="false" type="button">
                 <span class="sm:hidden">
@@ -387,8 +385,8 @@
               @endif
             @else
               @if($has('login')) <a class="sidebar-link" href="{{ route('login') }}">Ingresar</a> @endif
-              @if($has('register')) <a class="sidebar-link" href="{{ route('register') }}">Crear cuenta</a> @endif
             @endif
+
           </div>
         </div>
 
@@ -523,8 +521,8 @@
               @endif
             @else
               @if($has('login')) <a href="{{ route('login') }}">Ingresar</a> @endif
-              @if($has('register')) <a href="{{ route('register') }}">Registrarme</a> @endif
             @endif
+
           </div>
         </div>
       </div>
