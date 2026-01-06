@@ -16,20 +16,24 @@
 
     <div class="card-body">
 
-      @if(auth()->user()->google_id && (!auth()->user()->phone || trim(auth()->user()->phone) === ''))
-        <div class="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          <div class="font-bold">Completá tu teléfono</div>
-          <div class="mt-1">Es necesario para asociar compras y recibir avisos por WhatsApp.</div>
-        </div>
-      @endif
+          @php
+            $missingLast  = !$user->last_name || trim($user->last_name) === '';
+            $missingPhone = !$user->phone || trim($user->phone) === '';
+          @endphp
 
+          @if($missingLast || $missingPhone)
+            <div class="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              <div class="font-bold">Completá tus datos</div>
+              <div class="mt-1">
+                Te falta:
+                <span class="font-extrabold">
+                  {{ $missingLast ? 'apellido' : '' }}{{ ($missingLast && $missingPhone) ? ' y ' : '' }}{{ $missingPhone ? 'teléfono' : '' }}
+                </span>.
+              </div>
+              <div class="mt-1">Es necesario para asociar compras y recibir avisos por WhatsApp.</div>
+            </div>
+          @endif
 
-      @if(auth()->user()->phone === null || trim(auth()->user()->phone) === '')
-        <div class="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          <div class="font-bold">Te falta completar el teléfono</div>
-          <div class="mt-1">Es necesario para asociar pedidos y enviarte avisos por WhatsApp.</div>
-        </div>
-      @endif
 
 
       <form method="POST" action="{{ route('account.update') }}" class="grid gap-4">

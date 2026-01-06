@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Str;
+
 
 
 
@@ -30,12 +32,26 @@ class AccountController extends Controller
             'email'     => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
         ]);
 
-        $user->fill($data);
-        $user->save();
+            $data['name']      = trim($data['name']);
+            $data['last_name'] = trim($data['last_name']);
+            $data['phone']     = trim($data['phone']);
+            $data['email']     = Str::lower(trim($data['email']));
 
-        return redirect()
-            ->route('account.edit')
-            ->with('success', 'Datos actualizados.');
+            $user->fill($data);
+            $user->save();
+
+            $returnTo = $request->session()->pull('profile_return_to');
+
+            if ($returnTo) {
+                return redirect()
+                    ->to($returnTo)
+                    ->with('success', 'Datos actualizados. Ya podés continuar.');
+            }
+
+            return redirect()
+                ->route('account.edit')
+                ->with('success', 'Datos actualizados.');
+
     }
 
     public function updatePassword(Request $request)

@@ -31,12 +31,15 @@ class OrderController extends Controller
 
         $user = Auth::user();
 
-        // Requerimos datos mínimos del perfil para evitar pedidos "incompletos"
-        if (!$user || empty($user->last_name) || empty($user->phone)) {
-            return redirect()
-                ->route('account.edit')
-                ->withErrors(['profile' => 'Completá tu apellido y teléfono para poder confirmar pedidos.']);
-        }
+            // Requerimos datos mínimos del perfil para evitar pedidos "incompletos"
+            if (!$user || empty(trim((string)($user->last_name ?? ''))) || empty(trim((string)($user->phone ?? '')))) {
+                $request->session()->put('profile_return_to', route('checkout'));
+
+                return redirect()
+                    ->route('account.edit')
+                    ->withErrors(['profile' => 'Completá tu apellido y teléfono para poder confirmar pedidos.']);
+            }
+
 
         $data = $request->validate([
             'payment_method'        => ['required', 'in:local,mercado_pago,transferencia'],

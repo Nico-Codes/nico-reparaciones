@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
 
 class CartController extends Controller
 {
@@ -282,16 +284,27 @@ class CartController extends Controller
 
 
 
-        if (empty($cart)) {
-            // Si el carrito está vacío, lo mando a la tienda
-            return redirect()
-                ->route('store.index')
-                ->with('success', 'Tu carrito está vacío. Agregá algunos productos antes de finalizar el pedido.');
-        }
+            if (empty($cart)) {
+                // Si el carrito está vacío, lo mando a la tienda
+                return redirect()
+                    ->route('store.index')
+                    ->with('success', 'Tu carrito está vacío. Agregá algunos productos antes de finalizar el pedido.');
+            }
 
-        // Por ahora, el checkout solo muestra un resumen.
-        // Más adelante acá pedimos método de pago, notas, etc.
-        $total = 0;
+            $user = Auth::user();
+
+            if (!$user || empty(trim((string)($user->last_name ?? ''))) || empty(trim((string)($user->phone ?? '')))) {
+                $request->session()->put('profile_return_to', route('checkout'));
+
+                return redirect()
+                    ->route('account.edit')
+                    ->withErrors(['profile' => 'Completá tu apellido y teléfono para poder finalizar la compra.']);
+            }
+
+            // Por ahora, el checkout solo muestra un resumen.
+            // Más adelante acá pedimos método de pago, notas, etc.
+            $total = 0;
+
         foreach ($cart as $item) {
             $total += $item['price'] * $item['quantity'];
         }

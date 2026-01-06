@@ -200,15 +200,32 @@ class AuthController extends Controller
             ]);
         }
 
-        Auth::login($user, true);
-        $request->session()->regenerate();
+                Auth::login($user, true);
+                $request->session()->regenerate();
 
-        $fallback = ($user->role ?? 'user') === 'admin'
-            ? route('admin.dashboard')
-            : route('home');
+                $fallback = ($user->role ?? 'user') === 'admin'
+                    ? route('admin.dashboard')
+                    : route('home');
 
-        return redirect()->intended($fallback)
-            ->with('success', 'Sesión iniciada con Google.');
+                $needsProfile =
+                    empty(trim((string)($user->last_name ?? ''))) ||
+                    empty(trim((string)($user->phone ?? '')));
+
+                if ($needsProfile) {
+                    // Guardamos a dónde quería ir (checkout u otra sección)
+                    $returnTo = $request->session()->get('url.intended') ?: $fallback;
+
+                    $request->session()->put('profile_return_to', $returnTo);
+                    $request->session()->forget('url.intended');
+
+                    return redirect()
+                        ->route('account.edit')
+                        ->withErrors(['profile' => 'Completá tu apellido y teléfono para poder comprar.']);
+                }
+
+                return redirect()->intended($fallback)
+                    ->with('success', 'Sesión iniciada con Google.');
+
     }
 
 
