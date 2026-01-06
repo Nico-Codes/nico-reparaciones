@@ -826,19 +826,28 @@ document.addEventListener('DOMContentLoaded', () => {
     // Inicial (por si vino disabled desde Blade)
     syncButtons();
 
-    const postFormJsonQty = async (form) => {
-      const res = await fetch(form.action, {
-        method: 'POST',
-        headers: {
-          'X-Requested-With': 'XMLHttpRequest',
-          Accept: 'application/json',
-        },
-        body: new FormData(form),
-      });
+    const postFormJsonQty = async (form, { timeoutMs = 12000 } = {}) => {
+      const controller = new AbortController();
+      const timer = window.setTimeout(() => controller.abort(), timeoutMs);
 
-      if (!res.ok) throw new Error('bad response');
-      return await res.json();
+      try {
+        const res = await fetch(form.action, {
+          method: 'POST',
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            Accept: 'application/json',
+          },
+          body: new FormData(form),
+          signal: controller.signal,
+        });
+
+        if (!res.ok) throw new Error('bad response');
+        return await res.json();
+      } finally {
+        window.clearTimeout(timer);
+      }
     };
+
     const collapseRemoveCard = (card) =>
       new Promise((resolve) => {
         if (!card) return resolve();
@@ -868,29 +877,40 @@ document.addEventListener('DOMContentLoaded', () => {
         );
       });
 
+      // ✅ BATCH / DEBOUNCE:
+      // En vez de mandar 1 request por cada click, mandamos 1 solo con el valor final.
       let inFlight = false;
-      let pending = false;
+      let desiredQty = getVal();       // último valor que el usuario quiere
+      let lastSentQty = desiredQty;    // último valor que mandamos al backend
+      let sendTimer = null;
 
-      const requestSubmit = () => {
-        if (inFlight) {
-          pending = true;
-          return;
-        }
-        doSubmit();
+      const scheduleSend = () => {
+        window.clearTimeout(sendTimer);
+        sendTimer = window.setTimeout(() => {
+          if (inFlight) return; // cuando termine el request, re-programamos si hace falta
+          sendNow();
+        }, 180); // 👈 ajustá 150–250ms si querés
       };
 
-      const doSubmit = async () => {
+      const sendNow = async () => {
         if (inFlight) return;
         inFlight = true;
-        pending = false;
+
+        // aseguramos que el form mande el último valor
+        desiredQty = clamp(desiredQty);
+        input.value = String(desiredQty);
+        syncButtons();
+
+        const qtyWeSent = desiredQty;
+        lastSentQty = qtyWeSent;
 
         try {
-          const data = await postFormJsonQty(form);
+          const data = await postFormJsonQty(form, { timeoutMs: 12000 });
           if (!data?.ok) throw new Error('bad json');
 
           const card = form.closest('[data-cart-item]');
 
-          // ✅ Si el backend avisó que el producto quedó sin stock y se eliminó:
+          // ✅ eliminado por falta de stock
           if (data.removed) {
             await collapseRemoveCard(card);
 
@@ -932,19 +952,32 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
           }
 
-          if (typeof data.quantity !== 'undefined') {
-            input.value = String(data.quantity);
-            syncButtons();
-          }
-
+          // ✅ stock máximo actualizado
           if (typeof data.maxStock !== 'undefined') {
             const m = parseInt(data.maxStock, 10);
             if (Number.isFinite(m) && m > 0) {
               input.setAttribute('max', String(m));
               const stockEl = card?.querySelector('[data-stock-available]');
               if (stockEl) stockEl.textContent = String(m);
+
+              // re-clamp por si el stock bajó
+              desiredQty = clamp(desiredQty);
+              input.value = String(desiredQty);
+              syncButtons();
             }
-            syncButtons();
+          }
+
+          // ✅ cantidad final que quedó en servidor (clamp del backend)
+          if (typeof data.quantity !== 'undefined') {
+            const serverQty = parseInt(data.quantity, 10);
+            if (Number.isFinite(serverQty) && serverQty > 0) {
+              // Solo pisamos el input si el usuario NO cambió otra vez mientras mandábamos
+              if (desiredQty === qtyWeSent) {
+                desiredQty = serverQty;
+                input.value = String(serverQty);
+                syncButtons();
+              }
+            }
           }
 
           const lineEl = card?.querySelector('[data-line-subtotal]');
@@ -967,15 +1000,20 @@ document.addEventListener('DOMContentLoaded', () => {
             setNavbarCartCount(data.cartCount);
           }
 
-          showMiniToast(data.message || 'Carrito actualizado.');
+          // (opcional) toast, si te molesta lo sacamos
+          // showMiniToast(data.message || 'Carrito actualizado.');
         } catch (e) {
-          if (typeof form.requestSubmit === 'function') form.requestSubmit();
-          else form.submit();
+          // No recargamos la página porque eso “mata” la UX.
+          if (e?.name === 'AbortError') {
+            showMiniToast('Tardó mucho en actualizar. Reintentá.');
+          } else {
+            showMiniToast('No se pudo actualizar el carrito. Reintentá.');
+          }
         } finally {
           inFlight = false;
 
-          // ✅ actualiza el “Finalizar compra” sin recargar
           updateCartCheckoutState();
+
 
           // ✅ si el usuario apretó varias veces durante el request, reenviamos el último estado
           if (pending && form.isConnected) {
