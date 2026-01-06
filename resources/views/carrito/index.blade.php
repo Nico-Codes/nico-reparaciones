@@ -10,7 +10,18 @@
 
   $itemsCount = 0;
   foreach ($cart as $i) { $itemsCount += (int)($i['quantity'] ?? 0); }
+
+  // ✅ Si hay productos sin stock o cantidad > stock, bloqueamos checkout
+  $hasStockIssue = false;
+  foreach ($cart as $it) {
+    $s = (int)($it['stock'] ?? 0);
+    $q = (int)($it['quantity'] ?? 1);
+    if ($q < 1) $q = 1;
+
+    if ($s <= 0 || $q > $s) { $hasStockIssue = true; break; }
+  }
 @endphp
+
 
 
 @section('content')
@@ -48,8 +59,15 @@
           $productUrl = $slug ? route('store.product', $slug) : route('store.index');
 
           $stock  = (int)($item['stock'] ?? 0);
-          $maxQty = $stock > 0 ? $stock : 999;
+          $isOut  = $stock <= 0;
+
+          // ✅ Si está sin stock, no permitimos subir (y dejamos max en 1 para que el JS no use 999)
+          $maxQty = $stock > 0 ? $stock : 1;
+
+          // Seguridad visual por si quedó desfasado
+          if ($qty > $maxQty) $qty = $maxQty;
         @endphp
+
 
 
         <div class="card" data-cart-item data-item-id="{{ $item['id'] }}">
@@ -68,7 +86,7 @@
                       {{ $item['name'] ?? 'Producto' }}
                     </a>
 
-                    <div class="text-xs text-zinc-500 mt-1 flex flex-wrap gap-x-2 gap-y-1">
+                    <div class="text-xs text-zinc-500 mt-1 flex flex-wrap gap-x-2 gap-y-1 items-center">
                       <span>
                         Precio unitario: <span class="font-black text-zinc-900">{{ $fmt($price) }}</span>
                       </span>
@@ -76,7 +94,12 @@
                       <span>
                         Disponible: <span class="font-black text-zinc-900" data-stock-available>{{ $stock }}</span>
                       </span>
+
+                      @if($isOut)
+                        <span class="badge-rose">Sin stock</span>
+                      @endif
                     </div>
+
 
                   </div>
 
@@ -101,7 +124,7 @@
                       type="button"
                       class="btn-outline btn-sm px-3"
                       data-qty-minus
-                      {{ $qty <= 1 ? 'disabled' : '' }}
+                      {{ ($isOut || $qty <= 1) ? 'disabled' : '' }}
                       aria-label="Restar"
                     >−</button>
 
@@ -116,16 +139,17 @@
                       class="w-20 text-center"
                       data-qty-input
                       max="{{ $maxQty }}"
-
+                      {{ $isOut ? 'disabled' : '' }}
                     >
 
                     <button
-                      {{ ($qty >= $maxQty) ? 'disabled' : '' }}
+                      {{ ($isOut || ($qty >= $maxQty)) ? 'disabled' : '' }}
                       type="button"
                       class="btn-outline btn-sm px-3"
                       data-qty-plus
                       aria-label="Sumar"
                     >+</button>
+
                   </form>
 
                   <div class="text-right leading-tight">
@@ -163,7 +187,21 @@
           </div>
 
           <div class="grid gap-2">
-            <a href="{{ route('checkout') }}" class="btn-primary w-full">Finalizar compra</a>
+             @if(!$hasStockIssue)
+                <a href="{{ route('checkout') }}" class="btn-primary w-full">Finalizar compra</a>
+              @else
+                <a href="{{ route('checkout') }}"
+                  class="btn-primary w-full opacity-50 pointer-events-none"
+                  aria-disabled="true"
+                  tabindex="-1">
+                  Finalizar compra
+                </a>
+
+                <div class="mt-2 text-xs text-rose-700 font-semibold">
+                  Hay productos sin stock o con cantidad mayor al stock. Ajustá el carrito para continuar.
+                </div>
+              @endif
+
 
             <form method="POST" action="{{ route('cart.clear') }}" data-cart-clear>
               @csrf
