@@ -817,14 +817,57 @@ document.addEventListener('DOMContentLoaded', () => {
       if (plus) plus.disabled = v >= max;
     };
 
+    // ✅ UI instantánea (optimista): subtotal + total sin esperar al backend
+    const card = form.closest('[data-cart-item]');
 
-    const setVal = (n) => {
-      input.value = String(clamp(n));
-      syncButtons();
+    const getUnitPrice = () => {
+      const v = parseFloat(card?.dataset?.unitPrice || '0');
+      return Number.isFinite(v) ? v : 0;
     };
 
-    // Inicial (por si vino disabled desde Blade)
+    const updateLocalLineSubtotal = (qty) => {
+      const lineEl = card?.querySelector('[data-line-subtotal]');
+      if (!lineEl) return;
+      const q = parseInt(qty, 10) || 0;
+      lineEl.textContent = formatARS(getUnitPrice() * q);
+    };
+
+    const updateLocalCartTotals = () => {
+      let items = 0;
+      let total = 0;
+
+      document.querySelectorAll('form[data-cart-qty] [data-qty-input]').forEach((inp) => {
+        const q = parseInt(inp.value || '0', 10) || 0;
+        items += q;
+
+        const c = inp.closest('[data-cart-item]');
+        const unit = parseFloat(c?.dataset?.unitPrice || '0');
+        if (Number.isFinite(unit)) total += unit * q;
+      });
+
+      const itemsCountEl = document.querySelector('[data-cart-items-count]');
+      const totalEl = document.querySelector('[data-cart-total]');
+
+      if (itemsCountEl) itemsCountEl.textContent = `${items} ítem${items === 1 ? '' : 's'}`;
+      if (totalEl) totalEl.textContent = formatARS(total);
+
+      // badge del navbar (queda “vivo” mientras tocas + / -)
+      setNavbarCartCount(items);
+    };
+
+    const setVal = (n) => {
+      const v = clamp(n);
+      input.value = String(v);
+      syncButtons();
+      updateLocalLineSubtotal(v);
+      updateLocalCartTotals();
+    };
+
+    // Inicial
     syncButtons();
+    updateLocalLineSubtotal(getVal());
+    updateLocalCartTotals();
+
 
     const postFormJsonQty = async (form, { timeoutMs = 12000 } = {}) => {
       const controller = new AbortController();
@@ -900,10 +943,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // aseguramos que el form mande el último valor
         desiredQty = clamp(desiredQty);
-        input.value = String(desiredQty);
-        syncButtons();
+        setVal(desiredQty);
 
         const qtyWeSent = desiredQty;
+
 
         try {
           const data = await postFormJsonQty(form, { timeoutMs: 12000 });
@@ -1026,8 +1069,7 @@ document.addEventListener('DOMContentLoaded', () => {
       minus?.addEventListener('click', (e) => {
         e.preventDefault();
         desiredQty = clamp(getVal() - 1);
-        input.value = String(desiredQty);
-        syncButtons();
+        setVal(desiredQty);
         scheduleSend();
       });
 
@@ -1043,29 +1085,28 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         desiredQty = clamp(v + 1);
-        input.value = String(desiredQty);
-        syncButtons();
+        setVal(desiredQty);
         scheduleSend();
       });
+
 
       // Input manual
       let t = null;
       input.addEventListener('input', () => {
-        window.clearTimeout(t);
-        t = window.setTimeout(() => {
+        clearTimeout(t);
+        t = setTimeout(() => {
           desiredQty = clamp(parseInt(input.value, 10) || 1);
-          input.value = String(desiredQty);
-          syncButtons();
+          setVal(desiredQty);
           scheduleSend();
         }, 250);
       });
 
       input.addEventListener('blur', () => {
         desiredQty = clamp(parseInt(input.value, 10) || 1);
-        input.value = String(desiredQty);
-        syncButtons();
+        setVal(desiredQty);
         scheduleSend();
       });
+
 
       // Inicial
       updateCartCheckoutState();

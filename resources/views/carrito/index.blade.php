@@ -70,7 +70,8 @@
 
 
 
-        <div class="card" data-cart-item data-item-id="{{ $item['id'] }}">
+        <div class="card" data-cart-item data-item-id="{{ $item['id'] }}" data-unit-price="{{ (float) $price }}">
+
           <div class="card-body">
             <div class="flex items-start gap-3">
               {{-- Thumb simple --}}
