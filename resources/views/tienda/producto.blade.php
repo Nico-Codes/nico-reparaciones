@@ -12,7 +12,8 @@
     <a href="{{ route('store.index') }}" class="font-black">Tienda</a>
     <span class="mx-2">/</span>
     @if($cat)
-      <a href="{{ route('store.category', $cat->slug) }}" class="font-black">{{ $cat->name }}</a>
+      <a href="{{ route('store.category', ['category' => $cat->slug]) }}" class="font-black">{{ $cat->name }}</a>
+
       <span class="mx-2">/</span>
     @endif
     <span class="text-zinc-500">{{ $product->name }}</span>

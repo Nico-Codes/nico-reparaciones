@@ -65,6 +65,11 @@ class CartController extends Controller
             $quantity = (int) $product->stock;
         }
 
+        if ((int)($product->active ?? 1) !== 1) {
+            return back()->withErrors([
+                'stock' => 'Este producto no está disponible.',
+            ]);
+        }
 
         if (isset($cart[$product->id])) {
             // Ya existe, sumo cantidad
@@ -361,9 +366,11 @@ class CartController extends Controller
         $ids = array_values(array_unique(array_filter($ids)));
 
         $products = Product::query()
-            ->whereIn('id', $ids)
-            ->get()
-            ->keyBy('id');
+        ->whereIn('id', $ids)
+        ->where('active', 1)
+        ->get()
+        ->keyBy('id');
+
 
         // dirty = hubo cambios de snapshot (stock/nombre/slug/id)
         // changed = hubo cambios importantes (removido/ajuste qty/cambio precio)

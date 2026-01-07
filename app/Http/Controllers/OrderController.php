@@ -57,10 +57,12 @@ class OrderController extends Controller
                 $productIds = collect($cart)->pluck('id')->filter()->unique()->values()->all();
 
                 $products = Product::query()
-                    ->whereIn('id', $productIds)
-                    ->lockForUpdate()
-                    ->get()
-                    ->keyBy('id');
+                ->whereIn('id', $productIds)
+                ->where('active', 1)
+                ->lockForUpdate()
+                ->get()
+                ->keyBy('id');
+
 
                 $itemsToCreate = [];
                 $total = 0;

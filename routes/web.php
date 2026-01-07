@@ -36,7 +36,8 @@ use App\Http\Controllers\AdminOrderWhatsappTemplateController;
 Route::get('/', [StoreController::class, 'index'])->name('home');
 
 Route::get('/tienda', [StoreController::class, 'index'])->name('store.index');
-Route::get('/tienda/categoria/{slug}', [StoreController::class, 'category'])->name('store.category');
+Route::get('/tienda/categoria/{category:slug}', [StoreController::class, 'category'])->name('store.category');
+
 Route::get('/producto/{slug}', [StoreController::class, 'product'])->name('store.product');
 
 /*

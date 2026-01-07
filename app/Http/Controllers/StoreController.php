@@ -65,13 +65,17 @@ private function applySort($query, string $sort)
         ->take(12)
         ->get();
 
-    $productsQ = Product::query()->where('active', 1);
+    $productsQ = Product::query()
+    ->where('active', 1)
+    ->with(['category:id,name,slug']);
+
 
     if ($q !== '') {
         $productsQ->where('name', 'like', '%' . $q . '%');
     }
 
-    $products = $this->applySort($productsQ, $sort)->paginate(12);
+    $products = $this->applySort($productsQ, $sort)->paginate(12)->withQueryString();
+
 
     return view('tienda.index', [
         'categories' => $categories,
@@ -84,34 +88,37 @@ private function applySort($query, string $sort)
 
     public function category(Category $category, Request $request)
     {
-    $q = trim((string)$request->query('q', ''));
-    $sort = $this->normalizeSort($request->query('sort', 'relevance'));
+        $q = trim((string)$request->query('q', ''));
+        $sort = $this->normalizeSort($request->query('sort', 'relevance'));
 
-    $categories = Category::where('active', 1)->orderBy('name')->get();
+        $categories = Category::where('active', 1)->orderBy('name')->get();
 
-    $featuredProducts = Product::where('active', 1)
+        $featuredProducts = Product::where('active', 1)
         ->where('featured', 1)
+        ->with(['category:id,name,slug'])
         ->orderByDesc('id')
         ->take(12)
         ->get();
 
-    $productsQ = Product::query()
-        ->where('active', 1)
-        ->where('category_id', $category->id);
 
-    if ($q !== '') {
-        $productsQ->where('name', 'like', '%' . $q . '%');
-    }
+        $productsQ = Product::query()
+            ->where('active', 1)
+            ->where('category_id', $category->id);
 
-    $products = $this->applySort($productsQ, $sort)->paginate(12);
+        if ($q !== '') {
+            $productsQ->where('name', 'like', '%' . $q . '%');
+        }
 
-    return view('tienda.index', [
-        'categories' => $categories,
-        'featuredProducts' => $featuredProducts,
-        'products' => $products,
-        'filters' => ['q' => $q, 'sort' => $sort],
-        'category' => $category,
-    ]);
+        $products = $this->applySort($productsQ, $sort)->paginate(12)->withQueryString();
+
+
+        return view('tienda.index', [
+            'categories' => $categories,
+            'featuredProducts' => $featuredProducts,
+            'products' => $products,
+            'filters' => ['q' => $q, 'sort' => $sort],
+            'category' => $category,
+        ]);
     }
 
 
