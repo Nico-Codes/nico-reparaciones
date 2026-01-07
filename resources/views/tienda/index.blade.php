@@ -14,21 +14,79 @@
   @if(($categories ?? collect())->count())
     <div class="card">
       <div class="card-body">
+        @php
+          $keep = [];
+          if (request()->filled('q')) $keep['q'] = request('q');
+          if (request()->filled('sort')) $keep['sort'] = request('sort');
+        @endphp
+
         <div class="flex flex-wrap gap-2">
-          <a href="{{ route('store.index') }}" class="nav-pill {{ empty($currentCategorySafe) ? 'nav-pill-active' : '' }}">
+          <a href="{{ route('store.index', $keep) }}" class="nav-pill {{ empty($currentCategorySafe) ? 'nav-pill-active' : '' }}">
             Todas
           </a>
 
           @foreach($categories as $cat)
-            <a href="{{ route('store.category', $cat->slug) }}"
-               class="nav-pill {{ ($currentCategorySafe?->id === $cat->id) ? 'nav-pill-active' : '' }}">
+            <a href="{{ route('store.category', ['slug' => $cat->slug] + $keep) }}"
+              class="nav-pill {{ ($currentCategorySafe?->id === $cat->id) ? 'nav-pill-active' : '' }}">
               {{ $cat->name }}
             </a>
           @endforeach
+
         </div>
+
       </div>
     </div>
   @endif
+
+  @php
+    $formAction = $currentCategorySafe
+      ? route('store.category', ['category' => $currentCategorySafe->slug])
+      : route('store.index');
+
+    $qVal = (string)($filters['q'] ?? '');
+    $sortVal = (string)($filters['sort'] ?? 'relevance');
+  @endphp
+
+  <div class="card">
+    <div class="card-body">
+      <form method="GET" action="{{ $formAction }}" class="grid gap-3 md:grid-cols-12 items-end">
+        <div class="md:col-span-7">
+          <div class="text-xs font-black text-zinc-700">Buscar</div>
+          <input
+            name="q"
+            value="{{ $qVal }}"
+            placeholder="Ej: iPhone, display, batería..."
+            class="mt-1 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold text-zinc-900 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-200/40"
+          >
+        </div>
+
+        <div class="md:col-span-3">
+          <div class="text-xs font-black text-zinc-700">Ordenar</div>
+          <select
+            name="sort"
+            class="mt-1 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold text-zinc-900 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-200/40"
+          >
+            <option value="relevance" {{ $sortVal === 'relevance' ? 'selected' : '' }}>Relevancia</option>
+            <option value="newest" {{ $sortVal === 'newest' ? 'selected' : '' }}>Más nuevos</option>
+            <option value="price_asc" {{ $sortVal === 'price_asc' ? 'selected' : '' }}>Menor precio</option>
+            <option value="price_desc" {{ $sortVal === 'price_desc' ? 'selected' : '' }}>Mayor precio</option>
+            <option value="name_asc" {{ $sortVal === 'name_asc' ? 'selected' : '' }}>Nombre A–Z</option>
+            <option value="name_desc" {{ $sortVal === 'name_desc' ? 'selected' : '' }}>Nombre Z–A</option>
+            <option value="stock_desc" {{ $sortVal === 'stock_desc' ? 'selected' : '' }}>Más stock</option>
+          </select>
+        </div>
+
+        <div class="md:col-span-2 flex gap-2">
+          <button type="submit" class="btn-primary w-full justify-center">Aplicar</button>
+
+          @if($qVal !== '' || ($sortVal !== 'relevance'))
+            <a href="{{ $formAction }}" class="btn-outline w-full justify-center">Limpiar</a>
+          @endif
+        </div>
+      </form>
+    </div>
+  </div>
+
 
   {{-- Destacados --}}
   @if(($featuredProducts ?? collect())->count())

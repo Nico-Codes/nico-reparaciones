@@ -8,71 +8,112 @@ use Illuminate\Http\Request;
 
 class StoreController extends Controller
 {
+private function normalizeSort(?string $sort): string
+{
+  $sort = trim((string)$sort);
+
+  $allowed = [
+    'relevance',   // default (destacados arriba + más nuevo)
+    'newest',      // más nuevos
+    'price_asc',   // menor precio
+    'price_desc',  // mayor precio
+    'name_asc',    // A-Z
+    'name_desc',   // Z-A
+    'stock_desc',  // más stock
+  ];
+
+  return in_array($sort, $allowed, true) ? $sort : 'relevance';
+}
+
+private function applySort($query, string $sort)
+{
+  switch ($sort) {
+    case 'newest':
+      return $query->orderByDesc('id');
+
+    case 'price_asc':
+      return $query->orderBy('price')->orderByDesc('id');
+
+    case 'price_desc':
+      return $query->orderByDesc('price')->orderByDesc('id');
+
+    case 'name_asc':
+      return $query->orderBy('name')->orderByDesc('id');
+
+    case 'name_desc':
+      return $query->orderByDesc('name')->orderByDesc('id');
+
+    case 'stock_desc':
+      return $query->orderByDesc('stock')->orderByDesc('id');
+
+    case 'relevance':
+    default:
+      return $query->orderByDesc('featured')->orderByDesc('id');
+  }
+}
+
     public function index(Request $request)
     {
-        $q = trim((string) $request->query('q', ''));
+    $q = trim((string)$request->query('q', ''));
+    $sort = $this->normalizeSort($request->query('sort', 'relevance'));
 
-        $categories = Category::query()
-            ->orderBy('name')
-            ->get();
+    $categories = Category::where('active', 1)->orderBy('name')->get();
 
-        $productsQuery = Product::query()
-            ->with('category')
-            ->orderByDesc('id');
+    $featuredProducts = Product::where('active', 1)
+        ->where('featured', 1)
+        ->orderByDesc('id')
+        ->take(12)
+        ->get();
 
-        if ($q !== '') {
-            $productsQuery->where('name', 'like', "%{$q}%");
-        }
+    $productsQ = Product::query()->where('active', 1);
 
-        $products = $productsQuery->paginate(18)->withQueryString();
-
-        $featuredProducts = Product::query()
-            ->with('category')
-            ->where('featured', true)
-            ->orderByDesc('id')
-            ->take(8)
-            ->get();
-
-        return view('tienda.index', [
-            'categories'       => $categories,
-            'products'         => $products,
-            'featuredProducts' => $featuredProducts,
-            'category'         => null,
-            'q'                => $q,
-        ]);
+    if ($q !== '') {
+        $productsQ->where('name', 'like', '%' . $q . '%');
     }
 
-    public function category(Request $request, string $slug)
+    $products = $this->applySort($productsQ, $sort)->paginate(12);
+
+    return view('tienda.index', [
+        'categories' => $categories,
+        'featuredProducts' => $featuredProducts,
+        'products' => $products,
+        'filters' => ['q' => $q, 'sort' => $sort],
+        'category' => null,
+    ]);
+    }
+
+    public function category(Category $category, Request $request)
     {
-        $q = trim((string) $request->query('q', ''));
+    $q = trim((string)$request->query('q', ''));
+    $sort = $this->normalizeSort($request->query('sort', 'relevance'));
 
-        $category = Category::query()
-            ->where('slug', $slug)
-            ->firstOrFail();
+    $categories = Category::where('active', 1)->orderBy('name')->get();
 
-        $categories = Category::query()
-            ->orderBy('name')
-            ->get();
+    $featuredProducts = Product::where('active', 1)
+        ->where('featured', 1)
+        ->orderByDesc('id')
+        ->take(12)
+        ->get();
 
-        $productsQuery = Product::query()
-            ->with('category')
-            ->where('category_id', $category->id)
-            ->orderByDesc('id');
+    $productsQ = Product::query()
+        ->where('active', 1)
+        ->where('category_id', $category->id);
 
-        if ($q !== '') {
-            $productsQuery->where('name', 'like', "%{$q}%");
-        }
-
-        $products = $productsQuery->paginate(18)->withQueryString();
-
-        return view('tienda.index', [
-            'categories'       => $categories,
-            'products'         => $products,
-            'category'         => $category,
-            'q'                => $q,
-            'featuredProducts' => collect(),
-        ]);
+    if ($q !== '') {
+        $productsQ->where('name', 'like', '%' . $q . '%');
     }
+
+    $products = $this->applySort($productsQ, $sort)->paginate(12);
+
+    return view('tienda.index', [
+        'categories' => $categories,
+        'featuredProducts' => $featuredProducts,
+        'products' => $products,
+        'filters' => ['q' => $q, 'sort' => $sort],
+        'category' => $category,
+    ]);
+    }
+
 
     public function product(string $slug)
     {
