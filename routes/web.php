@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
@@ -30,17 +30,12 @@ use App\Http\Controllers\AdminOrderWhatsappTemplateController;
 
 /*
 |--------------------------------------------------------------------------
-| Rutas públicas
+| Rutas pÃºblicas
 |--------------------------------------------------------------------------
 */
 Route::get('/', [StoreController::class, 'index'])->name('home');
-
 Route::get('/tienda', [StoreController::class, 'index'])->name('store.index');
-Route::get('/tienda/categoria/{category:slug}', [StoreController::class, 'category'])
-    ->name('store.category');
-
-
-
+Route::get('/tienda/categoria/{category:slug}', [StoreController::class, 'category'])->name('store.category');
 Route::get('/producto/{slug}', [StoreController::class, 'product'])->name('store.product');
 
 /*
@@ -55,7 +50,7 @@ Route::middleware('guest')->group(function () {
     Route::get('/registro', [AuthController::class, 'showRegister'])->name('register');
     Route::post('/registro', [AuthController::class, 'register'])->name('register.post');
 
-    // ✅ Google OAuth
+    // âœ… Google OAuth
     Route::get('/auth/google', [AuthController::class, 'googleRedirect'])->name('auth.google.redirect');
     Route::get('/auth/google/callback', [AuthController::class, 'googleCallback'])->name('auth.google.callback');
 });
@@ -88,7 +83,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/mi-cuenta', [AccountController::class, 'edit'])->name('account.edit');
     Route::put('/mi-cuenta', [AccountController::class, 'update'])->name('account.update');
 
-    // ✅ Cambiar contraseña (simple)
+    // âœ… Cambiar contraseÃ±a (simple)
     Route::put('/mi-cuenta/password', [AccountController::class, 'updatePassword'])->name('account.password');
 
     Route::get('/mis-pedidos', [OrderController::class, 'index'])->name('orders.index');
@@ -106,7 +101,7 @@ Route::middleware(['auth'])->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| Reparación - consulta pública (lookup)
+| ReparaciÃ³n - consulta pÃºblica (lookup)
 |--------------------------------------------------------------------------
 */
 Route::get('/reparacion', [RepairLookupController::class, 'form'])->name('repairs.lookup');
@@ -149,7 +144,7 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     Route::get('/pedidos/{order}', [AdminOrderController::class, 'show'])->name('admin.orders.show');
     Route::post('/pedidos/{order}/estado', [AdminOrderController::class, 'updateStatus'])->name('admin.orders.updateStatus');
 
-    // ✅ WhatsApp Pedidos (logs)
+    // âœ… WhatsApp Pedidos (logs)
     Route::post('/pedidos/{order}/whatsapp', [AdminOrderController::class, 'whatsappLog'])->name('admin.orders.whatsappLog');
     Route::post('/pedidos/{order}/whatsapp-ajax', [AdminOrderController::class, 'whatsappLogAjax'])->name('admin.orders.whatsappLogAjax');
 
@@ -172,7 +167,7 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     Route::get('/pedidos/{order}/imprimir', AdminOrderPrintController::class)->name('admin.orders.print');
     Route::get('/pedidos/{order}/ticket', AdminOrderTicketController::class)->name('admin.orders.ticket');
 
-    // Categorías
+    // CategorÃ­as
     Route::get('/categorias', [AdminCategoryController::class, 'index'])->name('admin.categories.index');
     Route::get('/categorias/crear', [AdminCategoryController::class, 'create'])->name('admin.categories.create');
     Route::post('/categorias', [AdminCategoryController::class, 'store'])->name('admin.categories.store');
@@ -194,7 +189,7 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     Route::post('/usuarios/{user}/rol', [AdminUserController::class, 'updateRole'])->name('admin.users.updateRole');
 
 
-    // Configuración negocio
+    // ConfiguraciÃ³n negocio
     Route::get('/configuracion', [AdminBusinessSettingsController::class, 'index'])->name('admin.settings.index');
     Route::post('/configuracion', [AdminBusinessSettingsController::class, 'update'])->name('admin.settings.update');
 
@@ -202,7 +197,9 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     Route::get('/whatsapp', [AdminWhatsappTemplateController::class, 'index'])->name('admin.whatsapp_templates.index');
     Route::post('/whatsapp', [AdminWhatsappTemplateController::class, 'update'])->name('admin.whatsapp_templates.update');
 
-    // ✅ WhatsApp Pedidos (plantillas)
+    // âœ… WhatsApp Pedidos (plantillas)
     Route::get('/whatsapp-pedidos', [AdminOrderWhatsappTemplateController::class, 'index'])->name('admin.orders_whatsapp_templates.index');
     Route::post('/whatsapp-pedidos', [AdminOrderWhatsappTemplateController::class, 'update'])->name('admin.orders_whatsapp_templates.update');
 });
+
+
