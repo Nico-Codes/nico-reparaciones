@@ -880,20 +880,22 @@ document.addEventListener('DOMContentLoaded', () => {
       // ✅ BATCH / DEBOUNCE:
       // En vez de mandar 1 request por cada click, mandamos 1 solo con el valor final.
       let inFlight = false;
-      let desiredQty = getVal();       // último valor que el usuario quiere
-      let lastSentQty = desiredQty;    // último valor que mandamos al backend
+      let desiredQty = getVal();          // último valor que el usuario quiere
+      let lastAppliedQty = desiredQty;    // último valor confirmado (servidor)
       let sendTimer = null;
 
       const scheduleSend = () => {
         window.clearTimeout(sendTimer);
         sendTimer = window.setTimeout(() => {
-          if (inFlight) return; // cuando termine el request, re-programamos si hace falta
+          if (inFlight) return; // al terminar el request, reprogramamos si hace falta
           sendNow();
-        }, 180); // 👈 ajustá 150–250ms si querés
+        }, 180);
       };
 
       const sendNow = async () => {
         if (inFlight) return;
+        if (!form.isConnected) return;
+
         inFlight = true;
 
         // aseguramos que el form mande el último valor
@@ -902,7 +904,6 @@ document.addEventListener('DOMContentLoaded', () => {
         syncButtons();
 
         const qtyWeSent = desiredQty;
-        lastSentQty = qtyWeSent;
 
         try {
           const data = await postFormJsonQty(form, { timeoutMs: 12000 });
@@ -960,10 +961,12 @@ document.addEventListener('DOMContentLoaded', () => {
               const stockEl = card?.querySelector('[data-stock-available]');
               if (stockEl) stockEl.textContent = String(m);
 
-              // re-clamp por si el stock bajó
-              desiredQty = clamp(desiredQty);
-              input.value = String(desiredQty);
-              syncButtons();
+              // re-clamp solo si el usuario no cambió mientras volaba el request
+              if (desiredQty === qtyWeSent) {
+                desiredQty = clamp(desiredQty);
+                input.value = String(desiredQty);
+                syncButtons();
+              }
             }
           }
 
@@ -971,13 +974,17 @@ document.addEventListener('DOMContentLoaded', () => {
           if (typeof data.quantity !== 'undefined') {
             const serverQty = parseInt(data.quantity, 10);
             if (Number.isFinite(serverQty) && serverQty > 0) {
-              // Solo pisamos el input si el usuario NO cambió otra vez mientras mandábamos
               if (desiredQty === qtyWeSent) {
                 desiredQty = serverQty;
                 input.value = String(serverQty);
                 syncButtons();
               }
+              lastAppliedQty = serverQty;
+            } else {
+              lastAppliedQty = qtyWeSent;
             }
+          } else {
+            lastAppliedQty = qtyWeSent;
           }
 
           const lineEl = card?.querySelector('[data-line-subtotal]');
@@ -1000,34 +1007,28 @@ document.addEventListener('DOMContentLoaded', () => {
             setNavbarCartCount(data.cartCount);
           }
 
-          // (opcional) toast, si te molesta lo sacamos
-          // showMiniToast(data.message || 'Carrito actualizado.');
         } catch (e) {
-          // No recargamos la página porque eso “mata” la UX.
-          if (e?.name === 'AbortError') {
-            showMiniToast('Tardó mucho en actualizar. Reintentá.');
-          } else {
-            showMiniToast('No se pudo actualizar el carrito. Reintentá.');
-          }
+          if (e?.name === 'AbortError') showMiniToast('Tardó mucho en actualizar. Reintentá.');
+          else showMiniToast('No se pudo actualizar el carrito. Reintentá.');
         } finally {
           inFlight = false;
-
           updateCartCheckoutState();
 
-
-          // ✅ si el usuario apretó varias veces durante el request, reenviamos el último estado
-          if (pending && form.isConnected) {
-            pending = false;
-            requestSubmit();
+          // Si el usuario siguió tocando mientras el request estaba en vuelo,
+          // reprogramamos envío con el último desiredQty.
+          if (form.isConnected && desiredQty !== lastAppliedQty) {
+            scheduleSend();
           }
         }
       };
 
-
+      // Botones (+ / -) — NO mandan request inmediato, solo programan
       minus?.addEventListener('click', (e) => {
         e.preventDefault();
-        setVal(getVal() - 1);
-        requestSubmit();
+        desiredQty = clamp(getVal() - 1);
+        input.value = String(desiredQty);
+        syncButtons();
+        scheduleSend();
       });
 
       plus?.addEventListener('click', (e) => {
@@ -1041,22 +1042,29 @@ document.addEventListener('DOMContentLoaded', () => {
           return;
         }
 
-        setVal(v + 1);
-        requestSubmit();
+        desiredQty = clamp(v + 1);
+        input.value = String(desiredQty);
+        syncButtons();
+        scheduleSend();
       });
 
-
+      // Input manual
       let t = null;
       input.addEventListener('input', () => {
-        clearTimeout(t);
-        t = setTimeout(() => {
-          setVal(getVal());
-          requestSubmit();
-        }, 450);
+        window.clearTimeout(t);
+        t = window.setTimeout(() => {
+          desiredQty = clamp(parseInt(input.value, 10) || 1);
+          input.value = String(desiredQty);
+          syncButtons();
+          scheduleSend();
+        }, 250);
       });
 
       input.addEventListener('blur', () => {
-        setVal(getVal());
+        desiredQty = clamp(parseInt(input.value, 10) || 1);
+        input.value = String(desiredQty);
+        syncButtons();
+        scheduleSend();
       });
 
       // Inicial
