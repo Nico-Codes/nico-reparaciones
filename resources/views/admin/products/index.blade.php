@@ -15,12 +15,17 @@
     return $stock > 0 ? ('Stock: ' . $stock) : 'Sin stock';
   };
 
+  $activeBadge = fn($active) => ((bool)$active) ? 'badge-emerald' : 'badge-zinc';
+  $activeLabel = fn($active) => ((bool)$active) ? 'Activo' : 'Inactivo';
+
+  $featuredBadge = fn($featured) => ((bool)$featured) ? 'badge-amber' : 'badge-zinc';
+  $featuredLabel = fn($featured) => ((bool)$featured) ? 'Destacado' : 'Normal';
+
   $q = $q ?? '';
-  $stock = $stock ?? '';
 @endphp
 
 @section('content')
-<div class="space-y-6">
+<div class="space-y-6" data-admin-products>
   <div class="flex items-start justify-between gap-4 flex-wrap">
     <div class="page-head mb-0">
       <div class="page-title">Productos</div>
@@ -79,13 +84,53 @@
                   <div class="mt-1 text-xs text-zinc-500">Slug: <span class="font-semibold">{{ $p->slug }}</span></div>
                   <div class="mt-1 text-xs text-zinc-500">Categoría: <span class="font-semibold">{{ $p->category?->name ?? '—' }}</span></div>
                 </div>
-                <span class="{{ $stockBadge($p->stock) }} shrink-0">{{ $stockLabel($p->stock) }}</span>
+                <span class="{{ $stockBadge($p->stock) }} shrink-0" data-stock-label-for="{{ $p->id }}">
+                  {{ $stockLabel($p->stock) }}
+                </span>
               </div>
 
-              <div class="mt-3 flex items-center justify-between gap-2">
-                <div class="text-lg font-black">{{ $money($p->price) }}</div>
-                <a class="btn-outline btn-sm" href="{{ route('admin.products.edit', $p) }}">Editar</a>
-              </div>
+                <div class="mt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <div class="text-lg font-black">{{ $money($p->price) }}</div>
+
+                  <div class="flex items-center gap-2 flex-wrap justify-end">
+                    <form method="POST"
+                          action="{{ route('admin.products.toggleActive', $p) }}"
+                          data-admin-product-toggle="active"
+                          class="inline">
+                      @csrf
+                      <button type="submit" class="{{ $activeBadge($p->active) }} hover:opacity-90 transition" data-toggle-btn>
+                        {{ $activeLabel($p->active) }}
+                      </button>
+                    </form>
+
+                    <form method="POST"
+                          action="{{ route('admin.products.toggleFeatured', $p) }}"
+                          data-admin-product-toggle="featured"
+                          class="inline">
+                      @csrf
+                      <button type="submit" class="{{ $featuredBadge($p->featured) }} hover:opacity-90 transition" data-toggle-btn>
+                        {{ $featuredLabel($p->featured) }}
+                      </button>
+                    </form>
+
+                    <a class="btn-outline btn-sm" href="{{ route('admin.products.edit', $p) }}">Editar</a>
+                  </div>
+                </div>
+
+                <form method="POST"
+                      action="{{ route('admin.products.updateStock', $p) }}"
+                      data-admin-product-stock
+                      data-product-id="{{ $p->id }}"
+                      class="mt-2 flex items-center gap-2">
+                  @csrf
+                  <input type="number"
+                        name="stock"
+                        min="0"
+                        value="{{ (int)$p->stock }}"
+                        class="!w-28 text-right"
+                        data-stock-input-for="{{ $p->id }}">
+                  <button type="submit" class="btn-outline btn-sm">Guardar stock</button>
+                </form>
             </div>
           </div>
         </div>
@@ -128,10 +173,52 @@
               <td class="font-semibold text-zinc-700">{{ $p->category?->name ?? '—' }}</td>
               <td class="hidden lg:table-cell text-zinc-700">{{ $p->slug }}</td>
               <td class="text-right font-black">{{ $money($p->price) }}</td>
-              <td class="text-right"><span class="{{ $stockBadge($p->stock) }}">{{ $stockLabel($p->stock) }}</span></td>
               <td class="text-right">
-                <a class="btn-outline btn-sm" href="{{ route('admin.products.edit', $p) }}">Editar</a>
+                <form method="POST"
+                      action="{{ route('admin.products.updateStock', $p) }}"
+                      data-admin-product-stock
+                      data-product-id="{{ $p->id }}"
+                      class="inline-flex items-center justify-end gap-2">
+                  @csrf
+                  <span class="{{ $stockBadge($p->stock) }}" data-stock-label-for="{{ $p->id }}">
+                    {{ $stockLabel($p->stock) }}
+                  </span>
+                  <input type="number"
+                        name="stock"
+                        min="0"
+                        value="{{ (int)$p->stock }}"
+                        class="!w-24 text-right"
+                        data-stock-input-for="{{ $p->id }}">
+                  <button type="submit" class="btn-outline btn-sm">OK</button>
+                </form>
               </td>
+
+              <td class="text-right">
+                <div class="inline-flex items-center justify-end gap-2">
+                  <form method="POST"
+                        action="{{ route('admin.products.toggleActive', $p) }}"
+                        data-admin-product-toggle="active"
+                        class="inline">
+                    @csrf
+                    <button type="submit" class="{{ $activeBadge($p->active) }} hover:opacity-90 transition" data-toggle-btn>
+                      {{ $activeLabel($p->active) }}
+                    </button>
+                  </form>
+
+                  <form method="POST"
+                        action="{{ route('admin.products.toggleFeatured', $p) }}"
+                        data-admin-product-toggle="featured"
+                        class="inline">
+                    @csrf
+                    <button type="submit" class="{{ $featuredBadge($p->featured) }} hover:opacity-90 transition" data-toggle-btn>
+                      {{ $featuredLabel($p->featured) }}
+                    </button>
+                  </form>
+
+                  <a class="btn-outline btn-sm" href="{{ route('admin.products.edit', $p) }}">Editar</a>
+                </div>
+              </td>
+
             </tr>
           @empty
             <tr><td colspan="6" class="py-8 text-center text-zinc-500">No hay productos.</td></tr>

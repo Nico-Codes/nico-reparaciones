@@ -1649,5 +1649,111 @@ document.addEventListener('DOMContentLoaded', () => {
 
       });
     });
+
+
+    // Admin: Productos (toggles + stock rápido)
+    (() => {
+      const root = document.querySelector('[data-admin-products]');
+      if (!root) return;
+
+      const postFormJson = async (form) => {
+        const res = await fetch(form.action, {
+          method: 'POST',
+          headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+          body: new FormData(form),
+        });
+
+        let data = null;
+        try { data = await res.json(); } catch (_) {}
+
+        if (!res.ok) {
+          const msg = data?.message || (res.status === 419 ? 'Sesión expirada (CSRF) ⚠️' : 'No se pudo completar ⚠️');
+          const err = new Error(msg);
+          err.status = res.status;
+          err.data = data;
+          throw err;
+        }
+
+        return data;
+      };
+
+      const setBusy = (form, busy) => {
+        form.dataset.busy = busy ? '1' : '0';
+        const btn = form.querySelector('button[type="submit"]');
+        if (btn) btn.disabled = !!busy;
+        if (busy) btn?.classList.add('opacity-60', 'pointer-events-none');
+        else btn?.classList.remove('opacity-60', 'pointer-events-none');
+      };
+
+      const updateStockUI = (productId, stock) => {
+        const s = Number(stock ?? 0);
+        const label = s > 0 ? `Stock: ${s}` : 'Sin stock';
+        const ok = s > 0;
+
+        root.querySelectorAll(`[data-stock-label-for="${productId}"]`).forEach(el => {
+          el.textContent = label;
+          el.classList.toggle('badge-emerald', ok);
+          el.classList.toggle('badge-rose', !ok);
+        });
+
+        root.querySelectorAll(`[data-stock-input-for="${productId}"]`).forEach(el => {
+          el.value = String(s);
+        });
+      };
+
+      const updateToggleUI = (btn, kind, value) => {
+        const on = !!value;
+
+        if (kind === 'active') {
+          btn.textContent = on ? 'Activo' : 'Inactivo';
+          btn.classList.toggle('badge-emerald', on);
+          btn.classList.toggle('badge-zinc', !on);
+        }
+
+        if (kind === 'featured') {
+          btn.textContent = on ? 'Destacado' : 'Normal';
+          btn.classList.toggle('badge-amber', on);
+          btn.classList.toggle('badge-zinc', !on);
+        }
+      };
+
+      root.addEventListener('submit', async (e) => {
+        const form = e.target;
+        if (!(form instanceof HTMLFormElement)) return;
+
+        const toggleKind = form.getAttribute('data-admin-product-toggle');
+        const isStock = form.hasAttribute('data-admin-product-stock');
+
+        if (!toggleKind && !isStock) return;
+
+        e.preventDefault();
+        if (form.dataset.busy === '1') return;
+
+        setBusy(form, true);
+
+        try {
+          const data = await postFormJson(form);
+
+          if (toggleKind) {
+            const btn = form.querySelector('[data-toggle-btn]') || form.querySelector('button[type="submit"]');
+            if (btn) updateToggleUI(btn, toggleKind, data?.[toggleKind]);
+          }
+
+          if (isStock) {
+            const pid = form.getAttribute('data-product-id');
+            if (pid) updateStockUI(pid, data?.stock ?? 0);
+          }
+
+          if (typeof showMiniToast === 'function') showMiniToast(data?.message || 'Actualizado ✅');
+        } catch (err) {
+          if (typeof showMiniToast === 'function') showMiniToast(err?.message || 'Error ⚠️');
+        } finally {
+          setBusy(form, false);
+        }
+      }, true);
+    })();
+
   });
+
+
 });

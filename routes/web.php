@@ -183,6 +183,11 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     Route::put('/productos/{product}', [AdminProductController::class, 'update'])->name('admin.products.update');
     Route::delete('/productos/{product}', [AdminProductController::class, 'destroy'])->name('admin.products.destroy');
 
+    // Productos (acciones rápidas)
+    Route::post('/productos/{product}/toggle-active', [AdminProductController::class, 'toggleActive'])->name('admin.products.toggleActive');
+    Route::post('/productos/{product}/toggle-featured', [AdminProductController::class, 'toggleFeatured'])->name('admin.products.toggleFeatured');
+    Route::post('/productos/{product}/stock', [AdminProductController::class, 'updateStock'])->name('admin.products.updateStock');
+
     // Usuarios
     Route::get('/usuarios', [AdminUserController::class, 'index'])->name('admin.users.index');
     Route::get('/usuarios/{user}', [AdminUserController::class, 'show'])->name('admin.users.show');
@@ -200,6 +205,16 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     // âœ… WhatsApp Pedidos (plantillas)
     Route::get('/whatsapp-pedidos', [AdminOrderWhatsappTemplateController::class, 'index'])->name('admin.orders_whatsapp_templates.index');
     Route::post('/whatsapp-pedidos', [AdminOrderWhatsappTemplateController::class, 'update'])->name('admin.orders_whatsapp_templates.update');
+
+    Route::post('/admin/productos/{product}/toggle-active', [AdminProductController::class, 'toggleActive'])
+        ->name('admin.products.toggleActive');
+
+    Route::post('/admin/productos/{product}/toggle-featured', [AdminProductController::class, 'toggleFeatured'])
+        ->name('admin.products.toggleFeatured');
+
+    Route::post('/admin/productos/{product}/stock', [AdminProductController::class, 'updateStock'])
+        ->name('admin.products.updateStock');
+
 });
 
 

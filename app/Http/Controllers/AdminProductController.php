@@ -145,8 +145,49 @@ class AdminProductController extends Controller
             ->with('success', 'Producto eliminado.');
     }
 
+    public function toggleActive(Product $product)
+    {
+        $product->active = !(bool) $product->active;
+        $product->save();
+
+        return response()->json([
+            'ok' => true,
+            'active' => (bool) $product->active,
+            'message' => $product->active ? 'Producto activado ✅' : 'Producto desactivado ✅',
+        ]);
+    }
+
+    public function toggleFeatured(Product $product)
+    {
+        $product->featured = !(bool) $product->featured;
+        $product->save();
+
+        return response()->json([
+            'ok' => true,
+            'featured' => (bool) $product->featured,
+            'message' => $product->featured ? 'Marcado como destacado ✅' : 'Quitado de destacados ✅',
+        ]);
+    }
+
+    public function updateStock(Request $request, Product $product)
+    {
+        $data = $request->validate([
+            'stock' => ['required', 'integer', 'min:0'],
+        ]);
+
+        $product->stock = (int) $data['stock'];
+        $product->save();
+
+        return response()->json([
+            'ok' => true,
+            'stock' => (int) $product->stock,
+            'message' => 'Stock actualizado ✅',
+        ]);
+    }
+
     private function uniqueSlug(string $seed, ?int $ignoreId = null): string
     {
+
         $base = Str::slug($seed);
         if ($base === '') $base = 'producto';
 
@@ -163,4 +204,7 @@ class AdminProductController extends Controller
             $i++;
         }
     }
+
+
+
 }
