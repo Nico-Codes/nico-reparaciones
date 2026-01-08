@@ -61,13 +61,17 @@ private function applySort($query, string $sort)
 
     $featuredProducts = Product::where('active', 1)
         ->where('featured', 1)
+        ->whereHas('category', fn($q) => $q->where('active', 1))
+        ->with(['category:id,name,slug'])
         ->orderByDesc('id')
         ->take(12)
         ->get();
 
     $productsQ = Product::query()
-    ->where('active', 1)
-    ->with(['category:id,name,slug']);
+        ->where('active', 1)
+        ->whereHas('category', fn($q) => $q->where('active', 1))
+        ->with(['category:id,name,slug']);
+
 
 
     if ($q !== '') {
@@ -88,6 +92,10 @@ private function applySort($query, string $sort)
 
     public function category(Category $category, Request $request)
     {
+        if ((int)($category->active ?? 1) !== 1) {
+            abort(404);
+        }
+
         $q = trim((string)$request->query('q', ''));
         $sort = $this->normalizeSort($request->query('sort', 'relevance'));
 
@@ -125,9 +133,12 @@ private function applySort($query, string $sort)
     public function product(string $slug)
     {
         $product = Product::query()
-            ->with('category')
+            ->with(['category:id,name,slug,active'])
+            ->where('active', 1)
             ->where('slug', $slug)
+            ->whereHas('category', fn($q) => $q->where('active', 1))
             ->firstOrFail();
+
 
         return view('tienda.producto', compact('product'));
     }

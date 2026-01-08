@@ -4,10 +4,14 @@
 
 @php
   $count = isset($categories) ? $categories->count() : 0;
+
+  $activeBadge = fn($active) => ((bool)$active) ? 'badge-emerald' : 'badge-zinc';
+  $activeLabel = fn($active) => ((bool)$active) ? 'Activa' : 'Inactiva';
 @endphp
 
 @section('content')
-<div class="space-y-6">
+<div class="space-y-6" data-admin-categories>
+
   <div class="flex items-start justify-between gap-4 flex-wrap">
     <div class="page-head mb-0">
       <div class="page-title">Categorías</div>
@@ -43,7 +47,23 @@
               @endif
             </div>
 
-            <span class="badge-zinc shrink-0">Productos: {{ $c->products_count ?? 0 }}</span>
+            <div class="flex flex-col items-end gap-2 shrink-0">
+              <form method="POST"
+                    action="{{ route('admin.categories.toggleActive', $c) }}"
+                    data-admin-category-toggle
+                    data-category-id="{{ $c->id }}"
+                    class="inline">
+                @csrf
+                <button type="submit"
+                        class="{{ $activeBadge($c->active) }} hover:opacity-90 transition"
+                        data-active-btn>
+                  {{ $activeLabel($c->active) }}
+                </button>
+              </form>
+
+              <span class="badge-zinc">Productos: {{ $c->products_count ?? 0 }}</span>
+            </div>
+
           </div>
 
           <div class="mt-4 flex items-center gap-2">
@@ -90,13 +110,28 @@
               <td class="text-right"><span class="badge-zinc">{{ $c->products_count ?? 0 }}</span></td>
               <td class="text-right">
                 <div class="inline-flex gap-2">
+                  <form method="POST"
+                        action="{{ route('admin.categories.toggleActive', $c) }}"
+                        data-admin-category-toggle
+                        data-category-id="{{ $c->id }}"
+                        class="inline">
+                    @csrf
+                    <button type="submit"
+                            class="{{ $activeBadge($c->active) }} hover:opacity-90 transition"
+                            data-active-btn>
+                      {{ $activeLabel($c->active) }}
+                    </button>
+                  </form>
+
                   <a class="btn-outline btn-sm" href="{{ route('admin.categories.edit', $c) }}">Editar</a>
+
                   <form method="POST" action="{{ route('admin.categories.destroy', $c) }}" onsubmit="return confirm('¿Eliminar categoría? Esto puede afectar el catálogo.');">
                     @csrf
                     @method('DELETE')
                     <button class="btn-danger btn-sm" type="submit">Eliminar</button>
                   </form>
                 </div>
+
               </td>
             </tr>
           @empty

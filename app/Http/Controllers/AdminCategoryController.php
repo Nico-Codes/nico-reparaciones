@@ -60,8 +60,27 @@ class AdminCategoryController extends Controller
             ->with('success', 'Categoría eliminada.');
     }
 
+    public function toggleActive(Request $request, Category $category)
+    {
+        $category->active = !(bool) $category->active;
+        $category->save();
+
+        $payload = [
+            'ok' => true,
+            'active' => (bool) $category->active,
+            'message' => $category->active ? 'Categoría activada ✅' : 'Categoría desactivada ✅',
+        ];
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json($payload);
+        }
+
+        return back()->with('success', $payload['message']);
+    }
+
     private function validateData(Request $request, ?int $ignoreId = null): array
     {
+
         return $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'slug' => ['nullable', 'string', 'max:255'],

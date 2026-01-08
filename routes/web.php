@@ -167,13 +167,16 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     Route::get('/pedidos/{order}/imprimir', AdminOrderPrintController::class)->name('admin.orders.print');
     Route::get('/pedidos/{order}/ticket', AdminOrderTicketController::class)->name('admin.orders.ticket');
 
-    // CategorÃ­as
+
+    // Categorías
     Route::get('/categorias', [AdminCategoryController::class, 'index'])->name('admin.categories.index');
     Route::get('/categorias/crear', [AdminCategoryController::class, 'create'])->name('admin.categories.create');
     Route::post('/categorias', [AdminCategoryController::class, 'store'])->name('admin.categories.store');
     Route::get('/categorias/{category}/editar', [AdminCategoryController::class, 'edit'])->name('admin.categories.edit');
     Route::put('/categorias/{category}', [AdminCategoryController::class, 'update'])->name('admin.categories.update');
     Route::delete('/categorias/{category}', [AdminCategoryController::class, 'destroy'])->name('admin.categories.destroy');
+
+    Route::post('/categorias/{category}/toggle-active', [AdminCategoryController::class, 'toggleActive'])->name('admin.categories.toggleActive');
 
     // Productos
     Route::get('/productos', [AdminProductController::class, 'index'])->name('admin.products.index');
