@@ -132,6 +132,17 @@
         <div class="flex flex-col sm:flex-row gap-2 pt-2">
           <a class="btn-outline w-full sm:w-auto" href="{{ route('orders.show', $order->id) }}">Ver detalle</a>
           <a class="btn-primary w-full sm:w-auto" href="{{ route('store.index') }}">Seguir comprando</a>
+          <a class="btn-outline w-full sm:w-auto"
+            target="_blank" rel="noopener"
+            href="{{ route('orders.ticket', $order->id) }}?autoprint=1">
+            Imprimir ticket
+          </a>
+
+          <a class="btn-outline w-full sm:w-auto"
+            target="_blank" rel="noopener"
+            href="{{ route('orders.print', $order->id) }}">
+            Imprimir A4
+          </a>
 
             @if(!empty($waNumber))
             <textarea id="nrWaText" class="hidden" readonly>{{ $waText }}</textarea>

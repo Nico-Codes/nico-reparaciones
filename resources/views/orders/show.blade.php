@@ -211,6 +211,19 @@
               Consultar por WhatsApp
             </a>
 
+            <a class="btn-outline w-full"
+              target="_blank" rel="noopener"
+              href="{{ route('orders.ticket', $order->id) }}?autoprint=1">
+              Imprimir ticket
+            </a>
+
+            <a class="btn-outline w-full"
+              target="_blank" rel="noopener"
+              href="{{ route('orders.print', $order->id) }}">
+              Imprimir A4
+            </a>
+
+
             <button type="button"
                     class="btn-outline w-full"
                     data-copy-target="#nrOrderWaText"
