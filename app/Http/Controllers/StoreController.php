@@ -59,13 +59,19 @@ private function applySort($query, string $sort)
 
     $categories = Category::where('active', 1)->orderBy('name')->get();
 
-    $featuredProducts = Product::where('active', 1)
-        ->where('featured', 1)
-        ->whereHas('category', fn($q) => $q->where('active', 1))
-        ->with(['category:id,name,slug'])
-        ->orderByDesc('id')
-        ->take(12)
-        ->get();
+    $showFeatured = ($q === '' && $sort === 'relevance');
+
+    $featuredProducts = collect();
+    if ($showFeatured) {
+        $featuredProducts = Product::where('active', 1)
+            ->where('featured', 1)
+            ->whereHas('category', fn($q) => $q->where('active', 1))
+            ->with(['category:id,name,slug'])
+            ->orderByDesc('id')
+            ->take(12)
+            ->get();
+    }
+
 
     $productsQ = Product::query()
         ->where('active', 1)
@@ -101,17 +107,28 @@ private function applySort($query, string $sort)
 
         $categories = Category::where('active', 1)->orderBy('name')->get();
 
-        $featuredProducts = Product::where('active', 1)
-        ->where('featured', 1)
-        ->with(['category:id,name,slug'])
-        ->orderByDesc('id')
-        ->take(12)
-        ->get();
+        $showFeatured = ($q === '' && $sort === 'relevance');
+
+        $featuredProducts = collect();
+        if ($showFeatured) {
+            $featuredProducts = Product::where('active', 1)
+                ->where('featured', 1)
+                ->where('category_id', $category->id)
+                ->whereHas('category', fn($q) => $q->where('active', 1))
+                ->with(['category:id,name,slug'])
+                ->orderByDesc('id')
+                ->take(12)
+                ->get();
+        }
+
 
 
         $productsQ = Product::query()
             ->where('active', 1)
-            ->where('category_id', $category->id);
+            ->where('category_id', $category->id)
+            ->whereHas('category', fn($q) => $q->where('active', 1))
+            ->with(['category:id,name,slug']);
+
 
         if ($q !== '') {
             $productsQ->where('name', 'like', '%' . $q . '%');

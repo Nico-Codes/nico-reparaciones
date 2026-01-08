@@ -92,7 +92,7 @@
 
 
   {{-- Destacados --}}
-  @if(($featuredProducts ?? collect())->count())
+  @if(($featuredProducts ?? collect())->count() && $qVal === '' && $sortVal === 'relevance')
     <div class="mt-6 card">
       <div class="card-head flex items-center justify-between">
         <div class="font-black">Destacados</div>
@@ -242,18 +242,59 @@
         @endforeach
       </div>
 
-      @if(method_exists($products, 'links'))
-        <div class="mt-6">
-          {{ $products->links() }}
-        </div>
-      @endif
-    @else
-      <div class="card">
-        <div class="card-body">
-          <div class="muted">No hay productos para mostrar.</div>
-        </div>
-      </div>
-    @endif
+          @php
+            $hasPaginator = method_exists($products, 'links');
+            $hasPages = $hasPaginator && method_exists($products, 'hasPages') ? $products->hasPages() : false;
+          @endphp
+
+          @if($hasPaginator)
+            <div class="mt-6 flex flex-col gap-2">
+              @if(method_exists($products, 'total') && $products->total() > 0)
+                <div class="muted text-sm">
+                  Mostrando {{ $products->firstItem() }}–{{ $products->lastItem() }} de {{ $products->total() }}
+                </div>
+              @endif
+
+              @if($hasPages)
+                <div>
+                  {{ $products->onEachSide(1)->fragment('productos')->links() }}
+                </div>
+              @endif
+            </div>
+          @endif
+
+        @else
+          <div class="card">
+            <div class="card-body space-y-3">
+              @if($qVal !== '')
+                <div class="font-black">Sin resultados</div>
+                <div class="muted">
+                  No encontramos productos para “{{ $qVal }}”
+                  @if($currentCategorySafe) en “{{ $currentCategorySafe->name }}” @endif.
+                </div>
+
+                <div class="flex flex-wrap gap-2">
+                  <a class="btn-outline" href="{{ $formAction }}">Limpiar búsqueda</a>
+                  @if($currentCategorySafe)
+                    <a class="btn-outline" href="{{ route('store.index') }}">Ver todas</a>
+                  @endif
+                </div>
+
+              @elseif($currentCategorySafe)
+                <div class="font-black">Categoría sin productos</div>
+                <div class="muted">Todavía no hay productos en “{{ $currentCategorySafe->name }}”.</div>
+                <div>
+                  <a class="btn-outline" href="{{ route('store.index') }}">Ver todas</a>
+                </div>
+
+              @else
+                <div class="font-black">No hay productos</div>
+                <div class="muted">Todavía no hay productos para mostrar.</div>
+              @endif
+            </div>
+          </div>
+        @endif
+
   </div>
 
 </div>
