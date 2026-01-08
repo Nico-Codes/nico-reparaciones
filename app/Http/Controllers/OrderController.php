@@ -152,8 +152,12 @@ class OrderController extends Controller
                             ]);
                         }
                     }
-
                 }
+
+                // ✅ Audit: marcamos que ya descontamos stock
+                $order->stock_deducted_at = now();
+                $order->save();
+
             });
 
             // Si salió bien, vaciamos carrito

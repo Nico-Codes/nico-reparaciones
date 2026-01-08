@@ -249,35 +249,44 @@ class AdminOrderController extends Controller
 
             DB::transaction(function () use ($order, $from, $to, $data) {
 
-            // ✅ Si pasa a cancelado, devolvemos stock (una sola vez)
+            // ✅ Si pasa a cancelado, devolvemos stock (solo si aún no fue devuelto)
             if ($to === 'cancelado' && $from !== 'cancelado') {
-                $order->load('items');
 
-                $pids = $order->items
-                    ->pluck('product_id')
-                    ->filter()
-                    ->unique()
-                    ->values()
-                    ->all();
+                // Si ya fue devuelto antes, no volvemos a tocar stock
+                if (!$order->stock_restored_at) {
 
-                if (!empty($pids)) {
-                    $products = Product::query()
-                        ->whereIn('id', $pids)
-                        ->lockForUpdate()
-                        ->get()
-                        ->keyBy('id');
+                    $order->load('items');
 
-                    foreach ($order->items as $it) {
-                        $pid = $it->product_id;
-                        if (!$pid) continue;
+                    $pids = $order->items
+                        ->pluck('product_id')
+                        ->filter()
+                        ->unique()
+                        ->values()
+                        ->all();
 
-                        $p = $products->get($pid);
-                        if ($p) {
-                            $p->increment('stock', (int) $it->quantity);
+                    if (!empty($pids)) {
+                        $products = Product::query()
+                            ->whereIn('id', $pids)
+                            ->lockForUpdate()
+                            ->get()
+                            ->keyBy('id');
+
+                        foreach ($order->items as $it) {
+                            $pid = $it->product_id;
+                            if (!$pid) continue;
+
+                            $p = $products->get($pid);
+                            if ($p) {
+                                $p->increment('stock', (int) $it->quantity);
+                            }
                         }
                     }
+
+                    // ✅ Audit: marcamos que ya devolvimos stock
+                    $order->stock_restored_at = now();
                 }
             }
+
 
             $order->status = $to;
             $order->save();
