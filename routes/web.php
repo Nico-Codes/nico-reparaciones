@@ -19,6 +19,8 @@ use App\Http\Controllers\AdminRepairPrintController;
 use App\Http\Controllers\AdminOrderPrintController;
 use App\Http\Controllers\AdminOrderTicketController;
 use App\Http\Controllers\AdminRepairTicketController;
+use App\Http\Controllers\AdminDeviceCatalogController;
+
 
 
 use App\Http\Controllers\AdminUserController;
@@ -164,6 +166,13 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
 
     Route::get('/reparaciones/{repair}/imprimir', AdminRepairPrintController::class)->name('admin.repairs.print');
     Route::get('/reparaciones/{repair}/ticket', AdminRepairTicketController::class)->name('admin.repairs.ticket');
+
+    // ✅ Device catalog (AJAX)
+    Route::get('/device-catalog/brands', [AdminDeviceCatalogController::class, 'brands'])->name('admin.deviceCatalog.brands');
+    Route::get('/device-catalog/models', [AdminDeviceCatalogController::class, 'models'])->name('admin.deviceCatalog.models');
+    Route::post('/device-catalog/brands', [AdminDeviceCatalogController::class, 'storeBrand'])->name('admin.deviceCatalog.brands.store');
+    Route::post('/device-catalog/models', [AdminDeviceCatalogController::class, 'storeModel'])->name('admin.deviceCatalog.models.store');
+
 
     Route::get('/pedidos/{order}/imprimir', AdminOrderPrintController::class)->name('admin.orders.print');
     Route::get('/pedidos/{order}/ticket', AdminOrderTicketController::class)->name('admin.orders.ticket');

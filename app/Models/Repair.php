@@ -13,8 +13,14 @@ class Repair extends Model
         'user_id',
         'customer_name',
         'customer_phone',
+
+        'device_type_id',
+        'device_brand_id',
+        'device_model_id',
+
         'device_brand',
         'device_model',
+
         'issue_reported',
         'diagnosis',
 

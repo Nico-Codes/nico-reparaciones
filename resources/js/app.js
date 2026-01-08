@@ -1956,6 +1956,173 @@ document.addEventListener('DOMContentLoaded', () => {
       }, true);
     })();
 
+
+  (function initRepairDeviceCatalog(){
+    const blocks = document.querySelectorAll('[data-repair-device-catalog]');
+    if (!blocks.length) return;
+
+    const headers = { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' };
+
+    const getCsrf = () =>
+      document.querySelector('input[name="_token"]')?.value || '';
+
+    const setOptions = (select, items, placeholder, selectedId = null) => {
+      select.innerHTML = '';
+      const opt0 = document.createElement('option');
+      opt0.value = '';
+      opt0.textContent = placeholder;
+      select.appendChild(opt0);
+
+      items.forEach(it => {
+        const opt = document.createElement('option');
+        opt.value = String(it.id);
+        opt.textContent = it.name;
+        if (selectedId && String(selectedId) === String(it.id)) opt.selected = true;
+        select.appendChild(opt);
+      });
+    };
+
+    const fetchJson = async (url, opts={}) => {
+      const res = await fetch(url, { credentials: 'same-origin', headers, ...opts });
+      const j = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(j?.message || 'Error');
+      return j;
+    };
+
+    blocks.forEach(block => {
+      const typeSel  = block.querySelector('[data-device-type]');
+      const brandSel = block.querySelector('[data-device-brand]');
+      const modelSel = block.querySelector('[data-device-model]');
+
+      const btnAddBrand = block.querySelector('[data-add-brand]');
+      const brandForm = block.querySelector('[data-add-brand-form]');
+      const brandInput = block.querySelector('[data-add-brand-input]');
+      const btnSaveBrand = block.querySelector('[data-save-brand]');
+      const btnCancelBrand = block.querySelector('[data-cancel-brand]');
+
+      const btnAddModel = block.querySelector('[data-add-model]');
+      const modelForm = block.querySelector('[data-add-model-form]');
+      const modelInput = block.querySelector('[data-add-model-input]');
+      const btnSaveModel = block.querySelector('[data-save-model]');
+      const btnCancelModel = block.querySelector('[data-cancel-model]');
+
+      const loadBrands = async (typeId, selected=null) => {
+        brandSel.disabled = true;
+        modelSel.disabled = true;
+        btnAddModel.disabled = true;
+
+        setOptions(brandSel, [], 'Cargando marcas…');
+        setOptions(modelSel, [], 'Elegí una marca primero');
+
+        const j = await fetchJson(`/admin/device-catalog/brands?type_id=${encodeURIComponent(typeId)}`);
+        brandSel.disabled = false;
+        setOptions(brandSel, j.brands || [], '— Elegí una marca —', selected || brandSel.dataset.selected);
+      };
+
+      const loadModels = async (brandId, selected=null) => {
+        modelSel.disabled = true;
+        btnAddModel.disabled = true;
+
+        setOptions(modelSel, [], 'Cargando modelos…');
+
+        const j = await fetchJson(`/admin/device-catalog/models?brand_id=${encodeURIComponent(brandId)}`);
+        modelSel.disabled = false;
+        btnAddModel.disabled = false;
+        setOptions(modelSel, j.models || [], '— Elegí un modelo —', selected || modelSel.dataset.selected);
+      };
+
+      // cambios
+      typeSel?.addEventListener('change', async () => {
+        const typeId = typeSel.value;
+        if (!typeId) {
+          brandSel.disabled = true;
+          modelSel.disabled = true;
+          btnAddModel.disabled = true;
+          setOptions(brandSel, [], '— Elegí un tipo primero —');
+          setOptions(modelSel, [], '— Elegí una marca primero —');
+          return;
+        }
+        await loadBrands(typeId);
+      });
+
+      brandSel?.addEventListener('change', async () => {
+        const brandId = brandSel.value;
+        if (!brandId) {
+          modelSel.disabled = true;
+          btnAddModel.disabled = true;
+          setOptions(modelSel, [], '— Elegí una marca primero —');
+          return;
+        }
+        await loadModels(brandId);
+      });
+
+      // agregar marca
+      btnAddBrand?.addEventListener('click', () => {
+        brandForm.classList.toggle('hidden');
+        brandForm.classList.toggle('flex');
+        brandInput?.focus();
+      });
+      btnCancelBrand?.addEventListener('click', () => {
+        brandForm.classList.add('hidden');
+        brandForm.classList.remove('flex');
+        if (brandInput) brandInput.value = '';
+      });
+      btnSaveBrand?.addEventListener('click', async () => {
+        const name = (brandInput?.value || '').trim();
+        const typeId = typeSel?.value;
+        if (!typeId || !name) return;
+
+        const fd = new FormData();
+        fd.append('_token', getCsrf());
+        fd.append('device_type_id', typeId);
+        fd.append('name', name);
+
+        const j = await fetchJson('/admin/device-catalog/brands', { method: 'POST', body: fd });
+        await loadBrands(typeId, j.brand?.id);
+        btnCancelBrand?.click();
+        window.openToast?.('Marca agregada ✅', 'OK');
+      });
+
+      // agregar modelo
+      btnAddModel?.addEventListener('click', () => {
+        if (btnAddModel.disabled) return;
+        modelForm.classList.toggle('hidden');
+        modelForm.classList.toggle('flex');
+        modelInput?.focus();
+      });
+      btnCancelModel?.addEventListener('click', () => {
+        modelForm.classList.add('hidden');
+        modelForm.classList.remove('flex');
+        if (modelInput) modelInput.value = '';
+      });
+      btnSaveModel?.addEventListener('click', async () => {
+        const name = (modelInput?.value || '').trim();
+        const brandId = brandSel?.value;
+        if (!brandId || !name) return;
+
+        const fd = new FormData();
+        fd.append('_token', getCsrf());
+        fd.append('device_brand_id', brandId);
+        fd.append('name', name);
+
+        const j = await fetchJson('/admin/device-catalog/models', { method: 'POST', body: fd });
+        await loadModels(brandId, j.model?.id);
+        btnCancelModel?.click();
+        window.openToast?.('Modelo agregado ✅', 'OK');
+      });
+
+      // init (si viene preseleccionado)
+      const initType = typeSel?.value;
+      if (initType) {
+        loadBrands(initType).then(() => {
+          const initBrand = brandSel?.value;
+          if (initBrand) loadModels(initBrand);
+        });
+      }
+    });
+  })();
+
+
   
 
 });

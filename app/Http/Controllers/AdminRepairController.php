@@ -8,8 +8,13 @@ use App\Models\RepairStatusHistory;
 use App\Models\RepairWhatsappLog;
 use App\Models\RepairWhatsappTemplate;
 use App\Models\User;
+use App\Models\DeviceType;
+use App\Models\DeviceBrand;
+use App\Models\DeviceModel;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+
 
 
 class AdminRepairController extends Controller
@@ -200,9 +205,11 @@ class AdminRepairController extends Controller
     public function create()
     {
         return view('admin.repairs.create', [
-            'statuses' => Repair::STATUSES,
-            'paymentMethods' => Repair::PAYMENT_METHODS,
+        'statuses' => Repair::STATUSES,
+        'paymentMethods' => Repair::PAYMENT_METHODS,
+        'deviceTypes' => DeviceType::orderBy('id')->get(),
         ]);
+
     }
 
     public function store(Request $request)
@@ -211,8 +218,10 @@ class AdminRepairController extends Controller
             'user_email'      => 'nullable|email',
             'customer_name'   => 'required|string|max:255',
             'customer_phone'  => 'required|string|max:30',
-            'device_brand'    => 'nullable|string|max:255',
-            'device_model'    => 'nullable|string|max:255',
+            'device_type_id'  => 'required|exists:device_types,id',
+            'device_brand_id' => 'required|exists:device_brands,id',
+            'device_model_id' => 'required|exists:device_models,id',
+
             'issue_reported'  => 'required|string',
             'diagnosis'       => 'nullable|string',
 
@@ -250,12 +259,30 @@ class AdminRepairController extends Controller
             $deliveredAt = now();
         }
 
+        $type  = DeviceType::findOrFail((int)$data['device_type_id']);
+        $brand = DeviceBrand::findOrFail((int)$data['device_brand_id']);
+        $model = DeviceModel::findOrFail((int)$data['device_model_id']);
+
+        if ($brand->device_type_id !== $type->id) {
+        return back()->withErrors(['device_brand_id' => 'La marca no pertenece al tipo seleccionado.'])->withInput();
+        }
+        if ($model->device_brand_id !== $brand->id) {
+        return back()->withErrors(['device_model_id' => 'El modelo no pertenece a la marca seleccionada.'])->withInput();
+        }
+
+
         $repair = Repair::create([
             'user_id'        => $userId,
             'customer_name'  => $data['customer_name'],
             'customer_phone' => $data['customer_phone'],
-            'device_brand'   => $data['device_brand'] ?? null,
-            'device_model'   => $data['device_model'] ?? null,
+            'device_type_id'  => $type->id,
+            'device_brand_id' => $brand->id,
+            'device_model_id' => $model->id,
+
+            // seguimos guardando strings para mostrar en el sistema como antes
+            'device_brand' => $brand->name,
+            'device_model' => $model->name,
+
             'issue_reported' => $data['issue_reported'],
             'diagnosis'      => $data['diagnosis'] ?? null,
 
@@ -316,6 +343,7 @@ class AdminRepairController extends Controller
             'statuses'          => Repair::STATUSES,
             'paymentMethods'    => Repair::PAYMENT_METHODS,
             'history'           => $repair->statusHistory()->get(),
+            'deviceTypes' => DeviceType::orderBy('id')->get(),
             'linkedUserEmail'   => $linkedUserEmail,
             'waPhone'           => $waPhone,
             'waMessage'         => $waMessage,
@@ -368,8 +396,14 @@ class AdminRepairController extends Controller
             'user_id'        => $userId,
             'customer_name'  => $data['customer_name'],
             'customer_phone' => $data['customer_phone'],
-            'device_brand'   => $data['device_brand'] ?? null,
-            'device_model'   => $data['device_model'] ?? null,
+            'device_type_id'  => $type->id,
+            'device_brand_id' => $brand->id,
+            'device_model_id' => $model->id,
+
+            // seguimos guardando strings para mostrar en el sistema como antes
+            'device_brand' => $brand->name,
+            'device_model' => $model->name,
+
             'issue_reported' => $data['issue_reported'],
             'diagnosis'      => $data['diagnosis'] ?? null,
 
