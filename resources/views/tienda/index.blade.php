@@ -26,12 +26,14 @@
           </a>
 
           @foreach($categories as $cat)
-            <a href="{{ route('store.category', ['category' => $cat->slug] + $keep) }}">
-
-              class="nav-pill {{ ($currentCategorySafe?->id === $cat->id) ? 'nav-pill-active' : '' }}">
+            <a
+              href="{{ route('store.category', ['category' => $cat->slug] + $keep) }}"
+              class="nav-pill {{ ($currentCategorySafe?->id === $cat->id) ? 'nav-pill-active' : '' }}"
+            >
               {{ $cat->name }}
             </a>
           @endforeach
+
 
         </div>
 
