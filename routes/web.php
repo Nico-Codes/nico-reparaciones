@@ -90,10 +90,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/mis-pedidos/{order}', [OrderController::class, 'show'])->name('orders.show');
     Route::get('/pedido/{order}', [OrderController::class, 'thankYou'])->name('orders.thankyou');
 
-    // ✅ Comprobante cliente
-    Route::get('/pedido/{order}/imprimir', [OrderController::class, 'print'])->name('orders.print');
-    Route::get('/pedido/{order}/ticket', [OrderController::class, 'ticket'])->name('orders.ticket');
-
+  
 
 
     Route::get('/mis-reparaciones', [UserRepairController::class, 'index'])->name('repairs.my.index');

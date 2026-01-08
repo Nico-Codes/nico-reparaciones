@@ -311,29 +311,6 @@ class OrderController extends Controller
         ]);
     }
 
-    public function print(Order $order)
-    {
-        if ($order->user_id !== Auth::id()) {
-            abort(403);
-        }
-
-        $order->load(['user', 'items.product']);
-        $settings = BusinessSetting::all()->pluck('value', 'key');
-
-        return view('orders.print', compact('order', 'settings'));
-    }
-
-    public function ticket(Order $order)
-    {
-        if ($order->user_id !== Auth::id()) {
-            abort(403);
-        }
-
-        $order->load(['user', 'items.product']);
-        $settings = BusinessSetting::all()->pluck('value', 'key');
-
-        return view('orders.ticket', compact('order', 'settings'));
-    }
-
+  
 
 }
