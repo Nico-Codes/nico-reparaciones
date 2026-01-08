@@ -247,12 +247,10 @@
                       data-product-id="{{ $p->id }}"
                       class="inline-flex items-center justify-end gap-2">
                   @csrf
-                  <div class="flex items-center gap-2 shrink-0">
-                    <input type="checkbox" value="{{ $p->id }}" class="h-4 w-4 rounded border-zinc-300" data-bulk-checkbox>
-                    <span class="{{ $stockBadge($p->stock) }}" data-stock-label-for="{{ $p->id }}">
-                      {{ $stockLabel($p->stock) }}
-                    </span>
-                  </div>
+                  <span class="{{ $stockBadge($p->stock) }}" data-stock-label-for="{{ $p->id }}">
+                    {{ $stockLabel($p->stock) }}
+                  </span>
+
 
                   <input type="number"
                         name="stock"
