@@ -145,29 +145,43 @@ class AdminProductController extends Controller
             ->with('success', 'Producto eliminado.');
     }
 
-    public function toggleActive(Product $product)
+    public function toggleActive(Request $request, Product $product)
     {
         $product->active = !(bool) $product->active;
         $product->save();
 
-        return response()->json([
+        $payload = [
             'ok' => true,
             'active' => (bool) $product->active,
             'message' => $product->active ? 'Producto activado ✅' : 'Producto desactivado ✅',
-        ]);
+        ];
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json($payload);
+        }
+
+        return back()->with('success', $payload['message']);
     }
 
-    public function toggleFeatured(Product $product)
+
+    public function toggleFeatured(Request $request, Product $product)
     {
         $product->featured = !(bool) $product->featured;
         $product->save();
 
-        return response()->json([
+        $payload = [
             'ok' => true,
             'featured' => (bool) $product->featured,
             'message' => $product->featured ? 'Marcado como destacado ✅' : 'Quitado de destacados ✅',
-        ]);
+        ];
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json($payload);
+        }
+
+        return back()->with('success', $payload['message']);
     }
+
 
     public function updateStock(Request $request, Product $product)
     {
@@ -178,12 +192,19 @@ class AdminProductController extends Controller
         $product->stock = (int) $data['stock'];
         $product->save();
 
-        return response()->json([
+        $payload = [
             'ok' => true,
             'stock' => (int) $product->stock,
             'message' => 'Stock actualizado ✅',
-        ]);
+        ];
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json($payload);
+        }
+
+        return back()->with('success', $payload['message']);
     }
+
 
     private function uniqueSlug(string $seed, ?int $ignoreId = null): string
     {
