@@ -14,10 +14,16 @@ class AdminProductController extends Controller
     {
         $q = trim((string)$request->query('q', ''));
         $stockFilter = (string)$request->query('stock', ''); // '', 'out', 'low'
+        $categoryId = (string)$request->query('category_id', ''); // '' o id
+        $active = (string)$request->query('active', ''); // '', '1', '0'
+        $featured = (string)$request->query('featured', ''); // '', '1', '0'
 
+        $categories = Category::query()
+            ->select(['id', 'name'])
+            ->orderBy('name')
+            ->get();
 
-        $query = Product::with('category')
-            ->orderByDesc('id');
+        $query = Product::with('category')->orderByDesc('id');
 
         if ($q !== '') {
             $query->where(function($sub) use ($q) {
@@ -26,22 +32,38 @@ class AdminProductController extends Controller
             });
         }
 
+        if ($categoryId !== '') {
+            $query->where('category_id', (int)$categoryId);
+        }
+
+        if ($active !== '') {
+            $query->where('active', (int)$active);
+        }
+
+        if ($featured !== '') {
+            $query->where('featured', (int)$featured);
+        }
+
         if ($stockFilter === 'out') {
             $query->where('stock', '<=', 0)->orderBy('stock', 'asc');
         } elseif ($stockFilter === 'low') {
             $query->where('stock', '>', 0)->where('stock', '<=', 5)->orderBy('stock', 'asc');
         }
 
-
         $products = $query->orderByDesc('id')->paginate(20)->withQueryString();
 
         return view('admin.products.index', [
             'products' => $products,
+            'categories' => $categories,
+
             'q' => $q,
             'stock' => $stockFilter,
+            'category_id' => $categoryId,
+            'active' => $active,
+            'featured' => $featured,
         ]);
-
     }
+
 
     public function create()
     {

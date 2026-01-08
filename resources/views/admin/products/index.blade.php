@@ -47,6 +47,25 @@
       <form method="GET" class="flex flex-col sm:flex-row gap-2">
         <input name="q" value="{{ $q }}" placeholder="Buscar por nombre o slug…" />
 
+        <select name="category_id" class="sm:w-56">
+          <option value="" @selected(($category_id ?? '')==='')>Categoría: Todas</option>
+          @foreach(($categories ?? collect()) as $c)
+            <option value="{{ $c->id }}" @selected((string)($category_id ?? '') === (string)$c->id)>{{ $c->name }}</option>
+          @endforeach
+        </select>
+
+        <select name="active" class="sm:w-44">
+          <option value="" @selected(($active ?? '')==='')>Estado: Todos</option>
+          <option value="1" @selected(($active ?? '')==='1')>Activos</option>
+          <option value="0" @selected(($active ?? '')==='0')>Inactivos</option>
+        </select>
+
+        <select name="featured" class="sm:w-44">
+          <option value="" @selected(($featured ?? '')==='')>Destacado: Todos</option>
+          <option value="1" @selected(($featured ?? '')==='1')>Destacados</option>
+          <option value="0" @selected(($featured ?? '')==='0')>No destacados</option>
+        </select>
+
         <select name="stock" class="sm:w-48">
           <option value="" @selected($stock==='')>Stock: Todos</option>
           <option value="out" @selected($stock==='out')>Sin stock</option>
@@ -55,10 +74,20 @@
 
         <button class="btn-outline sm:w-40" type="submit">Filtrar</button>
 
-        @if($q !== '' || $stock !== '')
+        @php
+          $hasFilters =
+            ($q ?? '') !== '' ||
+            ($stock ?? '') !== '' ||
+            ($category_id ?? '') !== '' ||
+            ($active ?? '') !== '' ||
+            ($featured ?? '') !== '';
+        @endphp
+
+        @if($hasFilters)
           <a class="btn-ghost sm:w-40" href="{{ route('admin.products.index') }}">Limpiar</a>
         @endif
       </form>
+
 
     </div>
   </div>
