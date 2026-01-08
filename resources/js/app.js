@@ -175,7 +175,8 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="rounded-t-3xl bg-white p-4 shadow-2xl">
             <div class="flex items-start justify-between gap-3">
               <div class="min-w-0">
-                <div class="font-black text-zinc-900">Agregado al carrito ✅</div>
+                <div class="font-black text-zinc-900" id="cartAddedTitle">Agregado al carrito ✅</div>
+
                 <div class="text-sm text-zinc-600 mt-1 truncate">
                   <span id="cartAddedName">Producto</span>
                 </div>
@@ -208,11 +209,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   };
 
-  const openToast = (productName = 'Producto') => {
+  const openToast = (message = 'Producto', title = 'Agregado al carrito ✅') => {
     ensureToast();
 
+    const titleEl = $('#cartAddedTitle');
+    if (titleEl) titleEl.textContent = title;
+
     const nameEl = $('#cartAddedName');
-    if (nameEl) nameEl.textContent = productName;
+    if (nameEl) nameEl.textContent = message;
 
     lockScroll('toast');
 
@@ -225,6 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
       autoCloseTimer = window.setTimeout(closeToast, 4500);
     });
   };
+
 
   const closeToast = () => {
     if (!overlay || !sheet) return;
@@ -279,16 +284,20 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const getProductNameFromContext = (form) => {
-    const btn = form.querySelector('button.btn-cart');
+    const btn = form.querySelector('button[type="submit"]');
     const dn = btn?.getAttribute('data-product-name');
     if (dn) return dn;
 
     const card = form.closest('.product-card, .card');
-    const title = card?.querySelector('.product-title')?.textContent?.trim();
+    const title =
+      card?.querySelector('.product-title')?.textContent?.trim() ||
+      card?.querySelector('.page-title')?.textContent?.trim();
+
     if (title) return title;
 
     return 'Producto';
   };
+
 
   const getQtyFromForm = (form) => {
     const q = form.querySelector('input[name="quantity"]')?.value;
@@ -326,18 +335,50 @@ document.addEventListener('DOMContentLoaded', () => {
           credentials: 'same-origin',
           headers: {
             'X-Requested-With': 'XMLHttpRequest',
-            'Accept': 'text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8',
+            'Accept': 'application/json',
           },
         });
 
-        if (!res.ok) {
-          if (res.status === 419) openToast('Sesión expirada. Reintentá.');
-          else openToast('No se pudo agregar. Reintentá.');
+        if (res.status === 422) {
+          const j = await res.json().catch(() => null);
+          openToast(j?.message || 'No se pudo agregar.', 'No se pudo agregar ❌');
           return;
         }
 
-        bumpCartBadge(qty);
-        openToast(productName);
+        if (!res.ok) {
+          if (res.status === 419) openToast('Sesión expirada. Reintentá.', 'Error');
+          else openToast('No se pudo agregar. Reintentá.', 'Error');
+          return;
+        }
+
+        const j = await res.json().catch(() => null);
+        const cartCount = typeof j?.cartCount === 'number' ? j.cartCount : null;
+
+        // setear el badge al número real (evita “+1” si el backend clampeó)
+        if (cartCount !== null) {
+          const cartLink = $('a[aria-label="Carrito"]');
+          if (cartLink) {
+            let badge = $('[data-cart-count]', cartLink);
+
+            if (cartCount <= 0) {
+              badge?.remove();
+            } else {
+              if (!badge) {
+                badge = document.createElement('span');
+                badge.setAttribute('data-cart-count', '1');
+                badge.className =
+                  'absolute -top-2 -right-2 min-w-5 h-5 px-1 rounded-full bg-sky-600 text-white text-[11px] leading-5 font-black flex items-center justify-center ring-2 ring-white';
+                cartLink.appendChild(badge);
+              }
+              badge.textContent = String(cartCount);
+            }
+          }
+        } else {
+          bumpCartBadge(qty);
+        }
+
+        openToast(productName, 'Agregado al carrito ✅');
+
       } catch (_) {
         openToast('Error de red. Reintentá.');
       } finally {

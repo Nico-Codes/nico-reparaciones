@@ -52,12 +52,16 @@ class CartController extends Controller
             $quantity = 1;
         }
 
-        // ✅ Stock real: 0 = sin stock
         if ((int)$product->stock <= 0) {
+            if ($request->expectsJson()) {
+                return response()->json(['ok' => false, 'message' => 'Este producto está sin stock.'], 422);
+            }
+
             return back()->withErrors([
                 'stock' => 'Este producto está sin stock.',
             ]);
         }
+
 
 
         // No permitir más que el stock disponible
@@ -66,18 +70,28 @@ class CartController extends Controller
         }
 
         if ((int)($product->active ?? 1) !== 1) {
+            if ($request->expectsJson()) {
+                return response()->json(['ok' => false, 'message' => 'Este producto no está disponible.'], 422);
+            }
+
             return back()->withErrors([
                 'stock' => 'Este producto no está disponible.',
             ]);
         }
+
 
         $product->loadMissing('category:id,active');
 
         if (!$product->category || (int)($product->category->active ?? 1) !== 1) {
+            if ($request->expectsJson()) {
+                return response()->json(['ok' => false, 'message' => 'Este producto no está disponible.'], 422);
+            }
+
             return back()->withErrors([
                 'stock' => 'Este producto no está disponible.',
             ]);
         }
+
 
 
         if (isset($cart[$product->id])) {
