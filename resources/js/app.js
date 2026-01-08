@@ -176,7 +176,6 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="flex items-start justify-between gap-3">
               <div class="min-w-0">
                 <div class="font-black text-zinc-900" id="cartAddedTitle">Agregado al carrito ✅</div>
-
                 <div class="text-sm text-zinc-600 mt-1 truncate">
                   <span id="cartAddedName">Producto</span>
                 </div>
@@ -229,6 +228,7 @@ document.addEventListener('DOMContentLoaded', () => {
       autoCloseTimer = window.setTimeout(closeToast, 4500);
     });
   };
+
 
 
   const closeToast = () => {
@@ -299,6 +299,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
 
+
   const getQtyFromForm = (form) => {
     const q = form.querySelector('input[name="quantity"]')?.value;
     const n = parseInt(q || '1', 10);
@@ -352,15 +353,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const j = await res.json().catch(() => null);
-        const cartCount = typeof j?.cartCount === 'number' ? j.cartCount : null;
-
-        // setear el badge al número real (evita “+1” si el backend clampeó)
-        if (cartCount !== null) {
+        if (typeof j?.cartCount === 'number') {
+          // setea el número real (mejor que “+1”)
           const cartLink = $('a[aria-label="Carrito"]');
           if (cartLink) {
             let badge = $('[data-cart-count]', cartLink);
 
-            if (cartCount <= 0) {
+            if (j.cartCount <= 0) {
               badge?.remove();
             } else {
               if (!badge) {
@@ -370,7 +369,7 @@ document.addEventListener('DOMContentLoaded', () => {
                   'absolute -top-2 -right-2 min-w-5 h-5 px-1 rounded-full bg-sky-600 text-white text-[11px] leading-5 font-black flex items-center justify-center ring-2 ring-white';
                 cartLink.appendChild(badge);
               }
-              badge.textContent = String(cartCount);
+              badge.textContent = String(j.cartCount);
             }
           }
         } else {
@@ -378,6 +377,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         openToast(productName, 'Agregado al carrito ✅');
+
 
       } catch (_) {
         openToast('Error de red. Reintentá.');
