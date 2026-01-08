@@ -92,7 +92,37 @@
     </div>
   </div>
 
+  {{-- Bulk actions --}}
+  <div class="card hidden" data-products-bulk-bar>
+    <div class="card-body flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div class="text-sm text-zinc-600">
+        <span class="font-black" data-bulk-count>0</span> seleccionados
+      </div>
+
+      <form method="POST" action="{{ route('admin.products.bulk') }}" class="flex flex-col sm:flex-row gap-2 sm:items-center" data-admin-products-bulk>
+        @csrf
+
+        <select name="action" class="sm:w-64" data-bulk-action>
+          <option value="">Acción masiva…</option>
+          <option value="activate">Activar</option>
+          <option value="deactivate">Desactivar</option>
+          <option value="feature">Marcar destacado</option>
+          <option value="unfeature">Quitar destacado</option>
+          <option value="stock_zero">Poner stock en 0</option>
+          <option value="set_stock">Setear stock…</option>
+          <option value="delete">Eliminar (si no tiene pedidos)</option>
+        </select>
+
+        <input type="number" name="stock" min="0" class="sm:w-40 hidden" placeholder="Stock" data-bulk-stock>
+
+        <button type="submit" class="btn-primary sm:w-40" data-bulk-apply disabled>Aplicar</button>
+        <button type="button" class="btn-ghost sm:w-40" data-bulk-clear>Limpiar</button>
+      </form>
+    </div>
+  </div>
+
   {{-- Mobile (cards) --}}
+
   <div class="grid gap-3 md:hidden">
     @forelse($products as $p)
       <div class="card">
@@ -175,6 +205,9 @@
       <table class="table">
         <thead>
           <tr>
+            <th class="w-10">
+              <input type="checkbox" class="h-4 w-4 rounded border-zinc-300" data-bulk-select-all>
+            </th>
             <th>Producto</th>
             <th>Categoría</th>
             <th class="hidden lg:table-cell">Slug</th>
@@ -183,11 +216,16 @@
             <th class="text-right">Acciones</th>
           </tr>
         </thead>
+
         <tbody>
           @forelse($products as $p)
             <tr>
+              <td class="align-top">
+                <input type="checkbox" value="{{ $p->id }}" class="h-4 w-4 rounded border-zinc-300" data-bulk-checkbox>
+              </td>
               <td>
                 <div class="flex items-center gap-3">
+
                   <div class="h-10 w-10 overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50">
                     @if($p->image_url)
                       <img src="{{ $p->image_url }}" alt="{{ $p->name }}" class="h-full w-full object-cover">
@@ -209,9 +247,13 @@
                       data-product-id="{{ $p->id }}"
                       class="inline-flex items-center justify-end gap-2">
                   @csrf
-                  <span class="{{ $stockBadge($p->stock) }}" data-stock-label-for="{{ $p->id }}">
-                    {{ $stockLabel($p->stock) }}
-                  </span>
+                  <div class="flex items-center gap-2 shrink-0">
+                    <input type="checkbox" value="{{ $p->id }}" class="h-4 w-4 rounded border-zinc-300" data-bulk-checkbox>
+                    <span class="{{ $stockBadge($p->stock) }}" data-stock-label-for="{{ $p->id }}">
+                      {{ $stockLabel($p->stock) }}
+                    </span>
+                  </div>
+
                   <input type="number"
                         name="stock"
                         min="0"

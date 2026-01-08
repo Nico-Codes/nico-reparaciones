@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Models\OrderItem;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+
 
 class AdminProductController extends Controller
 {
@@ -226,6 +228,95 @@ class AdminProductController extends Controller
 
         return back()->with('success', $payload['message']);
     }
+
+    public function bulk(Request $request)
+    {
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'exists:products,id'],
+            'action' => ['required', 'string', 'in:activate,deactivate,feature,unfeature,stock_zero,set_stock,delete'],
+            'stock' => ['nullable', 'integer', 'min:0'],
+        ]);
+
+        $ids = array_map('intval', $data['ids']);
+        $action = $data['action'];
+
+        // Validación extra para set_stock
+        if ($action === 'set_stock' && $data['stock'] === null) {
+            return response()->json(['ok' => false, 'message' => 'Falta el stock para aplicar.'], 422);
+        }
+
+        $affected = 0;
+        $skipped = 0;
+        $message = 'Acción aplicada ✅';
+
+        if ($action === 'delete') {
+            // No se pueden borrar productos que ya estén en pedidos (FK restrict)
+            $lockedIds = OrderItem::whereIn('product_id', $ids)->pluck('product_id')->map(fn ($v) => (int)$v)->all();
+            $deleteIds = array_values(array_diff($ids, $lockedIds));
+            $skipped = count($lockedIds);
+
+            if (count($deleteIds) === 0) {
+                return response()->json([
+                    'ok' => false,
+                    'message' => 'No se pudo eliminar: todos los productos seleccionados tienen pedidos asociados.',
+                ], 422);
+            }
+
+            // Borrar imágenes (si tienen) y luego borrar productos
+            $products = Product::whereIn('id', $deleteIds)->get(['id', 'image_path']);
+            foreach ($products as $p) {
+                if ($p->image_path) {
+                    Storage::disk('public')->delete($p->image_path);
+                }
+            }
+
+            $affected = Product::whereIn('id', $deleteIds)->delete();
+            $message = "Eliminados: {$affected}. Omitidos: {$skipped} (tienen pedidos).";
+        } else {
+            $query = Product::whereIn('id', $ids);
+
+            switch ($action) {
+                case 'activate':
+                    $affected = $query->update(['active' => 1]);
+                    $message = "Activados: {$affected} ✅";
+                    break;
+
+                case 'deactivate':
+                    $affected = $query->update(['active' => 0]);
+                    $message = "Desactivados: {$affected} ✅";
+                    break;
+
+                case 'feature':
+                    $affected = $query->update(['featured' => 1]);
+                    $message = "Marcados como destacados: {$affected} ✅";
+                    break;
+
+                case 'unfeature':
+                    $affected = $query->update(['featured' => 0]);
+                    $message = "Destacado quitado: {$affected} ✅";
+                    break;
+
+                case 'stock_zero':
+                    $affected = $query->update(['stock' => 0]);
+                    $message = "Stock en 0 para: {$affected} ✅";
+                    break;
+
+                case 'set_stock':
+                    $affected = $query->update(['stock' => (int)$data['stock']]);
+                    $message = "Stock seteado para: {$affected} ✅";
+                    break;
+            }
+        }
+
+        return response()->json([
+            'ok' => true,
+            'affected' => $affected,
+            'skipped' => $skipped,
+            'message' => $message,
+        ]);
+    }
+
 
 
     private function uniqueSlug(string $seed, ?int $ignoreId = null): string
