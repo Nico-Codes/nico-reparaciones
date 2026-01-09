@@ -177,14 +177,30 @@
                 disabled>
 
               {{-- lo dejamos para guardar el ID, pero NO lo mostramos (simplicidad) --}}
-              <select name="device_issue_type_id"
-                required
-                data-issue-select
-                data-selected="{{ old('device_issue_type_id') }}"
-                disabled
-                class="hidden">
+              <select name="device_issue_type_id" required class="hidden">
                 <option value="">Elegí una falla…</option>
+                @foreach($issueTypes as $it)
+                  <option value="{{ $it->id }}" @selected(old('device_issue_type_id') == $it->id)>{{ $it->name }}</option>
+                @endforeach
               </select>
+
+              <div class="space-y-1 pt-2">
+                <label class="text-sm font-semibold">Reparación final *</label>
+                <select name="repair_type_id" required data-repair-type-final>
+                  <option value="">Elegí una reparación…</option>
+                  @foreach($repairTypes as $rt)
+                    <option value="{{ $rt->id }}" @selected(old('repair_type_id') == $rt->id)>{{ $rt->name }}</option>
+                  @endforeach
+                </select>
+                <div class="text-xs text-zinc-500">
+                  Esto es lo que dispara el cálculo automático (módulo, batería, mantenimiento, etc).
+                </div>
+              </div>
+
+              <div class="text-xs text-zinc-500">
+                Tip: empezá por “No enciende”, “Módulo roto”, “Batería”, “Joystick drift”… después detallás abajo.
+              </div>
+
 
               <div class="flex items-center gap-2 pt-1">
                 <button type="button" class="btn-outline btn-sm"
@@ -223,20 +239,53 @@
       </div>
       <div class="card-body">
         <div class="grid gap-4 sm:grid-cols-3">
-          <div class="space-y-1">
-            <label>Costo repuestos</label>
-            <input name="parts_cost" value="{{ old('parts_cost') }}" inputmode="decimal" placeholder="0" />
+          <div class="space-y-1" data-repair-pricing-auto>
+            <label class="text-sm font-semibold">Costo repuesto</label>
+            <input name="parts_cost" inputmode="numeric" value="{{ old('parts_cost') }}" placeholder="0" data-parts-cost />
           </div>
 
           <div class="space-y-1">
-            <label>Mano de obra</label>
-            <input name="labor_cost" value="{{ old('labor_cost') }}" inputmode="decimal" placeholder="0" />
+            <label class="text-sm font-semibold">Envío</label>
+            <div class="flex items-center gap-2">
+              <label class="inline-flex items-center gap-2 text-sm">
+                <input type="checkbox" class="h-4 w-4" data-shipping-enabled />
+                <span>Sumar</span>
+              </label>
+              <input inputmode="numeric" value="{{ old('shipping_amount') }}" placeholder="0" class="w-32" data-shipping-amount />
+            </div>
+            <div class="text-xs text-zinc-500" data-pricing-rule-label>Regla: —</div>
           </div>
 
           <div class="space-y-1">
-            <label>Precio final al cliente</label>
-            <input name="final_price" value="{{ old('final_price') }}" inputmode="decimal" placeholder="0" />
+            <label class="text-sm font-semibold">Ganancia sugerida</label>
+            <input inputmode="numeric" value="" placeholder="0" readonly data-profit-display />
+            <div class="text-xs text-zinc-500">Se calcula por regla (porcentaje + mínimo).</div>
           </div>
+
+          <div class="space-y-1">
+            <label class="text-sm font-semibold">Mano de obra (opcional)</label>
+            <input name="labor_cost" inputmode="numeric" value="{{ old('labor_cost') }}" placeholder="0" data-labor-cost />
+            <div class="text-xs text-zinc-500">Si la usás, se suma al total sugerido.</div>
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-sm font-semibold">Total sugerido</label>
+            <input inputmode="numeric" value="" placeholder="0" readonly data-total-display />
+            <div class="text-xs text-zinc-500">Repuesto + ganancia + (mano de obra) + (envío).</div>
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-sm font-semibold flex items-center justify-between gap-2">
+              <span>Precio final al cliente</span>
+              <span class="inline-flex items-center gap-2 text-xs text-zinc-600">
+                <input type="checkbox" class="h-4 w-4" checked data-final-auto />
+                Auto
+              </span>
+            </label>
+            <input name="final_price" inputmode="numeric" value="{{ old('final_price') }}" placeholder="0" data-final-price />
+            <div class="text-xs text-zinc-500">Si desactivás “Auto”, no se pisa tu valor.</div>
+          </div>
+
 
           <div class="space-y-1">
             <label>Pagado</label>

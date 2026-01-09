@@ -1965,6 +1965,157 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
   (function initRepairDeviceCatalog(){
+
+    // ✅ Repair Create: pricing auto (costos automáticos)
+    const initRepairPricingAuto = () => {
+      const root = document.querySelector('[data-repair-pricing-auto]');
+      if (!root) return;
+
+      const form = root.closest('form') || document;
+
+      const typeEl  = form.querySelector('[name="device_type_id"]');
+      const brandEl = form.querySelector('[name="device_brand_id"]');
+      const modelEl = form.querySelector('[name="device_model_id"]');
+      const repTypeEl = form.querySelector('[data-repair-type-final]');
+
+      const partsEl = form.querySelector('[data-parts-cost]');
+      const laborEl = form.querySelector('[data-labor-cost]');
+      const shipOnEl = form.querySelector('[data-shipping-enabled]');
+      const shipAmtEl = form.querySelector('[data-shipping-amount]');
+      const profitEl = form.querySelector('[data-profit-display]');
+      const totalEl = form.querySelector('[data-total-display]');
+      const finalAutoEl = form.querySelector('[data-final-auto]');
+      const finalEl = form.querySelector('[data-final-price]');
+      const ruleLabelEl = form.querySelector('[data-pricing-rule-label]');
+
+      if (!typeEl || !repTypeEl || !partsEl || !profitEl || !totalEl || !finalEl) return;
+
+      const num = (v) => {
+        const s = String(v ?? '').replace(/[^\d]/g, '');
+        return s ? parseInt(s, 10) : 0;
+      };
+
+      const setVal = (el, n) => {
+        if (!el) return;
+        el.value = (n ?? 0) ? String(Math.max(0, Math.round(n))) : '';
+      };
+
+      let currentRule = null;
+      let resolveTimer = null;
+      let shippingAutofilled = false;
+
+      const compute = () => {
+        const parts = num(partsEl.value);
+        const labor = laborEl ? num(laborEl.value) : 0;
+        const shipOn = shipOnEl ? !!shipOnEl.checked : false;
+        const shipAmt = shipAmtEl ? num(shipAmtEl.value) : 0;
+
+        let profit = 0;
+        let suggested = 0;
+
+        if (!currentRule) {
+          profit = 0;
+          suggested = parts + labor + (shipOn ? shipAmt : 0);
+        } else if (currentRule.mode === 'fixed') {
+          const fixed = Number(currentRule.fixed_total || 0);
+          profit = 0;
+          suggested = fixed + (shipOn ? shipAmt : 0);
+        } else {
+          const mult = Number(currentRule.multiplier ?? 0);
+          const minProfit = Number(currentRule.min_profit ?? 0);
+          const byPct = parts * mult;
+          profit = Math.max(byPct, minProfit);
+          suggested = parts + profit + labor + (shipOn ? shipAmt : 0);
+        }
+
+        setVal(profitEl, profit);
+        setVal(totalEl, suggested);
+
+        if (finalAutoEl?.checked) {
+          // solo pisa final_price si está en auto
+          setVal(finalEl, suggested);
+        }
+      };
+
+      const resolveRule = async () => {
+        const device_type_id = typeEl.value || '';
+        const repair_type_id = repTypeEl.value || '';
+        const device_brand_id = brandEl?.value || '';
+        const device_model_id = modelEl?.value || '';
+
+        if (!device_type_id || !repair_type_id) {
+          currentRule = null;
+          if (ruleLabelEl) ruleLabelEl.textContent = 'Regla: —';
+          compute();
+          return;
+        }
+
+        const qs = new URLSearchParams({
+          device_type_id,
+          repair_type_id,
+        });
+        if (device_brand_id) qs.set('device_brand_id', device_brand_id);
+        if (device_model_id) qs.set('device_model_id', device_model_id);
+
+        const url = `/admin/precios/resolve?${qs.toString()}`;
+
+        try {
+          const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+          const json = await res.json();
+
+          currentRule = json.rule || null;
+
+          if (ruleLabelEl) {
+            if (!currentRule) ruleLabelEl.textContent = 'Regla: (sin coincidencia)';
+            else {
+              const mode = currentRule.mode === 'fixed' ? 'Fijo' : 'Margen';
+              ruleLabelEl.textContent = `Regla: ${mode} • envío sugerido $${(currentRule.shipping_default ?? 0)}`;
+            }
+          }
+
+          // Autocompletar envío (solo 1 vez o si está vacío)
+          if (shipAmtEl && currentRule && !shippingAutofilled && !shipAmtEl.value) {
+            const sd = Number(currentRule.shipping_default ?? 0);
+            if (sd > 0) {
+              shipOnEl && (shipOnEl.checked = true);
+              shipAmtEl.value = String(sd);
+              shippingAutofilled = true;
+            }
+          }
+
+          compute();
+        } catch (e) {
+          currentRule = null;
+          if (ruleLabelEl) ruleLabelEl.textContent = 'Regla: (error)';
+          compute();
+        }
+      };
+
+      const debouncedResolve = () => {
+        if (resolveTimer) clearTimeout(resolveTimer);
+        resolveTimer = setTimeout(resolveRule, 250); // 👈 esto hace que no “parpadee” al cambiar rápido
+      };
+
+      // listeners
+      typeEl.addEventListener('change', () => { shippingAutofilled = false; debouncedResolve(); });
+      repTypeEl.addEventListener('change', () => { shippingAutofilled = false; debouncedResolve(); });
+      brandEl?.addEventListener('change', () => { shippingAutofilled = false; debouncedResolve(); });
+      modelEl?.addEventListener('change', () => { shippingAutofilled = false; debouncedResolve(); });
+
+      partsEl.addEventListener('input', compute);
+      laborEl?.addEventListener('input', compute);
+      shipOnEl?.addEventListener('change', compute);
+      shipAmtEl?.addEventListener('input', compute);
+      finalAutoEl?.addEventListener('change', compute);
+
+      // init
+      debouncedResolve();
+      compute();
+    };
+
+    initRepairPricingAuto();
+
+
     const blocks = document.querySelectorAll('[data-repair-device-catalog]');
     if (!blocks.length) return;
 
@@ -2506,6 +2657,49 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   })();
+
+  // ✅ Admin: asignar modelos a grupos (guardar automático)
+  const initAdminModelGroups = () => {
+    const root = document.querySelector('[data-admin-model-groups]');
+    if (!root) return;
+
+    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+    root.querySelectorAll('select[data-model-id]').forEach(sel => {
+      sel.addEventListener('change', async () => {
+        const modelId = sel.getAttribute('data-model-id');
+        const device_model_group_id = sel.value || '';
+
+        try {
+          const res = await fetch(`/admin/grupos-modelos/modelo/${modelId}/asignar`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              ...(token ? { 'X-CSRF-TOKEN': token } : {}),
+            },
+            body: JSON.stringify({ device_model_group_id: device_model_group_id || null }),
+          });
+
+          if (!res.ok) {
+            // fallback simple
+            sel.classList.add('ring-2','ring-red-400');
+            setTimeout(() => sel.classList.remove('ring-2','ring-red-400'), 1200);
+            return;
+          }
+
+          sel.classList.add('ring-2','ring-emerald-400');
+          setTimeout(() => sel.classList.remove('ring-2','ring-emerald-400'), 600);
+        } catch (e) {
+          sel.classList.add('ring-2','ring-red-400');
+          setTimeout(() => sel.classList.remove('ring-2','ring-red-400'), 1200);
+        }
+      });
+    });
+  };
+
+  initAdminModelGroups();
+
 
   ;(function initRepairIssueCatalog() {
     const blocks = document.querySelectorAll('[data-repair-issue-catalog]');

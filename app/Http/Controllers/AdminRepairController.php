@@ -205,11 +205,15 @@ class AdminRepairController extends Controller
 
     public function create()
     {
-        return view('admin.repairs.create', [
-        'statuses' => Repair::STATUSES,
-        'paymentMethods' => Repair::PAYMENT_METHODS,
-        'deviceTypes' => DeviceType::orderBy('id')->get(),
-        ]);
+        $issueTypes = DeviceIssueType::where('active', true)->orderBy('name')->get();
+        $repairTypes = \App\Models\RepairType::where('active', true)->orderBy('name')->get();
+        return view('admin.repairs.create', compact(
+            'statuses',
+            'paymentMethods',
+            'deviceTypes',
+            'issueTypes',
+            'repairTypes',
+        ));
 
     }
 
@@ -223,8 +227,10 @@ class AdminRepairController extends Controller
             'device_brand_id' => 'required|exists:device_brands,id',
             'device_model_id' => 'required|exists:device_models,id',
 
-            'device_issue_type_id' => 'required|integer|exists:device_issue_types,id',
-            'issue_detail' => 'nullable|string|max:2000',
+            'device_issue_type_id' => ['required', 'integer', 'exists:device_issue_types,id'],
+            'repair_type_id' => ['required', 'integer', 'exists:repair_types,id'],
+            'issue_detail' => ['nullable', 'string', 'max:255'],
+
 
             'diagnosis'       => 'nullable|string',
 
@@ -298,7 +304,10 @@ class AdminRepairController extends Controller
             'device_model' => $model->name,
 
             'device_issue_type_id' => $issueType->id,
-            'issue_detail' => $issueDetail !== '' ? $issueDetail : null,
+            'repair_type_id'       => $data['repair_type_id'],
+            'issue_detail'         => $issueDetail !== '' ? $issueDetail : null,
+
+            
             'issue_reported' => $issueReported,
             'diagnosis'      => $data['diagnosis'] ?? null,
 

@@ -28,7 +28,12 @@ use App\Http\Controllers\AdminCategoryController;
 use App\Http\Controllers\AdminProductController;
 use App\Http\Controllers\AdminBusinessSettingsController;
 use App\Http\Controllers\AdminWhatsappTemplateController;
+
 use App\Http\Controllers\AdminOrderWhatsappTemplateController;
+use App\Http\Controllers\AdminPricingRuleController;
+use App\Http\Controllers\AdminRepairTypeController;
+use App\Http\Controllers\AdminModelGroupController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -226,6 +231,25 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     // âœ… WhatsApp Pedidos (plantillas)
     Route::get('/whatsapp-pedidos', [AdminOrderWhatsappTemplateController::class, 'index'])->name('admin.orders_whatsapp_templates.index');
     Route::post('/whatsapp-pedidos', [AdminOrderWhatsappTemplateController::class, 'update'])->name('admin.orders_whatsapp_templates.update');
+
+    // ✅ Reparaciones: Tipos / Grupos / Reglas de precios
+    Route::get('/tipos-reparacion', [AdminRepairTypeController::class, 'index'])->name('admin.repairTypes.index');
+    Route::post('/tipos-reparacion', [AdminRepairTypeController::class, 'store'])->name('admin.repairTypes.store');
+    Route::put('/tipos-reparacion/{repairType}', [AdminRepairTypeController::class, 'update'])->name('admin.repairTypes.update');
+
+    Route::get('/grupos-modelos', [AdminModelGroupController::class, 'index'])->name('admin.modelGroups.index');
+    Route::post('/grupos-modelos', [AdminModelGroupController::class, 'store'])->name('admin.modelGroups.store');
+    Route::put('/grupos-modelos/{group}', [AdminModelGroupController::class, 'update'])->name('admin.modelGroups.update');
+    Route::post('/grupos-modelos/modelo/{model}/asignar', [AdminModelGroupController::class, 'assignModel'])->name('admin.modelGroups.assignModel');
+
+    Route::get('/precios', [AdminPricingRuleController::class, 'index'])->name('admin.pricing.index');
+    Route::get('/precios/crear', [AdminPricingRuleController::class, 'create'])->name('admin.pricing.create');
+    Route::post('/precios', [AdminPricingRuleController::class, 'store'])->name('admin.pricing.store');
+    Route::get('/precios/{rule}/editar', [AdminPricingRuleController::class, 'edit'])->name('admin.pricing.edit');
+    Route::put('/precios/{rule}', [AdminPricingRuleController::class, 'update'])->name('admin.pricing.update');
+
+    // JSON resolver (para el cálculo automático en Crear Reparación)
+    Route::get('/precios/resolve', [AdminPricingRuleController::class, 'resolve'])->name('admin.pricing.resolve');
 
 
 });

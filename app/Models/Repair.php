@@ -19,7 +19,9 @@ class Repair extends Model
         'device_model_id',
 
         'device_issue_type_id',
+        'repair_type_id',
         'issue_detail',
+
 
 
         'device_brand',
@@ -132,6 +134,11 @@ class Repair extends Model
     public function deviceIssueType()
     {
         return $this->belongsTo(DeviceIssueType::class, 'device_issue_type_id');
+    }
+
+    public function repairType()
+    {
+        return $this->belongsTo(\App\Models\RepairType::class, 'repair_type_id');
     }
 
 }

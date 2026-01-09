@@ -13,11 +13,11 @@ class DatabaseSeeder extends Seeder
     {
         // Acá llamamos a todos los seeders que queremos ejecutar
         $this->call([
-            AdminUserSeeder::class,
             BusinessSettingsSeeder::class,
-            CategoryProductSeeder::class,
             DeviceCatalogSeeder::class,
+            RepairPricingSeeder::class,
         ]);
+
 
 
     }
