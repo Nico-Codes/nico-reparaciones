@@ -44,57 +44,72 @@
             <div class="text-xs text-zinc-500">Tip: podés pegarlo con o sin +54, se normaliza solo.</div>
           </div>
 
-          <div class="space-y-3" data-repair-device-catalog>
-            <div class="space-y-1">
-              <label>Tipo de dispositivo</label>
-              <select id="device_type_id" name="device_type_id" data-device-type>
-                <option value="">— Elegí un tipo —</option>
-                @foreach($deviceTypes as $t)
-                  <option value="{{ $t->id }}" @selected(old('device_type_id') == $t->id)>{{ $t->name }}</option>
-                @endforeach
-              </select>
-            </div>
-
-            <div class="space-y-1">
-              <div class="flex items-center justify-between gap-2">
-                <label>Marca</label>
-                <button type="button" class="btn-outline btn-sm" data-add-brand disabled>+ Agregar</button>
+          <div class="sm:col-span-2" data-repair-device-catalog>
+            <div class="grid gap-4 sm:grid-cols-3">
+              {{-- Tipo --}}
+              <div class="space-y-1 min-w-0">
+                <label>Tipo de dispositivo *</label>
+                <select id="device_type_id" name="device_type_id" data-device-type required>
+                  <option value="">— Elegí un tipo —</option>
+                  @foreach($deviceTypes as $t)
+                    <option value="{{ $t->id }}" @selected(old('device_type_id') == $t->id)>{{ $t->name }}</option>
+                  @endforeach
+                </select>
+                <div class="text-xs text-zinc-500">Paso 1: elegí el tipo.</div>
               </div>
 
-              <input type="text" class="mt-2" placeholder="Buscar marca…" data-brand-search disabled>
+              {{-- Marca --}}
+              <div class="space-y-1 min-w-0">
+                <div class="flex items-center justify-between gap-2">
+                  <label>Marca *</label>
+                  <button type="button" class="btn-outline btn-sm" data-add-brand disabled>+ Agregar</button>
+                </div>
 
-              <select id="device_brand_id" name="device_brand_id" data-device-brand disabled data-selected="{{ old('device_brand_id') }}">
-                <option value="">— Elegí un tipo primero —</option>
-              </select>
+                <input type="text" placeholder="Buscar marca… (Enter)"
+                  data-brand-search disabled>
 
+                <select id="device_brand_id" name="device_brand_id"
+                  data-device-brand disabled required
+                  data-selected="{{ old('device_brand_id') }}">
+                  <option value="">— Elegí un tipo primero —</option>
+                </select>
 
-              <div class="hidden mt-2 gap-2" data-add-brand-form>
-                <input type="text" class="flex-1" placeholder="Nueva marca…" data-add-brand-input>
-                <button type="button" class="btn-primary btn-sm" data-save-brand>Guardar</button>
-                <button type="button" class="btn-ghost btn-sm" data-cancel-brand>Cancelar</button>
+                <div class="hidden mt-2 gap-2 flex-col sm:flex-row" data-add-brand-form>
+                  <input type="text" class="flex-1" placeholder="Nueva marca…" data-add-brand-input>
+                  <button type="button" class="btn-primary btn-sm w-full sm:w-auto" data-save-brand>Guardar</button>
+                  <button type="button" class="btn-ghost btn-sm w-full sm:w-auto" data-cancel-brand>Cancelar</button>
+                </div>
+
+                <div class="text-xs text-zinc-500">Paso 2: escribí y Enter, o usá flechas.</div>
               </div>
-            </div>
 
-            <div class="space-y-1">
-              <div class="flex items-center justify-between gap-2">
-                <label>Modelo</label>
-                <button type="button" class="btn-outline btn-sm" data-add-model disabled>+ Agregar</button>
-              </div>
+              {{-- Modelo --}}
+              <div class="space-y-1 min-w-0">
+                <div class="flex items-center justify-between gap-2">
+                  <label>Modelo *</label>
+                  <button type="button" class="btn-outline btn-sm" data-add-model disabled>+ Agregar</button>
+                </div>
 
-              <input type="text" class="mt-2" placeholder="Buscar modelo…" data-model-search disabled>
+                <input type="text" placeholder="Buscar modelo… (Enter)"
+                  data-model-search disabled>
 
-              <select id="device_model_id" name="device_model_id" data-device-model disabled data-selected="{{ old('device_model_id') }}">
-                <option value="">— Elegí una marca primero —</option>
-              </select>
+                <select id="device_model_id" name="device_model_id"
+                  data-device-model disabled required
+                  data-selected="{{ old('device_model_id') }}">
+                  <option value="">— Elegí una marca primero —</option>
+                </select>
 
+                <div class="hidden mt-2 gap-2 flex-col sm:flex-row" data-add-model-form>
+                  <input type="text" class="flex-1" placeholder="Nuevo modelo…" data-add-model-input>
+                  <button type="button" class="btn-primary btn-sm w-full sm:w-auto" data-save-model>Guardar</button>
+                  <button type="button" class="btn-ghost btn-sm w-full sm:w-auto" data-cancel-model>Cancelar</button>
+                </div>
 
-              <div class="hidden mt-2 gap-2" data-add-model-form>
-                <input type="text" class="flex-1" placeholder="Nuevo modelo…" data-add-model-input>
-                <button type="button" class="btn-primary btn-sm" data-save-model>Guardar</button>
-                <button type="button" class="btn-ghost btn-sm" data-cancel-model>Cancelar</button>
+                <div class="text-xs text-zinc-500">Paso 3: al elegir marca carga modelos.</div>
               </div>
             </div>
           </div>
+
 
         </div>
       </div>
@@ -109,35 +124,33 @@
         <div class="grid gap-4 md:grid-cols-2" data-repair-issue-catalog>
           <div class="space-y-3">
             <div class="space-y-1">
-              <label class="text-sm font-medium">Falla principal *</label>
+              <label>Falla principal *</label>
 
-              <input type="text" class="w-full input"
-                placeholder="Buscar falla…"
+              <input type="text"
+                placeholder="Escribí la falla y Enter (si no existe, se crea)"
                 data-issue-search
                 disabled>
 
-              <select name="device_issue_type_id" class="w-full input"
+              {{-- lo dejamos para guardar el ID, pero NO lo mostramos (simplicidad) --}}
+              <select name="device_issue_type_id"
                 required
                 data-issue-select
                 data-selected="{{ old('device_issue_type_id') }}"
-                disabled>
+                disabled
+                class="hidden">
                 <option value="">Elegí una falla…</option>
               </select>
 
-              <div class="mt-2 flex items-center gap-2">
-                <button type="button" class="btn btn-secondary"
+              <div class="flex items-center gap-2 pt-1">
+                <button type="button" class="btn-outline btn-sm"
                   data-add-issue
                   disabled>
                   + Agregar falla
                 </button>
-              </div>
-
-              <div class="mt-2 hidden items-center gap-2" data-issue-form>
-                <input type="text" class="w-full input" placeholder="Nueva falla…" data-issue-input>
-                <button type="button" class="btn btn-primary" data-issue-save>Guardar</button>
-                <button type="button" class="btn btn-ghost" data-issue-cancel>Cancelar</button>
+                <div class="text-xs text-zinc-500">Tip: Enter selecciona / crea.</div>
               </div>
             </div>
+
 
             <div class="space-y-1">
               <label class="text-sm font-medium">Detalle (opcional)</label>

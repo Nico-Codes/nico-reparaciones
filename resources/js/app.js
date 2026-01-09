@@ -2017,8 +2017,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!sel) return;
         const n = sel.options?.length || 0;
         if (n <= 1) return; // solo placeholder
-        sel.size = Math.min(8, Math.max(2, n));
+        sel.size = Math.min(6, Math.max(2, n)); // ✅ más cómodo en móvil
       };
+
 
       const closeList = (sel) => {
         if (!sel) return;
@@ -2097,7 +2098,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         btnAddModel.disabled = true;
 
-        // ✅ NUEVO: reset/bloqueo del botón y buscadores
         if (btnAddBrand) btnAddBrand.disabled = true;
 
         if (brandSearch) {
@@ -2110,16 +2110,17 @@ document.addEventListener('DOMContentLoaded', () => {
           modelSearch.disabled = true;
         }
 
-        // ✅ NUEVO: vaciar listas en memoria para que no filtre cosas viejas
         brandsList = [];
         modelsList = [];
 
-        // si no hay tipo elegido, terminamos acá
         if (!typeId) return;
 
-        // si hay tipo, cargamos marcas
         await loadBrands(typeId);
+
+        // ✅ UX: al terminar, te manda directo a Marca
+        setTimeout(() => brandSearch?.focus?.(), 0);
       });
+
 
 
       brandSel?.addEventListener('change', async () => {
@@ -2150,15 +2151,21 @@ document.addEventListener('DOMContentLoaded', () => {
         // mantener un toque el estado “cargando”
         setOptions(modelSel, [], 'Cargando modelos…');
 
-        modelsLoadTimer = setTimeout(() => {
-          (async () => {
-            try {
-              await loadModels(brandId, null, seq);
-            } catch (e) {
-              console.error('[NR] loadModels error:', e);
-            }
-          })();
-        }, 250);
+          modelsLoadTimer = setTimeout(() => {
+            (async () => {
+              try {
+                await loadModels(brandId, null, seq);
+
+                // ✅ si esta carga sigue siendo la vigente, enfocamos Modelo
+                if (seq === modelsLoadSeq) {
+                  setTimeout(() => modelSearch?.focus?.(), 0);
+                }
+              } catch (e) {
+                console.error('[NR] loadModels error:', e);
+              }
+            })();
+          }, 250);
+
       });
 
 
@@ -2197,6 +2204,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
       brandSearch?.addEventListener('input', applyBrandFilter);
       modelSearch?.addEventListener('input', applyModelFilter);
+
+            // ✅ Si escriben exacto y salen del input, auto-selecciona (evita errores por no apretar Enter)
+      brandSearch?.addEventListener('blur', () => {
+        setTimeout(() => {
+          if (document.activeElement === brandSel) return; // si fue a elegir con mouse/flechas, no molestamos
+          if (brandSel.value) return;
+          const q = (brandSearch.value || '').trim();
+          if (!q) return;
+          const hit = firstMatch(brandsList, q);
+          if (!hit) return;
+
+          brandSel.value = String(hit.id);
+          brandSel.dispatchEvent(new Event('change', { bubbles: true }));
+          closeList(brandSel);
+        }, 0);
+      });
+
+      modelSearch?.addEventListener('blur', () => {
+        setTimeout(() => {
+          if (document.activeElement === modelSel) return;
+          if (modelSel.value) return;
+          const q = (modelSearch.value || '').trim();
+          if (!q) return;
+          const hit = firstMatch(modelsList, q);
+          if (!hit) return;
+
+          modelSel.value = String(hit.id);
+          modelSel.dispatchEvent(new Event('change', { bubbles: true }));
+          closeList(modelSel);
+        }, 0);
+      });
+
 
       // ✅ Mantener la lista abierta cuando pasás del input al select (para poder navegar con flechas)
         const keepListWhileInteracting = (searchEl, selEl) => {
@@ -2378,24 +2417,6 @@ document.addEventListener('DOMContentLoaded', () => {
         openModelFormPrefill(q);
       });
 
-
-      // ENTER en buscador de modelo: si matchea, selecciona; si no, abre alta con el texto
-      modelSearch?.addEventListener('keydown', (e) => {
-        if (e.key !== 'Enter') return;
-        e.preventDefault();
-
-        if (modelSearch.disabled) return;
-        const q = (modelSearch.value || '').trim();
-        if (!q) return;
-
-        const hit = firstMatch(modelsList, q);
-        if (hit) {
-          modelSel.value = String(hit.id);
-          return;
-        }
-
-        openModelFormPrefill(q);
-      });
 
       // agregar marca
       btnAddBrand?.addEventListener('click', () => {
@@ -2651,6 +2672,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
         await addIssue(q);
       });
+
+
+      // ✅ Si escriben una falla exacta y salen del campo, auto-selecciona
+      issueSearch.addEventListener('blur', () => {
+        setTimeout(() => {
+          if (issueSel.value) return;
+          const q = (issueSearch.value || '').trim();
+          if (!q) return;
+          const hit = firstMatch(issuesList, q);
+          if (!hit) return;
+
+          issueSel.value = String(hit.id);
+          issueSel.dispatchEvent(new Event('change', { bubbles: true }));
+        }, 0);
+      });
+
 
       issueSel.addEventListener('change', () => {
         const label = issueSel.options[issueSel.selectedIndex]?.text || '';
