@@ -2165,17 +2165,49 @@ document.addEventListener('DOMContentLoaded', () => {
       brandSearch?.addEventListener('input', applyBrandFilter);
       modelSearch?.addEventListener('input', applyModelFilter);
 
-      // ✅ Si enfoca el buscador, abrimos la lista (si ya hay datos)
-      brandSearch?.addEventListener('focus', () => openList(brandSel));
-      modelSearch?.addEventListener('focus', () => openList(modelSel));
+      // ✅ Mantener la lista abierta cuando pasás del input al select (para poder navegar con flechas)
+      const keepListWhileInteracting = (searchEl, selEl) => {
+        if (!searchEl || !selEl) return;
 
-      // ✅ Al salir del buscador, cerramos (con delay para permitir click en opciones)
-      brandSearch?.addEventListener('blur', () => setTimeout(() => closeList(brandSel), 150));
-      modelSearch?.addEventListener('blur', () => setTimeout(() => closeList(modelSel), 150));
+        const maybeClose = () => {
+          // si el foco sigue en input o select, NO cerrar
+          setTimeout(() => {
+            const ae = document.activeElement;
+            if (ae !== searchEl && ae !== selEl) closeList(selEl);
+          }, 0);
+        };
 
-      // ✅ Si elige una opción, cerramos y seguimos flujo
-      brandSel?.addEventListener('change', () => closeList(brandSel));
-      modelSel?.addEventListener('change', () => closeList(modelSel));
+        searchEl.addEventListener('focus', () => openList(selEl));
+        selEl.addEventListener('focus', () => openList(selEl));
+
+        searchEl.addEventListener('blur', maybeClose);
+        selEl.addEventListener('blur', maybeClose);
+
+        // si el usuario eligió desde el select, reflejar en el input
+        selEl.addEventListener('change', () => {
+          const label = selEl.options[selEl.selectedIndex]?.text || '';
+          if (label && !label.startsWith('—')) searchEl.value = label;
+          closeList(selEl);
+        });
+
+        // en el input, ↓/↑ manda el foco al select para navegar
+        searchEl.addEventListener('keydown', (e) => {
+          if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+          if (searchEl.disabled) return;
+          e.preventDefault();
+
+          openList(selEl);
+          selEl.focus();
+
+          // si está en placeholder, saltar a primera opción real
+          if ((selEl.selectedIndex ?? 0) <= 0 && selEl.options.length > 1) {
+            selEl.selectedIndex = 1;
+          }
+        });
+      };
+
+      keepListWhileInteracting(brandSearch, brandSel);
+      keepListWhileInteracting(modelSearch, modelSel);
 
       // helpers (DEJAR SOLO UNA VEZ)
       const openBrandFormPrefill = (value) => {
@@ -2218,14 +2250,47 @@ document.addEventListener('DOMContentLoaded', () => {
         const hit = firstMatch(brandsList, q);
         if (hit) {
           brandSel.value = String(hit.id);
+
+          // refleja el nombre exacto en el input
+          const label = brandSel.options[brandSel.selectedIndex]?.text || q;
+          if (label && !label.startsWith('—')) brandSearch.value = label;
+
           brandSel.dispatchEvent(new Event('change', { bubbles: true })); // carga modelos
+          closeList(brandSel);
           setTimeout(() => modelSearch?.focus(), 0);
           return;
         }
 
-
         openBrandFormPrefill(q);
       });
+
+      // ENTER en buscador de modelo: si matchea, selecciona; si no, abre alta con el texto
+      modelSearch?.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+
+        if (modelSearch.disabled) return;
+        const q = (modelSearch.value || '').trim();
+        if (!q) return;
+
+        const hit = firstMatch(modelsList, q);
+        if (hit) {
+          modelSel.value = String(hit.id);
+          modelSel.dispatchEvent(new Event('change', { bubbles: true }));
+
+          const label = modelSel.options[modelSel.selectedIndex]?.text || q;
+          if (label && !label.startsWith('—')) modelSearch.value = label;
+
+          closeList(modelSel);
+
+          // salto a "Falla principal" si existe
+          document.querySelector('[data-issue-search]')?.focus?.();
+          return;
+        }
+
+        openModelFormPrefill(q);
+      });
+
 
       // ENTER en buscador de modelo: si matchea, selecciona; si no, abre alta con el texto
       modelSearch?.addEventListener('keydown', (e) => {
@@ -2428,7 +2493,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       };
 
-      const loadIssues = async (typeId, selectedId = null) => {
+        const loadIssues = async (typeId, selectedId = null) => {
         if (!typeId) {
           setEnabled(false);
           return;
@@ -2437,7 +2502,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setEnabled(true);
 
         const data = await fetchJson(`/admin/device-catalog/issues?type_id=${encodeURIComponent(typeId)}`);
-        const items = data.items || data.data || [];
+        const items = data.issues || [];
         setOptions(items, selectedId);
       };
 
@@ -2449,7 +2514,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!name) return;
 
         const fd = new FormData();
-        fd.append('device_type_id', typeId);
+        fd.append('type_id', typeId);
         fd.append('name', name);
 
         const csrf = getCsrf(form);
@@ -2459,8 +2524,11 @@ document.addEventListener('DOMContentLoaded', () => {
           body: fd,
         });
 
-        if (data && data.ok && data.id) {
-          await loadIssues(typeId, data.id);
+        const newId = data?.issue?.id || null;
+
+        if (data && data.ok && newId) {
+          await loadIssues(typeId, newId);
+          issueSel.value = String(newId);
           issueSel.dispatchEvent(new Event('change', { bubbles: true }));
           return;
         }
@@ -2477,9 +2545,8 @@ document.addEventListener('DOMContentLoaded', () => {
         issueSel.removeAttribute('data-selected');
       });
 
-      issueSearch.addEventListener('focus', () => openList(issueSel));
-      issueSearch.addEventListener('blur', () => setTimeout(() => closeList(issueSel), 150));
-      issueSearch.addEventListener('input', () => openList(issueSel));
+      // ✅ Para "Falla principal" NO desplegamos lista (no te interesa dropdown)
+      // El select queda para guardar el id, pero visualmente trabajamos con el input + Enter / botón "Agregar"
 
       issueSearch.addEventListener('keydown', async (e) => {
         if (e.key !== 'Enter') return;
