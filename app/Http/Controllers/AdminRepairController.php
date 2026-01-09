@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Models\DeviceType;
 use App\Models\DeviceBrand;
 use App\Models\DeviceModel;
+use App\Models\DeviceIssueType;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -222,7 +223,9 @@ class AdminRepairController extends Controller
             'device_brand_id' => 'required|exists:device_brands,id',
             'device_model_id' => 'required|exists:device_models,id',
 
-            'issue_reported'  => 'required|string',
+            'device_issue_type_id' => 'required|integer|exists:device_issue_types,id',
+            'issue_detail' => 'nullable|string|max:2000',
+
             'diagnosis'       => 'nullable|string',
 
             'parts_cost'      => 'nullable|numeric|min:0',
@@ -270,6 +273,17 @@ class AdminRepairController extends Controller
         return back()->withErrors(['device_model_id' => 'El modelo no pertenece a la marca seleccionada.'])->withInput();
         }
 
+        $issueType = DeviceIssueType::findOrFail((int) $data['device_issue_type_id']);
+        if ($issueType->device_type_id !== $type->id) {
+            return back()->withErrors(['device_issue_type_id' => 'La falla no corresponde al tipo de dispositivo seleccionado.'])->withInput();
+        }
+
+        $issueDetail = trim((string) ($data['issue_detail'] ?? ''));
+        $issueReported = $issueType->name;
+        if ($issueDetail !== '') {
+            $issueReported .= ' — ' . $issueDetail;
+        }
+
 
         $repair = Repair::create([
             'user_id'        => $userId,
@@ -283,7 +297,9 @@ class AdminRepairController extends Controller
             'device_brand' => $brand->name,
             'device_model' => $model->name,
 
-            'issue_reported' => $data['issue_reported'],
+            'device_issue_type_id' => $issueType->id,
+            'issue_detail' => $issueDetail !== '' ? $issueDetail : null,
+            'issue_reported' => $issueReported,
             'diagnosis'      => $data['diagnosis'] ?? null,
 
             'parts_cost'     => $parts,
@@ -365,7 +381,10 @@ class AdminRepairController extends Controller
             'device_brand_id' => 'required|exists:device_brands,id',
             'device_model_id' => 'required|exists:device_models,id',
 
-            'issue_reported'  => 'required|string',
+            'device_issue_type_id' => $issueType->id,
+            'issue_detail' => $issueDetail !== '' ? $issueDetail : null,
+            'issue_reported' => $issueReported,
+
             'diagnosis'       => 'nullable|string',
 
             'parts_cost'      => 'nullable|numeric|min:0',

@@ -106,22 +106,53 @@
         <span class="badge-zinc">Taller</span>
       </div>
       <div class="card-body">
-        <div class="grid gap-4">
-          <div class="space-y-1">
-            <label>Falla reportada *</label>
-            <textarea name="issue_reported" required rows="3" placeholder="Qué le pasa al equipo (según el cliente)…">{{ old('issue_reported') }}</textarea>
+        <div class="grid gap-4 md:grid-cols-2" data-repair-issue-catalog>
+          <div class="space-y-3">
+            <div class="space-y-1">
+              <label class="text-sm font-medium">Falla principal *</label>
+
+              <input type="text" class="w-full input"
+                placeholder="Buscar falla…"
+                data-issue-search
+                disabled>
+
+              <select name="device_issue_type_id" class="w-full input"
+                required
+                data-issue-select
+                data-selected="{{ old('device_issue_type_id') }}"
+                disabled>
+                <option value="">Elegí una falla…</option>
+              </select>
+
+              <div class="mt-2 flex items-center gap-2">
+                <button type="button" class="btn btn-secondary"
+                  data-add-issue
+                  disabled>
+                  + Agregar falla
+                </button>
+              </div>
+
+              <div class="mt-2 hidden items-center gap-2" data-issue-form>
+                <input type="text" class="w-full input" placeholder="Nueva falla…" data-issue-input>
+                <button type="button" class="btn btn-primary" data-issue-save>Guardar</button>
+                <button type="button" class="btn btn-ghost" data-issue-cancel>Cancelar</button>
+              </div>
+            </div>
+
+            <div class="space-y-1">
+              <label class="text-sm font-medium">Detalle (opcional)</label>
+              <textarea name="issue_detail" class="w-full input" rows="3"
+                placeholder="Ej: ‘se reinicia’, ‘no carga’, ‘pantalla con manchas’…">{{ old('issue_detail') }}</textarea>
+            </div>
           </div>
 
           <div class="space-y-1">
-            <label>Diagnóstico (opcional)</label>
-            <textarea name="diagnosis" rows="3" placeholder="Diagnóstico técnico (si ya lo tenés)…">{{ old('diagnosis') }}</textarea>
+            <label class="text-sm font-medium">Diagnóstico</label>
+            <textarea name="diagnosis" class="w-full input" rows="6"
+              placeholder="Diagnóstico técnico / notas internas…">{{ old('diagnosis') }}</textarea>
           </div>
+</div>
 
-          <div class="space-y-1">
-            <label>Notas internas</label>
-            <textarea name="notes" rows="3" placeholder="Notas para el taller (no visibles para el cliente)…">{{ old('notes') }}</textarea>
-          </div>
-        </div>
       </div>
     </div>
 

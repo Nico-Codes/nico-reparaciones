@@ -7,6 +7,8 @@ use App\Models\DeviceModel;
 use App\Models\DeviceType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use App\Models\DeviceIssueType;
+
 
 class AdminDeviceCatalogController extends Controller
 {
@@ -91,4 +93,61 @@ class AdminDeviceCatalogController extends Controller
 
         return response()->json(['ok' => true, 'model' => ['id' => $model->id, 'name' => $model->name]]);
     }
+
+    public function issues(Request $request)
+    {
+        $typeId = (int) $request->query('type_id', 0);
+
+        if ($typeId <= 0) {
+            return response()->json(['ok' => true, 'issues' => []]);
+        }
+
+        $issues = DeviceIssueType::query()
+            ->where('device_type_id', $typeId)
+            ->orderBy('name')
+            ->get(['id', 'name', 'slug']);
+
+        return response()->json(['ok' => true, 'issues' => $issues]);
+    }
+
+    public function storeIssue(Request $request)
+    {
+        $data = $request->validate([
+            'type_id' => 'required|integer|exists:device_types,id',
+            'name'    => 'required|string|max:80',
+        ]);
+
+        $typeId = (int) $data['type_id'];
+        $name   = trim($data['name']);
+
+        $base = \Illuminate\Support\Str::slug($name);
+        $slug = $base ?: ('issue-' . time());
+
+        // asegurar unique por (type_id, slug)
+        $i = 2;
+        while (
+            DeviceIssueType::where('device_type_id', $typeId)
+                ->where('slug', $slug)
+                ->exists()
+        ) {
+            $slug = $base . '-' . $i;
+            $i++;
+        }
+
+        $issue = DeviceIssueType::create([
+            'device_type_id' => $typeId,
+            'name' => $name,
+            'slug' => $slug,
+        ]);
+
+        return response()->json([
+            'ok' => true,
+            'issue' => [
+                'id' => $issue->id,
+                'name' => $issue->name,
+                'slug' => $issue->slug,
+            ],
+        ]);
+    }
+
 }

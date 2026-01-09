@@ -9,8 +9,14 @@ class DeviceType extends Model
 {
     protected $fillable = ['name', 'slug'];
 
-    public function brands(): HasMany
+    public function brands()
     {
         return $this->hasMany(DeviceBrand::class);
     }
+
+    public function issueTypes()
+    {
+        return $this->hasMany(DeviceIssueType::class);
+    }
+
 }

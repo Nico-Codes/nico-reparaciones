@@ -7,6 +7,9 @@ use Illuminate\Support\Str;
 use App\Models\DeviceType;
 use App\Models\DeviceBrand;
 use App\Models\DeviceModel;
+use App\Models\DeviceIssueType;
+
+
 
 class DeviceCatalogSeeder extends Seeder
 {
@@ -55,6 +58,44 @@ class DeviceCatalogSeeder extends Seeder
         foreach (['Joy-Con'] as $m) $this->model($joyNin, $m);
 
         $this->model($generico, 'Otro');
+
+
+        $issue = function (DeviceType $type, string $name) {
+            $base = Str::slug($name);
+            $slug = $base ?: ('issue-' . time());
+
+            $i = 2;
+            while (DeviceIssueType::where('device_type_id', $type->id)->where('slug', $slug)->exists()) {
+                $slug = $base . '-' . $i;
+                $i++;
+            }
+
+            return DeviceIssueType::firstOrCreate(
+                ['device_type_id' => $type->id, 'slug' => $slug],
+                ['name' => $name]
+            );
+        };
+
+        // Ejemplos:
+        $issue($phone, 'Pantalla');
+        $issue($phone, 'Batería');
+        $issue($phone, 'Pin de carga');
+        $issue($phone, 'Software');
+        $issue($phone, 'Cámara');
+        $issue($phone, 'Otro');
+
+        $issue($console, 'HDMI');
+        $issue($console, 'No enciende');
+        $issue($console, 'Limpieza');
+        $issue($console, 'Software');
+        $issue($console, 'Otro');
+
+        $issue($joystick, 'Drift');
+        $issue($joystick, 'Botones');
+        $issue($joystick, 'Gatillos');
+        $issue($joystick, 'Batería / carga');
+        $issue($joystick, 'Otro');
+
     }
 
     private function type(string $name, string $slug): DeviceType

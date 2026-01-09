@@ -18,6 +18,10 @@ class Repair extends Model
         'device_brand_id',
         'device_model_id',
 
+        'device_issue_type_id',
+        'issue_detail',
+
+
         'device_brand',
         'device_model',
 
@@ -124,4 +128,10 @@ class Repair extends Model
         if (!$exp) return false;
         return now()->lte($exp);
     }
+
+    public function deviceIssueType()
+    {
+        return $this->belongsTo(DeviceIssueType::class, 'device_issue_type_id');
+    }
+
 }

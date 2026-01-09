@@ -170,8 +170,13 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     // ✅ Device catalog (AJAX)
     Route::get('/device-catalog/brands', [AdminDeviceCatalogController::class, 'brands'])->name('admin.deviceCatalog.brands');
     Route::get('/device-catalog/models', [AdminDeviceCatalogController::class, 'models'])->name('admin.deviceCatalog.models');
+
+    Route::get('/device-catalog/issues', [AdminDeviceCatalogController::class, 'issues'])->name('admin.deviceCatalog.issues');
+
     Route::post('/device-catalog/brands', [AdminDeviceCatalogController::class, 'storeBrand'])->name('admin.deviceCatalog.brands.store');
     Route::post('/device-catalog/models', [AdminDeviceCatalogController::class, 'storeModel'])->name('admin.deviceCatalog.models.store');
+
+    Route::post('/device-catalog/issues', [AdminDeviceCatalogController::class, 'storeIssue'])->name('admin.deviceCatalog.issues.store');
 
 
     Route::get('/pedidos/{order}/imprimir', AdminOrderPrintController::class)->name('admin.orders.print');
