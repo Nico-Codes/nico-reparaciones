@@ -1142,11 +1142,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 250);
       });
 
+      
+
+
       input.addEventListener('blur', () => {
         desiredQty = clamp(parseInt(input.value, 10) || 1);
         setVal(desiredQty);
         scheduleSend();
       });
+
+
+
+
 
 
       // Inicial
@@ -2115,7 +2122,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!brandSearch) return;
         const q = (brandSearch.value || '').trim().toLowerCase();
         const current = brandSel?.value || null;
-        const filtered = !q ? brandsList : brandsList.filter(b => (b.name || '').toLowerCase().includes(q));
+        const filtered = !q
+          ? brandsList
+          : brandsList.filter(b => (b.name || '').toLowerCase().includes(q));
         setOptions(brandSel, filtered, '— Elegí una marca —', current);
       };
 
@@ -2123,21 +2132,93 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!modelSearch) return;
         const q = (modelSearch.value || '').trim().toLowerCase();
         const current = modelSel?.value || null;
-        const filtered = !q ? modelsList : modelsList.filter(m => (m.name || '').toLowerCase().includes(q));
+        const filtered = !q
+          ? modelsList
+          : modelsList.filter(m => (m.name || '').toLowerCase().includes(q));
         setOptions(modelSel, filtered, '— Elegí un modelo —', current);
       };
 
       brandSearch?.addEventListener('input', applyBrandFilter);
       modelSearch?.addEventListener('input', applyModelFilter);
 
+      // helpers (DEJAR SOLO UNA VEZ)
+      const openBrandFormPrefill = (value) => {
+        if (!brandForm || !brandInput) return;
+        brandForm.classList.remove('hidden');
+        brandForm.classList.add('flex');
+        brandInput.value = (value || '').trim();
+        brandInput.focus();
+        brandInput.select?.();
+      };
 
+      const openModelFormPrefill = (value) => {
+        if (!modelForm || !modelInput) return;
+        modelForm.classList.remove('hidden');
+        modelForm.classList.add('flex');
+        modelInput.value = (value || '').trim();
+        modelInput.focus();
+        modelInput.select?.();
+      };
+
+      const firstMatch = (list, q) => {
+        const s = (q || '').trim().toLowerCase();
+        if (!s) return null;
+        return (
+          list.find(x => (x.name || '').toLowerCase() === s) ||
+          list.find(x => (x.name || '').toLowerCase().startsWith(s)) ||
+          null
+        );
+      };
+
+      // ENTER en buscador de marca: si matchea, selecciona; si no, abre alta con el texto
+      brandSearch?.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+
+        if (brandSearch.disabled) return;
+        const q = (brandSearch.value || '').trim();
+        if (!q) return;
+
+        const hit = firstMatch(brandsList, q);
+        if (hit) {
+          brandSel.value = String(hit.id);
+          brandSel.dispatchEvent(new Event('change', { bubbles: true })); // carga modelos
+          setTimeout(() => modelSearch?.focus(), 0);
+          return;
+        }
+
+
+        openBrandFormPrefill(q);
+      });
+
+      // ENTER en buscador de modelo: si matchea, selecciona; si no, abre alta con el texto
+      modelSearch?.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+
+        if (modelSearch.disabled) return;
+        const q = (modelSearch.value || '').trim();
+        if (!q) return;
+
+        const hit = firstMatch(modelsList, q);
+        if (hit) {
+          modelSel.value = String(hit.id);
+          return;
+        }
+
+        openModelFormPrefill(q);
+      });
 
       // agregar marca
       btnAddBrand?.addEventListener('click', () => {
+        const v = (brandSearch?.value || '').trim();
         brandForm.classList.toggle('hidden');
         brandForm.classList.toggle('flex');
+        if (brandInput) brandInput.value = v || brandInput.value || '';
         brandInput?.focus();
+        brandInput?.select?.();
       });
+
       btnCancelBrand?.addEventListener('click', () => {
         brandForm.classList.add('hidden');
         brandForm.classList.remove('flex');
@@ -2162,10 +2243,14 @@ document.addEventListener('DOMContentLoaded', () => {
       // agregar modelo
       btnAddModel?.addEventListener('click', () => {
         if (btnAddModel.disabled) return;
+        const v = (modelSearch?.value || '').trim();
         modelForm.classList.toggle('hidden');
         modelForm.classList.toggle('flex');
+        if (modelInput) modelInput.value = v || modelInput.value || '';
         modelInput?.focus();
+        modelInput?.select?.();
       });
+
       btnCancelModel?.addEventListener('click', () => {
         modelForm.classList.add('hidden');
         modelForm.classList.remove('flex');
@@ -2186,6 +2271,21 @@ document.addEventListener('DOMContentLoaded', () => {
         btnCancelModel?.click();
         window.openToast?.('Modelo agregado ✅', 'OK');
       });
+
+      brandInput?.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        btnSaveBrand?.click();
+      });
+
+      modelInput?.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        btnSaveModel?.click();
+      });
+
+
+
 
       // init (si viene preseleccionado)
       const initType = typeSel?.value;
