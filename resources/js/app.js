@@ -2007,6 +2007,11 @@ document.addEventListener('DOMContentLoaded', () => {
       let brandsList = [];
       let modelsList = [];
 
+      // ✅ NUEVO: control de carga de modelos (evita “parpadeos” si cambiás rápido)
+      let modelsLoadSeq = 0;
+      let modelsLoadTimer = null;
+
+
       // ✅ Helpers: “desplegar” el select como listbox mientras buscás
       const openList = (sel) => {
         if (!sel) return;
@@ -2052,22 +2057,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
       };
 
-      const loadModels = async (brandId, selected=null) => {
+      const loadModels = async (brandId, selected=null, expectedSeq=null) => {
         modelSel.disabled = true;
         btnAddModel.disabled = true;
 
         setOptions(modelSel, [], 'Cargando modelos…');
 
         const j = await fetchJson(`/admin/device-catalog/models?brand_id=${encodeURIComponent(brandId)}`);
+
+        // ✅ si cambiaste de marca mientras cargaba, ignorar este resultado
+        if (expectedSeq !== null && expectedSeq !== modelsLoadSeq) return;
+
         modelsList = j.models || [];
 
         modelSel.disabled = false;
         btnAddModel.disabled = false;
-        if (modelSearch) { modelSearch.disabled = false; modelSearch.value = ''; }
+
+        if (modelSearch) {
+          modelSearch.disabled = false;
+          modelSearch.value = '';
+          // si tu input tiene placeholder, lo respeta; si no, deja uno razonable
+          modelSearch.placeholder = modelSearch.getAttribute('placeholder') || 'Buscar modelo…';
+        }
 
         setOptions(modelSel, modelsList, '— Elegí un modelo —', selected || modelSel.dataset.selected);
-
       };
+
 
       // cambios
       typeSel?.addEventListener('change', async () => {
@@ -2108,6 +2123,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
       brandSel?.addEventListener('change', async () => {
+        // ✅ si estás navegando la lista con flechas, NO recargues modelos todavía
+        if (brandSel?.dataset?.nrKbNav === '1' && document.activeElement === brandSel) return;
+
         const brandId = brandSel.value || '';
 
         // reset modelo (siempre que cambia marca)
@@ -2115,19 +2133,34 @@ document.addEventListener('DOMContentLoaded', () => {
         modelSel.disabled = true;
         btnAddModel.disabled = true;
 
-        // ✅ NUEVO: reset/bloqueo del buscador de modelo
         if (modelSearch) {
           modelSearch.value = '';
           modelSearch.disabled = true;
+          modelSearch.placeholder = 'Cargando modelos…';
         }
 
-        // ✅ NUEVO: limpiar lista de modelos en memoria
         modelsList = [];
 
         if (!brandId) return;
 
-        await loadModels(brandId);
+        // ✅ delay suave para evitar “cambio muy rápido” y confusión
+        const seq = ++modelsLoadSeq;
+        if (modelsLoadTimer) clearTimeout(modelsLoadTimer);
+
+        // mantener un toque el estado “cargando”
+        setOptions(modelSel, [], 'Cargando modelos…');
+
+        modelsLoadTimer = setTimeout(() => {
+          (async () => {
+            try {
+              await loadModels(brandId, null, seq);
+            } catch (e) {
+              console.error('[NR] loadModels error:', e);
+            }
+          })();
+        }, 250);
       });
+
 
 
       // buscar marca/modelo (filtra opciones cargadas)
@@ -2166,40 +2199,93 @@ document.addEventListener('DOMContentLoaded', () => {
       modelSearch?.addEventListener('input', applyModelFilter);
 
       // ✅ Mantener la lista abierta cuando pasás del input al select (para poder navegar con flechas)
-      const keepListWhileInteracting = (searchEl, selEl) => {
+        const keepListWhileInteracting = (searchEl, selEl) => {
         if (!searchEl || !selEl) return;
 
+        const syncInputFromSelect = () => {
+          const label = selEl.options[selEl.selectedIndex]?.text || '';
+          if (label && !label.startsWith('—')) searchEl.value = label;
+        };
+
+        const setPrev = () => { selEl.dataset.nrPrevValue = String(selEl.value || ''); };
+        const changed = () => String(selEl.value || '') !== String(selEl.dataset.nrPrevValue || '');
+
+        const startKbNav = () => { selEl.dataset.nrKbNav = '1'; };
+        const stopKbNav  = () => { delete selEl.dataset.nrKbNav; };
+
+        const commit = () => {
+          stopKbNav();
+          syncInputFromSelect();
+          closeList(selEl);
+
+          // si cambió realmente, forzar un change “final” (para que marca cargue modelos una sola vez)
+          if (changed()) selEl.dispatchEvent(new Event('change', { bubbles: true }));
+          setPrev();
+        };
+
         const maybeClose = () => {
-          // si el foco sigue en input o select, NO cerrar
           setTimeout(() => {
             const ae = document.activeElement;
-            if (ae !== searchEl && ae !== selEl) closeList(selEl);
+            if (ae !== searchEl && ae !== selEl) {
+              // al salir del control, confirmamos y cerramos
+              commit();
+            }
           }, 0);
         };
 
         searchEl.addEventListener('focus', () => openList(selEl));
-        selEl.addEventListener('focus', () => openList(selEl));
+
+        selEl.addEventListener('focus', () => {
+          setPrev();
+          openList(selEl);
+        });
 
         searchEl.addEventListener('blur', maybeClose);
         selEl.addEventListener('blur', maybeClose);
 
-        // si el usuario eligió desde el select, reflejar en el input
-        selEl.addEventListener('change', () => {
-          const label = selEl.options[selEl.selectedIndex]?.text || '';
-          if (label && !label.startsWith('—')) searchEl.value = label;
-          closeList(selEl);
+        // ✅ teclado dentro del select
+        selEl.addEventListener('keydown', (e) => {
+          if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            startKbNav();
+            openList(selEl);
+            return; // dejamos que el browser navegue
+          }
+
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            commit();
+            return;
+          }
+
+          if (e.key === 'Escape') {
+            e.preventDefault();
+            stopKbNav();
+            closeList(selEl);
+            searchEl.focus();
+          }
         });
 
-        // en el input, ↓/↑ manda el foco al select para navegar
+        // ✅ si el change es por flechas mientras está enfocado, NO cerrar ni sync
+        selEl.addEventListener('change', () => {
+          if (selEl.dataset.nrKbNav === '1' && document.activeElement === selEl) return;
+
+          // mouse click / selección externa: confirmar
+          stopKbNav();
+          syncInputFromSelect();
+          closeList(selEl);
+          setPrev();
+        });
+
+        // ✅ desde el input, ↓/↑ pasa al select para navegar sin cerrar
         searchEl.addEventListener('keydown', (e) => {
           if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
           if (searchEl.disabled) return;
           e.preventDefault();
 
           openList(selEl);
+          startKbNav();
           selEl.focus();
 
-          // si está en placeholder, saltar a primera opción real
           if ((selEl.selectedIndex ?? 0) <= 0 && selEl.options.length > 1) {
             selEl.selectedIndex = 1;
           }
@@ -2208,6 +2294,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       keepListWhileInteracting(brandSearch, brandSel);
       keepListWhileInteracting(modelSearch, modelSel);
+
 
       // helpers (DEJAR SOLO UNA VEZ)
       const openBrandFormPrefill = (value) => {
