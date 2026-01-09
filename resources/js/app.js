@@ -2007,6 +2007,19 @@ document.addEventListener('DOMContentLoaded', () => {
       let brandsList = [];
       let modelsList = [];
 
+      // ✅ Helpers: “desplegar” el select como listbox mientras buscás
+      const openList = (sel) => {
+        if (!sel) return;
+        const n = sel.options?.length || 0;
+        if (n <= 1) return; // solo placeholder
+        sel.size = Math.min(8, Math.max(2, n));
+      };
+
+      const closeList = (sel) => {
+        if (!sel) return;
+        sel.size = 1;
+      };
+
       const btnAddBrand = block.querySelector('[data-add-brand]');
       const brandForm = block.querySelector('[data-add-brand-form]');
       const brandInput = block.querySelector('[data-add-brand-input]');
@@ -2122,24 +2135,47 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!brandSearch) return;
         const q = (brandSearch.value || '').trim().toLowerCase();
         const current = brandSel?.value || null;
+
         const filtered = !q
           ? brandsList
           : brandsList.filter(b => (b.name || '').toLowerCase().includes(q));
+
         setOptions(brandSel, filtered, '— Elegí una marca —', current);
+
+        // ✅ “Despliega” automáticamente
+        openList(brandSel);
       };
 
       const applyModelFilter = () => {
         if (!modelSearch) return;
         const q = (modelSearch.value || '').trim().toLowerCase();
         const current = modelSel?.value || null;
+
         const filtered = !q
           ? modelsList
           : modelsList.filter(m => (m.name || '').toLowerCase().includes(q));
+
         setOptions(modelSel, filtered, '— Elegí un modelo —', current);
+
+        // ✅ “Despliega” automáticamente
+        openList(modelSel);
       };
+
 
       brandSearch?.addEventListener('input', applyBrandFilter);
       modelSearch?.addEventListener('input', applyModelFilter);
+
+      // ✅ Si enfoca el buscador, abrimos la lista (si ya hay datos)
+      brandSearch?.addEventListener('focus', () => openList(brandSel));
+      modelSearch?.addEventListener('focus', () => openList(modelSel));
+
+      // ✅ Al salir del buscador, cerramos (con delay para permitir click en opciones)
+      brandSearch?.addEventListener('blur', () => setTimeout(() => closeList(brandSel), 150));
+      modelSearch?.addEventListener('blur', () => setTimeout(() => closeList(modelSel), 150));
+
+      // ✅ Si elige una opción, cerramos y seguimos flujo
+      brandSel?.addEventListener('change', () => closeList(brandSel));
+      modelSel?.addEventListener('change', () => closeList(modelSel));
 
       // helpers (DEJAR SOLO UNA VEZ)
       const openBrandFormPrefill = (value) => {
