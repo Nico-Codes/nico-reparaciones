@@ -20,11 +20,47 @@
   <form method="POST" action="{{ route('admin.repairs.store') }}" class="space-y-4">
     @csrf
 
+    {{-- Resumen en vivo (UX) --}}
+    <div class="card" data-repair-create-summary>
+      <div class="card-head">
+        <div class="font-black">Resumen</div>
+        <span class="badge-amber" data-sum-state>Incompleto</span>
+      </div>
+      <div class="card-body">
+        <div class="grid gap-3 sm:grid-cols-4">
+          <div class="sm:col-span-2">
+            <div class="text-xs text-zinc-500">Cliente</div>
+            <div class="font-extrabold" data-sum-customer>—</div>
+            <div class="text-sm text-zinc-600" data-sum-phone>—</div>
+          </div>
+
+          <div class="sm:col-span-2">
+            <div class="text-xs text-zinc-500">Equipo</div>
+            <div class="font-extrabold" data-sum-device>—</div>
+            <div class="text-sm text-zinc-600" data-sum-issue>—</div>
+          </div>
+
+          <div class="sm:col-span-4 flex flex-wrap items-center gap-2 pt-1">
+            <span class="badge-zinc" data-sum-status>Estado: —</span>
+
+            <a href="#" target="_blank" rel="noopener"
+              class="btn-ghost btn-sm hidden"
+              data-sum-wa>
+              Abrir WhatsApp
+            </a>
+
+            <div class="text-xs text-zinc-500">El código se genera al crear.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="card">
       <div class="card-head">
         <div class="font-black">Cliente y equipo</div>
         <span class="badge-zinc">Datos</span>
       </div>
+
       <div class="card-body">
         <div class="grid gap-4 sm:grid-cols-2">
           <div class="sm:col-span-2 space-y-1">
@@ -35,14 +71,23 @@
 
           <div class="space-y-1">
             <label>Nombre del cliente *</label>
-            <input name="customer_name" value="{{ old('customer_name') }}" required placeholder="Nombre y apellido" />
+            <input name="customer_name" data-repair-customer-name value="{{ old('customer_name') }}" required placeholder="Nombre y apellido" />
           </div>
+
 
           <div class="space-y-1">
             <label>Teléfono (WhatsApp) *</label>
-            <input name="customer_phone" value="{{ old('customer_phone') }}" required inputmode="numeric" placeholder="Ej: 341xxxxxxx" />
-            <div class="text-xs text-zinc-500">Tip: podés pegarlo con o sin +54, se normaliza solo.</div>
+            <input name="customer_phone"
+              data-repair-customer-phone
+              data-phone-normalize
+              value="{{ old('customer_phone') }}"
+              required
+              inputmode="numeric"
+              autocomplete="tel"
+              placeholder="Ej: 341xxxxxxx" />
+            <div class="text-xs text-zinc-500">Tip: podés pegarlo con o sin +54, espacios o guiones.</div>
           </div>
+
 
           <div class="sm:col-span-2" data-repair-device-catalog>
             <div class="grid gap-4 sm:grid-cols-3">
@@ -154,15 +199,17 @@
 
             <div class="space-y-1">
               <label class="text-sm font-medium">Detalle (opcional)</label>
-              <textarea name="issue_detail" class="w-full input" rows="3"
+                <textarea name="issue_detail" rows="3"
                 placeholder="Ej: ‘se reinicia’, ‘no carga’, ‘pantalla con manchas’…">{{ old('issue_detail') }}</textarea>
+
             </div>
           </div>
 
           <div class="space-y-1">
             <label class="text-sm font-medium">Diagnóstico</label>
-            <textarea name="diagnosis" class="w-full input" rows="6"
+              <textarea name="diagnosis" rows="6"
               placeholder="Diagnóstico técnico / notas internas…">{{ old('diagnosis') }}</textarea>
+
           </div>
 </div>
 
@@ -220,11 +267,12 @@
             <div class="grid gap-4 sm:grid-cols-2">
               <div class="space-y-1">
                 <label>Estado *</label>
-                <select name="status" required>
+                <select name="status" data-repair-status required>
                   @foreach($statuses as $k => $label)
                     <option value="{{ $k }}" @selected($oldStatus === $k)>{{ $label }}</option>
                   @endforeach
                 </select>
+
               </div>
 
               <div class="rounded-2xl border border-zinc-100 bg-zinc-50 p-4">

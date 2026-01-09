@@ -2714,6 +2714,124 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   })();
 
+    ;(function initRepairCreateSummaryAndPhone() {
+    const summary = document.querySelector('[data-repair-create-summary]');
+    if (!summary) return;
+
+    const form = summary.closest('form') || document.querySelector('form');
+    if (!form) return;
+
+    const elName   = form.querySelector('[data-repair-customer-name]')  || form.querySelector('input[name="customer_name"]');
+    const elPhone  = form.querySelector('[data-repair-customer-phone]') || form.querySelector('input[name="customer_phone"]');
+    const elStatus = form.querySelector('[data-repair-status]')         || form.querySelector('select[name="status"]');
+
+    const typeSel  = form.querySelector('[data-device-type]');
+    const brandSel = form.querySelector('[data-device-brand]');
+    const modelSel = form.querySelector('[data-device-model]');
+    const issueInp = form.querySelector('[data-issue-search]');
+
+    const sumState    = summary.querySelector('[data-sum-state]');
+    const sumCustomer = summary.querySelector('[data-sum-customer]');
+    const sumPhone    = summary.querySelector('[data-sum-phone]');
+    const sumDevice   = summary.querySelector('[data-sum-device]');
+    const sumIssue    = summary.querySelector('[data-sum-issue]');
+    const sumStatus   = summary.querySelector('[data-sum-status]');
+    const sumWa       = summary.querySelector('[data-sum-wa]');
+
+    const labelOf = (sel) => {
+      if (!sel || !sel.value) return '';
+      const opt = sel.options?.[sel.selectedIndex];
+      const t = (opt?.textContent || '').trim();
+      if (!t || t.startsWith('—')) return '';
+      return t;
+    };
+
+    // Misma lógica que tu backend (AdminRepairController::normalizeWhatsappPhone)
+    const normalizePhoneDigits = (raw) => {
+      let digits = String(raw || '').replace(/\D+/g, '');
+      if (!digits) return '';
+
+      if (digits.startsWith('54')) return digits;
+
+      if (digits.startsWith('0')) digits = digits.replace(/^0+/, '');
+
+      if (digits.length >= 10 && digits.length <= 12) return '54' + digits;
+
+      return digits;
+    };
+
+    const applyPhoneNormalization = () => {
+      if (!elPhone) return;
+      const digits = normalizePhoneDigits(elPhone.value);
+      if (!digits) return;
+      // Visual: +54XXXXXXXXXX
+      elPhone.value = '+' + digits;
+    };
+
+    const update = () => {
+      const customer = (elName?.value || '').trim();
+      const phoneRaw = (elPhone?.value || '').trim();
+      const phoneDigits = normalizePhoneDigits(phoneRaw);
+
+      const t = labelOf(typeSel);
+      const b = labelOf(brandSel);
+      const m = labelOf(modelSel);
+
+      const issue = (issueInp?.value || '').trim();
+      const statusLabel = labelOf(elStatus);
+
+      // Cliente
+      sumCustomer.textContent = customer || '—';
+      sumPhone.textContent = phoneDigits ? ('+' + phoneDigits) : (phoneRaw || '—');
+
+      // Equipo
+      const device = [t, b, m].filter(Boolean).join(' · ');
+      sumDevice.textContent = device || '—';
+
+      // Falla
+      sumIssue.textContent = issue ? `Falla: ${issue}` : 'Falla: —';
+
+      // Estado
+      sumStatus.textContent = `Estado: ${statusLabel || '—'}`;
+
+      // WhatsApp
+      if (sumWa) {
+        if (phoneDigits && phoneDigits.length >= 10) {
+          sumWa.classList.remove('hidden');
+          sumWa.href = `https://wa.me/${phoneDigits}`;
+        } else {
+          sumWa.classList.add('hidden');
+          sumWa.href = '#';
+        }
+      }
+
+      // Estado del resumen (completo / incompleto)
+      const ok = Boolean(customer && phoneDigits && t && b && m && issue && statusLabel);
+
+      if (sumState) {
+        sumState.textContent = ok ? 'Listo' : 'Incompleto';
+        sumState.classList.toggle('badge-emerald', ok);
+        sumState.classList.toggle('badge-amber', !ok);
+      }
+    };
+
+    // Normalizar teléfono (sin joder mientras escribe)
+    if (elPhone?.hasAttribute('data-phone-normalize')) {
+      elPhone.addEventListener('blur', () => {
+        applyPhoneNormalization();
+        update();
+      });
+    }
+
+    // Update en vivo
+    const bind = (el, ev) => el && el.addEventListener(ev, update);
+    [elName, elPhone, issueInp].forEach(el => bind(el, 'input'));
+    [elStatus, typeSel, brandSel, modelSel].forEach(el => bind(el, 'change'));
+
+    update();
+  })();
+
+
 
   
 
