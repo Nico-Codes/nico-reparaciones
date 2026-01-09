@@ -361,8 +361,10 @@ class AdminRepairController extends Controller
             'unlink_user'     => 'nullable|boolean',
             'customer_name'   => 'required|string|max:255',
             'customer_phone'  => 'required|string|max:30',
-            'device_brand'    => 'nullable|string|max:255',
-            'device_model'    => 'nullable|string|max:255',
+            'device_type_id'  => 'required|exists:device_types,id',
+            'device_brand_id' => 'required|exists:device_brands,id',
+            'device_model_id' => 'required|exists:device_models,id',
+
             'issue_reported'  => 'required|string',
             'diagnosis'       => 'nullable|string',
 
@@ -391,6 +393,19 @@ class AdminRepairController extends Controller
             }
             $userId = $user->id;
         }
+
+        $type  = DeviceType::findOrFail((int)$data['device_type_id']);
+        $brand = DeviceBrand::findOrFail((int)$data['device_brand_id']);
+        $model = DeviceModel::findOrFail((int)$data['device_model_id']);
+
+        if ($brand->device_type_id !== $type->id) {
+            return back()->withErrors(['device_brand_id' => 'La marca no pertenece al tipo seleccionado.'])->withInput();
+        }
+        if ($model->device_brand_id !== $brand->id) {
+            return back()->withErrors(['device_model_id' => 'El modelo no pertenece a la marca seleccionada.'])->withInput();
+        }
+
+
 
         $repair->update([
             'user_id'        => $userId,

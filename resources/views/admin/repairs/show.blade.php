@@ -404,14 +404,72 @@
                 <input id="customer_phone" name="customer_phone" value="{{ old('customer_phone', $repair->customer_phone) }}">
               </div>
 
-              <div>
-                <label for="device_brand" class="block mb-1">Marca</label>
-                <input id="device_brand" name="device_brand" value="{{ old('device_brand', $repair->device_brand) }}">
+              <div class="md:col-span-2">
+                <div class="space-y-3" data-repair-device-catalog>
+                  <div class="grid gap-3 md:grid-cols-2">
+
+                    <div>
+                      <label for="device_type_id" class="block mb-1">Tipo de dispositivo</label>
+                      <select id="device_type_id" name="device_type_id" data-device-type>
+                        <option value="">— Elegí un tipo —</option>
+                        @foreach($deviceTypes as $t)
+                          <option value="{{ $t->id }}" @selected((string)old('device_type_id', $repair->device_type_id) === (string)$t->id)>
+                            {{ $t->name }}
+                          </option>
+                        @endforeach
+                      </select>
+                    </div>
+
+                    <div>
+                      <div class="flex items-center justify-between gap-2">
+                        <label for="device_brand_id" class="block mb-1">Marca</label>
+                        <button type="button" class="btn-outline btn-sm" data-add-brand>+ Agregar</button>
+                      </div>
+
+                      <select
+                        id="device_brand_id"
+                        name="device_brand_id"
+                        data-device-brand
+                        disabled
+                        data-selected="{{ old('device_brand_id', $repair->device_brand_id) }}"
+                      >
+                        <option value="">— Elegí un tipo primero —</option>
+                      </select>
+
+                      <div class="hidden mt-2 gap-2" data-add-brand-form>
+                        <input type="text" class="flex-1" placeholder="Nueva marca…" data-add-brand-input>
+                        <button type="button" class="btn-primary btn-sm" data-save-brand>Guardar</button>
+                        <button type="button" class="btn-ghost btn-sm" data-cancel-brand>Cancelar</button>
+                      </div>
+                    </div>
+
+                    <div class="md:col-span-2">
+                      <div class="flex items-center justify-between gap-2">
+                        <label for="device_model_id" class="block mb-1">Modelo</label>
+                        <button type="button" class="btn-outline btn-sm" data-add-model disabled>+ Agregar</button>
+                      </div>
+
+                      <select
+                        id="device_model_id"
+                        name="device_model_id"
+                        data-device-model
+                        disabled
+                        data-selected="{{ old('device_model_id', $repair->device_model_id) }}"
+                      >
+                        <option value="">— Elegí una marca primero —</option>
+                      </select>
+
+                      <div class="hidden mt-2 gap-2" data-add-model-form>
+                        <input type="text" class="flex-1" placeholder="Nuevo modelo…" data-add-model-input>
+                        <button type="button" class="btn-primary btn-sm" data-save-model>Guardar</button>
+                        <button type="button" class="btn-ghost btn-sm" data-cancel-model>Cancelar</button>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
               </div>
-              <div>
-                <label for="device_model" class="block mb-1">Modelo</label>
-                <input id="device_model" name="device_model" value="{{ old('device_model', $repair->device_model) }}">
-              </div>
+
             </div>
 
             <div class="grid gap-3 md:grid-cols-2">
