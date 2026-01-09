@@ -61,40 +61,47 @@ class DeviceCatalogSeeder extends Seeder
 
 
         $issue = function (DeviceType $type, string $name) {
-            $base = Str::slug($name);
-            $slug = $base ?: ('issue-' . time());
-
-            $i = 2;
-            while (DeviceIssueType::where('device_type_id', $type->id)->where('slug', $slug)->exists()) {
-                $slug = $base . '-' . $i;
-                $i++;
-            }
-
-            return DeviceIssueType::firstOrCreate(
+            $slug = Str::slug($name);
+            DeviceIssueType::updateOrCreate(
                 ['device_type_id' => $type->id, 'slug' => $slug],
                 ['name' => $name]
             );
         };
 
-        // Ejemplos:
-        $issue($phone, 'Pantalla');
-        $issue($phone, 'Batería');
-        $issue($phone, 'Pin de carga');
-        $issue($phone, 'Software');
-        $issue($phone, 'Cámara');
-        $issue($phone, 'Otro');
+        // Celular
+        $issue($cel, 'Pantalla');
+        $issue($cel, 'Batería');
+        $issue($cel, 'Pin de carga');
+        $issue($cel, 'Software');
+        $issue($cel, 'Cámara');
+        $issue($cel, 'Otro');
 
-        $issue($console, 'HDMI');
-        $issue($console, 'No enciende');
-        $issue($console, 'Limpieza');
-        $issue($console, 'Software');
-        $issue($console, 'Otro');
+        // Tablet
+        $issue($tab, 'Pantalla');
+        $issue($tab, 'Batería');
+        $issue($tab, 'Pin de carga');
+        $issue($tab, 'Software');
+        $issue($tab, 'Otro');
 
-        $issue($joystick, 'Drift');
-        $issue($joystick, 'Botones');
-        $issue($joystick, 'Gatillos');
-        $issue($joystick, 'Batería / carga');
-        $issue($joystick, 'Otro');
+        // Consola
+        $issue($con, 'No enciende');
+        $issue($con, 'HDMI / Video');
+        $issue($con, 'Sobrecalentamiento');
+        $issue($con, 'Software');
+        $issue($con, 'Limpieza');
+        $issue($con, 'Otro');
+
+        // Joystick
+        $issue($joy, 'Drift');
+        $issue($joy, 'Botones');
+        $issue($joy, 'Gatillos');
+        $issue($joy, 'Batería / Carga');
+        $issue($joy, 'Otro');
+
+        // Otro
+        $issue($otr, 'Diagnóstico');
+        $issue($otr, 'Otro');
+
 
     }
 

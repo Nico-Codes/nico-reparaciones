@@ -376,21 +376,50 @@
             @csrf
             @method('PUT')
 
-            <div class="grid gap-3 md:grid-cols-2">
-              <div>
-                <label for="user_email" class="block mb-1">Vincular por email (opcional)</label>
-                <input id="user_email" name="user_email" type="email" value="{{ old('user_email', $linkedUserEmail ?? '') }}" placeholder="cliente@correo.com">
-                <p class="mt-1 text-xs text-zinc-500">
-                  Si existe un usuario con ese email, se asocia la reparación a su cuenta.
-                </p>
+            <div class="grid gap-3 md:grid-cols-2" data-repair-issue-catalog>
+              <div class="space-y-3">
+                <div>
+                  <label class="block mb-1">Falla principal *</label>
+
+                  <input type="text"
+                        placeholder="Buscar falla…"
+                        data-issue-search
+                        disabled>
+
+                  <select name="device_issue_type_id"
+                          required
+                          data-issue-select
+                          data-selected="{{ old('device_issue_type_id', $repair->device_issue_type_id) }}"
+                          disabled>
+                    <option value="">Elegí una falla…</option>
+                  </select>
+
+                  <div class="mt-2 flex items-center gap-2">
+                    <button type="button" class="btn btn-secondary" data-add-issue disabled>
+                      + Agregar falla
+                    </button>
+                  </div>
+
+                  <p class="mt-1 text-xs text-zinc-500">
+                    Tip: escribí y apretá ENTER para autoseleccionar; si no existe, te deja crearla.
+                  </p>
+                </div>
+
+                <div>
+                  <label for="issue_detail" class="block mb-1">Detalle (opcional)</label>
+                  <textarea id="issue_detail"
+                            name="issue_detail"
+                            rows="3"
+                            placeholder="Ej: no carga, se apaga, se calentó, etc.">{{ old('issue_detail', $repair->issue_detail) }}</textarea>
+                </div>
               </div>
-              <div class="flex items-end">
-                <label class="inline-flex items-center gap-2 text-sm font-extrabold">
-                  <input type="checkbox" class="h-4 w-4 rounded border-zinc-300" name="unlink_user" value="1" @checked(old('unlink_user'))>
-                  Desvincular usuario actual
-                </label>
+
+              <div>
+                <label for="diagnosis" class="block mb-1">Diagnóstico</label>
+                <textarea id="diagnosis" name="diagnosis" rows="4">{{ old('diagnosis', $repair->diagnosis) }}</textarea>
               </div>
             </div>
+
 
             <hr>
 

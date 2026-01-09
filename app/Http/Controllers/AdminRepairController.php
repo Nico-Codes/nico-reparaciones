@@ -375,15 +375,16 @@ class AdminRepairController extends Controller
         $data = $request->validate([
             'user_email'      => 'nullable|email',
             'unlink_user'     => 'nullable|boolean',
+
             'customer_name'   => 'required|string|max:255',
             'customer_phone'  => 'required|string|max:30',
+
             'device_type_id'  => 'required|exists:device_types,id',
             'device_brand_id' => 'required|exists:device_brands,id',
             'device_model_id' => 'required|exists:device_models,id',
 
-            'device_issue_type_id' => $issueType->id,
-            'issue_detail' => $issueDetail !== '' ? $issueDetail : null,
-            'issue_reported' => $issueReported,
+            'device_issue_type_id' => 'required|integer|exists:device_issue_types,id',
+            'issue_detail'         => 'nullable|string|max:2000',
 
             'diagnosis'       => 'nullable|string',
 
@@ -391,7 +392,6 @@ class AdminRepairController extends Controller
             'labor_cost'      => 'nullable|numeric|min:0',
             'final_price'     => 'nullable|numeric|min:0',
 
-            // ✅ Pagos
             'paid_amount'     => 'nullable|numeric|min:0',
             'payment_method'  => 'nullable|string|max:50',
             'payment_notes'   => 'nullable|string|max:500',
@@ -400,61 +400,78 @@ class AdminRepairController extends Controller
             'notes'           => 'nullable|string',
         ]);
 
+        // Vincular/desvincular usuario
         $unlink = $request->boolean('unlink_user');
-
         $userId = $repair->user_id;
+
         if ($unlink) {
             $userId = null;
-        } elseif (!empty($data['user_email'])) {
-            $user = User::where('email', $data['user_email'])->first();
-            if (!$user) {
-                return back()->withErrors(['user_email' => 'No existe un usuario con ese email.'])->withInput();
+        } else {
+            $email = trim((string) ($data['user_email'] ?? ''));
+            if ($email !== '') {
+                $user = User::where('email', $email)->first();
+                if (! $user) {
+                    return back()->withErrors(['user_email' => 'No existe un usuario con ese email.'])->withInput();
+                }
+                $userId = $user->id;
             }
-            $userId = $user->id;
         }
 
-        $type  = DeviceType::findOrFail((int)$data['device_type_id']);
-        $brand = DeviceBrand::findOrFail((int)$data['device_brand_id']);
-        $model = DeviceModel::findOrFail((int)$data['device_model_id']);
-
+        // Coherencia tipo/marca/modelo
+        $type  = DeviceType::findOrFail((int) $data['device_type_id']);
+        $brand = DeviceBrand::findOrFail((int) $data['device_brand_id']);
         if ($brand->device_type_id !== $type->id) {
             return back()->withErrors(['device_brand_id' => 'La marca no pertenece al tipo seleccionado.'])->withInput();
         }
+
+        $model = DeviceModel::findOrFail((int) $data['device_model_id']);
         if ($model->device_brand_id !== $brand->id) {
             return back()->withErrors(['device_model_id' => 'El modelo no pertenece a la marca seleccionada.'])->withInput();
         }
 
+        // Coherencia falla/tipo
+        $issueType = DeviceIssueType::findOrFail((int) $data['device_issue_type_id']);
+        if ($issueType->device_type_id !== $type->id) {
+            return back()->withErrors(['device_issue_type_id' => 'La falla no corresponde al tipo de dispositivo seleccionado.'])->withInput();
+        }
 
+        $issueDetail   = trim((string) ($data['issue_detail'] ?? ''));
+        $issueReported = $issueType->name . ($issueDetail !== '' ? (' — ' . $issueDetail) : '');
 
         $repair->update([
-            'user_id'        => $userId,
-            'customer_name'  => $data['customer_name'],
-            'customer_phone' => $data['customer_phone'],
+            'user_id'         => $userId,
+            'customer_name'   => $data['customer_name'],
+            'customer_phone'  => $data['customer_phone'],
+
             'device_type_id'  => $type->id,
             'device_brand_id' => $brand->id,
             'device_model_id' => $model->id,
 
-            // seguimos guardando strings para mostrar en el sistema como antes
+            // seguimos guardando strings (como antes)
             'device_brand' => $brand->name,
             'device_model' => $model->name,
 
-            'issue_reported' => $data['issue_reported'],
-            'diagnosis'      => $data['diagnosis'] ?? null,
+            'device_issue_type_id' => $issueType->id,
+            'issue_detail'         => $issueDetail !== '' ? $issueDetail : null,
+            'issue_reported'       => $issueReported,
 
-            'parts_cost'     => (float) ($data['parts_cost'] ?? 0),
-            'labor_cost'     => (float) ($data['labor_cost'] ?? 0),
-            'final_price'    => $data['final_price'] ?? null,
+            'diagnosis'       => $data['diagnosis'] ?? null,
 
-            'paid_amount'    => (float) ($data['paid_amount'] ?? 0),
-            'payment_method' => $data['payment_method'] ?? null,
-            'payment_notes'  => $data['payment_notes'] ?? null,
+            'parts_cost'      => (float) ($data['parts_cost'] ?? 0),
+            'labor_cost'      => (float) ($data['labor_cost'] ?? 0),
+            'final_price'     => $data['final_price'] ?? null,
 
-            'warranty_days'  => (int) ($data['warranty_days'] ?? 0),
-            'notes'          => $data['notes'] ?? null,
+            'paid_amount'     => (float) ($data['paid_amount'] ?? 0),
+            'payment_method'  => $data['payment_method'] ?? null,
+            'payment_notes'   => $data['payment_notes'] ?? null,
+
+            'warranty_days'   => (int) ($data['warranty_days'] ?? 0),
+            'notes'           => $data['notes'] ?? null,
         ]);
 
         return back()->with('success', 'Datos de la reparación actualizados.');
     }
+
 
     public function updateStatus(Request $request, Repair $repair)
     {

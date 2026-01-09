@@ -2334,6 +2334,195 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   })();
 
+  ;(function initRepairIssueCatalog() {
+    const blocks = document.querySelectorAll('[data-repair-issue-catalog]');
+    if (!blocks.length) return;
+
+    const getCsrf = (form) =>
+      document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+      || form?.querySelector('input[name="_token"]')?.value
+      || '';
+
+    const fetchJson = async (url, opts = {}) => {
+      const res = await fetch(url, {
+        credentials: 'same-origin',
+        headers: {
+          'Accept': 'application/json',
+          ...(opts.headers || {}),
+        },
+        ...opts,
+      });
+
+      let data = null;
+      try { data = await res.json(); } catch (_) {}
+
+      if (!res.ok) {
+        const msg = (data && (data.message || data.error)) || `HTTP ${res.status}`;
+        throw new Error(msg);
+      }
+      return data;
+    };
+
+    const openList = (sel) => {
+      if (!sel) return;
+      const n = sel.options?.length || 0;
+      if (n <= 1) return;
+      sel.size = Math.min(8, Math.max(2, n));
+    };
+
+    const closeList = (sel) => {
+      if (!sel) return;
+      sel.size = 1;
+    };
+
+    const firstMatch = (list, q) => {
+      const s = (q || '').trim().toLowerCase();
+      if (!s) return null;
+      return (
+        list.find(x => (x.name || '').toLowerCase() === s) ||
+        list.find(x => (x.name || '').toLowerCase().startsWith(s)) ||
+        null
+      );
+    };
+
+    blocks.forEach((block) => {
+      const form = block.closest('form');
+
+      // el tipo está en el catálogo de device (mismo form)
+      const typeSel = form?.querySelector('[data-device-type]');
+      const issueSearch = block.querySelector('[data-issue-search]');
+      const issueSel = block.querySelector('[data-issue-select]');
+      const btnAddIssue = block.querySelector('[data-add-issue]');
+
+      if (!typeSel || !issueSearch || !issueSel) return;
+
+      let issuesList = [];
+
+      const setEnabled = (enabled) => {
+        issueSearch.disabled = !enabled;
+        issueSel.disabled = !enabled;
+        if (btnAddIssue) btnAddIssue.disabled = !enabled;
+        if (!enabled) {
+          issueSearch.value = '';
+          issueSel.innerHTML = '<option value="">Elegí una falla…</option>';
+          closeList(issueSel);
+        }
+      };
+
+      const setOptions = (items, selectedId) => {
+        issuesList = (items || []).map(x => ({ id: x.id, name: x.name }));
+
+        const keep = issueSel.querySelector('option[value=""]')?.textContent || 'Elegí una falla…';
+        issueSel.innerHTML = `<option value="">${keep}</option>`;
+        for (const it of issuesList) {
+          const opt = document.createElement('option');
+          opt.value = String(it.id);
+          opt.textContent = it.name;
+          issueSel.appendChild(opt);
+        }
+
+        if (selectedId) {
+          issueSel.value = String(selectedId);
+          const label = issueSel.options[issueSel.selectedIndex]?.text || '';
+          if (label) issueSearch.value = label;
+        }
+      };
+
+      const loadIssues = async (typeId, selectedId = null) => {
+        if (!typeId) {
+          setEnabled(false);
+          return;
+        }
+
+        setEnabled(true);
+
+        const data = await fetchJson(`/admin/device-catalog/issues?type_id=${encodeURIComponent(typeId)}`);
+        const items = data.items || data.data || [];
+        setOptions(items, selectedId);
+      };
+
+      const addIssue = async (prefill = '') => {
+        const typeId = (typeSel.value || '').trim();
+        if (!typeId) return;
+
+        const name = (prompt('Nueva falla (para este tipo):', (prefill || '').trim()) || '').trim();
+        if (!name) return;
+
+        const fd = new FormData();
+        fd.append('device_type_id', typeId);
+        fd.append('name', name);
+
+        const csrf = getCsrf(form);
+        const data = await fetchJson('/admin/device-catalog/issues', {
+          method: 'POST',
+          headers: csrf ? { 'X-CSRF-TOKEN': csrf } : {},
+          body: fd,
+        });
+
+        if (data && data.ok && data.id) {
+          await loadIssues(typeId, data.id);
+          issueSel.dispatchEvent(new Event('change', { bubbles: true }));
+          return;
+        }
+
+        // fallback: recargar igual
+        await loadIssues(typeId, null);
+      };
+
+      // Eventos UI
+      typeSel.addEventListener('change', async () => {
+        const typeId = (typeSel.value || '').trim();
+        const selected = issueSel.getAttribute('data-selected');
+        await loadIssues(typeId, selected || null);
+        issueSel.removeAttribute('data-selected');
+      });
+
+      issueSearch.addEventListener('focus', () => openList(issueSel));
+      issueSearch.addEventListener('blur', () => setTimeout(() => closeList(issueSel), 150));
+      issueSearch.addEventListener('input', () => openList(issueSel));
+
+      issueSearch.addEventListener('keydown', async (e) => {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+
+        const q = (issueSearch.value || '').trim();
+        if (!q) return;
+
+        const hit = firstMatch(issuesList, q);
+        if (hit) {
+          issueSel.value = String(hit.id);
+          issueSel.dispatchEvent(new Event('change', { bubbles: true }));
+          return;
+        }
+
+        await addIssue(q);
+      });
+
+      issueSel.addEventListener('change', () => {
+        const label = issueSel.options[issueSel.selectedIndex]?.text || '';
+        issueSearch.value = label || '';
+        closeList(issueSel);
+      });
+
+      btnAddIssue?.addEventListener('click', async () => {
+        const q = (issueSearch.value || '').trim();
+        await addIssue(q);
+      });
+
+      // Init (si ya hay tipo seleccionado)
+      (async () => {
+        const typeId = (typeSel.value || '').trim();
+        const selected = issueSel.getAttribute('data-selected');
+        if (typeId) {
+          await loadIssues(typeId, selected || null);
+          issueSel.removeAttribute('data-selected');
+        } else {
+          setEnabled(false);
+        }
+      })();
+    });
+  })();
+
 
   
 
