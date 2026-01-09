@@ -423,8 +423,10 @@
                     <div>
                       <div class="flex items-center justify-between gap-2">
                         <label for="device_brand_id" class="block mb-1">Marca</label>
-                        <button type="button" class="btn-outline btn-sm" data-add-brand>+ Agregar</button>
+                        <button type="button" class="btn-outline btn-sm" data-add-brand disabled>+ Agregar</button>
                       </div>
+
+                      <input type="text" class="mt-2" placeholder="Buscar marca…" data-brand-search disabled>
 
                       <select
                         id="device_brand_id"
@@ -443,11 +445,14 @@
                       </div>
                     </div>
 
+
                     <div class="md:col-span-2">
                       <div class="flex items-center justify-between gap-2">
                         <label for="device_model_id" class="block mb-1">Modelo</label>
                         <button type="button" class="btn-outline btn-sm" data-add-model disabled>+ Agregar</button>
                       </div>
+
+                      <input type="text" class="mt-2" placeholder="Buscar modelo…" data-model-search disabled>
 
                       <select
                         id="device_model_id"
@@ -465,6 +470,7 @@
                         <button type="button" class="btn-ghost btn-sm" data-cancel-model>Cancelar</button>
                       </div>
                     </div>
+
 
                   </div>
                 </div>

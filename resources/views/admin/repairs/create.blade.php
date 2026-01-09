@@ -58,12 +58,15 @@
             <div class="space-y-1">
               <div class="flex items-center justify-between gap-2">
                 <label>Marca</label>
-                <button type="button" class="btn-outline btn-sm" data-add-brand>+ Agregar</button>
+                <button type="button" class="btn-outline btn-sm" data-add-brand disabled>+ Agregar</button>
               </div>
+
+              <input type="text" class="mt-2" placeholder="Buscar marca…" data-brand-search disabled>
 
               <select id="device_brand_id" name="device_brand_id" data-device-brand disabled data-selected="{{ old('device_brand_id') }}">
                 <option value="">— Elegí un tipo primero —</option>
               </select>
+
 
               <div class="hidden mt-2 gap-2" data-add-brand-form>
                 <input type="text" class="flex-1" placeholder="Nueva marca…" data-add-brand-input>
@@ -78,9 +81,12 @@
                 <button type="button" class="btn-outline btn-sm" data-add-model disabled>+ Agregar</button>
               </div>
 
+              <input type="text" class="mt-2" placeholder="Buscar modelo…" data-model-search disabled>
+
               <select id="device_model_id" name="device_model_id" data-device-model disabled data-selected="{{ old('device_model_id') }}">
                 <option value="">— Elegí una marca primero —</option>
               </select>
+
 
               <div class="hidden mt-2 gap-2" data-add-model-form>
                 <input type="text" class="flex-1" placeholder="Nuevo modelo…" data-add-model-input>

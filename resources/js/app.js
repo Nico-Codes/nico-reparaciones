@@ -1994,6 +1994,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const brandSel = block.querySelector('[data-device-brand]');
       const modelSel = block.querySelector('[data-device-model]');
 
+      const brandSearch = block.querySelector('[data-brand-search]');
+      const modelSearch = block.querySelector('[data-model-search]');
+
+      let brandsList = [];
+      let modelsList = [];
+
       const btnAddBrand = block.querySelector('[data-add-brand]');
       const brandForm = block.querySelector('[data-add-brand-form]');
       const brandInput = block.querySelector('[data-add-brand-input]');
@@ -2012,11 +2018,18 @@ document.addEventListener('DOMContentLoaded', () => {
         btnAddModel.disabled = true;
 
         setOptions(brandSel, [], 'Cargando marcas…');
-        setOptions(modelSel, [], 'Elegí una marca primero');
+        setOptions(modelSel, [], '— Elegí una marca primero —');
+
 
         const j = await fetchJson(`/admin/device-catalog/brands?type_id=${encodeURIComponent(typeId)}`);
+        brandsList = j.brands || [];
+
         brandSel.disabled = false;
-        setOptions(brandSel, j.brands || [], '— Elegí una marca —', selected || brandSel.dataset.selected);
+        if (brandSearch) { brandSearch.disabled = false; brandSearch.value = ''; }
+        if (btnAddBrand) btnAddBrand.disabled = false;
+
+        setOptions(brandSel, brandsList, '— Elegí una marca —', selected || brandSel.dataset.selected);
+
       };
 
       const loadModels = async (brandId, selected=null) => {
@@ -2026,35 +2039,98 @@ document.addEventListener('DOMContentLoaded', () => {
         setOptions(modelSel, [], 'Cargando modelos…');
 
         const j = await fetchJson(`/admin/device-catalog/models?brand_id=${encodeURIComponent(brandId)}`);
+        modelsList = j.models || [];
+
         modelSel.disabled = false;
         btnAddModel.disabled = false;
-        setOptions(modelSel, j.models || [], '— Elegí un modelo —', selected || modelSel.dataset.selected);
+        if (modelSearch) { modelSearch.disabled = false; modelSearch.value = ''; }
+
+        setOptions(modelSel, modelsList, '— Elegí un modelo —', selected || modelSel.dataset.selected);
+
       };
 
       // cambios
       typeSel?.addEventListener('change', async () => {
-        const typeId = typeSel.value;
-        if (!typeId) {
-          brandSel.disabled = true;
-          modelSel.disabled = true;
-          btnAddModel.disabled = true;
-          setOptions(brandSel, [], '— Elegí un tipo primero —');
-          setOptions(modelSel, [], '— Elegí una marca primero —');
-          return;
+        const typeId = typeSel.value || '';
+
+        // reset marca + modelo (siempre que cambia tipo)
+        brandSel.innerHTML = '<option value="">— Elegí un tipo primero —</option>';
+        brandSel.disabled = true;
+
+        modelSel.innerHTML = '<option value="">— Elegí una marca primero —</option>';
+        modelSel.disabled = true;
+
+        btnAddModel.disabled = true;
+
+        // ✅ NUEVO: reset/bloqueo del botón y buscadores
+        if (btnAddBrand) btnAddBrand.disabled = true;
+
+        if (brandSearch) {
+          brandSearch.value = '';
+          brandSearch.disabled = true;
         }
+
+        if (modelSearch) {
+          modelSearch.value = '';
+          modelSearch.disabled = true;
+        }
+
+        // ✅ NUEVO: vaciar listas en memoria para que no filtre cosas viejas
+        brandsList = [];
+        modelsList = [];
+
+        // si no hay tipo elegido, terminamos acá
+        if (!typeId) return;
+
+        // si hay tipo, cargamos marcas
         await loadBrands(typeId);
       });
 
+
       brandSel?.addEventListener('change', async () => {
-        const brandId = brandSel.value;
-        if (!brandId) {
-          modelSel.disabled = true;
-          btnAddModel.disabled = true;
-          setOptions(modelSel, [], '— Elegí una marca primero —');
-          return;
+        const brandId = brandSel.value || '';
+
+        // reset modelo (siempre que cambia marca)
+        modelSel.innerHTML = '<option value="">— Elegí una marca primero —</option>';
+        modelSel.disabled = true;
+        btnAddModel.disabled = true;
+
+        // ✅ NUEVO: reset/bloqueo del buscador de modelo
+        if (modelSearch) {
+          modelSearch.value = '';
+          modelSearch.disabled = true;
         }
+
+        // ✅ NUEVO: limpiar lista de modelos en memoria
+        modelsList = [];
+
+        if (!brandId) return;
+
         await loadModels(brandId);
       });
+
+
+      // buscar marca/modelo (filtra opciones cargadas)
+      const applyBrandFilter = () => {
+        if (!brandSearch) return;
+        const q = (brandSearch.value || '').trim().toLowerCase();
+        const current = brandSel?.value || null;
+        const filtered = !q ? brandsList : brandsList.filter(b => (b.name || '').toLowerCase().includes(q));
+        setOptions(brandSel, filtered, '— Elegí una marca —', current);
+      };
+
+      const applyModelFilter = () => {
+        if (!modelSearch) return;
+        const q = (modelSearch.value || '').trim().toLowerCase();
+        const current = modelSel?.value || null;
+        const filtered = !q ? modelsList : modelsList.filter(m => (m.name || '').toLowerCase().includes(q));
+        setOptions(modelSel, filtered, '— Elegí un modelo —', current);
+      };
+
+      brandSearch?.addEventListener('input', applyBrandFilter);
+      modelSearch?.addEventListener('input', applyModelFilter);
+
+
 
       // agregar marca
       btnAddBrand?.addEventListener('click', () => {
