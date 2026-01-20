@@ -205,8 +205,13 @@ class AdminRepairController extends Controller
 
     public function create()
     {
-        $issueTypes = DeviceIssueType::where('active', true)->orderBy('name')->get();
+        $statuses = Repair::STATUSES;
+        $paymentMethods = Repair::PAYMENT_METHODS;
+
+        $deviceTypes = DeviceType::where('active', true)->orderBy('name')->get();
+        $issueTypes  = DeviceIssueType::where('active', true)->orderBy('name')->get();
         $repairTypes = \App\Models\RepairType::where('active', true)->orderBy('name')->get();
+
         return view('admin.repairs.create', compact(
             'statuses',
             'paymentMethods',
@@ -214,8 +219,8 @@ class AdminRepairController extends Controller
             'issueTypes',
             'repairTypes',
         ));
-
     }
+
 
     public function store(Request $request)
     {
