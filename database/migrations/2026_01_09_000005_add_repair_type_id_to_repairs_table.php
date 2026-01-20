@@ -9,25 +9,25 @@ return new class extends Migration {
     {
         $after = null;
 
-        if (\Illuminate\Support\Facades\Schema::hasColumn('repairs', 'device_model_id')) {
+        if (Schema::hasColumn('repairs', 'device_model_id')) {
             $after = 'device_model_id';
-        } elseif (\Illuminate\Support\Facades\Schema::hasColumn('repairs', 'device_brand_id')) {
+        } elseif (Schema::hasColumn('repairs', 'device_brand_id')) {
             $after = 'device_brand_id';
-        } elseif (\Illuminate\Support\Facades\Schema::hasColumn('repairs', 'device_type_id')) {
+        } elseif (Schema::hasColumn('repairs', 'device_type_id')) {
             $after = 'device_type_id';
+        } elseif (Schema::hasColumn('repairs', 'customer_phone')) {
+            $after = 'customer_phone';
         }
 
         Schema::table('repairs', function (Blueprint $table) use ($after) {
-            $col = $table->foreignId('device_issue_type_id')->nullable();
+            $col = $table->foreignId('repair_type_id')->nullable();
 
             if ($after) {
                 $col->after($after);
             }
 
-            $col->constrained('device_issue_types')->nullOnDelete();
+            $col->constrained('repair_types')->nullOnDelete();
         });
-
-
     }
 
     public function down(): void

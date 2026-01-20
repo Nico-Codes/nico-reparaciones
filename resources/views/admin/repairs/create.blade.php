@@ -177,12 +177,19 @@
                 disabled>
 
               {{-- lo dejamos para guardar el ID, pero NO lo mostramos (simplicidad) --}}
-              <select name="device_issue_type_id" required class="hidden">
-                <option value="">Elegí una falla…</option>
+              <select
+                name="device_issue_type_id"
+                required
+                class="hidden"
+                data-issue-select
+                data-selected="{{ old('device_issue_type_id') }}"
+              >
+                <option value="">—</option>
                 @foreach($issueTypes as $it)
                   <option value="{{ $it->id }}" @selected(old('device_issue_type_id') == $it->id)>{{ $it->name }}</option>
                 @endforeach
               </select>
+
 
               <div class="space-y-1 pt-2">
                 <label class="text-sm font-semibold">Reparación final *</label>
