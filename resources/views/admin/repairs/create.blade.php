@@ -253,7 +253,10 @@
       </div>
       <div class="card-body">
         <div class="grid gap-4 sm:grid-cols-3">
-          <div class="space-y-1" data-repair-pricing-auto>
+          <div class="space-y-1" data-repair-pricing-auto
+            data-pricing-create-base="{{ route('admin.pricing.create') }}"
+            data-pricing-edit-base="{{ url('/admin/precios') }}">
+
             <label class="text-sm font-semibold">Costo repuesto</label>
             <input name="parts_cost" inputmode="numeric" value="{{ old('parts_cost') }}" placeholder="0" data-parts-cost />
           </div>
@@ -267,7 +270,17 @@
               </label>
               <input inputmode="numeric" value="{{ old('shipping_amount') }}" placeholder="0" class="w-32" data-shipping-amount />
             </div>
-            <div class="text-xs text-zinc-500" data-pricing-rule-label>Regla: —</div>
+            <div class="flex items-center justify-between text-xs text-zinc-500">
+              <span data-pricing-rule-label>Regla: —</span>
+
+              <a href="{{ route('admin.pricing.create') }}"
+                target="_blank" rel="noopener"
+                class="underline hover:text-zinc-700"
+                data-pricing-rule-action>
+                Crear regla
+              </a>
+            </div>
+
           </div>
 
           <div class="space-y-1">

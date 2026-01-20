@@ -25,16 +25,25 @@ class AdminPricingRuleController extends Controller
         return view('admin.pricing.index', compact('rules'));
     }
 
-    public function create()
+    public function create(Request $request)
     {
         $deviceTypes = DeviceType::where('active', true)->orderBy('name')->get();
         $repairTypes = RepairType::where('active', true)->orderBy('name')->get();
         $brands = DeviceBrand::where('active', true)->orderBy('name')->get();
         $groups = DeviceModelGroup::orderBy('name')->get();
-        $models = DeviceModel::orderBy('name')->get();
+        $models = DeviceModel::where('active', true)->orderBy('name')->get();
 
-        return view('admin.pricing.create', compact('deviceTypes','repairTypes','brands','groups','models'));
+        $prefill = [
+            'device_type_id'        => $request->integer('device_type_id') ?: null,
+            'repair_type_id'        => $request->integer('repair_type_id') ?: null,
+            'device_brand_id'       => $request->integer('device_brand_id') ?: null,
+            'device_model_id'       => $request->integer('device_model_id') ?: null,
+            'device_model_group_id' => $request->integer('device_model_group_id') ?: null,
+        ];
+
+        return view('admin.pricing.create', compact('deviceTypes','repairTypes','brands','groups','models','prefill'));
     }
+
 
     public function store(Request $request)
     {
