@@ -4,7 +4,19 @@
 
 @php
   $oldStatus = old('status', 'received');
+
+  // Si hubo errores o el usuario ya cargó campos opcionales, abrimos el panel opcional.
+  $advOpen = (bool) (
+    old('user_email') ||
+    old('diagnosis') ||
+    old('paid_amount') ||
+    old('payment_method') ||
+    old('warranty_days') ||
+    old('payment_notes') ||
+    old('notes')
+  );
 @endphp
+
 
 @section('content')
 <div class="mx-auto w-full max-w-4xl">
@@ -54,7 +66,18 @@
         </div>
       </div>
     </div>
+    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div class="text-sm text-zinc-600">
+        Modo rápido: completá solo lo marcado con <span class="font-black">*</span>. El resto es opcional.
+      </div>
 
+      <button type="button"
+        class="btn-outline btn-sm"
+        data-toggle-advanced
+        aria-expanded="{{ $advOpen ? 'true' : 'false' }}">
+        {{ $advOpen ? 'Ocultar campos opcionales' : 'Mostrar campos opcionales' }}
+      </button>
+    </div>
     <div class="card">
       <div class="card-head">
         <div class="font-black">Cliente y equipo</div>
@@ -63,17 +86,10 @@
 
       <div class="card-body">
         <div class="grid gap-4 sm:grid-cols-2">
-          <div class="sm:col-span-2 space-y-1">
-            <label>Email de usuario (opcional, para asociar)</label>
-            <input name="user_email" value="{{ old('user_email') }}" placeholder="cliente@email.com" />
-            <div class="text-xs text-zinc-500">Si lo dejás vacío, queda como reparación “sin cuenta”.</div>
-          </div>
-
           <div class="space-y-1">
             <label>Nombre del cliente *</label>
             <input name="customer_name" data-repair-customer-name value="{{ old('customer_name') }}" required placeholder="Nombre y apellido" />
           </div>
-
 
           <div class="space-y-1">
             <label>Teléfono (WhatsApp) *</label>
@@ -87,6 +103,7 @@
               placeholder="Ej: 341xxxxxxx" />
             <div class="text-xs text-zinc-500">Tip: podés pegarlo con o sin +54, espacios o guiones.</div>
           </div>
+
 
 
           <div class="sm:col-span-2" data-repair-device-catalog>
@@ -166,75 +183,65 @@
         <span class="badge-zinc">Taller</span>
       </div>
       <div class="card-body">
-        <div class="grid gap-4 md:grid-cols-2" data-repair-issue-catalog>
-          <div class="space-y-3">
-            <div class="space-y-1">
-              <label>Falla principal *</label>
+        <div class="space-y-3" data-repair-issue-catalog>
+          <div class="space-y-1">
+            <label>Falla principal *</label>
 
-              <input type="text"
-                placeholder="Escribí la falla y Enter (si no existe, se crea)"
-                data-issue-search
-                disabled>
+            <input type="text"
+              placeholder="Escribí la falla y Enter (si no existe, se crea)"
+              data-issue-search
+              disabled>
 
-              {{-- lo dejamos para guardar el ID, pero NO lo mostramos (simplicidad) --}}
-              <select
-                name="device_issue_type_id"
-                required
-                class="hidden"
-                data-issue-select
-                data-selected="{{ old('device_issue_type_id') }}"
-              >
-                <option value="">—</option>
-                @foreach($issueTypes as $it)
-                  <option value="{{ $it->id }}" @selected(old('device_issue_type_id') == $it->id)>{{ $it->name }}</option>
-                @endforeach
-              </select>
+            {{-- lo dejamos para guardar el ID, pero NO lo mostramos (simplicidad) --}}
+            <select
+              name="device_issue_type_id"
+              required
+              class="hidden"
+              data-issue-select
+              data-selected="{{ old('device_issue_type_id') }}"
+            >
+              <option value="">—</option>
+              @foreach($issueTypes as $it)
+                <option value="{{ $it->id }}" @selected(old('device_issue_type_id') == $it->id)>{{ $it->name }}</option>
+              @endforeach
+            </select>
 
-
-              <div class="space-y-1 pt-2">
-                <label class="text-sm font-semibold">Reparación final *</label>
-                <select name="repair_type_id" required data-repair-type-final>
-                  <option value="">Elegí una reparación…</option>
-                  @foreach($repairTypes as $rt)
-                    <option value="{{ $rt->id }}" @selected(old('repair_type_id') == $rt->id)>{{ $rt->name }}</option>
-                  @endforeach
-                </select>
-                <div class="text-xs text-zinc-500">
-                  Esto es lo que dispara el cálculo automático (módulo, batería, mantenimiento, etc).
-                </div>
-              </div>
-
-              <div class="text-xs text-zinc-500">
-                Tip: empezá por “No enciende”, “Módulo roto”, “Batería”, “Joystick drift”… después detallás abajo.
-              </div>
-
-
-              <div class="flex items-center gap-2 pt-1">
-                <button type="button" class="btn-outline btn-sm"
-                  data-add-issue
-                  disabled>
-                  + Agregar falla
-                </button>
-                <div class="text-xs text-zinc-500">Tip: Enter selecciona / crea.</div>
-              </div>
+            {{-- Crear falla inline (sin prompt) --}}
+            <div class="hidden mt-2 gap-2 flex-col sm:flex-row" data-issue-create-row>
+              <input type="text" class="flex-1" placeholder="Nueva falla…" data-issue-create-input>
+              <button type="button" class="btn-primary btn-sm w-full sm:w-auto" data-issue-create-save>Guardar</button>
+              <button type="button" class="btn-ghost btn-sm w-full sm:w-auto" data-issue-create-cancel>Cancelar</button>
             </div>
 
-
-            <div class="space-y-1">
-              <label class="text-sm font-medium">Detalle (opcional)</label>
-                <textarea name="issue_detail" rows="3"
-                placeholder="Ej: ‘se reinicia’, ‘no carga’, ‘pantalla con manchas’…">{{ old('issue_detail') }}</textarea>
-
+            <div class="text-xs text-zinc-500">
+              Enter: selecciona la mejor coincidencia. Si no existe, te propone crearla.
             </div>
           </div>
 
           <div class="space-y-1">
-            <label class="text-sm font-medium">Diagnóstico</label>
-              <textarea name="diagnosis" rows="6"
-              placeholder="Diagnóstico técnico / notas internas…">{{ old('diagnosis') }}</textarea>
-
+            <label class="text-sm font-semibold">Reparación final *</label>
+            <select name="repair_type_id" required data-repair-type-final>
+              <option value="">Elegí una reparación…</option>
+              @foreach($repairTypes as $rt)
+                <option value="{{ $rt->id }}" @selected(old('repair_type_id') == $rt->id)>{{ $rt->name }}</option>
+              @endforeach
+            </select>
+            <div class="text-xs text-zinc-500">
+              Esto dispara el cálculo automático (módulo, batería, mantenimiento, etc).
+            </div>
           </div>
-</div>
+
+          <div class="space-y-1">
+            <label class="text-sm font-medium">Detalle (opcional)</label>
+            <textarea name="issue_detail" rows="3"
+              placeholder="Ej: ‘se reinicia’, ‘no carga’, ‘pantalla con manchas’…">{{ old('issue_detail') }}</textarea>
+          </div>
+
+          <div class="text-xs text-zinc-500">
+            Tip: empezá por “No enciende”, “Módulo roto”, “Batería”, “Joystick drift”… después detallás arriba.
+          </div>
+        </div>
+
 
       </div>
     </div>
@@ -294,58 +301,80 @@
           </div>
 
 
-          <div class="space-y-1">
-            <label>Pagado</label>
-            <input name="paid_amount" value="{{ old('paid_amount') }}" inputmode="decimal" placeholder="0" />
-          </div>
-
-          <div class="space-y-1">
-            <label>Método de pago</label>
-            <select name="payment_method">
-              <option value="">—</option>
-              @foreach($paymentMethods as $k => $label)
-                <option value="{{ $k }}" @selected(old('payment_method') === $k)>{{ $label }}</option>
+          <div class="sm:col-span-3 space-y-1">
+            <label>Estado *</label>
+            <select name="status" data-repair-status required>
+              @foreach($statuses as $k => $label)
+                <option value="{{ $k }}" @selected($oldStatus === $k)>{{ $label }}</option>
               @endforeach
             </select>
-          </div>
 
-          <div class="space-y-1">
-            <label>Garantía (días)</label>
-            <input name="warranty_days" value="{{ old('warranty_days', 0) }}" inputmode="numeric" placeholder="0" />
-          </div>
-
-          <div class="sm:col-span-3 space-y-1">
-            <label>Notas de pago</label>
-            <input name="payment_notes" value="{{ old('payment_notes') }}" placeholder="Ej: señal, transferencia, etc." />
-          </div>
-
-          <div class="sm:col-span-3">
-            <div class="grid gap-4 sm:grid-cols-2">
-              <div class="space-y-1">
-                <label>Estado *</label>
-                <select name="status" data-repair-status required>
-                  @foreach($statuses as $k => $label)
-                    <option value="{{ $k }}" @selected($oldStatus === $k)>{{ $label }}</option>
-                  @endforeach
-                </select>
-
-              </div>
-
-              <div class="rounded-2xl border border-zinc-100 bg-zinc-50 p-4">
-                <div class="text-sm font-black">Tip rápido</div>
-                <div class="mt-1 text-sm text-zinc-700">
-                  Si ponés <span class="font-black">Entregado</span>, se guarda la fecha de entrega y la garantía empieza a contar desde ahí.
-                </div>
-              </div>
+            <div class="text-xs text-zinc-500">
+              Tip: si ponés <span class="font-black">Entregado</span>, se guarda la fecha de entrega y la garantía empieza a contar desde ahí.
             </div>
           </div>
+
         </div>
       </div>
     </div>
 
+      <div class="card {{ $advOpen ? '' : 'hidden' }}" data-advanced-fields>
+        <div class="card-head">
+          <div class="font-black">Campos opcionales</div>
+          <span class="badge-zinc">Podés ignorarlos</span>
+        </div>
+
+        <div class="card-body">
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div class="sm:col-span-2 space-y-1">
+              <label>Email de usuario (opcional, para asociar)</label>
+              <input name="user_email" value="{{ old('user_email') }}" placeholder="cliente@email.com" />
+              <div class="text-xs text-zinc-500">Si lo dejás vacío, queda como reparación “sin cuenta”.</div>
+            </div>
+
+            <div class="sm:col-span-2 space-y-1">
+              <label class="text-sm font-medium">Diagnóstico (opcional)</label>
+              <textarea name="diagnosis" rows="5"
+                placeholder="Diagnóstico técnico / notas internas…">{{ old('diagnosis') }}</textarea>
+            </div>
+
+            <div class="space-y-1">
+              <label>Pagado</label>
+              <input name="paid_amount" value="{{ old('paid_amount') }}" inputmode="decimal" placeholder="0" />
+            </div>
+
+            <div class="space-y-1">
+              <label>Método de pago</label>
+              <select name="payment_method">
+                <option value="">—</option>
+                @foreach($paymentMethods as $k => $label)
+                  <option value="{{ $k }}" @selected(old('payment_method') === $k)>{{ $label }}</option>
+                @endforeach
+              </select>
+            </div>
+
+            <div class="space-y-1">
+              <label>Garantía (días)</label>
+              <input name="warranty_days" value="{{ old('warranty_days', 0) }}" inputmode="numeric" placeholder="0" />
+            </div>
+
+            <div class="sm:col-span-2 space-y-1">
+              <label>Notas de pago</label>
+              <input name="payment_notes" value="{{ old('payment_notes') }}" placeholder="Ej: señal, transferencia, etc." />
+            </div>
+
+            <div class="sm:col-span-2 space-y-1">
+              <label>Notas internas (opcional)</label>
+              <textarea name="notes" rows="3" placeholder="Cualquier dato extra para vos…">{{ old('notes') }}</textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
     <div class="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
       <a href="{{ route('admin.repairs.index') }}" class="btn-outline">Cancelar</a>
-      <button class="btn-primary" type="submit">Crear reparación</button>
+            <button class="btn-primary" type="submit" data-repair-submit>Crear reparación</button>
     </div>
   </form>
 </div>

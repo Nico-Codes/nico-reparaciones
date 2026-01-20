@@ -2808,12 +2808,29 @@ document.addEventListener('DOMContentLoaded', () => {
         setOptions(items, selectedId);
       };
 
-      const addIssue = async (prefill = '') => {
-        const typeId = (typeSel.value || '').trim();
-        if (!typeId) return;
+      // UI inline para crear falla (sin prompt)
+      const issueCreateRow    = block.querySelector('[data-issue-create-row]');
+      const issueCreateInput  = block.querySelector('[data-issue-create-input]');
+      const issueCreateSave   = block.querySelector('[data-issue-create-save]');
+      const issueCreateCancel = block.querySelector('[data-issue-create-cancel]');
 
-        const name = (prompt('Nueva falla (para este tipo):', (prefill || '').trim()) || '').trim();
-        if (!name) return;
+      const openCreateRow = (prefill = '') => {
+        if (!issueCreateRow || !issueCreateInput) return;
+        issueCreateRow.classList.remove('hidden');
+        issueCreateInput.value = (prefill || '').trim();
+        issueCreateInput.focus();
+        issueCreateInput.select?.();
+      };
+
+      const closeCreateRow = () => {
+        if (!issueCreateRow || !issueCreateInput) return;
+        issueCreateRow.classList.add('hidden');
+        issueCreateInput.value = '';
+      };
+
+      const createIssue = async (name) => {
+        const typeId = (typeSel.value || '').trim();
+        if (!typeId) return null;
 
         const fd = new FormData();
         fd.append('type_id', typeId);
@@ -2826,30 +2843,39 @@ document.addEventListener('DOMContentLoaded', () => {
           body: fd,
         });
 
-        const newId = data?.issue?.id || null;
+        return data?.issue?.id || null;
+      };
 
-        if (data && data.ok && newId) {
+      const saveIssueFromRow = async () => {
+        const typeId = (typeSel.value || '').trim();
+        if (!typeId) return;
+
+        const name = (issueCreateInput?.value || '').trim();
+        if (!name) return;
+
+        const newId = await createIssue(name);
+        if (newId) {
           await loadIssues(typeId, newId);
           issueSel.value = String(newId);
           issueSel.dispatchEvent(new Event('change', { bubbles: true }));
+          closeCreateRow();
           return;
         }
 
-        // fallback: recargar igual
+        // fallback
         await loadIssues(typeId, null);
       };
 
       // Eventos UI
       typeSel.addEventListener('change', async () => {
+        closeCreateRow();
         const typeId = (typeSel.value || '').trim();
         const selected = issueSel.getAttribute('data-selected');
         await loadIssues(typeId, selected || null);
         issueSel.removeAttribute('data-selected');
       });
 
-      // ✅ Para "Falla principal" NO desplegamos lista (no te interesa dropdown)
-      // El select queda para guardar el id, pero visualmente trabajamos con el input + Enter / botón "Agregar"
-
+      // Enter: si hay match, selecciona. Si no, ofrece crear inline.
       issueSearch.addEventListener('keydown', async (e) => {
         if (e.key !== 'Enter') return;
         e.preventDefault();
@@ -2859,21 +2885,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const hit = firstMatch(issuesList, q);
         if (hit) {
+          closeCreateRow();
           issueSel.value = String(hit.id);
           issueSel.dispatchEvent(new Event('change', { bubbles: true }));
           return;
         }
 
-        await addIssue(q);
+        openCreateRow(q);
       });
 
-
-      // ✅ Si escriben una falla exacta y salen del campo, auto-selecciona
+      // Si escriben una falla exacta y salen del campo, auto-selecciona
       issueSearch.addEventListener('blur', () => {
         setTimeout(() => {
           if (issueSel.value) return;
+          if (!issueCreateRow?.classList.contains('hidden')) return;
+
           const q = (issueSearch.value || '').trim();
           if (!q) return;
+
           const hit = firstMatch(issuesList, q);
           if (!hit) return;
 
@@ -2882,17 +2911,25 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 0);
       });
 
-
       issueSel.addEventListener('change', () => {
         const label = issueSel.options[issueSel.selectedIndex]?.text || '';
         issueSearch.value = label || '';
         closeList(issueSel);
       });
 
-      btnAddIssue?.addEventListener('click', async () => {
-        const q = (issueSearch.value || '').trim();
-        await addIssue(q);
+      // Botones inline (si existen)
+      issueCreateSave?.addEventListener('click', saveIssueFromRow);
+      issueCreateCancel?.addEventListener('click', closeCreateRow);
+
+      issueCreateInput?.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        saveIssueFromRow();
       });
+
+      // Compatibilidad si todavía existiera el botón viejo
+      btnAddIssue?.addEventListener('click', () => openCreateRow((issueSearch.value || '').trim()));
+
 
       // Init (si ya hay tipo seleccionado)
       (async () => {
@@ -2906,9 +2943,40 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       })();
     });
-  })();
+    })();
+
+    ;(function initRepairCreateAdvancedToggle() {
+      const btn = document.querySelector('[data-toggle-advanced]');
+      const block = document.querySelector('[data-advanced-fields]');
+      if (!btn || !block) return;
+
+      const KEY = 'nr_repairs_adv_open';
+
+      const setOpen = (open) => {
+        block.classList.toggle('hidden', !open);
+        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        btn.textContent = open ? 'Ocultar campos opcionales' : 'Mostrar campos opcionales';
+      };
+
+      let open = !block.classList.contains('hidden');
+
+      // Preferimos el estado guardado si el panel está cerrado (y blade no lo abrió por old/errors).
+      try {
+        const saved = localStorage.getItem(KEY);
+        if (saved !== null && !open) open = (saved === '1');
+      } catch (_) {}
+
+      setOpen(open);
+
+      btn.addEventListener('click', () => {
+        open = !open;
+        setOpen(open);
+        try { localStorage.setItem(KEY, open ? '1' : '0'); } catch (_) {}
+      });
+    })();
 
     ;(function initRepairCreateSummaryAndPhone() {
+
     const summary = document.querySelector('[data-repair-create-summary]');
     if (!summary) return;
 
@@ -2923,6 +2991,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const brandSel = form.querySelector('[data-device-brand]');
     const modelSel = form.querySelector('[data-device-model]');
     const issueInp = form.querySelector('[data-issue-search]');
+    const issueSel = form.querySelector('[data-issue-select]') || form.querySelector('select[name="device_issue_type_id"]');
+    const repairTypeSel = form.querySelector('[data-repair-type-final]') || form.querySelector('select[name="repair_type_id"]');
+    const submitBtn = form.querySelector('[data-repair-submit]');
 
     const sumState    = summary.querySelector('[data-sum-state]');
     const sumCustomer = summary.querySelector('[data-sum-customer]');
@@ -2999,14 +3070,25 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      // Estado del resumen (completo / incompleto)
-      const ok = Boolean(customer && phoneDigits && t && b && m && issue && statusLabel);
+      const issueSelected = (issueSel?.value || '').trim();
+      const repairSelected = (repairTypeSel?.value || '').trim();
+      const statusOk = Boolean((elStatus?.value || '').trim());
+
+      const ok = Boolean(customer && phoneDigits && t && b && m && issueSelected && repairSelected && statusOk);
 
       if (sumState) {
         sumState.textContent = ok ? 'Listo' : 'Incompleto';
         sumState.classList.toggle('badge-emerald', ok);
         sumState.classList.toggle('badge-amber', !ok);
       }
+
+      // Bloquear submit si faltan obligatorios (evita “cargas fantasma” o incompletas)
+      if (submitBtn) {
+        submitBtn.disabled = !ok;
+        submitBtn.classList.toggle('opacity-60', !ok);
+        submitBtn.classList.toggle('cursor-not-allowed', !ok);
+      }
+
     };
 
     // Normalizar teléfono (sin joder mientras escribe)
@@ -3020,7 +3102,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Update en vivo
     const bind = (el, ev) => el && el.addEventListener(ev, update);
     [elName, elPhone, issueInp].forEach(el => bind(el, 'input'));
-    [elStatus, typeSel, brandSel, modelSel].forEach(el => bind(el, 'change'));
+    [elStatus, typeSel, brandSel, modelSel, repairTypeSel, issueSel].forEach(el => bind(el, 'change'));
 
     update();
   })();
