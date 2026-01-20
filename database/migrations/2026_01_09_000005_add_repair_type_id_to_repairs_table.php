@@ -7,15 +7,27 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
-        Schema::table('repairs', function (Blueprint $table) {
-            $table->foreignId('repair_type_id')
-                ->nullable()
-                ->after('device_issue_type_id')
-                ->constrained('repair_types')
-                ->nullOnDelete();
+        $after = null;
 
-            $table->index(['repair_type_id']);
+        if (\Illuminate\Support\Facades\Schema::hasColumn('repairs', 'device_model_id')) {
+            $after = 'device_model_id';
+        } elseif (\Illuminate\Support\Facades\Schema::hasColumn('repairs', 'device_brand_id')) {
+            $after = 'device_brand_id';
+        } elseif (\Illuminate\Support\Facades\Schema::hasColumn('repairs', 'device_type_id')) {
+            $after = 'device_type_id';
+        }
+
+        Schema::table('repairs', function (Blueprint $table) use ($after) {
+            $col = $table->foreignId('device_issue_type_id')->nullable();
+
+            if ($after) {
+                $col->after($after);
+            }
+
+            $col->constrained('device_issue_types')->nullOnDelete();
         });
+
+
     }
 
     public function down(): void

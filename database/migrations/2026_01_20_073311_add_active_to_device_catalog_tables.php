@@ -15,6 +15,11 @@ return new class extends Migration {
         ];
 
         foreach ($tables as $table) {
+            // ✅ Si la tabla todavía no existe (por orden de migrations), no hacemos nada
+            if (!Schema::hasTable($table)) {
+                continue;
+            }
+
             if (!Schema::hasColumn($table, 'active')) {
                 Schema::table($table, function (Blueprint $t) {
                     $t->boolean('active')->default(true);
@@ -33,6 +38,10 @@ return new class extends Migration {
         ];
 
         foreach ($tables as $table) {
+            if (!Schema::hasTable($table)) {
+                continue;
+            }
+
             if (Schema::hasColumn($table, 'active')) {
                 Schema::table($table, function (Blueprint $t) {
                     $t->dropColumn('active');
@@ -41,3 +50,4 @@ return new class extends Migration {
         }
     }
 };
+

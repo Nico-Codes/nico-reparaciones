@@ -12,6 +12,10 @@ return new class extends Migration {
             $table->foreignId('device_type_id')->constrained('device_types')->cascadeOnDelete();
             $table->string('name');
             $table->string('slug');
+
+            // ✅ Para que funcione tu query where('active', true)
+            $table->boolean('active')->default(true);
+
             $table->timestamps();
 
             $table->unique(['device_type_id', 'slug']);
