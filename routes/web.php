@@ -251,7 +251,7 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     // JSON resolver (para el cálculo automático en Crear Reparación)
     Route::get('/precios/resolve', [AdminPricingRuleController::class, 'resolve'])->name('admin.pricing.resolve');
 
-
+ // test
 });
 
 

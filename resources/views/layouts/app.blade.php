@@ -422,6 +422,16 @@
                     <img src="/icons/mis-reparaciones.svg" alt="" class="w-5 h-5" loading="lazy" decoding="async">
                     <span>Reparaciones</span>
                   </span>
+                </a>c
+              @endif
+
+              @if($has('admin.pricing.index'))
+                <a class="sidebar-link {{ request()->routeIs('admin.pricing.*') || request()->routeIs('admin.repairTypes.*') || request()->routeIs('admin.modelGroups.*') ? 'active' : '' }}"
+                  href="{{ route('admin.pricing.index') }}">
+                  <span class="inline-flex items-center gap-2">
+                    <img src="/icons/settings.svg" alt="" class="w-5 h-5" loading="lazy" decoding="async">
+                    <span>Precios</span>
+                  </span>
                 </a>
               @endif
 
@@ -434,6 +444,7 @@
                   </span>
                 </a>
               @endif
+
 
               @if($has('admin.settings.index'))
                 <a class="sidebar-link {{ request()->routeIs('admin.settings.*') ? 'active' : '' }}"
