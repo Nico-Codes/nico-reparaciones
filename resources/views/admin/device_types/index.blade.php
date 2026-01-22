@@ -11,8 +11,10 @@
     </div>
 
     <div class="flex gap-2">
-      <a class="btn btn-ghost" href="{{ route('admin.pricing.index') }}">← Precios</a>
+     <a class="btn btn-ghost" href="{{ route('admin.pricing.index') }}">← Precios</a>
+     <a class="btn btn-ghost" href="{{ route('admin.deviceCatalog.index') }}">Catálogo</a>
     </div>
+
   </div>
 
   <div class="grid gap-4 mt-6">

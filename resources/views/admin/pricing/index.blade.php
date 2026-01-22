@@ -9,9 +9,11 @@
   </div>
   <div class="flex gap-2">
     <a class="btn btn-ghost" href="{{ route('admin.deviceTypes.index') }}">Dispositivos</a>
+    <a class="btn btn-ghost" href="{{ route('admin.deviceCatalog.index') }}">Catálogo</a>
     <a class="btn btn-ghost" href="{{ route('admin.modelGroups.index') }}">Grupos</a>
     <a class="btn btn-ghost" href="{{ route('admin.repairTypes.index') }}">Tipos</a>
   </div>
+
 
 </div>
 

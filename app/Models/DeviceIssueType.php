@@ -6,7 +6,17 @@ use Illuminate\Database\Eloquent\Model;
 
 class DeviceIssueType extends Model
 {
-    protected $fillable = ['device_type_id', 'name', 'slug'];
+    protected $fillable = [
+        'device_type_id',
+        'name',
+        'slug',
+        'active',
+    ];
+
+    protected $casts = [
+        'active' => 'boolean',
+    ];
+
 
     public function deviceType()
     {

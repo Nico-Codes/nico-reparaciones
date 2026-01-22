@@ -19,9 +19,16 @@ class AdminDeviceCatalogController extends Controller
             return response()->json(['ok' => false, 'message' => 'Tipo inválido'], 422);
         }
 
+        // si el tipo está inactivo, devolvemos vacío (en "Nueva reparación" solo queremos activos)
+        if (!DeviceType::whereKey($typeId)->where('active', true)->exists()) {
+            return response()->json([]);
+        }
+
         $brands = DeviceBrand::where('device_type_id', $typeId)
+            ->where('active', true)
             ->orderBy('name')
             ->get(['id', 'name']);
+
 
         return response()->json(['ok' => true, 'brands' => $brands]);
     }
@@ -33,9 +40,16 @@ class AdminDeviceCatalogController extends Controller
             return response()->json(['ok' => false, 'message' => 'Marca inválida'], 422);
         }
 
+        // si la marca está inactiva, devolvemos vacío
+        if (!DeviceBrand::whereKey($brandId)->where('active', true)->exists()) {
+            return response()->json([]);
+        }
+
         $models = DeviceModel::where('device_brand_id', $brandId)
+            ->where('active', true)
             ->orderBy('name')
             ->get(['id', 'name']);
+
 
         return response()->json(['ok' => true, 'models' => $models]);
     }
@@ -102,10 +116,15 @@ class AdminDeviceCatalogController extends Controller
             return response()->json(['ok' => true, 'issues' => []]);
         }
 
-        $issues = DeviceIssueType::query()
-            ->where('device_type_id', $typeId)
+        if (!DeviceType::whereKey($typeId)->where('active', true)->exists()) {
+            return response()->json([]);
+        }
+
+        $issues = DeviceIssueType::where('device_type_id', $typeId)
+            ->where('active', true)
             ->orderBy('name')
             ->get(['id', 'name', 'slug']);
+
 
         return response()->json(['ok' => true, 'issues' => $issues]);
     }

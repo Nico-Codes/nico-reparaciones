@@ -19,8 +19,11 @@ use App\Http\Controllers\AdminRepairPrintController;
 use App\Http\Controllers\AdminOrderPrintController;
 use App\Http\Controllers\AdminOrderTicketController;
 use App\Http\Controllers\AdminRepairTicketController;
-use App\Http\Controllers\AdminDeviceCatalogController;
 
+
+use App\Http\Controllers\AdminDeviceCatalogController;
+use App\Http\Controllers\AdminDeviceCatalogManageController;
+use App\Http\Controllers\AdminDeviceTypeController;
 
 
 use App\Http\Controllers\AdminUserController;
@@ -33,7 +36,7 @@ use App\Http\Controllers\AdminOrderWhatsappTemplateController;
 use App\Http\Controllers\AdminPricingRuleController;
 use App\Http\Controllers\AdminRepairTypeController;
 use App\Http\Controllers\AdminModelGroupController;
-use App\Http\Controllers\AdminDeviceTypeController;
+
 
 
 
@@ -244,11 +247,27 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     Route::put('/grupos-modelos/{group}', [AdminModelGroupController::class, 'update'])->name('admin.modelGroups.update');
     Route::post('/grupos-modelos/modelo/{model}/asignar', [AdminModelGroupController::class, 'assignModel'])->name('admin.modelGroups.assignModel');
 
-    // Catálogo (tipos de dispositivo)
+    // Tipos de dispositivo (admin)
     Route::get('/tipos-dispositivo', [AdminDeviceTypeController::class, 'index'])->name('admin.deviceTypes.index');
     Route::post('/tipos-dispositivo', [AdminDeviceTypeController::class, 'store'])->name('admin.deviceTypes.store');
     Route::put('/tipos-dispositivo/{deviceType}', [AdminDeviceTypeController::class, 'update'])->name('admin.deviceTypes.update');
 
+    // Catálogo de dispositivos (admin)
+    Route::get('/catalogo-dispositivos', [AdminDeviceCatalogManageController::class, 'index'])->name('admin.deviceCatalog.index');
+
+    Route::post('/catalogo-dispositivos/marcas', [AdminDeviceCatalogManageController::class, 'storeBrand'])->name('admin.deviceCatalog.brands.store');
+    Route::put('/catalogo-dispositivos/marcas/{brand}', [AdminDeviceCatalogManageController::class, 'updateBrand'])->name('admin.deviceCatalog.brands.update');
+    Route::post('/catalogo-dispositivos/marcas/{brand}/toggle', [AdminDeviceCatalogManageController::class, 'toggleBrand'])->name('admin.deviceCatalog.brands.toggle');
+
+    Route::post('/catalogo-dispositivos/modelos', [AdminDeviceCatalogManageController::class, 'storeModel'])->name('admin.deviceCatalog.models.store');
+    Route::put('/catalogo-dispositivos/modelos/{model}', [AdminDeviceCatalogManageController::class, 'updateModel'])->name('admin.deviceCatalog.models.update');
+    Route::post('/catalogo-dispositivos/modelos/{model}/toggle', [AdminDeviceCatalogManageController::class, 'toggleModel'])->name('admin.deviceCatalog.models.toggle');
+
+    Route::post('/catalogo-dispositivos/fallas', [AdminDeviceCatalogManageController::class, 'storeIssue'])->name('admin.deviceCatalog.issues.store');
+    Route::put('/catalogo-dispositivos/fallas/{issue}', [AdminDeviceCatalogManageController::class, 'updateIssue'])->name('admin.deviceCatalog.issues.update');
+    Route::post('/catalogo-dispositivos/fallas/{issue}/toggle', [AdminDeviceCatalogManageController::class, 'toggleIssue'])->name('admin.deviceCatalog.issues.toggle');
+
+  
     // Precios (auto cálculo)
     Route::get('/precios', [AdminPricingRuleController::class, 'index'])->name('admin.pricing.index');
     Route::get('/precios/crear', [AdminPricingRuleController::class, 'create'])->name('admin.pricing.create');

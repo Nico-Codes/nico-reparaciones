@@ -266,6 +266,10 @@
                 @if($isAdmin && $has('admin.deviceTypes.index'))
                   <a class="dropdown-item" href="{{ route('admin.deviceTypes.index') }}">Admin — Tipos de dispositivo</a>
                 @endif
+                @if($isAdmin && $has('admin.deviceCatalog.index'))
+                  <a class="dropdown-item" href="{{ route('admin.deviceCatalog.index') }}">Admin — Catálogo dispositivos</a>
+                @endif
+
                 @if($isAdmin && $has('admin.settings.index'))
                   <a class="dropdown-item" href="{{ route('admin.settings.index') }}">Admin — Ajustes</a>
                 @endif
