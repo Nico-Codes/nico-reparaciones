@@ -2230,6 +2230,9 @@ document.addEventListener('DOMContentLoaded', () => {
       let brandsList = [];
       let modelsList = [];
 
+      const mode = block.dataset.catalogMode || 'create'; // create | edit
+
+
       // ✅ NUEVO: control de carga de modelos (evita “parpadeos” si cambiás rápido)
       let modelsLoadSeq = 0;
       let modelsLoadTimer = null;
@@ -2269,17 +2272,21 @@ document.addEventListener('DOMContentLoaded', () => {
         setOptions(brandSel, [], 'Cargando marcas…');
         setOptions(modelSel, [], '— Elegí una marca primero —');
 
+        const selectedBrandId = selected || brandSel.dataset.selected || '';
 
-        const j = await fetchJson(`/admin/device-catalog/brands?type_id=${encodeURIComponent(typeId)}`);
+        const qs = new URLSearchParams({ type_id: String(typeId), mode });
+        if (mode === 'edit' && selectedBrandId) qs.set('selected_brand_id', String(selectedBrandId));
+
+        const j = await fetchJson(`/admin/device-catalog/brands?${qs.toString()}`);
         brandsList = j.brands || [];
 
         brandSel.disabled = false;
         if (brandSearch) { brandSearch.disabled = false; brandSearch.value = ''; }
         if (btnAddBrand) btnAddBrand.disabled = false;
 
-        setOptions(brandSel, brandsList, '— Elegí una marca —', selected || brandSel.dataset.selected);
-
+        setOptions(brandSel, brandsList, '— Elegí una marca —', selectedBrandId);
       };
+
 
       const loadModels = async (brandId, selected=null, expectedSeq=null) => {
         modelSel.disabled = true;
@@ -2287,7 +2294,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         setOptions(modelSel, [], 'Cargando modelos…');
 
-        const j = await fetchJson(`/admin/device-catalog/models?brand_id=${encodeURIComponent(brandId)}`);
+        const selectedModelId = selected || modelSel.dataset.selected || '';
+
+        const qs = new URLSearchParams({ brand_id: String(brandId), mode });
+        if (mode === 'edit' && selectedModelId) qs.set('selected_model_id', String(selectedModelId));
+
+        const j = await fetchJson(`/admin/device-catalog/models?${qs.toString()}`);
 
         // ✅ si cambiaste de marca mientras cargaba, ignorar este resultado
         if (expectedSeq !== null && expectedSeq !== modelsLoadSeq) return;
@@ -2300,12 +2312,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (modelSearch) {
           modelSearch.disabled = false;
           modelSearch.value = '';
-          // si tu input tiene placeholder, lo respeta; si no, deja uno razonable
           modelSearch.placeholder = modelSearch.getAttribute('placeholder') || 'Buscar modelo…';
         }
 
-        setOptions(modelSel, modelsList, '— Elegí un modelo —', selected || modelSel.dataset.selected);
+        setOptions(modelSel, modelsList, '— Elegí un modelo —', selectedModelId);
       };
+
 
 
       // cambios
@@ -2826,6 +2838,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     blocks.forEach((block) => {
       const form = block.closest('form');
+      const mode = block.dataset.catalogMode || 'create'; // create | edit
+
 
       // el tipo está en el catálogo de device (mismo form)
       const typeSel = form?.querySelector('[data-device-type]');
@@ -2868,17 +2882,23 @@ document.addEventListener('DOMContentLoaded', () => {
       };
 
         const loadIssues = async (typeId, selectedId = null) => {
-        if (!typeId) {
-          setEnabled(false);
-          return;
-        }
+          if (!typeId) {
+            setEnabled(false);
+            return;
+          }
 
-        setEnabled(true);
+          setEnabled(true);
 
-        const data = await fetchJson(`/admin/device-catalog/issues?type_id=${encodeURIComponent(typeId)}`);
-        const items = data.issues || [];
-        setOptions(items, selectedId);
-      };
+          const sel = selectedId || issueSel?.dataset?.selected || '';
+
+          const qs = new URLSearchParams({ type_id: String(typeId), mode });
+          if (mode === 'edit' && sel) qs.set('selected_issue_id', String(sel));
+
+          const data = await fetchJson(`/admin/device-catalog/issues?${qs.toString()}`);
+          const items = data.issues || [];
+          setOptions(items, selectedId);
+        };
+
 
       // UI inline para crear falla (sin prompt)
       const issueCreateRow    = block.querySelector('[data-issue-create-row]');

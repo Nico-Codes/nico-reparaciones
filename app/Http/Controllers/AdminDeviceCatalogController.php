@@ -15,44 +15,72 @@ class AdminDeviceCatalogController extends Controller
     public function brands(Request $request)
     {
         $typeId = (int) $request->query('type_id');
+        $mode = (string) $request->query('mode', 'create'); // create|edit
+        $selectedBrandId = (int) $request->query('selected_brand_id', 0);
+
         if (!$typeId || !DeviceType::whereKey($typeId)->exists()) {
             return response()->json(['ok' => false, 'message' => 'Tipo inválido'], 422);
         }
 
-        // si el tipo está inactivo, devolvemos vacío (en "Nueva reparación" solo queremos activos)
-        if (!DeviceType::whereKey($typeId)->where('active', true)->exists()) {
-            return response()->json([]);
+        $typeIsActive = DeviceType::whereKey($typeId)->where('active', true)->exists();
+        if (!$typeIsActive && $mode !== 'edit') {
+            return response()->json(['ok' => true, 'brands' => []]);
         }
 
-        $brands = DeviceBrand::where('device_type_id', $typeId)
-            ->where('active', true)
-            ->orderBy('name')
-            ->get(['id', 'name']);
+        if ($selectedBrandId > 0 && !DeviceBrand::whereKey($selectedBrandId)->where('device_type_id', $typeId)->exists()) {
+            $selectedBrandId = 0;
+        }
 
+        $q = DeviceBrand::where('device_type_id', $typeId);
+
+        if ($mode === 'edit' && $selectedBrandId > 0) {
+            $q->where(function ($qq) use ($selectedBrandId) {
+                $qq->where('active', true)->orWhere('id', $selectedBrandId);
+            });
+        } else {
+            $q->where('active', true);
+        }
+
+        $brands = $q->orderBy('name')->get(['id', 'name']);
 
         return response()->json(['ok' => true, 'brands' => $brands]);
     }
 
+
     public function models(Request $request)
     {
         $brandId = (int) $request->query('brand_id');
+        $mode = (string) $request->query('mode', 'create'); // create|edit
+        $selectedModelId = (int) $request->query('selected_model_id', 0);
+
         if (!$brandId || !DeviceBrand::whereKey($brandId)->exists()) {
             return response()->json(['ok' => false, 'message' => 'Marca inválida'], 422);
         }
 
-        // si la marca está inactiva, devolvemos vacío
-        if (!DeviceBrand::whereKey($brandId)->where('active', true)->exists()) {
-            return response()->json([]);
+        $brandIsActive = DeviceBrand::whereKey($brandId)->where('active', true)->exists();
+        if (!$brandIsActive && $mode !== 'edit') {
+            return response()->json(['ok' => true, 'models' => []]);
         }
 
-        $models = DeviceModel::where('device_brand_id', $brandId)
-            ->where('active', true)
-            ->orderBy('name')
-            ->get(['id', 'name']);
+        if ($selectedModelId > 0 && !DeviceModel::whereKey($selectedModelId)->where('device_brand_id', $brandId)->exists()) {
+            $selectedModelId = 0;
+        }
 
+        $q = DeviceModel::where('device_brand_id', $brandId);
+
+        if ($mode === 'edit' && $selectedModelId > 0) {
+            $q->where(function ($qq) use ($selectedModelId) {
+                $qq->where('active', true)->orWhere('id', $selectedModelId);
+            });
+        } else {
+            $q->where('active', true);
+        }
+
+        $models = $q->orderBy('name')->get(['id', 'name']);
 
         return response()->json(['ok' => true, 'models' => $models]);
     }
+
 
     public function storeBrand(Request $request)
     {
@@ -111,23 +139,42 @@ class AdminDeviceCatalogController extends Controller
     public function issues(Request $request)
     {
         $typeId = (int) $request->query('type_id', 0);
+        $mode = (string) $request->query('mode', 'create'); // create|edit
+        $selectedIssueId = (int) $request->query('selected_issue_id', 0);
 
         if ($typeId <= 0) {
             return response()->json(['ok' => true, 'issues' => []]);
         }
 
-        if (!DeviceType::whereKey($typeId)->where('active', true)->exists()) {
-            return response()->json([]);
+        $typeExists = DeviceType::whereKey($typeId)->exists();
+        if (!$typeExists) {
+            return response()->json(['ok' => false, 'message' => 'Tipo inválido'], 422);
         }
 
-        $issues = DeviceIssueType::where('device_type_id', $typeId)
-            ->where('active', true)
-            ->orderBy('name')
-            ->get(['id', 'name', 'slug']);
+        $typeIsActive = DeviceType::whereKey($typeId)->where('active', true)->exists();
+        if (!$typeIsActive && $mode !== 'edit') {
+            return response()->json(['ok' => true, 'issues' => []]);
+        }
 
+        if ($selectedIssueId > 0 && !DeviceIssueType::whereKey($selectedIssueId)->where('device_type_id', $typeId)->exists()) {
+            $selectedIssueId = 0;
+        }
+
+        $q = DeviceIssueType::where('device_type_id', $typeId);
+
+        if ($mode === 'edit' && $selectedIssueId > 0) {
+            $q->where(function ($qq) use ($selectedIssueId) {
+                $qq->where('active', true)->orWhere('id', $selectedIssueId);
+            });
+        } else {
+            $q->where('active', true);
+        }
+
+        $issues = $q->orderBy('name')->get(['id', 'name', 'slug']);
 
         return response()->json(['ok' => true, 'issues' => $issues]);
     }
+
 
     public function storeIssue(Request $request)
     {

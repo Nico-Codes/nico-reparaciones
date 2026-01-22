@@ -376,7 +376,8 @@
             @csrf
             @method('PUT')
 
-            <div class="grid gap-3 md:grid-cols-2" data-repair-issue-catalog>
+            <div class="grid gap-3 md:grid-cols-2" data-repair-issue-catalog data-catalog-mode="edit">
+
               <div class="space-y-3">
                 <div>
                   <label class="block mb-1">Falla principal *</label>
@@ -434,7 +435,8 @@
               </div>
 
               <div class="md:col-span-2">
-                <div class="space-y-3" data-repair-device-catalog>
+                <div class="space-y-3" data-repair-device-catalog data-catalog-mode="edit">
+
                   <div class="grid gap-3 md:grid-cols-2">
 
                     <div>
