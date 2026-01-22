@@ -520,20 +520,103 @@
 
             <hr>
 
-            <div class="grid gap-3 md:grid-cols-3">
-              <div>
-                <label for="parts_cost" class="block mb-1">Repuestos</label>
-                <input id="parts_cost" name="parts_cost" inputmode="decimal" value="{{ old('parts_cost', $repair->parts_cost) }}">
+            <div class="grid gap-4 sm:grid-cols-3">
+              <div class="space-y-1" data-repair-pricing-auto
+                data-pricing-create-base="{{ route('admin.pricing.create') }}"
+                data-pricing-edit-base="{{ url('/admin/precios') }}">
+
+                <label for="parts_cost" class="text-sm font-semibold">Costo repuesto</label>
+                <input
+                  id="parts_cost"
+                  name="parts_cost"
+                  inputmode="decimal"
+                  value="{{ old('parts_cost', $repair->parts_cost) }}"
+                  placeholder="0"
+                  data-parts-cost
+                />
               </div>
-              <div>
-                <label for="labor_cost" class="block mb-1">Mano de obra</label>
-                <input id="labor_cost" name="labor_cost" inputmode="decimal" value="{{ old('labor_cost', $repair->labor_cost) }}">
+
+              <div class="space-y-1">
+                <label class="text-sm font-semibold">Envío</label>
+
+                <div class="flex items-center gap-2">
+                  <label class="inline-flex items-center gap-2 text-sm">
+                    <input type="checkbox" class="h-4 w-4" data-shipping-enabled />
+                    <span>Sumar</span>
+                  </label>
+
+                  <input
+                    inputmode="numeric"
+                    value="{{ old('shipping_amount') }}"
+                    placeholder="0"
+                    class="w-32"
+                    data-shipping-amount
+                  />
+                </div>
+
+                <div class="flex items-center justify-between text-xs text-zinc-500">
+                  <span data-pricing-rule-label>Regla: —</span>
+
+                  <a
+                    href="{{ route('admin.pricing.create') }}"
+                    target="_blank"
+                    rel="noopener"
+                    class="underline hover:text-zinc-700"
+                    data-pricing-rule-action
+                  >
+                    Crear regla
+                  </a>
+                </div>
               </div>
-              <div>
-                <label for="final_price" class="block mb-1">Precio final</label>
-                <input id="final_price" name="final_price" inputmode="decimal" value="{{ old('final_price', $repair->final_price) }}">
+
+              <div class="space-y-1">
+                <label class="text-sm font-semibold">Ganancia sugerida</label>
+                <input inputmode="numeric" value="" placeholder="0" readonly data-profit-display />
+                <div class="text-xs text-zinc-500">Se calcula por regla (porcentaje + mínimo).</div>
+              </div>
+
+              <div class="space-y-1">
+                <label for="labor_cost" class="text-sm font-semibold">Mano de obra (opcional)</label>
+                <input
+                  id="labor_cost"
+                  name="labor_cost"
+                  inputmode="decimal"
+                  value="{{ old('labor_cost', $repair->labor_cost) }}"
+                  placeholder="0"
+                  data-labor-cost
+                />
+                <div class="text-xs text-zinc-500">Si la usás, se suma al total sugerido.</div>
+              </div>
+
+              <div class="space-y-1">
+                <label class="text-sm font-semibold">Total sugerido</label>
+                <input inputmode="numeric" value="" placeholder="0" readonly data-total-display />
+                <div class="text-xs text-zinc-500">Repuesto + ganancia + (mano de obra) + (envío).</div>
+              </div>
+
+              <div class="space-y-1">
+                <label for="final_price" class="text-sm font-semibold flex items-center justify-between gap-2">
+                  <span>Precio final al cliente</span>
+
+                  <span class="inline-flex items-center gap-2 text-xs text-zinc-600">
+                    <input type="checkbox" class="h-4 w-4" checked data-final-auto />
+                    Auto
+                  </span>
+                </label>
+
+                <input
+                  id="final_price"
+                  name="final_price"
+                  inputmode="decimal"
+                  value="{{ old('final_price', $repair->final_price) }}"
+                  placeholder="0"
+                  data-final-price
+                />
+
+                <div class="text-xs text-zinc-500">Si desactivás “Auto”, no se pisa tu valor.</div>
               </div>
             </div>
+
 
             <div class="grid gap-3 md:grid-cols-3">
               <div>
