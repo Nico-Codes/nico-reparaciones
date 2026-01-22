@@ -1978,8 +1978,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const laborEl = form.querySelector('[data-labor-cost]');
     const shipEl = form.querySelector('[data-shipping-enabled]');
     const shipAmtEl = form.querySelector('[data-shipping-amount]');
-    const profitEl = form.querySelector('[data-profit-suggested]');
-    const totalEl = form.querySelector('[data-suggested-total]');
+    const profitEl = form.querySelector('[data-profit-display]') || form.querySelector('[data-profit-suggested]');
+    const totalEl = form.querySelector('[data-total-display]') || form.querySelector('[data-suggested-total]');
+
     const finalEl = form.querySelector('[data-final-price]');
     const finalAutoEl = form.querySelector('[data-final-auto]');
     const ruleLabelEl = form.querySelector('[data-pricing-rule-label]');

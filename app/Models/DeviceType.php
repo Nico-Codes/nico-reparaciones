@@ -7,7 +7,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class DeviceType extends Model
 {
-    protected $fillable = ['name', 'slug'];
+    protected $fillable = ['name', 'slug', 'active'];
+
+    protected $casts = [
+        'active' => 'boolean',
+    ];
+
 
     public function brands()
     {

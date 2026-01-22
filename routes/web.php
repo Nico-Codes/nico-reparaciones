@@ -33,6 +33,8 @@ use App\Http\Controllers\AdminOrderWhatsappTemplateController;
 use App\Http\Controllers\AdminPricingRuleController;
 use App\Http\Controllers\AdminRepairTypeController;
 use App\Http\Controllers\AdminModelGroupController;
+use App\Http\Controllers\AdminDeviceTypeController;
+
 
 
 /*
@@ -242,6 +244,12 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     Route::put('/grupos-modelos/{group}', [AdminModelGroupController::class, 'update'])->name('admin.modelGroups.update');
     Route::post('/grupos-modelos/modelo/{model}/asignar', [AdminModelGroupController::class, 'assignModel'])->name('admin.modelGroups.assignModel');
 
+    // Catálogo (tipos de dispositivo)
+    Route::get('/tipos-dispositivo', [AdminDeviceTypeController::class, 'index'])->name('admin.deviceTypes.index');
+    Route::post('/tipos-dispositivo', [AdminDeviceTypeController::class, 'store'])->name('admin.deviceTypes.store');
+    Route::put('/tipos-dispositivo/{deviceType}', [AdminDeviceTypeController::class, 'update'])->name('admin.deviceTypes.update');
+
+    // Precios (auto cálculo)
     Route::get('/precios', [AdminPricingRuleController::class, 'index'])->name('admin.pricing.index');
     Route::get('/precios/crear', [AdminPricingRuleController::class, 'create'])->name('admin.pricing.create');
     Route::post('/precios', [AdminPricingRuleController::class, 'store'])->name('admin.pricing.store');

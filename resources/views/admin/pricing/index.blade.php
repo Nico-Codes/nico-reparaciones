@@ -8,10 +8,11 @@
     <div class="page-subtitle">Configurá porcentaje, mínimos y precios fijos por tipo/marca/grupo/modelo.</div>
   </div>
   <div class="flex gap-2">
+    <a class="btn btn-ghost" href="{{ route('admin.deviceTypes.index') }}">Dispositivos</a>
     <a class="btn btn-ghost" href="{{ route('admin.modelGroups.index') }}">Grupos</a>
     <a class="btn btn-ghost" href="{{ route('admin.repairTypes.index') }}">Tipos</a>
-    <a class="btn btn-primary" href="{{ route('admin.pricing.create') }}">+ Crear regla</a>
   </div>
+
 </div>
 
 <div class="card p-4 overflow-x-auto">
