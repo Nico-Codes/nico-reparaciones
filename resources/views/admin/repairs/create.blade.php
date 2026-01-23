@@ -101,7 +101,8 @@
               inputmode="numeric"
               autocomplete="tel"
               placeholder="Ej: 341xxxxxxx" />
-            <div class="text-xs text-zinc-500">Tip: podés pegarlo con o sin +54, espacios o guiones.</div>
+             {{-- (tip removido para reducir ruido visual) --}}
+
           </div>
 
 
@@ -117,7 +118,8 @@
                     <option value="{{ $t->id }}" @selected(old('device_type_id') == $t->id)>{{ $t->name }}</option>
                   @endforeach
                 </select>
-                <div class="text-xs text-zinc-500">Paso 1: elegí el tipo.</div>
+                {{-- (ayuda removida) --}}
+
               </div>
 
               {{-- Marca --}}
@@ -142,7 +144,8 @@
                   <button type="button" class="btn-ghost btn-sm w-full sm:w-auto" data-cancel-brand>Cancelar</button>
                 </div>
 
-                <div class="text-xs text-zinc-500">Paso 2: escribí y Enter, o usá flechas.</div>
+                {{-- (ayuda removida) --}}
+
               </div>
 
               {{-- Modelo --}}
@@ -167,7 +170,8 @@
                   <button type="button" class="btn-ghost btn-sm w-full sm:w-auto" data-cancel-model>Cancelar</button>
                 </div>
 
-                <div class="text-xs text-zinc-500">Paso 3: al elegir marca carga modelos.</div>
+                {{-- (ayuda removida) --}}
+
               </div>
             </div>
           </div>
@@ -251,54 +255,14 @@
         <div class="font-black">Costos, cobro y estado</div>
         <span class="badge-zinc">Finanzas</span>
       </div>
-      <div class="card-body">
+      <div class="card-body" data-repair-pricing-auto
+        data-pricing-create-base="{{ route('admin.pricing.create') }}"
+        data-pricing-edit-base="{{ url('/admin/precios') }}">
         <div class="grid gap-4 sm:grid-cols-3">
-          <div class="space-y-1" data-repair-pricing-auto
-            data-pricing-create-base="{{ route('admin.pricing.create') }}"
-            data-pricing-edit-base="{{ url('/admin/precios') }}">
 
+          <div class="space-y-1">
             <label class="text-sm font-semibold">Costo repuesto</label>
             <input name="parts_cost" inputmode="numeric" value="{{ old('parts_cost') }}" placeholder="0" data-parts-cost />
-          </div>
-
-          <div class="space-y-1">
-            <label class="text-sm font-semibold">Envío</label>
-            <div class="flex items-center gap-2">
-              <label class="inline-flex items-center gap-2 text-sm">
-                <input type="checkbox" class="h-4 w-4" data-shipping-enabled />
-                <span>Sumar</span>
-              </label>
-              <input inputmode="numeric" value="{{ old('shipping_amount') }}" placeholder="0" class="w-32" data-shipping-amount />
-            </div>
-            <div class="flex items-center justify-between text-xs text-zinc-500">
-              <span data-pricing-rule-label>Regla: —</span>
-
-              <a href="{{ route('admin.pricing.create') }}"
-                target="_blank" rel="noopener"
-                class="underline hover:text-zinc-700"
-                data-pricing-rule-action>
-                Crear regla
-              </a>
-            </div>
-
-          </div>
-
-          <div class="space-y-1">
-            <label class="text-sm font-semibold">Ganancia sugerida</label>
-            <input inputmode="numeric" value="" placeholder="0" readonly data-profit-display />
-            <div class="text-xs text-zinc-500">Se calcula por regla (porcentaje + mínimo).</div>
-          </div>
-
-          <div class="space-y-1">
-            <label class="text-sm font-semibold">Mano de obra (opcional)</label>
-            <input name="labor_cost" inputmode="numeric" value="{{ old('labor_cost') }}" placeholder="0" data-labor-cost />
-            <div class="text-xs text-zinc-500">Si la usás, se suma al total sugerido.</div>
-          </div>
-
-          <div class="space-y-1">
-            <label class="text-sm font-semibold">Total sugerido</label>
-            <input inputmode="numeric" value="" placeholder="0" readonly data-total-display />
-            <div class="text-xs text-zinc-500">Repuesto + ganancia + (mano de obra) + (envío).</div>
           </div>
 
           <div class="space-y-1">
@@ -310,11 +274,9 @@
               </span>
             </label>
             <input name="final_price" inputmode="numeric" value="{{ old('final_price') }}" placeholder="0" data-final-price />
-            <div class="text-xs text-zinc-500">Si desactivás “Auto”, no se pisa tu valor.</div>
           </div>
 
-
-          <div class="sm:col-span-3 space-y-1">
+          <div class="space-y-1">
             <label>Estado *</label>
             <select name="status" data-repair-status required>
               @foreach($statuses as $k => $label)
@@ -323,12 +285,63 @@
             </select>
 
             <div class="text-xs text-zinc-500">
-              Tip: si ponés <span class="font-black">Entregado</span>, se guarda la fecha de entrega y la garantía empieza a contar desde ahí.
+              Si marcás <span class="font-black">Entregado</span>, se guarda la fecha de entrega.
+            </div>
+          </div>
+
+          <div class="sm:col-span-3">
+            <button type="button" class="btn-ghost btn-sm" data-toggle-finance aria-expanded="false">
+              Ver detalle de cálculo
+            </button>
+          </div>
+
+          <div class="sm:col-span-3 hidden" data-finance-advanced>
+            <div class="grid gap-4 sm:grid-cols-3">
+
+              <div class="space-y-1">
+                <label class="text-sm font-semibold">Envío</label>
+                <div class="flex items-center gap-2">
+                  <label class="inline-flex items-center gap-2 text-sm">
+                    <input type="checkbox" class="h-4 w-4" data-shipping-enabled />
+                    <span>Sumar</span>
+                  </label>
+                  <input inputmode="numeric" value="{{ old('shipping_amount') }}" placeholder="0" class="w-32" data-shipping-amount />
+                </div>
+
+                <div class="flex items-center justify-between text-xs text-zinc-500">
+                  <span data-pricing-rule-label>Regla: —</span>
+
+                  <a href="{{ route('admin.pricing.create') }}"
+                    target="_blank" rel="noopener"
+                    class="underline hover:text-zinc-700"
+                    data-pricing-rule-action>
+                    Crear regla
+                  </a>
+                </div>
+              </div>
+
+              <div class="space-y-1">
+                <label class="text-sm font-semibold">Ganancia sugerida</label>
+                <input inputmode="numeric" value="" placeholder="0" readonly data-profit-display />
+              </div>
+
+              <div class="space-y-1">
+                <label class="text-sm font-semibold">Mano de obra (opcional)</label>
+                <input name="labor_cost" inputmode="numeric" value="{{ old('labor_cost') }}" placeholder="0" data-labor-cost />
+              </div>
+
+              <div class="space-y-1 sm:col-span-3">
+                <label class="text-sm font-semibold">Total sugerido</label>
+                <input inputmode="numeric" value="" placeholder="0" readonly data-total-display />
+                <div class="text-xs text-zinc-500">Repuesto + ganancia + (mano de obra) + (envío).</div>
+              </div>
+
             </div>
           </div>
 
         </div>
       </div>
+
     </div>
 
       <div class="card {{ $advOpen ? '' : 'hidden' }}" data-advanced-fields>

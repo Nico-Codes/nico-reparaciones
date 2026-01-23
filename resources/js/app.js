@@ -3067,7 +3067,74 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     })();
 
+    ;(function initRepairCreateFinanceToggle() {
+      const btn = document.querySelector('[data-toggle-finance]');
+      const block = document.querySelector('[data-finance-advanced]');
+      if (!btn || !block) return;
+
+      const KEY = 'nr_repairs_finance_open';
+
+      const setOpen = (open) => {
+        block.classList.toggle('hidden', !open);
+        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        btn.textContent = open ? 'Ocultar detalle de cálculo' : 'Ver detalle de cálculo';
+      };
+
+      let open = !block.classList.contains('hidden');
+
+      try {
+        const saved = localStorage.getItem(KEY);
+        if (saved !== null && !open) open = (saved === '1');
+      } catch (_) {}
+
+      setOpen(open);
+
+      btn.addEventListener('click', () => {
+        open = !open;
+        setOpen(open);
+        try { localStorage.setItem(KEY, open ? '1' : '0'); } catch (_) {}
+      });
+    })();
+
+    ;(function initUICollapsibles() {
+      const btns = document.querySelectorAll('[data-toggle-collapse]');
+      if (!btns.length) return;
+
+      const esc = (s) => (window.CSS && CSS.escape) ? CSS.escape(s) : String(s).replace(/[^a-zA-Z0-9_-]/g, '\\$&');
+
+      btns.forEach((btn) => {
+        const key = btn.getAttribute('data-toggle-collapse');
+        if (!key) return;
+
+        const block = document.querySelector(`[data-collapse="${esc(key)}"]`);
+        if (!block) return;
+
+        const STORE = `nr_collapse_${key}`;
+
+        const setOpen = (open) => {
+          block.classList.toggle('hidden', !open);
+          btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+          btn.textContent = open ? 'Ocultar' : 'Ver';
+        };
+
+        let open = !block.classList.contains('hidden');
+        try {
+          const saved = localStorage.getItem(STORE);
+          if (saved !== null) open = (saved === '1');
+        } catch (_) {}
+
+        setOpen(open);
+
+        btn.addEventListener('click', () => {
+          open = !open;
+          setOpen(open);
+          try { localStorage.setItem(STORE, open ? '1' : '0'); } catch (_) {}
+        });
+      });
+    })();
+
     ;(function initRepairCreateSummaryAndPhone() {
+
 
     const summary = document.querySelector('[data-repair-create-summary]');
     if (!summary) return;

@@ -256,59 +256,15 @@
 
       <div class="card">
         <div class="card-head">
-          <div class="font-black">WhatsApp</div>
-          @if(!empty($waNotifiedAt))
-            <span class="badge-zinc">Último: {{ $waNotifiedAt->format('d/m/Y H:i') }}</span>
-          @else
-            <span class="badge-zinc">Sin envíos</span>
-          @endif
-        </div>
-        <div class="card-body">
-          <div class="text-sm text-zinc-700 space-y-2">
-            <div class="flex items-start justify-between gap-3">
-              <span class="text-zinc-500">Teléfono</span>
-              <span class="font-extrabold text-right">{{ $repair->customer_phone ?: '—' }}</span>
-            </div>
-            <div class="flex items-start justify-between gap-3">
-              <span class="text-zinc-500">Estado notificado</span>
-              <span class="{{ !empty($waNotifiedCurrent) ? 'badge-emerald' : 'badge-amber' }}">
-                {{ !empty($waNotifiedCurrent) ? 'Al día' : 'Pendiente' }}
-              </span>
-            </div>
-          </div>
-
-          @if(!empty($waMessage))
-            <div class="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-3 text-sm">
-              <div class="text-xs font-black uppercase text-zinc-500">Mensaje</div>
-              <div class="mt-1 whitespace-pre-wrap font-semibold text-zinc-800">{{ $waMessage }}</div>
-            </div>
-          @endif
-
-          @if(!empty($waUrl))
-            <a href="{{ $waUrl }}" target="_blank" rel="noopener"
-               class="btn-primary w-full mt-4"
-               data-wa-open
-               data-wa-ajax="{{ route('admin.repairs.whatsappLogAjax', $repair) }}">
-              Abrir WhatsApp
-            </a>
-            <p class="mt-2 text-xs text-zinc-500">
-              Se registra el envío y se evita duplicar si ya se envió el mismo estado recientemente.
-            </p>
-          @else
-            <div class="mt-4 text-sm text-rose-700 font-extrabold">
-              Teléfono inválido o vacío: no se puede generar el link de WhatsApp.
-            </div>
-          @endif
-        </div>
-      </div>
-
-      {{-- Historial de estados --}}
-      <div class="card">
-        <div class="card-head">
           <div class="font-black">Historial</div>
-          <span class="badge-zinc">{{ $history->count() }} cambios</span>
+
+          <div class="flex items-center gap-2">
+            <span class="badge-zinc">{{ $history->count() }} cambios</span>
+            <button type="button" class="btn-ghost btn-sm" data-toggle-collapse="repair_history" aria-expanded="false">Ver</button>
+          </div>
         </div>
-        <div class="card-body">
+
+        <div class="card-body hidden" data-collapse="repair_history">
           @if($history->count())
             <ol class="space-y-3">
               @foreach($history as $h)
@@ -334,13 +290,19 @@
         </div>
       </div>
 
+
       {{-- Logs de WhatsApp --}}
       <div class="card">
         <div class="card-head">
           <div class="font-black">Logs WhatsApp</div>
-          <span class="badge-zinc">{{ $waLogs->count() }}</span>
+
+          <div class="flex items-center gap-2">
+            <span class="badge-zinc">{{ $waLogs->count() }}</span>
+            <button type="button" class="btn-ghost btn-sm" data-toggle-collapse="repair_wa_logs" aria-expanded="false">Ver</button>
+          </div>
         </div>
-        <div class="card-body">
+
+        <div class="card-body hidden" data-collapse="repair_wa_logs">
           @if($waLogs->count())
             <div class="space-y-2 text-sm">
               @foreach($waLogs as $l)
@@ -362,6 +324,7 @@
           @endif
         </div>
       </div>
+
     </div>
 
     {{-- Columna derecha: edición completa --}}
