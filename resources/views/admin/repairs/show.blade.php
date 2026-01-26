@@ -364,9 +364,6 @@
                     </button>
                   </div>
 
-                  <p class="mt-1 text-xs text-zinc-500">
-                    Tip: escribí y apretá ENTER para autoseleccionar; si no existe, te deja crearla.
-                  </p>
                 </div>
 
                 <div>
@@ -472,16 +469,7 @@
 
             </div>
 
-            <div class="grid gap-3 md:grid-cols-2">
-              <div>
-                <label for="issue_reported" class="block mb-1">Problema reportado</label>
-                <textarea id="issue_reported" name="issue_reported" rows="4">{{ old('issue_reported', $repair->issue_reported) }}</textarea>
-              </div>
-              <div>
-                <label for="diagnosis" class="block mb-1">Diagnóstico</label>
-                <textarea id="diagnosis" name="diagnosis" rows="4">{{ old('diagnosis', $repair->diagnosis) }}</textarea>
-              </div>
-            </div>
+
 
             <hr>
 
@@ -502,66 +490,8 @@
               </div>
 
               <div class="space-y-1">
-                <label class="text-sm font-semibold">Envío</label>
-
-                <div class="flex items-center gap-2">
-                  <label class="inline-flex items-center gap-2 text-sm">
-                    <input type="checkbox" class="h-4 w-4" data-shipping-enabled />
-                    <span>Sumar</span>
-                  </label>
-
-                  <input
-                    inputmode="numeric"
-                    value="{{ old('shipping_amount') }}"
-                    placeholder="0"
-                    class="w-32"
-                    data-shipping-amount
-                  />
-                </div>
-
-                <div class="flex items-center justify-between text-xs text-zinc-500">
-                  <span data-pricing-rule-label>Regla: —</span>
-
-                  <a
-                    href="{{ route('admin.pricing.create') }}"
-                    target="_blank"
-                    rel="noopener"
-                    class="underline hover:text-zinc-700"
-                    data-pricing-rule-action
-                  >
-                    Crear regla
-                  </a>
-                </div>
-              </div>
-
-              <div class="space-y-1">
-                <label class="text-sm font-semibold">Ganancia sugerida</label>
-                <input inputmode="numeric" value="" placeholder="0" readonly data-profit-display />
-                <div class="text-xs text-zinc-500">Se calcula por regla (porcentaje + mínimo).</div>
-              </div>
-
-              <div class="space-y-1">
-                <label for="labor_cost" class="text-sm font-semibold">Mano de obra (opcional)</label>
-                <input
-                  id="labor_cost"
-                  name="labor_cost"
-                  inputmode="decimal"
-                  value="{{ old('labor_cost', $repair->labor_cost) }}"
-                  placeholder="0"
-                  data-labor-cost
-                />
-                <div class="text-xs text-zinc-500">Si la usás, se suma al total sugerido.</div>
-              </div>
-
-              <div class="space-y-1">
-                <label class="text-sm font-semibold">Total sugerido</label>
-                <input inputmode="numeric" value="" placeholder="0" readonly data-total-display />
-                <div class="text-xs text-zinc-500">Repuesto + ganancia + (mano de obra) + (envío).</div>
-              </div>
-
-              <div class="space-y-1">
                 <label for="final_price" class="text-sm font-semibold flex items-center justify-between gap-2">
-                  <span>Precio final al cliente</span>
+                  <span>Precio final</span>
 
                   <span class="inline-flex items-center gap-2 text-xs text-zinc-600">
                     <input type="checkbox" class="h-4 w-4" checked data-final-auto />
@@ -577,44 +507,121 @@
                   placeholder="0"
                   data-final-price
                 />
+              </div>
 
-                <div class="text-xs text-zinc-500">Si desactivás “Auto”, no se pisa tu valor.</div>
+              <div class="flex items-end justify-end">
+                <button type="button"
+                  class="btn-outline btn-sm"
+                  data-toggle-collapse="repair_show_finance"
+                  aria-expanded="false">Ver</button>
+              </div>
+
+              <div class="sm:col-span-3 hidden" data-collapse="repair_show_finance">
+                <div class="grid gap-4 sm:grid-cols-3">
+                  <div class="space-y-1">
+                    <label class="text-sm font-semibold">Envío</label>
+
+                    <div class="flex items-center gap-2">
+                      <label class="inline-flex items-center gap-2 text-sm">
+                        <input type="checkbox" class="h-4 w-4" data-shipping-enabled />
+                        <span>Sumar</span>
+                      </label>
+
+                      <input
+                        inputmode="numeric"
+                        value="{{ old('shipping_amount') }}"
+                        placeholder="0"
+                        class="w-32"
+                        data-shipping-amount
+                      />
+                    </div>
+
+                    <div class="flex items-center justify-between text-xs text-zinc-500">
+                      <span data-pricing-rule-label>Regla: —</span>
+
+                      <a
+                        href="{{ route('admin.pricing.create') }}"
+                        target="_blank"
+                        rel="noopener"
+                        class="underline hover:text-zinc-700"
+                        data-pricing-rule-action
+                      >
+                        Crear regla
+                      </a>
+                    </div>
+                  </div>
+
+                  <div class="space-y-1">
+                    <label class="text-sm font-semibold">Ganancia sugerida</label>
+                    <input inputmode="numeric" value="" placeholder="0" readonly data-profit-display />
+                  </div>
+
+                  <div class="space-y-1">
+                    <label for="labor_cost" class="text-sm font-semibold">Mano de obra</label>
+                    <input
+                      id="labor_cost"
+                      name="labor_cost"
+                      inputmode="decimal"
+                      value="{{ old('labor_cost', $repair->labor_cost) }}"
+                      placeholder="0"
+                      data-labor-cost
+                    />
+                  </div>
+
+                  <div class="space-y-1 sm:col-span-3">
+                    <label class="text-sm font-semibold">Total sugerido</label>
+                    <input inputmode="numeric" value="" placeholder="0" readonly data-total-display />
+                  </div>
+                </div>
               </div>
             </div>
 
 
-            <div class="grid gap-3 md:grid-cols-3">
-              <div>
-                <label for="paid_amount" class="block mb-1">Pagado</label>
-                <input id="paid_amount" name="paid_amount" inputmode="decimal" value="{{ old('paid_amount', $repair->paid_amount) }}">
+
+            <div class="flex items-center justify-between gap-3">
+              <div class="text-sm font-semibold text-zinc-800">Pagos y notas</div>
+
+              <button type="button"
+                class="btn-outline btn-sm"
+                data-toggle-collapse="repair_show_extras"
+                aria-expanded="false">Ver</button>
+            </div>
+
+            <div class="hidden" data-collapse="repair_show_extras">
+              <div class="grid gap-3 md:grid-cols-3">
+                <div>
+                  <label for="paid_amount" class="block mb-1">Pagado</label>
+                  <input id="paid_amount" name="paid_amount" inputmode="decimal" value="{{ old('paid_amount', $repair->paid_amount) }}">
+                </div>
+
+                <div>
+                  <label for="payment_method" class="block mb-1">Método</label>
+                  <select id="payment_method" name="payment_method">
+                    <option value="">—</option>
+                    @foreach($paymentMethods as $k => $label)
+                      <option value="{{ $k }}" @selected(old('payment_method', $repair->payment_method) === $k)>{{ $label }}</option>
+                    @endforeach
+                  </select>
+                </div>
+
+                <div>
+                  <label for="warranty_days" class="block mb-1">Garantía (días)</label>
+                  <input id="warranty_days" name="warranty_days" inputmode="numeric" value="{{ old('warranty_days', $repair->warranty_days) }}">
+                </div>
               </div>
 
-              <div>
-                <label for="payment_method" class="block mb-1">Método</label>
-                <select id="payment_method" name="payment_method">
-                  <option value="">—</option>
-                  @foreach($paymentMethods as $k => $label)
-                    <option value="{{ $k }}" @selected(old('payment_method', $repair->payment_method) === $k)>{{ $label }}</option>
-                  @endforeach
-                </select>
-              </div>
-
-              <div>
-                <label for="warranty_days" class="block mb-1">Garantía (días)</label>
-                <input id="warranty_days" name="warranty_days" inputmode="numeric" value="{{ old('warranty_days', $repair->warranty_days) }}">
+              <div class="grid gap-3 md:grid-cols-2 mt-3">
+                <div>
+                  <label for="payment_notes" class="block mb-1">Notas de pago</label>
+                  <textarea id="payment_notes" name="payment_notes" rows="3">{{ old('payment_notes', $repair->payment_notes) }}</textarea>
+                </div>
+                <div>
+                  <label for="notes" class="block mb-1">Notas internas</label>
+                  <textarea id="notes" name="notes" rows="3">{{ old('notes', $repair->notes) }}</textarea>
+                </div>
               </div>
             </div>
 
-            <div class="grid gap-3 md:grid-cols-2">
-              <div>
-                <label for="payment_notes" class="block mb-1">Notas de pago</label>
-                <textarea id="payment_notes" name="payment_notes" rows="3">{{ old('payment_notes', $repair->payment_notes) }}</textarea>
-              </div>
-              <div>
-                <label for="notes" class="block mb-1">Notas internas</label>
-                <textarea id="notes" name="notes" rows="3">{{ old('notes', $repair->notes) }}</textarea>
-              </div>
-            </div>
 
             <div class="flex flex-col sm:flex-row gap-2">
               <button class="btn-primary">Guardar cambios</button>

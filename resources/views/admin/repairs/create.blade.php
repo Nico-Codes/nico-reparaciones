@@ -35,10 +35,18 @@
     {{-- Resumen en vivo (UX) --}}
     <div class="card" data-repair-create-summary>
       <div class="card-head">
-        <div class="font-black">Resumen</div>
-        <span class="badge-amber" data-sum-state>Incompleto</span>
+        <div class="flex items-center gap-2">
+          <div class="font-black">Resumen</div>
+          <span class="badge-amber" data-sum-state>Incompleto</span>
+        </div>
+
+        <button type="button"
+          class="btn-ghost btn-sm"
+          data-toggle-collapse="repair_create_summary"
+          aria-expanded="false">Ver</button>
       </div>
-      <div class="card-body">
+
+      <div class="card-body hidden" data-collapse="repair_create_summary">
         <div class="grid gap-3 sm:grid-cols-4">
           <div class="sm:col-span-2">
             <div class="text-xs text-zinc-500">Cliente</div>
@@ -66,11 +74,8 @@
         </div>
       </div>
     </div>
-    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-      <div class="text-sm text-zinc-600">
-        Modo rápido: completá solo lo marcado con <span class="font-black">*</span>. El resto es opcional.
-      </div>
 
+    <div class="flex justify-end">
       <button type="button"
         class="btn-outline btn-sm"
         data-toggle-advanced
@@ -78,6 +83,7 @@
         {{ $advOpen ? 'Ocultar campos opcionales' : 'Mostrar campos opcionales' }}
       </button>
     </div>
+
     <div class="card">
       <div class="card-head">
         <div class="font-black">Cliente y equipo</div>
@@ -217,9 +223,7 @@
               <button type="button" class="btn-ghost btn-sm w-full sm:w-auto" data-issue-create-cancel>Cancelar</button>
             </div>
 
-            <div class="text-xs text-zinc-500">
-              Enter: selecciona la mejor coincidencia. Si no existe, te propone crearla.
-            </div>
+
           </div>
 
           <div class="space-y-1">
