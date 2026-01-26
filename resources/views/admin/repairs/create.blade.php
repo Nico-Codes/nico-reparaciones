@@ -130,36 +130,31 @@
 
               {{-- Marca --}}
               <div class="space-y-1 min-w-0">
-                <div class="flex items-center justify-between gap-2">
-                  <label>Marca *</label>
-                  <button type="button" class="btn-outline btn-sm" data-add-brand disabled>+ Agregar</button>
-                </div>
+                <label>Marca *</label>
 
                 <input type="text" placeholder="Buscar marca… (Enter)"
                   data-brand-search disabled>
 
                 <select id="device_brand_id" name="device_brand_id"
-                  data-device-brand disabled required
+                  data-device-brand disabled
+                  required
                   data-selected="{{ old('device_brand_id') }}">
                   <option value="">— Elegí un tipo primero —</option>
                 </select>
+
+                <button type="button" class="btn-ghost btn-sm mt-2" data-add-brand disabled>+ Agregar marca</button>
 
                 <div class="hidden mt-2 gap-2 flex-col sm:flex-row" data-add-brand-form>
                   <input type="text" class="flex-1" placeholder="Nueva marca…" data-add-brand-input>
                   <button type="button" class="btn-primary btn-sm w-full sm:w-auto" data-save-brand>Guardar</button>
                   <button type="button" class="btn-ghost btn-sm w-full sm:w-auto" data-cancel-brand>Cancelar</button>
                 </div>
-
-                {{-- (ayuda removida) --}}
-
               </div>
+
 
               {{-- Modelo --}}
               <div class="space-y-1 min-w-0">
-                <div class="flex items-center justify-between gap-2">
-                  <label>Modelo *</label>
-                  <button type="button" class="btn-outline btn-sm" data-add-model disabled>+ Agregar</button>
-                </div>
+                <label>Modelo *</label>
 
                 <input type="text" placeholder="Buscar modelo… (Enter)"
                   data-model-search disabled>
@@ -170,15 +165,15 @@
                   <option value="">— Elegí una marca primero —</option>
                 </select>
 
+                <button type="button" class="btn-ghost btn-sm mt-2" data-add-model disabled>+ Agregar modelo</button>
+
                 <div class="hidden mt-2 gap-2 flex-col sm:flex-row" data-add-model-form>
                   <input type="text" class="flex-1" placeholder="Nuevo modelo…" data-add-model-input>
                   <button type="button" class="btn-primary btn-sm w-full sm:w-auto" data-save-model>Guardar</button>
                   <button type="button" class="btn-ghost btn-sm w-full sm:w-auto" data-cancel-model>Cancelar</button>
                 </div>
-
-                {{-- (ayuda removida) --}}
-
               </div>
+
             </div>
           </div>
 
