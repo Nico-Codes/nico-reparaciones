@@ -314,14 +314,44 @@
       </div>
 
       <div class="p-4 space-y-4 flex-1 overflow-y-auto">
+        @php
+          $userName = auth()->user()->name ?? 'Usuario';
+          $userEmail = auth()->user()->email ?? '';
+          $userInitial = \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($userName, 0, 1));
+          $accountHref = $has('account.edit') ? route('account.edit') : null;
+        @endphp
+
         @if($isAuth)
-          <div class="card">
-            <div class="card-body">
-              <div class="font-black text-zinc-900 truncate">{{ auth()->user()->name ?? 'Usuario' }}</div>
-              <div class="sidebar-sub truncate">{{ auth()->user()->email ?? '' }}</div>
+          @if($accountHref)
+            <a href="{{ $accountHref }}" class="card group hover:shadow-md transition" aria-label="Ver mi cuenta">
+              <div class="card-body flex items-center gap-3">
+                <div class="h-11 w-11 rounded-2xl bg-sky-50 text-sky-700 ring-1 ring-sky-100 flex items-center justify-center font-black">
+                  {{ $userInitial }}
+                </div>
+
+                <div class="min-w-0 flex-1">
+                  <div class="font-black text-zinc-900 truncate">{{ $userName }}</div>
+                  <div class="sidebar-sub truncate">{{ $userEmail }}</div>
+
+                  <div class="mt-1 text-xs font-extrabold text-sky-700/80 group-hover:text-sky-700 inline-flex items-center gap-1">
+                    Ver mi cuenta
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" class="w-4 h-4" fill="currentColor" aria-hidden="true">
+                      <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 0 1 .02-1.06L10.94 10 7.23 6.29a.75.75 0 1 1 1.06-1.06l4.24 4.24c.29.29.29.77 0 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0Z" clip-rule="evenodd"/>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </a>
+          @else
+            <div class="card">
+              <div class="card-body">
+                <div class="font-black text-zinc-900 truncate">{{ $userName }}</div>
+                <div class="sidebar-sub truncate">{{ $userEmail }}</div>
+              </div>
             </div>
-          </div>
+          @endif
         @endif
+
 
         <div class="sidebar-section space-y-2">
           <div class="sidebar-title">Navegación</div>
@@ -354,8 +384,13 @@
                   <img src="/icons/carrito.svg" alt="" class="w-5 h-5" loading="lazy" decoding="async">
                   <span>Carrito</span>
                 </span>
+
+                @if($cartCount > 0)
+                  <span class="badge badge-sky ml-auto">{{ $cartCount }}</span>
+                @endif
               </a>
             @endif
+
           </div>
         </div>
 

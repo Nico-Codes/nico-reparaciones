@@ -109,10 +109,25 @@ document.addEventListener('DOMContentLoaded', () => {
     sidebarBtn.addEventListener('click', () => (sidebarIsOpen() ? sidebarClose() : sidebarOpen()));
     $$('[data-close="sidebar"]').forEach((el) => el.addEventListener('click', sidebarClose));
 
+    // ✅ UX: cerrar el menú al navegar (click en links dentro del sidebar)
+    sidebar.addEventListener('click', (e) => {
+      const a = e.target.closest('a.sidebar-link');
+      if (a && a.getAttribute('href')) {
+        sidebarClose();
+        return;
+      }
+
+      const btn = e.target.closest('button.sidebar-link');
+      if (btn && (btn.type || '').toLowerCase() === 'submit') {
+        sidebarClose();
+      }
+    });
+
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') sidebarClose();
     });
   }
+
 
   // ----------------------------
   // Dropdown cuenta (data-menu="id")
