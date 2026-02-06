@@ -27,6 +27,9 @@
   $wa = $wa ?? '';
   $q = $q ?? '';
 
+  $filtersMoreOpen = $wa !== '';
+
+
   $tabs = ['' => 'Todos'] + ($statuses ?? []);
   $statusCounts = $statusCounts ?? [];
   $totalCount = $totalCount ?? 0;
@@ -46,39 +49,52 @@
     </div>
 
 
-    {{-- Tabs por estado (con contadores) --}}
-    <div class="flex items-center gap-2 overflow-x-auto pb-1">
-      @foreach($tabs as $key => $label)
-        @php
-          $isActive = ($status ?? '') === (string)$key;
+        {{-- Tabs por estado (con contadores) --}}
+        <div class="w-full">
+          <div class="flex items-center justify-between gap-3">
+            <div class="text-sm font-semibold text-zinc-900">Estados</div>
 
-          $params = array_filter([
-            'q' => $q ?? '',
-            'wa' => $wa ?? '',
-            'status' => $key,
-          ], fn($v) => $v !== '' && $v !== null);
+            <button type="button"
+              class="btn-ghost btn-sm"
+              data-toggle-collapse="repairs_tabs"
+              data-toggle-collapse-label="estados"
+              aria-expanded="false">Ver estados</button>
+          </div>
 
-          // Para "Todos", no mandamos status
-          if ($key === '') unset($params['status']);
+          <div class="mt-2 flex items-center gap-2 overflow-x-auto pb-1 hidden" data-collapse="repairs_tabs">
+            @foreach($tabs as $key => $label)
+              @php
+                $isActive = ($status ?? '') === (string)$key;
 
-          $href = route('admin.repairs.index', $params);
+                $params = array_filter([
+                  'q' => $q ?? '',
+                  'wa' => $wa ?? '',
+                  'status' => $key,
+                ], fn($v) => $v !== '' && $v !== null);
 
-          $count = $key === '' ? (int)$totalCount : (int)($statusCounts[$key] ?? 0);
-          $countKey = $key === '' ? 'all' : (string)$key;
-        @endphp
+                // Para "Todos", no mandamos status
+                if ($key === '') unset($params['status']);
 
-        <a href="{{ $href }}" class="nav-pill {{ $isActive ? 'nav-pill-active' : '' }}">
-          <span>{{ $label }}</span>
-          <span
-            class="inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-black
-                  ring-1 ring-zinc-200 bg-white/70 text-zinc-700"
-            data-admin-repairs-count="{{ $countKey }}"
-          >
-            {{ $count }}
-          </span>
-        </a>
-      @endforeach
-    </div>
+                $href = route('admin.repairs.index', $params);
+
+                $count = $key === '' ? (int)$totalCount : (int)($statusCounts[$key] ?? 0);
+                $countKey = $key === '' ? 'all' : (string)$key;
+              @endphp
+
+              <a href="{{ $href }}" class="nav-pill {{ $isActive ? 'nav-pill-active' : '' }}">
+                <span>{{ $label }}</span>
+                <span
+                  class="inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-black
+                        ring-1 ring-zinc-200 bg-white/70 text-zinc-700"
+                  data-admin-repairs-count="{{ $countKey }}"
+                >
+                  {{ $count }}
+                </span>
+              </a>
+            @endforeach
+          </div>
+        </div>
+
 
 
     <div class="flex gap-2 flex-wrap">
@@ -120,7 +136,7 @@
           </select>
         </div>
 
-        <div class="sm:col-span-2">
+        <div class="sm:col-span-2 {{ $filtersMoreOpen ? '' : 'hidden' }}" data-collapse="repairs_filters_more">
           <label>WhatsApp</label>
           <select name="wa">
             <option value="">Todos</option>
@@ -128,15 +144,23 @@
             <option value="sent" @selected($wa === 'sent')>Enviado (OK)</option>
             <option value="no_phone" @selected($wa === 'no_phone')>Sin teléfono</option>
           </select>
-
         </div>
 
-        <div class="sm:col-span-6 flex flex-col sm:flex-row gap-2">
+
+       <div class="sm:col-span-6 flex flex-col sm:flex-row gap-2 sm:items-center">
           <button class="btn-outline sm:w-40" type="submit">Aplicar</button>
+
           @if($q !== '' || $status !== '' || $wa !== '')
             <a class="btn-ghost sm:w-40" href="{{ route('admin.repairs.index') }}">Limpiar</a>
           @endif
+
+          <button type="button"
+            class="btn-ghost sm:w-40 sm:ml-auto"
+            data-toggle-collapse="repairs_filters_more"
+            data-toggle-collapse-label="filtros"
+            aria-expanded="{{ $filtersMoreOpen ? 'true' : 'false' }}">Ver filtros</button>
         </div>
+
       </form>
     </div>
   </div>

@@ -75,14 +75,8 @@
       </div>
     </div>
 
-    <div class="flex justify-end">
-      <button type="button"
-        class="btn-outline btn-sm"
-        data-toggle-advanced
-        aria-expanded="{{ $advOpen ? 'true' : 'false' }}">
-        {{ $advOpen ? 'Ocultar campos opcionales' : 'Mostrar campos opcionales' }}
-      </button>
-    </div>
+    {{-- (botón de opcionales movido al final para mantener la pantalla limpia) --}}
+
 
     <div class="card">
       <div class="card-head">
@@ -193,7 +187,8 @@
             <label>Falla principal *</label>
 
             <input type="text"
-              placeholder="Escribí la falla y Enter (si no existe, se crea)"
+              placeholder="Buscar falla… (Enter para crear)"
+
               data-issue-search
               disabled>
 
@@ -397,10 +392,20 @@
       </div>
 
 
-    <div class="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
-      <a href="{{ route('admin.repairs.index') }}" class="btn-outline">Cancelar</a>
-            <button class="btn-primary" type="submit" data-repair-submit>Crear reparación</button>
+    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <button type="button"
+        class="btn-ghost btn-sm self-start"
+        data-toggle-advanced
+        aria-expanded="{{ $advOpen ? 'true' : 'false' }}">
+        {{ $advOpen ? 'Ocultar campos opcionales' : 'Mostrar campos opcionales' }}
+      </button>
+
+      <div class="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
+        <a href="{{ route('admin.repairs.index') }}" class="btn-outline">Cancelar</a>
+        <button class="btn-primary" type="submit" data-repair-submit>Crear reparación</button>
+      </div>
     </div>
+
   </form>
 </div>
 @endsection
