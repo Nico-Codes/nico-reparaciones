@@ -246,40 +246,12 @@
                 @endif
 
                 @if($has('orders.index')) <a class="dropdown-item" href="{{ route('orders.index') }}">Mis pedidos</a> @endif
-                @if($has('repairs.my.index')) <a class="dropdown-item" href="{{ route('repairs.my.index') }}">Mis reparaciones</a> @endif
-                @if($isAdmin && $has('admin.dashboard'))
-                  <a class="dropdown-item" href="{{ route('admin.dashboard') }}">Panel admin</a>
-                @endif
+                  @if($has('repairs.my.index')) <a class="dropdown-item" href="{{ route('repairs.my.index') }}">Mis reparaciones</a> @endif
 
-                @if($isAdmin && $has('admin.repairs.index'))
-                  <a class="dropdown-item" href="{{ route('admin.repairs.index') }}">Admin — Reparaciones</a>
-                @endif
-                @if($isAdmin && $has('admin.orders.index'))
-                  <a class="dropdown-item" href="{{ route('admin.orders.index') }}">Admin — Pedidos</a>
-                @endif
-                @if($isAdmin && $has('admin.products.index'))
-                  <a class="dropdown-item" href="{{ route('admin.products.index') }}">Admin — Productos</a>
-                @endif
-                @if($isAdmin && $has('admin.pricing.index'))
-                  <a class="dropdown-item" href="{{ route('admin.pricing.index') }}">Admin — Precios</a>
-                @endif
-                @if($isAdmin && $has('admin.deviceTypes.index'))
-                  <a class="dropdown-item" href="{{ route('admin.deviceTypes.index') }}">Admin — Tipos de dispositivo</a>
-                @endif
-                @if($isAdmin && $has('admin.deviceCatalog.index'))
-                  <a class="dropdown-item" href="{{ route('admin.deviceCatalog.index') }}">Admin — Catálogo dispositivos</a>
-                @endif
+                  @include('layouts.partials.account_admin_section')
 
-                @if($isAdmin && $has('admin.settings.index'))
-                  <a class="dropdown-item" href="{{ route('admin.settings.index') }}">Admin — Ajustes</a>
-                @endif
+                  <div class="my-2 border-t border-zinc-200"></div>
 
-                @if($isAdmin && $has('admin.users.index'))
-                  <a class="dropdown-item flex items-center justify-between gap-2" href="{{ route('admin.users.index') }}">
-                    <span>Usuarios</span>
-                    <img src="{{ asset('icons/users.svg') }}" alt="" width="18" height="18">
-                  </a>
-                @endif
 
 
 
