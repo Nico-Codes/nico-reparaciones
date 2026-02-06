@@ -3114,8 +3114,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const setOpen = (open) => {
           block.classList.toggle('hidden', !open);
           btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-          btn.textContent = open ? 'Ocultar' : 'Ver';
+
+          const label = btn.getAttribute('data-toggle-collapse-label');
+          if (label) {
+            btn.textContent = open ? `Ocultar ${label}` : `Ver ${label}`;
+          } else {
+            btn.textContent = open ? 'Ocultar' : 'Ver';
+          }
         };
+
 
         let open = !block.classList.contains('hidden');
         try {

@@ -486,8 +486,9 @@
                         <div class="hidden mt-2 gap-2" data-add-model-form>
                           <input type="text" class="flex-1" placeholder="Nuevo modelo…" data-add-model-input>
                           <button type="button" class="btn-primary btn-sm" data-save-model>Guardar</button>
-                          <button type="button" class="btn-ghost btn-sm" data-cancel-brand>Cancelar</button>
+                          <button type="button" class="btn-ghost btn-sm" data-cancel-model>Cancelar</button>
                         </div>
+
                       </div>
 
                     </div>

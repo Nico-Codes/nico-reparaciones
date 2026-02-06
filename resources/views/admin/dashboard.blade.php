@@ -193,7 +193,20 @@
   </div>
 
   {{-- Charts --}}
-  <div class="grid gap-3 lg:grid-cols-2">
+    <div class="flex items-center justify-between gap-3">
+      <div>
+        <div class="font-extrabold text-zinc-900">Gráficos</div>
+        <div class="text-xs text-zinc-500">Opcional.</div>
+      </div>
+
+      <button type="button"
+        class="btn-ghost btn-sm"
+        data-toggle-collapse="dash_charts"
+        aria-expanded="false">Ver</button>
+    </div>
+
+    <div class="grid gap-3 lg:grid-cols-2 hidden" data-collapse="dash_charts">
+
     {{-- Ventas 6 meses --}}
     <div class="card">
       <div class="card-head">

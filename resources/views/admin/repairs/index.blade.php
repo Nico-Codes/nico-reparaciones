@@ -42,8 +42,9 @@
   <div class="flex items-start justify-between gap-4 flex-wrap">
     <div class="page-head mb-0">
       <div class="page-title">Reparaciones</div>
-      <div class="page-subtitle">Gestioná estados, impresión y WhatsApp. Todo 100% mobile-first.</div>
+      <div class="page-subtitle">Listado y control rápido de reparaciones.</div>
     </div>
+
 
     {{-- Tabs por estado (con contadores) --}}
     <div class="flex items-center gap-2 overflow-x-auto pb-1">
@@ -190,9 +191,12 @@
                   <span class="badge-rose" title="Más de {{ $urgentHoursRepairs }}h sin cerrar">URGENTE</span>
                 @endif
 
-                <span class="{{ $waChip($repair) }}">
-                  WA: {{ ($repair->wa_notified_current ?? false) ? 'OK' : 'Pend.' }}
-                </span>
+                @if(!$repair->wa_url)
+                  <span class="badge-amber">Sin teléfono</span>
+                @elseif(!($repair->wa_notified_current ?? false))
+                  <span class="badge-amber">WA pendiente</span>
+                @endif
+
 
               </div>
           </div>
@@ -203,18 +207,24 @@
               <div class="text-lg font-black">{{ $money($repair->final_price) }}</div>
             </div>
 
-            <div class="flex items-center gap-2">
+            <div class="inline-flex items-center gap-2">
               <a class="btn-outline btn-sm" href="{{ route('admin.repairs.show', $repair) }}">Ver</a>
-              <a class="btn-outline btn-sm" href="{{ route('admin.repairs.print', $repair) }}" target="_blank" rel="noopener">Imprimir</a>
-              <a class="btn-outline btn-sm" href="{{ route('admin.repairs.ticket', $repair) }}?autoprint=1" target="_blank" rel="noopener">Ticket</a>
 
               @if($repair->wa_url)
                 <a href="{{ $repair->wa_url }}" target="_blank" rel="noopener"
-                   class="btn-sm inline-flex items-center justify-center rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700 active:scale-[.99]">
+                  class="btn-sm inline-flex items-center justify-center rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700 active:scale-[.99]">
                   WhatsApp
                 </a>
               @endif
+
+              <button type="button" class="btn-ghost btn-sm" data-menu="repairMoreDesk-{{ $repair->id }}" aria-expanded="false">⋯</button>
+              <div id="repairMoreDesk-{{ $repair->id }}" class="dropdown-menu hidden">
+                <a class="dropdown-item" href="{{ route('admin.repairs.print', $repair) }}" target="_blank" rel="noopener">Imprimir</a>
+                <a class="dropdown-item" href="{{ route('admin.repairs.ticket', $repair) }}?autoprint=1" target="_blank" rel="noopener">Ticket</a>
+              </div>
             </div>
+
+
           </div>
         </div>
       </div>
@@ -233,11 +243,11 @@
             <th>Cliente</th>
             <th>Equipo</th>
             <th>Estado</th>
-            <th>WA</th>
             <th class="text-right">Final</th>
             <th class="text-right">Acciones</th>
           </tr>
         </thead>
+
         <tbody>
           @forelse($repairs as $repair)
             <tr>
@@ -274,18 +284,23 @@
                 </div>
               </td>
 
-              <td><span class="{{ $waChip($repair) }}">{{ ($repair->wa_notified_current ?? false) ? 'OK' : 'Pendiente' }}</span></td>
+              
               <td class="text-right font-black">{{ $money($repair->final_price) }}</td>
               <td class="text-right">
                 <div class="inline-flex items-center gap-2">
-                  <a class="btn-outline btn-sm" href="{{ route('admin.repairs.show', $repair) }}">Ver</a>
-                  @if($repair->wa_url)
-                    <a href="{{ $repair->wa_url }}" target="_blank" rel="noopener"
-                       class="btn-sm inline-flex items-center justify-center rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700 active:scale-[.99]">
-                      WhatsApp
-                    </a>
+                  <span class="{{ $badge($repair->status) }}">{{ $statuses[$repair->status] ?? $repair->status }}</span>
+
+                  @if(!$repair->wa_url)
+                    <span class="badge-amber">Sin teléfono</span>
+                  @elseif(!($repair->wa_notified_current ?? false))
+                    <span class="badge-amber">WA pendiente</span>
+                  @endif
+
+                  @if($isUrgentRepair)
+                    <span class="badge-rose" title="Más de {{ $urgentHoursRepairs }}h sin cerrar">URGENTE</span>
                   @endif
                 </div>
+
               </td>
             </tr>
           @empty
