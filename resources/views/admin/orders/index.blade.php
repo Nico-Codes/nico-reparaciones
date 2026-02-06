@@ -41,12 +41,17 @@
 
   $currentWa = $currentWa ?? '';
 
+  // UI: abrimos filtros/tabs si el usuario ya está filtrando
+  $filtersMoreOpen = $currentWa !== '';
+  $tabsOpen = $currentStatus !== '';
+
   $waTabs = [
     ''        => 'WhatsApp: Todos',
     'pending' => 'WA pendiente',
     'sent'    => 'WA enviado',
     'no_phone'=> 'Sin teléfono',
   ];
+
 
     // ✅ Urgentes
     $urgentHoursOrders = 24;
@@ -61,10 +66,11 @@
   <div class="page-head">
     <div class="min-w-0">
       <div class="page-title">Pedidos (Admin)</div>
-      <div class="page-subtitle">Filtrá por estado, buscá por nombre/teléfono/id y operá rápido.</div>
+      <div class="page-subtitle">Listado y control rápido de pedidos.</div>
+
     </div>
 
-    <form method="GET" action="{{ route('admin.orders.index') }}" class="flex gap-2 w-full md:w-auto">
+    <form method="GET" action="{{ route('admin.orders.index') }}" class="flex flex-wrap gap-2 w-full md:w-auto">
       @if($currentStatus !== '')
         <input type="hidden" name="status" value="{{ $currentStatus }}">
       @endif
@@ -73,15 +79,17 @@
         type="text"
         name="q"
         value="{{ $q }}"
-        placeholder="Buscar: #id, nombre, teléfono, email…"
+        placeholder="Buscar: #id, nombre, teléfono…"
         class="w-full md:w-[320px]"
       >
 
-      <select name="wa" class="md:w-52">
-        @foreach($waTabs as $key => $label)
-          <option value="{{ $key }}" @selected((string)$currentWa === (string)$key)>{{ $label }}</option>
-        @endforeach
-      </select>
+      <div class="{{ $filtersMoreOpen ? '' : 'hidden' }}" data-collapse="orders_filters_more">
+        <select name="wa" class="w-full md:w-52">
+          @foreach($waTabs as $key => $label)
+            <option value="{{ $key }}" @selected((string)$currentWa === (string)$key)>{{ $label }}</option>
+          @endforeach
+        </select>
+      </div>
 
       <button class="btn-primary" type="submit">Filtrar</button>
 
@@ -91,12 +99,29 @@
           Limpiar
         </a>
       @endif
+
+      <button type="button"
+        class="btn-ghost"
+        data-toggle-collapse="orders_filters_more"
+        data-toggle-collapse-label="filtros"
+        aria-expanded="{{ $filtersMoreOpen ? 'true' : 'false' }}">Ver filtros</button>
     </form>
+
 
   </div>
 
   {{-- Tabs --}}
-  <div class="mt-3 flex items-center gap-2 overflow-x-auto pb-1">
+  <div class="mt-3 flex items-center justify-between gap-2">
+    <div class="text-xs font-black uppercase text-zinc-500">Estados</div>
+
+    <button type="button"
+      class="btn-ghost btn-sm"
+      data-toggle-collapse="orders_tabs"
+      data-toggle-collapse-label="estados"
+      aria-expanded="{{ $tabsOpen ? 'true' : 'false' }}">Ver estados</button>
+  </div>
+
+  <div class="mt-2 flex items-center gap-2 overflow-x-auto pb-1 {{ $tabsOpen ? '' : 'hidden' }}" data-collapse="orders_tabs">
     @foreach($tabs as $key => $label)
       @php
         $isActive = ((string)$currentStatus === (string)$key);
@@ -193,10 +218,7 @@
                   <span class="text-xs font-bold text-zinc-600">{{ $age }}</span>
                 @endif
 
-                @if($order->user?->email)
-                  <span class="text-zinc-400">·</span>
-                  <span class="truncate">{{ $order->user->email }}</span>
-                @endif
+
               </div>
 
               @if($order->notes)
@@ -244,25 +266,6 @@
                   Abrir
                 </a>
 
-                <a class="btn-outline btn-sm" href="{{ route('admin.orders.print', $order->id) }}" target="_blank" rel="noopener">
-                  Imprimir
-                </a>
-
-                <a class="btn-outline btn-sm"
-                  href="{{ route('admin.orders.ticket', $order->id) }}?autoprint=1"
-                  target="_blank"
-                  rel="noopener">
-                  Ticket
-                </a>
-
-
-
-                <span class="{{ $waBadgeClass }}"
-                      data-admin-order-wa-badge
-                      data-wa-state="{{ $waState }}">
-                  {{ $waBadgeText }}
-                </span>
-
                 @if($waHref)
                   <a
                     class="btn-outline btn-sm text-emerald-700 border-emerald-200 hover:bg-emerald-50"
@@ -276,6 +279,33 @@
                     WhatsApp
                   </a>
                 @endif
+
+                @if($waState !== 'ok')
+                  <span class="{{ $waBadgeClass }}"
+                        data-admin-order-wa-badge
+                        data-wa-state="{{ $waState }}">
+                    {{ $waBadgeText }}
+                  </span>
+                @endif
+
+                <div class="dropdown">
+                  <button type="button" class="btn-ghost btn-sm" data-menu="orderMoreMenu-{{ $order->id }}">
+                    ⋯
+                  </button>
+
+                  <div id="orderMoreMenu-{{ $order->id }}" class="dropdown-menu hidden">
+                    <a class="dropdown-item"
+                      href="{{ route('admin.orders.print', $order->id) }}"
+                      target="_blank"
+                      rel="noopener">Imprimir</a>
+
+                    <a class="dropdown-item"
+                      href="{{ route('admin.orders.ticket', $order->id) }}?autoprint=1"
+                      target="_blank"
+                      rel="noopener">Ticket</a>
+                  </div>
+                </div>
+
 
 
                   {{-- Botón fijo Estado + dropdown --}}
