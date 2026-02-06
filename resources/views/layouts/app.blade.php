@@ -364,11 +364,83 @@
           <div class="sidebar-links">
 
             @if($isAuth)
+
+              @if($has('account.edit'))
+                <a class="sidebar-link {{ request()->routeIs('account.edit') ? 'active' : '' }}"
+                   href="{{ route('account.edit') }}">
+                  <span class="inline-flex items-center gap-2">
+                    <img src="/icons/settings.svg" alt="" class="w-5 h-5" loading="lazy" decoding="async">
+                    <span>Mi cuenta</span>
+                  </span>
+                </a>
+              @endif
+
+              @if($has('orders.index'))
+                <a class="sidebar-link {{ request()->routeIs('orders.*') ? 'active' : '' }}"
+                   href="{{ route('orders.index') }}">
+                  <span class="inline-flex items-center gap-2">
+                    <img src="/icons/mis-pedidos.svg" alt="" class="w-5 h-5" loading="lazy" decoding="async">
+                    <span>Mis pedidos</span>
+                  </span>
+                </a>
+              @endif
+
+              @if($has('repairs.my.index'))
+                <a class="sidebar-link {{ request()->routeIs('repairs.my.*') ? 'active' : '' }}"
+                   href="{{ route('repairs.my.index') }}">
+                  <span class="inline-flex items-center gap-2">
+                    <img src="/icons/mis-reparaciones.svg" alt="" class="w-5 h-5" loading="lazy" decoding="async">
+                    <span>Mis reparaciones</span>
+                  </span>
+                </a>
+              @endif
+
+              {{-- Admin (solo si corresponde) --}}
               @include('layouts.partials.sidebar_admin_section')
+
+              <div class="my-2 border-t border-zinc-200"></div>
+
+              @if($has('logout'))
+                <form method="POST" action="{{ route('logout') }}">
+                  @csrf
+                  <button type="submit" class="sidebar-link text-rose-700">
+                    <span class="inline-flex items-center gap-2">
+                      <img src="/icons/logout.svg" alt="" class="w-5 h-5" loading="lazy" decoding="async">
+                      <span>Cerrar sesión</span>
+                    </span>
+                  </button>
+                </form>
+              @endif
+
+            @else
+
+              @if($has('login'))
+                <a class="sidebar-link" href="{{ route('login') }}">
+                  <span class="inline-flex items-center gap-2">
+                    <img src="/icons/dashboard.svg" alt="" class="w-5 h-5" loading="lazy" decoding="async">
+                    <span>Iniciar sesión</span>
+                  </span>
+                </a>
+              @endif
+
+              @if($has('register'))
+                <a class="sidebar-link" href="{{ route('register') }}">
+                  <span class="inline-flex items-center gap-2">
+                    <img src="/icons/settings.svg" alt="" class="w-5 h-5" loading="lazy" decoding="async">
+                    <span>Crear cuenta</span>
+                  </span>
+                </a>
+              @endif
+
             @endif
+
           </div>
+        </div>
+
+      </div>
 
     </aside>
+
   </header>
 
   <main class="flex-1">
