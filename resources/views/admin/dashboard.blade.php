@@ -411,9 +411,20 @@
 
     <div class="card">
       <div class="card-head">
-        <div class="font-extrabold">Actividad reciente</div>
+        <div>
+          <div class="font-extrabold">Actividad reciente</div>
+          <div class="text-xs text-zinc-500">Últimos movimientos (opcional).</div>
+        </div>
+
+        <button type="button"
+          class="btn-ghost btn-sm"
+          data-toggle-collapse="dash_activity"
+          data-toggle-collapse-label="actividad"
+          aria-expanded="false">Ver actividad</button>
       </div>
-      <div class="card-body space-y-4">
+
+      <div class="card-body space-y-4 hidden" data-collapse="dash_activity">
+
         <div>
           <div class="text-xs font-black uppercase text-zinc-500">Últimos pedidos</div>
           <div class="mt-2 space-y-2">

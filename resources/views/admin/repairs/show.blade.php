@@ -142,33 +142,44 @@
             </button>
           @endif
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-zinc-200">
-            <form method="POST" action="{{ route('admin.repairs.updateStatus', $repair) }}"
-                  onsubmit="return confirm('¿Marcar como ENTREGADA la reparación {{ $repair->code ?? '' }}?');">
-              @csrf
-              <input type="hidden" name="status" value="delivered">
-              <input type="hidden" name="comment" value="Acción rápida: marcada como entregada">
-              <button class="btn-primary w-full" type="submit" {{ $isFinal ? 'disabled' : '' }}>
-                Marcar entregada
-              </button>
-            </form>
+          <div class="pt-2 border-t border-zinc-200">
+            <button type="button"
+              class="btn-ghost btn-sm w-full"
+              data-toggle-collapse="repair_quick_status"
+              data-toggle-collapse-label="acciones de estado"
+              aria-expanded="false">Ver acciones de estado</button>
 
-            <form method="POST" action="{{ route('admin.repairs.updateStatus', $repair) }}"
-                  onsubmit="return confirm('¿Cancelar la reparación {{ $repair->code ?? '' }}?');">
-              @csrf
-              <input type="hidden" name="status" value="cancelled">
-              <input type="hidden" name="comment" value="Acción rápida: reparación cancelada">
-              <button class="btn-outline w-full" type="submit" {{ $isFinal ? 'disabled' : '' }}>
-                Cancelar
-              </button>
-            </form>
+            <div class="mt-2 hidden" data-collapse="repair_quick_status">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <form method="POST" action="{{ route('admin.repairs.updateStatus', $repair) }}"
+                      onsubmit="return confirm('¿Marcar como ENTREGADA la reparación {{ $repair->code ?? '' }}?');">
+                  @csrf
+                  <input type="hidden" name="status" value="delivered">
+                  <input type="hidden" name="comment" value="Acción rápida: marcada como entregada">
+                  <button class="btn-primary w-full" type="submit" {{ $isFinal ? 'disabled' : '' }}>
+                    Marcar entregada
+                  </button>
+                </form>
+
+                <form method="POST" action="{{ route('admin.repairs.updateStatus', $repair) }}"
+                      onsubmit="return confirm('¿Cancelar la reparación {{ $repair->code ?? '' }}?');">
+                  @csrf
+                  <input type="hidden" name="status" value="cancelled">
+                  <input type="hidden" name="comment" value="Acción rápida: reparación cancelada">
+                  <button class="btn-outline w-full" type="submit" {{ $isFinal ? 'disabled' : '' }}>
+                    Cancelar
+                  </button>
+                </form>
+              </div>
+
+              @if($isFinal)
+                <p class="text-xs text-zinc-500 mt-2">
+                  Esta reparación ya está en un estado final (entregada/cancelada).
+                </p>
+              @endif
+            </div>
           </div>
 
-          @if($isFinal)
-            <p class="text-xs text-zinc-500">
-              Esta reparación ya está en un estado final (entregada/cancelada).
-            </p>
-          @endif
         </div>
       </div>
 
@@ -260,7 +271,12 @@
 
           <div class="flex items-center gap-2">
             <span class="badge-zinc">{{ $history->count() }} cambios</span>
-            <button type="button" class="btn-ghost btn-sm" data-toggle-collapse="repair_history" aria-expanded="false">Ver</button>
+            <button type="button"
+            class="btn-ghost btn-sm"
+            data-toggle-collapse="repair_history"
+            data-toggle-collapse-label="historial"
+            aria-expanded="false">Ver historial</button>
+
           </div>
         </div>
 
@@ -298,7 +314,12 @@
 
           <div class="flex items-center gap-2">
             <span class="badge-zinc">{{ $waLogs->count() }}</span>
-            <button type="button" class="btn-ghost btn-sm" data-toggle-collapse="repair_wa_logs" aria-expanded="false">Ver</button>
+            <button type="button"
+            class="btn-ghost btn-sm"
+            data-toggle-collapse="repair_wa_logs"
+            data-toggle-collapse-label="logs"
+            aria-expanded="false">Ver logs</button>
+
           </div>
         </div>
 
@@ -418,11 +439,13 @@
                   </div>
 
                   <button type="button"
-                    class="btn-outline btn-sm"
+                    class="btn-ghost btn-sm"
                     data-toggle-collapse="repair_device_catalog"
+                    data-toggle-collapse-label="equipo"
                     aria-expanded="{{ $devOpen ? 'true' : 'false' }}">
-                    {{ $devOpen ? 'Ocultar' : 'Ver' }}
+                    {{ $devOpen ? 'Ocultar equipo' : 'Ver equipo' }}
                   </button>
+
                 </div>
 
                 <div class="mt-3 {{ $devOpen ? '' : 'hidden' }}" data-collapse="repair_device_catalog">
@@ -541,9 +564,12 @@
 
               <div class="flex items-end justify-end">
                 <button type="button"
-                  class="btn-outline btn-sm"
+                  class="btn-ghost btn-sm"
                   data-toggle-collapse="repair_show_finance"
-                  aria-expanded="false">Ver</button>
+                  data-toggle-collapse-label="cálculo"
+                  aria-expanded="false">Ver cálculo
+                </button>
+
               </div>
 
               <div class="sm:col-span-3 hidden" data-collapse="repair_show_finance">
@@ -612,9 +638,11 @@
               <div class="text-sm font-semibold text-zinc-800">Pagos y notas</div>
 
               <button type="button"
-                class="btn-outline btn-sm"
-                data-toggle-collapse="repair_show_extras"
-                aria-expanded="false">Ver</button>
+              class="btn-ghost btn-sm"
+              data-toggle-collapse="repair_show_extras"
+              data-toggle-collapse-label="pagos"
+              aria-expanded="false">Ver pagos</button>
+
             </div>
 
             <div class="hidden" data-collapse="repair_show_extras">
