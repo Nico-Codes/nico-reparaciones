@@ -245,8 +245,23 @@
                   </a>
                 @endif
 
-                @if($has('orders.index')) <a class="dropdown-item" href="{{ route('orders.index') }}">Mis pedidos</a> @endif
-                  @if($has('repairs.my.index')) <a class="dropdown-item" href="{{ route('repairs.my.index') }}">Mis reparaciones</a> @endif
+                @if($has('orders.index'))
+                  <a class="dropdown-item" href="{{ route('orders.index') }}">
+                    <span class="inline-flex items-center gap-2">
+                      <img src="/icons/mis-pedidos.svg" alt="" class="w-5 h-5" loading="lazy" decoding="async">
+                      <span>Mis pedidos</span>
+                    </span>
+                  </a>
+                @endif
+
+                @if($has('repairs.my.index'))
+                  <a class="dropdown-item" href="{{ route('repairs.my.index') }}">
+                    <span class="inline-flex items-center gap-2">
+                      <img src="/icons/mis-reparaciones.svg" alt="" class="w-5 h-5" loading="lazy" decoding="async">
+                      <span>Mis reparaciones</span>
+                    </span>
+                  </a>
+                @endif
 
                   @include('layouts.partials.account_admin_section')
 
@@ -349,124 +364,9 @@
           <div class="sidebar-links">
 
             @if($isAuth)
-              @if($has('orders.index'))
-                <a class="sidebar-link {{ request()->routeIs('orders.index') ? 'active' : '' }}"
-                  href="{{ route('orders.index') }}">
-                  <span class="inline-flex items-center gap-2">
-                    <img src="/icons/mis-pedidos.svg" alt="" class="w-5 h-5" loading="lazy" decoding="async">
-                    <span>Mis pedidos</span>
-                  </span>
-                </a>
-              @endif
-
-              @if($has('repairs.my.index'))
-                <a class="sidebar-link {{ request()->routeIs('repairs.my.index') ? 'active' : '' }}"
-                  href="{{ route('repairs.my.index') }}">
-                  <span class="inline-flex items-center gap-2">
-                    <img src="/icons/mis-reparaciones.svg" alt="" class="w-5 h-5" loading="lazy" decoding="async">
-                    <span>Mis reparaciones</span>
-                  </span>
-                </a>
-              @endif
-
-              @if($has('logout'))
-                <form method="POST" action="{{ route('logout') }}">
-                  @csrf
-                  <button type="submit" class="sidebar-link text-rose-700 hover:text-rose-800">
-                    <span class="inline-flex items-center gap-2">
-                      <img src="/icons/logout.svg" alt="" class="w-5 h-5" loading="lazy" decoding="async">
-                      <span>Cerrar sesión</span>
-                    </span>
-                  </button>
-                </form>
-              @endif
-            @else
-              @if($has('login')) <a class="sidebar-link" href="{{ route('login') }}">Ingresar</a> @endif
+              @include('layouts.partials.sidebar_admin_section')
             @endif
-
           </div>
-        </div>
-
-        @if($isAdmin)
-          <div class="sidebar-section space-y-2">
-            <div class="sidebar-title">Admin</div>
-            <div class="sidebar-links">
-
-              @if($has('admin.dashboard'))
-                <a class="sidebar-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}"
-                  href="{{ route('admin.dashboard') }}">
-                  <span class="inline-flex items-center gap-2">
-                    <img src="/icons/dashboard.svg" alt="" class="w-5 h-5" loading="lazy" decoding="async">
-                    <span>Dashboard</span>
-                  </span>
-                </a>
-              @endif
-
-              @if($has('admin.orders.index'))
-                <a class="sidebar-link {{ request()->routeIs('admin.orders.*') ? 'active' : '' }}"
-                  href="{{ route('admin.orders.index') }}">
-                  <span class="inline-flex items-center gap-2">
-                    <img src="/icons/consultar-reparacion.svg" alt="" class="w-5 h-5" loading="lazy" decoding="async">
-                    <span>Pedidos</span>
-                  </span>
-                </a>
-              @endif
-
-              @if($has('admin.repairs.index'))
-                <a class="sidebar-link {{ request()->routeIs('admin.repairs.*') ? 'active' : '' }}"
-                  href="{{ route('admin.repairs.index') }}">
-                  <span class="inline-flex items-center gap-2">
-                    <img src="/icons/mis-reparaciones.svg" alt="" class="w-5 h-5" loading="lazy" decoding="async">
-                    <span>Reparaciones</span>
-                  </span>
-                </a>
-              @endif
-
-              @if($has('admin.pricing.index'))
-                <a class="sidebar-link {{ request()->routeIs('admin.pricing.*') || request()->routeIs('admin.repairTypes.*') || request()->routeIs('admin.modelGroups.*') ? 'active' : '' }}"
-                  href="{{ route('admin.pricing.index') }}">
-                  <span class="inline-flex items-center gap-2">
-                    <img src="/icons/settings.svg" alt="" class="w-5 h-5" loading="lazy" decoding="async">
-                    <span>Precios</span>
-                  </span>
-                </a>
-              @endif
-
-              @if($has('admin.products.index'))
-                <a class="sidebar-link {{ request()->routeIs('admin.products.*') ? 'active' : '' }}"
-                  href="{{ route('admin.products.index') }}">
-                  <span class="inline-flex items-center gap-2">
-                    <img src="/icons/mis-pedidos.svg" alt="" class="w-5 h-5" loading="lazy" decoding="async">
-                    <span>Productos</span>
-                  </span>
-                </a>
-              @endif
-
-
-              @if($has('admin.settings.index'))
-                <a class="sidebar-link {{ request()->routeIs('admin.settings.*') ? 'active' : '' }}"
-                  href="{{ route('admin.settings.index') }}">
-                  <span class="inline-flex items-center gap-2">
-                    <img src="/icons/settings.svg" alt="" class="w-5 h-5" loading="lazy" decoding="async">
-                    <span>Configuración</span>
-                  </span>
-                </a>
-              @endif
-
-              @if($has('admin.users.index'))
-                <a class="sidebar-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}"
-                  href="{{ route('admin.users.index') }}">
-                  <span class="inline-flex items-center gap-2">
-                    <img src="/icons/settings.svg" alt="" class="w-5 h-5" loading="lazy" decoding="async">
-                    <span>Usuarios</span>
-                  </span>
-                </a>
-              @endif
-
-            </div>
-          </div>
-  @endif
-</div>
 
     </aside>
   </header>
