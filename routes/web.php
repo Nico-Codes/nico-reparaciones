@@ -165,7 +165,7 @@ Route::get('/storage/{path}', function (string $path) {
 | Admin
 |--------------------------------------------------------------------------
 */
-Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
+Route::prefix('admin')->middleware(['auth', 'admin', 'can:access-admin'])->group(function () {
 
     Route::get('/', [AdminDashboardController::class, 'index'])->name('admin');
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('admin.dashboard');

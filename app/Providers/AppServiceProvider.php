@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\Order;
 use App\Models\Repair;
+use App\Models\User;
 use App\Policies\OrderPolicy;
 use App\Policies\RepairPolicy;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -29,6 +30,7 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::policy(Order::class, OrderPolicy::class);
         Gate::policy(Repair::class, RepairPolicy::class);
+        Gate::define('access-admin', fn (User $user): bool => $user->isAdmin());
 
         RateLimiter::for('repair-lookup', function (Request $request) {
             return Limit::perMinute(8)->by($request->ip());
