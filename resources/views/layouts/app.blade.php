@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>@yield('title', config('app.name', 'NicoReparaciones'))</title>
-  <link rel="icon" href="{{ asset('favicon.ico') }}">
-  <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('favicon-16x16.png') }}">
-  <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon-32x32.png') }}">
-  <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('apple-touch-icon.png') }}">
-  <link rel="manifest" href="{{ asset('site.webmanifest') }}">
+  <link rel="icon" href="{{ \App\Support\BrandAssets::url('favicon_ico') }}">
+  <link rel="icon" type="image/png" sizes="16x16" href="{{ \App\Support\BrandAssets::url('favicon_16') }}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ \App\Support\BrandAssets::url('favicon_32') }}">
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ \App\Support\BrandAssets::url('apple_touch_icon') }}">
+  <link rel="manifest" href="{{ route('site.manifest') }}">
   <meta name="theme-color" content="#0ea5e9">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -23,7 +23,7 @@
     $useHot = file_exists($hotPath);
     $useManifest = file_exists($manifestPath);
 
-    // ✅ En build: generamos tags con rutas RELATIVAS (/build/...)
+    // En build: generamos tags con rutas relativas (/build/...)
     $manifestCss = [];
     $manifestJs  = [];
 
@@ -46,7 +46,7 @@
           if (str_ends_with($data['file'], '.css')) $manifestCss[] = $data['file'];
         }
 
-        // css asociado a la entry (muy común en app.js)
+        // css asociado a la entry (muy comun en app.js)
         if (!empty($data['css']) && is_array($data['css'])) {
           foreach ($data['css'] as $cssFile) {
             if (is_string($cssFile)) $manifestCss[] = $cssFile;
@@ -60,10 +60,10 @@
   @endphp
 
   @if($useHot)
-    {{-- DEV (solo PC / misma red). Para túnel remoto NO sirve porque apunta a localhost:5173 --}}
+    {{-- DEV (solo PC / misma red). Para tunel remoto no sirve porque apunta a localhost:5173 --}}
     @vite(['resources/css/app.css', 'resources/js/app.js'])
   @elseif($useManifest)
-    {{-- ✅ BUILD (túnel remoto): rutas relativas SIEMPRE funcionan --}}
+    {{-- BUILD (tunel remoto): rutas relativas siempre funcionan --}}
     @foreach($manifestCss as $css)
       <link rel="stylesheet" href="/build/{{ $css }}">
     @endforeach
@@ -71,7 +71,7 @@
       <script type="module" src="/build/{{ $js }}"></script>
     @endforeach
   @else
-    {{-- fallback mínimo --}}
+    {{-- fallback minimo --}}
     <style>
       body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;background:#fafafa;color:#09090b}
       a{text-decoration:none;color:inherit}
@@ -88,8 +88,16 @@
   $cartCount = 0;
   foreach ($cart as $i) { $cartCount += (int)($i['quantity'] ?? 0); }
 
-  $logoRel = 'brand/logo.png';
-  $logoExists = file_exists(public_path($logoRel));
+  $assetUrl = fn(string $key) => \App\Support\BrandAssets::url($key);
+  $logoUrl = $assetUrl('logo_main');
+  $iconStore = $assetUrl('icon_store');
+  $iconRepairLookup = $assetUrl('icon_repair_lookup');
+  $iconCart = $assetUrl('icon_cart');
+  $iconSettings = $assetUrl('icon_settings');
+  $iconOrders = $assetUrl('icon_orders');
+  $iconRepairs = $assetUrl('icon_repairs');
+  $iconLogout = $assetUrl('icon_logout');
+  $iconDashboard = $assetUrl('icon_dashboard');
 
   $has = fn($name) => \Illuminate\Support\Facades\Route::has($name);
 
@@ -108,7 +116,7 @@
           <button
             class="icon-btn md:hidden"
             data-toggle="sidebar"
-            aria-label="Abrir menú"
+            aria-label="Abrir menu"
             aria-expanded="false"
             type="button"
           >
@@ -122,20 +130,16 @@
 
 
           <a href="{{ $brandHref }}" class="flex items-center gap-2 min-w-0">
-            @if($logoExists)
-              <img src="/{{ $logoRel }}" class="h-9 w-9 object-contain" alt="NicoReparaciones">
-            @else
-              <div class="h-9 w-9 flex items-center justify-center font-black text-sky-700">NR</div>
-            @endif
+            <img src="{{ $logoUrl }}" class="h-9 w-9 object-contain" alt="NicoReparaciones">
 
 
             <div class="leading-tight min-w-0">
-              {{-- Desktop (una línea) --}}
+              {{-- Desktop (una linea) --}}
               <div class="hidden sm:block font-black tracking-tight text-zinc-900 truncate">
                 Nico<span class="text-sky-600">Reparaciones</span>
               </div>
 
-              {{-- Mobile (dos líneas) --}}
+              {{-- Mobile (dos lineas) --}}
               <div class="sm:hidden font-black tracking-tight leading-none flex flex-col gap-0">
                 <span class="text-[13px] text-zinc-900 leading-none block">Nico</span>
                 <span class="text-[13px] text-sky-600 leading-none block">Reparaciones</span>
@@ -167,7 +171,7 @@
                       {{ request()->routeIs('repairs.lookup','repairs.lookup.post')
                           ? 'bg-white text-sky-700 shadow-sm ring-1 ring-sky-200'
                           : 'text-zinc-700 hover:text-zinc-900 hover:bg-white/70' }}">
-              Reparación
+              Reparacion
             </a>
           @endif
 
@@ -230,7 +234,7 @@
                   </svg>
                 </span>
                 <span class="hidden sm:inline max-w-[12rem] truncate">{{ auth()->user()->name ?? 'Cuenta' }}</span>
-                <span class="hidden sm:inline">▾</span>
+                <span class="hidden sm:inline">&#9662;</span>
               </button>
 
 
@@ -239,7 +243,7 @@
                 @if($has('account.edit'))
                   <a class="dropdown-item" href="{{ route('account.edit') }}">
                     <span class="inline-flex items-center gap-2">
-                      <img src="/icons/settings.svg" alt="" class="w-5 h-5" loading="lazy" decoding="async">
+                      <img src="{{ $iconSettings }}" alt="" class="w-5 h-5" loading="lazy" decoding="async">
                       <span>Mi cuenta</span>
                     </span>
                   </a>
@@ -256,7 +260,7 @@
                 @if($has('logout'))
                   <form method="POST" action="{{ route('logout') }}">
                     @csrf
-                    <button type="submit" class="dropdown-item text-rose-700">Cerrar sesión</button>
+                    <button type="submit" class="dropdown-item text-rose-700">Cerrar sesion</button>
                   </form>
                 @endif
               </div>
@@ -271,20 +275,16 @@
     <aside
       id="appSidebar"
       class="fixed left-0 top-0 z-50 h-full w-[86%] max-w-xs -translate-x-full transform bg-white shadow-xl transition-transform duration-200 ease-out md:hidden flex flex-col"
-      aria-label="Menú">
+      aria-label="Menu">
 
 
       <div class="h-14 px-4 flex items-center justify-between border-b border-zinc-100">
         <div class="flex items-center gap-2">
-          @if($logoExists)
-            <img src="/{{ $logoRel }}" class="h-8 w-8 rounded-xl ring-1 ring-zinc-100 bg-white object-contain" alt="NicoReparaciones">
-          @else
-            <div class="h-8 w-8 rounded-xl ring-1 ring-zinc-100 bg-white flex items-center justify-center font-black text-sky-700">NR</div>
-          @endif
-          <div class="font-black text-zinc-900">Menú</div>
+          <img src="{{ $logoUrl }}" class="h-8 w-8 rounded-xl ring-1 ring-zinc-100 bg-white object-contain" alt="NicoReparaciones">
+          <div class="font-black text-zinc-900">Menu</div>
         </div>
 
-        <button class="icon-btn" data-close="sidebar" aria-label="Cerrar menú" type="button">
+        <button class="icon-btn" data-close="sidebar" aria-label="Cerrar menu" type="button">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
               fill="none" stroke="currentColor" stroke-width="2"
               stroke-linecap="round" stroke-linejoin="round"
@@ -336,14 +336,14 @@
 
 
         <div class="sidebar-section space-y-2">
-          <div class="sidebar-title">Navegación</div>
+          <div class="sidebar-title">Navegacion</div>
           <div class="sidebar-links">
 
             @if($has('store.index'))
               <a class="sidebar-link {{ request()->routeIs('store.index','store.category','store.product','home') ? 'active' : '' }}"
                 href="{{ route('store.index') }}">
                 <span class="inline-flex items-center gap-2">
-                  <img src="/icons/tienda.svg" alt="" class="w-5 h-5" loading="lazy" decoding="async">
+                  <img src="{{ $iconStore }}" alt="" class="w-5 h-5" loading="lazy" decoding="async">
                   <span>Tienda</span>
                 </span>
               </a>
@@ -353,8 +353,8 @@
               <a class="sidebar-link {{ request()->routeIs('repairs.lookup','repairs.lookup.post') ? 'active' : '' }}"
                 href="{{ route('repairs.lookup') }}">
                 <span class="inline-flex items-center gap-2">
-                  <img src="/icons/consultar-reparacion.svg" alt="" class="w-5 h-5" loading="lazy" decoding="async">
-                  <span>Consultar reparación</span>
+                  <img src="{{ $iconRepairLookup }}" alt="" class="w-5 h-5" loading="lazy" decoding="async">
+                  <span>Consultar reparacion</span>
                 </span>
               </a>
             @endif
@@ -363,7 +363,7 @@
               <a class="sidebar-link {{ request()->routeIs('cart.index') ? 'active' : '' }}"
                 href="{{ route('cart.index') }}">
                 <span class="inline-flex items-center gap-2">
-                  <img src="/icons/carrito.svg" alt="" class="w-5 h-5" loading="lazy" decoding="async">
+                  <img src="{{ $iconCart }}" alt="" class="w-5 h-5" loading="lazy" decoding="async">
                   <span>Carrito</span>
                 </span>
 
@@ -386,7 +386,7 @@
                 <a class="sidebar-link {{ request()->routeIs('account.edit') ? 'active' : '' }}"
                    href="{{ route('account.edit') }}">
                   <span class="inline-flex items-center gap-2">
-                    <img src="/icons/settings.svg" alt="" class="w-5 h-5" loading="lazy" decoding="async">
+                    <img src="{{ $iconSettings }}" alt="" class="w-5 h-5" loading="lazy" decoding="async">
                     <span>Mi cuenta</span>
                   </span>
                 </a>
@@ -396,7 +396,7 @@
                 <a class="sidebar-link {{ request()->routeIs('orders.*') ? 'active' : '' }}"
                    href="{{ route('orders.index') }}">
                   <span class="inline-flex items-center gap-2">
-                    <img src="/icons/mis-pedidos.svg" alt="" class="w-5 h-5" loading="lazy" decoding="async">
+                    <img src="{{ $iconOrders }}" alt="" class="w-5 h-5" loading="lazy" decoding="async">
                     <span>Mis pedidos</span>
                   </span>
                 </a>
@@ -406,7 +406,7 @@
                 <a class="sidebar-link {{ request()->routeIs('repairs.my.*') ? 'active' : '' }}"
                    href="{{ route('repairs.my.index') }}">
                   <span class="inline-flex items-center gap-2">
-                    <img src="/icons/mis-reparaciones.svg" alt="" class="w-5 h-5" loading="lazy" decoding="async">
+                    <img src="{{ $iconRepairs }}" alt="" class="w-5 h-5" loading="lazy" decoding="async">
                     <span>Mis reparaciones</span>
                   </span>
                 </a>
@@ -422,8 +422,8 @@
                   @csrf
                   <button type="submit" class="sidebar-link text-rose-700">
                     <span class="inline-flex items-center gap-2">
-                      <img src="/icons/logout.svg" alt="" class="w-5 h-5" loading="lazy" decoding="async">
-                      <span>Cerrar sesión</span>
+                      <img src="{{ $iconLogout }}" alt="" class="w-5 h-5" loading="lazy" decoding="async">
+                      <span>Cerrar sesion</span>
                     </span>
                   </button>
                 </form>
@@ -434,8 +434,8 @@
               @if($has('login'))
                 <a class="sidebar-link" href="{{ route('login') }}">
                   <span class="inline-flex items-center gap-2">
-                    <img src="/icons/dashboard.svg" alt="" class="w-5 h-5" loading="lazy" decoding="async">
-                    <span>Iniciar sesión</span>
+                    <img src="{{ $iconDashboard }}" alt="" class="w-5 h-5" loading="lazy" decoding="async">
+                    <span>Iniciar sesion</span>
                   </span>
                 </a>
               @endif
@@ -443,7 +443,7 @@
               @if($has('register'))
                 <a class="sidebar-link" href="{{ route('register') }}">
                   <span class="inline-flex items-center gap-2">
-                    <img src="/icons/settings.svg" alt="" class="w-5 h-5" loading="lazy" decoding="async">
+                    <img src="{{ $iconSettings }}" alt="" class="w-5 h-5" loading="lazy" decoding="async">
                     <span>Crear cuenta</span>
                   </span>
                 </a>
@@ -491,11 +491,7 @@
       <div class="grid gap-6 md:grid-cols-3">
         <div>
           <div class="flex items-center gap-2">
-            @if($logoExists)
-              <img src="/{{ $logoRel }}" class="h-9 w-9 rounded-xl ring-1 ring-zinc-100 bg-white object-contain" alt="NicoReparaciones">
-            @else
-              <div class="h-9 w-9 rounded-xl ring-1 ring-zinc-100 bg-white flex items-center justify-center font-black text-sky-700">NR</div>
-            @endif
+            <img src="{{ $logoUrl }}" class="h-9 w-9 rounded-xl ring-1 ring-zinc-100 bg-white object-contain" alt="NicoReparaciones">
             <div class="font-black tracking-tight">Nico<span class="text-sky-600">Reparaciones</span></div>
           </div>
           <p class="muted mt-2">Tienda simple + consulta de reparaciones.</p>
@@ -506,7 +502,7 @@
           <div class="grid gap-1">
             @if($has('store.index')) <a href="{{ route('store.index') }}">Tienda</a> @endif
             @if($has('cart.index')) <a href="{{ route('cart.index') }}">Carrito</a> @endif
-            @if($has('repairs.lookup')) <a href="{{ route('repairs.lookup') }}">Consultar reparación</a> @endif
+            @if($has('repairs.lookup')) <a href="{{ route('repairs.lookup') }}">Consultar reparacion</a> @endif
           </div>
         </div>
 
@@ -519,7 +515,7 @@
               @if($has('logout'))
                 <form method="POST" action="{{ route('logout') }}">
                   @csrf
-                  <button class="text-left text-rose-700 hover:text-rose-800 font-bold">Cerrar sesión</button>
+                  <button class="text-left text-rose-700 hover:text-rose-800 font-bold">Cerrar sesion</button>
                 </form>
               @endif
             @else
@@ -531,13 +527,13 @@
       </div>
 
       <div class="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-zinc-500">
-        <div>© {{ date('Y') }} NicoReparaciones</div>
+        <div>&copy; {{ date('Y') }} NicoReparaciones</div>
         <div class="text-zinc-400">Hecho con Laravel</div>
       </div>
     </div>
   </footer>
 
-  {{-- Bottom-sheet “Agregado al carrito” --}}
+  {{-- Bottom-sheet "Agregado al carrito" --}}
   @if(is_array($cartAdded))
     <div id="cartAddedOverlay"
          class="fixed inset-0 z-[60] opacity-0 pointer-events-none transition-opacity duration-300 ease-out"
@@ -574,3 +570,4 @@
   @endif
 </body>
 </html>
+

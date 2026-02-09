@@ -1,14 +1,17 @@
 @php
+  $iconDashboard = \App\Support\BrandAssets::url('icon_dashboard');
+
   $adminLinks = [
-    ['route' => 'admin.dashboard',        'label' => 'Dashboard'],
-    ['route' => 'admin.repairs.index',    'label' => 'Reparaciones'],
-    ['route' => 'admin.orders.index',     'label' => 'Pedidos'],
-    ['route' => 'admin.products.index',   'label' => 'Productos'],
-    ['route' => 'admin.pricing.index',    'label' => 'Precios'],
-    ['route' => 'admin.deviceTypes.index','label' => 'Tipos de dispositivo'],
-    ['route' => 'admin.deviceCatalog.index','label' => 'Catálogo dispositivos'],
-    ['route' => 'admin.settings.index',   'label' => 'Ajustes'],
-    ['route' => 'admin.users.index',      'label' => 'Usuarios'],
+    ['route' => 'admin.dashboard', 'label' => 'Panel'],
+    ['route' => 'admin.repairs.index', 'label' => 'Reparaciones'],
+    ['route' => 'admin.orders.index', 'label' => 'Pedidos'],
+    ['route' => 'admin.products.index', 'label' => 'Productos'],
+    ['route' => 'admin.pricing.index', 'label' => 'Precios'],
+    ['route' => 'admin.deviceTypes.index', 'label' => 'Tipos de dispositivo'],
+    ['route' => 'admin.deviceCatalog.index', 'label' => 'Catalogo de dispositivos'],
+    ['route' => 'admin.settings.index', 'label' => 'Configuracion'],
+    ['route' => 'admin.settings.assets.index', 'label' => 'Identidad visual'],
+    ['route' => 'admin.users.index', 'label' => 'Usuarios'],
   ];
 
   $hasAnyAdmin = false;
@@ -29,7 +32,7 @@
     aria-expanded="false"
   >
     <span class="inline-flex items-center gap-2">
-      <img src="/icons/dashboard.svg" alt="" class="w-5 h-5" loading="lazy" decoding="async">
+      <img src="{{ $iconDashboard }}" alt="" class="w-5 h-5" loading="lazy" decoding="async">
       <span>Admin</span>
     </span>
 

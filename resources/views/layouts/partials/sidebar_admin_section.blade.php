@@ -2,59 +2,66 @@
   $adminLinks = [
     [
       'route' => 'admin.dashboard',
-      'label' => 'Dashboard',
-      'icon'  => '/icons/dashboard.svg',
-      'active'=> request()->routeIs('admin.dashboard'),
+      'label' => 'Panel',
+      'icon' => \App\Support\BrandAssets::url('icon_dashboard'),
+      'active' => request()->routeIs('admin.dashboard'),
     ],
     [
       'route' => 'admin.repairs.index',
       'label' => 'Reparaciones',
-      'icon'  => '/icons/mis-reparaciones.svg',
-      'active'=> request()->routeIs('admin.repairs.*'),
+      'icon' => \App\Support\BrandAssets::url('icon_repairs'),
+      'active' => request()->routeIs('admin.repairs.*'),
     ],
     [
       'route' => 'admin.orders.index',
       'label' => 'Pedidos',
-      'icon'  => '/icons/mis-pedidos.svg',
-      'active'=> request()->routeIs('admin.orders.*'),
+      'icon' => \App\Support\BrandAssets::url('icon_orders'),
+      'active' => request()->routeIs('admin.orders.*'),
     ],
     [
       'route' => 'admin.products.index',
       'label' => 'Productos',
-      'icon'  => '/icons/tienda.svg',
-      'active'=> request()->routeIs('admin.products.*'),
+      'icon' => \App\Support\BrandAssets::url('icon_store'),
+      'active' => request()->routeIs('admin.products.*'),
     ],
     [
       'route' => 'admin.pricing.index',
       'label' => 'Precios',
-      'icon'  => '/icons/settings.svg',
-      'active'=> request()->routeIs('admin.pricing.*')
-                  || request()->routeIs('admin.repairTypes.*')
-                  || request()->routeIs('admin.modelGroups.*'),
+      'icon' => \App\Support\BrandAssets::url('icon_settings'),
+      'active' => request()->routeIs('admin.pricing.*')
+        || request()->routeIs('admin.repairTypes.*')
+        || request()->routeIs('admin.modelGroups.*'),
     ],
     [
       'route' => 'admin.deviceTypes.index',
       'label' => 'Tipos de dispositivo',
-      'icon'  => '/icons/settings.svg',
-      'active'=> request()->routeIs('admin.deviceTypes.*'),
+      'icon' => \App\Support\BrandAssets::url('icon_settings'),
+      'active' => request()->routeIs('admin.deviceTypes.*'),
     ],
     [
       'route' => 'admin.deviceCatalog.index',
-      'label' => 'Catálogo dispositivos',
-      'icon'  => '/icons/settings.svg',
-      'active'=> request()->routeIs('admin.deviceCatalog.*'),
+      'label' => 'Catalogo de dispositivos',
+      'icon' => \App\Support\BrandAssets::url('icon_settings'),
+      'active' => request()->routeIs('admin.deviceCatalog.*'),
     ],
     [
       'route' => 'admin.settings.index',
-      'label' => 'Ajustes',
-      'icon'  => '/icons/settings.svg',
-      'active'=> request()->routeIs('admin.settings.*'),
+      'label' => 'Configuracion',
+      'icon' => \App\Support\BrandAssets::url('icon_settings'),
+      'active' => request()->routeIs('admin.settings.index')
+        || request()->routeIs('admin.settings.update'),
+    ],
+    [
+      'route' => 'admin.settings.assets.index',
+      'label' => 'Identidad visual',
+      'icon' => \App\Support\BrandAssets::url('icon_settings'),
+      'active' => request()->routeIs('admin.settings.assets.*'),
     ],
     [
       'route' => 'admin.users.index',
       'label' => 'Usuarios',
-      'icon'  => '/icons/settings.svg',
-      'active'=> request()->routeIs('admin.users.*'),
+      'icon' => \App\Support\BrandAssets::url('icon_settings'),
+      'active' => request()->routeIs('admin.users.*'),
     ],
   ];
 
@@ -67,7 +74,6 @@
 @endphp
 
 @if($isAdmin && $hasAnyAdmin)
-
   <button
     type="button"
     class="sidebar-link flex items-center justify-between gap-2 {{ $open ? 'active' : '' }}"
@@ -77,7 +83,7 @@
     aria-expanded="{{ $open ? 'true' : 'false' }}"
   >
     <span class="inline-flex items-center gap-2">
-      <img src="/icons/dashboard.svg" alt="" class="w-5 h-5" loading="lazy" decoding="async">
+      <img src="{{ \App\Support\BrandAssets::url('icon_dashboard') }}" alt="" class="w-5 h-5" loading="lazy" decoding="async">
       <span>Admin</span>
     </span>
 
@@ -102,5 +108,4 @@
       @endforeach
     </div>
   </div>
-
 @endif

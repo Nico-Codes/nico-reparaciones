@@ -8,7 +8,7 @@
   <div class="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
     <div class="flex items-center gap-3">
       <div class="h-11 w-11 overflow-hidden rounded-2xl border border-zinc-200 bg-white">
-        <img src="{{ asset('images/logo-nico.png') }}" alt="NicoReparaciones" class="h-full w-full object-contain">
+        <img src="{{ \App\Support\BrandAssets::url('logo_main') }}" alt="NicoReparaciones" class="h-full w-full object-contain">
       </div>
       <div>
         <h1 class="text-xl font-black tracking-tight">Ingresar</h1>
