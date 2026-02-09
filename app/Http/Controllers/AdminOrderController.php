@@ -9,6 +9,7 @@ use App\Models\OrderWhatsappLog;
 use App\Models\OrderWhatsappTemplate;
 use App\Models\Product;
 use App\Support\WhatsApp;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -25,66 +26,22 @@ class AdminOrderController extends Controller
         $wa = (string) $request->query('wa', '');
         $q = trim((string) $request->query('q', ''));
 
-        $query = Order::query()->with(['user']);
+        $query = Order::query()
+            ->select('orders.*')
+            ->with(['user'])
+            ->addSelect([
+                'wa_notified_current' => OrderWhatsappLog::selectRaw('1')
+                    ->whereColumn('order_whatsapp_logs.order_id', 'orders.id')
+                    ->whereColumn('order_whatsapp_logs.notified_status', 'orders.status')
+                    ->limit(1),
+            ]);
 
         if ($status !== '') {
             $query->where('status', $status);
         }
 
-        // Buscar por ID, nombre, teléfono, email
-        if ($q !== '') {
-            $qDigits = preg_replace('/\D+/', '', $q);
-
-            $query->where(function ($sub) use ($q, $qDigits) {
-                if (ctype_digit($q)) {
-                    $sub->orWhere('id', (int) $q);
-                }
-
-                $sub->orWhere('pickup_name', 'like', "%{$q}%")
-                    ->orWhere('payment_method', 'like', "%{$q}%");
-
-                if ($qDigits !== '') {
-                    $sub->orWhere('pickup_phone', 'like', "%{$qDigits}%");
-                }
-
-                $sub->orWhereHas('user', function ($u) use ($q) {
-                    $u->where('name', 'like', "%{$q}%")
-                      ->orWhere('email', 'like', "%{$q}%");
-                });
-            });
-        }
-
-        // Filtro WhatsApp
-        if ($wa === 'no_phone') {
-            $query->where(function ($q) {
-                $q->whereNull('pickup_phone')
-                  ->orWhere('pickup_phone', '');
-            })->whereDoesntHave('user', function ($u) {
-                $u->whereNotNull('phone')->where('phone', '!=', '');
-            });
-        } elseif ($wa === 'pending') {
-            // Tiene teléfono (pickup o user) pero no log para estado actual
-            $query->where(function ($q) {
-                $q->where(function ($a) {
-                    $a->whereNotNull('pickup_phone')->where('pickup_phone', '!=', '');
-                })->orWhereHas('user', function ($u) {
-                    $u->whereNotNull('phone')->where('phone', '!=', '');
-                });
-            })->whereDoesntHave('whatsappLogs', function ($l) {
-                $l->whereColumn('order_whatsapp_logs.notified_status', 'orders.status');
-            });
-        } elseif ($wa === 'sent') {
-            // Tiene teléfono y sí log para estado actual
-            $query->where(function ($q) {
-                $q->where(function ($a) {
-                    $a->whereNotNull('pickup_phone')->where('pickup_phone', '!=', '');
-                })->orWhereHas('user', function ($u) {
-                    $u->whereNotNull('phone')->where('phone', '!=', '');
-                });
-            })->whereHas('whatsappLogs', function ($l) {
-                $l->whereColumn('order_whatsapp_logs.notified_status', 'orders.status');
-            });
-        }
+        $this->applyOrderSearchFilter($query, $q);
+        $this->applyOrderWaFilter($query, $wa);
 
         if ($status === 'pendiente') {
             // ✅ Pendientes: mostrar primero los más viejos
@@ -94,14 +51,44 @@ class AdminOrderController extends Controller
         }
 
 
-        // Contadores por status (para tabs)
-        $statusCounts = Order::query()
+        // Contadores por status (tabs): respetan búsqueda + filtro WA, ignoran "status" actual.
+        $statusCountQuery = Order::query();
+        $this->applyOrderSearchFilter($statusCountQuery, $q);
+        $this->applyOrderWaFilter($statusCountQuery, $wa);
+
+        $statusCounts = $statusCountQuery
             ->selectRaw('status, COUNT(*) as c')
             ->groupBy('status')
             ->pluck('c', 'status')
             ->toArray();
 
         $totalCount = (int) array_sum($statusCounts);
+
+        // Contadores WA (tabs): respetan búsqueda + filtro status, ignoran "wa" actual.
+        $waCountBaseQuery = Order::query();
+        if ($status !== '') {
+            $waCountBaseQuery->where('status', $status);
+        }
+        $this->applyOrderSearchFilter($waCountBaseQuery, $q);
+
+        $waCounts = [
+            'all' => (int) (clone $waCountBaseQuery)->count(),
+            'pending' => 0,
+            'sent' => 0,
+            'no_phone' => 0,
+        ];
+
+        $waPendingQuery = clone $waCountBaseQuery;
+        $this->applyOrderWaFilter($waPendingQuery, 'pending');
+        $waCounts['pending'] = (int) $waPendingQuery->count();
+
+        $waSentQuery = clone $waCountBaseQuery;
+        $this->applyOrderWaFilter($waSentQuery, 'sent');
+        $waCounts['sent'] = (int) $waSentQuery->count();
+
+        $waNoPhoneQuery = clone $waCountBaseQuery;
+        $this->applyOrderWaFilter($waNoPhoneQuery, 'no_phone');
+        $waCounts['no_phone'] = (int) $waNoPhoneQuery->count();
 
         return view('admin.orders.index', [
             'orders' => $orders,
@@ -111,6 +98,7 @@ class AdminOrderController extends Controller
             'q' => $q,
             'statusCounts' => $statusCounts,
             'totalCount' => $totalCount,
+            'waCounts' => $waCounts,
         ]);
     }
 
@@ -396,6 +384,76 @@ class AdminOrderController extends Controller
             'message' => $created ? 'Log registrado.' : 'Ya estaba registrado recientemente.',
             'notified_at_label' => $waNotifiedAtLabel,
         ]);
+    }
+
+    private function applyOrderSearchFilter(Builder $query, string $q): void
+    {
+        $q = trim($q);
+        if ($q === '') {
+            return;
+        }
+
+        $qDigits = preg_replace('/\D+/', '', $q);
+
+        $query->where(function ($sub) use ($q, $qDigits) {
+            if (ctype_digit($q)) {
+                $sub->orWhere('id', (int) $q);
+            }
+
+            $sub->orWhere('pickup_name', 'like', "%{$q}%")
+                ->orWhere('payment_method', 'like', "%{$q}%");
+
+            if ($qDigits !== '') {
+                $sub->orWhere('pickup_phone', 'like', "%{$qDigits}%");
+            }
+
+            $sub->orWhereHas('user', function ($u) use ($q) {
+                $u->where('name', 'like', "%{$q}%")
+                    ->orWhere('email', 'like', "%{$q}%");
+            });
+        });
+    }
+
+    private function applyOrderWaFilter(Builder $query, string $wa): void
+    {
+        if ($wa === 'no_phone') {
+            $query->where(function ($q) {
+                $q->whereNull('pickup_phone')
+                    ->orWhere('pickup_phone', '');
+            })->whereDoesntHave('user', function ($u) {
+                $u->whereNotNull('phone')->where('phone', '!=', '');
+            });
+
+            return;
+        }
+
+        if ($wa === 'pending') {
+            // Tiene teléfono (pickup o user) pero no log para el estado actual.
+            $query->where(function ($q) {
+                $q->where(function ($a) {
+                    $a->whereNotNull('pickup_phone')->where('pickup_phone', '!=', '');
+                })->orWhereHas('user', function ($u) {
+                    $u->whereNotNull('phone')->where('phone', '!=', '');
+                });
+            })->whereDoesntHave('whatsappLogs', function ($l) {
+                $l->whereColumn('order_whatsapp_logs.notified_status', 'orders.status');
+            });
+
+            return;
+        }
+
+        if ($wa === 'sent') {
+            // Tiene teléfono y sí log para el estado actual.
+            $query->where(function ($q) {
+                $q->where(function ($a) {
+                    $a->whereNotNull('pickup_phone')->where('pickup_phone', '!=', '');
+                })->orWhereHas('user', function ($u) {
+                    $u->whereNotNull('phone')->where('phone', '!=', '');
+                });
+            })->whereHas('whatsappLogs', function ($l) {
+                $l->whereColumn('order_whatsapp_logs.notified_status', 'orders.status');
+            });
+        }
     }
 
     private function buildWhatsappMessage(Order $order): string

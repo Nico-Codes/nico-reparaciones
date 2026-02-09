@@ -128,6 +128,12 @@ Route::post('/reparacion', [RepairLookupController::class, 'lookup'])
 |--------------------------------------------------------------------------
 */
 Route::get('/storage/{path}', function (string $path) {
+    $allowedInThisEnv = app()->environment(['local', 'development'])
+        || filter_var((string) env('APP_ALLOW_STORAGE_LOCAL_ROUTE', 'false'), FILTER_VALIDATE_BOOL);
+
+    if (!$allowedInThisEnv) {
+        abort(404);
+    }
 
     $path = ltrim($path, '/');
 
@@ -282,4 +288,3 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
 
  
 });
-
