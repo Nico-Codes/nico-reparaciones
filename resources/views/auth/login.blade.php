@@ -4,8 +4,8 @@
 @section('suppress_global_alerts', '1')
 
 @section('content')
-<div class="mx-auto w-full max-w-md px-4 py-8">
-  <div class="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
+<div class="mx-auto w-full max-w-md px-4 py-6 sm:py-8">
+  <div class="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
     <div class="flex items-center gap-3">
       <div class="h-11 w-11 overflow-hidden rounded-2xl border border-zinc-200 bg-white">
         <img src="{{ asset('images/logo-nico.png') }}" alt="NicoReparaciones" class="h-full w-full object-contain">
@@ -31,7 +31,7 @@
 
     @if (config('services.google.client_id'))
       <a href="{{ route('auth.google.redirect') }}"
-        class="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
+        class="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
         Continuar con Google
       </a>
 
@@ -48,9 +48,9 @@
       @csrf
 
       <div>
-        <label class="text-xs font-semibold text-zinc-700">Email</label>
+        <label class="text-xs font-black uppercase tracking-wide text-zinc-600">Email</label>
         <input type="email" name="email" value="{{ old('email') }}" required autofocus autocomplete="email"
-              class="mt-1 w-full rounded-2xl border bg-white px-3 py-2 text-sm outline-none focus:ring-2
+              class="mt-1 h-11 w-full rounded-2xl border bg-white px-3 text-sm outline-none focus:ring-2
                       border-zinc-200 focus:border-sky-300 focus:ring-sky-100
                       @error('email') border-rose-300 focus:border-rose-300 focus:ring-rose-100 @enderror"
               placeholder="tu@email.com">
@@ -62,9 +62,9 @@
 
 
       <div>
-        <label class="text-xs font-semibold text-zinc-700">Contraseña</label>
+        <label class="text-xs font-black uppercase tracking-wide text-zinc-600">Contraseña</label>
         <input type="password" name="password" required autocomplete="current-password"
-              class="mt-1 w-full rounded-2xl border bg-white px-3 py-2 text-sm outline-none focus:ring-2
+              class="mt-1 h-11 w-full rounded-2xl border bg-white px-3 text-sm outline-none focus:ring-2
                       border-zinc-200 focus:border-sky-300 focus:ring-sky-100
                       @error('password') border-rose-300 focus:border-rose-300 focus:ring-rose-100 @enderror"
               placeholder="••••••••">
@@ -75,12 +75,12 @@
       </div>
 
 
-      <label class="flex items-center gap-2 text-sm text-zinc-700">
+      <label class="inline-flex items-center gap-2 text-sm font-semibold text-zinc-700">
         <input type="checkbox" name="remember" class="h-4 w-4 rounded border-zinc-300">
         Recordarme
       </label>
 
-      <button class="w-full rounded-2xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-sky-700 active:scale-[.99]">
+      <button class="btn-primary h-11 w-full justify-center">
         Ingresar
       </button>
     </form>
