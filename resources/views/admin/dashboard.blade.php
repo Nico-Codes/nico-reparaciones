@@ -372,17 +372,37 @@
   <div class="grid gap-3 lg:grid-cols-2">
     <div class="card">
       <div class="card-head">
-        <div>
+        <div class="min-w-0">
           <div class="font-extrabold">Top productos (últimos {{ (int)$rangeDays }} días)</div>
           <div class="text-xs text-zinc-500">Por cantidad vendida (excluye cancelados).</div>
         </div>
-        <a class="btn-outline btn-sm" href="{{ route('admin.orders.index') }}">Ver pedidos</a>
+        <a class="btn-outline btn-sm h-10 w-full justify-center sm:w-auto" href="{{ route('admin.orders.index') }}">Ver pedidos</a>
       </div>
       <div class="card-body">
         @if(empty($topProducts) || $topProducts->count() === 0)
           <div class="text-sm text-zinc-600">Aún no hay ventas en este rango.</div>
         @else
-          <div class="overflow-x-auto">
+          <div class="space-y-2 md:hidden">
+            @foreach($topProducts as $tp)
+              <div class="rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm">
+                <div class="font-semibold text-zinc-900">{{ $tp->product_name }}</div>
+                <div class="mt-0.5 text-xs text-zinc-500">ID: {{ $tp->product_id }}</div>
+
+                <div class="mt-2 grid grid-cols-2 gap-2 text-xs">
+                  <div class="rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2">
+                    <div class="font-black uppercase text-zinc-500">Cant.</div>
+                    <div class="mt-0.5 text-sm font-black text-zinc-900">{{ (int)$tp->qty }}</div>
+                  </div>
+                  <div class="rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2">
+                    <div class="font-black uppercase text-zinc-500">Facturación</div>
+                    <div class="mt-0.5 text-sm font-black text-zinc-900">{{ $money((int)$tp->revenue) }}</div>
+                  </div>
+                </div>
+              </div>
+            @endforeach
+          </div>
+
+          <div class="hidden md:block overflow-x-auto">
             <table class="w-full text-sm">
               <thead class="bg-zinc-50">
                 <tr>
@@ -417,7 +437,7 @@
         </div>
 
         <button type="button"
-          class="btn-ghost btn-sm"
+          class="btn-ghost btn-sm h-10 w-full justify-center sm:w-auto"
           data-toggle-collapse="dash_activity"
           data-toggle-collapse-label="actividad"
           aria-expanded="false">Ver actividad</button>
