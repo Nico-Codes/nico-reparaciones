@@ -32,9 +32,9 @@
       <div class="page-subtitle">Administrá tu catálogo (precio, stock, categoría e imagen).</div>
     </div>
 
-    <div class="flex gap-2 flex-wrap">
-      <a class="btn-outline" href="{{ route('admin.categories.index') }}">Categorías</a>
-      <a class="btn-primary" href="{{ route('admin.products.create') }}">+ Nuevo producto</a>
+    <div class="flex w-full gap-2 flex-wrap sm:w-auto">
+      <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.categories.index') }}">Categorías</a>
+      <a class="btn-primary h-11 w-full justify-center sm:w-auto" href="{{ route('admin.products.create') }}">+ Nuevo producto</a>
     </div>
   </div>
 
@@ -45,34 +45,34 @@
   <div class="card">
     <div class="card-body">
       <form method="GET" class="flex flex-col sm:flex-row gap-2">
-        <input name="q" value="{{ $q }}" placeholder="Buscar por nombre o slug…" />
+        <input name="q" value="{{ $q }}" placeholder="Buscar por nombre o slug…" class="h-11" />
 
-        <select name="category_id" class="sm:w-56">
+        <select name="category_id" class="h-11 sm:w-56">
           <option value="" @selected(($category_id ?? '')==='')>Categoría: Todas</option>
           @foreach(($categories ?? collect()) as $c)
             <option value="{{ $c->id }}" @selected((string)($category_id ?? '') === (string)$c->id)>{{ $c->name }}</option>
           @endforeach
         </select>
 
-        <select name="active" class="sm:w-44">
+        <select name="active" class="h-11 sm:w-44">
           <option value="" @selected(($active ?? '')==='')>Estado: Todos</option>
           <option value="1" @selected(($active ?? '')==='1')>Activos</option>
           <option value="0" @selected(($active ?? '')==='0')>Inactivos</option>
         </select>
 
-        <select name="featured" class="sm:w-44">
+        <select name="featured" class="h-11 sm:w-44">
           <option value="" @selected(($featured ?? '')==='')>Destacado: Todos</option>
           <option value="1" @selected(($featured ?? '')==='1')>Destacados</option>
           <option value="0" @selected(($featured ?? '')==='0')>No destacados</option>
         </select>
 
-        <select name="stock" class="sm:w-48">
+        <select name="stock" class="h-11 sm:w-48">
           <option value="" @selected($stock==='')>Stock: Todos</option>
           <option value="out" @selected($stock==='out')>Sin stock</option>
           <option value="low" @selected($stock==='low')>Stock bajo (≤ 5)</option>
         </select>
 
-        <button class="btn-outline sm:w-40" type="submit">Filtrar</button>
+        <button class="btn-outline h-11 w-full justify-center sm:w-40" type="submit">Filtrar</button>
 
         @php
           $hasFilters =
@@ -84,7 +84,7 @@
         @endphp
 
         @if($hasFilters)
-          <a class="btn-ghost sm:w-40" href="{{ route('admin.products.index') }}">Limpiar</a>
+          <a class="btn-ghost h-11 w-full justify-center sm:w-40" href="{{ route('admin.products.index') }}">Limpiar</a>
         @endif
       </form>
 
@@ -102,7 +102,7 @@
       <form method="POST" action="{{ route('admin.products.bulk') }}" class="flex flex-col sm:flex-row gap-2 sm:items-center" data-admin-products-bulk>
         @csrf
 
-        <select name="action" class="sm:w-64" data-bulk-action>
+        <select name="action" class="h-11 sm:w-64" data-bulk-action>
           <option value="">Acción masiva…</option>
           <option value="activate">Activar</option>
           <option value="deactivate">Desactivar</option>
@@ -113,10 +113,10 @@
           <option value="delete">Eliminar (si no tiene pedidos)</option>
         </select>
 
-        <input type="number" name="stock" min="0" class="sm:w-40 hidden" placeholder="Stock" data-bulk-stock>
+        <input type="number" name="stock" min="0" class="h-11 sm:w-40 hidden" placeholder="Stock" data-bulk-stock>
 
-        <button type="submit" class="btn-primary sm:w-40" data-bulk-apply disabled>Aplicar</button>
-        <button type="button" class="btn-ghost sm:w-40" data-bulk-clear>Limpiar</button>
+        <button type="submit" class="btn-primary h-11 w-full justify-center sm:w-40" data-bulk-apply disabled>Aplicar</button>
+        <button type="button" class="btn-ghost h-11 w-full justify-center sm:w-40" data-bulk-clear>Limpiar</button>
       </form>
     </div>
   </div>
@@ -151,13 +151,13 @@
                 <div class="mt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                   <div class="text-lg font-black">{{ $money($p->price) }}</div>
 
-                  <div class="flex items-center gap-2 flex-wrap justify-end">
+                  <div class="flex items-center gap-2 flex-wrap justify-start">
                     <form method="POST"
                           action="{{ route('admin.products.toggleActive', $p) }}"
                           data-admin-product-toggle="active"
                           class="inline">
                       @csrf
-                      <button type="submit" class="{{ $activeBadge($p->active) }} hover:opacity-90 transition" data-toggle-btn>
+                      <button type="submit" class="{{ $activeBadge($p->active) }} h-10 justify-center hover:opacity-90 transition" data-toggle-btn>
                         {{ $activeLabel($p->active) }}
                       </button>
                     </form>
@@ -167,12 +167,12 @@
                           data-admin-product-toggle="featured"
                           class="inline">
                       @csrf
-                      <button type="submit" class="{{ $featuredBadge($p->featured) }} hover:opacity-90 transition" data-toggle-btn>
+                      <button type="submit" class="{{ $featuredBadge($p->featured) }} h-10 justify-center hover:opacity-90 transition" data-toggle-btn>
                         {{ $featuredLabel($p->featured) }}
                       </button>
                     </form>
 
-                    <a class="btn-outline btn-sm" href="{{ route('admin.products.edit', $p) }}">Editar</a>
+                    <a class="btn-outline btn-sm h-10 justify-center" href="{{ route('admin.products.edit', $p) }}">Editar</a>
                   </div>
                 </div>
 
@@ -180,15 +180,15 @@
                       action="{{ route('admin.products.updateStock', $p) }}"
                       data-admin-product-stock
                       data-product-id="{{ $p->id }}"
-                      class="mt-2 flex items-center gap-2">
+                      class="mt-2 flex items-center gap-2 flex-wrap">
                   @csrf
                   <input type="number"
                         name="stock"
                         min="0"
                         value="{{ (int)$p->stock }}"
-                        class="!w-28 text-right"
+                        class="!w-28 h-10 text-right"
                         data-stock-input-for="{{ $p->id }}">
-                  <button type="submit" class="btn-outline btn-sm">Guardar stock</button>
+                  <button type="submit" class="btn-outline btn-sm h-10 justify-center">Guardar stock</button>
                 </form>
             </div>
           </div>

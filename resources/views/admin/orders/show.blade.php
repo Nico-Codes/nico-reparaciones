@@ -43,10 +43,10 @@
      data-order-id="{{ $order->id }}"
      data-status="{{ (string)($order->status ?? 'pendiente') }}">
 
-  <div class="flex items-start justify-between gap-4 mb-4">
+  <div class="mb-4 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
     <div class="min-w-0">
-      <div class="flex items-center gap-2">
-        <a href="{{ route('admin.orders.index') }}" class="btn-ghost">← Volver</a>
+      <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <a href="{{ route('admin.orders.index') }}" class="btn-ghost h-11 w-full justify-center sm:h-auto sm:w-auto">← Volver</a>
         <div class="min-w-0">
           <div class="text-xl font-black text-zinc-900">Pedido #{{ $order->id }}</div>
           <div class="text-sm text-zinc-500">
@@ -57,35 +57,42 @@
           </div>
         </div>
       </div>
+
+      <div class="mt-2 flex gap-2 overflow-x-auto pb-1 sm:hidden">
+        <a href="#order_actions" class="nav-pill whitespace-nowrap">Acciones</a>
+        <a href="#order_customer" class="nav-pill whitespace-nowrap">Cliente</a>
+        <a href="#order_items" class="nav-pill whitespace-nowrap">Items</a>
+        <a href="#order_whatsapp" class="nav-pill whitespace-nowrap">WhatsApp</a>
+      </div>
     </div>
 
-    <div class="shrink-0 text-right">
-      <div class="inline-flex items-center gap-2 justify-end">
-        <a class="btn-outline btn-sm"
-          href="{{ route('admin.orders.print', $order->id) }}"
+    <div class="w-full rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm lg:w-auto lg:shrink-0 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none">
+      <div class="grid grid-cols-2 gap-2 lg:flex lg:flex-wrap lg:items-center lg:justify-end">
+        <a href="{{ route('admin.orders.print', $order->id) }}"
           target="_blank"
-          rel="noopener">
+          rel="noopener"
+          class="btn-outline btn-sm h-10 w-full justify-center lg:h-auto lg:w-auto">
           Imprimir
         </a>
 
-        <a class="btn-outline btn-sm"
-          href="{{ route('admin.orders.ticket', $order->id) }}?autoprint=1"
+        <a href="{{ route('admin.orders.ticket', $order->id) }}?autoprint=1"
           target="_blank"
-          rel="noopener">
+          rel="noopener"
+          class="btn-outline btn-sm h-10 w-full justify-center lg:h-auto lg:w-auto">
           Ticket
         </a>
 
 
-        <span class="{{ $badge($order->status) }}" data-admin-order-status-badge>
+        <span class="{{ $badge($order->status) }} inline-flex h-10 w-full items-center justify-center lg:h-auto lg:w-auto" data-admin-order-status-badge>
           {{ $statusMap[$order->status] ?? $order->status }}
         </span>
 
 
           {{-- Botón fijo Estado + dropdown (cambio rápido) --}}
-          <div class="dropdown">
+          <div class="dropdown w-full lg:w-auto">
             <button
               type="button"
-              class="btn-primary btn-sm {{ $isFinal ? 'opacity-60 cursor-not-allowed' : '' }}"
+              class="btn-primary btn-sm h-10 w-full justify-center lg:h-auto lg:w-auto {{ $isFinal ? 'opacity-60 cursor-not-allowed' : '' }}"
               data-menu="orderStatusMenu-{{ $order->id }}"
               data-admin-order-status-btn
               {{ $isFinal ? 'disabled' : '' }}
@@ -127,8 +134,8 @@
         </form>
       </div>
 
-      <div class="mt-1 text-sm text-zinc-500">Total</div>
-      <div class="text-xl font-black text-zinc-900">{{ $money($order->total) }}</div>
+      <div class="mt-2 text-sm text-zinc-500 lg:text-right">Total</div>
+      <div class="text-xl font-black text-zinc-900 lg:text-right">{{ $money($order->total) }}</div>
     </div>
 
   </div>
@@ -153,7 +160,7 @@
     <div class="space-y-4 lg:col-span-1">
       
 
-      <div class="card">
+      <div class="card" id="order_actions">
         <div class="card-head">
           <div class="font-black">Acciones rápidas</div>
           <span class="badge-zinc">Pedido #{{ $order->id }}</span>
@@ -161,14 +168,14 @@
 
         <div class="card-body space-y-2">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <a class="btn-outline w-full"
+            <a class="btn-outline h-11 w-full justify-center"
               href="{{ route('admin.orders.print', $order->id) }}"
               target="_blank"
               rel="noopener">
               Imprimir
             </a>
 
-            <a class="btn-outline w-full"
+            <a class="btn-outline h-11 w-full justify-center"
               href="{{ route('admin.orders.ticket', $order->id) }}?autoprint=1"
               target="_blank"
               rel="noopener">
@@ -177,7 +184,7 @@
           </div>
 
           @if($waUrl)
-            <a class="btn-outline w-full"
+            <a class="btn-outline h-11 w-full justify-center"
               href="{{ $waUrl }}"
               target="_blank"
               rel="noopener"
@@ -185,7 +192,7 @@
               Abrir WhatsApp
             </a>
           @else
-            <button type="button" class="btn-outline w-full opacity-50" disabled>
+            <button type="button" class="btn-outline h-11 w-full justify-center opacity-50" disabled>
               WhatsApp (sin teléfono)
             </button>
           @endif
@@ -196,7 +203,7 @@
               @csrf
               <input type="hidden" name="status" value="entregado">
               <input type="hidden" name="comment" value="Acción rápida: marcado como entregado">
-              <button class="btn-primary w-full" type="submit" {{ $isFinal ? 'disabled' : '' }}>
+              <button class="btn-primary h-11 w-full justify-center" type="submit" {{ $isFinal ? 'disabled' : '' }}>
                 Marcar entregado
               </button>
             </form>
@@ -206,7 +213,7 @@
               @csrf
               <input type="hidden" name="status" value="cancelado">
               <input type="hidden" name="comment" value="Acción rápida: pedido cancelado">
-              <button class="btn-outline w-full" type="submit" {{ $isFinal ? 'disabled' : '' }}>
+              <button class="btn-outline h-11 w-full justify-center" type="submit" {{ $isFinal ? 'disabled' : '' }}>
                 Cancelar pedido
               </button>
             </form>
@@ -220,19 +227,19 @@
         </div>
       </div>
 
-      <div class="card">
+      <div class="card" id="order_customer">
         <div class="card-head">
           <div class="font-black">Cliente</div>
           <span class="badge-zinc">{{ $order->payment_method ?: '—' }}</span>
         </div>
         <div class="card-body">
           <div class="text-sm text-zinc-700 space-y-2">
-            <div class="flex items-start justify-between gap-3">
+            <div class="flex flex-col gap-0.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
               <span class="text-zinc-500">Nombre</span>
               <span class="font-extrabold text-right">{{ $customerName }}</span>
             </div>
 
-            <div class="flex items-start justify-between gap-3">
+            <div class="flex flex-col gap-0.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
               <span class="text-zinc-500">Teléfono</span>
               <span class="font-extrabold text-right">{{ $customerPhone ?: '—' }}</span>
             </div>
@@ -242,13 +249,13 @@
                 <div class="text-xs font-black text-zinc-700">Retira otra persona</div>
                 <div class="mt-2 space-y-1">
                   @if($order->pickup_delegate_name)
-                    <div class="flex items-start justify-between gap-3">
+                    <div class="flex flex-col gap-0.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                       <span class="text-zinc-500">Nombre</span>
                       <span class="font-extrabold text-right">{{ $order->pickup_delegate_name }}</span>
                     </div>
                   @endif
                   @if($order->pickup_delegate_phone)
-                    <div class="flex items-start justify-between gap-3">
+                    <div class="flex flex-col gap-0.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                       <span class="text-zinc-500">Teléfono</span>
                       <span class="font-extrabold text-right">{{ $order->pickup_delegate_phone }}</span>
                     </div>
@@ -281,7 +288,7 @@
 
             <div>
               <label class="label">Estado</label>
-              <select name="status" class="w-full">
+              <select name="status" class="h-11 w-full">
                 @foreach($statusMap as $key => $label)
                   <option value="{{ $key }}" @selected($order->status === $key)>{{ $label }}</option>
                 @endforeach
@@ -290,15 +297,15 @@
 
             <div>
               <label class="label">Comentario (opcional)</label>
-              <input type="text" name="comment" placeholder="Ej: listo para retirar" />
+              <input type="text" name="comment" placeholder="Ej: listo para retirar" class="h-11" />
             </div>
 
-            <button class="btn-primary w-full" type="submit">Guardar estado</button>
+            <button class="btn-primary h-11 w-full justify-center" type="submit">Guardar estado</button>
           </form>
         </div>
       </div>
 
-      <div class="card">
+      <div class="card" id="order_whatsapp">
         <div class="card-head">
           <div class="font-black">WhatsApp</div>
           <span class="badge-zinc">{{ $waPhone ?: '—' }}</span>
@@ -312,7 +319,7 @@
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
             @if($waUrl)
-              <a class="btn-outline w-full"
+              <a class="btn-outline h-11 w-full justify-center"
                 href="{{ $waUrl }}"
                 target="_blank"
                 rel="noopener"
@@ -320,7 +327,7 @@
                 Abrir WhatsApp
               </a>
             @else
-              <button type="button" class="btn-outline w-full opacity-50" disabled>
+              <button type="button" class="btn-outline h-11 w-full justify-center opacity-50" disabled>
                 Sin teléfono
               </button>
             @endif
@@ -332,7 +339,7 @@
                   data-wa-phone="{{ $waPhone }}"
                   data-wa-message="{{ $waMessage }}">
               @csrf
-              <button class="btn-primary w-full" type="submit" {{ $waUrl ? '' : 'disabled' }}>
+              <button class="btn-primary h-11 w-full justify-center" type="submit" {{ $waUrl ? '' : 'disabled' }}>
                 Marcar como enviado
               </button>
             </form>
@@ -346,7 +353,7 @@
                 <ol class="space-y-2">
                   @foreach($waLogs as $log)
                     <li class="rounded-2xl border border-zinc-200 bg-white px-3 py-2">
-                      <div class="flex items-start justify-between gap-3">
+                      <div class="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                         <div class="text-xs font-black text-zinc-900">
                           {{ $statusMap[$log->notified_status] ?? $log->notified_status }}
                         </div>
@@ -381,7 +388,7 @@
     </div>
 
     {{-- Columna derecha: items --}}
-    <div class="lg:col-span-2">
+    <div class="lg:col-span-2" id="order_items">
       <div class="card">
         <div class="card-head">
           <div class="font-black">Items del pedido</div>
@@ -389,7 +396,33 @@
         </div>
 
         <div class="card-body">
-          <div class="table-wrap">
+          <div class="space-y-2 md:hidden">
+            @forelse($order->items as $it)
+              <div class="rounded-2xl border border-zinc-200 bg-zinc-50 p-3">
+                <div class="font-extrabold text-zinc-900">{{ $it->product_name }}</div>
+                <div class="mt-2 grid grid-cols-3 gap-2 text-xs text-zinc-600">
+                  <div>
+                    <div class="font-black uppercase text-zinc-500">Precio</div>
+                    <div class="mt-0.5 font-semibold text-zinc-900">{{ $money($it->price) }}</div>
+                  </div>
+                  <div>
+                    <div class="font-black uppercase text-zinc-500">Cant.</div>
+                    <div class="mt-0.5 font-extrabold text-zinc-900">{{ (int)$it->quantity }}</div>
+                  </div>
+                  <div class="text-right">
+                    <div class="font-black uppercase text-zinc-500">Subtotal</div>
+                    <div class="mt-0.5 font-black text-zinc-900">{{ $money($it->subtotal) }}</div>
+                  </div>
+                </div>
+              </div>
+            @empty
+              <div class="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-center text-sm text-zinc-500">
+                Pedido sin items.
+              </div>
+            @endforelse
+          </div>
+
+          <div class="table-wrap hidden md:block">
             <table class="table">
               <thead>
                 <tr>

@@ -13,14 +13,14 @@
 <div class="space-y-6" data-admin-categories>
 
   <div class="flex items-start justify-between gap-4 flex-wrap">
-    <div class="page-head mb-0">
+    <div class="page-head mb-0 w-full lg:w-auto">
       <div class="page-title">Categorías</div>
       <div class="page-subtitle">Organizá tu catálogo. Total: <span class="font-black">{{ $count }}</span></div>
     </div>
 
-    <div class="flex gap-2 flex-wrap">
-      <a class="btn-outline" href="{{ route('admin.products.index') }}">Productos</a>
-      <a class="btn-primary" href="{{ route('admin.categories.create') }}">+ Nueva categoría</a>
+    <div class="flex w-full gap-2 flex-wrap sm:w-auto">
+      <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.products.index') }}">Productos</a>
+      <a class="btn-primary h-11 w-full justify-center sm:w-auto" href="{{ route('admin.categories.create') }}">+ Nueva categoría</a>
     </div>
   </div>
 
@@ -55,7 +55,7 @@
                     class="inline">
                 @csrf
                 <button type="submit"
-                        class="{{ $activeBadge($c->active) }} hover:opacity-90 transition"
+                        class="{{ $activeBadge($c->active) }} h-10 justify-center hover:opacity-90 transition"
                         data-active-btn>
                   {{ $activeLabel($c->active) }}
                 </button>
@@ -66,12 +66,12 @@
 
           </div>
 
-          <div class="mt-4 flex items-center gap-2">
-            <a class="btn-outline btn-sm" href="{{ route('admin.categories.edit', $c) }}">Editar</a>
-            <form method="POST" action="{{ route('admin.categories.destroy', $c) }}" onsubmit="return confirm('¿Eliminar categoría? Esto puede afectar el catálogo.');">
+          <div class="mt-4 grid grid-cols-2 gap-2">
+            <a class="btn-outline btn-sm h-10 w-full justify-center" href="{{ route('admin.categories.edit', $c) }}">Editar</a>
+            <form method="POST" action="{{ route('admin.categories.destroy', $c) }}" class="w-full" onsubmit="return confirm('¿Eliminar categoría? Esto puede afectar el catálogo.');">
               @csrf
               @method('DELETE')
-              <button class="btn-danger btn-sm" type="submit">Eliminar</button>
+              <button class="btn-danger btn-sm h-10 w-full justify-center" type="submit">Eliminar</button>
             </form>
           </div>
         </div>

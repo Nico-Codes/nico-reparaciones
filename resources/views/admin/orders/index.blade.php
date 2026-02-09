@@ -70,7 +70,7 @@
 
     </div>
 
-    <form method="GET" action="{{ route('admin.orders.index') }}" class="flex flex-wrap gap-2 w-full md:w-auto">
+    <form method="GET" action="{{ route('admin.orders.index') }}" class="flex w-full flex-wrap gap-2 md:w-auto">
       @if($currentStatus !== '')
         <input type="hidden" name="status" value="{{ $currentStatus }}">
       @endif
@@ -80,28 +80,28 @@
         name="q"
         value="{{ $q }}"
         placeholder="Buscar: #id, nombre, teléfono…"
-        class="w-full md:w-[320px]"
+        class="h-11 w-full sm:flex-1 sm:min-w-[260px] md:w-[320px] md:flex-none"
       >
 
       <div class="{{ $filtersMoreOpen ? '' : 'hidden' }}" data-collapse="orders_filters_more">
-        <select name="wa" class="w-full md:w-52">
+        <select name="wa" class="h-11 w-full sm:w-52">
           @foreach($waTabs as $key => $label)
             <option value="{{ $key }}" @selected((string)$currentWa === (string)$key)>{{ $label }}</option>
           @endforeach
         </select>
       </div>
 
-      <button class="btn-primary" type="submit">Filtrar</button>
+      <button class="btn-primary h-11 w-full justify-center sm:w-auto" type="submit">Filtrar</button>
 
       @if($q !== '' || $currentWa !== '')
-        <a class="btn-outline"
+        <a class="btn-outline h-11 w-full justify-center sm:w-auto"
           href="{{ route('admin.orders.index', array_filter(['status' => $currentStatus, 'wa' => $currentWa], fn($v) => $v !== '')) }}">
           Limpiar
         </a>
       @endif
 
       <button type="button"
-        class="btn-ghost"
+        class="btn-ghost h-11 w-full justify-center sm:w-auto"
         data-toggle-collapse="orders_filters_more"
         data-toggle-collapse-label="filtros"
         aria-expanded="{{ $filtersMoreOpen ? 'true' : 'false' }}">Ver filtros</button>
@@ -115,13 +115,13 @@
     <div class="text-xs font-black uppercase text-zinc-500">Estados</div>
 
     <button type="button"
-      class="btn-ghost btn-sm"
+      class="btn-ghost btn-sm h-10"
       data-toggle-collapse="orders_tabs"
       data-toggle-collapse-label="estados"
       aria-expanded="{{ $tabsOpen ? 'true' : 'false' }}">Ver estados</button>
   </div>
 
-  <div class="mt-2 flex items-center gap-2 overflow-x-auto pb-1 {{ $tabsOpen ? '' : 'hidden' }}" data-collapse="orders_tabs">
+  <div class="mt-2 flex items-center gap-2 overflow-x-auto pb-1 snap-x {{ $tabsOpen ? '' : 'hidden' }}" data-collapse="orders_tabs">
     @foreach($tabs as $key => $label)
       @php
         $isActive = ((string)$currentStatus === (string)$key);
@@ -139,7 +139,7 @@
         $countKey = $key === '' ? 'all' : (string)$key;
       @endphp
 
-      <a href="{{ $href }}" class="nav-pill {{ $isActive ? 'nav-pill-active' : '' }}">
+      <a href="{{ $href }}" class="nav-pill whitespace-nowrap {{ $isActive ? 'nav-pill-active' : '' }}">
         <span>{{ $label }}</span>
         <span
           class="inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-black
@@ -229,8 +229,8 @@
               @endif
             </div>
 
-            <div class="shrink-0 flex flex-col items-end gap-2">
-              <div class="text-right">
+            <div class="shrink-0 flex w-full flex-col gap-2 md:w-auto md:items-end">
+              <div class="text-left md:text-right">
                 <div class="text-xs font-black uppercase text-zinc-500">Total</div>
                 <div class="text-lg font-black text-zinc-900">{{ $money($order->total) }}</div>
               </div>
@@ -261,14 +261,14 @@
               @endphp
 
 
-              <div class="flex flex-wrap items-center justify-end gap-2">
-                <a class="btn-outline btn-sm" href="{{ route('admin.orders.show', $order->id) }}">
+              <div class="grid w-full grid-cols-2 gap-2 md:flex md:w-auto md:flex-wrap md:items-center md:justify-end">
+                <a class="btn-outline btn-sm h-10 w-full justify-center md:h-auto md:w-auto" href="{{ route('admin.orders.show', $order->id) }}">
                   Abrir
                 </a>
 
                 @if($waHref)
                   <a
-                    class="btn-outline btn-sm text-emerald-700 border-emerald-200 hover:bg-emerald-50"
+                    class="btn-outline btn-sm h-10 w-full justify-center border-emerald-200 text-emerald-700 hover:bg-emerald-50 md:h-auto md:w-auto"
                     href="{{ $waHref }}"
                     target="_blank"
                     rel="noopener"
@@ -281,15 +281,15 @@
                 @endif
 
                 @if($waState !== 'ok')
-                  <span class="{{ $waBadgeClass }}"
+                  <span class="{{ $waBadgeClass }} inline-flex h-10 w-full items-center justify-center md:h-auto md:w-auto"
                         data-admin-order-wa-badge
                         data-wa-state="{{ $waState }}">
                     {{ $waBadgeText }}
                   </span>
                 @endif
 
-                <div class="dropdown">
-                  <button type="button" class="btn-ghost btn-sm" data-menu="orderMoreMenu-{{ $order->id }}">
+                <div class="dropdown w-full md:w-auto">
+                  <button type="button" class="btn-ghost btn-sm h-10 w-full justify-center md:h-auto md:w-auto" data-menu="orderMoreMenu-{{ $order->id }}">
                     ⋯
                   </button>
 
@@ -309,10 +309,10 @@
 
 
                   {{-- Botón fijo Estado + dropdown --}}
-                  <div class="dropdown">
+                  <div class="dropdown w-full md:w-auto">
                     <button
                       type="button"
-                      class="btn-primary btn-sm {{ $isFinal ? 'opacity-60 cursor-not-allowed' : '' }}"
+                      class="btn-primary btn-sm h-10 w-full justify-center md:h-auto md:w-auto {{ $isFinal ? 'opacity-60 cursor-not-allowed' : '' }}"
                       data-menu="orderStatusMenu-{{ $order->id }}"
                       data-admin-order-status-btn
                       {{ $isFinal ? 'disabled' : '' }}
@@ -384,7 +384,7 @@
           $countKey = $key === '' ? 'all' : (string)$key;
         @endphp
 
-        <a href="{{ $href }}" class="nav-pill {{ $isActiveWa ? 'nav-pill-active' : '' }}">
+        <a href="{{ $href }}" class="nav-pill whitespace-nowrap {{ $isActiveWa ? 'nav-pill-active' : '' }}">
           <span>{{ $label }}</span>
           <span class="inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-black
                 ring-1 ring-zinc-200 bg-white/70 text-zinc-700"

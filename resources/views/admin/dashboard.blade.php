@@ -80,7 +80,7 @@
 <div class="space-y-6">
   {{-- Header --}}
   <div class="flex items-end justify-between gap-3 flex-wrap">
-    <div class="page-head mb-0">
+    <div class="page-head mb-0 w-full lg:w-auto">
       <h1 class="page-title">Panel Admin</h1>
       <p class="page-subtitle">
         Dashboard inteligente · rango actual:
@@ -88,13 +88,13 @@
       </p>
     </div>
 
-    <div class="flex gap-2 flex-wrap">
-      <a class="btn-outline" href="{{ route('store.index') }}">Ver tienda</a>
-      <a class="btn-outline" href="{{ route('admin.orders.index') }}">Pedidos</a>
-      <a class="btn-outline" href="{{ route('admin.repairs.index') }}">Reparaciones</a>
-      <a class="btn-outline" href="{{ route('admin.products.index') }}">Productos</a>
-      <a class="btn-outline" href="{{ route('admin.settings.index') }}">Configuración</a>
-      <a class="btn-primary" href="{{ route('admin.repairs.create') }}">+ Nueva reparación</a>
+    <div class="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
+      <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('store.index') }}">Ver tienda</a>
+      <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.orders.index') }}">Pedidos</a>
+      <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.repairs.index') }}">Reparaciones</a>
+      <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.products.index') }}">Productos</a>
+      <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.settings.index') }}">Configuración</a>
+      <a class="btn-primary h-11 w-full justify-center sm:w-auto" href="{{ route('admin.repairs.create') }}">+ Nueva reparación</a>
     </div>
   </div>
 
@@ -108,15 +108,15 @@
 
       <div class="flex gap-2 flex-wrap">
         <a href="{{ route('admin.dashboard', ['range' => 7]) }}"
-           class="inline-flex items-center rounded-xl border px-3 py-2 text-sm font-semibold {{ $rangeBtn(7, $rangeDays) }}">
+           class="inline-flex h-11 min-w-[84px] items-center justify-center rounded-xl border px-3 py-2 text-sm font-semibold {{ $rangeBtn(7, $rangeDays) }}">
           7 días
         </a>
         <a href="{{ route('admin.dashboard', ['range' => 30]) }}"
-           class="inline-flex items-center rounded-xl border px-3 py-2 text-sm font-semibold {{ $rangeBtn(30, $rangeDays) }}">
+           class="inline-flex h-11 min-w-[84px] items-center justify-center rounded-xl border px-3 py-2 text-sm font-semibold {{ $rangeBtn(30, $rangeDays) }}">
           30 días
         </a>
         <a href="{{ route('admin.dashboard', ['range' => 90]) }}"
-           class="inline-flex items-center rounded-xl border px-3 py-2 text-sm font-semibold {{ $rangeBtn(90, $rangeDays) }}">
+           class="inline-flex h-11 min-w-[84px] items-center justify-center rounded-xl border px-3 py-2 text-sm font-semibold {{ $rangeBtn(90, $rangeDays) }}">
           90 días
         </a>
       </div>

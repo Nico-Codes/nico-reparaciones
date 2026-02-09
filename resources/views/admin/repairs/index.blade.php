@@ -55,13 +55,13 @@
             <div class="text-sm font-semibold text-zinc-900">Estados</div>
 
             <button type="button"
-              class="btn-ghost btn-sm"
+              class="btn-ghost btn-sm h-10"
               data-toggle-collapse="repairs_tabs"
               data-toggle-collapse-label="estados"
               aria-expanded="false">Ver estados</button>
           </div>
 
-          <div class="mt-2 flex items-center gap-2 overflow-x-auto pb-1 hidden" data-collapse="repairs_tabs">
+          <div class="mt-2 flex items-center gap-2 overflow-x-auto pb-1 snap-x hidden" data-collapse="repairs_tabs">
             @foreach($tabs as $key => $label)
               @php
                 $isActive = ($status ?? '') === (string)$key;
@@ -81,7 +81,7 @@
                 $countKey = $key === '' ? 'all' : (string)$key;
               @endphp
 
-              <a href="{{ $href }}" class="nav-pill {{ $isActive ? 'nav-pill-active' : '' }}">
+              <a href="{{ $href }}" class="nav-pill whitespace-nowrap {{ $isActive ? 'nav-pill-active' : '' }}">
                 <span>{{ $label }}</span>
                 <span
                   class="inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-black
@@ -97,8 +97,8 @@
 
 
 
-    <div class="flex gap-2 flex-wrap">
-      <a class="btn-primary" href="{{ route('admin.repairs.create') }}">+ Nueva reparación</a>
+    <div class="flex w-full gap-2 flex-wrap sm:w-auto">
+      <a class="btn-primary h-11 w-full justify-center sm:w-auto" href="{{ route('admin.repairs.create') }}">+ Nueva reparación</a>
     </div>
   </div>
 
@@ -123,12 +123,12 @@
       <form method="GET" class="grid gap-3 sm:grid-cols-6">
         <div class="sm:col-span-2">
           <label>Buscar</label>
-          <input name="q" value="{{ $q }}" placeholder="Código, nombre, teléfono…" />
+          <input name="q" value="{{ $q }}" placeholder="Código, nombre, teléfono…" class="h-11" />
         </div>
 
         <div class="sm:col-span-2">
           <label>Estado</label>
-          <select name="status">
+          <select name="status" class="h-11">
             <option value="">Todos</option>
             @foreach($statuses as $key => $label)
               <option value="{{ $key }}" @selected($status === $key)>{{ $label }}</option>
@@ -138,7 +138,7 @@
 
         <div class="sm:col-span-2 {{ $filtersMoreOpen ? '' : 'hidden' }}" data-collapse="repairs_filters_more">
           <label>WhatsApp</label>
-          <select name="wa">
+          <select name="wa" class="h-11">
             <option value="">Todos</option>
             <option value="pending" @selected($wa === 'pending')>Pendiente</option>
             <option value="sent" @selected($wa === 'sent')>Enviado (OK)</option>
@@ -148,14 +148,14 @@
 
 
        <div class="sm:col-span-6 flex flex-col sm:flex-row gap-2 sm:items-center">
-          <button class="btn-outline sm:w-40" type="submit">Aplicar</button>
+          <button class="btn-outline h-11 w-full justify-center sm:w-40" type="submit">Aplicar</button>
 
           @if($q !== '' || $status !== '' || $wa !== '')
-            <a class="btn-ghost sm:w-40" href="{{ route('admin.repairs.index') }}">Limpiar</a>
+            <a class="btn-ghost h-11 w-full justify-center sm:w-40" href="{{ route('admin.repairs.index') }}">Limpiar</a>
           @endif
 
           <button type="button"
-            class="btn-ghost sm:w-40 sm:ml-auto"
+            class="btn-ghost h-11 w-full justify-center sm:w-40 sm:ml-auto"
             data-toggle-collapse="repairs_filters_more"
             data-toggle-collapse-label="filtros"
             aria-expanded="{{ $filtersMoreOpen ? 'true' : 'false' }}">Ver filtros</button>
@@ -225,30 +225,32 @@
               </div>
           </div>
 
-          <div class="mt-4 flex items-center justify-between gap-2">
-            <div>
-              <div class="text-xs text-zinc-500">Precio final</div>
-              <div class="text-lg font-black">{{ $money($repair->final_price) }}</div>
+          <div class="mt-4 flex flex-col gap-3">
+            <div class="flex items-center justify-between gap-2">
+              <div>
+                <div class="text-xs text-zinc-500">Precio final</div>
+                <div class="text-lg font-black">{{ $money($repair->final_price) }}</div>
+              </div>
             </div>
 
-            <div class="inline-flex items-center gap-2">
-              <a class="btn-outline btn-sm" href="{{ route('admin.repairs.show', $repair) }}">Ver</a>
+            <div class="grid grid-cols-2 gap-2">
+              <a class="btn-outline btn-sm h-10 w-full justify-center" href="{{ route('admin.repairs.show', $repair) }}">Ver</a>
 
               @if($repair->wa_url)
                 <a href="{{ $repair->wa_url }}" target="_blank" rel="noopener"
-                  class="btn-sm inline-flex items-center justify-center rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700 active:scale-[.99]">
+                  class="btn-sm inline-flex h-10 w-full items-center justify-center rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700 active:scale-[.99]">
                   WhatsApp
                 </a>
               @endif
 
-              <button type="button" class="btn-ghost btn-sm" data-menu="repairMoreDesk-{{ $repair->id }}" aria-expanded="false">⋯</button>
-              <div id="repairMoreDesk-{{ $repair->id }}" class="dropdown-menu hidden">
-                <a class="dropdown-item" href="{{ route('admin.repairs.print', $repair) }}" target="_blank" rel="noopener">Imprimir</a>
-                <a class="dropdown-item" href="{{ route('admin.repairs.ticket', $repair) }}?autoprint=1" target="_blank" rel="noopener">Ticket</a>
+              <div class="dropdown col-span-2">
+                <button type="button" class="btn-ghost btn-sm h-10 w-full justify-center" data-menu="repairMoreDesk-{{ $repair->id }}" aria-expanded="false">Más acciones</button>
+                <div id="repairMoreDesk-{{ $repair->id }}" class="dropdown-menu hidden">
+                  <a class="dropdown-item" href="{{ route('admin.repairs.print', $repair) }}" target="_blank" rel="noopener">Imprimir</a>
+                  <a class="dropdown-item" href="{{ route('admin.repairs.ticket', $repair) }}?autoprint=1" target="_blank" rel="noopener">Ticket</a>
+                </div>
               </div>
             </div>
-
-
           </div>
         </div>
       </div>

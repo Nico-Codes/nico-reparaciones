@@ -59,16 +59,23 @@
         <span class="text-zinc-400">·</span>
         <span>{{ $device ?: '—' }}</span>
       </p>
+
+      <div class="mt-2 flex gap-2 overflow-x-auto pb-1 sm:hidden">
+        <a href="#repair_actions" class="nav-pill whitespace-nowrap">Acciones</a>
+        <a href="#repair_summary" class="nav-pill whitespace-nowrap">Resumen</a>
+        <a href="#repair_status" class="nav-pill whitespace-nowrap">Estado</a>
+        <a href="#repair_edit" class="nav-pill whitespace-nowrap">Editar</a>
+      </div>
     </div>
 
-    <div class="flex flex-wrap gap-2">
-      <a href="{{ route('admin.repairs.index') }}" class="btn-ghost btn-sm">Volver</a>
-      <a href="{{ route('admin.repairs.print', $repair) }}" class="btn-outline btn-sm" target="_blank" rel="noopener">Imprimir</a>
-      <a href="{{ route('admin.repairs.ticket', $repair) }}" class="btn-outline btn-sm" target="_blank" rel="noopener">Ticket</a>
+    <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
+      <a href="{{ route('admin.repairs.index') }}" class="btn-ghost btn-sm h-11 w-full justify-center sm:h-auto sm:w-auto">Volver</a>
+      <a href="{{ route('admin.repairs.print', $repair) }}" class="btn-outline btn-sm h-11 w-full justify-center sm:h-auto sm:w-auto" target="_blank" rel="noopener">Imprimir</a>
+      <a href="{{ route('admin.repairs.ticket', $repair) }}" class="btn-outline btn-sm h-11 w-full justify-center sm:h-auto sm:w-auto" target="_blank" rel="noopener">Ticket</a>
 
 
       @if(!empty($waUrl))
-        <a href="{{ $waUrl }}" class="btn-primary btn-sm" target="_blank" rel="noopener"
+        <a href="{{ $waUrl }}" class="btn-primary btn-sm h-11 w-full justify-center sm:h-auto sm:w-auto" target="_blank" rel="noopener"
            data-wa-open
            data-wa-ajax="{{ route('admin.repairs.whatsappLogAjax', $repair) }}">
           WhatsApp
@@ -107,7 +114,7 @@
       @endphp
 
       {{-- Acciones rápidas --}}
-      <div class="card">
+      <div class="card" id="repair_actions">
         <div class="card-head">
           <div class="font-black">Acciones rápidas</div>
           <span class="badge-zinc">{{ $repair->code ?? '—' }}</span>
@@ -115,14 +122,14 @@
 
         <div class="card-body space-y-2">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <a class="btn-outline w-full"
+            <a class="btn-outline h-11 w-full justify-center"
               href="{{ route('admin.repairs.print', $repair) }}"
               target="_blank"
               rel="noopener">
               Imprimir
             </a>
 
-            <a class="btn-outline w-full"
+            <a class="btn-outline h-11 w-full justify-center"
               href="{{ route('admin.repairs.ticket', $repair) }}?autoprint=1"
               target="_blank"
               rel="noopener">
@@ -131,20 +138,20 @@
           </div>
 
           @if(!empty($waUrl))
-            <a href="{{ $waUrl }}" class="btn-outline w-full" target="_blank" rel="noopener"
+            <a href="{{ $waUrl }}" class="btn-outline h-11 w-full justify-center" target="_blank" rel="noopener"
               data-wa-open
               data-wa-ajax="{{ route('admin.repairs.whatsappLogAjax', $repair) }}">
               Abrir WhatsApp
             </a>
           @else
-            <button type="button" class="btn-outline w-full opacity-50" disabled>
+            <button type="button" class="btn-outline h-11 w-full justify-center opacity-50" disabled>
               WhatsApp (sin teléfono)
             </button>
           @endif
 
           <div class="pt-2 border-t border-zinc-200">
             <button type="button"
-              class="btn-ghost btn-sm w-full"
+              class="btn-ghost btn-sm h-10 w-full justify-center"
               data-toggle-collapse="repair_quick_status"
               data-toggle-collapse-label="acciones de estado"
               aria-expanded="false">Ver acciones de estado</button>
@@ -156,7 +163,7 @@
                   @csrf
                   <input type="hidden" name="status" value="delivered">
                   <input type="hidden" name="comment" value="Acción rápida: marcada como entregada">
-                  <button class="btn-primary w-full" type="submit" {{ $isFinal ? 'disabled' : '' }}>
+                  <button class="btn-primary h-11 w-full justify-center" type="submit" {{ $isFinal ? 'disabled' : '' }}>
                     Marcar entregada
                   </button>
                 </form>
@@ -166,7 +173,7 @@
                   @csrf
                   <input type="hidden" name="status" value="cancelled">
                   <input type="hidden" name="comment" value="Acción rápida: reparación cancelada">
-                  <button class="btn-outline w-full" type="submit" {{ $isFinal ? 'disabled' : '' }}>
+                  <button class="btn-outline h-11 w-full justify-center" type="submit" {{ $isFinal ? 'disabled' : '' }}>
                     Cancelar
                   </button>
                 </form>
@@ -183,7 +190,7 @@
         </div>
       </div>
 
-      <div class="card">
+      <div class="card" id="repair_summary">
         <div class="card-head">
           <div class="font-black">Resumen</div>
           <span class="badge-zinc">Código: {{ $repair->code ?? '—' }}</span>
@@ -191,23 +198,23 @@
 
         <div class="card-body">
           <div class="text-sm text-zinc-700 space-y-2">
-            <div class="flex items-start justify-between gap-3">
+            <div class="flex flex-col gap-0.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
               <span class="text-zinc-500">Recibido</span>
               <span class="font-extrabold text-right">{{ $repair->received_at?->format('d/m/Y H:i') ?? '—' }}</span>
             </div>
-            <div class="flex items-start justify-between gap-3">
+            <div class="flex flex-col gap-0.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
               <span class="text-zinc-500">Entregado</span>
               <span class="font-extrabold text-right">{{ $repair->delivered_at?->format('d/m/Y H:i') ?? '—' }}</span>
             </div>
-            <div class="flex items-start justify-between gap-3">
+            <div class="flex flex-col gap-0.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
               <span class="text-zinc-500">Precio final</span>
               <span class="font-black text-right">{{ $money($final) }}</span>
             </div>
-            <div class="flex items-start justify-between gap-3">
+            <div class="flex flex-col gap-0.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
               <span class="text-zinc-500">Pagado</span>
               <span class="font-black text-right">{{ $money($paid) }}</span>
             </div>
-            <div class="flex items-start justify-between gap-3">
+            <div class="flex flex-col gap-0.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
               <span class="text-zinc-500">Debe</span>
               <span class="{{ $due > 0 ? 'font-black text-rose-700' : 'font-black text-emerald-700' }} text-right">
                 {{ $money($due) }}
@@ -215,7 +222,7 @@
             </div>
 
             <div class="pt-2 border-t border-zinc-100">
-              <div class="flex items-start justify-between gap-3">
+              <div class="flex flex-col gap-0.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                 <span class="text-zinc-500">Usuario asociado</span>
                 <span class="font-extrabold text-right">{{ $linkedUserEmail ?? '—' }}</span>
               </div>
@@ -231,7 +238,7 @@
         </div>
       </div>
 
-      <div class="card">
+      <div class="card" id="repair_status">
         <div class="card-head">
           <div class="font-black">Cambiar estado</div>
           <span class="{{ $badge($repair->status) }}">{{ $statusLabel }}</span>
@@ -243,14 +250,14 @@
 
             <div>
               <label for="status" class="block mb-1">Nuevo estado</label>
-              <select id="status" name="status" @disabled($isFinal)>
+              <select id="status" name="status" class="h-11" @disabled($isFinal)>
                 @foreach($statuses as $k => $label)
                   <option value="{{ $k }}" @selected(old('status', $repair->status) === $k)>{{ $label }}</option>
                 @endforeach
               </select>
             </div>
 
-            <button class="btn-primary w-full" @disabled($isFinal)>Guardar estado</button>
+            <button class="btn-primary h-11 w-full justify-center" @disabled($isFinal)>Guardar estado</button>
 
             @if($isFinal)
               <p class="text-xs text-zinc-500 mt-2">
@@ -272,7 +279,7 @@
           <div class="flex items-center gap-2">
             <span class="badge-zinc">{{ $history->count() }} cambios</span>
             <button type="button"
-            class="btn-ghost btn-sm"
+            class="btn-ghost btn-sm h-10"
             data-toggle-collapse="repair_history"
             data-toggle-collapse-label="historial"
             aria-expanded="false">Ver historial</button>
@@ -315,7 +322,7 @@
           <div class="flex items-center gap-2">
             <span class="badge-zinc">{{ $waLogs->count() }}</span>
             <button type="button"
-            class="btn-ghost btn-sm"
+            class="btn-ghost btn-sm h-10"
             data-toggle-collapse="repair_wa_logs"
             data-toggle-collapse-label="logs"
             aria-expanded="false">Ver logs</button>
@@ -349,7 +356,7 @@
     </div>
 
     {{-- Columna derecha: edición completa --}}
-    <div class="lg:col-span-2 space-y-4">
+    <div class="lg:col-span-2 space-y-4" id="repair_edit">
       <div class="card">
         <div class="card-head">
           <div class="font-black">Editar reparación</div>
@@ -439,7 +446,7 @@
                   </div>
 
                   <button type="button"
-                    class="btn-ghost btn-sm"
+                    class="btn-ghost btn-sm h-10"
                     data-toggle-collapse="repair_device_catalog"
                     data-toggle-collapse-label="equipo"
                     aria-expanded="{{ $devOpen ? 'true' : 'false' }}">
@@ -564,7 +571,7 @@
 
               <div class="flex items-end justify-end">
                 <button type="button"
-                  class="btn-ghost btn-sm"
+                  class="btn-ghost btn-sm h-10"
                   data-toggle-collapse="repair_show_finance"
                   data-toggle-collapse-label="cálculo"
                   aria-expanded="false">Ver cálculo
@@ -638,7 +645,7 @@
               <div class="text-sm font-semibold text-zinc-800">Pagos y notas</div>
 
               <button type="button"
-              class="btn-ghost btn-sm"
+              class="btn-ghost btn-sm h-10"
               data-toggle-collapse="repair_show_extras"
               data-toggle-collapse-label="pagos"
               aria-expanded="false">Ver pagos</button>
@@ -682,8 +689,8 @@
 
 
             <div class="flex flex-col sm:flex-row gap-2">
-              <button class="btn-primary">Guardar cambios</button>
-              <a href="{{ route('admin.repairs.show', $repair) }}" class="btn-outline">Cancelar</a>
+              <button class="btn-primary h-11 w-full justify-center sm:w-auto">Guardar cambios</button>
+              <a href="{{ route('admin.repairs.show', $repair) }}" class="btn-outline h-11 w-full justify-center sm:w-auto">Cancelar</a>
             </div>
           </form>
         </div>
