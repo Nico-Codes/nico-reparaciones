@@ -31,19 +31,19 @@
           </div>
 
           <div class="mt-4 grid gap-2 sm:grid-cols-2">
-            <button type="button" class="btn-primary w-full" onclick="window.location.reload();">
+            <button type="button" class="btn-primary h-11 w-full justify-center" onclick="window.location.reload();">
               Reintentar
             </button>
 
-            <a href="{{ route('repairs.lookup') }}" class="btn-outline w-full">
+            <a href="{{ route('repairs.lookup') }}" class="btn-outline h-11 w-full justify-center">
               Consultar reparación
             </a>
 
-            <a href="{{ $primaryUrl }}" class="btn-outline w-full">
+            <a href="{{ $primaryUrl }}" class="btn-outline h-11 w-full justify-center">
               {{ $primaryLabel }}
             </a>
 
-            <a href="{{ url()->previous() }}" class="btn-ghost w-full">
+            <a href="{{ url()->previous() }}" class="btn-ghost h-11 w-full justify-center">
               Volver
             </a>
           </div>

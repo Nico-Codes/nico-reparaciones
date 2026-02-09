@@ -583,8 +583,8 @@
           </div>
 
           <div class="mt-4 flex gap-2">
-            <a href="{{ route('cart.index') }}" class="btn btn-primary flex-1 justify-center">Ver carrito</a>
-            <button type="button" class="btn btn-outline flex-1 justify-center" data-cart-added-close>Seguir</button>
+            <a href="{{ route('cart.index') }}" class="btn-primary flex-1 justify-center">Ver carrito</a>
+            <button type="button" class="btn-outline flex-1 justify-center" data-cart-added-close>Seguir</button>
           </div>
         </div>
       </div>

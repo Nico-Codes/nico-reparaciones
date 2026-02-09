@@ -38,15 +38,15 @@
         </div>
 
         <div class="flex flex-col gap-2 md:min-w-[240px]">
-          <a href="{{ $primaryUrl }}" class="btn-primary w-full">{{ $primaryLabel }}</a>
+          <a href="{{ $primaryUrl }}" class="btn-primary h-11 w-full justify-center">{{ $primaryLabel }}</a>
 
-          <a href="{{ route('repairs.lookup') }}" class="btn-outline w-full">Consultar reparación</a>
+          <a href="{{ route('repairs.lookup') }}" class="btn-outline h-11 w-full justify-center">Consultar reparación</a>
 
-          <button type="button" class="btn-outline w-full" onclick="window.location.reload();">
+          <button type="button" class="btn-outline h-11 w-full justify-center" onclick="window.location.reload();">
             Recargar página
           </button>
 
-          <a href="{{ url()->previous() }}" class="btn-ghost w-full">Volver</a>
+          <a href="{{ url()->previous() }}" class="btn-ghost h-11 w-full justify-center">Volver</a>
         </div>
       </div>
     </div>
