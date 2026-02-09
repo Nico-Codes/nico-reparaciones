@@ -21,10 +21,7 @@ class UserRepairController extends Controller
 
     public function show(Repair $repair)
     {
-        // Seguridad: un usuario solo puede ver sus reparaciones
-        if ((int) $repair->user_id !== (int) auth()->id()) {
-            abort(404);
-        }
+        $this->authorize('view', $repair);
 
         return view('repairs.show', [
             'repair' => $repair,

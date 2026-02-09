@@ -284,9 +284,7 @@ class OrderController extends Controller
      */
     public function show(Order $order)
     {
-        if ($order->user_id !== Auth::id()) {
-            abort(403);
-        }
+        $this->authorize('view', $order);
 
         $order->load(['items', 'statusHistories']);
 
@@ -325,9 +323,7 @@ class OrderController extends Controller
 
     public function thankYou(Order $order)
     {
-        if ($order->user_id !== Auth::id()) {
-            abort(403);
-        }
+        $this->authorize('view', $order);
 
         $order->load(['items']);
 
