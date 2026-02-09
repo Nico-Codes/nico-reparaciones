@@ -72,7 +72,9 @@
   .btn-outline,
   .btn-ghost {
     @apply inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-2 text-sm font-extrabold
-      border border-transparent transition active:scale-[0.99];
+      border border-transparent transition-all duration-200 ease-out active:scale-[0.98]
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-200 focus-visible:ring-offset-2;
+    transform: translateY(0);
   }
 
   .btn-sm { @apply px-3 py-1.5 text-xs rounded-xl; }
@@ -80,12 +82,19 @@
   .btn-primary { @apply bg-sky-600 text-white hover:bg-sky-700; }
   .btn-outline { @apply bg-white border-zinc-200 hover:bg-zinc-50; }
   .btn-ghost { @apply bg-transparent hover:bg-zinc-100; }
+  .btn-primary:hover,
+  .btn-outline:hover { transform: translateY(-1px); }
+  .btn-ghost:hover { transform: translateY(-0.5px); }
 
   /* Icon buttons (base) */
   .icon-btn,
   .btn-cart {
-    @apply inline-flex items-center justify-center h-10 w-10 rounded-xl border border-zinc-200 bg-white hover:bg-zinc-50 transition;
+    @apply inline-flex items-center justify-center h-10 w-10 rounded-xl border border-zinc-200 bg-white hover:bg-zinc-50
+      transition-all duration-200 ease-out;
+    transform: translateY(0);
   }
+  .icon-btn:hover,
+  .btn-cart:hover { transform: translateY(-1px); }
 
   /* btn-cart (tienda) */
   .btn-cart { @apply text-sky-700 hover:text-sky-800; }
@@ -164,9 +173,37 @@
      Dropdown
   ========================== */
   .dropdown { @apply relative; }
-  .dropdown-menu { @apply absolute right-0 mt-2 w-48 rounded-2xl border border-zinc-200 bg-white shadow-lg p-2 z-50; }
+  .dropdown-menu {
+    @apply absolute right-0 mt-2 w-56 rounded-2xl border border-zinc-200 bg-white shadow-lg p-2 z-50;
+    max-height: min(72dvh, 30rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    transform-origin: top right;
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+    pointer-events: none;
+    transition: opacity 170ms ease, transform 170ms ease;
+  }
+  .dropdown-menu.is-open {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+  }
+  .dropdown-menu::-webkit-scrollbar { width: 8px; }
+  .dropdown-menu::-webkit-scrollbar-thumb {
+    background: #d4d4d8;
+    border-radius: 999px;
+  }
+  .dropdown-menu::-webkit-scrollbar-track { background: transparent; }
+  @media (max-width: 640px) {
+    .dropdown-menu { width: min(90vw, 18rem); }
+  }
   .dropdown.open .dropdown-menu { @apply block; }
-  .dropdown-item { @apply block px-3 py-2 rounded-xl text-sm font-semibold hover:bg-zinc-100; }
+  .dropdown-item {
+    @apply block px-3 py-2 rounded-xl text-sm font-semibold hover:bg-zinc-100
+      transition-colors duration-150 ease-out;
+  }
 
   /* =========================
      SIDEBAR MOBILE (Hamburguesa) — Moderno y ordenado
@@ -455,6 +492,20 @@
   body.nr-scroll-lock {
     padding-right: var(--nr-sbw, 0px);
     touch-action: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .btn,
+    .btn-primary,
+    .btn-outline,
+    .btn-ghost,
+    .icon-btn,
+    .btn-cart,
+    .dropdown-menu,
+    .dropdown-item {
+      transition: none !important;
+      transform: none !important;
+    }
   }
 
   .nr-no-transition { transition: none !important; }

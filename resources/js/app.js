@@ -138,24 +138,38 @@ document.addEventListener('DOMContentLoaded', () => {
   // Dropdown cuenta (data-menu="id")
   // ----------------------------
   const initDropdowns = () => {
+    const ANIM_MS = 170;
+
     $$('[data-menu]').forEach((btn) => {
       const id = btn.getAttribute('data-menu');
       const menu = id ? document.getElementById(id) : null;
       if (!menu) return;
 
+      let closeTimer = null;
+
       const close = () => {
-        menu.classList.add('hidden');
         btn.setAttribute('aria-expanded', 'false');
+        menu.classList.remove('is-open');
+
+        window.clearTimeout(closeTimer);
+        closeTimer = window.setTimeout(() => {
+          if (btn.getAttribute('aria-expanded') === 'true') return;
+          menu.classList.add('hidden');
+        }, ANIM_MS);
       };
 
       const open = () => {
+        window.clearTimeout(closeTimer);
         menu.classList.remove('hidden');
         btn.setAttribute('aria-expanded', 'true');
+        requestAnimationFrame(() => {
+          menu.classList.add('is-open');
+        });
       };
 
       btn.addEventListener('click', (e) => {
         e.preventDefault();
-        const isOpen = !menu.classList.contains('hidden');
+        const isOpen = menu.classList.contains('is-open');
         isOpen ? close() : open();
       });
 
