@@ -7,7 +7,7 @@
   $groupLabels = [
     'logos' => 'Logos',
     'icons' => 'Iconos de navegacion',
-    'favicons' => 'Favicons y app icons',
+    'favicons' => 'Favicons e iconos de app',
   ];
 
   $assetsByGroup = collect($brandAssets ?? [])->sortBy('label')->groupBy('group');
@@ -29,7 +29,7 @@
   <div class="card">
     <div class="card-head">
       <div>
-        <div class="font-black">Assets visuales</div>
+        <div class="font-black">Recursos visuales</div>
         <div class="text-xs text-zinc-500">Puedes subir por click o arrastrando desde el escritorio.</div>
       </div>
       <span class="badge-sky">Identidad</span>
@@ -103,7 +103,7 @@
                     method="POST"
                     action="{{ route('admin.settings.assets.reset', $asset['key']) }}"
                     class="mt-2"
-                    onsubmit="return confirm('Restaurar asset por defecto?')"
+                    onsubmit="return confirm('Restaurar recurso por defecto?')"
                   >
                     @csrf
                     @method('DELETE')

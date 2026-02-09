@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'Admin — Dashboard')
+@section('title', 'Admin - Panel')
 
 @php
   $money = fn($n) => '$ ' . number_format((float)($n ?? 0), 0, ',', '.');
@@ -83,7 +83,7 @@
     <div class="page-head mb-0 w-full lg:w-auto">
       <h1 class="page-title">Panel Admin</h1>
       <p class="page-subtitle">
-        Dashboard inteligente · rango actual:
+        Panel inteligente · rango actual:
         <span class="font-black">{{ (int)$rangeDays }} días</span>
       </p>
     </div>

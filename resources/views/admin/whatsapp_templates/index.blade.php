@@ -7,7 +7,7 @@
   <div class="flex items-start justify-between gap-4 flex-wrap">
     <div class="page-head mb-0 w-full lg:w-auto">
       <h1 class="page-title">Plantillas WhatsApp</h1>
-      <p class="page-subtitle">Editá mensajes por estado. Si dejás vacío, se usa el default del sistema.</p>
+      <p class="page-subtitle">Editá mensajes por estado. Si dejás vacío, se usa el texto predeterminado del sistema.</p>
     </div>
 
     <div class="flex w-full gap-2 flex-wrap sm:w-auto">
@@ -19,7 +19,7 @@
   <div class="card">
     <div class="card-head">
       <div>
-        <div class="font-extrabold text-zinc-900">Placeholders disponibles</div>
+        <div class="font-extrabold text-zinc-900">Variables disponibles</div>
         <div class="text-xs text-zinc-500">Podés combinarlos como quieras en cada plantilla.</div>
       </div>
     </div>

@@ -80,7 +80,7 @@ class AdminBusinessSettingsController extends Controller
 
         if ($ext === '' || !in_array($ext, $extensions, true)) {
             return back()->withErrors([
-                'file' => 'Formato de archivo no permitido para este asset.',
+                'file' => 'Formato de archivo no permitido para este recurso visual.',
             ]);
         }
 
@@ -103,7 +103,7 @@ class AdminBusinessSettingsController extends Controller
         $this->deleteManagedAssetFile($oldRelativePath);
         BrandAssets::clearRuntimeCache();
 
-        return back()->with('success', 'Asset actualizado: ' . ($definition['label'] ?? $assetKey));
+        return back()->with('success', 'Recurso visual actualizado: ' . ($definition['label'] ?? $assetKey));
     }
 
     public function resetAsset(Request $request, string $assetKey)
@@ -121,7 +121,7 @@ class AdminBusinessSettingsController extends Controller
         $this->deleteManagedAssetFile($oldRelativePath);
         BrandAssets::clearRuntimeCache();
 
-        return back()->with('success', 'Asset restaurado al valor por defecto: ' . ($definition['label'] ?? $assetKey));
+        return back()->with('success', 'Recurso visual restaurado al valor por defecto: ' . ($definition['label'] ?? $assetKey));
     }
 
     private function deleteManagedAssetFile(?string $relativePath): void
