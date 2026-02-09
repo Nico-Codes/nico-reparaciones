@@ -62,7 +62,8 @@
 
 @section('content')
 <div class="container-page py-6"
-     data-admin-orders-filter="{{ $currentStatus === '' ? 'all' : $currentStatus }}">
+     data-admin-orders-filter="{{ $currentStatus === '' ? 'all' : $currentStatus }}"
+     data-admin-order-transitions='@json(\App\Models\Order::TRANSITIONS)'>
   <div class="page-head">
     <div class="min-w-0">
       <div class="page-title">Pedidos (Admin)</div>
@@ -179,6 +180,7 @@
 
         $st = (string)($order->status ?? 'pendiente');
         $stLabel = $statusMap[$st] ?? $st;
+        $allowedStatusTransitions = \App\Models\Order::allowedNextStatuses($st);
 
         $isFinal = in_array($st, ['entregado','cancelado'], true);
 
@@ -323,11 +325,16 @@
 
                   <div id="orderStatusMenu-{{ $order->id }}" class="dropdown-menu hidden">
                     @foreach($statusMap as $k => $label)
+                      @php
+                        $isCurrentStatus = ($k === $st);
+                        $canPickStatus = $isCurrentStatus || in_array($k, $allowedStatusTransitions, true);
+                      @endphp
                       <button
                         type="button"
-                        class="dropdown-item {{ $k === $st ? 'bg-zinc-100' : '' }}"
+                        class="dropdown-item {{ $isCurrentStatus ? 'bg-zinc-100' : '' }} {{ $canPickStatus ? '' : 'opacity-60 cursor-not-allowed' }}"
                         data-admin-order-set-status
                         data-status="{{ $k }}"
+                        @disabled(!$canPickStatus || $isCurrentStatus)
                       >
                         {{ $label }}
                       </button>

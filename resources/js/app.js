@@ -1387,15 +1387,55 @@ document.addEventListener('DOMContentLoaded', () => {
     el.textContent = String(next);
   };
 
+  let adminOrderTransitionsCache = null;
+  const getAdminOrderTransitions = (card) => {
+    if (adminOrderTransitionsCache) return adminOrderTransitionsCache;
+
+    const source =
+      (card && (card.closest('[data-admin-order-transitions]') || (card.hasAttribute('data-admin-order-transitions') ? card : null))) ||
+      document.querySelector('[data-admin-order-transitions]');
+
+    let parsed = {};
+    if (source) {
+      try {
+        const raw = source.getAttribute('data-admin-order-transitions') || '{}';
+        const data = JSON.parse(raw);
+        if (data && typeof data === 'object') parsed = data;
+      } catch (_) {}
+    }
+
+    adminOrderTransitionsCache = parsed;
+    return parsed;
+  };
+
   const syncStatusOptions = (card, currentStatus) => {
+    const transitions = getAdminOrderTransitions(card);
+    const allowed = Array.isArray(transitions?.[currentStatus])
+      ? transitions[currentStatus].map((v) => String(v))
+      : [];
+    const allowedSet = new Set(allowed);
+    let hasEnabledOption = false;
+
     card.querySelectorAll('[data-admin-order-set-status]').forEach((b) => {
-      const isCur = b.getAttribute('data-status') === currentStatus;
+      const btnStatus = String(b.getAttribute('data-status') || '').trim();
+      const isCur = btnStatus === currentStatus;
+      const canPick = isCur || allowedSet.has(btnStatus);
+      const shouldDisable = !canPick || isCur;
 
       b.classList.toggle('bg-zinc-100', isCur);
-      b.disabled = isCur;
-      b.classList.toggle('opacity-60', isCur);
-      b.classList.toggle('cursor-not-allowed', isCur);
+      b.disabled = shouldDisable;
+      b.classList.toggle('opacity-60', shouldDisable);
+      b.classList.toggle('cursor-not-allowed', shouldDisable);
+
+      if (!shouldDisable) hasEnabledOption = true;
     });
+
+    const menuBtn = card.querySelector('[data-admin-order-status-btn]');
+    if (menuBtn) {
+      menuBtn.disabled = !hasEnabledOption;
+      menuBtn.classList.toggle('opacity-60', !hasEnabledOption);
+      menuBtn.classList.toggle('cursor-not-allowed', !hasEnabledOption);
+    }
   };
 
   const ensureAdminOrdersEmpty = () => {
@@ -1484,6 +1524,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const menuBtn = card.querySelector('[data-admin-order-status-btn]');
     const menuId = menuBtn?.getAttribute('data-menu');
     const menu = menuId ? document.getElementById(menuId) : null;
+    const initialStatus = String(card.dataset.status || '').trim();
+
+    syncStatusOptions(card, initialStatus);
 
     // Botón WhatsApp en el detalle: abrir WA y registrar log (sin confirm)
     if (waOpenBtn && waForm) {
@@ -1613,11 +1656,6 @@ document.addEventListener('DOMContentLoaded', () => {
             el.className = adminBadgeClass(newSt);
           });
 
-          // marcar activo visual
-          card.querySelectorAll('[data-admin-order-set-status]').forEach((b) => {
-            b.classList.toggle('bg-zinc-100', b.getAttribute('data-status') === newSt);
-          });
-
           showMiniToast('Estado actualizado ✅');
 
           // WhatsApp (si backend devuelve wa.url/message)
@@ -1730,7 +1768,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
           } finally {
             card.dataset.busy = '0';
-            if (menuBtn) menuBtn.disabled = false;
+            syncStatusOptions(card, String(card.dataset.status || '').trim());
           }
 
       });

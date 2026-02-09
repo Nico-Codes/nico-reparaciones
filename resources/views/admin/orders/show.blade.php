@@ -33,7 +33,12 @@
   $waPhone        = $waPhone ?? null;
   $waLastForStatus = $waLastForStatus ?? null;
 
+  $currentStatus = (string)($order->status ?? 'pendiente');
+  $allowedStatusTransitions = \App\Models\Order::allowedNextStatuses($currentStatus);
+
   $isFinal = in_array((string)($order->status ?? ''), ['entregado','cancelado'], true);
+  $canQuickDelivered = \App\Models\Order::canTransition($currentStatus, 'entregado');
+  $canQuickCancel = \App\Models\Order::canTransition($currentStatus, 'cancelado');
 @endphp
 
 
@@ -41,7 +46,8 @@
 <div class="container-page py-6"
      data-admin-order-card
      data-order-id="{{ $order->id }}"
-     data-status="{{ (string)($order->status ?? 'pendiente') }}">
+     data-status="{{ (string)($order->status ?? 'pendiente') }}"
+     data-admin-order-transitions='@json(\App\Models\Order::TRANSITIONS)'>
 
   <div class="mb-4 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
     <div class="min-w-0">
@@ -103,11 +109,16 @@
 
           <div id="orderStatusMenu-{{ $order->id }}" class="dropdown-menu hidden">
             @foreach($statusMap as $k => $label)
+              @php
+                $isCurrentStatus = ($k === $currentStatus);
+                $canPickStatus = $isCurrentStatus || in_array($k, $allowedStatusTransitions, true);
+              @endphp
               <button
                 type="button"
-                class="dropdown-item {{ $k === (string)($order->status ?? 'pendiente') ? 'bg-zinc-100' : '' }}"
+                class="dropdown-item {{ $isCurrentStatus ? 'bg-zinc-100' : '' }} {{ $canPickStatus ? '' : 'opacity-60 cursor-not-allowed' }}"
                 data-admin-order-set-status
                 data-status="{{ $k }}"
+                @disabled(!$canPickStatus || $isCurrentStatus)
               >
                 {{ $label }}
               </button>
@@ -203,7 +214,7 @@
               @csrf
               <input type="hidden" name="status" value="entregado">
               <input type="hidden" name="comment" value="Acción rápida: marcado como entregado">
-              <button class="btn-primary h-11 w-full justify-center" type="submit" {{ $isFinal ? 'disabled' : '' }}>
+              <button class="btn-primary h-11 w-full justify-center {{ ($canQuickDelivered && !$isFinal) ? '' : 'opacity-60 cursor-not-allowed' }}" type="submit" {{ ($canQuickDelivered && !$isFinal) ? '' : 'disabled' }}>
                 Marcar entregado
               </button>
             </form>
@@ -213,7 +224,7 @@
               @csrf
               <input type="hidden" name="status" value="cancelado">
               <input type="hidden" name="comment" value="Acción rápida: pedido cancelado">
-              <button class="btn-outline h-11 w-full justify-center" type="submit" {{ $isFinal ? 'disabled' : '' }}>
+              <button class="btn-outline h-11 w-full justify-center {{ ($canQuickCancel && !$isFinal) ? '' : 'opacity-60 cursor-not-allowed' }}" type="submit" {{ ($canQuickCancel && !$isFinal) ? '' : 'disabled' }}>
                 Cancelar pedido
               </button>
             </form>
@@ -290,7 +301,11 @@
               <label class="label">Estado</label>
               <select name="status" class="h-11 w-full">
                 @foreach($statusMap as $key => $label)
-                  <option value="{{ $key }}" @selected($order->status === $key)>{{ $label }}</option>
+                  @php
+                    $isCurrentOption = ($key === $currentStatus);
+                    $canPickOption = $isCurrentOption || in_array($key, $allowedStatusTransitions, true);
+                  @endphp
+                  <option value="{{ $key }}" @selected(old('status', $order->status) === $key) @disabled(!$canPickOption)>{{ $label }}</option>
                 @endforeach
               </select>
             </div>

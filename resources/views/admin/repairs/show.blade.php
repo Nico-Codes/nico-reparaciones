@@ -7,6 +7,8 @@
 
   $statusKey = (string)($repair->status ?? '');
   $statusLabel = $statuses[$statusKey] ?? ($statusKey !== '' ? $statusKey : '—');
+  $currentStatus = (string)($repair->status ?? 'received');
+  $allowedStatusTransitions = \App\Models\Repair::allowedNextStatuses($currentStatus);
 
   $device = trim(($repair->device_brand ?? '') . ' ' . ($repair->device_model ?? ''));
   $device = $device !== '' ? $device : null;
@@ -111,6 +113,8 @@
     <div class="space-y-4 lg:col-span-1">
       @php
         $isFinal = in_array((string)$repair->status, ['delivered','cancelled'], true);
+        $canQuickDelivered = \App\Models\Repair::canTransition($currentStatus, 'delivered');
+        $canQuickCancel = \App\Models\Repair::canTransition($currentStatus, 'cancelled');
       @endphp
 
       {{-- Acciones rápidas --}}
@@ -163,7 +167,7 @@
                   @csrf
                   <input type="hidden" name="status" value="delivered">
                   <input type="hidden" name="comment" value="Acción rápida: marcada como entregada">
-                  <button class="btn-primary h-11 w-full justify-center" type="submit" {{ $isFinal ? 'disabled' : '' }}>
+                  <button class="btn-primary h-11 w-full justify-center {{ ($canQuickDelivered && !$isFinal) ? '' : 'opacity-60 cursor-not-allowed' }}" type="submit" {{ ($canQuickDelivered && !$isFinal) ? '' : 'disabled' }}>
                     Marcar entregada
                   </button>
                 </form>
@@ -173,7 +177,7 @@
                   @csrf
                   <input type="hidden" name="status" value="cancelled">
                   <input type="hidden" name="comment" value="Acción rápida: reparación cancelada">
-                  <button class="btn-outline h-11 w-full justify-center" type="submit" {{ $isFinal ? 'disabled' : '' }}>
+                  <button class="btn-outline h-11 w-full justify-center {{ ($canQuickCancel && !$isFinal) ? '' : 'opacity-60 cursor-not-allowed' }}" type="submit" {{ ($canQuickCancel && !$isFinal) ? '' : 'disabled' }}>
                     Cancelar
                   </button>
                 </form>
@@ -252,7 +256,11 @@
               <label for="status" class="block mb-1">Nuevo estado</label>
               <select id="status" name="status" class="h-11" @disabled($isFinal)>
                 @foreach($statuses as $k => $label)
-                  <option value="{{ $k }}" @selected(old('status', $repair->status) === $k)>{{ $label }}</option>
+                  @php
+                    $isCurrentOption = ($k === $currentStatus);
+                    $canPickOption = $isCurrentOption || in_array($k, $allowedStatusTransitions, true);
+                  @endphp
+                  <option value="{{ $k }}" @selected(old('status', $repair->status) === $k) @disabled(!$canPickOption)>{{ $label }}</option>
                 @endforeach
               </select>
             </div>
