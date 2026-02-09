@@ -8,7 +8,7 @@
   $money = fn($n) => '$ ' . number_format((float)($n ?? 0), 0, ',', '.');
 @endphp
 
-<div id="top" class="container-page py-8">
+<div id="top" class="container-page py-5 sm:py-7 md:py-8">
 
   {{-- Tabs de categorías --}}
   @if(($categories ?? collect())->count())
@@ -20,15 +20,15 @@
           if (request()->filled('sort')) $keep['sort'] = request('sort');
         @endphp
 
-        <div class="flex flex-wrap gap-2">
-          <a href="{{ route('store.index', $keep) }}" class="nav-pill {{ empty($currentCategorySafe) ? 'nav-pill-active' : '' }}">
+        <div class="flex gap-2 overflow-x-auto overscroll-x-contain pb-1 md:flex-wrap md:overflow-visible">
+          <a href="{{ route('store.index', $keep) }}" class="nav-pill shrink-0 whitespace-nowrap {{ empty($currentCategorySafe) ? 'nav-pill-active' : '' }}">
             Todas
           </a>
 
           @foreach($categories as $cat)
             <a
               href="{{ route('store.category', ['category' => $cat->slug] + $keep) }}"
-              class="nav-pill {{ ($currentCategorySafe?->id === $cat->id) ? 'nav-pill-active' : '' }}"
+              class="nav-pill shrink-0 whitespace-nowrap {{ ($currentCategorySafe?->id === $cat->id) ? 'nav-pill-active' : '' }}"
             >
               {{ $cat->name }}
             </a>
@@ -52,14 +52,14 @@
 
   <div class="card">
     <div class="card-body">
-      <form method="GET" action="{{ $formAction }}" class="grid gap-3 md:grid-cols-12 items-end">
+      <form method="GET" action="{{ $formAction }}" class="grid gap-3 md:grid-cols-12 md:items-end">
         <div class="md:col-span-7">
           <div class="text-xs font-black text-zinc-700">Buscar</div>
           <input
             name="q"
             value="{{ $qVal }}"
             placeholder="Ej: iPhone, display, batería..."
-            class="mt-1 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold text-zinc-900 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-200/40"
+            class="mt-1 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-base font-semibold text-zinc-900 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-200/40 sm:text-sm"
           >
         </div>
 
@@ -67,7 +67,7 @@
           <div class="text-xs font-black text-zinc-700">Ordenar</div>
           <select
             name="sort"
-            class="mt-1 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold text-zinc-900 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-200/40"
+            class="mt-1 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-base font-semibold text-zinc-900 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-200/40 sm:text-sm"
           >
             <option value="relevance" {{ $sortVal === 'relevance' ? 'selected' : '' }}>Relevancia</option>
             <option value="newest" {{ $sortVal === 'newest' ? 'selected' : '' }}>Más nuevos</option>
@@ -79,7 +79,7 @@
           </select>
         </div>
 
-        <div class="md:col-span-2 flex gap-2">
+        <div class="md:col-span-2 grid gap-2 sm:grid-cols-2 md:flex md:items-center">
           <button type="submit" class="btn-primary w-full justify-center">Aplicar</button>
 
           @if($qVal !== '' || ($sortVal !== 'relevance'))
@@ -100,11 +100,12 @@
       </div>
 
       <div class="card-body">
-        <div class="grid grid-flow-col gap-4 overflow-x-auto overscroll-x-contain scroll-smooth pb-2 pr-4
+        <div class="grid grid-flow-col gap-3 overflow-x-auto overscroll-x-contain scroll-smooth pb-2 pr-3
               items-start snap-x snap-mandatory
-              auto-cols-[calc((100%-2rem)/2.5)]
-              md:auto-cols-[calc((100%-3rem)/4)]
-              lg:auto-cols-[calc((100%-5rem)/6)]">
+              auto-cols-[78%]
+              sm:auto-cols-[47%]
+              md:auto-cols-[31%]
+              lg:auto-cols-[19%]">
           @foreach($featuredProducts as $product)
             @php
               $hasStock = (int)($product->stock ?? 0) > 0;
@@ -130,6 +131,10 @@
                 <a class="product-title" href="{{ route('store.product', $product->slug) }}">
                   {{ $product->name }}
                 </a>
+
+                <div class="sm:hidden text-[11px] font-black {{ $hasStock ? 'text-emerald-700' : 'text-rose-700' }}">
+                  {{ $hasStock ? 'Stock disponible' : 'Sin stock' }}
+                </div>
 
                 <div class="product-row">
                   <div class="product-price">{{ $money($product->price) }}</div>
@@ -173,7 +178,7 @@
   {{-- Productos --}}
   <div class="mt-8" id="productos">
     @if(($products ?? collect())->count())
-      <div class="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+      <div class="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-5">
 
         @foreach($products as $product)
           @php
