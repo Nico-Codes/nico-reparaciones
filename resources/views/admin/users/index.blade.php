@@ -9,7 +9,7 @@
 @section('content')
   <div class="card mb-4">
     <div class="card-body">
-      <div class="flex items-center justify-between gap-3 flex-wrap">
+      <div class="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <div class="text-lg font-semibold">Usuarios</div>
           <div class="text-sm text-zinc-500">
@@ -17,24 +17,24 @@
           </div>
         </div>
 
-        <form class="flex gap-2 flex-wrap items-center" method="GET" action="{{ route('admin.users.index') }}">
+        <form class="flex w-full flex-wrap gap-2 items-center md:w-auto" method="GET" action="{{ route('admin.users.index') }}">
           <input
             type="text"
             name="q"
             value="{{ $q }}"
             placeholder="Buscar: nombre, email, teléfono…"
-            class="w-full md:w-[320px]"
+            class="h-11 w-full sm:flex-1 sm:min-w-[260px] md:w-[320px] md:flex-none"
           >
-          <select name="role" class="w-full md:w-[180px]">
+          <select name="role" class="h-11 w-full sm:w-[180px]">
             <option value="" @selected($role==='')>Todos</option>
             <option value="user" @selected($role==='user')>User</option>
             <option value="admin" @selected($role==='admin')>Admin</option>
           </select>
 
-          <button class="btn-primary" type="submit">Filtrar</button>
+          <button class="btn-primary h-11 w-full justify-center sm:w-auto" type="submit">Filtrar</button>
 
           @if($q !== '' || $role !== '')
-            <a class="btn-outline" href="{{ route('admin.users.index') }}">Limpiar</a>
+            <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.users.index') }}">Limpiar</a>
           @endif
         </form>
       </div>
@@ -45,9 +45,9 @@
     @forelse($users as $u)
       <div class="card">
         <div class="card-body">
-          <div class="flex items-start justify-between gap-3">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <div class="font-semibold">
+              <div class="font-semibold text-zinc-900">
                 {{ $u->name }} {{ $u->last_name }}
               </div>
               <div class="text-sm text-zinc-500">
@@ -61,10 +61,10 @@
               </div>
             </div>
 
-            <div class="text-right">
-              <span class="badge {{ $badge($u->role) }}">{{ strtoupper($u->role) }}</span>
+            <div class="w-full sm:w-auto sm:text-right">
+              <span class="badge {{ $badge($u->role) }} inline-flex h-10 items-center justify-center sm:h-auto">{{ strtoupper($u->role) }}</span>
               <div class="mt-2">
-                <a class="btn-outline btn-sm" href="{{ route('admin.users.show', $u) }}">Gestionar</a>
+                <a class="btn-outline btn-sm h-10 w-full justify-center sm:w-auto" href="{{ route('admin.users.show', $u) }}">Gestionar</a>
               </div>
             </div>
           </div>

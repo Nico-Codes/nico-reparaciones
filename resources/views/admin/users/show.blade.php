@@ -7,18 +7,18 @@
 @endphp
 
 @section('content')
-  <div class="flex items-center justify-between mb-4">
+  <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
     <div>
       <div class="text-lg font-semibold">Usuario #{{ $user->id }}</div>
       <div class="text-sm text-zinc-500">Gestión de rol y datos de registro</div>
     </div>
-    <a class="btn-outline" href="{{ route('admin.users.index') }}">Volver</a>
+    <a class="btn-outline h-11 w-full justify-center sm:h-auto sm:w-auto" href="{{ route('admin.users.index') }}">Volver</a>
   </div>
 
   <div class="grid md:grid-cols-2 gap-4">
     <div class="card">
       <div class="card-body">
-        <div class="flex items-start justify-between">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <div class="font-semibold text-lg">{{ $user->name }} {{ $user->last_name }}</div>
             <div class="text-sm text-zinc-500">
@@ -42,12 +42,12 @@
           @csrf
 
           <label class="text-sm text-zinc-600">Asignar rol</label>
-          <select name="role" class="w-full">
+          <select name="role" class="h-11 w-full">
             <option value="user" @selected($user->role === 'user')>User</option>
             <option value="admin" @selected($user->role === 'admin')>Admin</option>
           </select>
 
-          <button class="btn-primary w-full" type="submit">Guardar cambios</button>
+          <button class="btn-primary h-11 w-full justify-center" type="submit">Guardar cambios</button>
 
           <p class="text-xs text-zinc-500">
             Tip: no podés quitar el rol al último admin, ni quitarte admin a vos mismo.

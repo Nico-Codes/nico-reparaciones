@@ -7,8 +7,8 @@
     <div class="page-title">Crear regla</div>
     <div class="page-subtitle">Más específico = más prioridad (Modelo > Grupo > Marca > Genérico).</div>
   </div>
-  <div class="flex gap-2">
-    <a class="btn btn-ghost" href="{{ route('admin.pricing.index') }}">← Volver</a>
+  <div class="flex w-full gap-2 sm:w-auto">
+    <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.pricing.index') }}">← Volver</a>
   </div>
 </div>
 
@@ -34,7 +34,7 @@
     <div class="grid gap-4 sm:grid-cols-2">
       <div class="space-y-1">
         <label class="text-sm font-semibold">Tipo de dispositivo *</label>
-        <select name="device_type_id" required>
+        <select name="device_type_id" class="h-11" required>
           <option value="">Elegí…</option>
           @foreach($deviceTypes as $t)
             <option value="{{ $t->id }}" @selected($sel('device_type_id', $t->id))>{{ $t->name }}</option>
@@ -44,7 +44,7 @@
 
       <div class="space-y-1">
         <label class="text-sm font-semibold">Reparación final *</label>
-        <select name="repair_type_id" required>
+        <select name="repair_type_id" class="h-11" required>
           <option value="">Elegí…</option>
           @foreach($repairTypes as $rt)
             <option value="{{ $rt->id }}" @selected($sel('repair_type_id', $rt->id))>{{ $rt->name }}</option>
@@ -54,7 +54,7 @@
 
       <div class="space-y-1">
         <label class="text-sm font-semibold">Marca (opcional)</label>
-        <select name="device_brand_id">
+        <select name="device_brand_id" class="h-11">
           <option value="">—</option>
           @foreach($brands as $b)
             <option value="{{ $b->id }}" @selected($sel('device_brand_id', $b->id))>{{ $b->name }}</option>
@@ -64,7 +64,7 @@
 
       <div class="space-y-1">
         <label class="text-sm font-semibold">Grupo (opcional)</label>
-        <select name="device_model_group_id">
+        <select name="device_model_group_id" class="h-11">
           <option value="">—</option>
           @foreach($groups as $g)
             <option value="{{ $g->id }}" @selected($sel('device_model_group_id', $g->id))>{{ $g->name }}</option>
@@ -74,7 +74,7 @@
 
       <div class="space-y-1 sm:col-span-2">
         <label class="text-sm font-semibold">Modelo (opcional)</label>
-        <select name="device_model_id">
+        <select name="device_model_id" class="h-11">
           <option value="">—</option>
           @foreach($models as $m)
             <option value="{{ $m->id }}" @selected($sel('device_model_id', $m->id))>{{ $m->name }}</option>
@@ -87,7 +87,7 @@
     <div class="grid gap-4 sm:grid-cols-2">
       <div class="space-y-1">
         <label class="text-sm font-semibold">Modo *</label>
-        <select name="mode" required data-pricing-mode-select>
+        <select name="mode" class="h-11" required data-pricing-mode-select>
           <option value="margin" @selected($mode === 'margin')>Margen (porcentaje + mínimo)</option>
           <option value="fixed" @selected($mode === 'fixed')>Fijo</option>
         </select>
@@ -95,30 +95,30 @@
 
       <div class="space-y-1">
         <label class="text-sm font-semibold">Envío sugerido</label>
-        <input name="shipping_default" inputmode="numeric" value="{{ $val('shipping_default', 10000) }}" />
+        <input name="shipping_default" class="h-11" inputmode="numeric" value="{{ $val('shipping_default', 10000) }}" />
         <div class="text-xs text-zinc-500">Si no hay envío, poné 0.</div>
       </div>
 
       {{-- Campos modo "margin" --}}
       <div class="space-y-1" data-pricing-mode="margin">
         <label class="text-sm font-semibold">Porcentaje de ganancia (ej 0.25 = 25%)</label>
-        <input name="multiplier" inputmode="decimal" value="{{ $val('multiplier', '') }}" placeholder="0.25" />
+        <input name="multiplier" class="h-11" inputmode="decimal" value="{{ $val('multiplier', '') }}" placeholder="0.25" />
       </div>
 
       <div class="space-y-1" data-pricing-mode="margin">
         <label class="text-sm font-semibold">Mínimo de ganancia</label>
-        <input name="min_profit" inputmode="numeric" value="{{ $val('min_profit', '') }}" placeholder="24000" />
+        <input name="min_profit" class="h-11" inputmode="numeric" value="{{ $val('min_profit', '') }}" placeholder="24000" />
       </div>
 
       {{-- Campo modo "fixed" --}}
       <div class="space-y-1" data-pricing-mode="fixed">
         <label class="text-sm font-semibold">Total fijo (incluye mano de obra)</label>
-        <input name="fixed_total" inputmode="numeric" value="{{ $val('fixed_total', '') }}" placeholder="45000" />
+        <input name="fixed_total" class="h-11" inputmode="numeric" value="{{ $val('fixed_total', '') }}" placeholder="45000" />
       </div>
 
       <div class="space-y-1">
         <label class="text-sm font-semibold">Prioridad (avanzado)</label>
-        <input name="priority" inputmode="numeric" value="{{ $val('priority', 0) }}" />
+        <input name="priority" class="h-11" inputmode="numeric" value="{{ $val('priority', 0) }}" />
         <div class="text-xs text-zinc-500">Si hay empate de especificidad, gana la mayor prioridad.</div>
       </div>
     </div>
@@ -128,8 +128,9 @@
       <span>Activa</span>
     </label>
 
-    <div class="pt-2">
-      <button class="btn btn-primary">Guardar</button>
+    <div class="pt-2 flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
+      <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.pricing.index') }}">Cancelar</a>
+      <button class="btn-primary h-11 w-full justify-center sm:w-auto">Guardar</button>
     </div>
   </form>
 </div>

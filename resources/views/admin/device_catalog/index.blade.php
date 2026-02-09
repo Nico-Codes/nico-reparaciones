@@ -4,7 +4,7 @@
 
 @section('content')
 <div class="container-page">
-  <div class="flex items-center justify-between gap-3 flex-wrap">
+  <div class="flex items-start justify-between gap-3 flex-wrap">
     <div>
       <h1 class="text-2xl font-extrabold tracking-tight">Catálogo de dispositivos</h1>
       <p class="text-zinc-600 mt-1">
@@ -12,16 +12,16 @@
       </p>
     </div>
 
-    <div class="flex gap-2">
-      <a class="btn btn-ghost" href="{{ route('admin.deviceTypes.index') }}">Tipos</a>
-      <a class="btn btn-ghost" href="{{ route('admin.pricing.index') }}">Precios</a>
+    <div class="flex w-full gap-2 flex-wrap sm:w-auto">
+      <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.deviceTypes.index') }}">Tipos</a>
+      <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.pricing.index') }}">Precios</a>
     </div>
   </div>
 
   <form method="GET" class="card p-4 mt-6 grid gap-3 md:grid-cols-3 items-end">
     <div>
       <label class="block text-sm font-semibold text-zinc-800">Tipo</label>
-      <select name="type_id" class="mt-1 w-full" onchange="this.form.submit()">
+      <select name="type_id" class="mt-1 h-11 w-full" onchange="this.form.submit()">
         <option value="">— Elegí —</option>
         @foreach($types as $t)
           <option value="{{ $t->id }}" @selected($typeId == $t->id)>
@@ -34,7 +34,7 @@
 
     <div>
       <label class="block text-sm font-semibold text-zinc-800">Marca (para modelos)</label>
-      <select name="brand_id" class="mt-1 w-full" onchange="this.form.submit()" @disabled(!$typeId)>
+      <select name="brand_id" class="mt-1 h-11 w-full" onchange="this.form.submit()" @disabled(!$typeId)>
         <option value="">— Elegí —</option>
         @foreach($brands as $b)
           <option value="{{ $b->id }}" @selected($brandId == $b->id)>
@@ -58,11 +58,11 @@
         <span class="badge">{{ $brands->count() }}</span>
       </div>
 
-      <form method="POST" action="{{ route('admin.deviceCatalog.brands.store') }}" class="mt-3 flex gap-2">
+      <form method="POST" action="{{ route('admin.deviceCatalog.brands.store') }}" class="mt-3 flex flex-col gap-2 sm:flex-row">
         @csrf
         <input type="hidden" name="device_type_id" value="{{ $typeId }}">
-        <input name="name" class="w-full" placeholder="Ej: Samsung" @disabled(!$typeId) required>
-        <button class="btn btn-primary btn-sm" @disabled(!$typeId)>Agregar</button>
+        <input name="name" class="h-11 w-full" placeholder="Ej: Samsung" @disabled(!$typeId) required>
+        <button class="btn-primary h-11 w-full justify-center sm:h-auto sm:w-auto" @disabled(!$typeId)>Agregar</button>
       </form>
 
       <div class="mt-4">
@@ -71,7 +71,8 @@
         @elseif($brands->isEmpty())
           <p class="text-sm text-zinc-600">No hay marcas para este tipo.</p>
         @else
-          <table class="w-full text-sm">
+          <div class="overflow-x-auto">
+          <table class="min-w-[560px] w-full text-sm">
             <thead class="text-left text-zinc-500">
               <tr>
                 <th class="py-2">Nombre</th>
@@ -86,11 +87,11 @@
                     <div class="font-medium text-zinc-900">{{ $b->name }}</div>
                     <details class="mt-1">
                       <summary class="text-xs text-sky-700 cursor-pointer select-none">Renombrar</summary>
-                      <form method="POST" action="{{ route('admin.deviceCatalog.brands.update', $b) }}" class="mt-2 flex gap-2">
+                      <form method="POST" action="{{ route('admin.deviceCatalog.brands.update', $b) }}" class="mt-2 flex flex-col gap-2 sm:flex-row">
                         @csrf
                         @method('PUT')
-                        <input name="name" class="w-full" value="{{ $b->name }}" required>
-                        <button class="btn btn-primary btn-sm">Guardar</button>
+                        <input name="name" class="h-10 w-full" value="{{ $b->name }}" required>
+                        <button class="btn-primary btn-sm h-10 w-full justify-center sm:w-auto">Guardar</button>
                       </form>
                     </details>
                   </td>
@@ -104,7 +105,7 @@
                   <td class="py-2 text-right">
                     <form method="POST" action="{{ route('admin.deviceCatalog.brands.toggle', $b) }}">
                       @csrf
-                      <button class="btn btn-ghost btn-sm">
+                      <button class="btn-ghost btn-sm h-10">
                         {{ $b->active ? 'Desactivar' : 'Activar' }}
                       </button>
                     </form>
@@ -113,6 +114,7 @@
               @endforeach
             </tbody>
           </table>
+          </div>
         @endif
       </div>
     </div>
@@ -124,11 +126,11 @@
         <span class="badge">{{ $models->count() }}</span>
       </div>
 
-      <form method="POST" action="{{ route('admin.deviceCatalog.models.store') }}" class="mt-3 flex gap-2">
+      <form method="POST" action="{{ route('admin.deviceCatalog.models.store') }}" class="mt-3 flex flex-col gap-2 sm:flex-row">
         @csrf
         <input type="hidden" name="device_brand_id" value="{{ $brandId }}">
-        <input name="name" class="w-full" placeholder="Ej: A52 / iPhone 12" @disabled(!$brandId) required>
-        <button class="btn btn-primary btn-sm" @disabled(!$brandId)>Agregar</button>
+        <input name="name" class="h-11 w-full" placeholder="Ej: A52 / iPhone 12" @disabled(!$brandId) required>
+        <button class="btn-primary h-11 w-full justify-center sm:h-auto sm:w-auto" @disabled(!$brandId)>Agregar</button>
       </form>
 
       <div class="mt-4">
@@ -139,7 +141,8 @@
         @elseif($models->isEmpty())
           <p class="text-sm text-zinc-600">No hay modelos para esta marca.</p>
         @else
-          <table class="w-full text-sm">
+          <div class="overflow-x-auto">
+          <table class="min-w-[560px] w-full text-sm">
             <thead class="text-left text-zinc-500">
               <tr>
                 <th class="py-2">Nombre</th>
@@ -157,11 +160,11 @@
                     </div>
                     <details class="mt-1">
                       <summary class="text-xs text-sky-700 cursor-pointer select-none">Renombrar</summary>
-                      <form method="POST" action="{{ route('admin.deviceCatalog.models.update', $m) }}" class="mt-2 flex gap-2">
+                      <form method="POST" action="{{ route('admin.deviceCatalog.models.update', $m) }}" class="mt-2 flex flex-col gap-2 sm:flex-row">
                         @csrf
                         @method('PUT')
-                        <input name="name" class="w-full" value="{{ $m->name }}" required>
-                        <button class="btn btn-primary btn-sm">Guardar</button>
+                        <input name="name" class="h-10 w-full" value="{{ $m->name }}" required>
+                        <button class="btn-primary btn-sm h-10 w-full justify-center sm:w-auto">Guardar</button>
                       </form>
                     </details>
                   </td>
@@ -175,7 +178,7 @@
                   <td class="py-2 text-right">
                     <form method="POST" action="{{ route('admin.deviceCatalog.models.toggle', $m) }}">
                       @csrf
-                      <button class="btn btn-ghost btn-sm">
+                      <button class="btn-ghost btn-sm h-10">
                         {{ $m->active ? 'Desactivar' : 'Activar' }}
                       </button>
                     </form>
@@ -184,11 +187,12 @@
               @endforeach
             </tbody>
           </table>
+          </div>
         @endif
       </div>
 
       <div class="mt-3">
-        <a class="text-xs text-sky-700" href="{{ route('admin.modelGroups.index') }}">Administrar grupos de modelos →</a>
+        <a class="btn-outline btn-sm h-10 w-full justify-center sm:w-auto" href="{{ route('admin.modelGroups.index') }}">Administrar grupos de modelos</a>
       </div>
     </div>
 
@@ -199,11 +203,11 @@
         <span class="badge">{{ $issues->count() }}</span>
       </div>
 
-      <form method="POST" action="{{ route('admin.deviceCatalog.issues.store') }}" class="mt-3 flex gap-2">
+      <form method="POST" action="{{ route('admin.deviceCatalog.issues.store') }}" class="mt-3 flex flex-col gap-2 sm:flex-row">
         @csrf
         <input type="hidden" name="device_type_id" value="{{ $typeId }}">
-        <input name="name" class="w-full" placeholder="Ej: No carga / Pantalla" @disabled(!$typeId) required>
-        <button class="btn btn-primary btn-sm" @disabled(!$typeId)>Agregar</button>
+        <input name="name" class="h-11 w-full" placeholder="Ej: No carga / Pantalla" @disabled(!$typeId) required>
+        <button class="btn-primary h-11 w-full justify-center sm:h-auto sm:w-auto" @disabled(!$typeId)>Agregar</button>
       </form>
 
       <div class="mt-4">
@@ -212,7 +216,8 @@
         @elseif($issues->isEmpty())
           <p class="text-sm text-zinc-600">No hay fallas para este tipo.</p>
         @else
-          <table class="w-full text-sm">
+          <div class="overflow-x-auto">
+          <table class="min-w-[560px] w-full text-sm">
             <thead class="text-left text-zinc-500">
               <tr>
                 <th class="py-2">Nombre</th>
@@ -228,11 +233,11 @@
                     <div class="text-xs text-zinc-500">slug: {{ $i->slug }}</div>
                     <details class="mt-1">
                       <summary class="text-xs text-sky-700 cursor-pointer select-none">Renombrar</summary>
-                      <form method="POST" action="{{ route('admin.deviceCatalog.issues.update', $i) }}" class="mt-2 flex gap-2">
+                      <form method="POST" action="{{ route('admin.deviceCatalog.issues.update', $i) }}" class="mt-2 flex flex-col gap-2 sm:flex-row">
                         @csrf
                         @method('PUT')
-                        <input name="name" class="w-full" value="{{ $i->name }}" required>
-                        <button class="btn btn-primary btn-sm">Guardar</button>
+                        <input name="name" class="h-10 w-full" value="{{ $i->name }}" required>
+                        <button class="btn-primary btn-sm h-10 w-full justify-center sm:w-auto">Guardar</button>
                       </form>
                     </details>
                   </td>
@@ -246,7 +251,7 @@
                   <td class="py-2 text-right">
                     <form method="POST" action="{{ route('admin.deviceCatalog.issues.toggle', $i) }}">
                       @csrf
-                      <button class="btn btn-ghost btn-sm">
+                      <button class="btn-ghost btn-sm h-10">
                         {{ $i->active ? 'Desactivar' : 'Activar' }}
                       </button>
                     </form>
@@ -255,6 +260,7 @@
               @endforeach
             </tbody>
           </table>
+          </div>
         @endif
       </div>
     </div>
