@@ -148,39 +148,137 @@ class AdminOrderController extends Controller
      */
     public function updateStatus(Request $request, Order $order)
     {
-        $finalStatuses = ['entregado', 'cancelado'];
-
-        if (in_array($order->status, $finalStatuses, true)) {
-            // Si es AJAX devolvemos JSON, si no, volvemos con error
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'ok' => false,
-                    'message' => 'Este pedido ya está finalizado y no puede cambiar de estado.',
-                ], 422);
-            }
-
-            return back()->with('error', 'Este pedido ya está finalizado y no puede cambiar de estado.');
-        }
-
-
         $data = $request->validate([
             'status' => ['required', 'in:pendiente,confirmado,preparando,listo_retirar,entregado,cancelado'],
             'comment' => ['nullable', 'string', 'max:500'],
         ]);
 
-        $from = (string) $order->status;
         $to = (string) $data['status'];
 
         $isAjax = $request->expectsJson()
             || $request->wantsJson()
             || $request->header('X-Requested-With') === 'XMLHttpRequest';
 
-        if ($from === $to) {
+        $result = DB::transaction(function () use ($order, $to, $data) {
+            // Lock fuerte de la fila para evitar doble restauración de stock por requests concurrentes.
+            $lockedOrder = Order::query()
+                ->whereKey($order->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $from = (string) $lockedOrder->status;
+
+            if ($from === $to) {
+                return [
+                    'ok' => true,
+                    'changed' => false,
+                    'message' => 'El pedido ya estaba en ese estado.',
+                    'from' => $from,
+                    'to' => $from,
+                ];
+            }
+
+            // Estados finales: no se puede volver atrás.
+            if ($from === 'cancelado' && $to !== 'cancelado') {
+                return [
+                    'ok' => false,
+                    'changed' => false,
+                    'message' => 'Un pedido cancelado no puede volver a otro estado.',
+                    'from' => $from,
+                    'to' => $from,
+                ];
+            }
+
+            if ($from === 'entregado' && $to !== 'entregado') {
+                return [
+                    'ok' => false,
+                    'changed' => false,
+                    'message' => 'Un pedido entregado no puede volver a otro estado.',
+                    'from' => $from,
+                    'to' => $from,
+                ];
+            }
+
+            // Si pasa a cancelado, devolvemos stock una sola vez.
+            if ($to === 'cancelado' && $from !== 'cancelado' && !$lockedOrder->stock_restored_at) {
+                $items = $lockedOrder->items()->get(['product_id', 'quantity']);
+                $pids = $items
+                    ->pluck('product_id')
+                    ->filter()
+                    ->unique()
+                    ->values()
+                    ->all();
+
+                if (!empty($pids)) {
+                    $products = Product::query()
+                        ->whereIn('id', $pids)
+                        ->lockForUpdate()
+                        ->get()
+                        ->keyBy('id');
+
+                    foreach ($items as $it) {
+                        $pid = (int) ($it->product_id ?? 0);
+                        if ($pid <= 0) {
+                            continue;
+                        }
+
+                        $p = $products->get($pid);
+                        if ($p) {
+                            $p->increment('stock', (int) $it->quantity);
+                        }
+                    }
+                }
+
+                $lockedOrder->stock_restored_at = now();
+            }
+
+            $lockedOrder->status = $to;
+            $lockedOrder->save();
+
+            OrderStatusHistory::create([
+                'order_id' => $lockedOrder->id,
+                'from_status' => $from,
+                'to_status' => $to,
+                'changed_by' => Auth::id(),
+                'changed_at' => now(),
+                'comment' => $data['comment'] ?? null,
+            ]);
+
+            return [
+                'ok' => true,
+                'changed' => true,
+                'message' => 'Estado actualizado.',
+                'from' => $from,
+                'to' => $to,
+            ];
+        });
+
+        $from = (string) ($result['from'] ?? '');
+        $to = (string) ($result['to'] ?? $to);
+
+        if (!($result['ok'] ?? false)) {
+            $msg = (string) ($result['message'] ?? 'No se pudo actualizar el estado.');
+
+            if ($isAjax) {
+                return response()->json([
+                    'ok' => false,
+                    'changed' => false,
+                    'message' => $msg,
+                    'order_id' => $order->id,
+                    'status' => $from,
+                    'status_label' => \App\Models\Order::STATUSES[$from] ?? $from,
+                ], 422);
+            }
+
+            return redirect()->back()->withErrors(['status' => $msg]);
+        }
+
+        if (!($result['changed'] ?? false)) {
             if ($isAjax) {
                 return response()->json([
                     'ok' => true,
                     'changed' => false,
-                    'message' => 'El pedido ya estaba en ese estado.',
+                    'message' => (string) ($result['message'] ?? 'Sin cambios.'),
                     'order_id' => $order->id,
                     'status' => $from,
                     'status_label' => \App\Models\Order::STATUSES[$from] ?? $from,
@@ -189,121 +287,11 @@ class AdminOrderController extends Controller
 
             return redirect()
                 ->back()
-                ->with('success', 'El pedido ya estaba en ese estado.');
+                ->with('success', (string) ($result['message'] ?? 'Sin cambios.'));
         }
-
-        // ✅ Evita devolver stock por error en pedidos ya entregados
-        if ($to === 'cancelado' && $from === 'entregado') {
-
-            if ($isAjax) {
-                return response()->json([
-                    'ok' => false,
-                    'changed' => false,
-                    'message' => 'No podés cancelar un pedido ya entregado.',
-                    'order_id' => $order->id,
-                    'status' => $from,
-                    'status_label' => \App\Models\Order::STATUSES[$from] ?? $from,
-                ], 422);
-            }
-
-            return redirect()->back()->withErrors([
-                'status' => 'No podés cancelar un pedido ya entregado.',
-            ]);
-        }
-
-
-                // ✅ Simple: si está cancelado, no se puede volver atrás (evita stocks inconsistentes)
-            if ($from === 'cancelado' && $to !== 'cancelado') {
-                if ($isAjax) {
-                    return response()->json([
-                        'ok' => false,
-                        'changed' => false,
-                        'message' => 'Un pedido cancelado no puede volver a otro estado.',
-                        'order_id' => $order->id,
-                        'status' => $from,
-                        'status_label' => \App\Models\Order::STATUSES[$from] ?? $from,
-                    ], 422);
-                }
-
-                return redirect()
-                    ->back()
-                    ->withErrors(['status' => 'Un pedido cancelado no puede volver a otro estado.']);
-            }
-
-            // ✅ Si ya está ENTREGADO, no permitimos volver a otros estados
-            if ($from === 'entregado' && $to !== 'entregado') {
-                if ($isAjax) {
-                    return response()->json([
-                        'ok' => false,
-                        'changed' => false,
-                        'message' => 'Un pedido entregado no puede volver a otro estado.',
-                        'order_id' => $order->id,
-                        'status' => $from,
-                        'status_label' => \App\Models\Order::STATUSES[$from] ?? $from,
-                    ], 422);
-                }
-
-                return redirect()
-                    ->back()
-                    ->withErrors(['status' => 'Un pedido entregado no puede volver a otro estado.']);
-            }
-
-            DB::transaction(function () use ($order, $from, $to, $data) {
-
-            // ✅ Si pasa a cancelado, devolvemos stock (solo si aún no fue devuelto)
-            if ($to === 'cancelado' && $from !== 'cancelado') {
-
-                // Si ya fue devuelto antes, no volvemos a tocar stock
-                if (!$order->stock_restored_at) {
-
-                    $order->load('items');
-
-                    $pids = $order->items
-                        ->pluck('product_id')
-                        ->filter()
-                        ->unique()
-                        ->values()
-                        ->all();
-
-                    if (!empty($pids)) {
-                        $products = Product::query()
-                            ->whereIn('id', $pids)
-                            ->lockForUpdate()
-                            ->get()
-                            ->keyBy('id');
-
-                        foreach ($order->items as $it) {
-                            $pid = $it->product_id;
-                            if (!$pid) continue;
-
-                            $p = $products->get($pid);
-                            if ($p) {
-                                $p->increment('stock', (int) $it->quantity);
-                            }
-                        }
-                    }
-
-                    // ✅ Audit: marcamos que ya devolvimos stock
-                    $order->stock_restored_at = now();
-                }
-            }
-
-
-            $order->status = $to;
-            $order->save();
-
-            OrderStatusHistory::create([
-                'order_id' => $order->id,
-                'from_status' => $from,
-                'to_status' => $to,
-                'changed_by' => Auth::id(),
-                'changed_at' => now(),
-                'comment' => $data['comment'] ?? null,
-            ]);
-        });
 
         if ($isAjax) {
-            $order->load(['user', 'items']);
+            $order->refresh()->load(['user', 'items']);
 
             $rawPhone = (string) ($order->pickup_phone ?: ($order->user?->phone ?? ''));
             $waPhone = $this->normalizeWhatsappPhone($rawPhone);
@@ -322,13 +310,13 @@ class AdminOrderController extends Controller
             $waNotifiedAtLabel = $lastLog?->sent_at?->format('d/m/Y H:i') ?? '—';
             $waState = !$waPhone ? 'no_phone' : ($waNotifiedCurrent ? 'ok' : 'pending');
 
-            return response()->json([
-                'ok' => true,
-                'changed' => true,
-                'message' => 'Estado actualizado.',
-                'order_id' => $order->id,
-                'from_status' => $from,
-                'to_status' => $to,
+                return response()->json([
+                    'ok' => true,
+                    'changed' => true,
+                    'message' => (string) ($result['message'] ?? 'Estado actualizado.'),
+                    'order_id' => $order->id,
+                    'from_status' => $from,
+                    'to_status' => $to,
                 'status' => $to,
                 'status_label' => \App\Models\Order::STATUSES[$to] ?? $to,
 
@@ -361,6 +349,12 @@ class AdminOrderController extends Controller
         $waPhone = $this->normalizeWhatsappPhone($rawPhone);
         $waMessage = $this->buildWhatsappMessage($order);
 
+        if (!$waPhone) {
+            return redirect()
+                ->route('admin.orders.show', $order->id)
+                ->withErrors(['pickup_phone' => 'No hay un teléfono válido para enviar WhatsApp.']);
+        }
+
         $created = $this->createWhatsappLogIfNotDuplicate($order, $waPhone, $waMessage);
 
         return redirect()
@@ -378,6 +372,14 @@ class AdminOrderController extends Controller
         $rawPhone = (string) ($order->pickup_phone ?: ($order->user?->phone ?? ''));
         $waPhone = $this->normalizeWhatsappPhone($rawPhone);
         $waMessage = $this->buildWhatsappMessage($order);
+
+        if (!$waPhone) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'No hay un teléfono válido para enviar WhatsApp.',
+                'error' => 'invalid_phone',
+            ], 422);
+        }
 
         $created = $this->createWhatsappLogIfNotDuplicate($order, $waPhone, $waMessage);
 
@@ -411,15 +413,27 @@ class AdminOrderController extends Controller
         $shopAddress = (string) ($settings->get('shop_address') ?? '');
         $shopHours = (string) ($settings->get('shop_hours') ?? '');
         $shopName = (string) ($settings->get('company_name') ?? config('app.name'));
+        $myOrdersUrl = url('/mis-pedidos');
+        $storeUrl = url('/tienda');
 
-        $customerName = (string) ($order->pickup_name ?: ($order->user?->name ?? ''));
-        $itemsSummary = $order->items
+        $pickupName = (string) ($order->pickup_name ?: ($order->user?->name ?? ''));
+        $pickupPhone = (string) ($order->pickup_phone ?: ($order->user?->phone ?? ''));
+        $customerName = $pickupName;
+
+        $items = $order->items ?? collect();
+        $itemsSummary = $items
             ->map(function ($it) {
                 $name = (string) ($it->product_name ?? 'Item');
                 $qty = (int) ($it->quantity ?? 1);
                 return "{$qty}x {$name}";
             })
-            ->implode(', ');
+            ->implode("\n");
+        $itemsCount = (int) $items->sum(function ($it) {
+            return (int) ($it->quantity ?? 0);
+        });
+
+        $totalFormatted = '$ ' . number_format((float) ($order->total ?? 0), 0, ',', '.');
+        $notes = trim((string) ($order->notes ?? ''));
 
         $repl = [
             '{order_id}' => (string) $order->id,
@@ -427,7 +441,15 @@ class AdminOrderController extends Controller
             '{status}' => $status,
             '{status_label}' => Order::STATUSES[$status] ?? $status,
             '{items_summary}' => $itemsSummary,
-            '{total}' => (string) ($order->total ?? ''),
+            '{items_count}' => (string) $itemsCount,
+            '{total}' => $totalFormatted,
+            '{total_raw}' => (string) ($order->total ?? ''),
+            '{pickup_name}' => $pickupName,
+            '{pickup_phone}' => $pickupPhone,
+            '{phone}' => $pickupPhone,
+            '{notes}' => $notes,
+            '{my_orders_url}' => $myOrdersUrl,
+            '{store_url}' => $storeUrl,
             '{shop_phone}' => $shopPhone,
             '{shop_address}' => $shopAddress,
             '{shop_hours}' => $shopHours,

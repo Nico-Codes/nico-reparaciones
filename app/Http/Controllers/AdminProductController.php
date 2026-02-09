@@ -158,6 +158,18 @@ class AdminProductController extends Controller
 
     public function destroy(Product $product)
     {
+        $hasOrders = OrderItem::query()
+            ->where('product_id', $product->id)
+            ->exists();
+
+        if ($hasOrders) {
+            return redirect()
+                ->route('admin.products.index')
+                ->withErrors([
+                    'delete' => 'No se puede eliminar el producto porque tiene pedidos asociados. Podés desactivarlo para ocultarlo de la tienda.',
+                ]);
+        }
+
         if ($product->image_path) {
             Storage::disk('public')->delete($product->image_path);
         }

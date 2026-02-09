@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Models\OrderItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -53,7 +54,21 @@ class AdminCategoryController extends Controller
 
     public function destroy(Category $category)
     {
-        $category->delete(); // cascade products por migration
+        $hasSoldProducts = OrderItem::query()
+            ->whereHas('product', function ($q) use ($category) {
+                $q->where('category_id', $category->id);
+            })
+            ->exists();
+
+        if ($hasSoldProducts) {
+            return redirect()
+                ->route('admin.categories.index')
+                ->withErrors([
+                    'delete' => 'No se puede eliminar la categoría porque tiene productos con pedidos asociados. Desactívala en lugar de borrarla.',
+                ]);
+        }
+
+        $category->delete(); // cascade products sin ventas por migration
 
         return redirect()
             ->route('admin.categories.index')

@@ -1477,6 +1477,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const waLink = card.querySelector('[data-admin-order-wa-link]');
     const waOpenBtn = card.querySelector('[data-admin-order-wa-open]');
     const waBadge = card.querySelector('[data-admin-order-wa-badge]');
+    const waLastBadge = card.querySelector('[data-admin-order-wa-last]');
 
     const waMsgEls = card.querySelectorAll('[data-admin-order-wa-message]');
 
@@ -1593,6 +1594,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
           const newSt = data.status || next;
           card.dataset.status = newSt;
+          const prevWaState = String(waBadge?.dataset?.waState || 'no_phone');
+          const activeStatusFilter = getAdminOrdersFilter();
+          const leavingStatusGroup = !!(activeStatusFilter && activeStatusFilter !== newSt);
 
           // contadores
           if (prevSt && newSt && prevSt !== newSt) {
@@ -1659,7 +1663,7 @@ document.addEventListener('DOMContentLoaded', () => {
                   const data = await postFormJson(waForm);
 
                   setWaBadgeState(waBadge, 'ok');
-                  if (waLastBadge) waLastBadge.textContent = data?.sent_at_label || 'recién';
+                  if (waLastBadge) waLastBadge.textContent = data?.notified_at_label || 'recién';
 
                   const nextKey = waStateToTabKey('ok');
                   if (prevKey && nextKey && prevKey !== nextKey) {

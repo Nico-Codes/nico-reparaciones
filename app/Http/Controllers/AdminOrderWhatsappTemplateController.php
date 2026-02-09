@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\BusinessSetting;
 use App\Models\Order;
 use App\Models\OrderWhatsappTemplate;
 use Illuminate\Http\Request;
@@ -61,6 +60,7 @@ class AdminOrderWhatsappTemplateController extends Controller
             '{status}'          => 'Clave del estado (ej: preparando)',
             '{status_label}'    => 'Nombre lindo del estado (ej: Preparando)',
             '{total}'           => 'Total del pedido formateado',
+            '{total_raw}'       => 'Total numérico sin formato',
             '{items_count}'     => 'Cantidad de ítems',
             '{items_summary}'   => 'Listado simple de ítems (líneas)',
             '{pickup_name}'     => 'Nombre de retiro',
@@ -73,6 +73,8 @@ class AdminOrderWhatsappTemplateController extends Controller
             // settings
             '{shop_address}'    => 'Dirección del local (Admin > Configuración)',
             '{shop_hours}'      => 'Horarios (Admin > Configuración)',
+            '{shop_phone}'      => 'Teléfono del local',
+            '{shop_name}'       => 'Nombre del negocio',
         ];
     }
 
@@ -101,14 +103,6 @@ class AdminOrderWhatsappTemplateController extends Controller
         $base .= "\nVer tus pedidos: {my_orders_url}\n";
         $base .= "Tienda: {store_url}\n";
         $base .= "NicoReparaciones";
-
-        // Si no hay configuración, no rompe; queda vacío.
-        $shopAddress = BusinessSetting::getValue('shop_address', '');
-        $shopHours = BusinessSetting::getValue('shop_hours', '');
-        $base = strtr($base, [
-            '{shop_address}' => $shopAddress,
-            '{shop_hours}'   => $shopHours,
-        ]);
 
         return $base;
     }
