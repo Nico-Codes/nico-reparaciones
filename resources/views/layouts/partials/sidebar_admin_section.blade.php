@@ -40,13 +40,13 @@
     ],
     [
       'route' => 'admin.deviceCatalog.index',
-      'label' => 'Catalogo de dispositivos',
+      'label' => 'Catálogo de dispositivos',
       'icon' => \App\Support\BrandAssets::url('icon_settings'),
       'active' => request()->routeIs('admin.deviceCatalog.*'),
     ],
     [
       'route' => 'admin.settings.index',
-      'label' => 'Configuracion',
+      'label' => 'Configuración',
       'icon' => \App\Support\BrandAssets::url('icon_settings'),
       'active' => request()->routeIs('admin.settings.index')
         || request()->routeIs('admin.settings.update'),

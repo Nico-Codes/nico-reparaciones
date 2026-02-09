@@ -24,7 +24,7 @@ class BrandAssets
             'max_kb' => 2048,
         ],
         'icon_repair_lookup' => [
-            'label' => 'Icono consultar reparacion',
+            'label' => 'Icono consultar reparación',
             'group' => 'icons',
             'fallback' => 'icons/consultar-reparacion.svg',
             'extensions' => ['svg', 'png', 'jpg', 'jpeg', 'webp'],
@@ -52,14 +52,14 @@ class BrandAssets
             'max_kb' => 2048,
         ],
         'icon_logout' => [
-            'label' => 'Icono cerrar sesion',
+            'label' => 'Icono cerrar sesión',
             'group' => 'icons',
             'fallback' => 'icons/logout.svg',
             'extensions' => ['svg', 'png', 'jpg', 'jpeg', 'webp'],
             'max_kb' => 2048,
         ],
         'icon_dashboard' => [
-            'label' => 'Icono panel admin',
+            'label' => 'Icono panel de admin',
             'group' => 'icons',
             'fallback' => 'icons/dashboard.svg',
             'extensions' => ['svg', 'png', 'jpg', 'jpeg', 'webp'],

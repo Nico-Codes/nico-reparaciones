@@ -116,7 +116,7 @@
           <button
             class="icon-btn md:hidden"
             data-toggle="sidebar"
-            aria-label="Abrir menu"
+            aria-label="Abrir menú"
             aria-expanded="false"
             type="button"
           >
@@ -147,7 +147,7 @@
 
 
               <div class="hidden sm:block text-[11px] text-zinc-500 -mt-0.5 truncate">
-                Servicio Tecnico Profesional y Tienda de Electronica
+                Servicio Técnico Profesional y Tienda de Electrónica
               </div>
             </div>
 
@@ -171,7 +171,7 @@
                       {{ request()->routeIs('repairs.lookup','repairs.lookup.post')
                           ? 'bg-white text-sky-700 shadow-sm ring-1 ring-sky-200'
                           : 'text-zinc-700 hover:text-zinc-900 hover:bg-white/70' }}">
-              Reparacion
+              Reparación
             </a>
           @endif
 
@@ -260,7 +260,7 @@
                 @if($has('logout'))
                   <form method="POST" action="{{ route('logout') }}">
                     @csrf
-                    <button type="submit" class="dropdown-item text-rose-700">Cerrar sesion</button>
+                    <button type="submit" class="dropdown-item text-rose-700">Cerrar sesión</button>
                   </form>
                 @endif
               </div>
@@ -275,16 +275,16 @@
     <aside
       id="appSidebar"
       class="fixed left-0 top-0 z-50 h-full w-[86%] max-w-xs -translate-x-full transform bg-white shadow-xl transition-transform duration-200 ease-out md:hidden flex flex-col"
-      aria-label="Menu">
+      aria-label="Menú">
 
 
       <div class="h-14 px-4 flex items-center justify-between border-b border-zinc-100">
         <div class="flex items-center gap-2">
           <img src="{{ $logoUrl }}" class="h-8 w-8 rounded-xl ring-1 ring-zinc-100 bg-white object-contain" alt="NicoReparaciones">
-          <div class="font-black text-zinc-900">Menu</div>
+          <div class="font-black text-zinc-900">Menú</div>
         </div>
 
-        <button class="icon-btn" data-close="sidebar" aria-label="Cerrar menu" type="button">
+        <button class="icon-btn" data-close="sidebar" aria-label="Cerrar menú" type="button">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
               fill="none" stroke="currentColor" stroke-width="2"
               stroke-linecap="round" stroke-linejoin="round"
@@ -336,7 +336,7 @@
 
 
         <div class="sidebar-section space-y-2">
-          <div class="sidebar-title">Navegacion</div>
+          <div class="sidebar-title">Navegación</div>
           <div class="sidebar-links">
 
             @if($has('store.index'))
@@ -354,7 +354,7 @@
                 href="{{ route('repairs.lookup') }}">
                 <span class="inline-flex items-center gap-2">
                   <img src="{{ $iconRepairLookup }}" alt="" class="w-5 h-5" loading="lazy" decoding="async">
-                  <span>Consultar reparacion</span>
+                  <span>Consultar reparación</span>
                 </span>
               </a>
             @endif
@@ -423,7 +423,7 @@
                   <button type="submit" class="sidebar-link text-rose-700">
                     <span class="inline-flex items-center gap-2">
                       <img src="{{ $iconLogout }}" alt="" class="w-5 h-5" loading="lazy" decoding="async">
-                      <span>Cerrar sesion</span>
+                      <span>Cerrar sesión</span>
                     </span>
                   </button>
                 </form>
@@ -435,7 +435,7 @@
                 <a class="sidebar-link" href="{{ route('login') }}">
                   <span class="inline-flex items-center gap-2">
                     <img src="{{ $iconDashboard }}" alt="" class="w-5 h-5" loading="lazy" decoding="async">
-                    <span>Iniciar sesion</span>
+                    <span>Iniciar sesión</span>
                   </span>
                 </a>
               @endif
@@ -502,7 +502,7 @@
           <div class="grid gap-1">
             @if($has('store.index')) <a href="{{ route('store.index') }}">Tienda</a> @endif
             @if($has('cart.index')) <a href="{{ route('cart.index') }}">Carrito</a> @endif
-            @if($has('repairs.lookup')) <a href="{{ route('repairs.lookup') }}">Consultar reparacion</a> @endif
+            @if($has('repairs.lookup')) <a href="{{ route('repairs.lookup') }}">Consultar reparación</a> @endif
           </div>
         </div>
 
@@ -515,7 +515,7 @@
               @if($has('logout'))
                 <form method="POST" action="{{ route('logout') }}">
                   @csrf
-                  <button class="text-left text-rose-700 hover:text-rose-800 font-bold">Cerrar sesion</button>
+                  <button class="text-left text-rose-700 hover:text-rose-800 font-bold">Cerrar sesión</button>
                 </form>
               @endif
             @else

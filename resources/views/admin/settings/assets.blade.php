@@ -6,8 +6,8 @@
 @php
   $groupLabels = [
     'logos' => 'Logos',
-    'icons' => 'Iconos de navegacion',
-    'favicons' => 'Favicons e iconos de app',
+    'icons' => 'Íconos de navegación',
+    'favicons' => 'Favicons e íconos de app',
   ];
 
   $assetsByGroup = collect($brandAssets ?? [])->sortBy('label')->groupBy('group');
@@ -17,11 +17,11 @@
   <div class="flex items-start justify-between gap-4 flex-wrap">
     <div class="page-head mb-0 w-full lg:w-auto">
       <div class="page-title">Identidad visual</div>
-      <div class="page-subtitle">Sube y administra logos, iconos y favicons del sitio.</div>
+      <div class="page-subtitle">Sube y administra logos, íconos y favicons del sitio.</div>
     </div>
 
     <div class="flex w-full gap-2 flex-wrap sm:w-auto">
-      <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.settings.index') }}">Configuracion</a>
+      <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.settings.index') }}">Configuración</a>
       <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.dashboard') }}">Volver</a>
     </div>
   </div>
@@ -30,14 +30,14 @@
     <div class="card-head">
       <div>
         <div class="font-black">Recursos visuales</div>
-        <div class="text-xs text-zinc-500">Puedes subir por click o arrastrando desde el escritorio.</div>
+        <div class="text-xs text-zinc-500">Puedes subir con click o arrastrando desde el escritorio.</div>
       </div>
       <span class="badge-sky">Identidad</span>
     </div>
 
     <div class="card-body space-y-6">
       <div class="rounded-2xl border border-zinc-200 bg-zinc-50 p-3 text-xs text-zinc-600">
-        Nota: las imagenes de productos se gestionan desde <span class="font-black text-zinc-900">Admin &gt; Productos</span>.
+        Nota: las imágenes de productos se gestionan desde <span class="font-black text-zinc-900">Admin &gt; Productos</span>.
       </div>
 
       @foreach($assetsByGroup as $group => $assets)

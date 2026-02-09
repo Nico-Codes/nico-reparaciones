@@ -53,7 +53,7 @@ class AdminBusinessSettingsController extends Controller
             ['value' => $data['shop_phone'] ?? null, 'updated_by' => auth()->id()]
         );
 
-        return back()->with('success', 'Configuracion guardada.');
+        return back()->with('success', 'Configuración guardada.');
     }
 
     public function updateAsset(Request $request, string $assetKey)
