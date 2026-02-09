@@ -5,14 +5,14 @@
 @section('content')
 <div class="space-y-6">
   <div class="flex items-start justify-between gap-4 flex-wrap">
-    <div class="page-head mb-0">
+    <div class="page-head mb-0 w-full lg:w-auto">
       <h1 class="page-title">Plantillas WhatsApp</h1>
       <p class="page-subtitle">Editá mensajes por estado. Si dejás vacío, se usa el default del sistema.</p>
     </div>
 
-    <div class="flex gap-2 flex-wrap">
-      <a class="btn-outline" href="{{ route('admin.settings.index') }}">Configuración</a>
-      <a class="btn-outline" href="{{ route('admin.dashboard') }}">Volver</a>
+    <div class="flex w-full gap-2 flex-wrap sm:w-auto">
+      <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.settings.index') }}">Configuración</a>
+      <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.dashboard') }}">Volver</a>
     </div>
   </div>
 
@@ -50,6 +50,7 @@
           <div class="card-body">
             <textarea
               name="templates[{{ $key }}]"
+              class="min-h-36 text-sm"
               rows="8"
             >{{ old("templates.$key", $templates[$key] ?? '') }}</textarea>
           </div>
@@ -57,8 +58,9 @@
       @endforeach
     </div>
 
-    <div class="flex justify-end">
-      <button type="submit" class="btn-primary">Guardar plantillas</button>
+    <div class="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
+      <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.settings.index') }}">Cancelar</a>
+      <button type="submit" class="btn-primary h-11 w-full justify-center sm:w-auto">Guardar plantillas</button>
     </div>
   </form>
 </div>

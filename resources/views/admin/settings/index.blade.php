@@ -10,14 +10,14 @@
 
 <div class="space-y-6">
   <div class="flex items-start justify-between gap-4 flex-wrap">
-    <div class="page-head mb-0">
+    <div class="page-head mb-0 w-full lg:w-auto">
       <div class="page-title">Configuración</div>
       <div class="page-subtitle">Datos del negocio que se usan en reparaciones (WhatsApp, impresión, etc.).</div>
     </div>
 
-    <div class="flex gap-2 flex-wrap">
-      <a class="btn-outline" href="{{ route('admin.dashboard') }}">Volver</a>
-      <a class="btn-outline" href="{{ route('admin.whatsapp_templates.index') }}">Plantillas WhatsApp</a>
+    <div class="flex w-full gap-2 flex-wrap sm:w-auto">
+      <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.dashboard') }}">Volver</a>
+      <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.whatsapp_templates.index') }}">Plantillas WhatsApp</a>
     </div>
   </div>
 
@@ -84,6 +84,7 @@
           <div class="grid gap-2">
             <label>WhatsApp del local (opcional)</label>
             <input
+              class="h-11"
               name="shop_phone"
               value="{{ old('shop_phone', $shopPhone ?? '') }}"
               placeholder="Ej: +54 341 5550000 (solo números también sirve)">
@@ -105,8 +106,9 @@
             <div class="text-xs text-zinc-500">Ejemplo de placeholder: <code>{shop_hours}</code></div>
           </div>
 
-          <div class="flex justify-end">
-            <button class="btn-primary" type="submit">Guardar</button>
+          <div class="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
+            <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.dashboard') }}">Cancelar</a>
+            <button class="btn-primary h-11 w-full justify-center sm:w-auto" type="submit">Guardar</button>
           </div>
         </form>
       </div>
@@ -122,10 +124,10 @@
     </div>
     <div class="card-body">
       <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-        <a class="btn-outline" href="{{ route('admin.repairs.index') }}">Reparaciones</a>
-        <a class="btn-outline" href="{{ route('admin.orders.index') }}">Pedidos</a>
-        <a class="btn-outline" href="{{ route('admin.products.index') }}">Productos</a>
-        <a class="btn-outline" href="{{ route('admin.categories.index') }}">Categorías</a>
+        <a class="btn-outline h-11 w-full justify-center" href="{{ route('admin.repairs.index') }}">Reparaciones</a>
+        <a class="btn-outline h-11 w-full justify-center" href="{{ route('admin.orders.index') }}">Pedidos</a>
+        <a class="btn-outline h-11 w-full justify-center" href="{{ route('admin.products.index') }}">Productos</a>
+        <a class="btn-outline h-11 w-full justify-center" href="{{ route('admin.categories.index') }}">Categorías</a>
       </div>
     </div>
   </div>
