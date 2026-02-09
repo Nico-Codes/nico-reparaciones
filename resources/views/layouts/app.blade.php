@@ -245,29 +245,9 @@
                   </a>
                 @endif
 
-                <div class="hidden md:block">
-                  @if($has('orders.index'))
-                    <a class="dropdown-item" href="{{ route('orders.index') }}">
-                      <span class="inline-flex items-center gap-2">
-                        <img src="/icons/mis-pedidos.svg" alt="" class="w-5 h-5" loading="lazy" decoding="async">
-                        <span>Mis pedidos</span>
-                      </span>
-                    </a>
-                  @endif
-
-                  @if($has('repairs.my.index'))
-                    <a class="dropdown-item" href="{{ route('repairs.my.index') }}">
-                      <span class="inline-flex items-center gap-2">
-                        <img src="/icons/mis-reparaciones.svg" alt="" class="w-5 h-5" loading="lazy" decoding="async">
-                        <span>Mis reparaciones</span>
-                      </span>
-                    </a>
-                  @endif
-
-                    @include('layouts.partials.account_admin_section')
-
-                    <div class="my-2 border-t border-zinc-200"></div>
-                </div>
+                @if($has('account.edit') && $has('logout'))
+                  <div class="my-2 border-t border-zinc-200"></div>
+                @endif
 
 
 

@@ -39,7 +39,7 @@
   $currentStatus = $currentStatus ?? '';
   $q = $q ?? '';
 
-  $currentWa = $currentWa ?? '';
+  $currentWa = $currentWa ?? ($wa ?? '');
 
   // UI: abrimos filtros/tabs si el usuario ya está filtrando
   $filtersMoreOpen = $currentWa !== '';

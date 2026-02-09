@@ -106,6 +106,7 @@ class AdminOrderController extends Controller
         return view('admin.orders.index', [
             'orders' => $orders,
             'currentStatus' => $status,
+            'currentWa' => $wa,
             'wa' => $wa,
             'q' => $q,
             'statusCounts' => $statusCounts,

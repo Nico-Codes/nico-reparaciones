@@ -4,7 +4,7 @@
 
 @section('content')
 @php
-  $currentCategorySafe = $currentCategory ?? null;
+  $currentCategorySafe = $currentCategory ?? ($category ?? null);
   $money = fn($n) => '$ ' . number_format((float)($n ?? 0), 0, ',', '.');
 @endphp
 
