@@ -25,6 +25,15 @@ class Order extends Model
         'transferencia' => 'Transferencia',
     ];
 
+    public const TRANSITIONS = [
+        'pendiente' => ['confirmado', 'preparando', 'listo_retirar', 'cancelado'],
+        'confirmado' => ['preparando', 'listo_retirar', 'entregado', 'cancelado'],
+        'preparando' => ['listo_retirar', 'entregado', 'cancelado'],
+        'listo_retirar' => ['entregado', 'cancelado'],
+        'entregado' => [],
+        'cancelado' => [],
+    ];
+
     protected $fillable = [
         'user_id',
         'status',
@@ -68,5 +77,35 @@ class Order extends Model
     public function whatsappLogs(): HasMany
     {
         return $this->hasMany(OrderWhatsappLog::class)->orderByDesc('sent_at');
+    }
+
+    public static function allowedNextStatuses(string $from): array
+    {
+        return self::TRANSITIONS[$from] ?? [];
+    }
+
+    public static function canTransition(string $from, string $to): bool
+    {
+        if ($from === $to) {
+            return true;
+        }
+
+        return in_array($to, self::allowedNextStatuses($from), true);
+    }
+
+    public static function transitionErrorMessage(string $from): string
+    {
+        $fromLabel = self::STATUSES[$from] ?? $from;
+        $allowed = self::allowedNextStatuses($from);
+
+        if (empty($allowed)) {
+            return "Un pedido en estado {$fromLabel} no puede cambiar de estado.";
+        }
+
+        $allowedLabels = array_map(function (string $status): string {
+            return self::STATUSES[$status] ?? $status;
+        }, $allowed);
+
+        return "Cambio de estado inválido. Desde {$fromLabel} solo podés pasar a: " . implode(', ', $allowedLabels) . '.';
     }
 }

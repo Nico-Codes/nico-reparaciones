@@ -515,24 +515,8 @@ class AdminRepairController extends Controller
             return back()->with('success', 'El estado ya era ese.');
         }
 
-        // ✅ Cancelado es final (no se puede “des-cancelar”)
-        if ($from === 'cancelled' && $to !== 'cancelled') {
-            $msg = 'Una reparación cancelada no puede volver a otro estado.';
-            if ($isAjax) {
-                return response()->json([
-                    'ok' => false,
-                    'changed' => false,
-                    'message' => $msg,
-                    'status' => $from,
-                    'status_label' => Repair::STATUSES[$from] ?? $from,
-                ], 422);
-            }
-            return back()->withErrors(['status' => $msg]);
-        }
-
-        // ✅ Entregado es final (evita romper garantía/fechas)
-        if ($from === 'delivered' && $to !== 'delivered') {
-            $msg = 'Una reparación entregada no puede cambiar de estado.';
+        if (!Repair::canTransition($from, $to)) {
+            $msg = Repair::transitionErrorMessage($from);
             if ($isAjax) {
                 return response()->json([
                     'ok' => false,

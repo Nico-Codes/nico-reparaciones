@@ -166,22 +166,11 @@ class AdminOrderController extends Controller
                 ];
             }
 
-            // Estados finales: no se puede volver atrás.
-            if ($from === 'cancelado' && $to !== 'cancelado') {
+            if (!Order::canTransition($from, $to)) {
                 return [
                     'ok' => false,
                     'changed' => false,
-                    'message' => 'Un pedido cancelado no puede volver a otro estado.',
-                    'from' => $from,
-                    'to' => $from,
-                ];
-            }
-
-            if ($from === 'entregado' && $to !== 'entregado') {
-                return [
-                    'ok' => false,
-                    'changed' => false,
-                    'message' => 'Un pedido entregado no puede volver a otro estado.',
+                    'message' => Order::transitionErrorMessage($from),
                     'from' => $from,
                     'to' => $from,
                 ];

@@ -76,6 +76,16 @@ class Repair extends Model
         'other'       => 'Otro',
     ];
 
+    public const TRANSITIONS = [
+        'received' => ['diagnosing', 'waiting_approval', 'repairing', 'ready_pickup', 'cancelled'],
+        'diagnosing' => ['waiting_approval', 'repairing', 'ready_pickup', 'cancelled'],
+        'waiting_approval' => ['repairing', 'ready_pickup', 'cancelled'],
+        'repairing' => ['ready_pickup', 'cancelled'],
+        'ready_pickup' => ['delivered', 'cancelled'],
+        'delivered' => [],
+        'cancelled' => [],
+    ];
+
     // Normaliza teléfono a "solo números" al guardar
     public function setCustomerPhoneAttribute($value): void
     {
@@ -139,6 +149,36 @@ class Repair extends Model
     public function repairType()
     {
         return $this->belongsTo(\App\Models\RepairType::class, 'repair_type_id');
+    }
+
+    public static function allowedNextStatuses(string $from): array
+    {
+        return self::TRANSITIONS[$from] ?? [];
+    }
+
+    public static function canTransition(string $from, string $to): bool
+    {
+        if ($from === $to) {
+            return true;
+        }
+
+        return in_array($to, self::allowedNextStatuses($from), true);
+    }
+
+    public static function transitionErrorMessage(string $from): string
+    {
+        $fromLabel = self::STATUSES[$from] ?? $from;
+        $allowed = self::allowedNextStatuses($from);
+
+        if (empty($allowed)) {
+            return "Una reparación en estado {$fromLabel} no puede cambiar de estado.";
+        }
+
+        $allowedLabels = array_map(function (string $status): string {
+            return self::STATUSES[$status] ?? $status;
+        }, $allowed);
+
+        return "Cambio de estado inválido. Desde {$fromLabel} solo podés pasar a: " . implode(', ', $allowedLabels) . '.';
     }
 
 }
