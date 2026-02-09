@@ -3,85 +3,128 @@
 @section('title', 'Admin — Tipos de dispositivo')
 
 @section('content')
-<div class="container-page">
-  <div class="flex items-center justify-between gap-3 flex-wrap">
+<div class="space-y-4">
+  <div class="page-head">
     <div>
-      <h1 class="h1">Tipos de dispositivo</h1>
-      <p class="text-muted mt-1">Categorías base del catálogo (Celular, Notebook, Consola, etc.).</p>
+      <div class="page-title">Tipos de dispositivo</div>
+      <div class="page-subtitle">Categorías base del catálogo (Celular, Notebook, Consola, etc.).</div>
     </div>
 
-    <div class="flex gap-2">
-     <a class="btn btn-ghost" href="{{ route('admin.pricing.index') }}">← Precios</a>
-     <a class="btn btn-ghost" href="{{ route('admin.deviceCatalog.index') }}">Catálogo</a>
+    <div class="flex w-full gap-2 flex-wrap sm:w-auto">
+      <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.pricing.index') }}">← Precios</a>
+      <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.deviceCatalog.index') }}">Catálogo</a>
     </div>
-
   </div>
 
-  <div class="grid gap-4 mt-6">
-    <div class="card p-4">
-      <h2 class="h2 mb-3">Crear tipo</h2>
+  <div class="grid gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
+    <div class="card">
+      <div class="card-head">
+        <div class="font-black">Crear tipo</div>
+      </div>
 
-      <form method="POST" action="{{ route('admin.deviceTypes.store') }}" class="grid md:grid-cols-3 gap-3 items-end">
-        @csrf
+      <div class="card-body">
+        <form method="POST" action="{{ route('admin.deviceTypes.store') }}" class="space-y-3">
+          @csrf
 
-        <div>
-          <label class="label">Nombre</label>
-          <input class="input" name="name" placeholder="Ej: Celular" required>
-        </div>
+          <div class="space-y-1">
+            <label class="text-sm font-semibold text-zinc-800">Nombre</label>
+            <input class="h-11" name="name" placeholder="Ej: Celular" required>
+          </div>
 
-        <label class="inline-flex items-center gap-2 select-none">
-          <input type="checkbox" name="active" value="1" checked>
-          <span class="text-sm">Activo</span>
-        </label>
+          <label class="inline-flex items-center gap-2 text-sm font-semibold text-zinc-700">
+            <input class="h-4 w-4 rounded border-zinc-300" type="checkbox" name="active" value="1" checked>
+            <span>Activo</span>
+          </label>
 
-        <button class="btn btn-primary">Crear</button>
-      </form>
+          <button class="btn-primary h-11 w-full justify-center">Crear</button>
+        </form>
+      </div>
     </div>
 
-    <div class="card p-4">
-      <h2 class="h2 mb-3">Listado</h2>
+    <div class="card">
+      <div class="card-head">
+        <div class="font-black">Listado</div>
+        <span class="badge-zinc">{{ $deviceTypes->count() }}</span>
+      </div>
 
-      <div class="overflow-x-auto">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Tipo</th>
-              <th>Activo</th>
-              <th class="text-right">Slug</th>
-              <th class="text-right">Acción</th>
-            </tr>
-          </thead>
+      <div class="card-body p-0">
+        <div class="grid gap-3 p-4 md:hidden">
+          @forelse($deviceTypes as $t)
+            <form method="POST" action="{{ route('admin.deviceTypes.update', $t) }}" class="rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm space-y-3">
+              @csrf
+              @method('PUT')
 
-          <tbody>
-            @forelse($deviceTypes as $t)
-              <tr>
-                <td class="min-w-[260px]">
-                  <form method="POST" action="{{ route('admin.deviceTypes.update', $t) }}" class="flex items-center gap-2">
-                    @csrf
-                    @method('PUT')
-                    <input class="input" name="name" value="{{ $t->name }}" required>
-                </td>
+              <div class="space-y-1">
+                <label class="text-xs font-black uppercase text-zinc-500">Tipo</label>
+                <input class="h-11" name="name" value="{{ $t->name }}" required>
+              </div>
 
-                <td class="text-center">
-                  <input type="checkbox" name="active" value="1" @checked($t->active)>
-                </td>
+              <div class="flex items-center justify-between gap-3">
+                <div class="min-w-0 text-xs text-zinc-500">
+                  Slug: <span class="font-semibold text-zinc-700">{{ $t->slug }}</span>
+                </div>
 
-                <td class="text-right text-sm text-muted">
-                  {{ $t->slug }}
-                </td>
+                <label class="inline-flex items-center gap-2 whitespace-nowrap text-sm font-semibold text-zinc-700">
+                  <input class="h-4 w-4 rounded border-zinc-300" type="checkbox" name="active" value="1" @checked($t->active)>
+                  <span>Activo</span>
+                </label>
+              </div>
 
-                <td class="text-right">
-                    <button class="btn btn-ghost btn-sm">Guardar</button>
-                  </form>
-                </td>
-              </tr>
-            @empty
-              <tr>
-                <td colspan="4" class="text-muted">No hay tipos cargados.</td>
-              </tr>
-            @endforelse
-          </tbody>
-        </table>
+              <button class="btn-outline h-10 w-full justify-center">Guardar</button>
+            </form>
+          @empty
+            <div class="rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 px-3 py-4 text-sm text-zinc-600">
+              No hay tipos cargados.
+            </div>
+          @endforelse
+        </div>
+
+        <div class="hidden md:block">
+          <div class="table-wrap">
+            <table class="table min-w-[760px]">
+              <thead>
+                <tr>
+                  <th>Tipo</th>
+                  <th>Activo</th>
+                  <th>Slug</th>
+                  <th class="text-right">Acción</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                @forelse($deviceTypes as $t)
+                  @php($formId = 'device-type-'.$t->id)
+                  <tr>
+                    <td class="min-w-[320px]">
+                      <form id="{{ $formId }}" method="POST" action="{{ route('admin.deviceTypes.update', $t) }}">
+                        @csrf
+                        @method('PUT')
+                        <input class="h-10" name="name" value="{{ $t->name }}" required>
+                      </form>
+                    </td>
+
+                    <td>
+                      <label class="inline-flex items-center gap-2 text-sm font-semibold text-zinc-700">
+                        <input class="h-4 w-4 rounded border-zinc-300" form="{{ $formId }}" type="checkbox" name="active" value="1" @checked($t->active)>
+                        <span>Activo</span>
+                      </label>
+                    </td>
+
+                    <td class="text-sm text-zinc-500">{{ $t->slug }}</td>
+
+                    <td class="text-right">
+                      <button class="btn-outline btn-sm h-10" form="{{ $formId }}">Guardar</button>
+                    </td>
+                  </tr>
+                @empty
+                  <tr>
+                    <td colspan="4" class="text-sm text-zinc-600">No hay tipos cargados.</td>
+                  </tr>
+                @endforelse
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
   </div>
