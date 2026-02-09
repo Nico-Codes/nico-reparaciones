@@ -27,7 +27,7 @@
 @section('content')
   <div class="page-head">
     <div class="page-title">Carrito</div>
-    <div class="page-subtitle">Revisá los productos antes de finalizar tu pedido.</div>
+    <div class="page-subtitle">Revisa productos, cantidades y stock antes de confirmar.</div>
   </div>
 
   @if(empty($cart))
@@ -44,9 +44,9 @@
     @return
   @endif
 
-  <div class="grid gap-4 lg:grid-cols-3" data-cart-grid data-store-url="{{ route('store.index') }}">
+  <div class="grid gap-4 lg:grid-cols-3 lg:items-start" data-cart-grid data-store-url="{{ route('store.index') }}">
     {{-- Items --}}
-    <div class="lg:col-span-2 grid gap-3" data-cart-items-wrap>
+    <div class="order-2 lg:order-1 lg:col-span-2 grid gap-3" data-cart-items-wrap>
       @foreach($cart as $item)
         @php
           $qty = (int)($item['quantity'] ?? 1);
@@ -71,51 +71,55 @@
 
 
         <div class="card" data-cart-item data-item-id="{{ $item['id'] }}" data-unit-price="{{ (float) $price }}">
-
-          <div class="card-body">
+          <div class="card-body p-3 sm:p-4">
             <div class="flex items-start gap-3">
-              {{-- Thumb simple --}}
-              <div class="h-14 w-14 shrink-0 rounded-2xl border border-zinc-100 bg-zinc-50 flex items-center justify-center">
-                <span class="text-lg">🧩</span>
+              <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-zinc-100 bg-zinc-50">
+                <svg class="h-7 w-7 text-zinc-400" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M5 8.5 12 4l7 4.5v7L12 20l-7-4.5v-7Z" stroke="currentColor" stroke-width="1.5" />
+                  <path d="M5.5 8.5 12 12l6.5-3.5M12 12v7.5" stroke="currentColor" stroke-width="1.5" />
+                </svg>
               </div>
 
               <div class="min-w-0 flex-1">
-                <div class="flex items-start justify-between gap-3">
+                <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                   <div class="min-w-0">
                     <a href="{{ $productUrl }}"
-                       class="font-black text-zinc-900 hover:text-[rgb(var(--brand-700))] truncate block">
+                       class="block truncate text-[15px] font-black leading-tight text-zinc-900 hover:text-[rgb(var(--brand-700))]">
                       {{ $item['name'] ?? 'Producto' }}
                     </a>
 
-                    <div class="text-xs text-zinc-500 mt-1 flex flex-wrap gap-x-2 gap-y-1 items-center">
+                    <div class="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-500">
                       <span>
                         Precio unitario: <span class="font-black text-zinc-900">{{ $fmt($price) }}</span>
                       </span>
-                      <span class="text-zinc-300">•</span>
+                      <span class="text-zinc-300">|</span>
                       <span>
-                        Disponible: <span class="font-black text-zinc-900" data-stock-available>{{ $stock }}</span>
+                        Stock: <span class="font-black text-zinc-900" data-stock-available>{{ $stock }}</span>
                       </span>
 
                       @if($isOut)
                         <span class="badge-rose">Sin stock</span>
                       @endif
                     </div>
-
-
                   </div>
 
                   <form method="POST" action="{{ route('cart.remove', $item['id']) }}" data-cart-remove>
                     @csrf
-                    <button class="btn-ghost btn-sm px-3" type="submit" aria-label="Eliminar del carrito">🗑️</button>
+                    <button
+                      class="inline-flex h-10 items-center justify-center rounded-xl border border-zinc-200 px-3 text-xs font-black text-zinc-700 hover:bg-zinc-50"
+                      type="submit"
+                      aria-label="Eliminar del carrito"
+                    >
+                      Quitar
+                    </button>
                   </form>
                 </div>
 
-                {{-- Qty controls + subtotal --}}
-                <div class="mt-4 flex items-center justify-between gap-3">
+                <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <form
                     method="POST"
                     action="{{ route('cart.update', $item['id']) }}"
-                    class="inline-flex items-center gap-2"
+                    class="inline-flex w-full items-center justify-between rounded-2xl border border-zinc-200 bg-zinc-50/70 p-1 sm:w-auto sm:justify-start sm:gap-2"
                     data-cart-qty
                     data-preserve-scroll="1"
                   >
@@ -123,11 +127,11 @@
 
                     <button
                       type="button"
-                      class="btn-outline btn-sm px-3"
+                      class="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-zinc-200 bg-white text-base font-black text-zinc-800 hover:bg-zinc-100 disabled:opacity-40"
                       data-qty-minus
                       {{ ($isOut || $qty <= 1) ? 'disabled' : '' }}
                       aria-label="Restar"
-                    >−</button>
+                    >-</button>
 
                     <label class="sr-only" for="qty_{{ $item['id'] }}">Cantidad</label>
                     <input
@@ -137,7 +141,7 @@
                       min="1"
                       inputmode="numeric"
                       value="{{ $qty }}"
-                      class="w-20 text-center"
+                      class="h-11 w-16 rounded-xl border-zinc-200 text-center text-base font-black"
                       data-qty-input
                       max="{{ $maxQty }}"
                       {{ $isOut ? 'disabled' : '' }}
@@ -146,22 +150,17 @@
                     <button
                       {{ ($isOut || ($qty >= $maxQty)) ? 'disabled' : '' }}
                       type="button"
-                      class="btn-outline btn-sm px-3"
+                      class="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-zinc-200 bg-white text-base font-black text-zinc-800 hover:bg-zinc-100 disabled:opacity-40"
                       data-qty-plus
                       aria-label="Sumar"
                     >+</button>
-
                   </form>
 
-                  <div class="text-right leading-tight">
+                  <div class="flex items-center justify-between rounded-2xl bg-zinc-50 px-3 py-2 sm:block sm:bg-transparent sm:px-0 sm:py-0 sm:text-right">
                     <div class="text-[11px] text-zinc-500">Subtotal</div>
-                    <div class="font-black text-zinc-900" data-line-subtotal>{{ $fmt($subtotal) }}</div>
+                    <div class="text-lg font-black text-zinc-900 sm:text-base" data-line-subtotal>{{ $fmt($subtotal) }}</div>
                   </div>
                 </div>
-
-
-
-               
               </div>
             </div>
           </div>
@@ -170,28 +169,33 @@
     </div>
 
     {{-- Summary --}}
-    <div class="lg:col-span-1" data-cart-summary-wrap>
-      <div class="card h-fit">
-        <div class="card-head">
-          <div class="font-black">Resumen</div>
-          <span class="badge-sky" data-cart-items-count>{{ $itemsCount }} ítems</span>
+    <div class="order-1 lg:order-2 lg:col-span-1" data-cart-summary-wrap>
+      <div class="card h-fit overflow-hidden">
+        <div class="card-head items-start">
+          <div class="min-w-0">
+            <div class="font-black">Resumen</div>
+            <div class="text-xs text-zinc-500">Pago y retiro en el local</div>
+          </div>
+          <span class="badge-sky" data-cart-items-count>{{ $itemsCount }} items</span>
         </div>
 
-        <div class="card-body grid gap-3">
-          <div class="flex items-center justify-between">
-            <div class="muted">Total</div>
-            <div class="text-xl font-black" data-cart-total>{{ $fmt($total) }}</div>
+        <div class="card-body grid gap-4">
+          <div class="rounded-2xl bg-zinc-50 px-3 py-2">
+            <div class="flex items-center justify-between">
+              <div class="text-sm font-bold text-zinc-600">Total</div>
+              <div class="text-2xl font-black tracking-tight text-zinc-900" data-cart-total>{{ $fmt($total) }}</div>
+            </div>
           </div>
 
           <div class="text-xs text-zinc-500">
-            Retiro en el local. Podés confirmar el pedido y después coordinamos.
+            Cuando confirmes, el pedido queda pendiente y luego coordinamos el retiro.
           </div>
 
           <div class="grid gap-2">
             <a
               href="{{ route('checkout') }}"
               data-checkout-btn
-              class="btn-primary w-full {{ $hasStockIssue ? 'opacity-50 pointer-events-none' : '' }}"
+              class="btn-primary h-11 w-full {{ $hasStockIssue ? 'opacity-50 pointer-events-none' : '' }}"
               aria-disabled="{{ $hasStockIssue ? 'true' : 'false' }}"
               tabindex="{{ $hasStockIssue ? '-1' : '0' }}"
             >
@@ -200,9 +204,9 @@
 
             <div
               data-stock-warning
-              class="mt-2 text-xs text-rose-700 font-semibold {{ $hasStockIssue ? '' : 'hidden' }}"
+              class="mt-1 rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 {{ $hasStockIssue ? '' : 'hidden' }}"
             >
-              Hay productos sin stock o con cantidad mayor al stock. Ajustá el carrito para continuar.
+              Hay productos sin stock o con cantidad mayor al stock. Ajusta el carrito para continuar.
             </div>
 
             <form method="POST" action="{{ route('cart.clear') }}" data-cart-clear>
@@ -210,12 +214,12 @@
               <button class="btn-outline w-full" type="submit">Vaciar carrito</button>
             </form>
 
-            <a href="{{ route('store.index') }}" class="btn-ghost w-full">Volver a la tienda</a>
+            <a href="{{ route('store.index') }}" class="btn-ghost w-full">Seguir comprando</a>
           </div>
 
 
           <div class="muted text-xs">
-            Al confirmar, el pedido queda asociado a tu cuenta y lo ves en “Mis pedidos”.
+            Al confirmar, el pedido queda asociado a tu cuenta y lo ves en "Mis pedidos".
           </div>
         </div>
       </div>

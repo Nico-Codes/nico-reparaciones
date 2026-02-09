@@ -111,17 +111,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ✅ UX: cerrar el menú al navegar (click en links dentro del sidebar)
     sidebar.addEventListener('click', (e) => {
-      const a = e.target.closest('a.sidebar-link');
-      if (a && a.getAttribute('href')) {
-        sidebarClose();
-        return;
+      // Close sidebar after navigating (any real link inside the sidebar)
+      const a = e.target.closest('a')
+      if (a && sidebar.contains(a)) {
+        const href = a.getAttribute('href')
+        if (href && href !== '#') {
+          sidebarClose()
+          return
+        }
       }
 
-      const btn = e.target.closest('button.sidebar-link');
-      if (btn && (btn.type || '').toLowerCase() === 'submit') {
-        sidebarClose();
+      const btn = e.target.closest('button')
+      if (btn && sidebar.contains(btn) && btn.type === 'submit') {
+        sidebarClose()
       }
-    });
+    })
+
 
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') sidebarClose();
