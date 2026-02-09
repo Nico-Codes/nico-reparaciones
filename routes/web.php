@@ -118,7 +118,9 @@ Route::middleware(['auth'])->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::get('/reparacion', [RepairLookupController::class, 'form'])->name('repairs.lookup');
-Route::post('/reparacion', [RepairLookupController::class, 'lookup'])->name('repairs.lookup.post');
+Route::post('/reparacion', [RepairLookupController::class, 'lookup'])
+    ->middleware('throttle:repair-lookup')
+    ->name('repairs.lookup.post');
 
 /*
 |--------------------------------------------------------------------------
@@ -183,10 +185,10 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
 
     Route::get('/device-catalog/issues', [AdminDeviceCatalogController::class, 'issues'])->name('admin.deviceCatalog.issues');
 
-    Route::post('/device-catalog/brands', [AdminDeviceCatalogController::class, 'storeBrand'])->name('admin.deviceCatalog.brands.store');
-    Route::post('/device-catalog/models', [AdminDeviceCatalogController::class, 'storeModel'])->name('admin.deviceCatalog.models.store');
+    Route::post('/device-catalog/brands', [AdminDeviceCatalogController::class, 'storeBrand'])->name('admin.deviceCatalog.ajax.brands.store');
+    Route::post('/device-catalog/models', [AdminDeviceCatalogController::class, 'storeModel'])->name('admin.deviceCatalog.ajax.models.store');
 
-    Route::post('/device-catalog/issues', [AdminDeviceCatalogController::class, 'storeIssue'])->name('admin.deviceCatalog.issues.store');
+    Route::post('/device-catalog/issues', [AdminDeviceCatalogController::class, 'storeIssue'])->name('admin.deviceCatalog.ajax.issues.store');
 
 
     Route::get('/pedidos/{order}/imprimir', AdminOrderPrintController::class)->name('admin.orders.print');
@@ -280,5 +282,4 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
 
  
 });
-
 

@@ -9,6 +9,7 @@ use App\Models\DeviceType;
 use App\Models\PricingRule;
 use App\Models\RepairType;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class AdminPricingRuleController extends Controller
 {
@@ -87,6 +88,8 @@ class AdminPricingRuleController extends Controller
         $brandId = !empty($data['device_brand_id']) ? (int)$data['device_brand_id'] : null;
         $modelId = !empty($data['device_model_id']) ? (int)$data['device_model_id'] : null;
         $repairTypeId = (int) $data['repair_type_id'];
+
+        $this->assertResolveSelectionConsistency($typeId, $brandId, $modelId);
 
         $groupId = null;
         if ($modelId) {
@@ -194,6 +197,108 @@ class AdminPricingRuleController extends Controller
             $data['fixed_total'] = null;
         }
 
+        $this->assertRuleSelectionConsistency($data);
+
         return $data;
+    }
+
+    private function assertResolveSelectionConsistency(int $typeId, ?int $brandId, ?int $modelId): void
+    {
+        if ($brandId !== null) {
+            $brand = DeviceBrand::find($brandId);
+
+            if (!$brand || (int) $brand->device_type_id !== $typeId) {
+                throw ValidationException::withMessages([
+                    'device_brand_id' => 'La marca no corresponde al tipo de dispositivo seleccionado.',
+                ]);
+            }
+        }
+
+        if ($modelId === null) {
+            return;
+        }
+
+        $model = DeviceModel::find($modelId);
+        if (!$model) {
+            throw ValidationException::withMessages([
+                'device_model_id' => 'El modelo seleccionado no existe.',
+            ]);
+        }
+
+        $modelBrand = DeviceBrand::find((int) $model->device_brand_id);
+        if (!$modelBrand || (int) $modelBrand->device_type_id !== $typeId) {
+            throw ValidationException::withMessages([
+                'device_model_id' => 'El modelo no corresponde al tipo de dispositivo seleccionado.',
+            ]);
+        }
+
+        if ($brandId === null || (int) $modelBrand->id !== $brandId) {
+            throw ValidationException::withMessages([
+                'device_model_id' => 'El modelo no corresponde a la marca seleccionada.',
+            ]);
+        }
+    }
+
+    private function assertRuleSelectionConsistency(array $data): void
+    {
+        $typeId = (int) $data['device_type_id'];
+        $brandId = isset($data['device_brand_id']) ? (int) $data['device_brand_id'] : null;
+        $groupId = isset($data['device_model_group_id']) ? (int) $data['device_model_group_id'] : null;
+        $modelId = isset($data['device_model_id']) ? (int) $data['device_model_id'] : null;
+
+        if (($groupId !== null || $modelId !== null) && $brandId === null) {
+            throw ValidationException::withMessages([
+                'device_brand_id' => 'Seleccioná una marca cuando definas grupo o modelo.',
+            ]);
+        }
+
+        $brand = null;
+        if ($brandId !== null) {
+            $brand = DeviceBrand::find($brandId);
+            if (!$brand || (int) $brand->device_type_id !== $typeId) {
+                throw ValidationException::withMessages([
+                    'device_brand_id' => 'La marca no corresponde al tipo de dispositivo seleccionado.',
+                ]);
+            }
+        }
+
+        if ($groupId !== null) {
+            $group = DeviceModelGroup::find($groupId);
+            if (!$group) {
+                throw ValidationException::withMessages([
+                    'device_model_group_id' => 'El grupo de modelos seleccionado no existe.',
+                ]);
+            }
+
+            if ($brand === null || (int) $group->device_brand_id !== (int) $brand->id) {
+                throw ValidationException::withMessages([
+                    'device_model_group_id' => 'El grupo de modelos no corresponde a la marca seleccionada.',
+                ]);
+            }
+        }
+
+        if ($modelId === null) {
+            return;
+        }
+
+        $model = DeviceModel::find($modelId);
+        if (!$model) {
+            throw ValidationException::withMessages([
+                'device_model_id' => 'El modelo seleccionado no existe.',
+            ]);
+        }
+
+        $modelBrandId = (int) $model->device_brand_id;
+        if ($brand === null || $modelBrandId !== (int) $brand->id) {
+            throw ValidationException::withMessages([
+                'device_model_id' => 'El modelo no corresponde a la marca seleccionada.',
+            ]);
+        }
+
+        if ($groupId !== null && (int) ($model->device_model_group_id ?? 0) !== $groupId) {
+            throw ValidationException::withMessages([
+                'device_model_id' => 'El modelo no corresponde al grupo seleccionado.',
+            ]);
+        }
     }
 }

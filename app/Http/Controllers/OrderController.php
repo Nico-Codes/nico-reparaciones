@@ -45,7 +45,7 @@ class OrderController extends Controller
             'payment_method'        => ['required', 'in:local,mercado_pago,transferencia'],
             'notes'                 => ['nullable', 'string'],
             'pickup_delegate_name'  => ['nullable', 'string', 'max:255', 'required_with:pickup_delegate_phone'],
-            'pickup_delegate_phone' => ['nullable', 'string', 'max:50', 'required_with:pickup_delegate_name'],
+            'pickup_delegate_phone' => ['nullable', 'string', 'max:30', 'required_with:pickup_delegate_name', 'regex:/^(?=(?:\\D*\\d){8,15}\\D*$)[0-9+()\\s-]{8,30}$/'],
         ]);
 
         try {
@@ -113,8 +113,8 @@ class OrderController extends Controller
                     'pickup_name'           => trim($user->name . ' ' . $user->last_name),
                     'pickup_phone'          => $user->phone,
                     'notes'                 => $data['notes'] ?? null,
-                    'pickup_delegate_name'  => $data['pickup_delegate_name'] ?? null,
-                    'pickup_delegate_phone' => $data['pickup_delegate_phone'] ?? null,
+                    'pickup_delegate_name'  => isset($data['pickup_delegate_name']) ? trim((string) $data['pickup_delegate_name']) : null,
+                    'pickup_delegate_phone' => isset($data['pickup_delegate_phone']) ? trim((string) $data['pickup_delegate_phone']) : null,
                 ]);
 
                 OrderStatusHistory::create([

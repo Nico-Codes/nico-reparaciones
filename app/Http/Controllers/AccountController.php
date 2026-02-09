@@ -28,7 +28,7 @@ class AccountController extends Controller
             $data = $request->validate([
                 'name'      => ['required', 'string', 'max:255'],
                 'last_name' => ['required', 'string', 'max:255'],
-                'phone'     => ['required', 'string', 'max:30', 'regex:/^[0-9+()\s-]{8,30}$/'],
+                'phone'     => ['required', 'string', 'max:30', 'regex:/^(?=(?:\\D*\\d){8,15}\\D*$)[0-9+()\\s-]{8,30}$/'],
                 'email'     => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             ], [
                 'name.required'       => 'Ingresá tu nombre.',

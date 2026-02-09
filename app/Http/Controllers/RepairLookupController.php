@@ -16,7 +16,7 @@ class RepairLookupController extends Controller
     {
         $data = $request->validate([
             'code' => 'required|string|max:50',
-            'phone' => 'required|string|max:30',
+            'phone' => ['required', 'string', 'max:30', 'regex:/^(?=(?:\\D*\\d){8,15}\\D*$)[0-9+()\\s-]{8,30}$/'],
         ]);
 
         $code = trim($data['code']);

@@ -227,7 +227,7 @@ class AdminRepairController extends Controller
         $data = $request->validate([
             'user_email'      => 'nullable|email',
             'customer_name'   => 'required|string|max:255',
-            'customer_phone'  => 'required|string|max:30',
+            'customer_phone'  => ['required', 'string', 'max:30', 'regex:/^(?=(?:\\D*\\d){8,15}\\D*$)[0-9+()\\s-]{8,30}$/'],
             'device_type_id'  => 'required|exists:device_types,id',
             'device_brand_id' => 'required|exists:device_brands,id',
             'device_model_id' => 'required|exists:device_models,id',
@@ -391,7 +391,7 @@ class AdminRepairController extends Controller
             'unlink_user'     => 'nullable|boolean',
 
             'customer_name'   => 'required|string|max:255',
-            'customer_phone'  => 'required|string|max:30',
+            'customer_phone'  => ['required', 'string', 'max:30', 'regex:/^(?=(?:\\D*\\d){8,15}\\D*$)[0-9+()\\s-]{8,30}$/'],
 
             'device_type_id'  => 'required|exists:device_types,id',
             'device_brand_id' => 'required|exists:device_brands,id',
