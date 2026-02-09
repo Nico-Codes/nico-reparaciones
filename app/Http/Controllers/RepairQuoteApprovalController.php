@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Repair;
 use App\Models\RepairStatusHistory;
+use App\Support\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -91,6 +92,15 @@ class RepairQuoteApprovalController extends Controller
         );
 
         if (($result['changed'] ?? false) === true) {
+            AuditLogger::log($request, 'public.repair.quote_decision', [
+                'subject_type' => Repair::class,
+                'subject_id' => $repair->id,
+                'metadata' => [
+                    'to_status' => $toStatus,
+                    'comment' => $comment,
+                ],
+            ]);
+
             return redirect($showUrl)->with('success', $successMessage);
         }
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Support\AuditLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -92,6 +93,15 @@ class AdminUserController extends Controller
 
         $user->role = $to;
         $user->save();
+
+        AuditLogger::log($request, 'admin.user.role_changed', [
+            'subject_type' => User::class,
+            'subject_id' => $user->id,
+            'metadata' => [
+                'from_role' => $from,
+                'to_role' => $to,
+            ],
+        ]);
 
         return redirect()
             ->route('admin.users.show', $user)

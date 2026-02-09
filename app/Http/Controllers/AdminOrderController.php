@@ -8,6 +8,7 @@ use App\Models\OrderStatusHistory;
 use App\Models\OrderWhatsappLog;
 use App\Models\OrderWhatsappTemplate;
 use App\Models\Product;
+use App\Support\AuditLogger;
 use App\Support\WhatsApp;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -266,6 +267,16 @@ class AdminOrderController extends Controller
                 ->back()
                 ->with('success', (string) ($result['message'] ?? 'Sin cambios.'));
         }
+
+        AuditLogger::log($request, 'admin.order.status_changed', [
+            'subject_type' => Order::class,
+            'subject_id' => $order->id,
+            'metadata' => [
+                'from_status' => $from,
+                'to_status' => $to,
+                'comment' => $data['comment'] ?? null,
+            ],
+        ]);
 
         if ($isAjax) {
             $order->refresh()->load(['user', 'items']);

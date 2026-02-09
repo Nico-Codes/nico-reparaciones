@@ -31,7 +31,6 @@
   </div>
 
   @if(empty($cart))
-    
     <div class="card">
       <div class="card-body">
         <div class="font-black">Tu carrito está vacío.</div>
@@ -41,8 +40,7 @@
         </div>
       </div>
     </div>
-    @return
-  @endif
+  @else
 
   <div class="grid gap-4 lg:grid-cols-3 lg:items-start" data-cart-grid data-store-url="{{ route('store.index') }}">
     {{-- Items --}}
@@ -225,6 +223,6 @@
       </div>
     </div>
   </div>
-
+  @endif
 
 @endsection

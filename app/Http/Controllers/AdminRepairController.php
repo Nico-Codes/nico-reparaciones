@@ -12,6 +12,7 @@ use App\Models\DeviceType;
 use App\Models\DeviceBrand;
 use App\Models\DeviceModel;
 use App\Models\DeviceIssueType;
+use App\Support\AuditLogger;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -552,6 +553,16 @@ class AdminRepairController extends Controller
                 'comment'     => $request->input('comment'),
             ]);
         });
+
+        AuditLogger::log($request, 'admin.repair.status_changed', [
+            'subject_type' => Repair::class,
+            'subject_id' => $repair->id,
+            'metadata' => [
+                'from_status' => $from,
+                'to_status' => $to,
+                'comment' => $request->input('comment'),
+            ],
+        ]);
 
         $waPhone   = $this->normalizeWhatsappPhone((string) $repair->customer_phone);
         $waMessage = $this->buildWhatsappMessage($repair);
