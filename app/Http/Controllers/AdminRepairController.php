@@ -15,6 +15,7 @@ use App\Models\DeviceIssueType;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\URL;
 
 
 
@@ -149,6 +150,7 @@ class AdminRepairController extends Controller
                 $r->wa_log_url = route('admin.repairs.whatsappLogAjax', $r);
 
                 $waPhone = $this->normalizeWhatsappPhone((string) $r->customer_phone);
+                $approvalUrl = $this->buildApprovalUrl($r);
                 if (!$waPhone) {
                     $r->wa_url = null;
                     $r->wa_message = null;
@@ -176,6 +178,7 @@ class AdminRepairController extends Controller
                     '{device}'         => (string) $device,
                     '{final_price}'    => (string) $finalPrice,
                     '{warranty_days}'  => (string) ((int)($r->warranty_days ?? 0)),
+                    '{approval_url}'   => (string) ($approvalUrl ?? ''),
                     '{shop_address}'   => (string) $shopAddress,
                     '{shop_hours}'     => (string) $shopHours,
                 ];
@@ -356,6 +359,7 @@ class AdminRepairController extends Controller
         $waPhone = $this->normalizeWhatsappPhone((string)$repair->customer_phone);
         $waMessage = $this->buildWhatsappMessage($repair);
         $waUrl = $waPhone ? ('https://wa.me/' . $waPhone . '?text=' . urlencode($waMessage)) : null;
+        $approvalUrl = $this->buildApprovalUrl($repair);
 
         $waLogs = $repair->whatsappLogs()->with('sentBy')->get();
 
@@ -378,6 +382,7 @@ class AdminRepairController extends Controller
             'waPhone'           => $waPhone,
             'waMessage'         => $waMessage,
             'waUrl'             => $waUrl,
+            'approvalUrl'       => $approvalUrl,
             'waLogs'            => $waLogs,
             'waNotifiedCurrent' => $waNotifiedCurrent,
             'waNotifiedAt'      => $waNotifiedAt,
@@ -671,6 +676,7 @@ class AdminRepairController extends Controller
     private function buildWhatsappMessage(Repair $repair): string
     {
         $statusLabel = Repair::STATUSES[$repair->status] ?? $repair->status;
+        $approvalUrl = $this->buildApprovalUrl($repair);
 
         $tpl = RepairWhatsappTemplate::where('status', $repair->status)->value('template');
         if (!$tpl || trim($tpl) === '') {
@@ -695,11 +701,25 @@ class AdminRepairController extends Controller
             '{device}'        => (string) $device,
             '{final_price}'   => (string) $finalPrice,
             '{warranty_days}' => (string) ((int)($repair->warranty_days ?? 0)),
+            '{approval_url}'  => (string) ($approvalUrl ?? ''),
             '{shop_address}'  => (string) $shopAddress,
             '{shop_hours}'    => (string) $shopHours,
         ];
 
         return strtr($tpl, $replacements);
+    }
+
+    private function buildApprovalUrl(Repair $repair): ?string
+    {
+        if ((string) ($repair->status ?? '') !== 'waiting_approval') {
+            return null;
+        }
+
+        return URL::temporarySignedRoute(
+            'repairs.quote.show',
+            now()->addDays(7),
+            ['repair' => $repair->id]
+        );
     }
 
     private function defaultTemplate(string $status): string
@@ -709,6 +729,7 @@ class AdminRepairController extends Controller
 
         if ($status === 'waiting_approval') {
             $base .= "Necesitamos tu aprobación para continuar.\n";
+            $base .= "Aprobá o rechazá acá: {approval_url}\n";
         } elseif ($status === 'ready_pickup') {
             $base .= "¡Ya está lista para retirar! ✅\n";
             $base .= "\nDirección: {shop_address}\n";

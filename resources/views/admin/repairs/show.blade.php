@@ -153,6 +153,20 @@
             </button>
           @endif
 
+          @if(!empty($approvalUrl))
+            <div class="rounded-2xl border border-sky-200 bg-sky-50 p-3">
+              <div class="text-xs font-black uppercase text-sky-700">Aprobación cliente</div>
+              <div class="mt-1 text-xs text-sky-900">Link firmado válido por 7 días.</div>
+
+              <div class="mt-2 grid gap-2 sm:grid-cols-[1fr_auto]">
+                <input type="text" readonly value="{{ $approvalUrl }}" class="h-11 text-xs font-semibold" onclick="this.select()">
+                <a href="{{ $approvalUrl }}" target="_blank" rel="noopener" class="btn-outline h-11 w-full justify-center sm:w-auto">
+                  Abrir
+                </a>
+              </div>
+            </div>
+          @endif
+
           <div class="pt-2 border-t border-zinc-200">
             <button type="button"
               class="btn-ghost btn-sm h-10 w-full justify-center"

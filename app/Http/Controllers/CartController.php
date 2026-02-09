@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 
 class CartController extends Controller
@@ -20,6 +21,7 @@ class CartController extends Controller
         if ($sync['dirty']) {
             $cart = $sync['cart'];
             $request->session()->put('cart', $cart);
+            $request->session()->forget('checkout_token');
 
             // Mostramos mensaje SOLO si hubo cambios importantes
             if ($sync['changed'] && !empty($sync['message'])) {
@@ -131,6 +133,7 @@ class CartController extends Controller
         }
 
         $request->session()->put('cart', $cart);
+        $request->session()->forget('checkout_token');
 
         // Si es AJAX/Fetch: devolvemos JSON (por si en el futuro lo usás sin recarga)
         if ($request->expectsJson()) {
@@ -232,6 +235,7 @@ class CartController extends Controller
         $cart[$product->id]['stock'] = (int) $product->stock;
 
         $request->session()->put('cart', $cart);
+        $request->session()->forget('checkout_token');
 
         // AJAX/Fetch: devolvemos datos para actualizar UI sin recargar
         if ($request->expectsJson()) {
@@ -279,6 +283,7 @@ class CartController extends Controller
         if (isset($cart[$product->id])) {
             unset($cart[$product->id]);
             $request->session()->put('cart', $cart);
+            $request->session()->forget('checkout_token');
         }
 
         // AJAX/Fetch: devolvemos totales para actualizar UI sin recargar
@@ -318,6 +323,7 @@ class CartController extends Controller
         public function clear(Request $request)
         {
             $request->session()->forget('cart');
+            $request->session()->forget('checkout_token');
 
             // AJAX/Fetch: devolvemos totales para actualizar UI sin recargar
             if ($request->expectsJson()) {
@@ -346,6 +352,7 @@ class CartController extends Controller
         if ($sync['dirty']) {
             $cart = $sync['cart'];
             $request->session()->put('cart', $cart);
+            $request->session()->forget('checkout_token');
         }
 
         // Si hubo cambios importantes, sí: volvemos al carrito
@@ -358,6 +365,7 @@ class CartController extends Controller
 
 
             if (empty($cart)) {
+                $request->session()->forget('checkout_token');
                 // Si el carrito está vacío, lo mando a la tienda
                 return redirect()
                     ->route('store.index')
@@ -382,9 +390,16 @@ class CartController extends Controller
             $total += $item['price'] * $item['quantity'];
         }
 
+        $checkoutToken = (string) $request->session()->get('checkout_token', '');
+        if ($checkoutToken === '') {
+            $checkoutToken = (string) Str::uuid();
+            $request->session()->put('checkout_token', $checkoutToken);
+        }
+
         return view('carrito.checkout', [
             'cart'  => $cart,
             'total' => $total,
+            'checkoutToken' => $checkoutToken,
         ]);
     }
 

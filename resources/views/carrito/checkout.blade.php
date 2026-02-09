@@ -103,6 +103,7 @@
                 class="grid gap-6"
                 data-checkout-form>
             @csrf
+            <input type="hidden" name="checkout_token" value="{{ old('checkout_token', $checkoutToken ?? '') }}">
 
             {{-- Metodo de pago --}}
             <div class="grid gap-3">

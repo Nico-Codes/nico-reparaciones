@@ -8,6 +8,7 @@ use App\Models\OrderStatusHistory;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -21,6 +22,18 @@ class OrderController extends Controller
      */
     public function confirm(Request $request)
     {
+        $submittedToken = trim((string) $request->input('checkout_token', ''));
+        $completedTokens = (array) $request->session()->get('checkout_completed_tokens', []);
+
+        if ($submittedToken !== '' && isset($completedTokens[$submittedToken])) {
+            $existingOrderId = (int) $completedTokens[$submittedToken];
+            if ($existingOrderId > 0) {
+                return redirect()
+                    ->route('orders.thankyou', $existingOrderId)
+                    ->with('success', 'El pedido ya estaba confirmado.');
+            }
+        }
+
         $cart = $request->session()->get('cart', []);
 
         if (empty($cart)) {
@@ -46,130 +59,170 @@ class OrderController extends Controller
             'notes'                 => ['nullable', 'string'],
             'pickup_delegate_name'  => ['nullable', 'string', 'max:255', 'required_with:pickup_delegate_phone'],
             'pickup_delegate_phone' => ['nullable', 'string', 'max:30', 'required_with:pickup_delegate_name', 'regex:/^(?=(?:\\D*\\d){8,15}\\D*$)[0-9+()\\s-]{8,30}$/'],
+            'checkout_token'        => ['required', 'string', 'max:64'],
         ]);
 
-        try {
-            $order = null;
+        $submittedToken = trim((string) $data['checkout_token']);
+        $sessionToken = trim((string) $request->session()->get('checkout_token', ''));
 
-            DB::transaction(function () use (&$order, $cart, $data, $user) {
+        if ($sessionToken === '' || !hash_equals($sessionToken, $submittedToken)) {
+            return redirect()
+                ->route('checkout')
+                ->withErrors(['cart' => 'La confirmación de checkout expiró. Revisá y confirmá de nuevo.']);
+        }
 
-                // Productos actualizados + lock para evitar overselling
-                $productIds = collect($cart)->pluck('id')->filter()->unique()->values()->all();
-
-                $products = Product::query()
-                    ->whereIn('id', $productIds)
-                    ->where('active', 1)
-                    ->whereHas('category', fn($q) => $q->where('active', 1))
-                    ->lockForUpdate()
-                    ->get()
-                    ->keyBy('id');
-
-
-
-                $itemsToCreate = [];
-                $total = 0;
-
-                foreach ($cart as $item) {
-                    $productId = (int)($item['id'] ?? 0);
-                    $qty = (int)($item['quantity'] ?? 1);
-                    if ($qty < 1) $qty = 1;
-
-                    $product = $products->get($productId);
-
-                    if (!$product) {
-                        throw ValidationException::withMessages([
-                            'cart' => 'Uno o más productos ya no existen o fueron eliminados. Volvé a armar el carrito.',
-                        ]);
-                    }
-
-                    // ✅ Stock real (0 = sin stock)
-                    if ($qty > (int)$product->stock) {
-                        throw ValidationException::withMessages([
-                            'cart' => "Stock insuficiente para \"{$product->name}\". Disponible: {$product->stock}.",
-                        ]);
-                    }
-
-                    // Precio real de BD (evita manipulación del precio en sesión)
-                    $unitPrice = (int)$product->price;
-                    $subtotal = $unitPrice * $qty;
-
-                    $total += $subtotal;
-
-                    $itemsToCreate[] = [
-                        'product_id'   => $product->id,
-                        'product_name' => $product->name,
-                        'price'        => $unitPrice, // columna real en order_items
-                        'quantity'     => $qty,
-                        'subtotal'     => $subtotal,
-                    ];
+        $lock = Cache::lock('checkout:token:' . $submittedToken, 20);
+        if (!$lock->get()) {
+            $completedTokens = (array) $request->session()->get('checkout_completed_tokens', []);
+            if (isset($completedTokens[$submittedToken])) {
+                $existingOrderId = (int) $completedTokens[$submittedToken];
+                if ($existingOrderId > 0) {
+                    return redirect()
+                        ->route('orders.thankyou', $existingOrderId)
+                        ->with('success', 'El pedido ya estaba confirmado.');
                 }
+            }
 
-                // Pedido + historia inicial
-                $order = Order::create([
-                    'user_id'               => Auth::id(),
-                    'status'                => 'pendiente',
-                    'payment_method'        => $data['payment_method'],
-                    'total'                 => $total,
-                    'pickup_name'           => trim($user->name . ' ' . $user->last_name),
-                    'pickup_phone'          => $user->phone,
-                    'notes'                 => $data['notes'] ?? null,
-                    'pickup_delegate_name'  => isset($data['pickup_delegate_name']) ? trim((string) $data['pickup_delegate_name']) : null,
-                    'pickup_delegate_phone' => isset($data['pickup_delegate_phone']) ? trim((string) $data['pickup_delegate_phone']) : null,
-                ]);
+            return redirect()
+                ->route('checkout')
+                ->withErrors(['cart' => 'Ya estamos procesando este pedido. Esperá unos segundos.']);
+        }
 
-                OrderStatusHistory::create([
-                    'order_id'    => $order->id,
-                    'from_status' => null,
-                    'to_status'   => 'pendiente',
-                    'changed_by'  => Auth::id(),
-                    'changed_at'  => now(),
-                    'comment'     => 'Pedido creado',
-                ]);
+        try {
+            try {
+                $order = null;
 
-                // Items + descuento de stock
-                foreach ($itemsToCreate as $it) {
-                    OrderItem::create([
-                        'order_id'     => $order->id,
-                        'product_id'   => $it['product_id'],
-                        'product_name' => $it['product_name'],
-                        'price'        => $it['price'],
-                        'quantity'     => $it['quantity'],
-                        'subtotal'     => $it['subtotal'],
-                    ]);
+                DB::transaction(function () use (&$order, $cart, $data, $user) {
 
-                    $product = $products->get($it['product_id']);
-                    if ($product) {
-                        $qty = (int) $it['quantity'];
+                    // Productos actualizados + lock para evitar overselling
+                    $productIds = collect($cart)->pluck('id')->filter()->unique()->values()->all();
 
-                        $affected = Product::query()
-                            ->whereKey($product->id)
-                            ->where('stock', '>=', $qty)
-                            ->decrement('stock', $qty);
+                    $products = Product::query()
+                        ->whereIn('id', $productIds)
+                        ->where('active', 1)
+                        ->whereHas('category', fn($q) => $q->where('active', 1))
+                        ->lockForUpdate()
+                        ->get()
+                        ->keyBy('id');
 
-                        if ($affected === 0) {
+
+
+                    $itemsToCreate = [];
+                    $total = 0;
+
+                    foreach ($cart as $item) {
+                        $productId = (int)($item['id'] ?? 0);
+                        $qty = (int)($item['quantity'] ?? 1);
+                        if ($qty < 1) $qty = 1;
+
+                        $product = $products->get($productId);
+
+                        if (!$product) {
                             throw ValidationException::withMessages([
-                                'cart' => "No se pudo confirmar: el stock de \"{$product->name}\" cambió. Volvé a intentar.",
+                                'cart' => 'Uno o más productos ya no existen o fueron eliminados. Volvé a armar el carrito.',
                             ]);
                         }
+
+                        // ✅ Stock real (0 = sin stock)
+                        if ($qty > (int)$product->stock) {
+                            throw ValidationException::withMessages([
+                                'cart' => "Stock insuficiente para \"{$product->name}\". Disponible: {$product->stock}.",
+                            ]);
+                        }
+
+                        // Precio real de BD (evita manipulación del precio en sesión)
+                        $unitPrice = (int)$product->price;
+                        $subtotal = $unitPrice * $qty;
+
+                        $total += $subtotal;
+
+                        $itemsToCreate[] = [
+                            'product_id'   => $product->id,
+                            'product_name' => $product->name,
+                            'price'        => $unitPrice, // columna real en order_items
+                            'quantity'     => $qty,
+                            'subtotal'     => $subtotal,
+                        ];
                     }
+
+                    // Pedido + historia inicial
+                    $order = Order::create([
+                        'user_id'               => Auth::id(),
+                        'status'                => 'pendiente',
+                        'payment_method'        => $data['payment_method'],
+                        'total'                 => $total,
+                        'pickup_name'           => trim($user->name . ' ' . $user->last_name),
+                        'pickup_phone'          => $user->phone,
+                        'notes'                 => $data['notes'] ?? null,
+                        'pickup_delegate_name'  => isset($data['pickup_delegate_name']) ? trim((string) $data['pickup_delegate_name']) : null,
+                        'pickup_delegate_phone' => isset($data['pickup_delegate_phone']) ? trim((string) $data['pickup_delegate_phone']) : null,
+                    ]);
+
+                    OrderStatusHistory::create([
+                        'order_id'    => $order->id,
+                        'from_status' => null,
+                        'to_status'   => 'pendiente',
+                        'changed_by'  => Auth::id(),
+                        'changed_at'  => now(),
+                        'comment'     => 'Pedido creado',
+                    ]);
+
+                    // Items + descuento de stock
+                    foreach ($itemsToCreate as $it) {
+                        OrderItem::create([
+                            'order_id'     => $order->id,
+                            'product_id'   => $it['product_id'],
+                            'product_name' => $it['product_name'],
+                            'price'        => $it['price'],
+                            'quantity'     => $it['quantity'],
+                            'subtotal'     => $it['subtotal'],
+                        ]);
+
+                        $product = $products->get($it['product_id']);
+                        if ($product) {
+                            $qty = (int) $it['quantity'];
+
+                            $affected = Product::query()
+                                ->whereKey($product->id)
+                                ->where('stock', '>=', $qty)
+                                ->decrement('stock', $qty);
+
+                            if ($affected === 0) {
+                                throw ValidationException::withMessages([
+                                    'cart' => "No se pudo confirmar: el stock de \"{$product->name}\" cambió. Volvé a intentar.",
+                                ]);
+                            }
+                        }
+                    }
+
+                    // ✅ Audit: marcamos que ya descontamos stock
+                    $order->stock_deducted_at = now();
+                    $order->save();
+
+                });
+
+                // Si salió bien, vaciamos carrito
+                $request->session()->forget('cart');
+
+                $completedTokens = (array) $request->session()->get('checkout_completed_tokens', []);
+                $completedTokens[$submittedToken] = (int) $order->id;
+                if (count($completedTokens) > 20) {
+                    $completedTokens = array_slice($completedTokens, -20, null, true);
                 }
+                $request->session()->put('checkout_completed_tokens', $completedTokens);
+                $request->session()->forget('checkout_token');
 
-                // ✅ Audit: marcamos que ya descontamos stock
-                $order->stock_deducted_at = now();
-                $order->save();
-
-            });
-
-            // Si salió bien, vaciamos carrito
-            $request->session()->forget('cart');
-
-            return redirect()
-                ->route('orders.thankyou', $order->id)
-                ->with('success', '¡Pedido confirmado!');
-        } catch (ValidationException $e) {
-            return redirect()
-                ->route('cart.index')
-                ->withErrors($e->errors());
+                return redirect()
+                    ->route('orders.thankyou', $order->id)
+                    ->with('success', '¡Pedido confirmado!');
+            } catch (ValidationException $e) {
+                $request->session()->forget('checkout_token');
+                return redirect()
+                    ->route('cart.index')
+                    ->withErrors($e->errors());
+            }
+        } finally {
+            $lock->release();
         }
     }
 

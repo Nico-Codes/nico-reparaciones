@@ -10,6 +10,7 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\OrderController;
 
 use App\Http\Controllers\RepairLookupController;
+use App\Http\Controllers\RepairQuoteApprovalController;
 use App\Http\Controllers\UserRepairController;
 
 use App\Http\Controllers\AdminDashboardController;
@@ -60,7 +61,7 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthController::class, 'login'])->name('login.post');
 
     Route::get('/registro', [AuthController::class, 'showRegister'])->name('register');
-    Route::post('/registro', [AuthController::class, 'register'])->name('register.post');
+    Route::post('/registro', [AuthController::class, 'register'])->middleware('throttle:auth-register')->name('register.post');
 
     // âœ… Google OAuth
     Route::get('/auth/google', [AuthController::class, 'googleRedirect'])->name('auth.google.redirect');
@@ -121,6 +122,15 @@ Route::get('/reparacion', [RepairLookupController::class, 'form'])->name('repair
 Route::post('/reparacion', [RepairLookupController::class, 'lookup'])
     ->middleware('throttle:repair-lookup')
     ->name('repairs.lookup.post');
+
+Route::middleware('signed')->group(function () {
+    Route::get('/reparacion/{repair}/presupuesto', [RepairQuoteApprovalController::class, 'show'])
+        ->name('repairs.quote.show');
+    Route::post('/reparacion/{repair}/presupuesto/aprobar', [RepairQuoteApprovalController::class, 'approve'])
+        ->name('repairs.quote.approve');
+    Route::post('/reparacion/{repair}/presupuesto/rechazar', [RepairQuoteApprovalController::class, 'reject'])
+        ->name('repairs.quote.reject');
+});
 
 /*
 |--------------------------------------------------------------------------

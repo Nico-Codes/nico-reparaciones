@@ -66,6 +66,7 @@ class AdminWhatsappTemplateController extends Controller
             '{device}' => 'Marca + Modelo',
             '{final_price}' => 'Precio final (si existe)',
             '{warranty_days}' => 'Garantía en días',
+            '{approval_url}' => 'Link firmado para que el cliente apruebe/rechace presupuesto',
 
             // ✅ NUEVOS
             '{shop_address}' => 'Dirección del local (Admin > Configuración)',
@@ -80,6 +81,7 @@ class AdminWhatsappTemplateController extends Controller
 
         if ($status === 'waiting_approval') {
             $base .= "Necesitamos tu aprobación para continuar.\n";
+            $base .= "Aprobá o rechazá acá: {approval_url}\n";
         } elseif ($status === 'ready_pickup') {
             $base .= "¡Ya está lista para retirar! ✅\n";
             $base .= "\n📍 Dirección: {shop_address}\n";
