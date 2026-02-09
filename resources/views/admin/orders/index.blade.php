@@ -111,11 +111,11 @@
   </div>
 
   {{-- Tabs --}}
-  <div class="mt-3 flex items-center justify-between gap-2">
+  <div class="mt-3 flex flex-col items-stretch justify-between gap-2 sm:flex-row sm:items-center">
     <div class="text-xs font-black uppercase text-zinc-500">Estados</div>
 
     <button type="button"
-      class="btn-ghost btn-sm h-10"
+      class="btn-ghost btn-sm h-10 w-full justify-center sm:w-auto"
       data-toggle-collapse="orders_tabs"
       data-toggle-collapse-label="estados"
       aria-expanded="{{ $tabsOpen ? 'true' : 'false' }}">Ver estados</button>
@@ -261,7 +261,7 @@
               @endphp
 
 
-              <div class="grid w-full grid-cols-2 gap-2 md:flex md:w-auto md:flex-wrap md:items-center md:justify-end">
+              <div class="grid w-full grid-cols-1 gap-2 sm:grid-cols-2 md:flex md:w-auto md:flex-wrap md:items-center md:justify-end">
                 <a class="btn-outline btn-sm h-10 w-full justify-center md:h-auto md:w-auto" href="{{ route('admin.orders.show', $order->id) }}">
                   Abrir
                 </a>
@@ -312,7 +312,7 @@
                   <div class="dropdown w-full md:w-auto">
                     <button
                       type="button"
-                      class="btn-primary btn-sm h-10 w-full justify-center md:h-auto md:w-auto {{ $isFinal ? 'opacity-60 cursor-not-allowed' : '' }}"
+                      class="btn-primary btn-sm h-11 w-full justify-center md:h-auto md:w-auto {{ $isFinal ? 'opacity-60 cursor-not-allowed' : '' }}"
                       data-menu="orderStatusMenu-{{ $order->id }}"
                       data-admin-order-status-btn
                       {{ $isFinal ? 'disabled' : '' }}

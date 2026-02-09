@@ -233,7 +233,7 @@
               </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-2">
+            <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <a class="btn-outline btn-sm h-10 w-full justify-center" href="{{ route('admin.repairs.show', $repair) }}">Ver</a>
 
               @if($repair->wa_url)
@@ -314,8 +314,27 @@
               <td class="text-right font-black">{{ $money($repair->final_price) }}</td>
               <td class="text-right">
                 <div class="inline-flex items-center gap-2">
-                  <span class="{{ $badge($repair->status) }}">{{ $statuses[$repair->status] ?? $repair->status }}</span>
+                  <a class="btn-outline btn-sm h-10" href="{{ route('admin.repairs.show', $repair) }}">Ver</a>
 
+                  @if($repair->wa_url)
+                    <a href="{{ $repair->wa_url }}"
+                      target="_blank"
+                      rel="noopener"
+                      class="btn-sm inline-flex h-10 items-center justify-center rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700 active:scale-[.99]">
+                      WhatsApp
+                    </a>
+                  @endif
+
+                  <div class="dropdown">
+                    <button type="button" class="btn-ghost btn-sm h-10" data-menu="repairMoreDeskTable-{{ $repair->id }}" aria-expanded="false">Más</button>
+                    <div id="repairMoreDeskTable-{{ $repair->id }}" class="dropdown-menu hidden">
+                      <a class="dropdown-item" href="{{ route('admin.repairs.print', $repair) }}" target="_blank" rel="noopener">Imprimir</a>
+                      <a class="dropdown-item" href="{{ route('admin.repairs.ticket', $repair) }}?autoprint=1" target="_blank" rel="noopener">Ticket</a>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mt-2 inline-flex items-center gap-2">
                   @if(!$repair->wa_url)
                     <span class="badge-amber">Sin teléfono</span>
                   @elseif(!($repair->wa_notified_current ?? false))
@@ -326,11 +345,10 @@
                     <span class="badge-rose" title="Más de {{ $urgentHoursRepairs }}h sin cerrar">URGENTE</span>
                   @endif
                 </div>
-
               </td>
             </tr>
           @empty
-            <tr><td colspan="7" class="py-8 text-center text-zinc-500">No hay reparaciones.</td></tr>
+            <tr><td colspan="6" class="py-8 text-center text-zinc-500">No hay reparaciones.</td></tr>
           @endforelse
         </tbody>
       </table>

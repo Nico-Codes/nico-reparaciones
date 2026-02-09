@@ -67,23 +67,23 @@
     </div>
 
     <div class="w-full rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm lg:w-auto lg:shrink-0 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none">
-      <div class="grid grid-cols-2 gap-2 lg:flex lg:flex-wrap lg:items-center lg:justify-end">
+      <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:flex lg:flex-wrap lg:items-center lg:justify-end">
         <a href="{{ route('admin.orders.print', $order->id) }}"
           target="_blank"
           rel="noopener"
-          class="btn-outline btn-sm h-10 w-full justify-center lg:h-auto lg:w-auto">
+          class="btn-outline btn-sm h-11 w-full justify-center lg:h-auto lg:w-auto">
           Imprimir
         </a>
 
         <a href="{{ route('admin.orders.ticket', $order->id) }}?autoprint=1"
           target="_blank"
           rel="noopener"
-          class="btn-outline btn-sm h-10 w-full justify-center lg:h-auto lg:w-auto">
+          class="btn-outline btn-sm h-11 w-full justify-center lg:h-auto lg:w-auto">
           Ticket
         </a>
 
 
-        <span class="{{ $badge($order->status) }} inline-flex h-10 w-full items-center justify-center lg:h-auto lg:w-auto" data-admin-order-status-badge>
+        <span class="{{ $badge($order->status) }} inline-flex h-11 w-full items-center justify-center lg:h-auto lg:w-auto" data-admin-order-status-badge>
           {{ $statusMap[$order->status] ?? $order->status }}
         </span>
 
@@ -92,7 +92,7 @@
           <div class="dropdown w-full lg:w-auto">
             <button
               type="button"
-              class="btn-primary btn-sm h-10 w-full justify-center lg:h-auto lg:w-auto {{ $isFinal ? 'opacity-60 cursor-not-allowed' : '' }}"
+              class="btn-primary btn-sm h-11 w-full justify-center lg:h-auto lg:w-auto {{ $isFinal ? 'opacity-60 cursor-not-allowed' : '' }}"
               data-menu="orderStatusMenu-{{ $order->id }}"
               data-admin-order-status-btn
               {{ $isFinal ? 'disabled' : '' }}

@@ -375,10 +375,12 @@
 
                   <input type="text"
                         placeholder="Buscar falla…"
+                        class="h-11"
                         data-issue-search
                         disabled>
 
                   <select name="device_issue_type_id"
+                          class="h-11"
                           required
                           data-issue-select
                           data-selected="{{ old('device_issue_type_id', $repair->device_issue_type_id) }}"
@@ -387,7 +389,7 @@
                   </select>
 
                   <div class="mt-2 flex items-center gap-2">
-                    <button type="button" class="btn btn-secondary" data-add-issue disabled>
+                    <button type="button" class="btn-outline btn-sm h-10 w-full justify-center sm:w-auto" data-add-issue disabled>
                       + Agregar falla
                     </button>
                   </div>
@@ -415,11 +417,11 @@
             <div class="grid gap-3 md:grid-cols-2">
               <div>
                 <label for="customer_name" class="block mb-1">Nombre cliente</label>
-                <input id="customer_name" name="customer_name" value="{{ old('customer_name', $repair->customer_name) }}">
+                <input id="customer_name" name="customer_name" class="h-11" value="{{ old('customer_name', $repair->customer_name) }}">
               </div>
               <div>
                 <label for="customer_phone" class="block mb-1">Teléfono cliente</label>
-                <input id="customer_phone" name="customer_phone" value="{{ old('customer_phone', $repair->customer_phone) }}">
+                <input id="customer_phone" name="customer_phone" class="h-11" value="{{ old('customer_phone', $repair->customer_phone) }}">
               </div>
 
               <div class="md:col-span-2">
@@ -462,7 +464,7 @@
 
                       <div>
                         <label for="device_type_id" class="block mb-1">Tipo de dispositivo</label>
-                        <select id="device_type_id" name="device_type_id" data-device-type>
+                        <select id="device_type_id" name="device_type_id" class="h-11" data-device-type>
                           <option value="">— Elegí un tipo —</option>
                           @foreach($deviceTypes as $t)
                             <option value="{{ $t->id }}" @selected((string)old('device_type_id', $repair->device_type_id) === (string)$t->id)>
@@ -475,11 +477,12 @@
                       <div>
                         <label for="device_brand_id" class="block mb-1">Marca</label>
 
-                        <input type="text" class="mt-2" placeholder="Buscar marca…" data-brand-search disabled>
+                        <input type="text" class="mt-2 h-11" placeholder="Buscar marca…" data-brand-search disabled>
 
                         <select
                           id="device_brand_id"
                           name="device_brand_id"
+                          class="h-11"
                           data-device-brand
                           disabled
                           data-selected="{{ old('device_brand_id', $repair->device_brand_id) }}"
@@ -487,23 +490,24 @@
                           <option value="">— Elegí un tipo primero —</option>
                         </select>
 
-                        <button type="button" class="btn-ghost btn-sm mt-2" data-add-brand disabled>+ Agregar marca</button>
+                        <button type="button" class="btn-ghost btn-sm mt-2 h-10 w-full justify-center sm:w-auto" data-add-brand disabled>+ Agregar marca</button>
 
-                        <div class="hidden mt-2 gap-2" data-add-brand-form>
-                          <input type="text" class="flex-1" placeholder="Nueva marca…" data-add-brand-input>
-                          <button type="button" class="btn-primary btn-sm" data-save-brand>Guardar</button>
-                          <button type="button" class="btn-ghost btn-sm" data-cancel-brand>Cancelar</button>
+                        <div class="hidden mt-2 flex-col gap-2 sm:flex-row" data-add-brand-form>
+                          <input type="text" class="h-11 w-full sm:flex-1" placeholder="Nueva marca…" data-add-brand-input>
+                          <button type="button" class="btn-primary btn-sm h-10 w-full justify-center sm:w-auto" data-save-brand>Guardar</button>
+                          <button type="button" class="btn-ghost btn-sm h-10 w-full justify-center sm:w-auto" data-cancel-brand>Cancelar</button>
                         </div>
                       </div>
 
                       <div class="md:col-span-2">
                         <label for="device_model_id" class="block mb-1">Modelo</label>
 
-                        <input type="text" class="mt-2" placeholder="Buscar modelo…" data-model-search disabled>
+                        <input type="text" class="mt-2 h-11" placeholder="Buscar modelo…" data-model-search disabled>
 
                         <select
                           id="device_model_id"
                           name="device_model_id"
+                          class="h-11"
                           data-device-model
                           disabled
                           data-selected="{{ old('device_model_id', $repair->device_model_id) }}"
@@ -511,12 +515,12 @@
                           <option value="">— Elegí una marca primero —</option>
                         </select>
 
-                        <button type="button" class="btn-ghost btn-sm mt-2" data-add-model disabled>+ Agregar modelo</button>
+                        <button type="button" class="btn-ghost btn-sm mt-2 h-10 w-full justify-center sm:w-auto" data-add-model disabled>+ Agregar modelo</button>
 
-                        <div class="hidden mt-2 gap-2" data-add-model-form>
-                          <input type="text" class="flex-1" placeholder="Nuevo modelo…" data-add-model-input>
-                          <button type="button" class="btn-primary btn-sm" data-save-model>Guardar</button>
-                          <button type="button" class="btn-ghost btn-sm" data-cancel-model>Cancelar</button>
+                        <div class="hidden mt-2 flex-col gap-2 sm:flex-row" data-add-model-form>
+                          <input type="text" class="h-11 w-full sm:flex-1" placeholder="Nuevo modelo…" data-add-model-input>
+                          <button type="button" class="btn-primary btn-sm h-10 w-full justify-center sm:w-auto" data-save-model>Guardar</button>
+                          <button type="button" class="btn-ghost btn-sm h-10 w-full justify-center sm:w-auto" data-cancel-model>Cancelar</button>
                         </div>
 
                       </div>
@@ -542,6 +546,7 @@
                 <input
                   id="parts_cost"
                   name="parts_cost"
+                  class="h-11"
                   inputmode="decimal"
                   value="{{ old('parts_cost', $repair->parts_cost) }}"
                   placeholder="0"
@@ -562,6 +567,7 @@
                 <input
                   id="final_price"
                   name="final_price"
+                  class="h-11"
                   inputmode="decimal"
                   value="{{ old('final_price', $repair->final_price) }}"
                   placeholder="0"
@@ -594,7 +600,7 @@
                         inputmode="numeric"
                         value="{{ old('shipping_amount') }}"
                         placeholder="0"
-                        class="w-32"
+                        class="h-11 w-full sm:w-32"
                         data-shipping-amount
                       />
                     </div>
@@ -616,7 +622,7 @@
 
                   <div class="space-y-1">
                     <label class="text-sm font-semibold">Ganancia sugerida</label>
-                    <input inputmode="numeric" value="" placeholder="0" readonly data-profit-display />
+                    <input class="h-11" inputmode="numeric" value="" placeholder="0" readonly data-profit-display />
                   </div>
 
                   <div class="space-y-1">
@@ -624,6 +630,7 @@
                     <input
                       id="labor_cost"
                       name="labor_cost"
+                      class="h-11"
                       inputmode="decimal"
                       value="{{ old('labor_cost', $repair->labor_cost) }}"
                       placeholder="0"
@@ -633,7 +640,7 @@
 
                   <div class="space-y-1 sm:col-span-3">
                     <label class="text-sm font-semibold">Total sugerido</label>
-                    <input inputmode="numeric" value="" placeholder="0" readonly data-total-display />
+                    <input class="h-11" inputmode="numeric" value="" placeholder="0" readonly data-total-display />
                   </div>
                 </div>
               </div>
@@ -656,12 +663,12 @@
               <div class="grid gap-3 md:grid-cols-3">
                 <div>
                   <label for="paid_amount" class="block mb-1">Pagado</label>
-                  <input id="paid_amount" name="paid_amount" inputmode="decimal" value="{{ old('paid_amount', $repair->paid_amount) }}">
+                  <input id="paid_amount" name="paid_amount" class="h-11" inputmode="decimal" value="{{ old('paid_amount', $repair->paid_amount) }}">
                 </div>
 
                 <div>
                   <label for="payment_method" class="block mb-1">Método</label>
-                  <select id="payment_method" name="payment_method">
+                  <select id="payment_method" name="payment_method" class="h-11">
                     <option value="">—</option>
                     @foreach($paymentMethods as $k => $label)
                       <option value="{{ $k }}" @selected(old('payment_method', $repair->payment_method) === $k)>{{ $label }}</option>
@@ -671,7 +678,7 @@
 
                 <div>
                   <label for="warranty_days" class="block mb-1">Garantía (días)</label>
-                  <input id="warranty_days" name="warranty_days" inputmode="numeric" value="{{ old('warranty_days', $repair->warranty_days) }}">
+                  <input id="warranty_days" name="warranty_days" class="h-11" inputmode="numeric" value="{{ old('warranty_days', $repair->warranty_days) }}">
                 </div>
               </div>
 
