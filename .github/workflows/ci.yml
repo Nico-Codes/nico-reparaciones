@@ -40,6 +40,32 @@ jobs:
       - name: Run tests
         run: php artisan test --ansi
 
+      - name: Prepare sqlite database for health check
+        run: |
+          mkdir -p database
+          touch database/database.sqlite
+          DB_CONNECTION=sqlite \
+          DB_DATABASE=database/database.sqlite \
+          CACHE_STORE=file \
+          ADMIN_COUNTERS_CACHE_STORE=file \
+          QUEUE_CONNECTION=database \
+          php artisan migrate --force --ansi
+
+      - name: Run strict ops health check
+        run: |
+          APP_ENV=local \
+          APP_DEBUG=false \
+          APP_URL=https://ci.local \
+          SESSION_SECURE_COOKIE=true \
+          ADMIN_ALLOWED_EMAILS=ci@example.com \
+          ADMIN_2FA_SESSION_MINUTES=15 \
+          DB_CONNECTION=sqlite \
+          DB_DATABASE=database/database.sqlite \
+          CACHE_STORE=file \
+          ADMIN_COUNTERS_CACHE_STORE=file \
+          QUEUE_CONNECTION=database \
+          php artisan ops:health-check --strict --ansi
+
   frontend-build:
     name: Frontend Build (Node 20)
     runs-on: ubuntu-latest

@@ -61,8 +61,7 @@
           </div>
         </div>
       </div>
-      @return
-    @endif
+    @else
 
     @php
       $status = (string)($repair->status ?? 'received');
@@ -152,5 +151,6 @@
         </div>
       </div>
     </div>
+    @endif
   </div>
 @endsection
