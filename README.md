@@ -7,6 +7,13 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
+## NicoReparaciones - Operacion rapida
+
+- Health check operativo: `php artisan ops:health-check`
+- Modo estricto: `php artisan ops:health-check --strict`
+- Quality gate local: `composer quality`
+- Checklist de produccion: `docs/OPERACION_PRODUCCION.md`
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:

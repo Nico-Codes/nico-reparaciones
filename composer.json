@@ -55,6 +55,12 @@
             "@php artisan test --ansi",
             "npm run build"
         ],
+        "ops:check": [
+            "@php artisan ops:health-check --ansi"
+        ],
+        "ops:check:strict": [
+            "@php artisan ops:health-check --strict --ansi"
+        ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"
