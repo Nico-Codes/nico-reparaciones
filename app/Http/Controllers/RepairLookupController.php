@@ -22,7 +22,18 @@ class RepairLookupController extends Controller
         $code = trim($data['code']);
         $phone = preg_replace('/\D+/', '', (string) $data['phone']);
 
-        $repair = Repair::where('code', $code)
+        $repair = Repair::query()
+            ->select([
+                'id',
+                'code',
+                'status',
+                'device_brand',
+                'device_model',
+                'issue_reported',
+                'diagnosis',
+                'updated_at',
+            ])
+            ->where('code', $code)
             ->where('customer_phone', $phone)
             ->first();
 

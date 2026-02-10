@@ -8,9 +8,10 @@
     ['route' => 'admin.products.index', 'label' => 'Productos'],
     ['route' => 'admin.pricing.index', 'label' => 'Precios'],
     ['route' => 'admin.deviceTypes.index', 'label' => 'Tipos de dispositivo'],
-    ['route' => 'admin.deviceCatalog.index', 'label' => 'Catálogo de dispositivos'],
-    ['route' => 'admin.settings.index', 'label' => 'Configuración'],
+    ['route' => 'admin.deviceCatalog.index', 'label' => 'Catalogo de dispositivos'],
+    ['route' => 'admin.settings.index', 'label' => 'Configuracion'],
     ['route' => 'admin.settings.assets.index', 'label' => 'Identidad visual'],
+    ['route' => 'admin.two_factor.settings', 'label' => 'Seguridad 2FA'],
     ['route' => 'admin.users.index', 'label' => 'Usuarios'],
   ];
 

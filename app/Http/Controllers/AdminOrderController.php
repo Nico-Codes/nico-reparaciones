@@ -8,6 +8,7 @@ use App\Models\OrderStatusHistory;
 use App\Models\OrderWhatsappLog;
 use App\Models\OrderWhatsappTemplate;
 use App\Models\Product;
+use App\Support\AdminCountersCache;
 use App\Support\AuditLogger;
 use App\Support\WhatsApp;
 use Illuminate\Database\Eloquent\Builder;
@@ -28,8 +29,18 @@ class AdminOrderController extends Controller
         $q = trim((string) $request->query('q', ''));
 
         $query = Order::query()
-            ->select('orders.*')
-            ->with(['user'])
+            ->select([
+                'orders.id',
+                'orders.user_id',
+                'orders.status',
+                'orders.payment_method',
+                'orders.total',
+                'orders.pickup_name',
+                'orders.pickup_phone',
+                'orders.notes',
+                'orders.created_at',
+            ])
+            ->with(['user:id,name,email,phone'])
             ->addSelect([
                 'wa_notified_current' => OrderWhatsappLog::selectRaw('1')
                     ->whereColumn('order_whatsapp_logs.order_id', 'orders.id')
@@ -53,43 +64,32 @@ class AdminOrderController extends Controller
 
 
         // Contadores por status (tabs): respetan búsqueda + filtro WA, ignoran "status" actual.
-        $statusCountQuery = Order::query();
-        $this->applyOrderSearchFilter($statusCountQuery, $q);
-        $this->applyOrderWaFilter($statusCountQuery, $wa);
+        $statusCounts = AdminCountersCache::rememberOrders(
+            'status_counts',
+            ['q' => $q, 'wa' => $wa],
+            function () use ($q, $wa): array {
+                $statusCountQuery = Order::query();
+                $this->applyOrderSearchFilter($statusCountQuery, $q);
+                $this->applyOrderWaFilter($statusCountQuery, $wa);
 
-        $statusCounts = $statusCountQuery
-            ->selectRaw('status, COUNT(*) as c')
-            ->groupBy('status')
-            ->pluck('c', 'status')
-            ->toArray();
+                return $statusCountQuery
+                    ->selectRaw('status, COUNT(*) as c')
+                    ->groupBy('status')
+                    ->pluck('c', 'status')
+                    ->toArray();
+            }
+        );
 
         $totalCount = (int) array_sum($statusCounts);
 
         // Contadores WA (tabs): respetan búsqueda + filtro status, ignoran "wa" actual.
-        $waCountBaseQuery = Order::query();
-        if ($status !== '') {
-            $waCountBaseQuery->where('status', $status);
-        }
-        $this->applyOrderSearchFilter($waCountBaseQuery, $q);
-
-        $waCounts = [
-            'all' => (int) (clone $waCountBaseQuery)->count(),
-            'pending' => 0,
-            'sent' => 0,
-            'no_phone' => 0,
-        ];
-
-        $waPendingQuery = clone $waCountBaseQuery;
-        $this->applyOrderWaFilter($waPendingQuery, 'pending');
-        $waCounts['pending'] = (int) $waPendingQuery->count();
-
-        $waSentQuery = clone $waCountBaseQuery;
-        $this->applyOrderWaFilter($waSentQuery, 'sent');
-        $waCounts['sent'] = (int) $waSentQuery->count();
-
-        $waNoPhoneQuery = clone $waCountBaseQuery;
-        $this->applyOrderWaFilter($waNoPhoneQuery, 'no_phone');
-        $waCounts['no_phone'] = (int) $waNoPhoneQuery->count();
+        $waCounts = AdminCountersCache::rememberOrders(
+            'wa_counts',
+            ['status' => $status, 'q' => $q],
+            function () use ($status, $q): array {
+                return $this->resolveOrderWaCounts($status, $q);
+            }
+        );
 
         return view('admin.orders.index', [
             'orders' => $orders,
@@ -456,6 +456,34 @@ class AdminOrderController extends Controller
         }
     }
 
+    private function resolveOrderWaCounts(string $status, string $q): array
+    {
+        $baseQuery = Order::query();
+        if ($status !== '') {
+            $baseQuery->where('orders.status', $status);
+        }
+        $this->applyOrderSearchFilter($baseQuery, $q);
+
+        $hasPhoneSql = "((orders.pickup_phone IS NOT NULL AND orders.pickup_phone <> '') OR (wa_users.phone IS NOT NULL AND wa_users.phone <> ''))";
+        $noPhoneSql = "((orders.pickup_phone IS NULL OR orders.pickup_phone = '') AND (wa_users.phone IS NULL OR wa_users.phone = ''))";
+        $waSentSql = "EXISTS (SELECT 1 FROM order_whatsapp_logs owl WHERE owl.order_id = orders.id AND owl.notified_status = orders.status)";
+
+        $row = $baseQuery
+            ->leftJoin('users as wa_users', 'wa_users.id', '=', 'orders.user_id')
+            ->selectRaw('COUNT(*) as all_count')
+            ->selectRaw("SUM(CASE WHEN {$hasPhoneSql} AND NOT {$waSentSql} THEN 1 ELSE 0 END) as pending_count")
+            ->selectRaw("SUM(CASE WHEN {$hasPhoneSql} AND {$waSentSql} THEN 1 ELSE 0 END) as sent_count")
+            ->selectRaw("SUM(CASE WHEN {$noPhoneSql} THEN 1 ELSE 0 END) as no_phone_count")
+            ->first();
+
+        return [
+            'all' => (int) ($row->all_count ?? 0),
+            'pending' => (int) ($row->pending_count ?? 0),
+            'sent' => (int) ($row->sent_count ?? 0),
+            'no_phone' => (int) ($row->no_phone_count ?? 0),
+        ];
+    }
+
     private function buildWhatsappMessage(Order $order): string
     {
         $status = (string) $order->status;
@@ -465,7 +493,7 @@ class AdminOrderController extends Controller
             ? $template
             : "Hola {customer_name}, tu pedido #{order_id} está en estado: {status_label}.";
 
-        $settings = BusinessSetting::all()->pluck('value', 'key');
+        $settings = BusinessSetting::allValues();
 
         $shopPhone = (string) ($settings->get('shop_phone') ?? '');
         $shopAddress = (string) ($settings->get('shop_address') ?? '');

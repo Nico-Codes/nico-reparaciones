@@ -9,14 +9,18 @@ return Application::configure(basePath: dirname(__DIR__))
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
     )
+    ->withCommands()
     ->withMiddleware(function (Middleware $middleware) {
-        // Agregar middlewares aquí
+        $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
+
         $middleware->alias([
-            'auth'  => \App\Http\Middleware\Authenticate::class,
+            'auth' => \App\Http\Middleware\Authenticate::class,
             'admin' => \App\Http\Middleware\IsAdmin::class,
+            'admin.restrict' => \App\Http\Middleware\RestrictAdminAccess::class,
+            'admin.2fa' => \App\Http\Middleware\EnsureAdminTwoFactorVerified::class,
         ]);
     })
     ->withExceptions(
-        // Acá después podemos personalizar errores si queremos
+        // Personalizar errores globales si hace falta.
     )
     ->create();

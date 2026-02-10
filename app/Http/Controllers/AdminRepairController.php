@@ -12,6 +12,7 @@ use App\Models\DeviceType;
 use App\Models\DeviceBrand;
 use App\Models\DeviceModel;
 use App\Models\DeviceIssueType;
+use App\Support\AdminCountersCache;
 use App\Support\AuditLogger;
 
 use Illuminate\Http\Request;
@@ -63,17 +64,35 @@ class AdminRepairController extends Controller
             });
         }
 
-        $statusCounts = (clone $countQuery)
-            ->selectRaw('status, COUNT(*) as c')
-            ->groupBy('status')
-            ->pluck('c', 'status')
-            ->toArray();
+        $statusCounts = AdminCountersCache::rememberRepairs(
+            'status_counts',
+            ['q' => $q, 'wa' => (string) $wa],
+            function () use ($countQuery): array {
+                return (clone $countQuery)
+                    ->selectRaw('status, COUNT(*) as c')
+                    ->groupBy('status')
+                    ->pluck('c', 'status')
+                    ->toArray();
+            }
+        );
 
         $totalCount = (int) array_sum($statusCounts);
 
 
         $query = Repair::query()
-            ->select('repairs.*')
+            ->select([
+                'repairs.id',
+                'repairs.code',
+                'repairs.customer_name',
+                'repairs.customer_phone',
+                'repairs.device_brand',
+                'repairs.device_model',
+                'repairs.status',
+                'repairs.final_price',
+                'repairs.warranty_days',
+                'repairs.received_at',
+                'repairs.created_at',
+            ])
             ->addSelect([
                 'wa_notified_current' => RepairWhatsappLog::selectRaw('1')
                     ->whereColumn('repair_id', 'repairs.id')
@@ -131,7 +150,7 @@ class AdminRepairController extends Controller
 
         // ✅ Si estás filtrando por estado y NO es final, mostramos primero las más viejas
         if ($status && !in_array((string)$status, ['delivered', 'cancelled'], true)) {
-            $query->orderByRaw('COALESCE(received_at, created_at) ASC');
+            $query->orderBy('received_at', 'asc')->orderBy('created_at', 'asc');
         } else {
             $query->latest();
         }
@@ -140,8 +159,9 @@ class AdminRepairController extends Controller
         $repairs = $query->paginate(20)->withQueryString();
 
         // Generar WA URL + log_url para el botón rápido del listado
-        $shopAddress = BusinessSetting::getValue('shop_address', '');
-        $shopHours = BusinessSetting::getValue('shop_hours', '');
+        $settings = BusinessSetting::allValues();
+        $shopAddress = (string) ($settings->get('shop_address') ?? '');
+        $shopHours = (string) ($settings->get('shop_hours') ?? '');
 
         $statusesInPage = $repairs->getCollection()->pluck('status')->unique()->values();
         $templates = RepairWhatsappTemplate::whereIn('status', $statusesInPage)->pluck('template', 'status');
@@ -697,8 +717,9 @@ class AdminRepairController extends Controller
         $device = trim(($repair->device_brand ?? '') . ' ' . ($repair->device_model ?? ''));
         $finalPrice = $repair->final_price !== null ? number_format((float)$repair->final_price, 0, ',', '.') : '';
 
-        $shopAddress = BusinessSetting::getValue('shop_address', '');
-        $shopHours = BusinessSetting::getValue('shop_hours', '');
+        $settings = BusinessSetting::allValues();
+        $shopAddress = (string) ($settings->get('shop_address') ?? '');
+        $shopHours = (string) ($settings->get('shop_hours') ?? '');
 
         $replacements = [
             '{customer_name}' => (string) $repair->customer_name,

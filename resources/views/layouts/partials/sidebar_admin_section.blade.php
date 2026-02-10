@@ -58,6 +58,12 @@
       'active' => request()->routeIs('admin.settings.assets.*'),
     ],
     [
+      'route' => 'admin.two_factor.settings',
+      'label' => 'Seguridad 2FA',
+      'icon' => \App\Support\BrandAssets::url('icon_settings'),
+      'active' => request()->routeIs('admin.two_factor.*'),
+    ],
+    [
       'route' => 'admin.users.index',
       'label' => 'Usuarios',
       'icon' => \App\Support\BrandAssets::url('icon_settings'),

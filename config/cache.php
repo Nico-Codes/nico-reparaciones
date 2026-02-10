@@ -18,6 +18,19 @@ return [
     'default' => env('CACHE_STORE', 'database'),
 
     /*
+    |----------------------------------------------------------------------
+    | Admin Counters Cache Store
+    |----------------------------------------------------------------------
+    |
+    | Store used by admin counters (orders/repairs). You can keep this
+    | independent from the main cache store to move hot counters to Redis
+    | while preserving the rest on database/file.
+    |
+    */
+
+    'admin_counters_store' => env('ADMIN_COUNTERS_CACHE_STORE', env('CACHE_STORE', 'database')),
+
+    /*
     |--------------------------------------------------------------------------
     | Cache Stores
     |--------------------------------------------------------------------------
@@ -76,6 +89,16 @@ return [
             'driver' => 'redis',
             'connection' => env('REDIS_CACHE_CONNECTION', 'cache'),
             'lock_connection' => env('REDIS_CACHE_LOCK_CONNECTION', 'default'),
+        ],
+
+        'admin_counters' => [
+            'driver' => 'failover',
+            'stores' => array_values(array_unique(array_filter([
+                env('ADMIN_COUNTERS_PRIMARY_STORE', 'redis'),
+                'database',
+                'file',
+                'array',
+            ]))),
         ],
 
         'dynamodb' => [

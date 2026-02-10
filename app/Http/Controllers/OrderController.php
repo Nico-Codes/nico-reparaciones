@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BusinessSetting;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderStatusHistory;
@@ -11,9 +12,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
-
-use App\Models\BusinessSetting;
-
 
 class OrderController extends Controller
 {
@@ -39,27 +37,25 @@ class OrderController extends Controller
         if (empty($cart)) {
             return redirect()
                 ->route('store.index')
-                ->with('success', 'Tu carrito está vacío.');
+                ->with('success', 'Tu carrito esta vacio.');
         }
 
         $user = Auth::user();
 
-            // Requerimos datos mínimos del perfil para evitar pedidos "incompletos"
-            if (!$user || empty(trim((string)($user->last_name ?? ''))) || empty(trim((string)($user->phone ?? '')))) {
-                $request->session()->put('profile_return_to', route('checkout'));
+        if (!$user || empty(trim((string) ($user->last_name ?? ''))) || empty(trim((string) ($user->phone ?? '')))) {
+            $request->session()->put('profile_return_to', route('checkout'));
 
-                return redirect()
-                    ->route('account.edit')
-                    ->withErrors(['profile' => 'Completá tu apellido y teléfono para poder confirmar pedidos.']);
-            }
-
+            return redirect()
+                ->route('account.edit')
+                ->withErrors(['profile' => 'Completa tu apellido y telefono para poder confirmar pedidos.']);
+        }
 
         $data = $request->validate([
-            'payment_method'        => ['required', 'in:local,mercado_pago,transferencia'],
-            'notes'                 => ['nullable', 'string'],
-            'pickup_delegate_name'  => ['nullable', 'string', 'max:255', 'required_with:pickup_delegate_phone'],
+            'payment_method' => ['required', 'in:local,mercado_pago,transferencia'],
+            'notes' => ['nullable', 'string'],
+            'pickup_delegate_name' => ['nullable', 'string', 'max:255', 'required_with:pickup_delegate_phone'],
             'pickup_delegate_phone' => ['nullable', 'string', 'max:30', 'required_with:pickup_delegate_name', 'regex:/^(?=(?:\\D*\\d){8,15}\\D*$)[0-9+()\\s-]{8,30}$/'],
-            'checkout_token'        => ['required', 'string', 'max:64'],
+            'checkout_token' => ['required', 'string', 'max:64'],
         ]);
 
         $submittedToken = trim((string) $data['checkout_token']);
@@ -68,7 +64,7 @@ class OrderController extends Controller
         if ($sessionToken === '' || !hash_equals($sessionToken, $submittedToken)) {
             return redirect()
                 ->route('checkout')
-                ->withErrors(['cart' => 'La confirmación de checkout expiró. Revisá y confirmá de nuevo.']);
+                ->withErrors(['cart' => 'La confirmacion de checkout expiro. Revisa y confirma de nuevo.']);
         }
 
         $lock = Cache::lock('checkout:token:' . $submittedToken, 20);
@@ -85,7 +81,7 @@ class OrderController extends Controller
 
             return redirect()
                 ->route('checkout')
-                ->withErrors(['cart' => 'Ya estamos procesando este pedido. Esperá unos segundos.']);
+                ->withErrors(['cart' => 'Ya estamos procesando este pedido. Espera unos segundos.']);
         }
 
         try {
@@ -93,8 +89,6 @@ class OrderController extends Controller
                 $order = null;
 
                 DB::transaction(function () use (&$order, $cart, $data, $user) {
-
-                    // Productos actualizados + lock para evitar overselling
                     $productIds = collect($cart)->pluck('id')->filter()->unique()->values()->all();
 
                     $products = Product::query()
@@ -105,77 +99,72 @@ class OrderController extends Controller
                         ->get()
                         ->keyBy('id');
 
-
-
                     $itemsToCreate = [];
                     $total = 0;
 
                     foreach ($cart as $item) {
-                        $productId = (int)($item['id'] ?? 0);
-                        $qty = (int)($item['quantity'] ?? 1);
-                        if ($qty < 1) $qty = 1;
+                        $productId = (int) ($item['id'] ?? 0);
+                        $qty = (int) ($item['quantity'] ?? 1);
+                        if ($qty < 1) {
+                            $qty = 1;
+                        }
 
                         $product = $products->get($productId);
 
                         if (!$product) {
                             throw ValidationException::withMessages([
-                                'cart' => 'Uno o más productos ya no existen o fueron eliminados. Volvé a armar el carrito.',
+                                'cart' => 'Uno o mas productos ya no existen o fueron eliminados. Vuelve a armar el carrito.',
                             ]);
                         }
 
-                        // ✅ Stock real (0 = sin stock)
-                        if ($qty > (int)$product->stock) {
+                        if ($qty > (int) $product->stock) {
                             throw ValidationException::withMessages([
                                 'cart' => "Stock insuficiente para \"{$product->name}\". Disponible: {$product->stock}.",
                             ]);
                         }
 
-                        // Precio real de BD (evita manipulación del precio en sesión)
-                        $unitPrice = (int)$product->price;
+                        $unitPrice = (int) $product->price;
                         $subtotal = $unitPrice * $qty;
-
                         $total += $subtotal;
 
                         $itemsToCreate[] = [
-                            'product_id'   => $product->id,
+                            'product_id' => $product->id,
                             'product_name' => $product->name,
-                            'price'        => $unitPrice, // columna real en order_items
-                            'quantity'     => $qty,
-                            'subtotal'     => $subtotal,
+                            'price' => $unitPrice,
+                            'quantity' => $qty,
+                            'subtotal' => $subtotal,
                         ];
                     }
 
-                    // Pedido + historia inicial
                     $order = Order::create([
-                        'user_id'               => Auth::id(),
-                        'status'                => 'pendiente',
-                        'payment_method'        => $data['payment_method'],
-                        'total'                 => $total,
-                        'pickup_name'           => trim($user->name . ' ' . $user->last_name),
-                        'pickup_phone'          => $user->phone,
-                        'notes'                 => $data['notes'] ?? null,
-                        'pickup_delegate_name'  => isset($data['pickup_delegate_name']) ? trim((string) $data['pickup_delegate_name']) : null,
+                        'user_id' => Auth::id(),
+                        'status' => 'pendiente',
+                        'payment_method' => $data['payment_method'],
+                        'total' => $total,
+                        'pickup_name' => trim($user->name . ' ' . $user->last_name),
+                        'pickup_phone' => $user->phone,
+                        'notes' => $data['notes'] ?? null,
+                        'pickup_delegate_name' => isset($data['pickup_delegate_name']) ? trim((string) $data['pickup_delegate_name']) : null,
                         'pickup_delegate_phone' => isset($data['pickup_delegate_phone']) ? trim((string) $data['pickup_delegate_phone']) : null,
                     ]);
 
                     OrderStatusHistory::create([
-                        'order_id'    => $order->id,
+                        'order_id' => $order->id,
                         'from_status' => null,
-                        'to_status'   => 'pendiente',
-                        'changed_by'  => Auth::id(),
-                        'changed_at'  => now(),
-                        'comment'     => 'Pedido creado',
+                        'to_status' => 'pendiente',
+                        'changed_by' => Auth::id(),
+                        'changed_at' => now(),
+                        'comment' => 'Pedido creado',
                     ]);
 
-                    // Items + descuento de stock
                     foreach ($itemsToCreate as $it) {
                         OrderItem::create([
-                            'order_id'     => $order->id,
-                            'product_id'   => $it['product_id'],
+                            'order_id' => $order->id,
+                            'product_id' => $it['product_id'],
                             'product_name' => $it['product_name'],
-                            'price'        => $it['price'],
-                            'quantity'     => $it['quantity'],
-                            'subtotal'     => $it['subtotal'],
+                            'price' => $it['price'],
+                            'quantity' => $it['quantity'],
+                            'subtotal' => $it['subtotal'],
                         ]);
 
                         $product = $products->get($it['product_id']);
@@ -189,19 +178,16 @@ class OrderController extends Controller
 
                             if ($affected === 0) {
                                 throw ValidationException::withMessages([
-                                    'cart' => "No se pudo confirmar: el stock de \"{$product->name}\" cambió. Volvé a intentar.",
+                                    'cart' => "No se pudo confirmar: el stock de \"{$product->name}\" cambio. Vuelve a intentar.",
                                 ]);
                             }
                         }
                     }
 
-                    // ✅ Audit: marcamos que ya descontamos stock
                     $order->stock_deducted_at = now();
                     $order->save();
-
                 });
 
-                // Si salió bien, vaciamos carrito
                 $request->session()->forget('cart');
 
                 $completedTokens = (array) $request->session()->get('checkout_completed_tokens', []);
@@ -214,7 +200,7 @@ class OrderController extends Controller
 
                 return redirect()
                     ->route('orders.thankyou', $order->id)
-                    ->with('success', '¡Pedido confirmado!');
+                    ->with('success', 'Pedido confirmado!');
             } catch (ValidationException $e) {
                 $request->session()->forget('checkout_token');
                 return redirect()
@@ -226,25 +212,32 @@ class OrderController extends Controller
         }
     }
 
-
-
     /**
-     * Listado de pedidos del usuario logueado..
+     * Listado de pedidos del usuario logueado.
      */
     public function index(Request $request)
     {
         $tab = (string) $request->query('tab', 'activos');
-        $q   = trim((string) $request->query('q', ''));
+        $q = trim((string) $request->query('q', ''));
 
         $query = Auth::user()
             ->orders()
+            ->select([
+                'id',
+                'user_id',
+                'status',
+                'payment_method',
+                'total',
+                'pickup_name',
+                'pickup_phone',
+                'created_at',
+            ])
             ->withCount('items')
-            ->with(['items' => function ($q) {
-                $q->select('id', 'order_id', 'product_name', 'quantity');
+            ->with(['items' => function ($itemsQuery) {
+                $itemsQuery->select('id', 'order_id', 'product_name', 'quantity');
             }])
             ->latest();
 
-        // Tabs: activos vs historial
         if ($tab === 'historial') {
             $query->whereIn('status', ['entregado', 'cancelado']);
         } else {
@@ -252,7 +245,6 @@ class OrderController extends Controller
             $query->whereNotIn('status', ['entregado', 'cancelado']);
         }
 
-        // Búsqueda: por #id, nombre o teléfono
         if ($q !== '') {
             $digits = preg_replace('/\D+/', '', $q);
 
@@ -273,11 +265,10 @@ class OrderController extends Controller
 
         return view('orders.index', [
             'orders' => $orders,
-            'tab'    => $tab,
-            'q'      => $q,
+            'tab' => $tab,
+            'q' => $q,
         ]);
     }
-
 
     /**
      * Detalle de un pedido del usuario.
@@ -286,72 +277,52 @@ class OrderController extends Controller
     {
         $this->authorize('view', $order);
 
-        $order->load(['items', 'statusHistories']);
+        $order->load(['items:id,order_id,product_name,price,quantity,subtotal']);
 
-        // Teléfono del local para WhatsApp (solo números)
-        $shopPhoneRaw = BusinessSetting::getValue('shop_phone', '');
-        $waNumber = preg_replace('/\D+/', '', (string) $shopPhoneRaw);
-
-        $payLabel = fn(?string $m) => match($m) {
-            'local' => 'Pago en el local',
-            'mercado_pago' => 'Mercado Pago',
-            'transferencia' => 'Transferencia',
-            default => $m ? ucfirst(str_replace('_',' ',$m)) : '—',
-        };
+        $shopPhoneRaw = (string) (BusinessSetting::allValues()->get('shop_phone') ?? '');
+        $waNumber = preg_replace('/\D+/', '', $shopPhoneRaw);
 
         $lines = [];
         foreach ($order->items as $it) {
-            $lines[] = ((int)$it->quantity) . 'x ' . $it->product_name;
+            $lines[] = ((int) $it->quantity) . 'x ' . $it->product_name;
         }
 
         $waText =
             "Hola! Soy {$order->pickup_name}.\n" .
             "Hice el pedido #{$order->id}.\n" .
-            "¿Me confirmás cuando esté listo para retirar?\n\n" .
+            "Me confirmas cuando este listo para retirar?\n\n" .
             "Items:\n- " . implode("\n- ", $lines) . "\n" .
-            "Total: $" . number_format((float)$order->total, 0, ',', '.') . "\n" .
+            "Total: $" . number_format((float) $order->total, 0, ',', '.') . "\n" .
             "Gracias!";
-
 
         return view('orders.show', [
             'order' => $order,
             'waNumber' => $waNumber,
             'waText' => $waText,
         ]);
-
     }
 
     public function thankYou(Order $order)
     {
         $this->authorize('view', $order);
 
-        $order->load(['items']);
+        $order->load(['items:id,order_id,product_name,subtotal,quantity']);
 
-        // Teléfono del local para WhatsApp (solo números)
-        $shopPhoneRaw = BusinessSetting::getValue('shop_phone', '');
-        $waNumber = preg_replace('/\D+/', '', (string) $shopPhoneRaw);
+        $shopPhoneRaw = (string) (BusinessSetting::allValues()->get('shop_phone') ?? '');
+        $waNumber = preg_replace('/\D+/', '', $shopPhoneRaw);
 
-        $payLabel = fn(?string $m) => match($m) {
-            'local' => 'Pago en el local',
-            'mercado_pago' => 'Mercado Pago',
-            'transferencia' => 'Transferencia',
-            default => $m ? ucfirst(str_replace('_',' ',$m)) : '—',
-        };
-
-        // Mensaje prearmado
         $lines = [];
         foreach ($order->items as $it) {
-            $lines[] = ((int)$it->quantity) . 'x ' . $it->product_name;
+            $lines[] = ((int) $it->quantity) . 'x ' . $it->product_name;
         }
 
         $waText =
             "Hola! Soy {$order->pickup_name}.\n" .
             "Hice el pedido #{$order->id}.\n" .
-            "¿Me confirmás cuando esté listo para retirar?\n\n" .
+            "Me confirmas cuando este listo para retirar?\n\n" .
             "Items:\n- " . implode("\n- ", $lines) . "\n" .
-            "Total: $" . number_format((float)$order->total, 0, ',', '.') . "\n" .
+            "Total: $" . number_format((float) $order->total, 0, ',', '.') . "\n" .
             "Gracias!";
-
 
         return view('orders.thankyou', [
             'order' => $order,
@@ -359,7 +330,4 @@ class OrderController extends Controller
             'waText' => $waText,
         ]);
     }
-
-  
-
 }

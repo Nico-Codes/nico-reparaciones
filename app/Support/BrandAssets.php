@@ -154,10 +154,11 @@ class BrandAssets
             $settingKeys[] = self::settingKey($assetKey);
         }
 
-        $overrides = BusinessSetting::query()
-            ->whereIn('key', $settingKeys)
-            ->pluck('value', 'key')
-            ->toArray();
+        $settings = BusinessSetting::allValues();
+        $overrides = [];
+        foreach ($settingKeys as $settingKey) {
+            $overrides[$settingKey] = $settings->get($settingKey);
+        }
 
         $resolved = [];
         foreach (self::DEFINITIONS as $assetKey => $definition) {

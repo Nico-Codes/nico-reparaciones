@@ -5,8 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Repair;
-use App\Models\OrderWhatsappLog;
-use App\Models\RepairWhatsappLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -15,9 +13,6 @@ class AdminDashboardController extends Controller
 {
     public function index(Request $request)
     {
-        // =========================
-        // Rango (7/30/90 días)
-        // =========================
         $rangeDays = (int) $request->query('range', 30);
         if (!in_array($rangeDays, [7, 30, 90], true)) {
             $rangeDays = 30;
@@ -29,179 +24,181 @@ class AdminDashboardController extends Controller
         $prevTo = now()->copy()->subDays($rangeDays)->endOfDay();
         $prevFrom = now()->copy()->subDays($rangeDays * 2)->startOfDay();
 
-        // =========================
-        // Estados (fallbacks seguros)
-        // =========================
         $orderStatuses = defined(Order::class . '::STATUSES')
             ? Order::STATUSES
             : [
-                'pendiente'     => 'Pendiente',
-                'confirmado'    => 'Confirmado',
-                'preparando'    => 'Preparando',
+                'pendiente' => 'Pendiente',
+                'confirmado' => 'Confirmado',
+                'preparando' => 'Preparando',
                 'listo_retirar' => 'Listo para retirar',
-                'entregado'     => 'Entregado',
-                'cancelado'     => 'Cancelado',
+                'entregado' => 'Entregado',
+                'cancelado' => 'Cancelado',
             ];
 
         $repairStatuses = defined(Repair::class . '::STATUSES')
             ? Repair::STATUSES
             : [
-                'received'         => 'Recibido',
-                'diagnosing'       => 'Diagnosticando',
-                'waiting_approval' => 'Esperando aprobación',
-                'repairing'        => 'En reparación',
-                'ready_pickup'     => 'Listo para retirar',
-                'delivered'        => 'Entregado',
-                'cancelled'        => 'Cancelado',
+                'received' => 'Recibido',
+                'diagnosing' => 'Diagnosticando',
+                'waiting_approval' => 'Esperando aprobacion',
+                'repairing' => 'En reparacion',
+                'ready_pickup' => 'Listo para retirar',
+                'delivered' => 'Entregado',
+                'cancelled' => 'Cancelado',
             ];
 
         $activeOrderStatuses = array_values(array_diff(array_keys($orderStatuses), ['entregado', 'cancelado']));
         $finalRepairStatuses = ['delivered', 'cancelled'];
 
-        // =========================
-        // Helpers
-        // =========================
-        $pctChange = function (float $current, float $previous): ?float {
-            if ($previous <= 0) return null;
+        $pctChange = static function (float $current, float $previous): ?float {
+            if ($previous <= 0) {
+                return null;
+            }
             return (($current - $previous) / $previous) * 100.0;
         };
 
-        // =========================
-        // KPIs (por rango)
-        // =========================
-        $ordersInRange = Order::query()
-            ->whereBetween('created_at', [$fromRange, $toRange])
-            ->count();
+        $orderRangeAgg = Order::query()
+            ->selectRaw('SUM(CASE WHEN created_at BETWEEN ? AND ? THEN 1 ELSE 0 END) as orders_in_range', [$fromRange, $toRange])
+            ->selectRaw('SUM(CASE WHEN created_at BETWEEN ? AND ? THEN 1 ELSE 0 END) as orders_prev_range', [$prevFrom, $prevTo])
+            ->selectRaw("SUM(CASE WHEN status = 'entregado' AND created_at BETWEEN ? AND ? THEN total ELSE 0 END) as sales_in_range", [$fromRange, $toRange])
+            ->selectRaw("SUM(CASE WHEN status = 'entregado' AND created_at BETWEEN ? AND ? THEN total ELSE 0 END) as sales_prev_range", [$prevFrom, $prevTo])
+            ->first();
 
-        $ordersPrevRange = Order::query()
-            ->whereBetween('created_at', [$prevFrom, $prevTo])
-            ->count();
+        $ordersInRange = (int) ($orderRangeAgg->orders_in_range ?? 0);
+        $ordersPrevRange = (int) ($orderRangeAgg->orders_prev_range ?? 0);
+        $ordersRangeDeltaPct = $pctChange((float) $ordersInRange, (float) $ordersPrevRange);
 
-        $ordersRangeDeltaPct = $pctChange((float)$ordersInRange, (float)$ordersPrevRange);
-
-        $salesInRange = (float) Order::query()
-            ->where('status', 'entregado')
-            ->whereBetween('created_at', [$fromRange, $toRange])
-            ->sum('total');
-
-        $salesPrevRange = (float) Order::query()
-            ->where('status', 'entregado')
-            ->whereBetween('created_at', [$prevFrom, $prevTo])
-            ->sum('total');
-
+        $salesInRange = (float) ($orderRangeAgg->sales_in_range ?? 0);
+        $salesPrevRange = (float) ($orderRangeAgg->sales_prev_range ?? 0);
         $salesRangeDeltaPct = $pctChange($salesInRange, $salesPrevRange);
 
-        $repairsInRange = Repair::query()
-            ->whereBetween('created_at', [$fromRange, $toRange])
-            ->count();
+        $repairRangeAgg = Repair::query()
+            ->selectRaw('SUM(CASE WHEN created_at BETWEEN ? AND ? THEN 1 ELSE 0 END) as repairs_in_range', [$fromRange, $toRange])
+            ->selectRaw('SUM(CASE WHEN created_at BETWEEN ? AND ? THEN 1 ELSE 0 END) as repairs_prev_range', [$prevFrom, $prevTo])
+            ->first();
 
-        $repairsPrevRange = Repair::query()
-            ->whereBetween('created_at', [$prevFrom, $prevTo])
-            ->count();
+        $repairsInRange = (int) ($repairRangeAgg->repairs_in_range ?? 0);
+        $repairsPrevRange = (int) ($repairRangeAgg->repairs_prev_range ?? 0);
+        $repairsRangeDeltaPct = $pctChange((float) $repairsInRange, (float) $repairsPrevRange);
 
-        $repairsRangeDeltaPct = $pctChange((float)$repairsInRange, (float)$repairsPrevRange);
-
-        // =========================
-        // KPIs (operativos)
-        // =========================
-        $ordersTotal = Order::query()->count();
-        $ordersActive = Order::query()->whereIn('status', $activeOrderStatuses)->count();
-        $ordersPending = Order::query()->where('status', 'pendiente')->count();
-
-        $repairsTotal = Repair::query()->count();
-        $repairsActive = Repair::query()->whereNotIn('status', $finalRepairStatuses)->count();
-
-        $productsTotal = Product::query()->count();
-        $lowStockThreshold = 3;
-        $lowStockCount = Product::query()->where('stock', '<=', $lowStockThreshold)->count();
-
-        // =========================
-        // WhatsApp pendientes (estado actual)
-        // =========================
-        $ordersWaPending = 0;
-        $ordersWaSent = 0;
-
-        if (Schema::hasTable('order_whatsapp_logs')) {
-            $ordersWaPending = Order::query()
-                ->whereIn('status', $activeOrderStatuses)
-                ->whereDoesntHave('whatsappLogs', function ($q) {
-                    $q->whereColumn('order_whatsapp_logs.notified_status', 'orders.status');
-                })
-                ->count();
-
-            $ordersWaSent = Order::query()
-                ->whereIn('status', $activeOrderStatuses)
-                ->whereHas('whatsappLogs', function ($q) {
-                    $q->whereColumn('order_whatsapp_logs.notified_status', 'orders.status');
-                })
-                ->count();
-        }
-
-        $repairsWaPending = 0;
-        $repairsWaSent = 0;
-
-        if (Schema::hasTable('repair_whatsapp_logs')) {
-            $repairsWaPending = Repair::query()
-                ->whereNotIn('status', $finalRepairStatuses)
-                ->whereDoesntHave('whatsappLogs', function ($q) {
-                    $q->whereColumn('repair_whatsapp_logs.notified_status', 'repairs.status');
-                })
-                ->count();
-
-            $repairsWaSent = Repair::query()
-                ->whereNotIn('status', $finalRepairStatuses)
-                ->whereHas('whatsappLogs', function ($q) {
-                    $q->whereColumn('repair_whatsapp_logs.notified_status', 'repairs.status');
-                })
-                ->count();
-        }
-
-        // =========================
-        // Conteos por estado
-        // =========================
         $orderCounts = Order::query()
             ->selectRaw('status, COUNT(*) as c')
             ->groupBy('status')
             ->pluck('c', 'status')
+            ->map(static fn ($count) => (int) $count)
             ->toArray();
+
+        $ordersTotal = (int) array_sum($orderCounts);
+        $ordersPending = (int) ($orderCounts['pendiente'] ?? 0);
+        $ordersActive = 0;
+        foreach ($activeOrderStatuses as $status) {
+            $ordersActive += (int) ($orderCounts[$status] ?? 0);
+        }
 
         $repairCounts = Repair::query()
             ->selectRaw('status, COUNT(*) as c')
             ->groupBy('status')
             ->pluck('c', 'status')
+            ->map(static fn ($count) => (int) $count)
             ->toArray();
 
-        // =========================
-        // Series (últimos 6 meses)
-        // =========================
+        $repairsTotal = (int) array_sum($repairCounts);
+        $repairsActive = $repairsTotal;
+        foreach ($finalRepairStatuses as $status) {
+            $repairsActive -= (int) ($repairCounts[$status] ?? 0);
+        }
+        if ($repairsActive < 0) {
+            $repairsActive = 0;
+        }
+
+        $lowStockThreshold = 3;
+        $productAgg = Product::query()
+            ->selectRaw('COUNT(*) as total_count')
+            ->selectRaw('SUM(CASE WHEN stock <= ? THEN 1 ELSE 0 END) as low_stock_count', [$lowStockThreshold])
+            ->first();
+
+        $productsTotal = (int) ($productAgg->total_count ?? 0);
+        $lowStockCount = (int) ($productAgg->low_stock_count ?? 0);
+
+        $ordersWaPending = 0;
+        $ordersWaSent = 0;
+        if (Schema::hasTable('order_whatsapp_logs')) {
+            $ordersWaSent = (int) Order::query()
+                ->whereIn('status', $activeOrderStatuses)
+                ->whereExists(function ($q) {
+                    $q->selectRaw('1')
+                        ->from('order_whatsapp_logs')
+                        ->whereColumn('order_whatsapp_logs.order_id', 'orders.id')
+                        ->whereColumn('order_whatsapp_logs.notified_status', 'orders.status');
+                })
+                ->count();
+
+            $ordersWaPending = max(0, $ordersActive - $ordersWaSent);
+        }
+
+        $repairsWaPending = 0;
+        $repairsWaSent = 0;
+        if (Schema::hasTable('repair_whatsapp_logs')) {
+            $repairsWaSent = (int) Repair::query()
+                ->whereNotIn('status', $finalRepairStatuses)
+                ->whereExists(function ($q) {
+                    $q->selectRaw('1')
+                        ->from('repair_whatsapp_logs')
+                        ->whereColumn('repair_whatsapp_logs.repair_id', 'repairs.id')
+                        ->whereColumn('repair_whatsapp_logs.notified_status', 'repairs.status');
+                })
+                ->count();
+
+            $repairsWaPending = max(0, $repairsActive - $repairsWaSent);
+        }
+
         $labels = [];
+        $monthKeys = [];
+        $monthStart = now()->copy()->startOfMonth()->subMonthsNoOverflow(5);
+        for ($i = 0; $i < 6; $i++) {
+            $month = $monthStart->copy()->addMonthsNoOverflow($i);
+            $labels[] = $month->format('M');
+            $monthKeys[] = $month->format('Y-m');
+        }
+
+        $monthExpr = DB::connection()->getDriverName() === 'sqlite'
+            ? "strftime('%Y-%m', created_at)"
+            : "DATE_FORMAT(created_at, '%Y-%m')";
+
+        $ordersSeriesMap = Order::query()
+            ->selectRaw("{$monthExpr} as ym, COUNT(*) as c")
+            ->where('created_at', '>=', $monthStart)
+            ->groupBy('ym')
+            ->pluck('c', 'ym')
+            ->map(static fn ($count) => (int) $count)
+            ->toArray();
+
+        $repairsSeriesMap = Repair::query()
+            ->selectRaw("{$monthExpr} as ym, COUNT(*) as c")
+            ->where('created_at', '>=', $monthStart)
+            ->groupBy('ym')
+            ->pluck('c', 'ym')
+            ->map(static fn ($count) => (int) $count)
+            ->toArray();
+
+        $salesSeriesMap = Order::query()
+            ->selectRaw("{$monthExpr} as ym, SUM(total) as s")
+            ->where('status', 'entregado')
+            ->where('created_at', '>=', $monthStart)
+            ->groupBy('ym')
+            ->pluck('s', 'ym')
+            ->map(static fn ($total) => (int) $total)
+            ->toArray();
+
         $ordersSeries = [];
         $repairsSeries = [];
         $salesSeries = [];
-
-        for ($i = 5; $i >= 0; $i--) {
-            $start = now()->copy()->subMonthsNoOverflow($i)->startOfMonth();
-            $end = now()->copy()->subMonthsNoOverflow($i)->endOfMonth();
-
-            $labels[] = $start->format('M');
-
-            $ordersSeries[] = (int) Order::query()
-                ->whereBetween('created_at', [$start, $end])
-                ->count();
-
-            $repairsSeries[] = (int) Repair::query()
-                ->whereBetween('created_at', [$start, $end])
-                ->count();
-
-            $salesSeries[] = (int) Order::query()
-                ->where('status', 'entregado')
-                ->whereBetween('created_at', [$start, $end])
-                ->sum('total');
+        foreach ($monthKeys as $key) {
+            $ordersSeries[] = (int) ($ordersSeriesMap[$key] ?? 0);
+            $repairsSeries[] = (int) ($repairsSeriesMap[$key] ?? 0);
+            $salesSeries[] = (int) ($salesSeriesMap[$key] ?? 0);
         }
 
-        // =========================
-        // Top productos (por rango)
-        // =========================
         $topProducts = collect();
         if (Schema::hasTable('order_items') && Schema::hasTable('orders')) {
             $topProducts = DB::table('order_items')
@@ -215,13 +212,21 @@ class AdminDashboardController extends Controller
                 ->get();
         }
 
-        // =========================
-        // Listas rápidas
-        // =========================
-        $latestOrders = Order::query()->with('user')->latest()->take(8)->get();
-        $latestRepairs = Repair::query()->latest()->take(8)->get();
+        $latestOrders = Order::query()
+            ->select(['id', 'user_id', 'status', 'pickup_name', 'total', 'created_at'])
+            ->with('user:id,name')
+            ->latest()
+            ->take(8)
+            ->get();
+
+        $latestRepairs = Repair::query()
+            ->select(['id', 'code', 'status', 'created_at', 'customer_name', 'device_brand', 'device_model'])
+            ->latest()
+            ->take(8)
+            ->get();
 
         $lowStockProducts = Product::query()
+            ->select(['id', 'name', 'stock'])
             ->where('stock', '<=', $lowStockThreshold)
             ->orderBy('stock')
             ->take(10)
@@ -238,7 +243,7 @@ class AdminDashboardController extends Controller
             'ordersInRange' => $ordersInRange,
             'ordersRangeDeltaPct' => $ordersRangeDeltaPct,
 
-            'salesInRange' => (int)$salesInRange,
+            'salesInRange' => (int) $salesInRange,
             'salesRangeDeltaPct' => $salesRangeDeltaPct,
 
             'repairsInRange' => $repairsInRange,

@@ -9,7 +9,17 @@ class UserRepairController extends Controller
 {
     public function index()
     {
-        $repairs = Repair::where('user_id', auth()->id())
+        $repairs = Repair::query()
+            ->select([
+                'id',
+                'user_id',
+                'code',
+                'device_brand',
+                'device_model',
+                'status',
+                'created_at',
+            ])
+            ->where('user_id', auth()->id())
             ->latest()
             ->paginate(20);
 

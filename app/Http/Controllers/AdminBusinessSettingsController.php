@@ -12,9 +12,10 @@ class AdminBusinessSettingsController extends Controller
 {
     public function index()
     {
-        $shopAddress = BusinessSetting::getValue('shop_address', '');
-        $shopHours = BusinessSetting::getValue('shop_hours', '');
-        $shopPhone = BusinessSetting::getValue('shop_phone', '');
+        $settings = BusinessSetting::allValues();
+        $shopAddress = (string) ($settings->get('shop_address') ?? '');
+        $shopHours = (string) ($settings->get('shop_hours') ?? '');
+        $shopPhone = (string) ($settings->get('shop_phone') ?? '');
 
         return view('admin.settings.index', [
             'shopAddress' => $shopAddress,

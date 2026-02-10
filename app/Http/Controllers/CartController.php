@@ -89,10 +89,8 @@ class CartController extends Controller
             ]);
         }
 
-
-
         $product->loadMissing('category:id,active');
-        if (!$product->category || (int)($product->category->active ?? 1) !== 1) {
+        if (!$product->category || (int) ($product->category->active ?? 1) !== 1) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'ok' => false,

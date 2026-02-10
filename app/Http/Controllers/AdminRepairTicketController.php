@@ -9,7 +9,7 @@ class AdminRepairTicketController extends Controller
 {
     public function __invoke(Repair $repair)
     {
-        $settings = BusinessSetting::all()->pluck('value', 'key');
+        $settings = BusinessSetting::allValues();
 
         return view('admin.repairs.ticket', compact('repair', 'settings'));
     }

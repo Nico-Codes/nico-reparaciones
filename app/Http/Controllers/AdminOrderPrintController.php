@@ -11,7 +11,7 @@ class AdminOrderPrintController extends Controller
     {
         $order->load(['user', 'items.product']);
 
-        $settings = BusinessSetting::all()->pluck('value', 'key');
+        $settings = BusinessSetting::allValues();
 
         return view('admin.orders.print', compact('order', 'settings'));
     }

@@ -52,6 +52,8 @@ class AuthController extends Controller
             RateLimiter::clear($throttleKey);
 
             $request->session()->regenerate();
+            $request->session()->put('auth_time', time());
+            $request->session()->forget('admin_2fa_passed_at');
 
             $fallback = (Auth::user()->role ?? 'user') === 'admin'
                 ? route('admin.dashboard')
@@ -120,6 +122,8 @@ class AuthController extends Controller
 
         Auth::login($user);
         $request->session()->regenerate();
+        $request->session()->put('auth_time', time());
+        $request->session()->forget('admin_2fa_passed_at');
 
         return redirect()->intended(route('home'))
             ->with('success', 'Cuenta creada correctamente.');
@@ -202,6 +206,8 @@ class AuthController extends Controller
 
                 Auth::login($user, true);
                 $request->session()->regenerate();
+                $request->session()->put('auth_time', time());
+                $request->session()->forget('admin_2fa_passed_at');
 
                 $fallback = ($user->role ?? 'user') === 'admin'
                     ? route('admin.dashboard')

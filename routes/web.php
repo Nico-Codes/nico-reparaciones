@@ -38,6 +38,7 @@ use App\Http\Controllers\AdminOrderWhatsappTemplateController;
 use App\Http\Controllers\AdminPricingRuleController;
 use App\Http\Controllers\AdminRepairTypeController;
 use App\Http\Controllers\AdminModelGroupController;
+use App\Http\Controllers\AdminTwoFactorController;
 
 
 
@@ -60,7 +61,7 @@ Route::get('/producto/{slug}', [StoreController::class, 'product'])->name('store
 */
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-    Route::post('/login', [AuthController::class, 'login'])->name('login.post');
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:auth-login')->name('login.post');
 
     Route::get('/registro', [AuthController::class, 'showRegister'])->name('register');
     Route::post('/registro', [AuthController::class, 'register'])->middleware('throttle:auth-register')->name('register.post');
@@ -81,13 +82,13 @@ Route::post('/logout', [AuthController::class, 'logout'])
 |--------------------------------------------------------------------------
 */
 Route::get('/carrito', [CartController::class, 'index'])->name('cart.index');
-Route::post('/carrito/agregar/{product}', [CartController::class, 'add'])->name('cart.add');
-Route::post('/carrito/actualizar/{product}', [CartController::class, 'update'])->name('cart.update');
-Route::post('/carrito/eliminar/{product}', [CartController::class, 'remove'])->name('cart.remove');
-Route::post('/carrito/vaciar', [CartController::class, 'clear'])->name('cart.clear');
+Route::post('/carrito/agregar/{product}', [CartController::class, 'add'])->middleware('throttle:cart-write')->name('cart.add');
+Route::post('/carrito/actualizar/{product}', [CartController::class, 'update'])->middleware('throttle:cart-write')->name('cart.update');
+Route::post('/carrito/eliminar/{product}', [CartController::class, 'remove'])->middleware('throttle:cart-write')->name('cart.remove');
+Route::post('/carrito/vaciar', [CartController::class, 'clear'])->middleware('throttle:cart-write')->name('cart.clear');
 
 Route::get('/checkout', [CartController::class, 'checkout'])->middleware('auth')->name('checkout');
-Route::post('/checkout/confirmar', [OrderController::class, 'confirm'])->middleware('auth')->name('checkout.confirm');
+Route::post('/checkout/confirmar', [OrderController::class, 'confirm'])->middleware(['auth', 'throttle:checkout-confirm'])->name('checkout.confirm');
 
 /*
 |--------------------------------------------------------------------------
@@ -162,12 +163,22 @@ Route::get('/storage/{path}', function (string $path) {
     return $disk->response($path);
 })->where('path', '.*')->name('storage.local');
 
+Route::prefix('admin')
+    ->middleware(['auth', 'admin', 'can:access-admin', 'admin.restrict'])
+    ->group(function () {
+        Route::get('/two-factor/challenge', [AdminTwoFactorController::class, 'challenge'])
+            ->name('admin.two_factor.challenge');
+        Route::post('/two-factor/challenge', [AdminTwoFactorController::class, 'verifyChallenge'])
+            ->middleware('throttle:admin-2fa')
+            ->name('admin.two_factor.challenge.verify');
+    });
+
 /*
 |--------------------------------------------------------------------------
 | Admin
 |--------------------------------------------------------------------------
 */
-Route::prefix('admin')->middleware(['auth', 'admin', 'can:access-admin'])->group(function () {
+Route::prefix('admin')->middleware(['auth', 'admin', 'can:access-admin', 'admin.restrict', 'admin.2fa', 'throttle:admin-requests'])->group(function () {
 
     Route::get('/', [AdminDashboardController::class, 'index'])->name('admin');
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
@@ -256,6 +267,25 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'can:access-admin'])->group
     Route::delete('/configuracion/identidad-visual/{assetKey}', [AdminBusinessSettingsController::class, 'resetAsset'])
         ->where('assetKey', '[A-Za-z0-9_]+')
         ->name('admin.settings.assets.reset');
+    Route::get('/seguridad/2fa', [AdminTwoFactorController::class, 'settings'])
+        ->name('admin.two_factor.settings');
+    Route::post('/seguridad/2fa/regenerar', [AdminTwoFactorController::class, 'regenerate'])
+        ->name('admin.two_factor.regenerate');
+    Route::post('/seguridad/2fa/activar', [AdminTwoFactorController::class, 'enable'])
+        ->middleware('throttle:admin-2fa')
+        ->name('admin.two_factor.enable');
+    Route::post('/seguridad/2fa/codigos-regenerar', [AdminTwoFactorController::class, 'regenerateRecoveryCodes'])
+        ->middleware('throttle:admin-2fa')
+        ->name('admin.two_factor.recovery.regenerate');
+    Route::get('/seguridad/2fa/codigos/txt', [AdminTwoFactorController::class, 'downloadRecoveryCodesTxt'])
+        ->name('admin.two_factor.recovery.download');
+    Route::get('/seguridad/2fa/codigos/imprimir', [AdminTwoFactorController::class, 'printRecoveryCodes'])
+        ->name('admin.two_factor.recovery.print');
+    Route::post('/seguridad/2fa/codigos/ocultar', [AdminTwoFactorController::class, 'clearRecoveryExport'])
+        ->name('admin.two_factor.recovery.clear');
+    Route::post('/seguridad/2fa/desactivar', [AdminTwoFactorController::class, 'disable'])
+        ->middleware('throttle:admin-2fa')
+        ->name('admin.two_factor.disable');
 
     // WhatsApp Reparaciones
     Route::get('/whatsapp', [AdminWhatsappTemplateController::class, 'index'])->name('admin.whatsapp_templates.index');

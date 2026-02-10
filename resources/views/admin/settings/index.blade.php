@@ -13,6 +13,7 @@
     <div class="flex w-full gap-2 flex-wrap sm:w-auto">
       <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.dashboard') }}">Volver</a>
       <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.settings.assets.index') }}">Identidad visual</a>
+      <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.two_factor.settings') }}">Seguridad 2FA</a>
       <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.whatsapp_templates.index') }}">Plantillas WhatsApp</a>
     </div>
   </div>
