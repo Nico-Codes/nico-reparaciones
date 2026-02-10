@@ -13,6 +13,10 @@
 - Modo estricto: `php artisan ops:health-check --strict`
 - Quality gate local: `composer quality`
 - Checklist de produccion: `docs/OPERACION_PRODUCCION.md`
+- E2E (Playwright):
+  - Instalar navegador: `npm run e2e:install`
+  - Ejecutar suite completa: `npm run e2e`
+  - Ejecutar contra un server ya levantado: `E2E_BASE_URL=http://127.0.0.1:8000 npm run e2e`
 
 ## About Laravel
 

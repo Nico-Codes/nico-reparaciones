@@ -20,6 +20,10 @@
 /public/storage
 /storage/*.key
 /storage/pail
+/database/e2e.sqlite
+/playwright-report
+/test-results
+/blob-report
 /vendor
 Homestead.json
 Homestead.yaml
