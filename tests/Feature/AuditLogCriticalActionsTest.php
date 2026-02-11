@@ -90,6 +90,8 @@ class AuditLogCriticalActionsTest extends TestCase
             'customer_phone' => '11 3333 4444',
             'issue_reported' => 'No enciende',
             'status' => 'ready_pickup',
+            'diagnosis' => 'Placa reparada',
+            'final_price' => 18000,
         ]);
 
         $this->actingAs($admin)

@@ -118,6 +118,8 @@ class StatusTransitionRulesTest extends TestCase
             'customer_phone' => '11 3333 2222',
             'issue_reported' => 'No enciende',
             'status' => 'ready_pickup',
+            'diagnosis' => 'Cambio de modulo de carga',
+            'final_price' => 25000,
         ]);
 
         $response = $this->actingAs($admin)->postJson(
@@ -139,5 +141,65 @@ class StatusTransitionRulesTest extends TestCase
             'status' => 'delivered',
         ]);
     }
-}
 
+    public function test_admin_repair_rejects_waiting_approval_without_final_price_or_diagnosis(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $repair = Repair::create([
+            'customer_name' => 'Cliente',
+            'customer_phone' => '11 3333 2222',
+            'issue_reported' => 'No enciende',
+            'status' => 'diagnosing',
+        ]);
+
+        $response = $this->actingAs($admin)->postJson(
+            route('admin.repairs.updateStatus', $repair),
+            ['status' => 'waiting_approval']
+        );
+
+        $response->assertStatus(422)
+            ->assertJson([
+                'ok' => false,
+                'changed' => false,
+                'status' => 'diagnosing',
+            ]);
+
+        $this->assertStringContainsString('diagnostico', (string) $response->json('message'));
+    }
+
+    public function test_admin_repair_rejects_delivered_when_paid_amount_has_no_method(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $repair = Repair::create([
+            'customer_name' => 'Cliente',
+            'customer_phone' => '11 3333 2222',
+            'issue_reported' => 'No enciende',
+            'status' => 'ready_pickup',
+            'diagnosis' => 'Reemplazo de bateria',
+            'final_price' => 30000,
+            'paid_amount' => 5000,
+            'payment_method' => null,
+        ]);
+
+        $response = $this->actingAs($admin)->postJson(
+            route('admin.repairs.updateStatus', $repair),
+            ['status' => 'delivered']
+        );
+
+        $response->assertStatus(422)
+            ->assertJson([
+                'ok' => false,
+                'changed' => false,
+                'status' => 'ready_pickup',
+            ]);
+
+        $this->assertStringContainsString('metodo de pago', (string) $response->json('message'));
+
+        $this->assertDatabaseHas('repairs', [
+            'id' => $repair->id,
+            'status' => 'ready_pickup',
+        ]);
+    }
+}

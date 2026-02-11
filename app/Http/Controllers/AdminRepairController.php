@@ -555,6 +555,21 @@ class AdminRepairController extends Controller
             return back()->withErrors(['status' => $msg]);
         }
 
+        $ruleError = $this->validateStatusBusinessRules($repair, $to);
+        if ($ruleError !== null) {
+            if ($isAjax) {
+                return response()->json([
+                    'ok' => false,
+                    'changed' => false,
+                    'message' => $ruleError,
+                    'status' => $from,
+                    'status_label' => Repair::STATUSES[$from] ?? $from,
+                ], 422);
+            }
+
+            return back()->withErrors(['status' => $ruleError]);
+        }
+
         DB::transaction(function () use ($request, $repair, $from, $to) {
             $repair->status = $to;
 
@@ -617,6 +632,30 @@ class AdminRepairController extends Controller
 
 
     // ✅ Compat con rutas actuales
+    private function validateStatusBusinessRules(Repair $repair, string $to): ?string
+    {
+        $requiresDiagnosis = ['waiting_approval', 'ready_pickup', 'delivered'];
+        if (in_array($to, $requiresDiagnosis, true) && trim((string) ($repair->diagnosis ?? '')) === '') {
+            return 'Completa el diagnostico antes de cambiar a ese estado.';
+        }
+
+        $requiresFinalPrice = ['waiting_approval', 'ready_pickup', 'delivered'];
+        if (in_array($to, $requiresFinalPrice, true) && $repair->final_price === null) {
+            return 'Define el precio final antes de cambiar a ese estado.';
+        }
+
+        if ($to === 'delivered') {
+            $paidAmount = (float) ($repair->paid_amount ?? 0);
+            $paymentMethod = trim((string) ($repair->payment_method ?? ''));
+
+            if ($paidAmount > 0 && $paymentMethod === '') {
+                return 'Completa el metodo de pago para marcar la reparacion como entregada.';
+            }
+        }
+
+        return null;
+    }
+
     public function whatsappLog(Repair $repair)
     {
         return $this->logWhatsapp($repair);
