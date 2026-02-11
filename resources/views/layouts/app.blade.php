@@ -85,6 +85,14 @@
   $authUser = $isAuth ? auth()->user() : null;
   $isAdmin = $isAuth && (($authUser->role ?? null) === 'admin' || ($authUser->is_admin ?? false));
   $emailUnverified = $isAuth && method_exists($authUser, 'hasVerifiedEmail') && ! $authUser->hasVerifiedEmail();
+  $emailStatusText = $isAuth
+    ? ($emailUnverified ? 'Email pendiente de verificacion' : 'Email verificado')
+    : null;
+  $emailStatusClasses = $isAuth
+    ? ($emailUnverified
+      ? 'border-amber-200 bg-amber-50 text-amber-800'
+      : 'border-emerald-200 bg-emerald-50 text-emerald-800')
+    : '';
 
   $cart = session('cart', []);
   $cartCount = 0;
@@ -266,6 +274,14 @@
 
 
               <div id="accountMenu" class="dropdown-menu hidden">
+                <div class="px-3 py-2">
+                  <div class="text-[11px] font-bold uppercase tracking-wide text-zinc-500">Estado de correo</div>
+                  <span class="mt-1 inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold {{ $emailStatusClasses }}">
+                    {{ $emailStatusText }}
+                  </span>
+                </div>
+
+                <div class="my-2 border-t border-zinc-200"></div>
               
                 @if($has('account.edit'))
                   <a class="dropdown-item" href="{{ route('account.edit') }}">
@@ -372,6 +388,9 @@
                 <div class="min-w-0 flex-1">
                   <div class="font-black text-zinc-900 truncate">{{ $userName }}</div>
                   <div class="sidebar-sub truncate">{{ $userEmail }}</div>
+                  <span class="mt-1 inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold {{ $emailStatusClasses }}">
+                    {{ $emailStatusText }}
+                  </span>
 
                   <div class="mt-1 text-xs font-extrabold text-sky-700/80 group-hover:text-sky-700 inline-flex items-center gap-1">
                     Ver mi cuenta

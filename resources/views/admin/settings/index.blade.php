@@ -19,6 +19,13 @@
     30 => 'Ultimos 30 dias',
     90 => 'Ultimos 90 dias',
   ];
+
+  $smtpStatus = (string) ($smtpHealth['status'] ?? 'warning');
+  $smtpBadgeClasses = match ($smtpStatus) {
+    'ok' => 'bg-emerald-100 text-emerald-800',
+    'local' => 'bg-amber-100 text-amber-800',
+    default => 'bg-rose-100 text-rose-800',
+  };
 @endphp
 <div class="space-y-6">
   <div class="flex items-start justify-between gap-4 flex-wrap">
@@ -165,6 +172,28 @@
       <span class="badge-sky">Mail</span>
     </div>
     <div class="card-body grid gap-3">
+      <div class="rounded-2xl border border-zinc-200 bg-zinc-50 p-3">
+        <div class="flex items-center justify-between gap-2">
+          <div class="text-sm font-bold text-zinc-900">Estado SMTP</div>
+          <span class="rounded-full px-2 py-0.5 text-xs font-bold {{ $smtpBadgeClasses }}">
+            {{ $smtpHealth['label'] ?? 'Incompleto' }}
+          </span>
+        </div>
+        <div class="mt-1 text-xs text-zinc-600">{{ $smtpHealth['summary'] ?? 'Configuracion incompleta para envio real.' }}</div>
+        <div class="mt-2 text-xs text-zinc-600">
+          Mailer: <span class="font-semibold text-zinc-800">{{ $smtpHealth['mailer'] ?? '-' }}</span>
+          |
+          From: <span class="font-semibold text-zinc-800">{{ $smtpHealth['from_address'] ?? '-' }}</span>
+        </div>
+        @if(!empty($smtpHealth['issues']))
+          <ul class="mt-2 list-disc space-y-1 pl-4 text-xs text-zinc-600">
+            @foreach($smtpHealth['issues'] as $issue)
+              <li>{{ $issue }}</li>
+            @endforeach
+          </ul>
+        @endif
+      </div>
+
       <form method="POST" action="{{ route('admin.settings.smtp_test.send') }}" class="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
         @csrf
         <div class="grid gap-2">

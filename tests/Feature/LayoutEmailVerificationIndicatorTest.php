@@ -18,6 +18,7 @@ class LayoutEmailVerificationIndicatorTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Correo sin verificar');
+        $response->assertSee('Email pendiente de verificacion');
         $response->assertSee(route('verification.notice'), false);
     }
 
@@ -29,6 +30,6 @@ class LayoutEmailVerificationIndicatorTest extends TestCase
 
         $response->assertOk();
         $response->assertDontSee('Correo sin verificar');
+        $response->assertSee('Email verificado');
     }
 }
-
