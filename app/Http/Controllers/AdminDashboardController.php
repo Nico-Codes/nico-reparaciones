@@ -14,7 +14,7 @@ class AdminDashboardController extends Controller
     public function index(Request $request)
     {
         $rangeDays = (int) $request->query('range', 30);
-        if (!in_array($rangeDays, [7, 30, 90], true)) {
+        if (! in_array($rangeDays, [7, 30, 90], true)) {
             $rangeDays = 30;
         }
 
@@ -24,7 +24,7 @@ class AdminDashboardController extends Controller
         $prevTo = now()->copy()->subDays($rangeDays)->endOfDay();
         $prevFrom = now()->copy()->subDays($rangeDays * 2)->startOfDay();
 
-        $orderStatuses = defined(Order::class . '::STATUSES')
+        $orderStatuses = defined(Order::class.'::STATUSES')
             ? Order::STATUSES
             : [
                 'pendiente' => 'Pendiente',
@@ -35,7 +35,7 @@ class AdminDashboardController extends Controller
                 'cancelado' => 'Cancelado',
             ];
 
-        $repairStatuses = defined(Repair::class . '::STATUSES')
+        $repairStatuses = defined(Repair::class.'::STATUSES')
             ? Repair::STATUSES
             : [
                 'received' => 'Recibido',
@@ -54,23 +54,42 @@ class AdminDashboardController extends Controller
             if ($previous <= 0) {
                 return null;
             }
+
             return (($current - $previous) / $previous) * 100.0;
         };
 
         $orderRangeAgg = Order::query()
             ->selectRaw('SUM(CASE WHEN created_at BETWEEN ? AND ? THEN 1 ELSE 0 END) as orders_in_range', [$fromRange, $toRange])
             ->selectRaw('SUM(CASE WHEN created_at BETWEEN ? AND ? THEN 1 ELSE 0 END) as orders_prev_range', [$prevFrom, $prevTo])
+            ->selectRaw("SUM(CASE WHEN status = 'entregado' AND created_at BETWEEN ? AND ? THEN 1 ELSE 0 END) as delivered_in_range", [$fromRange, $toRange])
+            ->selectRaw("SUM(CASE WHEN status = 'entregado' AND created_at BETWEEN ? AND ? THEN 1 ELSE 0 END) as delivered_prev_range", [$prevFrom, $prevTo])
             ->selectRaw("SUM(CASE WHEN status = 'entregado' AND created_at BETWEEN ? AND ? THEN total ELSE 0 END) as sales_in_range", [$fromRange, $toRange])
             ->selectRaw("SUM(CASE WHEN status = 'entregado' AND created_at BETWEEN ? AND ? THEN total ELSE 0 END) as sales_prev_range", [$prevFrom, $prevTo])
             ->first();
 
         $ordersInRange = (int) ($orderRangeAgg->orders_in_range ?? 0);
         $ordersPrevRange = (int) ($orderRangeAgg->orders_prev_range ?? 0);
+        $deliveredOrdersInRange = (int) ($orderRangeAgg->delivered_in_range ?? 0);
+        $deliveredOrdersPrevRange = (int) ($orderRangeAgg->delivered_prev_range ?? 0);
         $ordersRangeDeltaPct = $pctChange((float) $ordersInRange, (float) $ordersPrevRange);
 
         $salesInRange = (float) ($orderRangeAgg->sales_in_range ?? 0);
         $salesPrevRange = (float) ($orderRangeAgg->sales_prev_range ?? 0);
         $salesRangeDeltaPct = $pctChange($salesInRange, $salesPrevRange);
+
+        $avgTicketInRange = $deliveredOrdersInRange > 0 ? ($salesInRange / $deliveredOrdersInRange) : 0.0;
+        $avgTicketPrevRange = $deliveredOrdersPrevRange > 0 ? ($salesPrevRange / $deliveredOrdersPrevRange) : 0.0;
+        $avgTicketRangeDeltaPct = $pctChange($avgTicketInRange, $avgTicketPrevRange);
+
+        $deliveryRateInRange = $ordersInRange > 0
+            ? ($deliveredOrdersInRange / $ordersInRange) * 100.0
+            : null;
+        $deliveryRatePrevRange = $ordersPrevRange > 0
+            ? ($deliveredOrdersPrevRange / $ordersPrevRange) * 100.0
+            : null;
+        $deliveryRateDeltaPoints = ($deliveryRateInRange !== null && $deliveryRatePrevRange !== null)
+            ? ($deliveryRateInRange - $deliveryRatePrevRange)
+            : null;
 
         $repairRangeAgg = Repair::query()
             ->selectRaw('SUM(CASE WHEN created_at BETWEEN ? AND ? THEN 1 ELSE 0 END) as repairs_in_range', [$fromRange, $toRange])
@@ -80,6 +99,41 @@ class AdminDashboardController extends Controller
         $repairsInRange = (int) ($repairRangeAgg->repairs_in_range ?? 0);
         $repairsPrevRange = (int) ($repairRangeAgg->repairs_prev_range ?? 0);
         $repairsRangeDeltaPct = $pctChange((float) $repairsInRange, (float) $repairsPrevRange);
+
+        $turnaroundExpr = DB::connection()->getDriverName() === 'sqlite'
+            ? '(julianday(delivered_at) - julianday(received_at)) * 24'
+            : 'TIMESTAMPDIFF(HOUR, received_at, delivered_at)';
+
+        $repairTurnaroundInRange = Repair::query()
+            ->where('status', 'delivered')
+            ->whereNotNull('received_at')
+            ->whereNotNull('delivered_at')
+            ->whereBetween('delivered_at', [$fromRange, $toRange])
+            ->selectRaw("AVG({$turnaroundExpr}) as avg_turnaround_hours")
+            ->value('avg_turnaround_hours');
+
+        $repairTurnaroundPrevRange = Repair::query()
+            ->where('status', 'delivered')
+            ->whereNotNull('received_at')
+            ->whereNotNull('delivered_at')
+            ->whereBetween('delivered_at', [$prevFrom, $prevTo])
+            ->selectRaw("AVG({$turnaroundExpr}) as avg_turnaround_hours")
+            ->value('avg_turnaround_hours');
+
+        $avgRepairTurnaroundHours = $repairTurnaroundInRange !== null ? (float) $repairTurnaroundInRange : null;
+        $avgRepairTurnaroundPrevHours = $repairTurnaroundPrevRange !== null ? (float) $repairTurnaroundPrevRange : null;
+        $avgRepairTurnaroundDeltaPct = ($avgRepairTurnaroundHours !== null && $avgRepairTurnaroundPrevHours !== null)
+            ? $pctChange($avgRepairTurnaroundHours, $avgRepairTurnaroundPrevHours)
+            : null;
+
+        $waitingApprovalCount = (int) Repair::query()
+            ->where('status', 'waiting_approval')
+            ->count();
+
+        $waitingApprovalOver48h = (int) Repair::query()
+            ->where('status', 'waiting_approval')
+            ->where('created_at', '<', now()->copy()->subHours(48))
+            ->count();
 
         $orderCounts = Order::query()
             ->selectRaw('status, COUNT(*) as c')
@@ -245,9 +299,17 @@ class AdminDashboardController extends Controller
 
             'salesInRange' => (int) $salesInRange,
             'salesRangeDeltaPct' => $salesRangeDeltaPct,
+            'avgTicketInRange' => $avgTicketInRange,
+            'avgTicketRangeDeltaPct' => $avgTicketRangeDeltaPct,
+            'deliveryRateInRange' => $deliveryRateInRange,
+            'deliveryRateDeltaPoints' => $deliveryRateDeltaPoints,
 
             'repairsInRange' => $repairsInRange,
             'repairsRangeDeltaPct' => $repairsRangeDeltaPct,
+            'avgRepairTurnaroundHours' => $avgRepairTurnaroundHours,
+            'avgRepairTurnaroundDeltaPct' => $avgRepairTurnaroundDeltaPct,
+            'waitingApprovalCount' => $waitingApprovalCount,
+            'waitingApprovalOver48h' => $waitingApprovalOver48h,
 
             'ordersTotal' => $ordersTotal,
             'ordersActive' => $ordersActive,

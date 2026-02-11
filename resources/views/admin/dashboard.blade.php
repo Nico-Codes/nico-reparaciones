@@ -44,6 +44,16 @@
     return '<span class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold '.$cls.'">'.$sign.number_format($pct, 0).'%</span>';
   };
 
+  $deltaPointsPill = function($points) {
+    if ($points === null) return '<span class="text-xs text-zinc-500">sin historial</span>';
+    $up = $points >= 0;
+    $cls = $up ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-rose-50 border-rose-200 text-rose-900';
+    $sign = $up ? '+' : '';
+    return '<span class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold '.$cls.'">'.$sign.number_format($points, 1, ',', '.').' pp</span>';
+  };
+
+  $hoursLabel = fn($hours) => $hours === null ? 'sin datos' : number_format((float)$hours, 1, ',', '.').' h';
+
   $badgeOrder = function(string $st) {
     return match($st) {
       'pendiente' => 'bg-amber-100 text-amber-900 border-amber-200',
@@ -187,6 +197,64 @@
 
         <div class="text-xs text-zinc-500 mt-2">
           Enviados (actual): Pedidos {{ (int)($ordersWaSent ?? 0) }} · Reparaciones {{ (int)($repairsWaSent ?? 0) }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {{-- KPI extra de negocio --}}
+  <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="card">
+      <div class="card-body">
+        <div class="text-xs font-black uppercase text-zinc-500">Ticket promedio (entregados)</div>
+        <div class="flex items-end justify-between gap-2 mt-1">
+          <div class="text-3xl font-extrabold">{{ $money($avgTicketInRange ?? 0) }}</div>
+          {!! $deltaPill($avgTicketRangeDeltaPct ?? null) !!}
+        </div>
+        <div class="text-sm text-zinc-600 mt-2">
+          Promedio de pedidos <span class="font-black">entregados</span> en {{ (int)$rangeDays }} dias.
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <div class="text-xs font-black uppercase text-zinc-500">Tasa de entrega</div>
+        <div class="flex items-end justify-between gap-2 mt-1">
+          <div class="text-3xl font-extrabold">
+            @if(($deliveryRateInRange ?? null) === null)
+              --
+            @else
+              {{ number_format((float)$deliveryRateInRange, 1, ',', '.') }}%
+            @endif
+          </div>
+          {!! $deltaPointsPill($deliveryRateDeltaPoints ?? null) !!}
+        </div>
+        <div class="text-sm text-zinc-600 mt-2">
+          Entregados sobre pedidos creados en el rango.
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <div class="text-xs font-black uppercase text-zinc-500">Tiempo medio reparacion entregada</div>
+        <div class="flex items-end justify-between gap-2 mt-1">
+          <div class="text-3xl font-extrabold">{{ $hoursLabel($avgRepairTurnaroundHours ?? null) }}</div>
+          {!! $deltaPill($avgRepairTurnaroundDeltaPct ?? null) !!}
+        </div>
+        <div class="text-sm text-zinc-600 mt-2">
+          Basado en reparaciones con recibido y entregado.
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <div class="text-xs font-black uppercase text-zinc-500">Presupuestos esperando aprobacion</div>
+        <div class="text-3xl font-extrabold mt-1">{{ (int)($waitingApprovalCount ?? 0) }}</div>
+        <div class="text-sm text-zinc-600 mt-2">
+          Mas de 48h: <span class="font-black {{ (int)($waitingApprovalOver48h ?? 0) > 0 ? 'text-rose-700' : 'text-zinc-900' }}">{{ (int)($waitingApprovalOver48h ?? 0) }}</span>
         </div>
       </div>
     </div>
