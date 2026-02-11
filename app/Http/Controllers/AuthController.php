@@ -229,18 +229,26 @@ class AuthController extends Controller
     public function showEmailVerificationNotice(Request $request)
     {
         if ($request->user()?->hasVerifiedEmail()) {
-            return redirect()->route('home');
+            $redirectTo = (string) $request->session()->pull('post_verification_redirect', route('home'));
+
+            return redirect()->to($redirectTo);
         }
 
-        return view('auth.verify-email');
+        return view('auth.verify-email', [
+            'verificationRequiredFor' => (string) $request->session()->get('verification_required_for', ''),
+            'postVerificationRedirect' => (string) $request->session()->get('post_verification_redirect', ''),
+        ]);
     }
 
     public function verifyEmail(EmailVerificationRequest $request)
     {
         $request->fulfill();
 
+        $request->session()->forget('verification_required_for');
+        $redirectTo = (string) $request->session()->pull('post_verification_redirect', route('home'));
+
         return redirect()
-            ->route('home')
+            ->to($redirectTo)
             ->with('success', 'Correo verificado correctamente.');
     }
 

@@ -82,7 +82,9 @@
 
 @php
   $isAuth  = auth()->check();
-  $isAdmin = $isAuth && ((auth()->user()->role ?? null) === 'admin' || (auth()->user()->is_admin ?? false));
+  $authUser = $isAuth ? auth()->user() : null;
+  $isAdmin = $isAuth && (($authUser->role ?? null) === 'admin' || ($authUser->is_admin ?? false));
+  $emailUnverified = $isAuth && method_exists($authUser, 'hasVerifiedEmail') && ! $authUser->hasVerifiedEmail();
 
   $cart = session('cart', []);
   $cartCount = 0;
@@ -192,6 +194,27 @@
 
 
         <div class="flex items-center gap-2">
+          @if($emailUnverified && $has('verification.notice'))
+            <a
+              href="{{ route('verification.notice') }}"
+              class="hidden sm:inline-flex h-9 items-center rounded-full border border-amber-300 bg-amber-50 px-3 text-xs font-bold text-amber-800 transition hover:bg-amber-100"
+              aria-label="Correo sin verificar">
+              Correo sin verificar
+            </a>
+
+            <a
+              href="{{ route('verification.notice') }}"
+              class="icon-btn sm:hidden text-amber-700"
+              aria-label="Correo sin verificar"
+              title="Correo sin verificar">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 9v4"></path>
+                <path d="M12 17h.01"></path>
+                <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+              </svg>
+            </a>
+          @endif
+
           @if($has('cart.index'))
           <a href="{{ route('cart.index') }}"
             class="relative inline-flex items-center justify-center bg-transparent border-0 p-0 rounded-none hover:bg-transparent text-zinc-800 hover:text-sky-700 transition-colors mr-2"
@@ -253,6 +276,19 @@
                   </a>
                 @endif
 
+                @if($emailUnverified && $has('verification.notice'))
+                  <a class="dropdown-item text-amber-700" href="{{ route('verification.notice') }}">
+                    <span class="inline-flex items-center gap-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M12 9v4"></path>
+                        <path d="M12 17h.01"></path>
+                        <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                      </svg>
+                      <span>Verificar correo</span>
+                    </span>
+                  </a>
+                @endif
+
                 @if($has('orders.index'))
                   <a class="dropdown-item" href="{{ route('orders.index') }}">
                     <span class="inline-flex items-center gap-2">
@@ -271,7 +307,7 @@
                   </a>
                 @endif
 
-                @if(($has('account.edit') || $has('orders.index') || $has('repairs.my.index')) && $has('logout'))
+                @if(($has('account.edit') || ($emailUnverified && $has('verification.notice')) || $has('orders.index') || $has('repairs.my.index')) && $has('logout'))
                   <div class="my-2 border-t border-zinc-200"></div>
                 @endif
 
@@ -410,6 +446,20 @@
                   <span class="inline-flex items-center gap-2">
                     <img src="{{ $iconSettings }}" alt="" class="w-5 h-5" loading="lazy" decoding="async">
                     <span>Mi cuenta</span>
+                  </span>
+                </a>
+              @endif
+
+              @if($emailUnverified && $has('verification.notice'))
+                <a class="sidebar-link {{ request()->routeIs('verification.notice') ? 'active' : '' }}"
+                   href="{{ route('verification.notice') }}">
+                  <span class="inline-flex items-center gap-2 text-amber-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M12 9v4"></path>
+                      <path d="M12 17h.01"></path>
+                      <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                    </svg>
+                    <span>Verificar correo</span>
                   </span>
                 </a>
               @endif

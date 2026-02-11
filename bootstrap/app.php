@@ -19,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => \App\Http\Middleware\IsAdmin::class,
             'admin.restrict' => \App\Http\Middleware\RestrictAdminAccess::class,
             'admin.2fa' => \App\Http\Middleware\EnsureAdminTwoFactorVerified::class,
+            'verified.context' => \App\Http\Middleware\EnsureEmailIsVerifiedWithContext::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

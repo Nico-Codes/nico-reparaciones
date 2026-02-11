@@ -95,8 +95,8 @@ Route::post('/carrito/actualizar/{product}', [CartController::class, 'update'])-
 Route::post('/carrito/eliminar/{product}', [CartController::class, 'remove'])->middleware('throttle:cart-write')->name('cart.remove');
 Route::post('/carrito/vaciar', [CartController::class, 'clear'])->middleware('throttle:cart-write')->name('cart.clear');
 
-Route::get('/checkout', [CartController::class, 'checkout'])->middleware(['auth', 'verified'])->name('checkout');
-Route::post('/checkout/confirmar', [OrderController::class, 'confirm'])->middleware(['auth', 'verified', 'throttle:checkout-confirm'])->name('checkout.confirm');
+Route::get('/checkout', [CartController::class, 'checkout'])->middleware(['auth', 'verified.context:checkout'])->name('checkout');
+Route::post('/checkout/confirmar', [OrderController::class, 'confirm'])->middleware(['auth', 'verified.context:checkout', 'throttle:checkout-confirm'])->name('checkout.confirm');
 
 /*
 |--------------------------------------------------------------------------

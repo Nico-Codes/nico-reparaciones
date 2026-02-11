@@ -51,6 +51,8 @@ class AuthEmailFlowsTest extends TestCase
         $response = $this->get(route('checkout'));
 
         $response->assertRedirect(route('verification.notice'));
+        $response->assertSessionHas('verification_required_for', 'checkout');
+        $response->assertSessionHas('post_verification_redirect', route('checkout'));
     }
 
     public function test_user_can_verify_email_with_signed_link(): void
@@ -70,6 +72,46 @@ class AuthEmailFlowsTest extends TestCase
 
         $response->assertRedirect(route('home'));
         $this->assertNotNull($user->fresh()->email_verified_at);
+    }
+
+    public function test_user_is_redirected_back_to_checkout_after_successful_verification_when_it_was_blocked(): void
+    {
+        $user = User::factory()->unverified()->create();
+
+        $verificationUrl = URL::temporarySignedRoute(
+            'verification.verify',
+            now()->addMinutes(60),
+            [
+                'id' => $user->id,
+                'hash' => sha1($user->getEmailForVerification()),
+            ]
+        );
+
+        $response = $this->actingAs($user)
+            ->withSession([
+                'verification_required_for' => 'checkout',
+                'post_verification_redirect' => route('checkout'),
+            ])
+            ->get($verificationUrl);
+
+        $response->assertRedirect(route('checkout'));
+        $this->assertNotNull($user->fresh()->email_verified_at);
+    }
+
+    public function test_verification_notice_shows_checkout_context_message(): void
+    {
+        $user = User::factory()->unverified()->create();
+
+        $response = $this->actingAs($user)
+            ->withSession([
+                'verification_required_for' => 'checkout',
+                'post_verification_redirect' => route('checkout'),
+            ])
+            ->get(route('verification.notice'));
+
+        $response->assertOk();
+        $response->assertSee('Para finalizar tu compra necesitas verificar tu correo primero.');
+        $response->assertSee('te llevaremos automaticamente al checkout');
     }
 
     public function test_forgot_password_sends_reset_notification(): void
