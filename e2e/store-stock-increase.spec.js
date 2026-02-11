@@ -16,12 +16,12 @@ test('customer can increase quantity again after admin raises stock', async ({ b
   await shopperPage.locator('input[name="password"]').fill(customerPassword);
   await shopperPage.getByRole('button', { name: 'Ingresar' }).click();
 
-  await shopperPage.goto('/producto/e2e-stock-clamp-product');
-  await expect(shopperPage.locator('.page-title', { hasText: 'E2E Stock Clamp Product' })).toBeVisible();
+  await shopperPage.goto('/producto/e2e-stock-increase-product');
+  await expect(shopperPage.locator('.page-title', { hasText: 'E2E Stock Increase Product' })).toBeVisible();
   await shopperPage.getByRole('button', { name: 'Agregar al carrito' }).click();
 
   await shopperPage.goto('/carrito');
-  const cartRow = shopperPage.locator('[data-cart-item]', { hasText: 'E2E Stock Clamp Product' }).first();
+  const cartRow = shopperPage.locator('[data-cart-item]', { hasText: 'E2E Stock Increase Product' }).first();
   await expect(cartRow).toBeVisible();
 
   const qtyForm = cartRow.locator('form[data-cart-qty]').first();
@@ -29,7 +29,7 @@ test('customer can increase quantity again after admin raises stock', async ({ b
   await qtyForm.evaluate((form) => form.submit());
   await shopperPage.waitForURL(/\/carrito$/);
 
-  const rowAtStockLimit = shopperPage.locator('[data-cart-item]', { hasText: 'E2E Stock Clamp Product' }).first();
+  const rowAtStockLimit = shopperPage.locator('[data-cart-item]', { hasText: 'E2E Stock Increase Product' }).first();
   await expect(rowAtStockLimit.locator('input[name="quantity"]')).toHaveValue('5');
   await expect(rowAtStockLimit.locator('[data-qty-plus]')).toBeDisabled();
   await expect(rowAtStockLimit.locator('[data-stock-available]')).toContainText('5');
@@ -43,8 +43,8 @@ test('customer can increase quantity again after admin raises stock', async ({ b
   await adminPage.getByRole('button', { name: 'Ingresar' }).click();
   await expect(adminPage).toHaveURL(/\/admin(\/dashboard)?$/);
 
-  await adminPage.goto('/admin/productos?q=E2E%20Stock%20Clamp%20Product');
-  const adminRow = adminPage.locator('table tbody tr', { hasText: 'E2E Stock Clamp Product' }).first();
+  await adminPage.goto('/admin/productos?q=E2E%20Stock%20Increase%20Product');
+  const adminRow = adminPage.locator('table tbody tr', { hasText: 'E2E Stock Increase Product' }).first();
   await expect(adminRow).toBeVisible();
 
   const stockForm = adminRow.locator('form[data-admin-product-stock]').first();
@@ -52,12 +52,12 @@ test('customer can increase quantity again after admin raises stock', async ({ b
   await stockForm.evaluate((form) => form.submit());
   await adminPage.waitForLoadState('domcontentloaded');
 
-  await adminPage.goto('/admin/productos?q=E2E%20Stock%20Clamp%20Product');
-  const adminRowAfter = adminPage.locator('table tbody tr', { hasText: 'E2E Stock Clamp Product' }).first();
+  await adminPage.goto('/admin/productos?q=E2E%20Stock%20Increase%20Product');
+  const adminRowAfter = adminPage.locator('table tbody tr', { hasText: 'E2E Stock Increase Product' }).first();
   await expect(adminRowAfter.locator('[data-stock-label-for]')).toContainText('Stock: 8');
 
   await shopperPage.goto('/carrito');
-  const rowAfterStockIncrease = shopperPage.locator('[data-cart-item]', { hasText: 'E2E Stock Clamp Product' }).first();
+  const rowAfterStockIncrease = shopperPage.locator('[data-cart-item]', { hasText: 'E2E Stock Increase Product' }).first();
   await expect(rowAfterStockIncrease).toBeVisible();
   await expect(rowAfterStockIncrease.locator('[data-stock-available]')).toContainText('8');
   await expect(rowAfterStockIncrease.locator('input[name="quantity"]')).toHaveAttribute('max', '8');
@@ -68,7 +68,7 @@ test('customer can increase quantity again after admin raises stock', async ({ b
   await qtyFormAfterIncrease.evaluate((form) => form.submit());
   await shopperPage.waitForURL(/\/carrito$/);
 
-  const rowAfterQtyIncrease = shopperPage.locator('[data-cart-item]', { hasText: 'E2E Stock Clamp Product' }).first();
+  const rowAfterQtyIncrease = shopperPage.locator('[data-cart-item]', { hasText: 'E2E Stock Increase Product' }).first();
   await expect(rowAfterQtyIncrease.locator('input[name="quantity"]')).toHaveValue('6');
   await expect(shopperPage.locator('[data-checkout-btn]')).toHaveAttribute('aria-disabled', 'false');
 

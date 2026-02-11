@@ -213,6 +213,81 @@ class E2eSmokeSeeder extends Seeder
         $stockClampProduct->stock = 5;
         $stockClampProduct->save();
 
+        $stockIncreaseProduct = Product::firstOrCreate(
+            ['slug' => 'e2e-stock-increase-product'],
+            [
+                'category_id' => $activeCategory->id,
+                'name' => 'E2E Stock Increase Product',
+                'price' => 14999,
+                'stock' => 5,
+                'description' => 'Producto para validar aumento de stock desde admin.',
+                'featured' => false,
+            ]
+        );
+        $stockIncreaseProduct->category_id = $activeCategory->id;
+        $stockIncreaseProduct->active = true;
+        $stockIncreaseProduct->stock = 5;
+        $stockIncreaseProduct->save();
+
+        $priceSyncProduct = Product::firstOrCreate(
+            ['slug' => 'e2e-price-sync-product'],
+            [
+                'category_id' => $activeCategory->id,
+                'name' => 'E2E Price Sync Product',
+                'price' => 10000,
+                'stock' => 5,
+                'description' => 'Producto para validar sincronizacion de precios en carrito.',
+                'featured' => false,
+            ]
+        );
+        $priceSyncProduct->category_id = $activeCategory->id;
+        $priceSyncProduct->active = true;
+        $priceSyncProduct->stock = 5;
+        $priceSyncProduct->price = 10000;
+        $priceSyncProduct->save();
+
+        $inactiveSyncProduct = Product::firstOrCreate(
+            ['slug' => 'e2e-inactive-sync-product'],
+            [
+                'category_id' => $activeCategory->id,
+                'name' => 'E2E Inactive Sync Product',
+                'price' => 11000,
+                'stock' => 5,
+                'description' => 'Producto para validar remocion del carrito cuando queda inactivo.',
+                'featured' => false,
+            ]
+        );
+        $inactiveSyncProduct->category_id = $activeCategory->id;
+        $inactiveSyncProduct->active = true;
+        $inactiveSyncProduct->stock = 5;
+        $inactiveSyncProduct->save();
+
+        $categorySyncActive = Category::firstOrCreate(
+            ['slug' => 'e2e-category-sync-active'],
+            [
+                'name' => 'E2E Category Sync Active',
+                'description' => 'Categoria para validar remocion por inactivacion desde admin.',
+            ]
+        );
+        $categorySyncActive->active = true;
+        $categorySyncActive->save();
+
+        $categoryInactiveSyncProduct = Product::firstOrCreate(
+            ['slug' => 'e2e-category-inactive-sync-product'],
+            [
+                'category_id' => $categorySyncActive->id,
+                'name' => 'E2E Category Inactive Sync Product',
+                'price' => 11500,
+                'stock' => 5,
+                'description' => 'Producto para validar sincronizacion al inactivar su categoria.',
+                'featured' => false,
+            ]
+        );
+        $categoryInactiveSyncProduct->category_id = $categorySyncActive->id;
+        $categoryInactiveSyncProduct->active = true;
+        $categoryInactiveSyncProduct->stock = 5;
+        $categoryInactiveSyncProduct->save();
+
         Repair::create([
             'code' => 'R-E2E-OK-0001',
             'user_id' => $customer->id,

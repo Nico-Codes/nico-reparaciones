@@ -46,6 +46,7 @@ const sharedEnv = {
   ADMIN_PASSWORD: process.env.E2E_ADMIN_PASSWORD || 'admin1234',
   ADMIN_ALLOWED_EMAILS: process.env.E2E_ADMIN_EMAIL || 'admin@nico.local',
   ADMIN_2FA_SESSION_MINUTES: '0',
+  RATE_LIMIT_AUTH_LOGIN_PER_MINUTE: '120',
 };
 
 const runArtisan = (args) => {
