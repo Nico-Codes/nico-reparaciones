@@ -127,6 +127,7 @@ class AdminOrderController extends Controller
             'waMessage' => $waMessage,
             'waUrl' => $waUrl,
             'waLastForStatus' => $waLastForStatus,
+            'waLogs' => $order->whatsappLogs,
         ]);
     }
 

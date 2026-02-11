@@ -288,6 +288,32 @@ class E2eSmokeSeeder extends Seeder
         $categoryInactiveSyncProduct->stock = 5;
         $categoryInactiveSyncProduct->save();
 
+        $rollbackCategory = Category::firstOrCreate(
+            ['slug' => 'e2e-category-rollback-active'],
+            [
+                'name' => 'E2E Category Rollback Active',
+                'description' => 'Categoria para validar rollback de disponibilidad.',
+            ]
+        );
+        $rollbackCategory->active = true;
+        $rollbackCategory->save();
+
+        $rollbackProduct = Product::firstOrCreate(
+            ['slug' => 'e2e-rollback-product'],
+            [
+                'category_id' => $rollbackCategory->id,
+                'name' => 'E2E Rollback Product',
+                'price' => 12500,
+                'stock' => 5,
+                'description' => 'Producto para validar reactivacion de categoria y producto.',
+                'featured' => false,
+            ]
+        );
+        $rollbackProduct->category_id = $rollbackCategory->id;
+        $rollbackProduct->active = true;
+        $rollbackProduct->stock = 5;
+        $rollbackProduct->save();
+
         Repair::create([
             'code' => 'R-E2E-OK-0001',
             'user_id' => $customer->id,
@@ -300,6 +326,38 @@ class E2eSmokeSeeder extends Seeder
             'status' => 'repairing',
             'received_at' => now()->subDay(),
         ]);
+
+        Repair::firstOrCreate(
+            ['code' => 'R-E2E-QUOTE-APPROVE'],
+            [
+                'user_id' => $customer->id,
+                'customer_name' => 'E2E Quote Approve',
+                'customer_phone' => '3415550121',
+                'device_brand' => 'E2EBrand',
+                'device_model' => 'E2EQuoteApprove',
+                'issue_reported' => 'Cambio de modulo',
+                'diagnosis' => 'Presupuesto pendiente de aprobacion',
+                'status' => 'waiting_approval',
+                'final_price' => 42000,
+                'received_at' => now()->subHours(6),
+            ]
+        );
+
+        Repair::firstOrCreate(
+            ['code' => 'R-E2E-QUOTE-REJECT'],
+            [
+                'user_id' => $customer->id,
+                'customer_name' => 'E2E Quote Reject',
+                'customer_phone' => '3415550122',
+                'device_brand' => 'E2EBrand',
+                'device_model' => 'E2EQuoteReject',
+                'issue_reported' => 'Placa madre',
+                'diagnosis' => 'Presupuesto pendiente de decision',
+                'status' => 'waiting_approval',
+                'final_price' => 38000,
+                'received_at' => now()->subHours(5),
+            ]
+        );
 
     }
 }
