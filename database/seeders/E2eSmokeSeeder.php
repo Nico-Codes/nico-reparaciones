@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Category;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderWhatsappLog;
@@ -111,6 +112,106 @@ class E2eSmokeSeeder extends Seeder
             'sent_by' => $admin?->id,
             'sent_at' => now(),
         ]);
+
+        $activeCategory = Category::firstOrCreate(
+            ['slug' => 'e2e-store-active'],
+            [
+                'name' => 'E2E Store Active',
+                'description' => 'Categoria activa para pruebas E2E de tienda',
+            ]
+        );
+        $activeCategory->active = true;
+        $activeCategory->save();
+
+        $inactiveCategory = Category::firstOrCreate(
+            ['slug' => 'e2e-store-inactive'],
+            [
+                'name' => 'E2E Store Inactive',
+                'description' => 'Categoria inactiva para pruebas E2E de tienda',
+            ]
+        );
+        $inactiveCategory->active = false;
+        $inactiveCategory->save();
+
+        $noStockProduct = Product::firstOrCreate(
+            ['slug' => 'e2e-store-no-stock-product'],
+            [
+                'category_id' => $activeCategory->id,
+                'name' => 'E2E Store No Stock Product',
+                'price' => 9999,
+                'stock' => 0,
+                'description' => 'Producto activo sin stock para validar UI de detalle.',
+                'featured' => false,
+            ]
+        );
+        $noStockProduct->category_id = $activeCategory->id;
+        $noStockProduct->stock = 0;
+        $noStockProduct->active = true;
+        $noStockProduct->save();
+
+        $inactiveProduct = Product::firstOrCreate(
+            ['slug' => 'e2e-store-inactive-product'],
+            [
+                'category_id' => $activeCategory->id,
+                'name' => 'E2E Store Inactive Product',
+                'price' => 10999,
+                'stock' => 4,
+                'description' => 'Producto inactivo para validar guardas de acceso.',
+                'featured' => false,
+            ]
+        );
+        $inactiveProduct->category_id = $activeCategory->id;
+        $inactiveProduct->active = false;
+        $inactiveProduct->stock = max(1, (int) $inactiveProduct->stock);
+        $inactiveProduct->save();
+
+        $inactiveCategoryProduct = Product::firstOrCreate(
+            ['slug' => 'e2e-store-inactive-category-product'],
+            [
+                'category_id' => $inactiveCategory->id,
+                'name' => 'E2E Store Inactive Category Product',
+                'price' => 11999,
+                'stock' => 5,
+                'description' => 'Producto en categoria inactiva para validar 404.',
+                'featured' => false,
+            ]
+        );
+        $inactiveCategoryProduct->category_id = $inactiveCategory->id;
+        $inactiveCategoryProduct->active = true;
+        $inactiveCategoryProduct->stock = max(1, (int) $inactiveCategoryProduct->stock);
+        $inactiveCategoryProduct->save();
+
+        $stockSyncProduct = Product::firstOrCreate(
+            ['slug' => 'e2e-stock-sync-product'],
+            [
+                'category_id' => $activeCategory->id,
+                'name' => 'E2E Stock Sync Product',
+                'price' => 13999,
+                'stock' => 5,
+                'description' => 'Producto para validar sincronizacion de stock entre admin y checkout.',
+                'featured' => false,
+            ]
+        );
+        $stockSyncProduct->category_id = $activeCategory->id;
+        $stockSyncProduct->active = true;
+        $stockSyncProduct->stock = 5;
+        $stockSyncProduct->save();
+
+        $stockClampProduct = Product::firstOrCreate(
+            ['slug' => 'e2e-stock-clamp-product'],
+            [
+                'category_id' => $activeCategory->id,
+                'name' => 'E2E Stock Clamp Product',
+                'price' => 12999,
+                'stock' => 5,
+                'description' => 'Producto para validar clamp de cantidad cuando baja el stock.',
+                'featured' => false,
+            ]
+        );
+        $stockClampProduct->category_id = $activeCategory->id;
+        $stockClampProduct->active = true;
+        $stockClampProduct->stock = 5;
+        $stockClampProduct->save();
 
         Repair::create([
             'code' => 'R-E2E-OK-0001',

@@ -60,6 +60,8 @@ const runArtisan = (args) => {
 };
 
 runArtisan(['migrate:fresh', '--force']);
+runArtisan(['cache:clear']);
+runArtisan(['config:clear']);
 runArtisan(['db:seed', '--class=Database\\Seeders\\DatabaseSeeder', '--force']);
 runArtisan(['db:seed', '--class=Database\\Seeders\\CategoryProductSeeder', '--force']);
 runArtisan(['db:seed', '--class=Database\\Seeders\\AdminUserSeeder', '--force']);

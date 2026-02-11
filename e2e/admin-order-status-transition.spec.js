@@ -8,6 +8,7 @@ test('admin can change seeded order status from pendiente to confirmado', async 
   await page.locator('input[name="email"]').fill(adminEmail);
   await page.locator('input[name="password"]').fill(adminPassword);
   await page.getByRole('button', { name: 'Ingresar' }).click();
+  await expect(page).toHaveURL(/\/admin(\/dashboard)?$/);
 
   await page.goto('/admin/pedidos?q=E2E%20Transition');
 
