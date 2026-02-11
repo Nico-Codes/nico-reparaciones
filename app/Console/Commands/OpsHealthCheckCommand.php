@@ -13,7 +13,8 @@ use Throwable;
 class OpsHealthCheckCommand extends Command
 {
     protected $signature = 'ops:health-check
-        {--strict : Exit with failure when warnings are detected}';
+        {--strict : Exit with failure when warnings are detected}
+        {--assume-production : Evaluate checks with production rules regardless of APP_ENV}';
 
     protected $description = 'Run operational checks for production readiness.';
 
@@ -25,7 +26,7 @@ class OpsHealthCheckCommand extends Command
     public function handle(): int
     {
         $strict = (bool) $this->option('strict');
-        $isProduction = app()->environment('production');
+        $isProduction = app()->environment('production') || (bool) $this->option('assume-production');
 
         $this->rows = [];
 
@@ -34,9 +35,9 @@ class OpsHealthCheckCommand extends Command
         $this->checkAppUrl($isProduction);
         $this->checkSecurityHeaders($isProduction);
         $this->checkSessionCookieSecurity($isProduction);
-        $this->checkAdminRestrictions();
+        $this->checkAdminRestrictions($isProduction);
         $this->checkRateLimits();
-        $this->checkTwoFactorSessionWindow();
+        $this->checkTwoFactorSessionWindow($isProduction);
         $this->checkMonitoring($isProduction);
         $this->checkWeeklyReportSetup($isProduction);
 
@@ -159,12 +160,23 @@ class OpsHealthCheckCommand extends Command
         $this->addRow('OK', 'SESSION_SECURE_COOKIE', 'Enabled.');
     }
 
-    private function checkAdminRestrictions(): void
+    private function checkAdminRestrictions(bool $isProduction): void
     {
         $allowedEmails = $this->parseCsv((string) config('security.admin.allowed_emails', ''));
         $allowedIps = $this->parseCsv((string) config('security.admin.allowed_ips', ''));
+        $enforceAllowlistInProduction = (bool) config('security.admin.enforce_allowlist_in_production', true);
 
         if ($allowedEmails === [] && $allowedIps === []) {
+            if ($isProduction && $enforceAllowlistInProduction) {
+                $this->addRow(
+                    'FAIL',
+                    'Admin allowlist',
+                    'Production requires ADMIN_ALLOWED_EMAILS or ADMIN_ALLOWED_IPS.'
+                );
+
+                return;
+            }
+
             $this->addRow(
                 'WARN',
                 'Admin allowlist',
@@ -203,14 +215,16 @@ class OpsHealthCheckCommand extends Command
         }
     }
 
-    private function checkTwoFactorSessionWindow(): void
+    private function checkTwoFactorSessionWindow(bool $isProduction): void
     {
         $value = (int) config('security.admin.two_factor_session_minutes', 0);
         if ($value <= 0) {
             $this->addRow(
-                'WARN',
+                $isProduction ? 'FAIL' : 'WARN',
                 'ADMIN_2FA_SESSION_MINUTES',
-                'Value is 0 (2FA challenge may not expire).'
+                $isProduction
+                    ? 'Must be greater than 0 in production.'
+                    : 'Value is 0 (2FA challenge may not expire).'
             );
 
             return;

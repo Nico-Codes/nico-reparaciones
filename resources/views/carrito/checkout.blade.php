@@ -57,7 +57,7 @@
   @if(empty($cart))
     <div class="card">
       <div class="card-body">
-        <div class="font-black">Tu carrito esta vacio.</div>
+        <div class="font-black" data-testid="empty-cart-message">Tu carrito está vacío.</div>
         <div class="muted mt-1">Agrega productos desde la tienda para confirmar.</div>
         <div class="mt-4">
           <a href="{{ route('store.index') }}" class="btn-primary">Ir a la tienda</a>
@@ -239,4 +239,3 @@
     </div>
   </div>
 @endsection
-

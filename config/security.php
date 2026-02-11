@@ -13,6 +13,7 @@ return [
     'admin' => [
         'allowed_emails' => (string) env('ADMIN_ALLOWED_EMAILS', ''),
         'allowed_ips' => (string) env('ADMIN_ALLOWED_IPS', ''),
+        'enforce_allowlist_in_production' => (bool) env('ADMIN_ENFORCE_ALLOWLIST_IN_PRODUCTION', true),
         'require_reauth_minutes' => (int) env('ADMIN_REQUIRE_REAUTH_MINUTES', 0),
         'two_factor_session_minutes' => (int) env('ADMIN_2FA_SESSION_MINUTES', 0),
         'two_factor_recovery_codes_count' => (int) env('ADMIN_2FA_RECOVERY_CODES_COUNT', 8),

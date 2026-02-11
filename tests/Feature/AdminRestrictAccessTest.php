@@ -78,4 +78,23 @@ class AdminRestrictAccessTest extends TestCase
         $response->assertRedirect(route('login'));
         $response->assertSessionHasErrors('email');
     }
+
+    public function test_admin_is_blocked_in_production_when_allowlists_are_missing(): void
+    {
+        $this->app['env'] = 'production';
+
+        config()->set('security.admin.allowed_emails', '');
+        config()->set('security.admin.allowed_ips', '');
+        config()->set('security.admin.enforce_allowlist_in_production', true);
+        config()->set('security.admin.require_reauth_minutes', 0);
+
+        $admin = User::factory()->create([
+            'role' => 'admin',
+            'email' => 'admin@example.com',
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('admin.dashboard'));
+
+        $response->assertForbidden();
+    }
 }

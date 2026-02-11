@@ -325,7 +325,7 @@ export function initCartAndCheckout({ $, afterPaint, openToast }) {
       cartGrid.innerHTML = `
         <div class="card">
           <div class="card-body">
-            <div class="font-black">Tu carrito está vacío.</div>
+            <div class="font-black" data-testid="empty-cart-message">Tu carrito está vacío.</div>
             <div class="muted" style="margin-top:4px">Agregá productos desde la tienda.</div>
             <div style="margin-top:14px">
               <a href="${storeUrl}" class="btn-primary">Ir a la tienda</a>
@@ -638,7 +638,7 @@ export function initCartAndCheckout({ $, afterPaint, openToast }) {
                 cartGrid.innerHTML = `
                   <div class="card">
                     <div class="card-body">
-                      <div class="font-black">Tu carrito está vacío.</div>
+                      <div class="font-black" data-testid="empty-cart-message">Tu carrito está vacío.</div>
                       <div class="muted" style="margin-top:4px">Agregá productos desde la tienda.</div>
                       <div style="margin-top:14px">
                         <a href="${storeUrl}" class="btn-primary">Ir a la tienda</a>

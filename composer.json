@@ -61,6 +61,13 @@
         "ops:check:strict": [
             "@php artisan ops:health-check --strict --ansi"
         ],
+        "ops:prepare:production": [
+            "@php artisan ops:health-check --strict --assume-production --ansi",
+            "@php artisan config:cache --ansi",
+            "@php artisan route:cache --ansi",
+            "@php artisan view:cache --ansi",
+            "@php artisan ops:health-check --strict --assume-production --ansi"
+        ],
         "ops:backup": [
             "@php artisan ops:backup --only=all --ansi"
         ],

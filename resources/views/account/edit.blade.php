@@ -221,7 +221,7 @@
         </div>
 
         <div class="grid gap-2 sm:flex sm:flex-row">
-          <button class="btn-primary h-11 w-full sm:w-auto" type="submit">Actualizar contraseña</button>
+          <button class="btn-primary h-11 w-full sm:w-auto" type="submit" data-testid="account-password-submit">Actualizar contraseña</button>
         </div>
       </form>
     </div>

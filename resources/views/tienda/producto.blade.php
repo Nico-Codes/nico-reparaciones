@@ -113,6 +113,8 @@
               class="btn-primary h-11 w-full justify-center"
               type="submit"
               data-product-name="{{ $product->name }}"
+              data-testid="product-add-to-cart"
+              aria-label="Agregar al carrito"
               {{ $hasStock ? '' : 'disabled' }}
             >
               {{ $hasStock ? 'Agregar al carrito' : 'Sin stock' }}
@@ -132,4 +134,3 @@
     </div>
   </div>
 @endsection
-

@@ -1,4 +1,7 @@
 export function initStoreSearchSuggestions() {
+  const RECENT_KEY = 'nr_store_recent_searches';
+  const RECENT_LIMIT = 6;
+
   const roots = Array.from(document.querySelectorAll('[data-store-search]'));
   if (!roots.length) return;
 
@@ -15,6 +18,45 @@ export function initStoreSearchSuggestions() {
     let controller = null;
     let lastQuery = '';
 
+    const normalizeQuery = (value) => {
+      return String(value || '')
+        .trim()
+        .replace(/\s+/g, ' ')
+        .slice(0, 80);
+    };
+
+    const readRecent = () => {
+      try {
+        const raw = window.localStorage.getItem(RECENT_KEY);
+        if (!raw) return [];
+
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return [];
+
+        return parsed
+          .map((item) => normalizeQuery(item))
+          .filter((item) => item.length >= 2)
+          .slice(0, RECENT_LIMIT);
+      } catch (_) {
+        return [];
+      }
+    };
+
+    const writeRecent = (items) => {
+      try {
+        window.localStorage.setItem(RECENT_KEY, JSON.stringify(items.slice(0, RECENT_LIMIT)));
+      } catch (_) {}
+    };
+
+    const saveRecent = (query) => {
+      const normalized = normalizeQuery(query);
+      if (normalized.length < 2) return;
+
+      const lower = normalized.toLowerCase();
+      const merged = [normalized, ...readRecent().filter((item) => item.toLowerCase() !== lower)];
+      writeRecent(merged);
+    };
+
     const hidePanel = () => {
       panel.classList.add('hidden');
     };
@@ -25,6 +67,45 @@ export function initStoreSearchSuggestions() {
 
     const clearList = () => {
       list.innerHTML = '';
+    };
+
+    const renderRecent = () => {
+      const items = readRecent();
+      clearList();
+
+      if (!items.length) {
+        hidePanel();
+        return;
+      }
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'p-2';
+
+      const header = document.createElement('div');
+      header.className = 'px-1 pb-2 text-[11px] font-black uppercase tracking-wide text-zinc-500';
+      header.textContent = 'Busquedas recientes';
+      wrapper.appendChild(header);
+
+      const chips = document.createElement('div');
+      chips.className = 'flex flex-wrap gap-2';
+
+      items.forEach((item) => {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className =
+          'rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs font-semibold text-zinc-700 transition hover:border-zinc-300 hover:bg-zinc-100';
+        chip.textContent = item;
+        chip.addEventListener('click', () => {
+          input.value = item;
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+          input.focus();
+        });
+        chips.appendChild(chip);
+      });
+
+      wrapper.appendChild(chips);
+      list.appendChild(wrapper);
+      showPanel();
     };
 
     const renderEmpty = (query) => {
@@ -121,8 +202,7 @@ export function initStoreSearchSuggestions() {
       window.clearTimeout(timer);
 
       if (query.length < 2) {
-        clearList();
-        hidePanel();
+        renderRecent();
         return;
       }
 
@@ -132,6 +212,12 @@ export function initStoreSearchSuggestions() {
     });
 
     input.addEventListener('focus', () => {
+      const query = normalizeQuery(input.value);
+      if (query.length < 2) {
+        renderRecent();
+        return;
+      }
+
       if (list.children.length > 0) showPanel();
     });
 
@@ -144,6 +230,19 @@ export function initStoreSearchSuggestions() {
     document.addEventListener('click', (event) => {
       if (!root.contains(event.target)) {
         hidePanel();
+      }
+    });
+
+    const form = input.closest('form');
+    if (form) {
+      form.addEventListener('submit', () => {
+        saveRecent(input.value);
+      });
+    }
+
+    list.addEventListener('click', (event) => {
+      if (event.target.closest('a[href]')) {
+        saveRecent(input.value);
       }
     });
   });

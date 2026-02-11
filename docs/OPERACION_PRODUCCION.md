@@ -2,6 +2,10 @@
 
 Guia operativa para mantener NicoReparaciones estable, segura y recuperable.
 
+Tip rapido:
+
+- Puedes partir de `/.env.production.example` para armar tu `.env` de produccion.
+
 ## 1. Hardening minimo de `.env` (produccion)
 
 Valores recomendados:
@@ -24,6 +28,7 @@ SECURITY_CSP_ENABLED=true
 
 ADMIN_ALLOWED_EMAILS=admin1@tu-dominio.com,admin2@tu-dominio.com
 ADMIN_ALLOWED_IPS=203.0.113.10,198.51.100.0/24
+ADMIN_ENFORCE_ALLOWLIST_IN_PRODUCTION=true
 ADMIN_REQUIRE_REAUTH_MINUTES=30
 ADMIN_2FA_SESSION_MINUTES=30
 ```
@@ -32,7 +37,8 @@ Notas:
 
 - No dejes `APP_DEBUG=true` en produccion.
 - Configura al menos una allowlist (`ADMIN_ALLOWED_EMAILS` o `ADMIN_ALLOWED_IPS`).
-- Mantene 2FA admin activo y con expiracion de sesion razonable.
+- Mantene 2FA admin activo y con expiracion de sesion razonable (`ADMIN_2FA_SESSION_MINUTES > 0`).
+- En produccion, `ops:health-check` marca `FAIL` si `ADMIN_2FA_SESSION_MINUTES=0`.
 
 ## 2. Health check operacional
 
@@ -48,11 +54,29 @@ Modo estricto (falla tambien con warnings):
 php artisan ops:health-check --strict
 ```
 
+Modo produccion forzado (util para validar en local/staging):
+
+```bash
+php artisan ops:health-check --strict --assume-production
+```
+
 Atajo por Composer:
 
 ```bash
 composer ops:check
 composer ops:check:strict
+```
+
+Preflight completo de produccion (recomendado antes de cada deploy):
+
+```bash
+composer run ops:prepare:production
+```
+
+En Windows:
+
+```bat
+nico-prod-preflight.bat
 ```
 
 Este check valida:

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+﻿import { test, expect } from '@playwright/test';
 
 test.setTimeout(60000);
 
@@ -35,7 +35,7 @@ test('guest can register, update profile and sign in with a new password', async
   await page.locator('input[name="current_password"]').fill(initialPassword);
   await page.locator('input[name="password"]').fill(nextPassword);
   await page.locator('input[name="password_confirmation"]').fill(nextPassword);
-  await page.getByRole('button', { name: 'Actualizar contrasena' }).click();
+  await page.getByTestId('account-password-submit').click();
 
   const loginContext = await browser.newContext();
   const loginPage = await loginContext.newPage();
@@ -48,4 +48,5 @@ test('guest can register, update profile and sign in with a new password', async
   await expect(loginPage).toHaveURL(/\/$/);
   await loginContext.close();
 });
+
 

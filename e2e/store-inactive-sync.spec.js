@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+﻿import { test, expect } from '@playwright/test';
 
 const adminEmail = process.env.E2E_ADMIN_EMAIL || 'admin@nico.local';
 const adminPassword = process.env.E2E_ADMIN_PASSWORD || 'admin1234';
@@ -47,8 +47,9 @@ test('checkout removes cart item when product becomes inactive in admin', async 
   await shopperPage.goto('/checkout');
   await expect(shopperPage).toHaveURL(/\/carrito$/);
   await expect(shopperPage.locator('.alert-success').first()).toContainText(/Quitamos/i);
-  await expect(shopperPage.getByText(/Tu carrito está vacío/i)).toBeVisible();
+  await expect(shopperPage.getByTestId('empty-cart-message').first()).toBeVisible();
 
   await adminContext.close();
   await shopperContext.close();
 });
+

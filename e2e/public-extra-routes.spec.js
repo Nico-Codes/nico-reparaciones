@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+﻿import { test, expect } from '@playwright/test';
 
 const customerEmail = process.env.E2E_CUSTOMER_EMAIL || 'e2e.customer@nico.local';
 const customerPassword = process.env.E2E_CUSTOMER_PASSWORD || 'e2e12345';
@@ -59,13 +59,13 @@ test('customer cart update remove clear and logout routes work', async ({ page }
   await expect(removeForm).toBeVisible();
   await removeForm.evaluate((form) => form.submit());
   await page.waitForLoadState('domcontentloaded');
-  await expect(page.locator('.card', { hasText: 'Tu carrito está vacío' })).toBeVisible();
+  await expect(page.getByTestId('empty-cart-message').first()).toBeVisible();
 
   await page.goto('/producto/e2e-stock-sync-product');
   await page.getByRole('button', { name: 'Agregar al carrito' }).click();
   await page.goto('/carrito');
   await page.locator('form[data-cart-clear] button[type="submit"]').click();
-  await expect(page.locator('.card', { hasText: 'Tu carrito está vacío' })).toBeVisible();
+  await expect(page.getByTestId('empty-cart-message').first()).toBeVisible();
 
   const logoutForm = page.locator('form[action$="/logout"]').first();
   await expect(logoutForm).toHaveCount(1);
@@ -76,3 +76,4 @@ test('customer cart update remove clear and logout routes work', async ({ page }
   await page.goto('/mi-cuenta');
   await expect(page).toHaveURL(/\/login/);
 });
+

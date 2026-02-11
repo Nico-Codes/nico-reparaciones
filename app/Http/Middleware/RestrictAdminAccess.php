@@ -32,6 +32,13 @@ class RestrictAdminAccess
         }
 
         $allowedIps = $this->parseCsv((string) config('security.admin.allowed_ips', ''));
+        $enforceAllowlistInProduction = (bool) config('security.admin.enforce_allowlist_in_production', true);
+        $isProduction = app()->environment('production');
+
+        if ($isProduction && $enforceAllowlistInProduction && $allowedEmails === [] && $allowedIps === []) {
+            abort(403, 'El panel admin requiere allowlist en produccion. Configura ADMIN_ALLOWED_EMAILS o ADMIN_ALLOWED_IPS.');
+        }
+
         if ($allowedIps !== []) {
             $requestIp = (string) $request->ip();
             $ipAllowed = false;

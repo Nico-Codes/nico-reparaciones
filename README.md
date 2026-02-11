@@ -11,6 +11,10 @@
 
 - Health check operativo: `php artisan ops:health-check`
 - Modo estricto: `php artisan ops:health-check --strict`
+- Modo produccion desde local/staging: `php artisan ops:health-check --strict --assume-production`
+- Plantilla recomendada de produccion: `/.env.production.example`
+- Preflight de produccion (health strict + caches + health strict): `composer run ops:prepare:production`
+- En Windows tambien disponible: `nico-prod-preflight.bat`
 - Backup operativo (DB + archivos): `php artisan ops:backup --only=all`
 - Solo backup de base de datos: `php artisan ops:backup --only=db`
 - Solo backup de archivos: `php artisan ops:backup --only=files`
