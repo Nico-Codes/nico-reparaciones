@@ -38,7 +38,7 @@
 @section('content')
   <div class="page-head">
     <div class="page-title">Mis pedidos</div>
-    <div class="page-subtitle">Aca puedes ver el estado y el detalle de cada pedido.</div>
+    <div class="page-subtitle">Aquí puedes ver el estado y el detalle de cada pedido.</div>
   </div>
 
   <div class="card mb-4">
@@ -57,7 +57,7 @@
 
       <form method="GET" action="{{ route('orders.index') }}" class="grid w-full gap-2 sm:grid-cols-[1fr_auto_auto] md:flex md:w-auto">
         <input type="hidden" name="tab" value="{{ $tab }}">
-        <input class="h-11 text-base sm:text-sm" name="q" value="{{ $q }}" placeholder="Buscar #pedido, nombre o telefono...">
+        <input class="h-11 text-base sm:text-sm" name="q" value="{{ $q }}" placeholder="Buscar #pedido, nombre o teléfono...">
         <button class="btn-outline h-11" type="submit">Buscar</button>
 
         @if($q)
@@ -118,7 +118,7 @@
               @endforeach
 
               @if($more > 0)
-                <div class="text-xs text-zinc-500">+{{ $more }} mas</div>
+                <div class="text-xs text-zinc-500">+{{ $more }} más</div>
               @endif
             </div>
           @endif
@@ -132,8 +132,8 @@
     @empty
       <div class="card">
         <div class="card-body">
-          <div class="font-black">Todavia no tienes pedidos.</div>
-          <div class="muted mt-1">Cuando compres algo, van a aparecer aca con su estado.</div>
+          <div class="font-black">Todavía no tienes pedidos.</div>
+          <div class="muted mt-1">Cuando compres algo, aparecerá aquí con su estado.</div>
           <div class="mt-4">
             @if($has('store.index'))
               <a href="{{ route('store.index') }}" class="btn-primary h-11">Ir a la tienda</a>

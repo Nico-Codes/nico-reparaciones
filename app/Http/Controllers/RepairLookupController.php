@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Repair;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class RepairLookupController extends Controller
 {
@@ -19,7 +20,7 @@ class RepairLookupController extends Controller
             'phone' => ['required', 'string', 'max:30', 'regex:/^(?=(?:\\D*\\d){8,15}\\D*$)[0-9+()\\s-]{8,30}$/'],
         ]);
 
-        $code = trim($data['code']);
+        $code = Str::upper(trim((string) $data['code']));
         $phone = preg_replace('/\D+/', '', (string) $data['phone']);
 
         $repair = Repair::query()

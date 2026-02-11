@@ -169,7 +169,7 @@
         </div>
 
         <div>
-          <div class="muted">Telefono</div>
+          <div class="muted">Teléfono</div>
           <div class="font-black">{{ $order->pickup_phone ?: '-' }}</div>
         </div>
 

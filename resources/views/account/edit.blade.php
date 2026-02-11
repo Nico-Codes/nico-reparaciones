@@ -38,7 +38,7 @@
           <div class="mt-1">
             Te falta:
             <span class="font-extrabold">
-              {{ $missingLast ? 'apellido' : '' }}{{ ($missingLast && $missingPhone) ? ' y ' : '' }}{{ $missingPhone ? 'telefono' : '' }}
+              {{ $missingLast ? 'apellido' : '' }}{{ ($missingLast && $missingPhone) ? ' y ' : '' }}{{ $missingPhone ? 'teléfono' : '' }}
             </span>.
           </div>
           <div class="mt-1">Es necesario para asociar compras y recibir avisos por WhatsApp.</div>
@@ -93,7 +93,7 @@
           </div>
 
           <div>
-            <label for="phone">Telefono / WhatsApp</label>
+            <label for="phone">Teléfono / WhatsApp</label>
             <input
               id="phone"
               name="phone"
@@ -138,7 +138,7 @@
   <div class="card mt-4 max-w-2xl" id="security">
     <div class="card-head items-start">
       <div class="font-black">Seguridad</div>
-      <span class="badge-zinc shrink-0">Contrasena</span>
+      <span class="badge-zinc shrink-0">Contraseña</span>
     </div>
 
     <div class="card-body p-4 sm:p-5">
@@ -164,7 +164,7 @@
 
         @if(!$isGoogle)
           <div>
-            <label for="current_password">Contrasena actual</label>
+            <label for="current_password">Contraseña actual</label>
             <input
               id="current_password"
               name="current_password"
@@ -180,13 +180,13 @@
           </div>
         @else
           <div class="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700">
-            Estas ingresando con Google. Puedes establecer una contrasena nueva sin ingresar la actual.
+            Estás ingresando con Google. Puedes establecer una contraseña nueva sin ingresar la actual.
           </div>
         @endif
 
         <div class="grid gap-3 sm:grid-cols-2">
           <div>
-            <label for="password">Nueva contrasena</label>
+            <label for="password">Nueva contraseña</label>
             <input
               id="password"
               name="password"
@@ -204,7 +204,7 @@
           </div>
 
           <div>
-            <label for="password_confirmation">Repetir nueva contrasena</label>
+            <label for="password_confirmation">Repetir nueva contraseña</label>
             <input
               id="password_confirmation"
               name="password_confirmation"
@@ -221,7 +221,7 @@
         </div>
 
         <div class="grid gap-2 sm:flex sm:flex-row">
-          <button class="btn-primary h-11 w-full sm:w-auto" type="submit">Actualizar contrasena</button>
+          <button class="btn-primary h-11 w-full sm:w-auto" type="submit">Actualizar contraseña</button>
         </div>
       </form>
     </div>

@@ -38,7 +38,7 @@ class OrderController extends Controller
         if (empty($cart)) {
             return redirect()
                 ->route('store.index')
-                ->with('success', 'Tu carrito esta vacio.');
+                ->with('success', 'Tu carrito está vacío.');
         }
 
         $user = Auth::user();
@@ -48,7 +48,7 @@ class OrderController extends Controller
 
             return redirect()
                 ->route('account.edit')
-                ->withErrors(['profile' => 'Completa tu apellido y telefono para poder confirmar pedidos.']);
+                ->withErrors(['profile' => 'Completá tu apellido y teléfono para poder confirmar pedidos.']);
         }
 
         $data = $request->validate([
@@ -65,7 +65,7 @@ class OrderController extends Controller
         if ($sessionToken === '' || !hash_equals($sessionToken, $submittedToken)) {
             return redirect()
                 ->route('checkout')
-                ->withErrors(['cart' => 'La confirmacion de checkout expiro. Revisa y confirma de nuevo.']);
+                ->withErrors(['cart' => 'La confirmación del checkout expiró. Revisá y confirmá de nuevo.']);
         }
 
         $lock = Cache::lock('checkout:token:' . $submittedToken, 20);
@@ -82,7 +82,7 @@ class OrderController extends Controller
 
             return redirect()
                 ->route('checkout')
-                ->withErrors(['cart' => 'Ya estamos procesando este pedido. Espera unos segundos.']);
+                ->withErrors(['cart' => 'Ya estamos procesando este pedido. Esperá unos segundos.']);
         }
 
         try {
@@ -115,7 +115,7 @@ class OrderController extends Controller
 
                         if (!$product) {
                             throw ValidationException::withMessages([
-                                'cart' => 'Uno o mas productos ya no existen o fueron eliminados. Vuelve a armar el carrito.',
+                                'cart' => 'Uno o más productos ya no existen o fueron eliminados. Volvé a armar el carrito.',
                             ]);
                         }
 
@@ -180,7 +180,7 @@ class OrderController extends Controller
 
                             if ($affected === 0) {
                                 throw ValidationException::withMessages([
-                                    'cart' => "No se pudo confirmar: el stock de \"{$product->name}\" cambio. Vuelve a intentar.",
+                                    'cart' => "No se pudo confirmar: el stock de \"{$product->name}\" cambió. Volvé a intentar.",
                                 ]);
                             }
                         }
@@ -216,7 +216,7 @@ class OrderController extends Controller
                 return redirect()
                     ->route('checkout')
                     ->withErrors([
-                        'cart' => 'Detectamos concurrencia en el stock. Actualiza el checkout y vuelve a confirmar.',
+                        'cart' => 'Detectamos concurrencia en el stock. Actualizá el checkout y volvé a confirmar.',
                     ]);
             }
         } finally {

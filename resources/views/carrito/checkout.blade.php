@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Checkout')
+@section('suppress_global_alerts', '1')
 
 @php
   $fmt = fn($n) => '$ ' . number_format((float)$n, 0, ',', '.');
@@ -322,7 +323,7 @@
           </div>
 
           <div class="text-xs text-zinc-500">
-            Retiro en el local. Si hay algun detalle de stock, te avisamos antes de confirmar.
+            Retiro en el local. Si hay algún detalle de stock, te avisamos antes de confirmar.
           </div>
 
           <div class="lg:hidden pt-1">

@@ -105,7 +105,11 @@
     ? route('admin.dashboard')
     : ($has('store.index') ? route('store.index') : '/');
 
-  $cartAdded = session('cart_added'); // ['product_name' => ..., 'quantity' => ...]
+  $cartAdded = session('cart_added'); // ['name' => ...] o legacy ['product_name' => ...]
+  $cartAddedName = '';
+  if (is_array($cartAdded)) {
+    $cartAddedName = trim((string)($cartAdded['name'] ?? $cartAdded['product_name'] ?? ''));
+  }
 @endphp
 
 <body class="min-h-screen flex flex-col">
@@ -223,7 +227,7 @@
           @else
 
             <div class="relative">
-              <button class="btn-ghost px-3 py-2" data-menu="accountMenu" aria-expanded="false" type="button">
+              <button class="btn-ghost px-3 py-2" data-menu="accountMenu" aria-expanded="false" aria-label="Abrir menú de cuenta" type="button">
                 <span class="sm:hidden">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
                       fill="none" stroke="currentColor" stroke-width="2"
@@ -538,6 +542,7 @@
     <div id="cartAddedOverlay"
          class="fixed inset-0 z-[60] opacity-0 pointer-events-none transition-opacity duration-300 ease-out"
          data-cart-added="1"
+         data-cart-added-name="{{ $cartAddedName }}"
          aria-hidden="true">
 
       <div class="absolute inset-0 bg-zinc-950/40" data-cart-added-close></div>
@@ -547,10 +552,8 @@
         <div class="rounded-t-3xl bg-white p-4 shadow-2xl">
           <div class="flex items-start justify-between gap-3">
             <div>
-              <div class="text-base font-black">Agregado al carrito</div>
-              @if(!empty($cartAdded['product_name']))
-                <div class="mt-0.5 text-sm text-zinc-600">{{ $cartAdded['product_name'] }}</div>
-              @endif
+              <div class="text-base font-black" id="cartAddedTitle">Agregado al carrito</div>
+              <div class="mt-0.5 text-sm text-zinc-600" id="cartAddedName">{{ $cartAddedName !== '' ? $cartAddedName : 'Producto' }}</div>
             </div>
 
             <button type="button" class="icon-btn" data-cart-added-close aria-label="Cerrar">

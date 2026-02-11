@@ -207,11 +207,36 @@ document.addEventListener('DOMContentLoaded', () => {
   let sheet = $('#cartAddedSheet');
   let autoCloseTimer = null;
   let unlockTimer = null;
+  let toastEscBound = false;
+
+  const bindToastInteractions = () => {
+    if (!overlay) return;
+    if (overlay.dataset.toastBound === '1') return;
+
+    overlay.dataset.toastBound = '1';
+
+    $$('[data-cart-added-close]', overlay).forEach((el) => {
+      el.addEventListener('click', (e) => {
+        e.preventDefault();
+        closeToast();
+      });
+    });
+
+    if (!toastEscBound) {
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeToast();
+      });
+      toastEscBound = true;
+    }
+  };
 
   const ensureToast = () => {
     overlay = $('#cartAddedOverlay');
     sheet = $('#cartAddedSheet');
-    if (overlay && sheet) return;
+    if (overlay && sheet) {
+      bindToastInteractions();
+      return;
+    }
 
     const html = `
       <div id="cartAddedOverlay"
@@ -243,17 +268,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     overlay = $('#cartAddedOverlay');
     sheet = $('#cartAddedSheet');
-
-    $$('[data-cart-added-close]', overlay).forEach((el) => {
-      el.addEventListener('click', (e) => {
-        e.preventDefault();
-        closeToast();
-      });
-    });
-
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') closeToast();
-    });
+    bindToastInteractions();
   };
 
   const openToast = (message = 'Producto', title = 'Agregado al carrito ✅') => {

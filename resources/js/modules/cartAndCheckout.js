@@ -1,7 +1,12 @@
 export function initCartAndCheckout({ $, afterPaint, openToast }) {
   const serverOverlay = $('#cartAddedOverlay');
   if (serverOverlay?.dataset?.cartAdded === '1') {
-    afterPaint(() => openToast($('#cartAddedName')?.textContent?.trim() || 'Producto'));
+    const serverName =
+      (serverOverlay.dataset.cartAddedName || '').trim() ||
+      ($('#cartAddedName')?.textContent || '').trim() ||
+      'Producto';
+
+    afterPaint(() => openToast(serverName));
   }
 
   // ----------------------------
