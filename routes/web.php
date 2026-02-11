@@ -241,6 +241,10 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'can:access-admin', 'admin.
     // Configuracion del negocio
     Route::get('/configuracion', [AdminBusinessSettingsController::class, 'index'])->name('admin.settings.index');
     Route::post('/configuracion', [AdminBusinessSettingsController::class, 'update'])->name('admin.settings.update');
+    Route::post('/configuracion/reportes/dashboard', [AdminBusinessSettingsController::class, 'updateReports'])
+        ->name('admin.settings.reports.update');
+    Route::post('/configuracion/reportes/dashboard/enviar', [AdminBusinessSettingsController::class, 'sendWeeklyReport'])
+        ->name('admin.settings.reports.send');
     Route::get('/configuracion/identidad-visual', [AdminBusinessSettingsController::class, 'assets'])
         ->name('admin.settings.assets.index');
     Route::post('/configuracion/identidad-visual/{assetKey}', [AdminBusinessSettingsController::class, 'updateAsset'])

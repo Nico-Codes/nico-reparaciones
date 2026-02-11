@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Support\OpsDashboardReportSettings;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -274,21 +275,21 @@ class OpsHealthCheckCommand extends Command
 
     private function checkWeeklyReportSetup(bool $isProduction): void
     {
-        $emails = $this->parseCsv((string) config('ops.reports.dashboard_weekly_recipients', ''));
+        $emails = $this->parseCsv(OpsDashboardReportSettings::recipientsRaw());
 
         if ($emails === []) {
             $this->addRow(
                 $isProduction ? 'WARN' : 'WARN',
                 'Weekly KPI report',
-                'No recipients configured. Set OPS_WEEKLY_REPORT_EMAILS.'
+                'No recipients configured. Set OPS_WEEKLY_REPORT_EMAILS or configure Admin > Configuracion.'
             );
 
             return;
         }
 
-        $day = strtolower(trim((string) config('ops.reports.dashboard_weekly_day', 'monday')));
-        $time = trim((string) config('ops.reports.dashboard_weekly_time', '08:00'));
-        $range = (int) config('ops.reports.dashboard_weekly_range_days', 30);
+        $day = OpsDashboardReportSettings::day();
+        $time = OpsDashboardReportSettings::time();
+        $range = OpsDashboardReportSettings::rangeDays();
 
         $allowedDays = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
         if (! in_array($day, $allowedDays, true)) {

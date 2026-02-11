@@ -16,7 +16,7 @@
 - Solo backup de archivos: `php artisan ops:backup --only=files`
 - Prune de backups viejos: `php artisan ops:backup --prune-only`
 - Test de alertas operativas: `php artisan ops:alert-test`
-- Envio manual reporte semanal dashboard: `php artisan ops:dashboard-report-email --range=30 --to=ops@tu-dominio.com`
+- Envio manual reporte semanal dashboard: `php artisan ops:dashboard-report-email --range=30 --to=ops@tu-dominio.com` (tambien disponible en Admin > Configuracion)
 - Quality gate local: `composer quality`
 - Checklist de produccion: `docs/OPERACION_PRODUCCION.md`
 - E2E (Playwright):

@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Mail\AdminDashboardWeeklyReportMail;
 use App\Support\AdminDashboardReportBuilder;
+use App\Support\OpsDashboardReportSettings;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Mail;
 use Throwable;
@@ -19,7 +20,7 @@ class OpsDashboardReportEmailCommand extends Command
 
     public function handle(AdminDashboardReportBuilder $reportBuilder): int
     {
-        $configuredRange = (int) config('ops.reports.dashboard_weekly_range_days', 30);
+        $configuredRange = OpsDashboardReportSettings::rangeDays();
         $range = $this->resolveRangeDays((string) ($this->option('range') ?? ''), $configuredRange);
 
         $report = $reportBuilder->build($range);
@@ -77,7 +78,7 @@ class OpsDashboardReportEmailCommand extends Command
     {
         $source = trim($rawOption);
         if ($source === '') {
-            $source = (string) config('ops.reports.dashboard_weekly_recipients', '');
+            $source = OpsDashboardReportSettings::recipientsRaw();
         }
 
         if (trim($source) === '') {

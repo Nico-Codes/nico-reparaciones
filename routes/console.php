@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\OpsDashboardReportSettings;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -26,9 +27,9 @@ $weeklyDayMap = [
     'saturday' => 6,
 ];
 
-$weeklyDayRaw = strtolower((string) config('ops.reports.dashboard_weekly_day', 'monday'));
+$weeklyDayRaw = OpsDashboardReportSettings::day();
 $weeklyDay = $weeklyDayMap[$weeklyDayRaw] ?? 1;
-$weeklyTime = (string) config('ops.reports.dashboard_weekly_time', '08:00');
+$weeklyTime = OpsDashboardReportSettings::time();
 
 Schedule::command('ops:dashboard-report-email')
     ->weeklyOn($weeklyDay, $weeklyTime)

@@ -134,3 +134,32 @@ test('admin dashboard export routes return downloadable files', async ({ page })
   expect(xlsxBuffer[0]).toBe(0x50); // P
   expect(xlsxBuffer[1]).toBe(0x4b); // K
 });
+
+test('admin settings weekly report routes save and trigger manually', async ({ page }) => {
+  await loginAdmin(page);
+
+  await page.goto('/admin/configuracion');
+  const csrf = await csrfFromPage(page);
+  expect(csrf).toBeTruthy();
+
+  const updateReportResponse = await page.request.post('/admin/configuracion/reportes/dashboard', {
+    form: {
+      _token: csrf || '',
+      weekly_report_emails: 'ops@example.com, owner@example.com',
+      weekly_report_day: 'monday',
+      weekly_report_time: '08:00',
+      weekly_report_range_days: '30',
+    },
+    maxRedirects: 0,
+  });
+  expectRedirectStatus(updateReportResponse.status());
+
+  const sendReportResponse = await page.request.post('/admin/configuracion/reportes/dashboard/enviar', {
+    form: {
+      _token: csrf || '',
+      weekly_report_range_days: '30',
+    },
+    maxRedirects: 0,
+  });
+  expectRedirectStatus(sendReportResponse.status());
+});

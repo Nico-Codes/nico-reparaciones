@@ -167,6 +167,7 @@ Notas:
 
 - El comando adjunta CSV con KPIs + top productos.
 - El scheduler ya ejecuta `ops:dashboard-report-email` semanalmente segun `OPS_WEEKLY_REPORT_DAY/TIME`.
+- Tambien puedes configurar destinatarios/dia/hora/rango desde `Admin > Configuracion` (sobrescribe los valores de `.env`).
 - Si no hay destinatarios configurados, el comando falla para evitar falsa sensacion de cobertura operativa.
 
 ## 6. Deploy sugerido (sin downtime prolongado)
