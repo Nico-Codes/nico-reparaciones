@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\AdminSmtpTestMail;
 use App\Models\BusinessSetting;
 use App\Support\AuditLogger;
 use App\Support\BrandAssets;
@@ -9,7 +10,9 @@ use App\Support\OpsDashboardReportSettings;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use Throwable;
 
 class AdminBusinessSettingsController extends Controller
 {
@@ -28,6 +31,7 @@ class AdminBusinessSettingsController extends Controller
             'weeklyReportDay' => OpsDashboardReportSettings::day(),
             'weeklyReportTime' => OpsDashboardReportSettings::time(),
             'weeklyReportRangeDays' => OpsDashboardReportSettings::rangeDays(),
+            'smtpDefaultTo' => (string) (auth()->user()?->email ?? ''),
         ]);
     }
 
@@ -174,6 +178,49 @@ class AdminBusinessSettingsController extends Controller
         ]);
 
         return back()->with('success', 'Reporte semanal enviado correctamente.');
+    }
+
+    public function sendSmtpTestEmail(Request $request)
+    {
+        $data = $request->validate([
+            'test_email' => 'required|email|max:255',
+        ], [
+            'test_email.required' => 'Ingresa un email de destino para la prueba.',
+            'test_email.email' => 'Ingresa un email valido.',
+            'test_email.max' => 'El email no puede superar :max caracteres.',
+        ]);
+
+        $testEmail = Str::lower(trim((string) $data['test_email']));
+        $adminEmail = (string) (auth()->user()?->email ?? '');
+
+        try {
+            Mail::to($testEmail)->send(new AdminSmtpTestMail(
+                sentByEmail: $adminEmail !== '' ? $adminEmail : 'admin@local',
+                appEnv: (string) app()->environment(),
+                appUrl: (string) config('app.url')
+            ));
+        } catch (Throwable $exception) {
+            AuditLogger::log($request, 'admin.settings.smtp_test.failed', [
+                'subject_type' => BusinessSetting::class,
+                'metadata' => [
+                    'to' => $testEmail,
+                    'error' => $exception->getMessage(),
+                ],
+            ]);
+
+            return back()->withErrors([
+                'smtp_test' => 'No se pudo enviar el correo de prueba SMTP. Revisa la configuracion de mail.',
+            ]);
+        }
+
+        AuditLogger::log($request, 'admin.settings.smtp_test.sent', [
+            'subject_type' => BusinessSetting::class,
+            'metadata' => [
+                'to' => $testEmail,
+            ],
+        ]);
+
+        return back()->with('success', 'Correo de prueba SMTP enviado a '.$testEmail.'.');
     }
 
     public function updateAsset(Request $request, string $assetKey)

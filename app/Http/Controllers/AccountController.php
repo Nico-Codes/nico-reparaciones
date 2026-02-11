@@ -24,6 +24,7 @@ class AccountController extends Controller
     public function update(Request $request)
     {
         $user = Auth::user();
+        $currentEmail = Str::lower(trim((string) $user->email));
 
             $data = $request->validate([
                 'name'      => ['required', 'string', 'max:255'],
@@ -50,8 +51,21 @@ class AccountController extends Controller
             $data['phone']     = trim($data['phone']);
             $data['email']     = Str::lower(trim($data['email']));
 
+            $emailChanged = $data['email'] !== $currentEmail;
+
             $user->fill($data);
+            if ($emailChanged) {
+                $user->email_verified_at = null;
+            }
             $user->save();
+
+            if ($emailChanged) {
+                $user->sendEmailVerificationNotification();
+
+                return redirect()
+                    ->route('verification.notice')
+                    ->with('success', 'Email actualizado. Verifica tu nuevo correo para habilitar todas las funciones.');
+            }
 
             $returnTo = $request->session()->pull('profile_return_to');
 

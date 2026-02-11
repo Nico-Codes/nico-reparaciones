@@ -159,6 +159,38 @@
   <div class="card">
     <div class="card-head">
       <div>
+        <div class="font-black">Prueba de correo SMTP</div>
+        <div class="text-xs text-zinc-500">Envia un correo de prueba para validar la configuracion de mail.</div>
+      </div>
+      <span class="badge-sky">Mail</span>
+    </div>
+    <div class="card-body grid gap-3">
+      <form method="POST" action="{{ route('admin.settings.smtp_test.send') }}" class="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+        @csrf
+        <div class="grid gap-2">
+          <label>Email destino para prueba</label>
+          <input
+            type="email"
+            name="test_email"
+            class="h-11"
+            value="{{ old('test_email', $smtpDefaultTo ?? '') }}"
+            placeholder="tu-email@dominio.com"
+            required>
+        </div>
+        <button class="btn-primary h-11 w-full justify-center sm:w-auto" type="submit">
+          Enviar prueba SMTP
+        </button>
+      </form>
+
+      <div class="rounded-2xl border border-zinc-200 bg-zinc-50 p-3 text-xs text-zinc-600">
+        Si falla, revisa variables <code>MAIL_*</code> del entorno y proveedor SMTP.
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <div>
         <div class="font-black">Identidad visual</div>
         <div class="text-xs text-zinc-500">Gestiona logos, iconos y favicons en una vista separada.</div>
       </div>

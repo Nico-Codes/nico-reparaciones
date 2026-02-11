@@ -9,6 +9,44 @@
     <div class="page-subtitle">Actualiza tus datos. Se usan para asociar pedidos y contactarte.</div>
   </div>
 
+  @php
+    $emailIsVerified = !is_null($user->email_verified_at);
+  @endphp
+
+  <div class="card mb-4 max-w-2xl">
+    <div class="card-head items-start">
+      <div class="font-black">Estado del correo</div>
+      @if($emailIsVerified)
+        <span class="badge-sky shrink-0">Verificado</span>
+      @else
+        <span class="badge-zinc shrink-0">Pendiente</span>
+      @endif
+    </div>
+
+    <div class="card-body p-4 sm:p-5">
+      @if (session('status') === 'verification-link-sent')
+        <div class="mb-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+          Te enviamos un nuevo correo de verificacion.
+        </div>
+      @endif
+
+      @if($emailIsVerified)
+        <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+          Tu correo <span class="font-bold">{{ $user->email }}</span> ya esta verificado.
+        </div>
+      @else
+        <div class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          Tu correo <span class="font-bold">{{ $user->email }}</span> aun no esta verificado. Necesitas verificarlo para comprar y ver tus pedidos.
+        </div>
+
+        <form method="POST" action="{{ route('verification.send') }}" class="mt-3">
+          @csrf
+          <button type="submit" class="btn-primary h-11 w-full sm:w-auto">Reenviar correo de verificacion</button>
+        </form>
+      @endif
+    </div>
+  </div>
+
   <div class="mb-4 grid max-w-2xl grid-cols-2 gap-2">
     <a href="#profile" class="btn-ghost h-11 w-full justify-center">Perfil</a>
     <a href="#security" class="btn-ghost h-11 w-full justify-center">Seguridad</a>
