@@ -69,12 +69,29 @@
       <form method="GET" action="{{ $formAction }}" class="grid gap-3 md:grid-cols-12 md:items-end">
         <div class="md:col-span-7">
           <div class="text-xs font-black text-zinc-700">Buscar</div>
-          <input
-            name="q"
-            value="{{ $qVal }}"
-            placeholder="Ej: iPhone, display, bateria..."
-            class="mt-1 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-base font-semibold text-zinc-900 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-200/40 sm:text-sm"
+          <div
+            class="relative mt-1"
+            data-store-search
+            data-store-suggestions-url="{{ route('store.suggestions') }}"
+            data-store-search-category="{{ $currentCategorySafe?->slug ?? '' }}"
           >
+            <input
+              name="q"
+              value="{{ $qVal }}"
+              placeholder="Ej: iPhone, display, bateria..."
+              autocomplete="off"
+              data-store-search-input
+              class="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-base font-semibold text-zinc-900 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-200/40 sm:text-sm"
+            >
+
+            <div
+              class="absolute inset-x-0 top-full z-20 mt-2 hidden rounded-2xl border border-zinc-200 bg-white p-1 shadow-xl"
+              data-store-search-panel
+              aria-live="polite"
+            >
+              <div class="max-h-64 overflow-y-auto" data-store-search-list></div>
+            </div>
+          </div>
         </div>
 
         <div class="md:col-span-3">
@@ -292,4 +309,3 @@
   </div>
 </div>
 @endsection
-

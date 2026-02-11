@@ -5,9 +5,73 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 
 class StoreController extends Controller
 {
+    private function normalizeSearchTerm(string $value): string
+    {
+        $value = mb_strtolower(trim($value), 'UTF-8');
+        $value = preg_replace('/[^\pL\pN]+/u', ' ', $value) ?? $value;
+
+        $value = strtr($value, [
+            'á' => 'a', 'à' => 'a', 'ä' => 'a', 'â' => 'a',
+            'é' => 'e', 'è' => 'e', 'ë' => 'e', 'ê' => 'e',
+            'í' => 'i', 'ì' => 'i', 'ï' => 'i', 'î' => 'i',
+            'ó' => 'o', 'ò' => 'o', 'ö' => 'o', 'ô' => 'o',
+            'ú' => 'u', 'ù' => 'u', 'ü' => 'u', 'û' => 'u',
+            'ñ' => 'n',
+        ]);
+
+        return preg_replace('/\s+/', ' ', $value) ?? $value;
+    }
+
+    private function normalizedSqlColumn(string $column): string
+    {
+        $expr = "lower(coalesce($column, ''))";
+
+        foreach ([
+            'Á' => 'a', 'É' => 'e', 'Í' => 'i', 'Ó' => 'o', 'Ú' => 'u', 'Ñ' => 'n',
+            'á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u', 'ñ' => 'n',
+        ] as $from => $to) {
+            $expr = "replace($expr, '$from', '$to')";
+        }
+        return $expr;
+    }
+
+    private function applySearch($query, string $q)
+    {
+        $normalized = $this->normalizeSearchTerm($q);
+        if ($normalized === '') {
+            return $query;
+        }
+
+        $tokens = array_values(array_filter(explode(' ', $normalized), static fn($token) => $token !== ''));
+        $longTokens = array_values(array_filter($tokens, static fn($token) => mb_strlen($token, 'UTF-8') >= 2));
+        if ($longTokens !== []) {
+            $tokens = $longTokens;
+        }
+        if ($tokens === []) {
+            return $query;
+        }
+
+        $nameSql = $this->normalizedSqlColumn('name');
+        $brandSql = $this->normalizedSqlColumn('brand');
+        $shortDescriptionSql = $this->normalizedSqlColumn('short_description');
+
+        return $query->where(function ($outer) use ($tokens, $nameSql, $brandSql, $shortDescriptionSql) {
+            foreach ($tokens as $token) {
+                $term = '%' . $token . '%';
+
+                $outer->where(function ($sub) use ($term, $nameSql, $brandSql, $shortDescriptionSql) {
+                    $sub->whereRaw("$nameSql like ?", [$term])
+                        ->orWhereRaw("$brandSql like ?", [$term])
+                        ->orWhereRaw("$shortDescriptionSql like ?", [$term]);
+                });
+            }
+        });
+    }
+
     private function normalizeSort(?string $sort): string
     {
         $sort = trim((string) $sort);
@@ -77,9 +141,7 @@ class StoreController extends Controller
             ->whereHas('category', fn($q) => $q->where('active', 1))
             ->with(['category:id,name,slug']);
 
-        if ($q !== '') {
-            $productsQ->where('name', 'like', '%' . $q . '%');
-        }
+        $this->applySearch($productsQ, $q);
 
         $products = $this->applySort($productsQ, $sort)->paginate(12)->withQueryString();
 
@@ -123,9 +185,7 @@ class StoreController extends Controller
             ->whereHas('category', fn($q) => $q->where('active', 1))
             ->with(['category:id,name,slug']);
 
-        if ($q !== '') {
-            $productsQ->where('name', 'like', '%' . $q . '%');
-        }
+        $this->applySearch($productsQ, $q);
 
         $products = $this->applySort($productsQ, $sort)->paginate(12)->withQueryString();
 
@@ -135,6 +195,47 @@ class StoreController extends Controller
             'products' => $products,
             'filters' => ['q' => $q, 'sort' => $sort],
             'category' => $category,
+        ]);
+    }
+
+    public function suggestions(Request $request): JsonResponse
+    {
+        $q = mb_substr(trim((string) $request->query('q', '')), 0, 80, 'UTF-8');
+        if (mb_strlen($q, 'UTF-8') < 2) {
+            return response()->json(['items' => []]);
+        }
+
+        $categorySlug = trim((string) $request->query('category', ''));
+
+        $productsQ = Product::query()
+            ->where('active', 1)
+            ->whereHas('category', function ($q) use ($categorySlug) {
+                $q->where('active', 1);
+
+                if ($categorySlug !== '') {
+                    $q->where('slug', $categorySlug);
+                }
+            })
+            ->with(['category:id,name,slug']);
+
+        $this->applySearch($productsQ, $q);
+
+        $items = $productsQ
+            ->orderByDesc('featured')
+            ->orderByDesc('stock')
+            ->orderBy('name')
+            ->limit(5)
+            ->get(['id', 'category_id', 'name', 'slug', 'brand', 'price', 'stock']);
+
+        return response()->json([
+            'items' => $items->map(fn(Product $product) => [
+                'name' => (string) $product->name,
+                'brand' => $product->brand ? (string) $product->brand : null,
+                'category' => $product->category?->name ? (string) $product->category->name : null,
+                'price' => (int) ($product->price ?? 0),
+                'stock' => (int) ($product->stock ?? 0),
+                'url' => route('store.product', $product->slug),
+            ])->values(),
         ]);
     }
 

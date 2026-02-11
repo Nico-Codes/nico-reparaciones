@@ -156,7 +156,7 @@
           <div class="card-head items-start">
             <div class="min-w-0">
               <div class="font-black">Resumen</div>
-              <div class="text-xs text-zinc-500">{{ $itemsCount }} items</div>
+              <div class="text-xs text-zinc-500" data-cart-items-count>{{ $itemsCount }} items</div>
             </div>
           </div>
 
@@ -197,4 +197,3 @@
     </div>
   @endif
 @endsection
-

@@ -40,6 +40,9 @@ use Illuminate\Support\Facades\Storage;
 Route::get('/', [StoreController::class, 'index'])->name('home');
 Route::get('/manifest.webmanifest', SiteManifestController::class)->name('site.manifest');
 Route::get('/tienda', [StoreController::class, 'index'])->name('store.index');
+Route::get('/tienda/sugerencias', [StoreController::class, 'suggestions'])
+    ->middleware('throttle:120,1')
+    ->name('store.suggestions');
 Route::get('/tienda/categoria/{category:slug}', [StoreController::class, 'category'])->name('store.category');
 Route::get('/producto/{slug}', [StoreController::class, 'product'])->name('store.product');
 

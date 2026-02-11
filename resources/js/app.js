@@ -14,6 +14,7 @@ import { initRepairIssueCatalog } from './modules/repairIssueCatalog';
 import { initAdminModelGroups } from './modules/adminModelGroups';
 import { initRepairDeviceCatalog } from './modules/repairDeviceCatalog';
 import { initAdminCategoriesQuickToggle } from './modules/adminCategoriesQuickToggle';
+import { initStoreSearchSuggestions } from './modules/storeSearchSuggestions';
 
 window.NR_APP_VERSION = 'admin-status-quick-v1';
 console.log('[NR] app.js cargado:', window.NR_APP_VERSION);
@@ -510,4 +511,5 @@ document.addEventListener('DOMContentLoaded', () => {
   initUICollapsibles();
   initRepairCreateSummaryAndPhone();
   initAdminAssetUploadDropzones();
+  initStoreSearchSuggestions();
 });
