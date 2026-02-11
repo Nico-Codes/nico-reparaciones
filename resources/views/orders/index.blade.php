@@ -23,22 +23,21 @@
   };
 
   $tab = $tab ?? request('tab', 'activos');
-  $q   = $q ?? request('q', '');
-
-  $payLabel = fn(?string $m) => match($m) {
-    'local' => 'Pago en el local',
-    'mercado_pago' => 'Mercado Pago',
-    'transferencia' => 'Transferencia',
-    default => $m ? ucfirst(str_replace('_',' ',$m)) : '-',
-  };
+  $q = $q ?? request('q', '');
 
   $has = fn($name) => \Illuminate\Support\Facades\Route::has($name);
 @endphp
 
 @section('content')
   <div class="page-head">
-    <div class="page-title">Mis pedidos</div>
-    <div class="page-subtitle">Aquí puedes ver el estado y el detalle de cada pedido.</div>
+    <div>
+      <div class="page-title">Mis pedidos</div>
+      <div class="page-subtitle">Consulta estado y detalle de cada compra.</div>
+    </div>
+
+    @if($has('store.index'))
+      <a href="{{ route('store.index') }}" class="btn-ghost h-11 w-full justify-center sm:w-auto">Ir a la tienda</a>
+    @endif
   </div>
 
   <div class="card mb-4">
@@ -57,9 +56,8 @@
 
       <form method="GET" action="{{ route('orders.index') }}" class="grid w-full gap-2 sm:grid-cols-[1fr_auto_auto] md:flex md:w-auto">
         <input type="hidden" name="tab" value="{{ $tab }}">
-        <input class="h-11 text-base sm:text-sm" name="q" value="{{ $q }}" placeholder="Buscar #pedido, nombre o teléfono...">
+        <input class="h-11 text-base sm:text-sm" name="q" value="{{ $q }}" placeholder="Buscar #pedido o nombre...">
         <button class="btn-outline h-11" type="submit">Buscar</button>
-
         @if($q)
           <a class="btn-ghost h-11" href="{{ route('orders.index', ['tab' => $tab]) }}">Limpiar</a>
         @endif
@@ -67,21 +65,10 @@
     </div>
   </div>
 
-  <div class="mb-5 flex flex-col gap-2 sm:flex-row">
-    @if($has('store.index'))
-      <a href="{{ route('store.index') }}" class="btn-primary h-11 w-full sm:w-auto">Ir a la tienda</a>
-    @endif
-    @if($has('repairs.my.index'))
-      <a href="{{ route('repairs.my.index') }}" class="btn-outline h-11 w-full sm:w-auto">Mis reparaciones</a>
-    @endif
-  </div>
-
   <div class="grid gap-3">
     @forelse($orders as $order)
       @php
         $itemsCount = (int)($order->items_count ?? ($order->items?->count() ?? 0));
-        $preview = $order->items ? $order->items->take(2) : collect();
-        $more = max(0, $itemsCount - $preview->count());
       @endphp
 
       <a href="{{ route('orders.show', $order) }}" class="card group transition hover:shadow-md active:scale-[0.995]">
@@ -97,8 +84,6 @@
                 <span>{{ $order->created_at?->format('d/m/Y H:i') }}</span>
                 <span>|</span>
                 <span>{{ $itemsCount }} item{{ $itemsCount === 1 ? '' : 's' }}</span>
-                <span>|</span>
-                <span class="badge-zinc">{{ $payLabel($order->payment_method) }}</span>
               </div>
             </div>
 
@@ -107,21 +92,6 @@
               <div class="text-lg font-black text-zinc-900">{{ $fmt($order->total) }}</div>
             </div>
           </div>
-
-          @if($preview->count())
-            <div class="mt-3 grid gap-1">
-              @foreach($preview as $it)
-                <div class="truncate text-sm text-zinc-700">
-                  <span class="font-black text-zinc-900">{{ (int)$it->quantity }}x</span>
-                  {{ $it->product_name }}
-                </div>
-              @endforeach
-
-              @if($more > 0)
-                <div class="text-xs text-zinc-500">+{{ $more }} más</div>
-              @endif
-            </div>
-          @endif
 
           <div class="mt-4 flex items-center justify-between">
             <span class="text-xs text-zinc-500">Ver detalle</span>
@@ -132,8 +102,8 @@
     @empty
       <div class="card">
         <div class="card-body">
-          <div class="font-black">Todavía no tienes pedidos.</div>
-          <div class="muted mt-1">Cuando compres algo, aparecerá aquí con su estado.</div>
+          <div class="font-black">Todavia no tienes pedidos.</div>
+          <div class="muted mt-1">Cuando compres, los veras aqui.</div>
           <div class="mt-4">
             @if($has('store.index'))
               <a href="{{ route('store.index') }}" class="btn-primary h-11">Ir a la tienda</a>
@@ -150,3 +120,4 @@
     </div>
   @endif
 @endsection
+

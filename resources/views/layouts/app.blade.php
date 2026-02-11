@@ -253,7 +253,25 @@
                   </a>
                 @endif
 
-                @if($has('account.edit') && $has('logout'))
+                @if($has('orders.index'))
+                  <a class="dropdown-item" href="{{ route('orders.index') }}">
+                    <span class="inline-flex items-center gap-2">
+                      <img src="{{ $iconOrders }}" alt="" class="w-5 h-5" loading="lazy" decoding="async">
+                      <span>Mis pedidos</span>
+                    </span>
+                  </a>
+                @endif
+
+                @if($has('repairs.my.index'))
+                  <a class="dropdown-item" href="{{ route('repairs.my.index') }}">
+                    <span class="inline-flex items-center gap-2">
+                      <img src="{{ $iconRepairs }}" alt="" class="w-5 h-5" loading="lazy" decoding="async">
+                      <span>Mis reparaciones</span>
+                    </span>
+                  </a>
+                @endif
+
+                @if(($has('account.edit') || $has('orders.index') || $has('repairs.my.index')) && $has('logout'))
                   <div class="my-2 border-t border-zinc-200"></div>
                 @endif
 
