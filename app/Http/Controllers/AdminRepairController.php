@@ -248,6 +248,10 @@ class AdminRepairController extends Controller
 
     public function store(Request $request)
     {
+        $request->merge([
+            'payment_method' => $this->normalizeNullableString($request->input('payment_method')),
+        ]);
+
         $data = $request->validate([
             'user_email'      => 'nullable|email',
             'customer_name'   => 'required|string|max:255',
@@ -269,7 +273,7 @@ class AdminRepairController extends Controller
 
             // ✅ Pagos
             'paid_amount'     => 'nullable|numeric|min:0',
-            'payment_method'  => 'nullable|string|max:50',
+            'payment_method'  => 'nullable|string|in:' . implode(',', array_keys(Repair::PAYMENT_METHODS)),
             'payment_notes'   => 'nullable|string|max:500',
 
             'status'          => 'required|string|in:' . implode(',', array_keys(Repair::STATUSES)),
@@ -289,11 +293,26 @@ class AdminRepairController extends Controller
         $parts = (float) ($data['parts_cost'] ?? 0);
         $labor = (float) ($data['labor_cost'] ?? 0);
         $paid  = (float) ($data['paid_amount'] ?? 0);
+        $diagnosis = trim((string) ($data['diagnosis'] ?? ''));
+        $finalPrice = isset($data['final_price']) ? (float) $data['final_price'] : null;
+        $paymentMethod = $this->normalizeNullableString($data['payment_method'] ?? null);
+        $status = (string) ($data['status'] ?? 'received');
         $warranty = (int) ($data['warranty_days'] ?? 0);
+
+        $consistencyError = $this->validateRepairBusinessConsistency(
+            $status,
+            $diagnosis,
+            $finalPrice,
+            $paid,
+            $paymentMethod
+        );
+        if ($consistencyError !== null) {
+            return back()->withErrors(['status' => $consistencyError])->withInput();
+        }
 
         $receivedAt = now();
         $deliveredAt = null;
-        if (($data['status'] ?? null) === 'delivered') {
+        if ($status === 'delivered') {
             $deliveredAt = now();
         }
 
@@ -338,17 +357,17 @@ class AdminRepairController extends Controller
 
             
             'issue_reported' => $issueReported,
-            'diagnosis'      => $data['diagnosis'] ?? null,
+            'diagnosis'      => $diagnosis !== '' ? $diagnosis : null,
 
             'parts_cost'     => $parts,
             'labor_cost'     => $labor,
-            'final_price'    => $data['final_price'] ?? null,
+            'final_price'    => $finalPrice,
 
             'paid_amount'    => $paid,
-            'payment_method' => $data['payment_method'] ?? null,
+            'payment_method' => $paymentMethod,
             'payment_notes'  => $data['payment_notes'] ?? null,
 
-            'status'         => $data['status'],
+            'status'         => $status,
             'warranty_days'  => $warranty,
             'received_at'    => $receivedAt,
             'delivered_at'   => $deliveredAt,
@@ -412,6 +431,10 @@ class AdminRepairController extends Controller
 
     public function update(Request $request, Repair $repair)
     {
+        $request->merge([
+            'payment_method' => $this->normalizeNullableString($request->input('payment_method')),
+        ]);
+
         $data = $request->validate([
             'user_email'      => 'nullable|email',
             'unlink_user'     => 'nullable|boolean',
@@ -433,7 +456,7 @@ class AdminRepairController extends Controller
             'final_price'     => 'nullable|numeric|min:0',
 
             'paid_amount'     => 'nullable|numeric|min:0',
-            'payment_method'  => 'nullable|string|max:50',
+            'payment_method'  => 'nullable|string|in:' . implode(',', array_keys(Repair::PAYMENT_METHODS)),
             'payment_notes'   => 'nullable|string|max:500',
 
             'warranty_days'   => 'nullable|integer|min:0',
@@ -478,6 +501,28 @@ class AdminRepairController extends Controller
         $issueDetail   = trim((string) ($data['issue_detail'] ?? ''));
         $issueReported = $issueType->name . ($issueDetail !== '' ? (' — ' . $issueDetail) : '');
 
+        $targetStatus = (string) ($repair->status ?? 'received');
+        $diagnosis = trim((string) ($data['diagnosis'] ?? ''));
+        $finalPrice = isset($data['final_price']) ? (float) $data['final_price'] : null;
+        $paidAmount = (float) ($data['paid_amount'] ?? 0);
+        $paymentMethod = $this->normalizeNullableString($data['payment_method'] ?? null);
+
+        $consistencyError = $this->validateRepairBusinessConsistency(
+            $targetStatus,
+            $diagnosis,
+            $finalPrice,
+            $paidAmount,
+            $paymentMethod
+        );
+        if ($consistencyError !== null) {
+            return back()->withErrors(['repair' => $consistencyError])->withInput();
+        }
+
+        $deliveredAt = $repair->delivered_at;
+        if ($targetStatus === 'delivered' && !$deliveredAt) {
+            $deliveredAt = now();
+        }
+
         $repair->update([
             'user_id'         => $userId,
             'customer_name'   => $data['customer_name'],
@@ -495,17 +540,18 @@ class AdminRepairController extends Controller
             'issue_detail'         => $issueDetail !== '' ? $issueDetail : null,
             'issue_reported'       => $issueReported,
 
-            'diagnosis'       => $data['diagnosis'] ?? null,
+            'diagnosis'       => $diagnosis !== '' ? $diagnosis : null,
 
             'parts_cost'      => (float) ($data['parts_cost'] ?? 0),
             'labor_cost'      => (float) ($data['labor_cost'] ?? 0),
-            'final_price'     => $data['final_price'] ?? null,
+            'final_price'     => $finalPrice,
 
-            'paid_amount'     => (float) ($data['paid_amount'] ?? 0),
-            'payment_method'  => $data['payment_method'] ?? null,
+            'paid_amount'     => $paidAmount,
+            'payment_method'  => $paymentMethod,
             'payment_notes'   => $data['payment_notes'] ?? null,
 
             'warranty_days'   => (int) ($data['warranty_days'] ?? 0),
+            'delivered_at'    => $deliveredAt,
             'notes'           => $data['notes'] ?? null,
         ]);
 
@@ -634,26 +680,47 @@ class AdminRepairController extends Controller
     // ✅ Compat con rutas actuales
     private function validateStatusBusinessRules(Repair $repair, string $to): ?string
     {
-        $requiresDiagnosis = ['waiting_approval', 'ready_pickup', 'delivered'];
-        if (in_array($to, $requiresDiagnosis, true) && trim((string) ($repair->diagnosis ?? '')) === '') {
+        return $this->validateRepairBusinessConsistency(
+            $to,
+            trim((string) ($repair->diagnosis ?? '')),
+            $repair->final_price !== null ? (float) $repair->final_price : null,
+            (float) ($repair->paid_amount ?? 0),
+            $this->normalizeNullableString($repair->payment_method ?? null)
+        );
+    }
+
+    private function validateRepairBusinessConsistency(
+        string $status,
+        string $diagnosis,
+        ?float $finalPrice,
+        float $paidAmount,
+        ?string $paymentMethod
+    ): ?string {
+        $requiresDiagnosisAndPrice = ['waiting_approval', 'ready_pickup', 'delivered'];
+        if (in_array($status, $requiresDiagnosisAndPrice, true) && trim($diagnosis) === '') {
             return 'Completa el diagnostico antes de cambiar a ese estado.';
         }
 
-        $requiresFinalPrice = ['waiting_approval', 'ready_pickup', 'delivered'];
-        if (in_array($to, $requiresFinalPrice, true) && $repair->final_price === null) {
+        if (in_array($status, $requiresDiagnosisAndPrice, true) && $finalPrice === null) {
             return 'Define el precio final antes de cambiar a ese estado.';
         }
 
-        if ($to === 'delivered') {
-            $paidAmount = (float) ($repair->paid_amount ?? 0);
-            $paymentMethod = trim((string) ($repair->payment_method ?? ''));
+        if ($paidAmount > 0 && $paymentMethod === null) {
+            return 'Completa el metodo de pago para registrar montos abonados.';
+        }
 
-            if ($paidAmount > 0 && $paymentMethod === '') {
-                return 'Completa el metodo de pago para marcar la reparacion como entregada.';
-            }
+        if ($finalPrice !== null && $paidAmount > $finalPrice) {
+            return 'El monto pagado no puede superar el precio final.';
         }
 
         return null;
+    }
+
+    private function normalizeNullableString(mixed $value): ?string
+    {
+        $normalized = trim((string) $value);
+
+        return $normalized !== '' ? $normalized : null;
     }
 
     public function whatsappLog(Repair $repair)
