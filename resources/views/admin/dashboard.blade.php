@@ -129,6 +129,10 @@
            class="inline-flex h-11 min-w-[84px] items-center justify-center rounded-xl border px-3 py-2 text-sm font-semibold {{ $rangeBtn(90, $rangeDays) }}">
           90 días
         </a>
+        <a href="{{ route('admin.dashboard.export', ['range' => $rangeDays]) }}"
+           class="inline-flex h-11 min-w-[128px] items-center justify-center rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50">
+          Exportar CSV
+        </a>
       </div>
     </div>
   </div>

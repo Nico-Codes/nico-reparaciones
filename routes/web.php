@@ -1,47 +1,36 @@
-﻿<?php
-
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Storage;
+<?php
 
 use App\Http\Controllers\AccountController;
-use App\Http\Controllers\StoreController;
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\CartController;
-use App\Http\Controllers\OrderController;
-
-use App\Http\Controllers\RepairLookupController;
-use App\Http\Controllers\RepairQuoteApprovalController;
-use App\Http\Controllers\SiteManifestController;
-use App\Http\Controllers\UserRepairController;
-
+use App\Http\Controllers\AdminBusinessSettingsController;
+use App\Http\Controllers\AdminCategoryController;
 use App\Http\Controllers\AdminDashboardController;
-use App\Http\Controllers\AdminOrderController;
-use App\Http\Controllers\AdminRepairController;
-use App\Http\Controllers\AdminRepairPrintController;
-use App\Http\Controllers\AdminOrderPrintController;
-use App\Http\Controllers\AdminOrderTicketController;
-use App\Http\Controllers\AdminRepairTicketController;
-
-
 use App\Http\Controllers\AdminDeviceCatalogController;
 use App\Http\Controllers\AdminDeviceCatalogManageController;
 use App\Http\Controllers\AdminDeviceTypeController;
-
-
-use App\Http\Controllers\AdminUserController;
-use App\Http\Controllers\AdminCategoryController;
-use App\Http\Controllers\AdminProductController;
-use App\Http\Controllers\AdminBusinessSettingsController;
-use App\Http\Controllers\AdminWhatsappTemplateController;
-
+use App\Http\Controllers\AdminModelGroupController;
+use App\Http\Controllers\AdminOrderController;
+use App\Http\Controllers\AdminOrderPrintController;
+use App\Http\Controllers\AdminOrderTicketController;
 use App\Http\Controllers\AdminOrderWhatsappTemplateController;
 use App\Http\Controllers\AdminPricingRuleController;
+use App\Http\Controllers\AdminProductController;
+use App\Http\Controllers\AdminRepairController;
+use App\Http\Controllers\AdminRepairPrintController;
+use App\Http\Controllers\AdminRepairTicketController;
 use App\Http\Controllers\AdminRepairTypeController;
-use App\Http\Controllers\AdminModelGroupController;
 use App\Http\Controllers\AdminTwoFactorController;
-
-
-
+use App\Http\Controllers\AdminUserController;
+use App\Http\Controllers\AdminWhatsappTemplateController;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CartController;
+use App\Http\Controllers\OrderController;
+use App\Http\Controllers\RepairLookupController;
+use App\Http\Controllers\RepairQuoteApprovalController;
+use App\Http\Controllers\SiteManifestController;
+use App\Http\Controllers\StoreController;
+use App\Http\Controllers\UserRepairController;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 
 /*
 |--------------------------------------------------------------------------
@@ -70,7 +59,6 @@ Route::middleware('guest')->group(function () {
     Route::get('/auth/google', [AuthController::class, 'googleRedirect'])->name('auth.google.redirect');
     Route::get('/auth/google/callback', [AuthController::class, 'googleCallback'])->name('auth.google.callback');
 });
-
 
 Route::post('/logout', [AuthController::class, 'logout'])
     ->middleware('auth')
@@ -106,13 +94,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/mis-pedidos/{order}', [OrderController::class, 'show'])->name('orders.show');
     Route::get('/pedido/{order}', [OrderController::class, 'thankYou'])->name('orders.thankyou');
 
-  
-
-
     Route::get('/mis-reparaciones', [UserRepairController::class, 'index'])->name('repairs.my.index');
     Route::get('/mis-reparaciones/{repair}', [UserRepairController::class, 'show'])->name('repairs.my.show');
-
-    
 
 });
 
@@ -144,7 +127,7 @@ Route::get('/storage/{path}', function (string $path) {
     $allowedInThisEnv = app()->environment(['local', 'development'])
         || filter_var((string) env('APP_ALLOW_STORAGE_LOCAL_ROUTE', 'false'), FILTER_VALIDATE_BOOL);
 
-    if (!$allowedInThisEnv) {
+    if (! $allowedInThisEnv) {
         abort(404);
     }
 
@@ -156,7 +139,7 @@ Route::get('/storage/{path}', function (string $path) {
 
     $disk = Storage::disk('public');
 
-    if (!$disk->exists($path)) {
+    if (! $disk->exists($path)) {
         abort(404);
     }
 
@@ -182,6 +165,7 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'can:access-admin', 'admin.
 
     Route::get('/', [AdminDashboardController::class, 'index'])->name('admin');
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
+    Route::get('/dashboard/export.csv', [AdminDashboardController::class, 'exportCsv'])->name('admin.dashboard.export');
 
     // Pedidos
     Route::get('/pedidos', [AdminOrderController::class, 'index'])->name('admin.orders.index');
@@ -219,10 +203,8 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'can:access-admin', 'admin.
 
     Route::post('/device-catalog/issues', [AdminDeviceCatalogController::class, 'storeIssue'])->name('admin.deviceCatalog.ajax.issues.store');
 
-
     Route::get('/pedidos/{order}/imprimir', AdminOrderPrintController::class)->name('admin.orders.print');
     Route::get('/pedidos/{order}/ticket', AdminOrderTicketController::class)->name('admin.orders.ticket');
-
 
     // Categorías
     Route::get('/categorias', [AdminCategoryController::class, 'index'])->name('admin.categories.index');
@@ -254,7 +236,6 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'can:access-admin', 'admin.
     Route::get('/usuarios', [AdminUserController::class, 'index'])->name('admin.users.index');
     Route::get('/usuarios/{user}', [AdminUserController::class, 'show'])->name('admin.users.show');
     Route::post('/usuarios/{user}/rol', [AdminUserController::class, 'updateRole'])->name('admin.users.updateRole');
-
 
     // Configuracion del negocio
     Route::get('/configuracion', [AdminBusinessSettingsController::class, 'index'])->name('admin.settings.index');
@@ -325,7 +306,6 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'can:access-admin', 'admin.
     Route::put('/catalogo-dispositivos/fallas/{issue}', [AdminDeviceCatalogManageController::class, 'updateIssue'])->name('admin.deviceCatalog.issues.update');
     Route::post('/catalogo-dispositivos/fallas/{issue}/toggle', [AdminDeviceCatalogManageController::class, 'toggleIssue'])->name('admin.deviceCatalog.issues.toggle');
 
-  
     // Precios (auto cálculo)
     Route::get('/precios', [AdminPricingRuleController::class, 'index'])->name('admin.pricing.index');
     Route::get('/precios/crear', [AdminPricingRuleController::class, 'create'])->name('admin.pricing.create');
@@ -336,5 +316,4 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'can:access-admin', 'admin.
     // JSON resolver (para el cálculo automático en Crear Reparación)
     Route::get('/precios/resolve', [AdminPricingRuleController::class, 'resolve'])->name('admin.pricing.resolve');
 
- 
 });
