@@ -112,6 +112,8 @@ class AuthEmailFlowsTest extends TestCase
         $response->assertOk();
         $response->assertSee('Para finalizar tu compra necesitas verificar tu correo primero.');
         $response->assertSee('te llevaremos automaticamente al checkout');
+        $response->assertSee('Cambiar email en mi cuenta');
+        $response->assertSee(route('account.edit'), false);
     }
 
     public function test_forgot_password_sends_reset_notification(): void

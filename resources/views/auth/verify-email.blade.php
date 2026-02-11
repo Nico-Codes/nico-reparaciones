@@ -36,6 +36,12 @@
       <button class="btn-primary h-11 w-full justify-center">Reenviar correo de verificacion</button>
     </form>
 
+    @if (Route::has('account.edit'))
+      <a href="{{ route('account.edit') }}" class="btn-outline mt-3 h-11 w-full justify-center">
+        Cambiar email en mi cuenta
+      </a>
+    @endif
+
     @if (($verificationRequiredFor ?? '') === 'checkout' && !empty($postVerificationRedirect ?? ''))
       <div class="mt-3 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-xs text-zinc-600">
         Cuando verifiques tu correo te llevaremos automaticamente al checkout.
