@@ -166,6 +166,7 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'can:access-admin', 'admin.
     Route::get('/', [AdminDashboardController::class, 'index'])->name('admin');
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
     Route::get('/dashboard/export.csv', [AdminDashboardController::class, 'exportCsv'])->name('admin.dashboard.export');
+    Route::get('/dashboard/export.xlsx', [AdminDashboardController::class, 'exportXlsx'])->name('admin.dashboard.export_xlsx');
 
     // Pedidos
     Route::get('/pedidos', [AdminOrderController::class, 'index'])->name('admin.orders.index');

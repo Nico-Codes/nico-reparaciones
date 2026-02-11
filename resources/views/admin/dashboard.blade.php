@@ -133,6 +133,10 @@
            class="inline-flex h-11 min-w-[128px] items-center justify-center rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50">
           Exportar CSV
         </a>
+        <a href="{{ route('admin.dashboard.export_xlsx', ['range' => $rangeDays]) }}"
+           class="inline-flex h-11 min-w-[128px] items-center justify-center rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50">
+          Exportar XLSX
+        </a>
       </div>
     </div>
   </div>

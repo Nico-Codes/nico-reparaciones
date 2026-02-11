@@ -70,6 +70,9 @@
         "ops:alert:test": [
             "@php artisan ops:alert-test --ansi"
         ],
+        "ops:report:weekly": [
+            "@php artisan ops:dashboard-report-email --ansi"
+        ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"

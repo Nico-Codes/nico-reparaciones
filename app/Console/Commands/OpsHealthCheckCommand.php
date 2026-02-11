@@ -37,6 +37,7 @@ class OpsHealthCheckCommand extends Command
         $this->checkRateLimits();
         $this->checkTwoFactorSessionWindow();
         $this->checkMonitoring($isProduction);
+        $this->checkWeeklyReportSetup($isProduction);
 
         $databaseReady = $this->checkDatabaseConnection();
         if ($databaseReady) {
@@ -269,6 +270,50 @@ class OpsHealthCheckCommand extends Command
         }
 
         $this->addRow('OK', 'Ops alerts', 'Enabled via channel `'.$channel.'`.');
+    }
+
+    private function checkWeeklyReportSetup(bool $isProduction): void
+    {
+        $emails = $this->parseCsv((string) config('ops.reports.dashboard_weekly_recipients', ''));
+
+        if ($emails === []) {
+            $this->addRow(
+                $isProduction ? 'WARN' : 'WARN',
+                'Weekly KPI report',
+                'No recipients configured. Set OPS_WEEKLY_REPORT_EMAILS.'
+            );
+
+            return;
+        }
+
+        $day = strtolower(trim((string) config('ops.reports.dashboard_weekly_day', 'monday')));
+        $time = trim((string) config('ops.reports.dashboard_weekly_time', '08:00'));
+        $range = (int) config('ops.reports.dashboard_weekly_range_days', 30);
+
+        $allowedDays = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+        if (! in_array($day, $allowedDays, true)) {
+            $this->addRow('WARN', 'Weekly KPI report', "Invalid day `{$day}`. Use sunday..saturday.");
+
+            return;
+        }
+
+        if (! preg_match('/^\d{2}:\d{2}$/', $time)) {
+            $this->addRow('WARN', 'Weekly KPI report', "Invalid time `{$time}`. Use HH:MM format.");
+
+            return;
+        }
+
+        if (! in_array($range, [7, 30, 90], true)) {
+            $this->addRow('WARN', 'Weekly KPI report', "Invalid range `{$range}`. Use 7, 30 or 90.");
+
+            return;
+        }
+
+        $this->addRow(
+            'OK',
+            'Weekly KPI report',
+            sprintf('Recipients: %d, schedule: %s %s, range: %d days.', count($emails), $day, $time, $range)
+        );
     }
 
     private function checkDatabaseConnection(): bool

@@ -146,7 +146,30 @@ Comando de prueba:
 php artisan ops:alert-test
 ```
 
-## 5. Deploy sugerido (sin downtime prolongado)
+## 5. Reporte semanal de KPIs (email)
+
+Variables recomendadas:
+
+```dotenv
+OPS_WEEKLY_REPORT_EMAILS=ops@tu-dominio.com,owner@tu-dominio.com
+OPS_WEEKLY_REPORT_DAY=monday
+OPS_WEEKLY_REPORT_TIME=08:00
+OPS_WEEKLY_REPORT_RANGE_DAYS=30
+```
+
+Comando manual:
+
+```bash
+php artisan ops:dashboard-report-email --range=30 --to=ops@tu-dominio.com
+```
+
+Notas:
+
+- El comando adjunta CSV con KPIs + top productos.
+- El scheduler ya ejecuta `ops:dashboard-report-email` semanalmente segun `OPS_WEEKLY_REPORT_DAY/TIME`.
+- Si no hay destinatarios configurados, el comando falla para evitar falsa sensacion de cobertura operativa.
+
+## 6. Deploy sugerido (sin downtime prolongado)
 
 ```bash
 php artisan down --render=errors::503
@@ -159,7 +182,7 @@ php artisan up
 php artisan ops:health-check --strict
 ```
 
-## 6. Operacion continua
+## 7. Operacion continua
 
 - Revisar `storage/logs` diariamente (errores 5xx, auth y DB).
 - Rotar backups y verificar espacio en disco.

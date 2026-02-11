@@ -114,3 +114,23 @@ test('admin challenge routes respond without breaking session', async ({ page })
   });
   expect([301, 302, 303, 422]).toContain(challengeVerify.status());
 });
+
+test('admin dashboard export routes return downloadable files', async ({ page }) => {
+  await loginAdmin(page);
+
+  const csvResponse = await page.request.get('/admin/dashboard/export.csv?range=30');
+  expect(csvResponse.status()).toBe(200);
+  expect(csvResponse.headers()['content-type'] || '').toContain('text/csv');
+  const csvText = await csvResponse.text();
+  expect(csvText).toContain('seccion,metrica,valor,unidad,detalle');
+
+  const xlsxResponse = await page.request.get('/admin/dashboard/export.xlsx?range=30');
+  expect(xlsxResponse.status()).toBe(200);
+  expect(xlsxResponse.headers()['content-type'] || '').toContain(
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  );
+  const xlsxBuffer = await xlsxResponse.body();
+  expect(xlsxBuffer.length).toBeGreaterThan(100);
+  expect(xlsxBuffer[0]).toBe(0x50); // P
+  expect(xlsxBuffer[1]).toBe(0x4b); // K
+});

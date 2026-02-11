@@ -11,6 +11,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;
+use ZipArchive;
 
 class AdminDashboardExportCsvTest extends TestCase
 {
@@ -136,5 +137,49 @@ class AdminDashboardExportCsvTest extends TestCase
         $response = $this->actingAs($user)->get(route('admin.dashboard.export', ['range' => 30]));
 
         $response->assertForbidden();
+    }
+
+    public function test_admin_can_export_dashboard_xlsx(): void
+    {
+        Carbon::setTestNow(Carbon::create(2026, 2, 11, 12, 0, 0));
+
+        try {
+            $admin = User::factory()->create(['role' => 'admin']);
+            $customer = User::factory()->create(['phone' => '3415559998']);
+
+            Order::create([
+                'user_id' => $customer->id,
+                'status' => 'entregado',
+                'payment_method' => 'local',
+                'total' => 2500,
+                'pickup_name' => 'Cliente XLSX',
+                'pickup_phone' => '3415557010',
+            ]);
+
+            $response = $this->actingAs($admin)->get(route('admin.dashboard.export_xlsx', ['range' => 30]));
+            $response->assertOk();
+            $response->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+
+            $binary = (string) $response->getContent();
+            $this->assertStringStartsWith('PK', $binary);
+
+            $tmp = tempnam(sys_get_temp_dir(), 'xlsx_test_');
+            $this->assertNotFalse($tmp);
+            file_put_contents($tmp, $binary);
+
+            $zip = new ZipArchive;
+            $openResult = $zip->open($tmp);
+            $this->assertTrue($openResult === true);
+
+            $sheetXml = $zip->getFromName('xl/worksheets/sheet1.xml');
+            $zip->close();
+            @unlink($tmp);
+
+            $this->assertNotFalse($sheetXml);
+            $this->assertStringContainsString('Ticket promedio entregados', (string) $sheetXml);
+            $this->assertStringContainsString('Rango analizado', (string) $sheetXml);
+        } finally {
+            Carbon::setTestNow();
+        }
     }
 }
