@@ -6,11 +6,37 @@
 @php
   $currentCategorySafe = $currentCategory ?? ($category ?? null);
   $money = fn($n) => '$ ' . number_format((float)($n ?? 0), 0, ',', '.');
+
+  $cart = session('cart', []);
+  $cartCount = 0;
+  foreach ($cart as $item) { $cartCount += (int)($item['quantity'] ?? 0); }
+
+  $formAction = $currentCategorySafe
+    ? route('store.category', ['category' => $currentCategorySafe->slug])
+    : route('store.index');
+
+  $qVal = (string)($filters['q'] ?? '');
+  $sortVal = (string)($filters['sort'] ?? 'relevance');
 @endphp
 
 <div id="top" class="container-page py-5 sm:py-7 md:py-8">
+  <div class="page-head">
+    <div>
+      <div class="page-title">Tienda</div>
+      <div class="page-subtitle">Productos con stock real para retiro en local.</div>
+    </div>
 
-  {{-- Tabs de categorías --}}
+    <div class="grid w-full gap-2 sm:w-auto sm:grid-cols-2">
+      <a href="{{ route('cart.index') }}" class="btn-primary h-11 w-full justify-center sm:w-auto">
+        Ver carrito
+        @if($cartCount > 0)
+          <span class="badge-zinc ml-1">{{ $cartCount }}</span>
+        @endif
+      </a>
+      <a href="{{ route('repairs.lookup') }}" class="btn-outline h-11 w-full justify-center sm:w-auto">Consultar reparacion</a>
+    </div>
+  </div>
+
   @if(($categories ?? collect())->count())
     <div class="card">
       <div class="card-body">
@@ -33,24 +59,12 @@
               {{ $cat->name }}
             </a>
           @endforeach
-
-
         </div>
-
       </div>
     </div>
   @endif
 
-  @php
-    $formAction = $currentCategorySafe
-      ? route('store.category', ['category' => $currentCategorySafe->slug])
-      : route('store.index');
-
-    $qVal = (string)($filters['q'] ?? '');
-    $sortVal = (string)($filters['sort'] ?? 'relevance');
-  @endphp
-
-  <div class="card">
+  <div class="card mt-4">
     <div class="card-body">
       <form method="GET" action="{{ $formAction }}" class="grid gap-3 md:grid-cols-12 md:items-end">
         <div class="md:col-span-7">
@@ -58,7 +72,7 @@
           <input
             name="q"
             value="{{ $qVal }}"
-            placeholder="Ej: iPhone, display, batería..."
+            placeholder="Ej: iPhone, display, bateria..."
             class="mt-1 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-base font-semibold text-zinc-900 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-200/40 sm:text-sm"
           >
         </div>
@@ -70,12 +84,12 @@
             class="mt-1 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-base font-semibold text-zinc-900 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-200/40 sm:text-sm"
           >
             <option value="relevance" {{ $sortVal === 'relevance' ? 'selected' : '' }}>Relevancia</option>
-            <option value="newest" {{ $sortVal === 'newest' ? 'selected' : '' }}>Más nuevos</option>
+            <option value="newest" {{ $sortVal === 'newest' ? 'selected' : '' }}>Mas nuevos</option>
             <option value="price_asc" {{ $sortVal === 'price_asc' ? 'selected' : '' }}>Menor precio</option>
             <option value="price_desc" {{ $sortVal === 'price_desc' ? 'selected' : '' }}>Mayor precio</option>
-            <option value="name_asc" {{ $sortVal === 'name_asc' ? 'selected' : '' }}>Nombre A–Z</option>
-            <option value="name_desc" {{ $sortVal === 'name_desc' ? 'selected' : '' }}>Nombre Z–A</option>
-            <option value="stock_desc" {{ $sortVal === 'stock_desc' ? 'selected' : '' }}>Más stock</option>
+            <option value="name_asc" {{ $sortVal === 'name_asc' ? 'selected' : '' }}>Nombre A-Z</option>
+            <option value="name_desc" {{ $sortVal === 'name_desc' ? 'selected' : '' }}>Nombre Z-A</option>
+            <option value="stock_desc" {{ $sortVal === 'stock_desc' ? 'selected' : '' }}>Mas stock</option>
           </select>
         </div>
 
@@ -90,22 +104,15 @@
     </div>
   </div>
 
-
-  {{-- Destacados --}}
   @if(($featuredProducts ?? collect())->count() && $qVal === '' && $sortVal === 'relevance')
     <div class="mt-6 card">
       <div class="card-head flex items-center justify-between">
         <div class="font-black">Destacados</div>
-        <a href="#top" class="link-soft">Top</a>
+        <a href="#productos" class="btn-ghost btn-sm">Ver todos</a>
       </div>
 
       <div class="card-body">
-        <div class="grid grid-flow-col gap-3 overflow-x-auto overscroll-x-contain scroll-smooth pb-2 pr-3
-              items-start snap-x snap-mandatory
-              auto-cols-[78%]
-              sm:auto-cols-[47%]
-              md:auto-cols-[31%]
-              lg:auto-cols-[19%]">
+        <div class="grid grid-flow-col auto-cols-[78%] gap-3 overflow-x-auto overscroll-x-contain pb-2 pr-3 sm:auto-cols-[47%] md:auto-cols-[31%] lg:auto-cols-[19%]">
           @foreach($featuredProducts as $product)
             @php
               $hasStock = (int)($product->stock ?? 0) > 0;
@@ -132,10 +139,6 @@
                   {{ $product->name }}
                 </a>
 
-                <div class="sm:hidden text-[11px] font-black {{ $hasStock ? 'text-emerald-700' : 'text-rose-700' }}">
-                  {{ $hasStock ? 'Stock disponible' : 'Sin stock' }}
-                </div>
-
                 <div class="product-row">
                   <div class="product-price">{{ $money($product->price) }}</div>
 
@@ -144,11 +147,9 @@
                       {{ $hasStock ? ('Stock: ' . (int)$product->stock) : 'Sin stock' }}
                     </span>
 
-
                     <form method="POST" action="{{ route('cart.add', $product) }}">
                       @csrf
                       <input type="hidden" name="quantity" value="1">
-
                       <button
                         type="submit"
                         class="btn-cart {{ $hasStock ? '' : 'is-disabled' }}"
@@ -166,7 +167,6 @@
                     </form>
                   </div>
                 </div>
-
               </div>
             </div>
           @endforeach
@@ -175,11 +175,9 @@
     </div>
   @endif
 
-  {{-- Productos --}}
   <div class="mt-8" id="productos">
     @if(($products ?? collect())->count())
       <div class="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-5">
-
         @foreach($products as $product)
           @php
             $hasStock = (int)($product->stock ?? 0) > 0;
@@ -193,7 +191,6 @@
           @endphp
 
           <div class="product-card product-card-grid">
-
             <a class="product-image" href="{{ route('store.product', $product->slug) }}">
               @if($img)
                 <img src="{{ $img }}" alt="{{ $product->name }}">
@@ -219,11 +216,9 @@
                     {{ $hasStock ? ('Stock: ' . (int)$product->stock) : 'Sin stock' }}
                   </span>
 
-
                   <form method="POST" action="{{ route('cart.add', $product) }}">
                     @csrf
                     <input type="hidden" name="quantity" value="1">
-
                     <button
                       type="submit"
                       class="btn-cart {{ $hasStock ? '' : 'is-disabled' }}"
@@ -241,66 +236,60 @@
                   </form>
                 </div>
               </div>
-
             </div>
           </div>
         @endforeach
       </div>
 
-          @php
-            $hasPaginator = method_exists($products, 'links');
-            $hasPages = $hasPaginator && method_exists($products, 'hasPages') ? $products->hasPages() : false;
-          @endphp
+      @php
+        $hasPaginator = method_exists($products, 'links');
+        $hasPages = $hasPaginator && method_exists($products, 'hasPages') ? $products->hasPages() : false;
+      @endphp
 
-          @if($hasPaginator)
-            <div class="mt-6 flex flex-col gap-2">
-              @if(method_exists($products, 'total') && $products->total() > 0)
-                <div class="muted text-sm">
-                  Mostrando {{ $products->firstItem() }}–{{ $products->lastItem() }} de {{ $products->total() }}
-                </div>
-              @endif
-
-              @if($hasPages)
-                <div>
-                  {{ $products->onEachSide(1)->fragment('productos')->links() }}
-                </div>
-              @endif
+      @if($hasPaginator)
+        <div class="mt-6 flex flex-col gap-2">
+          @if(method_exists($products, 'total') && $products->total() > 0)
+            <div class="muted text-sm">
+              Mostrando {{ $products->firstItem() }}-{{ $products->lastItem() }} de {{ $products->total() }}
             </div>
           @endif
 
-        @else
-          <div class="card">
-            <div class="card-body space-y-3">
-              @if($qVal !== '')
-                <div class="font-black">Sin resultados</div>
-                <div class="muted">
-                  No encontramos productos para “{{ $qVal }}”
-                  @if($currentCategorySafe) en “{{ $currentCategorySafe->name }}” @endif.
-                </div>
-
-                <div class="flex flex-wrap gap-2">
-                  <a class="btn-outline" href="{{ $formAction }}">Limpiar búsqueda</a>
-                  @if($currentCategorySafe)
-                    <a class="btn-outline" href="{{ route('store.index') }}">Ver todas</a>
-                  @endif
-                </div>
-
-              @elseif($currentCategorySafe)
-                <div class="font-black">Categoría sin productos</div>
-                <div class="muted">Todavía no hay productos en “{{ $currentCategorySafe->name }}”.</div>
-                <div>
-                  <a class="btn-outline" href="{{ route('store.index') }}">Ver todas</a>
-                </div>
-
-              @else
-                <div class="font-black">No hay productos</div>
-                <div class="muted">Todavía no hay productos para mostrar.</div>
+          @if($hasPages)
+            <div>
+              {{ $products->onEachSide(1)->fragment('productos')->links() }}
+            </div>
+          @endif
+        </div>
+      @endif
+    @else
+      <div class="card">
+        <div class="card-body space-y-3">
+          @if($qVal !== '')
+            <div class="font-black">Sin resultados</div>
+            <div class="muted">
+              No encontramos productos para "{{ $qVal }}"
+              @if($currentCategorySafe) en "{{ $currentCategorySafe->name }}" @endif.
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <a class="btn-outline" href="{{ $formAction }}">Limpiar busqueda</a>
+              @if($currentCategorySafe)
+                <a class="btn-outline" href="{{ route('store.index') }}">Ver todas</a>
               @endif
             </div>
-          </div>
-        @endif
-
+          @elseif($currentCategorySafe)
+            <div class="font-black">Categoria sin productos</div>
+            <div class="muted">Todavia no hay productos en "{{ $currentCategorySafe->name }}".</div>
+            <div>
+              <a class="btn-outline" href="{{ route('store.index') }}">Ver todas</a>
+            </div>
+          @else
+            <div class="font-black">No hay productos</div>
+            <div class="muted">Todavia no hay productos para mostrar.</div>
+          @endif
+        </div>
+      </div>
+    @endif
   </div>
-
 </div>
 @endsection
+

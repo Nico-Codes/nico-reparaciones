@@ -201,6 +201,51 @@ document.addEventListener('DOMContentLoaded', () => {
   initDropdowns();
 
   // ----------------------------
+  // Selector de cantidad (detalle producto)
+  // ----------------------------
+  const initProductQtyPicker = () => {
+    $$('[data-product-qty]').forEach((wrap) => {
+      const input = $('[data-product-qty-input]', wrap);
+      const minus = $('[data-product-qty-minus]', wrap);
+      const plus = $('[data-product-qty-plus]', wrap);
+      if (!input) return;
+
+      const getMax = () => {
+        const max = parseInt(input.getAttribute('max') || '1', 10);
+        return Number.isFinite(max) && max > 0 ? max : 1;
+      };
+
+      const clamp = (n) => Math.max(1, Math.min(getMax(), n));
+      const getVal = () => clamp(parseInt(input.value || '1', 10));
+
+      const sync = () => {
+        const v = getVal();
+        const max = getMax();
+        input.value = String(v);
+        if (minus) minus.disabled = input.disabled || v <= 1;
+        if (plus) plus.disabled = input.disabled || v >= max;
+      };
+
+      minus?.addEventListener('click', (e) => {
+        e.preventDefault();
+        input.value = String(clamp(getVal() - 1));
+        sync();
+      });
+
+      plus?.addEventListener('click', (e) => {
+        e.preventDefault();
+        input.value = String(clamp(getVal() + 1));
+        sync();
+      });
+
+      input.addEventListener('input', sync);
+      input.addEventListener('blur', sync);
+      sync();
+    });
+  };
+  initProductQtyPicker();
+
+  // ----------------------------
   // Toast (bottom-sheet)
   // ----------------------------
   let overlay = $('#cartAddedOverlay');
