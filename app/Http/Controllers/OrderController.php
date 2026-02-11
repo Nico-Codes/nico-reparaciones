@@ -8,6 +8,7 @@ use App\Models\OrderItem;
 use App\Models\OrderStatusHistory;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -95,6 +96,7 @@ class OrderController extends Controller
                         ->whereIn('id', $productIds)
                         ->where('active', 1)
                         ->whereHas('category', fn($q) => $q->where('active', 1))
+                        ->orderBy('id')
                         ->lockForUpdate()
                         ->get()
                         ->keyBy('id');
@@ -186,7 +188,7 @@ class OrderController extends Controller
 
                     $order->stock_deducted_at = now();
                     $order->save();
-                });
+                }, 3);
 
                 $request->session()->forget('cart');
 
@@ -206,10 +208,35 @@ class OrderController extends Controller
                 return redirect()
                     ->route('cart.index')
                     ->withErrors($e->errors());
+            } catch (QueryException $e) {
+                if (!$this->isCheckoutConcurrencyException($e)) {
+                    throw $e;
+                }
+
+                return redirect()
+                    ->route('checkout')
+                    ->withErrors([
+                        'cart' => 'Detectamos concurrencia en el stock. Actualiza el checkout y vuelve a confirmar.',
+                    ]);
             }
         } finally {
             $lock->release();
         }
+    }
+
+    private function isCheckoutConcurrencyException(QueryException $e): bool
+    {
+        $sqlState = (string) ($e->errorInfo[0] ?? '');
+        $driverCode = (int) ($e->errorInfo[1] ?? 0);
+
+        if (in_array($sqlState, ['40001', 'HY000'], true) && in_array($driverCode, [1205, 1213], true)) {
+            return true;
+        }
+
+        $message = strtolower($e->getMessage());
+
+        return str_contains($message, 'deadlock')
+            || str_contains($message, 'lock wait timeout');
     }
 
     /**

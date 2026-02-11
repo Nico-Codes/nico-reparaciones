@@ -129,14 +129,28 @@
            class="inline-flex h-11 min-w-[84px] items-center justify-center rounded-xl border px-3 py-2 text-sm font-semibold {{ $rangeBtn(90, $rangeDays) }}">
           90 días
         </a>
-        <a href="{{ route('admin.dashboard.export', ['range' => $rangeDays]) }}"
-           class="inline-flex h-11 min-w-[128px] items-center justify-center rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50">
-          Exportar CSV
-        </a>
-        <a href="{{ route('admin.dashboard.export_xlsx', ['range' => $rangeDays]) }}"
-           class="inline-flex h-11 min-w-[128px] items-center justify-center rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50">
-          Exportar XLSX
-        </a>
+        <div class="dropdown">
+          <button
+            type="button"
+            class="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-50"
+            data-menu="dashboardExportMenu"
+            aria-expanded="false"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true" class="h-4 w-4">
+              <path fill="currentColor" d="M12 3a1 1 0 0 1 1 1v8.59l2.3-2.3a1 1 0 1 1 1.4 1.42l-4 3.99a1 1 0 0 1-1.4 0l-4-4a1 1 0 0 1 1.4-1.41L11 12.58V4a1 1 0 0 1 1-1Zm-7 14a1 1 0 0 1 1 1v1h12v-1a1 1 0 1 1 2 0v2a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-2a1 1 0 0 1 1-1Z" />
+            </svg>
+            Exportar
+          </button>
+
+          <div id="dashboardExportMenu" class="dropdown-menu hidden">
+            <a class="dropdown-item" href="{{ route('admin.dashboard.export', ['range' => $rangeDays]) }}">
+              Descargar CSV
+            </a>
+            <a class="dropdown-item" href="{{ route('admin.dashboard.export_xlsx', ['range' => $rangeDays]) }}">
+              Descargar XLSX
+            </a>
+          </div>
+        </div>
       </div>
     </div>
   </div>

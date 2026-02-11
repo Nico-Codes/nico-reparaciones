@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\BusinessSetting;
+use App\Support\AuditLogger;
 use App\Support\BrandAssets;
 use App\Support\OpsDashboardReportSettings;
 use Illuminate\Http\Request;
@@ -54,6 +55,8 @@ class AdminBusinessSettingsController extends Controller
 
     public function updateReports(Request $request)
     {
+        $before = $this->currentWeeklyReportConfig();
+
         $data = $request->validate([
             'weekly_report_emails' => [
                 'nullable',
@@ -106,6 +109,30 @@ class AdminBusinessSettingsController extends Controller
         $this->persistSetting(OpsDashboardReportSettings::KEY_TIME, (string) $data['weekly_report_time']);
         $this->persistSetting(OpsDashboardReportSettings::KEY_RANGE_DAYS, (string) $data['weekly_report_range_days']);
 
+        $after = [
+            'emails' => $emails,
+            'day' => (string) $data['weekly_report_day'],
+            'time' => (string) $data['weekly_report_time'],
+            'range_days' => (int) $data['weekly_report_range_days'],
+        ];
+
+        $changedKeys = [];
+        foreach (['emails', 'day', 'time', 'range_days'] as $field) {
+            if ((string) ($before[$field] ?? '') !== (string) ($after[$field] ?? '')) {
+                $changedKeys[] = $field;
+            }
+        }
+
+        AuditLogger::log($request, 'admin.settings.weekly_report.updated', [
+            'subject_type' => BusinessSetting::class,
+            'metadata' => [
+                'before' => $before,
+                'after' => $after,
+                'changed_keys' => $changedKeys,
+                'recipients_count' => $this->countEmails($emails),
+            ],
+        ]);
+
         return back()->with('success', 'Configuracion de reportes guardada.');
     }
 
@@ -122,12 +149,29 @@ class AdminBusinessSettingsController extends Controller
 
         $output = trim((string) Artisan::output());
         if ($exitCode !== 0) {
+            AuditLogger::log($request, 'admin.settings.weekly_report.send_failed', [
+                'subject_type' => BusinessSetting::class,
+                'metadata' => [
+                    'range_days' => $rangeDays,
+                    'recipients_count' => $this->countEmails(OpsDashboardReportSettings::recipientsRaw()),
+                    'output' => $output !== '' ? $output : null,
+                ],
+            ]);
+
             return back()->withErrors([
                 'weekly_report_send' => $output !== ''
                     ? $output
                     : 'No se pudo enviar el reporte semanal.',
             ]);
         }
+
+        AuditLogger::log($request, 'admin.settings.weekly_report.sent', [
+            'subject_type' => BusinessSetting::class,
+            'metadata' => [
+                'range_days' => $rangeDays,
+                'recipients_count' => $this->countEmails(OpsDashboardReportSettings::recipientsRaw()),
+            ],
+        ]);
 
         return back()->with('success', 'Reporte semanal enviado correctamente.');
     }
@@ -224,5 +268,28 @@ class AdminBusinessSettingsController extends Controller
                 'updated_by' => auth()->id(),
             ]
         );
+    }
+
+    /**
+     * @return array{emails:string,day:string,time:string,range_days:int}
+     */
+    private function currentWeeklyReportConfig(): array
+    {
+        return [
+            'emails' => OpsDashboardReportSettings::recipientsRaw(),
+            'day' => OpsDashboardReportSettings::day(),
+            'time' => OpsDashboardReportSettings::time(),
+            'range_days' => OpsDashboardReportSettings::rangeDays(),
+        ];
+    }
+
+    private function countEmails(string $raw): int
+    {
+        $list = array_values(array_filter(array_map(
+            static fn (string $email): string => trim($email),
+            explode(',', $raw)
+        )));
+
+        return count($list);
     }
 }

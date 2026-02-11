@@ -127,5 +127,111 @@ class CheckoutIdempotencyTest extends TestCase
             'stock' => 5,
         ]);
     }
-}
 
+    public function test_checkout_rejects_when_stock_changes_before_confirmation(): void
+    {
+        $user = User::factory()->create([
+            'name' => 'Nico',
+            'last_name' => 'Tester',
+            'phone' => '11 5555 6666',
+        ]);
+
+        $category = Category::create([
+            'name' => 'Fundas',
+            'slug' => 'fundas',
+        ]);
+
+        $product = Product::create([
+            'category_id' => $category->id,
+            'name' => 'Funda premium',
+            'slug' => 'funda-premium-stock-change',
+            'price' => 4000,
+            'stock' => 1,
+            'featured' => false,
+        ]);
+
+        $token = (string) Str::uuid();
+
+        $this->actingAs($user);
+
+        $response = $this->withSession([
+            'cart' => [
+                $product->id => [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'price' => (int) $product->price,
+                    'quantity' => 2,
+                    'slug' => $product->slug,
+                    'stock' => 2,
+                ],
+            ],
+            'checkout_token' => $token,
+        ])->post(route('checkout.confirm'), [
+            'payment_method' => 'local',
+            'checkout_token' => $token,
+        ]);
+
+        $response->assertRedirect(route('cart.index'));
+        $response->assertSessionHasErrors('cart');
+        $this->assertDatabaseCount('orders', 0);
+        $this->assertDatabaseHas('products', [
+            'id' => $product->id,
+            'stock' => 1,
+        ]);
+    }
+
+    public function test_checkout_rejects_when_product_becomes_inactive_before_confirmation(): void
+    {
+        $user = User::factory()->create([
+            'name' => 'Nico',
+            'last_name' => 'Tester',
+            'phone' => '11 5555 6666',
+        ]);
+
+        $category = Category::create([
+            'name' => 'Accesorios',
+            'slug' => 'accesorios-checkout-inactive',
+        ]);
+
+        $product = Product::create([
+            'category_id' => $category->id,
+            'name' => 'Accesorio QA',
+            'slug' => 'accesorio-qa-inactive-checkout',
+            'price' => 2500,
+            'stock' => 10,
+            'featured' => false,
+        ]);
+
+        Product::query()->whereKey($product->id)->update(['active' => 0]);
+
+        $token = (string) Str::uuid();
+
+        $this->actingAs($user);
+
+        $response = $this->withSession([
+            'cart' => [
+                $product->id => [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'price' => (int) $product->price,
+                    'quantity' => 1,
+                    'slug' => $product->slug,
+                    'stock' => 10,
+                ],
+            ],
+            'checkout_token' => $token,
+        ])->post(route('checkout.confirm'), [
+            'payment_method' => 'local',
+            'checkout_token' => $token,
+        ]);
+
+        $response->assertRedirect(route('cart.index'));
+        $response->assertSessionHasErrors('cart');
+        $this->assertDatabaseCount('orders', 0);
+        $this->assertDatabaseHas('products', [
+            'id' => $product->id,
+            'active' => 0,
+            'stock' => 10,
+        ]);
+    }
+}

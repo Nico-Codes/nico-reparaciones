@@ -117,6 +117,18 @@ test('admin challenge routes respond without breaking session', async ({ page })
 
 test('admin dashboard export routes return downloadable files', async ({ page }) => {
   await loginAdmin(page);
+  await page.goto('/admin/dashboard');
+
+  const exportButton = page.locator('[data-menu="dashboardExportMenu"]');
+  await expect(exportButton).toBeVisible();
+  await exportButton.click();
+
+  const csvLink = page.locator('#dashboardExportMenu a', { hasText: 'CSV' });
+  const xlsxLink = page.locator('#dashboardExportMenu a', { hasText: 'XLSX' });
+  await expect(csvLink).toBeVisible();
+  await expect(xlsxLink).toBeVisible();
+  await expect(csvLink).toHaveAttribute('href', /\/admin\/dashboard\/export\.csv\?range=\d+/);
+  await expect(xlsxLink).toHaveAttribute('href', /\/admin\/dashboard\/export\.xlsx\?range=\d+/);
 
   const csvResponse = await page.request.get('/admin/dashboard/export.csv?range=30');
   expect(csvResponse.status()).toBe(200);
