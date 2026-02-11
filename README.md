@@ -11,6 +11,10 @@
 
 - Health check operativo: `php artisan ops:health-check`
 - Modo estricto: `php artisan ops:health-check --strict`
+- Backup operativo (DB + archivos): `php artisan ops:backup --only=all`
+- Solo backup de base de datos: `php artisan ops:backup --only=db`
+- Solo backup de archivos: `php artisan ops:backup --only=files`
+- Prune de backups viejos: `php artisan ops:backup --prune-only`
 - Quality gate local: `composer quality`
 - Checklist de produccion: `docs/OPERACION_PRODUCCION.md`
 - E2E (Playwright):

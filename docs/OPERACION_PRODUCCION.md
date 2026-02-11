@@ -64,26 +64,57 @@ Este check valida:
 - Permisos de escritura en `storage` y `bootstrap/cache`.
 - Estado de `config:cache` y `route:cache`.
 
-## 3. Flujo de backup y restore (MySQL)
+## 3. Flujo de backup y restore
 
-### 3.1 Backup diario
+### 3.1 Backup diario con Artisan
 
 ```bash
-mysqldump -h 127.0.0.1 -P 3306 -u root -p nico_reparaciones > backup_nico_reparaciones.sql
+php artisan ops:backup --only=all
 ```
 
-### 3.2 Restore de prueba (base temporal)
+Opciones utiles:
+
+- Solo base de datos: `php artisan ops:backup --only=db`
+- Solo archivos: `php artisan ops:backup --only=files`
+- Solo limpieza por retencion: `php artisan ops:backup --prune-only`
+- Retencion manual puntual: `php artisan ops:backup --retention-days=30`
+
+Configurable por `.env`:
+
+```dotenv
+OPS_BACKUP_TIME=03:15
+OPS_BACKUP_PATH=app/backups
+OPS_BACKUP_FILES_SOURCE=app/public
+OPS_BACKUP_RETENTION_DAYS=14
+OPS_BACKUP_COMMAND_TIMEOUT=180
+MYSQLDUMP_BINARY=
+```
+
+Notas:
+
+- En SQLite de archivo se copia el `.sqlite` completo.
+- En MySQL/MariaDB se usa `mysqldump`/`mariadb-dump` (o `MYSQLDUMP_BINARY` si lo definis).
+- Cada snapshot guarda `manifest.json` y aplica politica de retencion automaticamente.
+
+### 3.2 Restore de prueba (MySQL)
+
+1. Crear base temporal:
 
 ```bash
 mysql -h 127.0.0.1 -P 3306 -u root -p -e "CREATE DATABASE IF NOT EXISTS nico_reparaciones_restore_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-mysql -h 127.0.0.1 -P 3306 -u root -p nico_reparaciones_restore_test < backup_nico_reparaciones.sql
+```
+
+2. Importar dump desde el snapshot:
+
+```bash
+mysql -h 127.0.0.1 -P 3306 -u root -p nico_reparaciones_restore_test < storage/app/backups/backup_YYYYMMDD_HHMMSS/database.sql
 ```
 
 ### 3.3 Validacion post-restore
 
 ```bash
 php artisan migrate:status
-php artisan ops:health-check
+php artisan ops:health-check --strict
 ```
 
 Recomendacion: ejecutar restore de prueba al menos 1 vez por mes.
@@ -105,5 +136,6 @@ php artisan ops:health-check --strict
 
 - Revisar `storage/logs` diariamente (errores 5xx, auth y DB).
 - Rotar backups y verificar espacio en disco.
+- Configurar cron/scheduler de Laravel (`php artisan schedule:run`) cada minuto.
 - Si usas colas async: mantener worker supervisado (`queue:work`).
 - Ejecutar CI en cada PR/merge y bloquear deploy si falla.

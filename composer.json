@@ -61,6 +61,12 @@
         "ops:check:strict": [
             "@php artisan ops:health-check --strict --ansi"
         ],
+        "ops:backup": [
+            "@php artisan ops:backup --only=all --ansi"
+        ],
+        "ops:backup:prune": [
+            "@php artisan ops:backup --prune-only --ansi"
+        ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"
