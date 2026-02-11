@@ -119,7 +119,34 @@ php artisan ops:health-check --strict
 
 Recomendacion: ejecutar restore de prueba al menos 1 vez por mes.
 
-## 4. Deploy sugerido (sin downtime prolongado)
+## 4. Monitoreo de errores y alertas
+
+Variables recomendadas:
+
+```dotenv
+MONITORING_ENABLED=true
+SENTRY_DSN=
+OPS_ALERTS_ENABLED=true
+OPS_ALERTS_CHANNEL=ops_alerts
+OPS_ALERTS_DEDUPE_MINUTES=10
+OPS_ALERT_STACK=ops_daily
+OPS_ALERT_WEBHOOK_URL=
+```
+
+Notas:
+
+- Si `SENTRY_DSN` esta configurado y Sentry esta integrado en runtime, las excepciones se capturan automaticamente.
+- Alertas operativas se emiten por `OPS_ALERTS_CHANNEL` con deduplicacion para evitar spam.
+- `ops_alerts` por defecto escribe en `storage/logs/ops-alerts.log` (`ops_daily`).
+- Para alertas externas (Slack/Discord webhook compatible), setear `OPS_ALERT_WEBHOOK_URL` y usar `OPS_ALERT_STACK=ops_slack,ops_daily`.
+
+Comando de prueba:
+
+```bash
+php artisan ops:alert-test
+```
+
+## 5. Deploy sugerido (sin downtime prolongado)
 
 ```bash
 php artisan down --render=errors::503
@@ -132,7 +159,7 @@ php artisan up
 php artisan ops:health-check --strict
 ```
 
-## 5. Operacion continua
+## 6. Operacion continua
 
 - Revisar `storage/logs` diariamente (errores 5xx, auth y DB).
 - Rotar backups y verificar espacio en disco.

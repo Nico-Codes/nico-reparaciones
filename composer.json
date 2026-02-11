@@ -67,6 +67,9 @@
         "ops:backup:prune": [
             "@php artisan ops:backup --prune-only --ansi"
         ],
+        "ops:alert:test": [
+            "@php artisan ops:alert-test --ansi"
+        ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"

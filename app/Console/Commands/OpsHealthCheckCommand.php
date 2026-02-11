@@ -36,6 +36,7 @@ class OpsHealthCheckCommand extends Command
         $this->checkAdminRestrictions();
         $this->checkRateLimits();
         $this->checkTwoFactorSessionWindow();
+        $this->checkMonitoring($isProduction);
 
         $databaseReady = $this->checkDatabaseConnection();
         if ($databaseReady) {
@@ -69,6 +70,7 @@ class OpsHealthCheckCommand extends Command
         $appKey = trim((string) config('app.key', ''));
         if ($appKey === '' || $appKey === 'base64:') {
             $this->addRow('FAIL', 'APP_KEY', 'APP_KEY is missing. Generate one with `php artisan key:generate`.');
+
             return;
         }
 
@@ -80,11 +82,13 @@ class OpsHealthCheckCommand extends Command
         $debug = (bool) config('app.debug', false);
         if ($isProduction && $debug) {
             $this->addRow('FAIL', 'APP_DEBUG', 'APP_DEBUG must be false in production.');
+
             return;
         }
 
-        if (!$isProduction && $debug) {
+        if (! $isProduction && $debug) {
             $this->addRow('WARN', 'APP_DEBUG', 'Enabled (expected in local/dev, disable in production).');
+
             return;
         }
 
@@ -96,11 +100,13 @@ class OpsHealthCheckCommand extends Command
         $appUrl = trim((string) config('app.url', ''));
         if ($appUrl === '') {
             $this->addRow('FAIL', 'APP_URL', 'APP_URL is empty.');
+
             return;
         }
 
-        if ($isProduction && !Str::startsWith(Str::lower($appUrl), 'https://')) {
+        if ($isProduction && ! Str::startsWith(Str::lower($appUrl), 'https://')) {
             $this->addRow('FAIL', 'APP_URL', 'Production APP_URL must use HTTPS.');
+
             return;
         }
 
@@ -112,7 +118,7 @@ class OpsHealthCheckCommand extends Command
         $headersEnabled = (bool) config('security.headers.enabled', true);
         $cspEnabled = (bool) config('security.headers.csp_enabled', true);
 
-        if (!$headersEnabled) {
+        if (! $headersEnabled) {
             $this->addRow(
                 $isProduction ? 'FAIL' : 'WARN',
                 'Security headers',
@@ -122,7 +128,7 @@ class OpsHealthCheckCommand extends Command
             $this->addRow('OK', 'Security headers', 'Enabled.');
         }
 
-        if (!$cspEnabled) {
+        if (! $cspEnabled) {
             $this->addRow(
                 $isProduction ? 'WARN' : 'WARN',
                 'Content-Security-Policy',
@@ -136,13 +142,15 @@ class OpsHealthCheckCommand extends Command
     private function checkSessionCookieSecurity(bool $isProduction): void
     {
         $secureCookie = (bool) config('session.secure', false);
-        if ($isProduction && !$secureCookie) {
+        if ($isProduction && ! $secureCookie) {
             $this->addRow('FAIL', 'SESSION_SECURE_COOKIE', 'Must be true in production.');
+
             return;
         }
 
-        if (!$secureCookie) {
+        if (! $secureCookie) {
             $this->addRow('WARN', 'SESSION_SECURE_COOKIE', 'False (acceptable in local HTTP only).');
+
             return;
         }
 
@@ -160,6 +168,7 @@ class OpsHealthCheckCommand extends Command
                 'Admin allowlist',
                 'Both ADMIN_ALLOWED_EMAILS and ADMIN_ALLOWED_IPS are empty.'
             );
+
             return;
         }
 
@@ -181,13 +190,14 @@ class OpsHealthCheckCommand extends Command
         ];
 
         foreach ($keys as $key) {
-            $value = (int) config('security.rate_limits.' . $key, 0);
+            $value = (int) config('security.rate_limits.'.$key, 0);
             if ($value <= 0) {
-                $this->addRow('FAIL', 'Rate limit: ' . $key, 'Value must be greater than 0.');
+                $this->addRow('FAIL', 'Rate limit: '.$key, 'Value must be greater than 0.');
+
                 continue;
             }
 
-            $this->addRow('OK', 'Rate limit: ' . $key, 'Configured with value ' . $value . '.');
+            $this->addRow('OK', 'Rate limit: '.$key, 'Configured with value '.$value.'.');
         }
     }
 
@@ -200,10 +210,65 @@ class OpsHealthCheckCommand extends Command
                 'ADMIN_2FA_SESSION_MINUTES',
                 'Value is 0 (2FA challenge may not expire).'
             );
+
             return;
         }
 
-        $this->addRow('OK', 'ADMIN_2FA_SESSION_MINUTES', 'Configured with value ' . $value . '.');
+        $this->addRow('OK', 'ADMIN_2FA_SESSION_MINUTES', 'Configured with value '.$value.'.');
+    }
+
+    private function checkMonitoring(bool $isProduction): void
+    {
+        $enabled = (bool) config('monitoring.enabled', true);
+        if (! $enabled) {
+            $this->addRow(
+                $isProduction ? 'WARN' : 'WARN',
+                'Monitoring',
+                'Disabled. Enable MONITORING_ENABLED=true.'
+            );
+
+            return;
+        }
+
+        $this->addRow('OK', 'Monitoring', 'Enabled.');
+
+        $dsn = trim((string) config('monitoring.sentry.dsn', ''));
+        if ($dsn === '') {
+            $this->addRow(
+                $isProduction ? 'WARN' : 'WARN',
+                'Sentry DSN',
+                'Not configured. Set SENTRY_DSN for external error tracking.'
+            );
+        } else {
+            $this->addRow('OK', 'Sentry DSN', 'Configured.');
+        }
+
+        $alertsEnabled = (bool) config('monitoring.alerts.enabled', true);
+        if (! $alertsEnabled) {
+            $this->addRow(
+                $isProduction ? 'WARN' : 'WARN',
+                'Ops alerts',
+                'Disabled. Enable OPS_ALERTS_ENABLED=true.'
+            );
+
+            return;
+        }
+
+        $channel = trim((string) config('monitoring.alerts.channel', ''));
+        if ($channel === '') {
+            $this->addRow('FAIL', 'Ops alerts', 'Alert channel is empty (OPS_ALERTS_CHANNEL).');
+
+            return;
+        }
+
+        $channelConfig = config('logging.channels.'.$channel);
+        if (! is_array($channelConfig)) {
+            $this->addRow('FAIL', 'Ops alerts', 'Channel `'.$channel.'` not found in logging config.');
+
+            return;
+        }
+
+        $this->addRow('OK', 'Ops alerts', 'Enabled via channel `'.$channel.'`.');
     }
 
     private function checkDatabaseConnection(): bool
@@ -211,9 +276,11 @@ class OpsHealthCheckCommand extends Command
         try {
             DB::select('SELECT 1');
             $this->addRow('OK', 'Database connection', 'Connected.');
+
             return true;
         } catch (Throwable $e) {
             $this->addRow('FAIL', 'Database connection', $this->sanitizeExceptionMessage($e->getMessage()));
+
             return false;
         }
     }
@@ -233,16 +300,17 @@ class OpsHealthCheckCommand extends Command
         $missing = [];
         foreach ($requiredTables as $table) {
             try {
-                if (!Schema::hasTable($table)) {
+                if (! Schema::hasTable($table)) {
                     $missing[] = $table;
                 }
             } catch (Throwable $e) {
-                $missing[] = $table . ' (' . $this->sanitizeExceptionMessage($e->getMessage()) . ')';
+                $missing[] = $table.' ('.$this->sanitizeExceptionMessage($e->getMessage()).')';
             }
         }
 
         if ($missing !== []) {
-            $this->addRow('FAIL', 'Core tables', 'Missing: ' . implode(', ', $missing));
+            $this->addRow('FAIL', 'Core tables', 'Missing: '.implode(', ', $missing));
+
             return;
         }
 
@@ -253,10 +321,11 @@ class OpsHealthCheckCommand extends Command
     {
         if ($store === '') {
             $this->addRow('FAIL', $label, 'No store configured.');
+
             return;
         }
 
-        $key = 'ops_health:' . Str::random(16);
+        $key = 'ops_health:'.Str::random(16);
 
         try {
             Cache::store($store)->put($key, 'ok', now()->addSeconds(30));
@@ -264,11 +333,12 @@ class OpsHealthCheckCommand extends Command
             Cache::store($store)->forget($key);
 
             if ($value !== 'ok') {
-                $this->addRow('FAIL', $label, 'Write/read validation failed for store `' . $store . '`.');
+                $this->addRow('FAIL', $label, 'Write/read validation failed for store `'.$store.'`.');
+
                 return;
             }
 
-            $this->addRow('OK', $label, 'Store `' . $store . '` is healthy.');
+            $this->addRow('OK', $label, 'Store `'.$store.'` is healthy.');
         } catch (Throwable $e) {
             $this->addRow('FAIL', $label, $this->sanitizeExceptionMessage($e->getMessage()));
         }
@@ -284,28 +354,32 @@ class OpsHealthCheckCommand extends Command
                 'QUEUE_CONNECTION',
                 'Using sync driver. Background jobs are not async.'
             );
+
             return;
         }
 
         if ($driver === 'database') {
-            if (!Schema::hasTable((string) config('queue.connections.database.table', 'jobs'))) {
+            if (! Schema::hasTable((string) config('queue.connections.database.table', 'jobs'))) {
                 $this->addRow('FAIL', 'QUEUE_CONNECTION', 'Database queue selected but jobs table is missing.');
+
                 return;
             }
         }
 
-        $this->addRow('OK', 'QUEUE_CONNECTION', 'Using `' . $driver . '`.');
+        $this->addRow('OK', 'QUEUE_CONNECTION', 'Using `'.$driver.'`.');
     }
 
     private function checkWritablePath(string $label, string $path): void
     {
-        if (!is_dir($path)) {
-            $this->addRow('FAIL', $label, 'Directory does not exist: ' . $path);
+        if (! is_dir($path)) {
+            $this->addRow('FAIL', $label, 'Directory does not exist: '.$path);
+
             return;
         }
 
-        if (!is_writable($path)) {
-            $this->addRow('FAIL', $label, 'Directory is not writable: ' . $path);
+        if (! is_writable($path)) {
+            $this->addRow('FAIL', $label, 'Directory is not writable: '.$path);
+
             return;
         }
 
@@ -317,13 +391,13 @@ class OpsHealthCheckCommand extends Command
         $configCached = app()->configurationIsCached();
         $routesCached = app()->routesAreCached();
 
-        if ($isProduction && !$configCached) {
+        if ($isProduction && ! $configCached) {
             $this->addRow('WARN', 'Config cache', 'Not cached. Run `php artisan config:cache`.');
         } else {
             $this->addRow('OK', 'Config cache', $configCached ? 'Cached.' : 'Not cached (acceptable in non-production).');
         }
 
-        if ($isProduction && !$routesCached) {
+        if ($isProduction && ! $routesCached) {
             $this->addRow('WARN', 'Route cache', 'Not cached. Run `php artisan route:cache`.');
         } else {
             $this->addRow('OK', 'Route cache', $routesCached ? 'Cached.' : 'Not cached (acceptable in non-production).');

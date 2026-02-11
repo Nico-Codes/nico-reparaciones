@@ -73,6 +73,32 @@ return [
             'replace_placeholders' => true,
         ],
 
+        'ops_daily' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/ops-alerts.log'),
+            'level' => env('OPS_ALERT_LEVEL', 'critical'),
+            'days' => env('OPS_ALERT_DAILY_DAYS', 30),
+            'replace_placeholders' => true,
+        ],
+
+        'ops_slack' => [
+            'driver' => 'slack',
+            'url' => env('OPS_ALERT_WEBHOOK_URL'),
+            'username' => env('OPS_ALERT_USERNAME', 'NicoReparaciones Alerts'),
+            'emoji' => env('OPS_ALERT_EMOJI', ':rotating_light:'),
+            'level' => env('OPS_ALERT_LEVEL', 'critical'),
+            'replace_placeholders' => true,
+        ],
+
+        'ops_alerts' => [
+            'driver' => 'stack',
+            'channels' => array_values(array_filter(array_map(
+                'trim',
+                explode(',', (string) env('OPS_ALERT_STACK', 'ops_daily'))
+            ))),
+            'ignore_exceptions' => true,
+        ],
+
         'slack' => [
             'driver' => 'slack',
             'url' => env('LOG_SLACK_WEBHOOK_URL'),

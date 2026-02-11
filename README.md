@@ -15,6 +15,7 @@
 - Solo backup de base de datos: `php artisan ops:backup --only=db`
 - Solo backup de archivos: `php artisan ops:backup --only=files`
 - Prune de backups viejos: `php artisan ops:backup --prune-only`
+- Test de alertas operativas: `php artisan ops:alert-test`
 - Quality gate local: `composer quality`
 - Checklist de produccion: `docs/OPERACION_PRODUCCION.md`
 - E2E (Playwright):
