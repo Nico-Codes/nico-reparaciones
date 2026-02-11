@@ -8,13 +8,13 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderStatusHistory;
 use App\Models\Product;
+use App\Support\MailDispatch;
+use App\Support\MailFailureMonitor;
 use Illuminate\Http\Request;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
 class OrderController extends Controller
@@ -205,12 +205,12 @@ class OrderController extends Controller
 
                 if (!empty((string) $user->email)) {
                     try {
-                        Mail::to($user->email)->send(new OrderCustomerConfirmationMail($order));
+                        MailDispatch::send($user->email, new OrderCustomerConfirmationMail($order));
                     } catch (\Throwable $mailException) {
-                        Log::warning('No se pudo enviar el correo de confirmacion de pedido.', [
+                        app(MailFailureMonitor::class)->reportSyncFailure($mailException, [
+                            'event' => 'order.customer_confirmation',
                             'order_id' => (int) $order->id,
                             'user_id' => (int) $user->id,
-                            'error' => $mailException->getMessage(),
                         ]);
                     }
                 }

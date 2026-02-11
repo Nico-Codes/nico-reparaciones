@@ -2,11 +2,32 @@
 
 namespace App\Notifications;
 
+use App\Support\MailDispatch;
 use Illuminate\Auth\Notifications\ResetPassword as BaseResetPassword;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 
-class ResetPasswordNotification extends BaseResetPassword
+class ResetPasswordNotification extends BaseResetPassword implements ShouldQueue
 {
+    use Queueable;
+
+    public int $tries;
+
+    /**
+     * @var array<int, int>
+     */
+    public array $backoff;
+
+    public function __construct(string $token)
+    {
+        parent::__construct($token);
+
+        $this->tries = MailDispatch::tries();
+        $this->backoff = MailDispatch::backoffSeconds();
+        MailDispatch::applyQueueMetadata($this);
+    }
+
     public function toMail($notifiable): MailMessage
     {
         $resetUrl = $this->resetUrl($notifiable);
@@ -21,4 +42,3 @@ class ResetPasswordNotification extends BaseResetPassword
             ->line('Si no solicitaste este cambio, puedes ignorar este mensaje.');
     }
 }
-

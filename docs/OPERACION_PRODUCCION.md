@@ -39,6 +39,7 @@ Notas:
 - Configura al menos una allowlist (`ADMIN_ALLOWED_EMAILS` o `ADMIN_ALLOWED_IPS`).
 - Mantene 2FA admin activo y con expiracion de sesion razonable (`ADMIN_2FA_SESSION_MINUTES > 0`).
 - En produccion, `ops:health-check` marca `FAIL` si `ADMIN_2FA_SESSION_MINUTES=0`.
+- En produccion, `ops:health-check` marca `FAIL` si mail no esta listo para envio real (`MAIL_MAILER=log/array` o faltan variables SMTP requeridas).
 
 ## 2. Health check operacional
 
@@ -179,6 +180,11 @@ OPS_WEEKLY_REPORT_EMAILS=ops@tu-dominio.com,owner@tu-dominio.com
 OPS_WEEKLY_REPORT_DAY=monday
 OPS_WEEKLY_REPORT_TIME=08:00
 OPS_WEEKLY_REPORT_RANGE_DAYS=30
+OPS_MAIL_ASYNC_ENABLED=true
+OPS_MAIL_QUEUE=mail
+OPS_MAIL_TRIES=3
+OPS_MAIL_BACKOFF_SECONDS=60,300,900
+OPS_MAIL_ALERTS_ON_FAILURE=true
 ```
 
 Comando manual:
@@ -193,6 +199,7 @@ Notas:
 - El scheduler ya ejecuta `ops:dashboard-report-email` semanalmente segun `OPS_WEEKLY_REPORT_DAY/TIME`.
 - Tambien puedes configurar destinatarios/dia/hora/rango desde `Admin > Configuracion` (sobrescribe los valores de `.env`).
 - Si no hay destinatarios configurados, el comando falla para evitar falsa sensacion de cobertura operativa.
+- Si `OPS_MAIL_ASYNC_ENABLED=true`, los correos se encolan (queue `OPS_MAIL_QUEUE`) y usan reintentos/backoff.
 
 ## 6. Deploy sugerido (sin downtime prolongado)
 
@@ -213,4 +220,5 @@ php artisan ops:health-check --strict
 - Rotar backups y verificar espacio en disco.
 - Configurar cron/scheduler de Laravel (`php artisan schedule:run`) cada minuto.
 - Si usas colas async: mantener worker supervisado (`queue:work`).
+- Para correo async, priorizar cola de mail: `php artisan queue:work --queue=mail,default --tries=3 --backoff=60`.
 - Ejecutar CI en cada PR/merge y bloquear deploy si falla.

@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Support\MailDispatch;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
@@ -13,6 +14,13 @@ class AdminDashboardWeeklyReportMail extends Mailable
 {
     use Queueable, SerializesModels;
 
+    public int $tries;
+
+    /**
+     * @var array<int, int>
+     */
+    public array $backoff;
+
     /**
      * @param  array<string, float|int|null>  $kpis
      */
@@ -23,7 +31,11 @@ class AdminDashboardWeeklyReportMail extends Mailable
         public array $kpis,
         public string $csvFilename,
         public string $csvContent
-    ) {}
+    ) {
+        $this->tries = MailDispatch::tries();
+        $this->backoff = MailDispatch::backoffSeconds();
+        MailDispatch::applyQueueMetadata($this);
+    }
 
     public function envelope(): Envelope
     {

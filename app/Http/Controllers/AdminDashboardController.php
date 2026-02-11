@@ -6,6 +6,7 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\Repair;
 use App\Support\AdminDashboardReportBuilder;
+use App\Support\MailHealthStatus;
 use App\Support\SimpleXlsxWriter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -17,6 +18,8 @@ class AdminDashboardController extends Controller
 {
     public function index(Request $request)
     {
+        $smtpHealth = MailHealthStatus::evaluate();
+
         $rangeDays = (int) $request->query('range', 30);
         if (! in_array($rangeDays, [7, 30, 90], true)) {
             $rangeDays = 30;
@@ -343,6 +346,7 @@ class AdminDashboardController extends Controller
             'latestOrders' => $latestOrders,
             'latestRepairs' => $latestRepairs,
             'lowStockProducts' => $lowStockProducts,
+            'smtpHealth' => $smtpHealth,
         ]);
     }
 

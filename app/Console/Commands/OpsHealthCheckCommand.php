@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands;
 
+use App\Support\MailHealthStatus;
+use App\Support\MailDispatch;
 use App\Support\OpsDashboardReportSettings;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
@@ -39,6 +41,8 @@ class OpsHealthCheckCommand extends Command
         $this->checkRateLimits();
         $this->checkTwoFactorSessionWindow($isProduction);
         $this->checkMonitoring($isProduction);
+        $this->checkMailHealth($isProduction);
+        $this->checkMailDispatchMode($isProduction);
         $this->checkWeeklyReportSetup($isProduction);
 
         $databaseReady = $this->checkDatabaseConnection();
@@ -329,6 +333,79 @@ class OpsHealthCheckCommand extends Command
             'Weekly KPI report',
             sprintf('Recipients: %d, schedule: %s %s, range: %d days.', count($emails), $day, $time, $range)
         );
+    }
+
+    private function checkMailHealth(bool $isProduction): void
+    {
+        $health = MailHealthStatus::evaluate();
+        $details = sprintf(
+            '%s Mailer: %s. From: %s.',
+            (string) ($health['summary'] ?? ''),
+            (string) ($health['mailer'] ?? '-'),
+            (string) ($health['from_address'] ?? '-')
+        );
+
+        $issues = (array) ($health['issues'] ?? []);
+        if ($issues !== []) {
+            $details .= ' Issues: '.implode(' ', $issues);
+        }
+
+        $ready = (bool) ($health['ready_for_real_delivery'] ?? false);
+        if ($isProduction && ! $ready) {
+            $this->addRow('FAIL', 'SMTP mail', $details);
+
+            return;
+        }
+
+        if (! $ready) {
+            $this->addRow('WARN', 'SMTP mail', $details);
+
+            return;
+        }
+
+        $this->addRow('OK', 'SMTP mail', $details);
+    }
+
+    private function checkMailDispatchMode(bool $isProduction): void
+    {
+        if (! MailDispatch::asyncEnabled()) {
+            $this->addRow(
+                'WARN',
+                'Mail async dispatch',
+                'Disabled (OPS_MAIL_ASYNC_ENABLED=false). Mail is sent in request/command flow.'
+            );
+
+            return;
+        }
+
+        $queueDriver = (string) config('queue.default', 'sync');
+        if ($queueDriver === 'sync') {
+            $this->addRow(
+                $isProduction ? 'FAIL' : 'WARN',
+                'Mail async dispatch',
+                'Enabled but QUEUE_CONNECTION=sync. Use async queue driver (database/redis/etc).'
+            );
+
+            return;
+        }
+
+        $queueName = MailDispatch::queueName();
+        $connection = MailDispatch::queueConnection();
+        $details = 'Enabled. Queue `'.$queueName.'`';
+        if ($connection !== null) {
+            $details .= ', connection `'.$connection.'`';
+        }
+        $details .= ', retries '.$this->formatRetriesForDisplay().'.';
+
+        $this->addRow('OK', 'Mail async dispatch', $details);
+    }
+
+    private function formatRetriesForDisplay(): string
+    {
+        $tries = MailDispatch::tries();
+        $backoff = MailDispatch::backoffSeconds();
+
+        return $tries.' (backoff: '.implode('/', $backoff).'s)';
     }
 
     private function checkDatabaseConnection(): bool

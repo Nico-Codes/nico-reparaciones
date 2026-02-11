@@ -12,6 +12,7 @@
 - Health check operativo: `php artisan ops:health-check`
 - Modo estricto: `php artisan ops:health-check --strict`
 - Modo produccion desde local/staging: `php artisan ops:health-check --strict --assume-production`
+- En produccion, el health-check marca `FAIL` si mail no esta listo para envio real (`MAIL_MAILER=log/array` o faltan `MAIL_FROM_ADDRESS`, `MAIL_HOST`, `MAIL_PORT` cuando aplica).
 - Plantilla recomendada de produccion: `/.env.production.example`
 - Preflight de produccion (health strict + caches + health strict): `composer run ops:prepare:production`
 - En Windows tambien disponible: `nico-prod-preflight.bat`
@@ -21,6 +22,8 @@
 - Prune de backups viejos: `php artisan ops:backup --prune-only`
 - Test de alertas operativas: `php artisan ops:alert-test`
 - Envio manual reporte semanal dashboard: `php artisan ops:dashboard-report-email --range=30 --to=ops@tu-dominio.com` (tambien disponible en Admin > Configuracion)
+- Mail async opcional (recomendado prod): `OPS_MAIL_ASYNC_ENABLED=true` + worker `php artisan queue:work --queue=mail,default --tries=3 --backoff=60`
+- En local, `nico-dev.bat start` ya levanta/detiene automaticamente el queue worker de mail si `OPS_MAIL_ASYNC_ENABLED=true`.
 - Quality gate local: `composer quality`
 - Checklist de produccion: `docs/OPERACION_PRODUCCION.md`
 - E2E (Playwright):

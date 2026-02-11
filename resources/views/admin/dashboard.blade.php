@@ -84,6 +84,16 @@
       ? 'bg-zinc-900 text-white border-zinc-900'
       : 'bg-white text-zinc-700 border-zinc-200 hover:bg-zinc-50';
   };
+
+  $smtpStatus = (string) ($smtpHealth['status'] ?? 'warning');
+  $smtpBadgeClasses = match ($smtpStatus) {
+    'local' => 'bg-amber-100 text-amber-800',
+    default => 'bg-rose-100 text-rose-800',
+  };
+  $smtpAlertClasses = match ($smtpStatus) {
+    'local' => 'border-amber-200 bg-amber-50',
+    default => 'border-rose-200 bg-rose-50',
+  };
 @endphp
 
 @section('content')
@@ -107,6 +117,37 @@
       <a class="btn-primary h-11 w-full justify-center sm:w-auto" href="{{ route('admin.repairs.create') }}">+ Nueva reparación</a>
     </div>
   </div>
+
+  @if(($smtpHealth['status'] ?? 'warning') !== 'ok')
+    <div class="rounded-2xl border p-4 {{ $smtpAlertClasses }}">
+      <div class="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <div class="text-sm font-black text-zinc-900">Atencion: correo no listo para produccion</div>
+          <div class="mt-1 text-xs text-zinc-700">{{ $smtpHealth['summary'] ?? 'Configuracion incompleta para envio real.' }}</div>
+        </div>
+        <span class="rounded-full px-2 py-0.5 text-xs font-bold {{ $smtpBadgeClasses }}">
+          {{ $smtpHealth['label'] ?? 'Incompleto' }}
+        </span>
+      </div>
+      <div class="mt-2 text-xs text-zinc-700">
+        Mailer: <span class="font-semibold text-zinc-900">{{ $smtpHealth['mailer'] ?? '-' }}</span>
+        |
+        From: <span class="font-semibold text-zinc-900">{{ $smtpHealth['from_address'] ?? '-' }}</span>
+      </div>
+      @if(!empty($smtpHealth['issues']))
+        <ul class="mt-2 list-disc space-y-1 pl-4 text-xs text-zinc-700">
+          @foreach($smtpHealth['issues'] as $issue)
+            <li>{{ $issue }}</li>
+          @endforeach
+        </ul>
+      @endif
+      <div class="mt-3">
+        <a class="btn-outline h-10 w-full justify-center sm:w-auto" href="{{ route('admin.settings.index') }}">
+          Revisar configuracion SMTP
+        </a>
+      </div>
+    </div>
+  @endif
 
   {{-- Rango --}}
   <div class="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">

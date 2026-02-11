@@ -13,9 +13,12 @@ use App\Observers\RepairObserver;
 use App\Observers\RepairWhatsappLogObserver;
 use App\Policies\OrderPolicy;
 use App\Policies\RepairPolicy;
+use App\Support\MailFailureMonitor;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
@@ -37,6 +40,9 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::policy(Order::class, OrderPolicy::class);
         Gate::policy(Repair::class, RepairPolicy::class);
+        Queue::failing(function (JobFailed $event): void {
+            app(MailFailureMonitor::class)->reportQueueFailure($event);
+        });
         Order::observe(OrderObserver::class);
         OrderWhatsappLog::observe(OrderWhatsappLogObserver::class);
         Repair::observe(RepairObserver::class);

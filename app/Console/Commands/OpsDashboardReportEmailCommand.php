@@ -4,9 +4,10 @@ namespace App\Console\Commands;
 
 use App\Mail\AdminDashboardWeeklyReportMail;
 use App\Support\AdminDashboardReportBuilder;
+use App\Support\MailDispatch;
+use App\Support\MailFailureMonitor;
 use App\Support\OpsDashboardReportSettings;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Mail;
 use Throwable;
 
 class OpsDashboardReportEmailCommand extends Command
@@ -45,7 +46,7 @@ class OpsDashboardReportEmailCommand extends Command
         }
 
         try {
-            Mail::to($recipients)->send(new AdminDashboardWeeklyReportMail(
+            MailDispatch::send($recipients, new AdminDashboardWeeklyReportMail(
                 $rangeDays,
                 $report['fromRange'],
                 $report['toRange'],
@@ -54,12 +55,18 @@ class OpsDashboardReportEmailCommand extends Command
                 $csvContent
             ));
         } catch (Throwable $e) {
+            app(MailFailureMonitor::class)->reportSyncFailure($e, [
+                'event' => 'ops.dashboard_weekly_report',
+                'range_days' => $rangeDays,
+                'recipients_count' => count($recipients),
+            ]);
             $this->error('Could not send dashboard report: '.$e->getMessage());
 
             return self::FAILURE;
         }
 
-        $this->info('Dashboard report sent to: '.implode(', ', $recipients));
+        $verb = MailDispatch::asyncEnabled() ? 'queued for' : 'sent to';
+        $this->info('Dashboard report '.$verb.': '.implode(', ', $recipients));
 
         return self::SUCCESS;
     }

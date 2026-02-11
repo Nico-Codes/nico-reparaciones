@@ -15,6 +15,7 @@ class OpsDashboardReportEmailCommandTest extends TestCase
     public function test_dashboard_report_command_sends_email_when_recipients_are_configured(): void
     {
         Mail::fake();
+        config()->set('ops.mail.async_enabled', false);
 
         config()->set('ops.reports.dashboard_weekly_recipients', 'ops@example.com, owner@example.com');
 
@@ -56,6 +57,7 @@ class OpsDashboardReportEmailCommandTest extends TestCase
     public function test_dashboard_report_command_uses_business_settings_overrides(): void
     {
         Mail::fake();
+        config()->set('ops.mail.async_enabled', false);
 
         config()->set('ops.reports.dashboard_weekly_recipients', '');
         config()->set('ops.reports.dashboard_weekly_range_days', 7);
@@ -86,6 +88,35 @@ class OpsDashboardReportEmailCommandTest extends TestCase
 
             return in_array('db-ops@example.com', $addresses, true)
                 && $mail->rangeDays === 90;
+        });
+    }
+
+    public function test_dashboard_report_command_queues_email_when_async_mode_is_enabled(): void
+    {
+        Mail::fake();
+
+        config()->set('ops.mail.async_enabled', true);
+        config()->set('ops.mail.queue', 'mail');
+        config()->set('ops.reports.dashboard_weekly_recipients', 'ops@example.com');
+
+        $this->artisan('ops:dashboard-report-email --range=30')
+            ->assertExitCode(0);
+
+        Mail::assertQueued(AdminDashboardWeeklyReportMail::class, function (AdminDashboardWeeklyReportMail $mail): bool {
+            $addresses = array_map(
+                static function ($address): string {
+                    if (is_array($address)) {
+                        return (string) ($address['address'] ?? '');
+                    }
+
+                    return (string) ($address->address ?? '');
+                },
+                $mail->to ?? []
+            );
+
+            return in_array('ops@example.com', $addresses, true)
+                && $mail->rangeDays === 30
+                && $mail->queue === 'mail';
         });
     }
 }

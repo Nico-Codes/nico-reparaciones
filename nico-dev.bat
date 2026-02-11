@@ -8,7 +8,7 @@ REM USO RAPIDO
 REM   1) Doble click en este .bat (menu interactivo)
 REM   2) O por consola:
 REM      - nico-dev.bat setup   (primera vez / PC nueva)
-REM      - nico-dev.bat start   (iniciar entorno)
+REM      - nico-dev.bat start   (iniciar entorno + worker de cola mail si aplica)
 REM      - nico-dev.bat stop    (detener entorno)
 REM ----------------------------------------------------------------------------
 REM GUIA "PC DESDE CERO" (antes de ejecutar setup)
@@ -34,6 +34,8 @@ set "APP_HOST=127.0.0.1"
 set "APP_PORT=8000"
 set "VITE_PORT=5173"
 set "NGROK_API_PORT=4040"
+set "DEV_RUNTIME_DIR=%PROJECT_ROOT%storage\app\dev"
+set "QUEUE_PID_FILE=%DEV_RUNTIME_DIR%\queue-worker.pid"
 
 if /I "%~1"=="setup" goto :setup
 if /I "%~1"=="start" goto :start
@@ -44,7 +46,7 @@ if /I "%~1"=="help" goto :help
 echo.
 echo ================= NicoReparaciones =================
 echo 1^) Setup inicial (primera vez / PC nueva)
-echo 2^) Iniciar entorno (MySQL + Laravel + Vite + ngrok)
+echo 2^) Iniciar entorno (MySQL + Laravel + Vite + queue + ngrok)
 echo 3^) Detener entorno
 echo Q^) Salir
 echo ================================================
@@ -104,6 +106,7 @@ call :check_required_file "%PHP_EXE%" "PHP de XAMPP" || goto :end_fail
 where npm >nul 2>&1 || (echo [ERROR] npm no encontrado. Instala Node.js LTS. & goto :end_fail)
 
 call :load_db_env
+call :load_ops_mail_env
 call :ensure_mysql_running || goto :end_fail
 
 if exist "public\hot" (
@@ -139,18 +142,27 @@ if exist "%NGROK_EXE%" (
     echo [WARN] NGROK_EXE no encontrado. Ajusta la ruta si quieres tunel publico.
 )
 
+call :ensure_queue_worker
+
 timeout /t 3 >nul
 echo.
 echo [OK] Entorno iniciado.
 echo - Web local:   http://%APP_HOST%:%APP_PORT%
 echo - Vite local:  http://localhost:%VITE_PORT%
 if exist "%NGROK_EXE%" echo - Panel ngrok: http://127.0.0.1:%NGROK_API_PORT%
+if /I "%OPS_MAIL_ASYNC_ENABLED%"=="true" (
+    echo - Cola mail: activa ^(queue: %QUEUE_WORKER_QUEUES%^)
+) else (
+    echo - Cola mail: desactivada ^(OPS_MAIL_ASYNC_ENABLED=false en .env^)
+)
 goto :end_ok
 
 :stop
 echo.
 echo [STOP] Deteniendo servicios por puertos %APP_PORT%, %VITE_PORT% y %NGROK_API_PORT%...
 powershell -NoProfile -Command "$ports=@(%APP_PORT%,%VITE_PORT%,%NGROK_API_PORT%); $pids=Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object { $ports -contains $_.LocalPort } | Select-Object -ExpandProperty OwningProcess -Unique; foreach($pid in $pids){ Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue }" >nul 2>&1
+
+call :stop_queue_worker
 
 echo - Servicios detenidos (si estaban activos).
 goto :end_ok
@@ -176,6 +188,97 @@ if exist ".env" (
         if /I "%%A"=="DB_PASSWORD" set "DB_PASSWORD=%%B"
     )
 )
+exit /b 0
+
+:load_ops_mail_env
+set "OPS_MAIL_ASYNC_ENABLED=false"
+set "OPS_MAIL_QUEUE=mail"
+set "OPS_MAIL_TRIES=3"
+set "OPS_MAIL_BACKOFF_SECONDS=60,300,900"
+set "OPS_MAIL_BACKOFF=60"
+set "QUEUE_WORKER_QUEUES=mail,default"
+
+if exist ".env" (
+    for /f "usebackq tokens=1,* delims==" %%A in (".env") do (
+        if /I "%%A"=="OPS_MAIL_ASYNC_ENABLED" set "OPS_MAIL_ASYNC_ENABLED=%%B"
+        if /I "%%A"=="OPS_MAIL_QUEUE" set "OPS_MAIL_QUEUE=%%B"
+        if /I "%%A"=="OPS_MAIL_TRIES" set "OPS_MAIL_TRIES=%%B"
+        if /I "%%A"=="OPS_MAIL_BACKOFF_SECONDS" set "OPS_MAIL_BACKOFF_SECONDS=%%B"
+    )
+)
+
+set "OPS_MAIL_ASYNC_ENABLED=%OPS_MAIL_ASYNC_ENABLED:"=%"
+set "OPS_MAIL_QUEUE=%OPS_MAIL_QUEUE:"=%"
+set "OPS_MAIL_TRIES=%OPS_MAIL_TRIES:"=%"
+set "OPS_MAIL_BACKOFF_SECONDS=%OPS_MAIL_BACKOFF_SECONDS:"=%"
+
+if /I "%OPS_MAIL_ASYNC_ENABLED%"=="1" set "OPS_MAIL_ASYNC_ENABLED=true"
+if /I "%OPS_MAIL_ASYNC_ENABLED%"=="yes" set "OPS_MAIL_ASYNC_ENABLED=true"
+
+for /f "tokens=1 delims=," %%B in ("%OPS_MAIL_BACKOFF_SECONDS%") do set "OPS_MAIL_BACKOFF=%%B"
+if "%OPS_MAIL_BACKOFF%"=="" set "OPS_MAIL_BACKOFF=60"
+for /f "delims=0123456789" %%N in ("%OPS_MAIL_BACKOFF%") do set "OPS_MAIL_BACKOFF=60"
+if "%OPS_MAIL_TRIES%"=="" set "OPS_MAIL_TRIES=3"
+for /f "delims=0123456789" %%N in ("%OPS_MAIL_TRIES%") do set "OPS_MAIL_TRIES=3"
+
+set "OPS_MAIL_QUEUE=%OPS_MAIL_QUEUE: =%"
+if "%OPS_MAIL_QUEUE%"=="" set "OPS_MAIL_QUEUE=mail"
+set "QUEUE_WORKER_QUEUES=%OPS_MAIL_QUEUE%"
+echo %QUEUE_WORKER_QUEUES% | findstr /I /C:"default" >nul 2>&1
+if errorlevel 1 set "QUEUE_WORKER_QUEUES=%QUEUE_WORKER_QUEUES%,default"
+exit /b 0
+
+:ensure_queue_worker
+if /I not "%OPS_MAIL_ASYNC_ENABLED%"=="true" (
+    echo - Cola mail async desactivada en .env. No se inicia queue worker.
+    exit /b 0
+)
+
+if not exist "%DEV_RUNTIME_DIR%" mkdir "%DEV_RUNTIME_DIR%" >nul 2>&1
+
+if exist "%QUEUE_PID_FILE%" (
+    set "QPID="
+    set /p QPID=<"%QUEUE_PID_FILE%"
+    if not "!QPID!"=="" (
+        tasklist /FI "PID eq !QPID!" | findstr /R /C:" !QPID! " >nul 2>&1
+        if not errorlevel 1 (
+            echo - Queue worker ya activo (PID !QPID!).
+            exit /b 0
+        )
+    )
+    del /F /Q "%QUEUE_PID_FILE%" >nul 2>&1
+)
+
+echo - Iniciando queue worker: artisan queue:work --queue=%QUEUE_WORKER_QUEUES% --tries=%OPS_MAIL_TRIES% --backoff=%OPS_MAIL_BACKOFF%
+powershell -NoProfile -Command "$p = Start-Process -FilePath '%PHP_EXE%' -ArgumentList 'artisan queue:work --queue=%QUEUE_WORKER_QUEUES% --tries=%OPS_MAIL_TRIES% --backoff=%OPS_MAIL_BACKOFF%' -WorkingDirectory '%PROJECT_ROOT%' -WindowStyle Minimized -PassThru; Set-Content -Path '%QUEUE_PID_FILE%' -Value $p.Id" >nul 2>&1
+if errorlevel 1 (
+    echo [WARN] No se pudo iniciar queue worker automaticamente.
+    exit /b 0
+)
+
+set "QPID="
+set /p QPID=<"%QUEUE_PID_FILE%"
+if "%QPID%"=="" (
+    echo [WARN] Queue worker iniciado, pero no se pudo guardar PID.
+) else (
+    echo - Queue worker iniciado (PID %QPID%).
+)
+exit /b 0
+
+:stop_queue_worker
+if exist "%QUEUE_PID_FILE%" (
+    set "QPID="
+    set /p QPID=<"%QUEUE_PID_FILE%"
+    if not "%QPID%"=="" (
+        taskkill /PID %QPID% /F >nul 2>&1
+        if not errorlevel 1 (
+            echo - Queue worker detenido (PID %QPID%).
+        )
+    )
+    del /F /Q "%QUEUE_PID_FILE%" >nul 2>&1
+)
+
+powershell -NoProfile -Command "$root = '%PROJECT_ROOT%'; $procs = Get-CimInstance Win32_Process -Filter \"Name='php.exe'\" | Where-Object { $_.CommandLine -like '*artisan queue:work*' -and $_.CommandLine -like ('*' + $root + '*') }; foreach($p in $procs){ Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue }" >nul 2>&1
 exit /b 0
 
 :ensure_mysql_running

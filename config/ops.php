@@ -20,4 +20,13 @@ return [
         'dashboard_weekly_time' => (string) env('OPS_WEEKLY_REPORT_TIME', '08:00'),
         'dashboard_weekly_range_days' => (int) env('OPS_WEEKLY_REPORT_RANGE_DAYS', 30),
     ],
+
+    'mail' => [
+        'async_enabled' => (bool) env('OPS_MAIL_ASYNC_ENABLED', false),
+        'queue' => (string) env('OPS_MAIL_QUEUE', 'mail'),
+        'queue_connection' => (string) env('OPS_MAIL_QUEUE_CONNECTION', ''),
+        'tries' => (int) env('OPS_MAIL_TRIES', 3),
+        'backoff_seconds' => (string) env('OPS_MAIL_BACKOFF_SECONDS', '60,300,900'),
+        'alerts_on_failure' => (bool) env('OPS_MAIL_ALERTS_ON_FAILURE', true),
+    ],
 ];

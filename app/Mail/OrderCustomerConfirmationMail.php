@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Models\Order;
+use App\Support\MailDispatch;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
@@ -13,8 +14,19 @@ class OrderCustomerConfirmationMail extends Mailable
 {
     use Queueable, SerializesModels;
 
+    public int $tries;
+
+    /**
+     * @var array<int, int>
+     */
+    public array $backoff;
+
     public function __construct(public Order $order)
     {
+        $this->tries = MailDispatch::tries();
+        $this->backoff = MailDispatch::backoffSeconds();
+        MailDispatch::applyQueueMetadata($this);
+
         $this->order->loadMissing('items');
     }
 
@@ -41,4 +53,3 @@ class OrderCustomerConfirmationMail extends Mailable
         return [];
     }
 }
-

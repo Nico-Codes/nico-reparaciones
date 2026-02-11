@@ -58,4 +58,54 @@ class OpsHealthCheckCommandTest extends TestCase
             ->expectsOutputToContain('APP_DEBUG')
             ->assertExitCode(1);
     }
+
+    public function test_health_check_fails_in_production_when_smtp_is_not_ready_for_real_delivery(): void
+    {
+        $this->app->instance('env', 'local');
+
+        config()->set('app.debug', false);
+        config()->set('app.url', 'https://example.com');
+        config()->set('session.secure', true);
+        config()->set('security.admin.allowed_emails', 'admin@example.com');
+        config()->set('security.admin.allowed_ips', '');
+        config()->set('security.admin.enforce_allowlist_in_production', true);
+        config()->set('security.admin.two_factor_session_minutes', 10);
+        config()->set('monitoring.enabled', true);
+        config()->set('monitoring.sentry.dsn', 'https://example.com/123');
+        config()->set('monitoring.alerts.enabled', true);
+        config()->set('monitoring.alerts.channel', 'stack');
+        config()->set('mail.default', 'log');
+        config()->set('mail.from.address', 'no-reply@example.com');
+
+        $this->artisan('ops:health-check --assume-production')
+            ->expectsOutputToContain('SMTP mail')
+            ->assertExitCode(1);
+    }
+
+    public function test_health_check_fails_when_async_mail_is_enabled_but_queue_driver_is_sync_in_production(): void
+    {
+        $this->app->instance('env', 'local');
+
+        config()->set('app.debug', false);
+        config()->set('app.url', 'https://example.com');
+        config()->set('session.secure', true);
+        config()->set('security.admin.allowed_emails', 'admin@example.com');
+        config()->set('security.admin.allowed_ips', '');
+        config()->set('security.admin.enforce_allowlist_in_production', true);
+        config()->set('security.admin.two_factor_session_minutes', 10);
+        config()->set('monitoring.enabled', true);
+        config()->set('monitoring.sentry.dsn', 'https://example.com/123');
+        config()->set('monitoring.alerts.enabled', true);
+        config()->set('monitoring.alerts.channel', 'stack');
+        config()->set('mail.default', 'smtp');
+        config()->set('mail.from.address', 'no-reply@example.com');
+        config()->set('mail.mailers.smtp.host', 'smtp.example.com');
+        config()->set('mail.mailers.smtp.port', 587);
+        config()->set('ops.mail.async_enabled', true);
+        config()->set('queue.default', 'sync');
+
+        $this->artisan('ops:health-check --assume-production')
+            ->expectsOutputToContain('Mail async dispatch')
+            ->assertExitCode(1);
+    }
 }

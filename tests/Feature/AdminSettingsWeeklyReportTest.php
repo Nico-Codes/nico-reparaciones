@@ -66,6 +66,7 @@ class AdminSettingsWeeklyReportTest extends TestCase
     public function test_admin_can_send_weekly_report_now_from_settings_screen(): void
     {
         Mail::fake();
+        config()->set('ops.mail.async_enabled', false);
 
         $admin = User::factory()->create(['role' => 'admin']);
 
