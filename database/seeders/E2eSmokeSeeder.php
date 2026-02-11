@@ -22,10 +22,15 @@ class E2eSmokeSeeder extends Seeder
                 'name' => 'E2E',
                 'last_name' => 'Cliente',
                 'phone' => '3415550011',
+                'email_verified_at' => now(),
                 'password' => Hash::make('e2e12345'),
                 'role' => 'user',
             ]
         );
+        if (!$customer->email_verified_at) {
+            $customer->email_verified_at = now();
+            $customer->save();
+        }
 
         $customerNoPhone = User::firstOrCreate(
             ['email' => 'e2e.nophone@nico.local'],
@@ -33,10 +38,15 @@ class E2eSmokeSeeder extends Seeder
                 'name' => 'E2E',
                 'last_name' => 'NoPhone',
                 'phone' => null,
+                'email_verified_at' => now(),
                 'password' => Hash::make('e2e12345'),
                 'role' => 'user',
             ]
         );
+        if (!$customerNoPhone->email_verified_at) {
+            $customerNoPhone->email_verified_at = now();
+            $customerNoPhone->save();
+        }
 
         $admin = User::query()
             ->where('role', 'admin')

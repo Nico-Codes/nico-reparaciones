@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\OrderCustomerConfirmationMail;
 use App\Models\BusinessSetting;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -12,6 +13,8 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
 class OrderController extends Controller
@@ -199,6 +202,18 @@ class OrderController extends Controller
                 }
                 $request->session()->put('checkout_completed_tokens', $completedTokens);
                 $request->session()->forget('checkout_token');
+
+                if (!empty((string) $user->email)) {
+                    try {
+                        Mail::to($user->email)->send(new OrderCustomerConfirmationMail($order));
+                    } catch (\Throwable $mailException) {
+                        Log::warning('No se pudo enviar el correo de confirmacion de pedido.', [
+                            'order_id' => (int) $order->id,
+                            'user_id' => (int) $user->id,
+                            'error' => $mailException->getMessage(),
+                        ]);
+                    }
+                }
 
                 return redirect()
                     ->route('orders.thankyou', $order->id)

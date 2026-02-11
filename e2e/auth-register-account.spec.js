@@ -19,7 +19,7 @@ test('guest can register, update profile and sign in with a new password', async
   await page.locator('input[name="password_confirmation"]').fill(initialPassword);
   await page.getByRole('button', { name: 'Crear cuenta' }).click();
 
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/email\/verificar$/);
 
   await page.goto('/mi-cuenta');
   await expect(page).toHaveURL(/\/mi-cuenta$/);
@@ -45,7 +45,7 @@ test('guest can register, update profile and sign in with a new password', async
   await loginPage.locator('input[name="password"]').fill(nextPassword);
   await loginPage.getByRole('button', { name: 'Ingresar' }).click();
 
-  await expect(loginPage).toHaveURL(/\/$/);
+  await expect(loginPage).toHaveURL(/\/email\/verificar$/);
   await loginContext.close();
 });
 

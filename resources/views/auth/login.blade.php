@@ -70,6 +70,12 @@
         Recordarme
       </label>
 
+      <div class="text-right text-sm">
+        <a href="{{ route('password.request') }}" class="font-semibold text-sky-700 hover:text-sky-800">
+          Olvide mi contrasena
+        </a>
+      </div>
+
       <button class="btn-primary h-11 w-full justify-center">Ingresar</button>
     </form>
 
@@ -85,4 +91,3 @@
   </div>
 </div>
 @endsection
-

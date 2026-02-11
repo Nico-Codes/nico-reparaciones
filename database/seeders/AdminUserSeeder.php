@@ -20,9 +20,15 @@ class AdminUserSeeder extends Seeder
                 'name' => 'Admin',
                 'last_name' => 'NicoReparaciones',
                 'phone' => '0000000000',
+                'email_verified_at' => now(),
                 'password' => Hash::make($pass),
                 'role' => 'admin',
             ]
         );
+
+        User::query()
+            ->where('email', $email)
+            ->whereNull('email_verified_at')
+            ->update(['email_verified_at' => now()]);
     }
 }

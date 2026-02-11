@@ -58,6 +58,13 @@ Route::middleware('guest')->group(function () {
     Route::get('/registro', [AuthController::class, 'showRegister'])->name('register');
     Route::post('/registro', [AuthController::class, 'register'])->middleware('throttle:auth-register')->name('register.post');
 
+    Route::get('/olvide-contrasena', [AuthController::class, 'showForgotPassword'])->name('password.request');
+    Route::post('/olvide-contrasena', [AuthController::class, 'sendResetLinkEmail'])
+        ->middleware('throttle:6,1')
+        ->name('password.email');
+    Route::get('/resetear-contrasena/{token}', [AuthController::class, 'showResetPassword'])->name('password.reset');
+    Route::post('/resetear-contrasena', [AuthController::class, 'resetPassword'])->name('password.update');
+
     // Google OAuth
     Route::get('/auth/google', [AuthController::class, 'googleRedirect'])->name('auth.google.redirect');
     Route::get('/auth/google/callback', [AuthController::class, 'googleCallback'])->name('auth.google.callback');
@@ -66,6 +73,16 @@ Route::middleware('guest')->group(function () {
 Route::post('/logout', [AuthController::class, 'logout'])
     ->middleware('auth')
     ->name('logout');
+
+Route::middleware('auth')->group(function () {
+    Route::get('/email/verificar', [AuthController::class, 'showEmailVerificationNotice'])->name('verification.notice');
+    Route::post('/email/verification-notification', [AuthController::class, 'resendVerification'])
+        ->middleware('throttle:6,1')
+        ->name('verification.send');
+    Route::get('/email/verificar/{id}/{hash}', [AuthController::class, 'verifyEmail'])
+        ->middleware(['signed', 'throttle:6,1'])
+        ->name('verification.verify');
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -78,8 +95,8 @@ Route::post('/carrito/actualizar/{product}', [CartController::class, 'update'])-
 Route::post('/carrito/eliminar/{product}', [CartController::class, 'remove'])->middleware('throttle:cart-write')->name('cart.remove');
 Route::post('/carrito/vaciar', [CartController::class, 'clear'])->middleware('throttle:cart-write')->name('cart.clear');
 
-Route::get('/checkout', [CartController::class, 'checkout'])->middleware('auth')->name('checkout');
-Route::post('/checkout/confirmar', [OrderController::class, 'confirm'])->middleware(['auth', 'throttle:checkout-confirm'])->name('checkout.confirm');
+Route::get('/checkout', [CartController::class, 'checkout'])->middleware(['auth', 'verified'])->name('checkout');
+Route::post('/checkout/confirmar', [OrderController::class, 'confirm'])->middleware(['auth', 'verified', 'throttle:checkout-confirm'])->name('checkout.confirm');
 
 /*
 |--------------------------------------------------------------------------
@@ -93,12 +110,14 @@ Route::middleware(['auth'])->group(function () {
     // Cambiar contrasena (simple)
     Route::put('/mi-cuenta/password', [AccountController::class, 'updatePassword'])->name('account.password');
 
-    Route::get('/mis-pedidos', [OrderController::class, 'index'])->name('orders.index');
-    Route::get('/mis-pedidos/{order}', [OrderController::class, 'show'])->name('orders.show');
-    Route::get('/pedido/{order}', [OrderController::class, 'thankYou'])->name('orders.thankyou');
+    Route::middleware('verified')->group(function () {
+        Route::get('/mis-pedidos', [OrderController::class, 'index'])->name('orders.index');
+        Route::get('/mis-pedidos/{order}', [OrderController::class, 'show'])->name('orders.show');
+        Route::get('/pedido/{order}', [OrderController::class, 'thankYou'])->name('orders.thankyou');
 
-    Route::get('/mis-reparaciones', [UserRepairController::class, 'index'])->name('repairs.my.index');
-    Route::get('/mis-reparaciones/{repair}', [UserRepairController::class, 'show'])->name('repairs.my.show');
+        Route::get('/mis-reparaciones', [UserRepairController::class, 'index'])->name('repairs.my.index');
+        Route::get('/mis-reparaciones/{repair}', [UserRepairController::class, 'show'])->name('repairs.my.show');
+    });
 
 });
 
