@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', 'Ayuda')
 
@@ -24,9 +24,16 @@
         class="card"
         data-help-item
         data-help-search="{{ \Illuminate\Support\Str::lower($entry->question . ' ' . $entry->answer) }}">
-        <div class="card-body space-y-2">
+        <button type="button" class="card-body flex w-full items-center justify-between gap-3 text-left" data-help-toggle aria-expanded="false">
           <h2 class="text-base font-black text-zinc-900">{{ $entry->question }}</h2>
-          <p class="text-sm text-zinc-700 whitespace-pre-line">{{ $entry->answer }}</p>
+          <svg class="h-5 w-5 shrink-0 text-zinc-500 transition-transform duration-300 ease-out" data-help-chevron viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="m6 9 6 6 6-6"></path>
+          </svg>
+        </button>
+        <div class="overflow-hidden max-h-0 opacity-0 transition-[max-height,opacity] duration-300 ease-out" data-help-answer>
+          <div class="px-4 pt-1 pb-12 sm:px-5 sm:pb-12">
+            <p class="mb-3 text-sm text-zinc-700 whitespace-pre-line leading-relaxed">{{ $entry->answer }}</p>
+          </div>
         </div>
       </article>
     @empty
@@ -85,6 +92,43 @@
   };
 
   input.addEventListener('input', update);
+})();
+
+(() => {
+  const items = Array.from(document.querySelectorAll('[data-help-item]'));
+  if (items.length === 0) return;
+
+  items.forEach((item) => {
+    const toggle = item.querySelector('[data-help-toggle]');
+    const chevron = item.querySelector('[data-help-chevron]');
+    const answer = item.querySelector('[data-help-answer]');
+    if (!toggle || !chevron || !answer) return;
+
+    const open = () => {
+      answer.style.maxHeight = `${answer.scrollHeight}px`;
+      answer.classList.remove('opacity-0');
+      toggle.setAttribute('aria-expanded', 'true');
+      chevron.classList.add('rotate-180');
+    };
+
+    const close = () => {
+      answer.style.maxHeight = '0px';
+      answer.classList.add('opacity-0');
+      toggle.setAttribute('aria-expanded', 'false');
+      chevron.classList.remove('rotate-180');
+    };
+
+    toggle.addEventListener('click', () => {
+      const isOpen = toggle.getAttribute('aria-expanded') === 'true';
+      if (isOpen) {
+        close();
+      } else {
+        open();
+      }
+    });
+
+    close();
+  });
 })();
 </script>
 @endsection
