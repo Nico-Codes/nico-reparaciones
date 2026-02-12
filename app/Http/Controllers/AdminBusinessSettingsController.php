@@ -34,12 +34,22 @@ class AdminBusinessSettingsController extends Controller
 
         $reportsRecipientsCount = $this->countEmails((string) ($reports['weeklyReportEmails'] ?? ''));
         $smtpStatus = (string) ($mail['smtpHealth']['status'] ?? 'warning');
+        $mailTemplatesCustomized = 0;
+        foreach (MailTemplateSettings::definitions() as $templateKey => $templateDef) {
+            foreach (array_keys((array) ($templateDef['fields'] ?? [])) as $fieldKey) {
+                $settingKey = MailTemplateSettings::settingKey($templateKey, (string) $fieldKey);
+                if (trim((string) BusinessSetting::getValue($settingKey, '')) !== '') {
+                    $mailTemplatesCustomized++;
+                }
+            }
+        }
 
         return view('admin.settings.index', [
             'statusBusiness' => $businessFilled >= 2 ? 'Completo' : 'Basico',
             'statusReports' => $reportsRecipientsCount > 0 ? 'Activo' : 'Sin destinatarios',
             'statusSmtpLabel' => (string) ($mail['smtpHealth']['label'] ?? 'Incompleto'),
             'statusSmtpTone' => $smtpStatus,
+            'statusMailTemplates' => $mailTemplatesCustomized > 0 ? 'Personalizadas' : 'Por defecto',
         ]);
     }
 

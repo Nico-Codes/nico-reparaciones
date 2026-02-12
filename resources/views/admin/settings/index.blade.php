@@ -26,87 +26,110 @@
     </div>
   </div>
 
-  <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-    <a href="{{ route('admin.settings.business') }}" class="card p-4 transition hover:-translate-y-0.5 hover:shadow-md">
-      <div class="flex items-center justify-between gap-3">
-        <div class="font-black text-zinc-900">Datos del negocio</div>
-        <img src="{{ $iconSettings }}" alt="" class="h-5 w-5 opacity-80" loading="lazy" decoding="async">
-      </div>
-      <div class="mt-1 text-sm text-zinc-600">Telefono, direccion y horarios usados por toda la web.</div>
-      <div class="mt-2">
-        <span class="inline-flex rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-bold text-zinc-700">{{ $statusBusiness ?? 'Basico' }}</span>
-      </div>
-      <div class="mt-3 text-xs font-bold text-sky-700">Abrir modulo</div>
-    </a>
+  <div class="space-y-3">
+    <div class="text-xs font-black uppercase tracking-wide text-zinc-500">Uso diario</div>
+    <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <a href="{{ route('admin.settings.mail.index') }}" class="card border-sky-200/70 bg-sky-50/30 p-4 transition hover:-translate-y-0.5 hover:shadow-md">
+        <div class="flex items-center justify-between gap-3">
+          <div class="font-black text-zinc-900">Correo SMTP</div>
+          <img src="{{ $iconSettings }}" alt="" class="h-5 w-5 opacity-80" loading="lazy" decoding="async">
+        </div>
+        <div class="mt-1 text-sm text-zinc-600">Estado de mail y prueba de envio al instante.</div>
+        <div class="mt-2">
+          <span class="inline-flex rounded-full px-2 py-0.5 text-xs font-bold {{ $smtpBadgeClasses }}">{{ $statusSmtpLabel ?? 'Incompleto' }}</span>
+        </div>
+        <div class="mt-3 text-xs font-bold text-sky-700">Abrir modulo</div>
+      </a>
 
-    <a href="{{ route('admin.settings.reports.index') }}" class="card p-4 transition hover:-translate-y-0.5 hover:shadow-md">
-      <div class="flex items-center justify-between gap-3">
-        <div class="font-black text-zinc-900">Reportes automaticos</div>
-        <img src="{{ $iconDashboard }}" alt="" class="h-5 w-5 opacity-80" loading="lazy" decoding="async">
-      </div>
-      <div class="mt-1 text-sm text-zinc-600">Destinatarios, dia/hora y envio manual de KPIs.</div>
-      <div class="mt-2">
-        <span class="inline-flex rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-bold text-zinc-700">{{ $statusReports ?? 'Sin destinatarios' }}</span>
-      </div>
-      <div class="mt-3 text-xs font-bold text-sky-700">Abrir modulo</div>
-    </a>
+      <a href="{{ route('admin.settings.reports.index') }}" class="card border-sky-200/70 bg-sky-50/30 p-4 transition hover:-translate-y-0.5 hover:shadow-md">
+        <div class="flex items-center justify-between gap-3">
+          <div class="font-black text-zinc-900">Reportes automaticos</div>
+          <img src="{{ $iconDashboard }}" alt="" class="h-5 w-5 opacity-80" loading="lazy" decoding="async">
+        </div>
+        <div class="mt-1 text-sm text-zinc-600">Destinatarios, dia/hora y envio manual de KPIs.</div>
+        <div class="mt-2">
+          <span class="inline-flex rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-bold text-zinc-700">{{ $statusReports ?? 'Sin destinatarios' }}</span>
+        </div>
+        <div class="mt-3 text-xs font-bold text-sky-700">Abrir modulo</div>
+      </a>
 
-    <a href="{{ route('admin.settings.mail.index') }}" class="card p-4 transition hover:-translate-y-0.5 hover:shadow-md">
-      <div class="flex items-center justify-between gap-3">
-        <div class="font-black text-zinc-900">Correo SMTP</div>
-        <img src="{{ $iconSettings }}" alt="" class="h-5 w-5 opacity-80" loading="lazy" decoding="async">
-      </div>
-      <div class="mt-1 text-sm text-zinc-600">Estado de mail y prueba de envio al instante.</div>
-      <div class="mt-2">
-        <span class="inline-flex rounded-full px-2 py-0.5 text-xs font-bold {{ $smtpBadgeClasses }}">{{ $statusSmtpLabel ?? 'Incompleto' }}</span>
-      </div>
-      <div class="mt-3 text-xs font-bold text-sky-700">Abrir modulo</div>
-    </a>
+      <a href="{{ route('admin.settings.business') }}" class="card border-sky-200/70 bg-sky-50/30 p-4 transition hover:-translate-y-0.5 hover:shadow-md">
+        <div class="flex items-center justify-between gap-3">
+          <div class="font-black text-zinc-900">Datos del negocio</div>
+          <img src="{{ $iconSettings }}" alt="" class="h-5 w-5 opacity-80" loading="lazy" decoding="async">
+        </div>
+        <div class="mt-1 text-sm text-zinc-600">Telefono, direccion y horarios usados por toda la web.</div>
+        <div class="mt-2">
+          <span class="inline-flex rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-bold text-zinc-700">{{ $statusBusiness ?? 'Basico' }}</span>
+        </div>
+        <div class="mt-3 text-xs font-bold text-sky-700">Abrir modulo</div>
+      </a>
+    </div>
+  </div>
 
-    <a href="{{ route('admin.settings.mail_templates.index') }}" class="card p-4 transition hover:-translate-y-0.5 hover:shadow-md">
-      <div class="flex items-center justify-between gap-3">
-        <div class="font-black text-zinc-900">Plantillas de correo</div>
-        <img src="{{ $iconSettings }}" alt="" class="h-5 w-5 opacity-80" loading="lazy" decoding="async">
-      </div>
-      <div class="mt-1 text-sm text-zinc-600">Textos de verificacion, recuperacion y confirmacion.</div>
-      <div class="mt-3 text-xs font-bold text-sky-700">Abrir modulo</div>
-    </a>
+  <div class="space-y-3">
+    <div class="text-xs font-black uppercase tracking-wide text-zinc-500">Configuracion avanzada</div>
+    <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <a href="{{ route('admin.settings.mail_templates.index') }}" class="card p-4 transition hover:-translate-y-0.5 hover:shadow-md">
+        <div class="flex items-center justify-between gap-3">
+          <div class="font-black text-zinc-900">Plantillas de correo</div>
+          <img src="{{ $iconSettings }}" alt="" class="h-5 w-5 opacity-80" loading="lazy" decoding="async">
+        </div>
+        <div class="mt-1 text-sm text-zinc-600">Textos de verificacion, recuperacion y confirmacion.</div>
+        <div class="mt-2">
+          <span class="inline-flex rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-bold text-zinc-700">{{ $statusMailTemplates ?? 'Por defecto' }}</span>
+        </div>
+        <div class="mt-3 text-xs font-bold text-sky-700">Abrir modulo</div>
+      </a>
 
-    <a href="{{ route('admin.settings.assets.index') }}" class="card p-4 transition hover:-translate-y-0.5 hover:shadow-md">
-      <div class="flex items-center justify-between gap-3">
-        <div class="font-black text-zinc-900">Identidad visual</div>
-        <img src="{{ $iconStore }}" alt="" class="h-5 w-5 opacity-80" loading="lazy" decoding="async">
-      </div>
-      <div class="mt-1 text-sm text-zinc-600">Logos, iconos y recursos visuales editables.</div>
-      <div class="mt-3 text-xs font-bold text-sky-700">Abrir modulo</div>
-    </a>
+      <a href="{{ route('admin.settings.assets.index') }}" class="card p-4 transition hover:-translate-y-0.5 hover:shadow-md">
+        <div class="flex items-center justify-between gap-3">
+          <div class="font-black text-zinc-900">Identidad visual</div>
+          <img src="{{ $iconStore }}" alt="" class="h-5 w-5 opacity-80" loading="lazy" decoding="async">
+        </div>
+        <div class="mt-1 text-sm text-zinc-600">Logos, iconos y recursos visuales editables.</div>
+        <div class="mt-2">
+          <span class="inline-flex rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-bold text-zinc-700">Modulo</span>
+        </div>
+        <div class="mt-3 text-xs font-bold text-sky-700">Abrir modulo</div>
+      </a>
 
-    <a href="{{ route('admin.two_factor.settings') }}" class="card p-4 transition hover:-translate-y-0.5 hover:shadow-md">
-      <div class="flex items-center justify-between gap-3">
-        <div class="font-black text-zinc-900">Seguridad 2FA</div>
-        <img src="{{ $iconSettings }}" alt="" class="h-5 w-5 opacity-80" loading="lazy" decoding="async">
-      </div>
-      <div class="mt-1 text-sm text-zinc-600">Gestion de segundo factor para acceso admin.</div>
-      <div class="mt-3 text-xs font-bold text-sky-700">Abrir modulo</div>
-    </a>
+      <a href="{{ route('admin.two_factor.settings') }}" class="card p-4 transition hover:-translate-y-0.5 hover:shadow-md">
+        <div class="flex items-center justify-between gap-3">
+          <div class="font-black text-zinc-900">Seguridad 2FA</div>
+          <img src="{{ $iconSettings }}" alt="" class="h-5 w-5 opacity-80" loading="lazy" decoding="async">
+        </div>
+        <div class="mt-1 text-sm text-zinc-600">Gestion de segundo factor para acceso admin.</div>
+        <div class="mt-2">
+          <span class="inline-flex rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-bold text-zinc-700">Modulo</span>
+        </div>
+        <div class="mt-3 text-xs font-bold text-sky-700">Abrir modulo</div>
+      </a>
 
-    <a href="{{ route('admin.whatsapp_templates.index') }}" class="card p-4 transition hover:-translate-y-0.5 hover:shadow-md">
-      <div class="flex items-center justify-between gap-3">
-        <div class="font-black text-zinc-900">Plantillas WhatsApp</div>
-        <img src="{{ $iconOrders }}" alt="" class="h-5 w-5 opacity-80" loading="lazy" decoding="async">
-      </div>
-      <div class="mt-1 text-sm text-zinc-600">Mensajes de seguimiento para reparaciones.</div>
-      <div class="mt-3 text-xs font-bold text-sky-700">Abrir modulo</div>
-    </a>
+      <a href="{{ route('admin.whatsapp_templates.index') }}" class="card p-4 transition hover:-translate-y-0.5 hover:shadow-md">
+        <div class="flex items-center justify-between gap-3">
+          <div class="font-black text-zinc-900">Plantillas WhatsApp</div>
+          <img src="{{ $iconOrders }}" alt="" class="h-5 w-5 opacity-80" loading="lazy" decoding="async">
+        </div>
+        <div class="mt-1 text-sm text-zinc-600">Mensajes de seguimiento para reparaciones.</div>
+        <div class="mt-2">
+          <span class="inline-flex rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-bold text-zinc-700">Modulo</span>
+        </div>
+        <div class="mt-3 text-xs font-bold text-sky-700">Abrir modulo</div>
+      </a>
 
-    <a href="{{ route('admin.orders_whatsapp_templates.index') }}" class="card p-4 transition hover:-translate-y-0.5 hover:shadow-md">
-      <div class="flex items-center justify-between gap-3">
-        <div class="font-black text-zinc-900">WhatsApp pedidos</div>
-        <img src="{{ $iconOrders }}" alt="" class="h-5 w-5 opacity-80" loading="lazy" decoding="async">
-      </div>
-      <div class="mt-1 text-sm text-zinc-600">Mensajes por estado para comunicacion de pedidos.</div>
-      <div class="mt-3 text-xs font-bold text-sky-700">Abrir modulo</div>
-    </a>
+      <a href="{{ route('admin.orders_whatsapp_templates.index') }}" class="card p-4 transition hover:-translate-y-0.5 hover:shadow-md">
+        <div class="flex items-center justify-between gap-3">
+          <div class="font-black text-zinc-900">WhatsApp pedidos</div>
+          <img src="{{ $iconOrders }}" alt="" class="h-5 w-5 opacity-80" loading="lazy" decoding="async">
+        </div>
+        <div class="mt-1 text-sm text-zinc-600">Mensajes por estado para comunicacion de pedidos.</div>
+        <div class="mt-2">
+          <span class="inline-flex rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-bold text-zinc-700">Modulo</span>
+        </div>
+        <div class="mt-3 text-xs font-bold text-sky-700">Abrir modulo</div>
+      </a>
+    </div>
   </div>
 </div>
 @endsection
