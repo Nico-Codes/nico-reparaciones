@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Support\MailDispatch;
+use App\Support\MailTemplateSettings;
 use Illuminate\Auth\Notifications\VerifyEmail as BaseVerifyEmail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -30,13 +31,17 @@ class VerifyEmailNotification extends BaseVerifyEmail implements ShouldQueue
     {
         $verificationUrl = $this->verificationUrl($notifiable);
         $expireMinutes = (int) config('auth.verification.expire', 60);
+        $tokens = [
+            'name' => (string) ($notifiable->name ?? ''),
+            'expire_minutes' => (string) $expireMinutes,
+        ];
 
         return (new MailMessage)
-            ->subject('Verifica tu correo en NicoReparaciones')
-            ->greeting('Hola, '.$notifiable->name.'.')
-            ->line('Gracias por crear tu cuenta. Para activarla, confirma tu correo electronico.')
-            ->action('Verificar correo', $verificationUrl)
-            ->line("Este enlace vence en {$expireMinutes} minutos.")
-            ->line('Si no creaste esta cuenta, puedes ignorar este mensaje.');
+            ->subject(MailTemplateSettings::resolve('verify_email', 'subject', $tokens))
+            ->greeting(MailTemplateSettings::resolve('verify_email', 'greeting', $tokens))
+            ->line(MailTemplateSettings::resolve('verify_email', 'intro_line', $tokens))
+            ->action(MailTemplateSettings::resolve('verify_email', 'action_label', $tokens), $verificationUrl)
+            ->line(MailTemplateSettings::resolve('verify_email', 'expiry_line', $tokens))
+            ->line(MailTemplateSettings::resolve('verify_email', 'outro_line', $tokens));
     }
 }

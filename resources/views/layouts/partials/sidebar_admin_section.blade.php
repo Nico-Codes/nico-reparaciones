@@ -48,14 +48,19 @@
       'route' => 'admin.settings.index',
       'label' => 'Configuración',
       'icon' => \App\Support\BrandAssets::url('icon_settings'),
-      'active' => request()->routeIs('admin.settings.index')
-        || request()->routeIs('admin.settings.update'),
+      'active' => request()->routeIs('admin.settings.*'),
     ],
     [
       'route' => 'admin.settings.assets.index',
       'label' => 'Identidad visual',
       'icon' => \App\Support\BrandAssets::url('icon_settings'),
       'active' => request()->routeIs('admin.settings.assets.*'),
+    ],
+    [
+      'route' => 'admin.settings.mail_templates.index',
+      'label' => 'Plantillas de correo',
+      'icon' => \App\Support\BrandAssets::url('icon_settings'),
+      'active' => request()->routeIs('admin.settings.mail_templates.*'),
     ],
     [
       'route' => 'admin.two_factor.settings',

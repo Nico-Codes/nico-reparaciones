@@ -12,9 +12,9 @@
   <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:20px;">
     <tr>
       <td>
-        <h1 style="margin:0 0 8px 0;font-size:22px;line-height:1.25;">Pedido confirmado #{{ $order->id }}</h1>
+        <h1 style="margin:0 0 8px 0;font-size:22px;line-height:1.25;">{{ $mailTitle ?? ('Pedido confirmado #' . $order->id) }}</h1>
         <p style="margin:0 0 16px 0;font-size:14px;color:#334155;">
-          Hola {{ $order->pickup_name }}, recibimos tu compra correctamente.
+          {{ $mailIntroLine ?? ('Hola ' . $order->pickup_name . ', recibimos tu compra correctamente.') }}
         </p>
 
         <p style="margin:0 0 8px 0;font-size:13px;color:#475569;"><strong>Estado:</strong> {{ \App\Models\Order::STATUSES[$order->status] ?? $order->status }}</p>
@@ -40,10 +40,9 @@
         </table>
 
         <p style="margin:16px 0 0 0;font-size:15px;color:#0f172a;"><strong>Total: {{ $money((int) $order->total) }}</strong></p>
-        <p style="margin:16px 0 0 0;font-size:13px;color:#475569;">Gracias por comprar en NicoReparaciones.</p>
+        <p style="margin:16px 0 0 0;font-size:13px;color:#475569;">{{ $mailFooterLine ?? 'Gracias por comprar en NicoReparaciones.' }}</p>
       </td>
     </tr>
   </table>
 </body>
 </html>
-

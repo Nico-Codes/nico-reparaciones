@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Support\MailDispatch;
+use App\Support\MailTemplateSettings;
 use Illuminate\Auth\Notifications\ResetPassword as BaseResetPassword;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -32,13 +33,17 @@ class ResetPasswordNotification extends BaseResetPassword implements ShouldQueue
     {
         $resetUrl = $this->resetUrl($notifiable);
         $expireMinutes = (int) config('auth.passwords.'.config('auth.defaults.passwords').'.expire', 60);
+        $tokens = [
+            'name' => (string) ($notifiable->name ?? ''),
+            'expire_minutes' => (string) $expireMinutes,
+        ];
 
         return (new MailMessage)
-            ->subject('Recuperar contrasena - NicoReparaciones')
-            ->greeting('Hola, '.$notifiable->name.'.')
-            ->line('Recibimos una solicitud para restablecer tu contrasena.')
-            ->action('Restablecer contrasena', $resetUrl)
-            ->line("Este enlace vence en {$expireMinutes} minutos.")
-            ->line('Si no solicitaste este cambio, puedes ignorar este mensaje.');
+            ->subject(MailTemplateSettings::resolve('reset_password', 'subject', $tokens))
+            ->greeting(MailTemplateSettings::resolve('reset_password', 'greeting', $tokens))
+            ->line(MailTemplateSettings::resolve('reset_password', 'intro_line', $tokens))
+            ->action(MailTemplateSettings::resolve('reset_password', 'action_label', $tokens), $resetUrl)
+            ->line(MailTemplateSettings::resolve('reset_password', 'expiry_line', $tokens))
+            ->line(MailTemplateSettings::resolve('reset_password', 'outro_line', $tokens));
     }
 }

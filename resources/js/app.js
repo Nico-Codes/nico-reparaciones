@@ -35,6 +35,24 @@ const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
 document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener(
+    'submit',
+    (e) => {
+      const form = e.target;
+      if (!(form instanceof HTMLFormElement)) return;
+
+      const submitter = e.submitter instanceof HTMLElement ? e.submitter : null;
+      const message =
+        submitter?.getAttribute('data-confirm') ||
+        form.getAttribute('data-confirm');
+
+      if (!message) return;
+      if (window.confirm(message)) return;
+
+      e.preventDefault();
+    },
+    true
+  );
   // ----------------------------
   // Scroll lock (shared) — evita “zoom” por scrollbar
   // ----------------------------

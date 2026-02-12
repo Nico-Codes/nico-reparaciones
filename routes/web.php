@@ -262,6 +262,9 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'can:access-admin', 'admin.
 
     // Configuracion del negocio
     Route::get('/configuracion', [AdminBusinessSettingsController::class, 'index'])->name('admin.settings.index');
+    Route::get('/configuracion/negocio', [AdminBusinessSettingsController::class, 'business'])->name('admin.settings.business');
+    Route::get('/configuracion/reportes', [AdminBusinessSettingsController::class, 'reports'])->name('admin.settings.reports.index');
+    Route::get('/configuracion/mail', [AdminBusinessSettingsController::class, 'mail'])->name('admin.settings.mail.index');
     Route::post('/configuracion', [AdminBusinessSettingsController::class, 'update'])->name('admin.settings.update');
     Route::post('/configuracion/reportes/dashboard', [AdminBusinessSettingsController::class, 'updateReports'])
         ->name('admin.settings.reports.update');
@@ -271,6 +274,13 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'can:access-admin', 'admin.
         ->name('admin.settings.smtp_test.send');
     Route::get('/configuracion/identidad-visual', [AdminBusinessSettingsController::class, 'assets'])
         ->name('admin.settings.assets.index');
+    Route::get('/configuracion/correos', [AdminBusinessSettingsController::class, 'mailTemplates'])
+        ->name('admin.settings.mail_templates.index');
+    Route::post('/configuracion/correos', [AdminBusinessSettingsController::class, 'updateMailTemplates'])
+        ->name('admin.settings.mail_templates.update');
+    Route::post('/configuracion/correos/{templateKey}/restaurar', [AdminBusinessSettingsController::class, 'resetMailTemplate'])
+        ->where('templateKey', '[A-Za-z0-9_]+')
+        ->name('admin.settings.mail_templates.reset');
     Route::post('/configuracion/identidad-visual/{assetKey}', [AdminBusinessSettingsController::class, 'updateAsset'])
         ->where('assetKey', '[A-Za-z0-9_]+')
         ->name('admin.settings.assets.update');

@@ -21,7 +21,7 @@ class AdminSettingsSmtpTest extends TestCase
         config()->set('mail.mailers.smtp.host', 'smtp.example.com');
         config()->set('mail.mailers.smtp.port', 587);
 
-        $response = $this->actingAs($admin)->get(route('admin.settings.index'));
+        $response = $this->actingAs($admin)->get(route('admin.settings.mail.index'));
 
         $response->assertOk();
         $response->assertSee('Estado SMTP');
@@ -36,7 +36,7 @@ class AdminSettingsSmtpTest extends TestCase
         config()->set('mail.default', 'log');
         config()->set('mail.from.address', 'no-reply@example.com');
 
-        $response = $this->actingAs($admin)->get(route('admin.settings.index'));
+        $response = $this->actingAs($admin)->get(route('admin.settings.mail.index'));
 
         $response->assertOk();
         $response->assertSee('Estado SMTP');

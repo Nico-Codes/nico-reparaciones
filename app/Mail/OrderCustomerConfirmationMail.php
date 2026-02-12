@@ -4,6 +4,7 @@ namespace App\Mail;
 
 use App\Models\Order;
 use App\Support\MailDispatch;
+use App\Support\MailTemplateSettings;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
@@ -32,16 +33,31 @@ class OrderCustomerConfirmationMail extends Mailable
 
     public function envelope(): Envelope
     {
+        $tokens = MailTemplateSettings::orderCustomerTokens(
+            (int) $this->order->id,
+            (string) $this->order->pickup_name
+        );
+
         return new Envelope(
-            subject: 'Confirmacion de pedido #'.$this->order->id.' - NicoReparaciones'
+            subject: MailTemplateSettings::resolve('order_customer_confirmation', 'subject', $tokens)
         );
     }
 
     public function content(): Content
     {
+        $tokens = MailTemplateSettings::orderCustomerTokens(
+            (int) $this->order->id,
+            (string) $this->order->pickup_name
+        );
+
         return new Content(
             view: 'emails.order_customer_confirmation',
-            text: 'emails.order_customer_confirmation_text'
+            text: 'emails.order_customer_confirmation_text',
+            with: [
+                'mailTitle' => MailTemplateSettings::resolve('order_customer_confirmation', 'title', $tokens),
+                'mailIntroLine' => MailTemplateSettings::resolve('order_customer_confirmation', 'intro_line', $tokens),
+                'mailFooterLine' => MailTemplateSettings::resolve('order_customer_confirmation', 'footer_line', $tokens),
+            ]
         );
     }
 

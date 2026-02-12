@@ -8,6 +8,7 @@ use App\Support\AuditLogger;
 use App\Support\BrandAssets;
 use App\Support\MailFailureMonitor;
 use App\Support\MailHealthStatus;
+use App\Support\MailTemplateSettings;
 use App\Support\OpsDashboardReportSettings;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
@@ -20,28 +21,35 @@ class AdminBusinessSettingsController extends Controller
 {
     public function index()
     {
-        $settings = BusinessSetting::allValues();
-        $shopAddress = (string) ($settings->get('shop_address') ?? '');
-        $shopHours = (string) ($settings->get('shop_hours') ?? '');
-        $shopPhone = (string) ($settings->get('shop_phone') ?? '');
+        return view('admin.settings.index');
+    }
 
-        return view('admin.settings.index', [
-            'shopAddress' => $shopAddress,
-            'shopHours' => $shopHours,
-            'shopPhone' => $shopPhone,
-            'weeklyReportEmails' => OpsDashboardReportSettings::recipientsRaw(),
-            'weeklyReportDay' => OpsDashboardReportSettings::day(),
-            'weeklyReportTime' => OpsDashboardReportSettings::time(),
-            'weeklyReportRangeDays' => OpsDashboardReportSettings::rangeDays(),
-            'smtpDefaultTo' => (string) (auth()->user()?->email ?? ''),
-            'smtpHealth' => MailHealthStatus::evaluate(),
-        ]);
+    public function business()
+    {
+        return view('admin.settings.business', $this->businessViewData());
+    }
+
+    public function reports()
+    {
+        return view('admin.settings.reports', $this->reportsViewData());
+    }
+
+    public function mail()
+    {
+        return view('admin.settings.mail', $this->mailViewData());
     }
 
     public function assets()
     {
         return view('admin.settings.assets', [
             'brandAssets' => BrandAssets::resolved(),
+        ]);
+    }
+
+    public function mailTemplates()
+    {
+        return view('admin.settings.mail_templates', [
+            'templates' => MailTemplateSettings::editableTemplates(),
         ]);
     }
 
@@ -141,6 +149,86 @@ class AdminBusinessSettingsController extends Controller
         ]);
 
         return back()->with('success', 'Configuracion de reportes guardada.');
+    }
+
+    public function updateMailTemplates(Request $request)
+    {
+        $definitions = MailTemplateSettings::definitions();
+        $rules = [];
+
+        foreach ($definitions as $templateKey => $templateDef) {
+            foreach ((array) ($templateDef['fields'] ?? []) as $fieldKey => $fieldDef) {
+                $inputKey = $this->mailTemplateInputKey($templateKey, $fieldKey);
+                $rules[$inputKey] = 'nullable|string|max:1000';
+            }
+        }
+
+        $data = $request->validate($rules);
+        $before = MailTemplateSettings::editableTemplates();
+        $changedKeys = [];
+
+        foreach ($definitions as $templateKey => $templateDef) {
+            foreach ((array) ($templateDef['fields'] ?? []) as $fieldKey => $fieldDef) {
+                $inputKey = $this->mailTemplateInputKey($templateKey, $fieldKey);
+                $settingKey = MailTemplateSettings::settingKey($templateKey, $fieldKey);
+                $defaultValue = (string) ($fieldDef['default'] ?? '');
+                $incomingValue = trim((string) ($data[$inputKey] ?? ''));
+                $toPersist = $incomingValue !== '' && $incomingValue !== $defaultValue
+                    ? $incomingValue
+                    : null;
+
+                $previousStoredValue = (string) (BusinessSetting::where('key', $settingKey)->value('value') ?? '');
+                if ((string) $toPersist !== $previousStoredValue) {
+                    $changedKeys[] = $settingKey;
+                }
+
+                BusinessSetting::updateOrCreate(
+                    ['key' => $settingKey],
+                    [
+                        'value' => $toPersist,
+                        'updated_by' => auth()->id(),
+                    ]
+                );
+            }
+        }
+
+        AuditLogger::log($request, 'admin.settings.mail_templates.updated', [
+            'subject_type' => BusinessSetting::class,
+            'metadata' => [
+                'changed_keys' => $changedKeys,
+                'before' => $before,
+                'after' => MailTemplateSettings::editableTemplates(),
+            ],
+        ]);
+
+        return back()->with('success', 'Plantillas de correo guardadas.');
+    }
+
+    public function resetMailTemplate(Request $request, string $templateKey)
+    {
+        $definitions = MailTemplateSettings::definitions();
+        if (!isset($definitions[$templateKey])) {
+            abort(404);
+        }
+
+        $fields = (array) ($definitions[$templateKey]['fields'] ?? []);
+        $affectedSettingKeys = [];
+
+        foreach (array_keys($fields) as $fieldKey) {
+            $settingKey = MailTemplateSettings::settingKey($templateKey, (string) $fieldKey);
+            BusinessSetting::where('key', $settingKey)->delete();
+            $affectedSettingKeys[] = $settingKey;
+        }
+
+        AuditLogger::log($request, 'admin.settings.mail_templates.reset', [
+            'subject_type' => BusinessSetting::class,
+            'metadata' => [
+                'template_key' => $templateKey,
+                'affected_keys' => $affectedSettingKeys,
+            ],
+        ]);
+
+        return back()->with('success', 'Plantilla restaurada a valores por defecto.');
     }
 
     public function sendWeeklyReport(Request $request)
@@ -346,6 +434,49 @@ class AdminBusinessSettingsController extends Controller
         )));
 
         return count($list);
+    }
+
+    private function mailTemplateInputKey(string $templateKey, string $fieldKey): string
+    {
+        return 'tpl_' . $templateKey . '_' . $fieldKey;
+    }
+
+    /**
+     * @return array{shopAddress:string,shopHours:string,shopPhone:string}
+     */
+    private function businessViewData(): array
+    {
+        $settings = BusinessSetting::allValues();
+
+        return [
+            'shopAddress' => (string) ($settings->get('shop_address') ?? ''),
+            'shopHours' => (string) ($settings->get('shop_hours') ?? ''),
+            'shopPhone' => (string) ($settings->get('shop_phone') ?? ''),
+        ];
+    }
+
+    /**
+     * @return array{weeklyReportEmails:string,weeklyReportDay:string,weeklyReportTime:string,weeklyReportRangeDays:int}
+     */
+    private function reportsViewData(): array
+    {
+        return [
+            'weeklyReportEmails' => OpsDashboardReportSettings::recipientsRaw(),
+            'weeklyReportDay' => OpsDashboardReportSettings::day(),
+            'weeklyReportTime' => OpsDashboardReportSettings::time(),
+            'weeklyReportRangeDays' => OpsDashboardReportSettings::rangeDays(),
+        ];
+    }
+
+    /**
+     * @return array{smtpDefaultTo:string,smtpHealth:array<string,mixed>}
+     */
+    private function mailViewData(): array
+    {
+        return [
+            'smtpDefaultTo' => (string) (auth()->user()?->email ?? ''),
+            'smtpHealth' => MailHealthStatus::evaluate(),
+        ];
     }
 
 }

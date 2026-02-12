@@ -10,7 +10,11 @@
     ['route' => 'admin.deviceTypes.index', 'label' => 'Tipos de dispositivo'],
     ['route' => 'admin.deviceCatalog.index', 'label' => 'Catalogo de dispositivos'],
     ['route' => 'admin.settings.index', 'label' => 'Configuracion'],
+    ['route' => 'admin.settings.business', 'label' => 'Datos del negocio'],
+    ['route' => 'admin.settings.reports.index', 'label' => 'Reportes automaticos'],
+    ['route' => 'admin.settings.mail.index', 'label' => 'Correo SMTP'],
     ['route' => 'admin.settings.assets.index', 'label' => 'Identidad visual'],
+    ['route' => 'admin.settings.mail_templates.index', 'label' => 'Plantillas de correo'],
     ['route' => 'admin.two_factor.settings', 'label' => 'Seguridad 2FA'],
     ['route' => 'admin.users.index', 'label' => 'Usuarios'],
   ];
