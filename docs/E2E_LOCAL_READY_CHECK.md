@@ -7,8 +7,8 @@ Tener una validacion E2E repetible en local con dos niveles:
 
 ## Comandos
 - Runner Windows:
-  - `nico-e2e-ready.bat` (solo critico)
-  - `nico-e2e-ready.bat full` (critico + full)
+  - `nico-dev.bat e2e` (solo critico)
+  - `nico-dev.bat e2e-full` (critico + full)
 - Alternativas directas:
   - `npm run e2e:critical`
   - `npm run e2e:full`

@@ -77,7 +77,7 @@ composer run ops:prepare:production
 En Windows:
 
 ```bat
-nico-prod-preflight.bat
+nico-dev.bat prod-preflight
 ```
 
 Este check valida:

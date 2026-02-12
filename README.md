@@ -15,7 +15,7 @@
 - En produccion, el health-check marca `FAIL` si mail no esta listo para envio real (`MAIL_MAILER=log/array` o faltan `MAIL_FROM_ADDRESS`, `MAIL_HOST`, `MAIL_PORT` cuando aplica).
 - Plantilla recomendada de produccion: `/.env.production.example`
 - Preflight de produccion (health strict + caches + health strict): `composer run ops:prepare:production`
-- En Windows tambien disponible: `nico-prod-preflight.bat`
+- En Windows tambien disponible: `nico-dev.bat prod-preflight`
 - Backup operativo (DB + archivos): `php artisan ops:backup --only=all`
 - Solo backup de base de datos: `php artisan ops:backup --only=db`
 - Solo backup de archivos: `php artisan ops:backup --only=files`
@@ -25,16 +25,18 @@
 - Prueba rapida de correo por terminal: `php artisan ops:mail-test --to=ops@tu-dominio.com` (agrega `--force-sync` para bypass de cola)
 - Mail async opcional (recomendado prod): `OPS_MAIL_ASYNC_ENABLED=true` + worker `php artisan queue:work --queue=mail,default --tries=3 --backoff=60`
 - En local, `nico-dev.bat start` levanta/detiene automaticamente Mailpit (`http://127.0.0.1:8025`) y el queue worker de mail si `OPS_MAIL_ASYNC_ENABLED=true`.
-- Validacion local completa (health + mail + tests criticos): `nico-local-ready.bat` o `composer run ops:local:ready`
+- Validacion local completa (health + mail + tests criticos): `nico-dev.bat local-ready` o `composer run ops:local:ready`
+- Validacion local integral (funcional + E2E critico): `nico-dev.bat project-ready` (usar `nico-dev.bat project-ready-full` para E2E completo)
 - Quality gate local: `composer quality`
 - Checklist de produccion: `docs/OPERACION_PRODUCCION.md`
 - Checklist de cierre mail local: `docs/MAIL_QA_CIERRE.md`
 - Checklist de validacion local integral: `docs/LOCAL_READY_CHECK.md`
+- Guia de scripts batch: `docs/BAT_SCRIPTS_GUIDE.md`
 - E2E (Playwright):
   - Instalar navegador: `npm run e2e:install`
   - Ejecutar suite critica: `npm run e2e:critical`
   - Ejecutar suite completa: `npm run e2e` o `npm run e2e:full`
-  - Runner local Windows: `nico-e2e-ready.bat` (critico) / `nico-e2e-ready.bat full`
+  - Runner local Windows: `nico-dev.bat e2e` (critico) / `nico-dev.bat e2e-full`
   - Ver reporte HTML: `npm run e2e:report`
   - Ejecutar contra un server ya levantado: `E2E_BASE_URL=http://127.0.0.1:8000 npm run e2e`
 - Checklist E2E local: `docs/E2E_LOCAL_READY_CHECK.md`

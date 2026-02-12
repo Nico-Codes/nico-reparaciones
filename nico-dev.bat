@@ -2,7 +2,7 @@
 setlocal EnableExtensions EnableDelayedExpansion
 
 REM ============================================================================
-REM NicoReparaciones - Helper de desarrollo para Windows
+REM NicoReparaciones - Script unificado para Windows
 REM ----------------------------------------------------------------------------
 REM USO RAPIDO
 REM   1) Doble click en este .bat (menu interactivo)
@@ -10,6 +10,12 @@ REM   2) O por consola:
 REM      - nico-dev.bat setup   (primera vez / PC nueva)
 REM      - nico-dev.bat start   (iniciar entorno + worker de cola mail si aplica)
 REM      - nico-dev.bat stop    (detener entorno)
+REM      - nico-dev.bat local-ready
+REM      - nico-dev.bat e2e
+REM      - nico-dev.bat e2e-full
+REM      - nico-dev.bat prod-preflight
+REM      - nico-dev.bat project-ready
+REM      - nico-dev.bat project-ready-full
 REM ----------------------------------------------------------------------------
 REM GUIA "PC DESDE CERO" (antes de ejecutar setup)
 REM   - Instalar XAMPP (PHP + MySQL)
@@ -44,6 +50,12 @@ set "MAILPIT_PID_FILE=%DEV_RUNTIME_DIR%\mailpit.pid"
 if /I "%~1"=="setup" goto :setup
 if /I "%~1"=="start" goto :start
 if /I "%~1"=="stop" goto :stop
+if /I "%~1"=="local-ready" goto :local_ready
+if /I "%~1"=="e2e" goto :e2e_ready
+if /I "%~1"=="e2e-full" set "RUN_E2E_FULL=1" & goto :e2e_ready
+if /I "%~1"=="prod-preflight" goto :prod_preflight
+if /I "%~1"=="project-ready" goto :project_ready
+if /I "%~1"=="project-ready-full" set "RUN_E2E_FULL=1" & goto :project_ready
 if /I "%~1"=="help" goto :help
 
 :menu
@@ -52,10 +64,20 @@ echo ================= NicoReparaciones =================
 echo 1^) Setup inicial (primera vez / PC nueva)
 echo 2^) Iniciar entorno (MySQL + Laravel + Vite + Mailpit + queue + ngrok)
 echo 3^) Detener entorno
+echo 4^) Local ready (health + mail + tests criticos)
+echo 5^) E2E critico
+echo 6^) E2E full
+echo 7^) Preflight produccion (estricto)
+echo 8^) Project ready (local ready + e2e critico)
 echo Q^) Salir
 echo ================================================
-choice /C 123Q /N /M "Selecciona opcion [1/2/3/Q]: "
-if errorlevel 4 goto :end_ok
+choice /C 12345678Q /N /M "Selecciona opcion [1/2/3/4/5/6/7/8/Q]: "
+if errorlevel 9 goto :end_ok
+if errorlevel 8 goto :project_ready
+if errorlevel 7 goto :prod_preflight
+if errorlevel 6 set "RUN_E2E_FULL=1" & goto :e2e_ready
+if errorlevel 5 goto :e2e_ready
+if errorlevel 4 goto :local_ready
 if errorlevel 3 goto :stop
 if errorlevel 2 goto :start
 if errorlevel 1 goto :setup
@@ -66,6 +88,12 @@ echo Uso:
 echo   nico-dev.bat setup
 echo   nico-dev.bat start
 echo   nico-dev.bat stop
+echo   nico-dev.bat local-ready
+echo   nico-dev.bat e2e
+echo   nico-dev.bat e2e-full
+echo   nico-dev.bat prod-preflight
+echo   nico-dev.bat project-ready
+echo   nico-dev.bat project-ready-full
 goto :end_ok
 
 :setup
@@ -174,9 +202,121 @@ call :stop_mailpit
 echo - Servicios detenidos (si estaban activos).
 goto :end_ok
 
+:local_ready
+echo.
+echo [LOCAL READY] Validando entorno local...
+call :resolve_php || exit /b 1
+
+echo.
+echo [1/5] Limpiando cache de configuracion...
+"%PHP_EXE%" artisan config:clear || exit /b 1
+
+echo.
+echo [2/5] Ejecutando health-check...
+"%PHP_EXE%" artisan ops:health-check || exit /b 1
+
+echo.
+echo [3/5] Probando mail sync...
+"%PHP_EXE%" artisan ops:mail-test --to=admin@nico.local --force-sync || exit /b 1
+
+echo.
+echo [4/5] Probando mail async y procesando cola...
+"%PHP_EXE%" artisan ops:mail-test --to=admin@nico.local || exit /b 1
+"%PHP_EXE%" artisan queue:work --once --queue=mail --stop-when-empty || exit /b 1
+
+echo.
+echo [5/5] Ejecutando tests criticos...
+"%PHP_EXE%" artisan test --filter="AuthEmailFlowsTest|OrderConfirmationMailTest|AdminSettingsSmtpTest|OpsMailTestCommandTest|OpsHealthCheckCommandTest" || exit /b 1
+
+echo.
+echo [OK] Local ready check completado.
+echo      Revisa bandeja de Mailpit en http://127.0.0.1:8025
+exit /b 0
+
+:e2e_ready
+if not defined RUN_E2E_FULL set "RUN_E2E_FULL=0"
+echo.
+echo [E2E] Verificando Playwright (Chromium)...
+where npm >nul 2>&1 || (echo [ERROR] npm no encontrado. Instala Node.js LTS. & exit /b 1)
+call npm run e2e:install || exit /b 1
+
+echo.
+echo [E2E] Ejecutando suite critica...
+set PLAYWRIGHT_HTML_OPEN=never
+call npm run e2e:critical || exit /b 1
+
+if /I "%RUN_E2E_FULL%"=="1" (
+    echo.
+    echo [E2E] Ejecutando suite completa...
+    call npm run e2e:full || exit /b 1
+) else (
+    echo.
+    echo [E2E] Suite completa omitida ^(usa e2e-full para incluirla^).
+)
+
+echo.
+echo [OK] E2E finalizado.
+echo      Reporte: playwright-report\index.html
+set "RUN_E2E_FULL="
+exit /b 0
+
+:prod_preflight
+echo.
+echo [PROD PREFLIGHT] Ejecutando checks estrictos...
+call :resolve_php || exit /b 1
+
+echo.
+echo [1/5] Health check estricto (modo produccion)...
+"%PHP_EXE%" artisan ops:health-check --strict --assume-production || exit /b 1
+
+echo.
+echo [2/5] Cacheando configuracion...
+"%PHP_EXE%" artisan config:cache || exit /b 1
+
+echo.
+echo [3/5] Cacheando rutas...
+"%PHP_EXE%" artisan route:cache || exit /b 1
+
+echo.
+echo [4/5] Cacheando vistas...
+"%PHP_EXE%" artisan view:cache || exit /b 1
+
+echo.
+echo [5/5] Health check estricto final (modo produccion)...
+"%PHP_EXE%" artisan ops:health-check --strict --assume-production || exit /b 1
+
+echo.
+echo [OK] Preflight de produccion completado correctamente.
+exit /b 0
+
+:project_ready
+if not defined RUN_E2E_FULL set "RUN_E2E_FULL=0"
+echo.
+echo [PROJECT READY] Ejecutando validacion integral...
+call :local_ready || exit /b 1
+if /I "%RUN_E2E_FULL%"=="1" (
+    set "RUN_E2E_FULL=1"
+) else (
+    set "RUN_E2E_FULL=0"
+)
+call :e2e_ready || exit /b 1
+set "RUN_E2E_FULL="
+exit /b 0
+
 :check_required_file
 if exist "%~1" exit /b 0
 echo [ERROR] Falta %~2 en la ruta: %~1
+exit /b 1
+
+:resolve_php
+if defined PHP_EXE if exist "%PHP_EXE%" exit /b 0
+for /f "delims=" %%P in ('where php 2^>nul') do (
+    set "PHP_EXE=%%P"
+    goto :resolve_php_done
+)
+:resolve_php_done
+if defined PHP_EXE if exist "%PHP_EXE%" exit /b 0
+echo [ERROR] PHP no encontrado. Verifica C:\xampp\php\php.exe o agrega php al PATH.
 exit /b 1
 
 :load_db_env

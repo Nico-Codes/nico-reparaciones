@@ -5,7 +5,7 @@ Validacion rapida para confirmar que el proyecto esta operativo en entorno local
 ## Opcion 1: Script Windows
 
 ```bat
-nico-local-ready.bat
+nico-dev.bat local-ready
 ```
 
 ## Opcion 2: Composer
