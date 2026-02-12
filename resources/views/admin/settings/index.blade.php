@@ -64,6 +64,18 @@
         </div>
         <div class="mt-3 text-xs font-bold text-sky-700">Abrir modulo</div>
       </a>
+
+      <a href="{{ route('admin.calculations.index') }}" class="card border-sky-200/70 bg-sky-50/30 p-4 transition hover:-translate-y-0.5 hover:shadow-md">
+        <div class="flex items-center justify-between gap-3">
+          <div class="font-black text-zinc-900">Reglas de calculo</div>
+          <img src="{{ $iconSettings }}" alt="" class="h-5 w-5 opacity-80" loading="lazy" decoding="async">
+        </div>
+        <div class="mt-1 text-sm text-zinc-600">Productos y reparaciones con calculo automatico editable.</div>
+        <div class="mt-2">
+          <span class="inline-flex rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-bold text-zinc-700">Modulo</span>
+        </div>
+        <div class="mt-3 text-xs font-bold text-sky-700">Abrir modulo</div>
+      </a>
     </div>
   </div>
 

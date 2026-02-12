@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Support\ProductPricingResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -72,10 +73,13 @@ class AdminProductController extends Controller
     public function create()
     {
         $categories = Category::orderBy('name')->get();
-        return view('admin.products.create', compact('categories'));
+        return view('admin.products.create', [
+            'categories' => $categories,
+            'priceResolveUrl' => route('admin.product_pricing_rules.resolve'),
+        ]);
     }
 
-    public function store(Request $request)
+    public function store(Request $request, ProductPricingResolver $resolver)
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
@@ -83,7 +87,8 @@ class AdminProductController extends Controller
             'sku' => ['required', 'string', 'max:64', 'regex:/^[A-Za-z0-9._-]+$/', 'unique:products,sku'],
             'barcode' => ['nullable', 'string', 'max:64', 'regex:/^[0-9A-Za-z._-]+$/', 'unique:products,barcode'],
             'category_id' => ['required', 'exists:categories,id'],
-            'price' => ['required', 'integer', 'min:0'],
+            'cost_price' => ['required', 'integer', 'min:0'],
+            'price' => ['nullable', 'integer', 'min:0'],
             'stock' => ['required', 'integer', 'min:0'],
 
             'description' => ['nullable', 'string', 'max:2000'],
@@ -95,6 +100,13 @@ class AdminProductController extends Controller
 
         $data['slug'] = $this->uniqueSlug($seed);
         $data['sku'] = strtoupper(trim((string) ($data['sku'] ?? '')));
+        $data['cost_price'] = (int) ($data['cost_price'] ?? 0);
+        if (!isset($data['price']) || $data['price'] === null || $data['price'] === '') {
+            $resolved = $resolver->resolve((int) $data['category_id'], null, (int) $data['cost_price']);
+            $data['price'] = (int) ($resolved['recommended_price'] ?? $data['cost_price']);
+        } else {
+            $data['price'] = (int) $data['price'];
+        }
         $barcode = trim((string) ($data['barcode'] ?? ''));
         $data['barcode'] = $barcode !== '' ? $barcode : null;
 
@@ -112,10 +124,14 @@ class AdminProductController extends Controller
     public function edit(Product $product)
     {
         $categories = Category::orderBy('name')->get();
-        return view('admin.products.edit', compact('product', 'categories'));
+        return view('admin.products.edit', [
+            'product' => $product,
+            'categories' => $categories,
+            'priceResolveUrl' => route('admin.product_pricing_rules.resolve'),
+        ]);
     }
 
-    public function update(Request $request, Product $product)
+    public function update(Request $request, Product $product, ProductPricingResolver $resolver)
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
@@ -123,7 +139,8 @@ class AdminProductController extends Controller
             'sku' => ['required', 'string', 'max:64', 'regex:/^[A-Za-z0-9._-]+$/', 'unique:products,sku,' . $product->id],
             'barcode' => ['nullable', 'string', 'max:64', 'regex:/^[0-9A-Za-z._-]+$/', 'unique:products,barcode,' . $product->id],
             'category_id' => ['required', 'exists:categories,id'],
-            'price' => ['required', 'integer', 'min:0'],
+            'cost_price' => ['required', 'integer', 'min:0'],
+            'price' => ['nullable', 'integer', 'min:0'],
             'stock' => ['required', 'integer', 'min:0'],
 
             'description' => ['nullable', 'string', 'max:2000'],
@@ -137,6 +154,13 @@ class AdminProductController extends Controller
 
         $data['slug'] = $this->uniqueSlug($seed, $product->id);
         $data['sku'] = strtoupper(trim((string) ($data['sku'] ?? '')));
+        $data['cost_price'] = (int) ($data['cost_price'] ?? 0);
+        if (!isset($data['price']) || $data['price'] === null || $data['price'] === '') {
+            $resolved = $resolver->resolve((int) $data['category_id'], (int) $product->id, (int) $data['cost_price']);
+            $data['price'] = (int) ($resolved['recommended_price'] ?? $data['cost_price']);
+        } else {
+            $data['price'] = (int) $data['price'];
+        }
         $barcode = trim((string) ($data['barcode'] ?? ''));
         $data['barcode'] = $barcode !== '' ? $barcode : null;
 
@@ -166,6 +190,33 @@ class AdminProductController extends Controller
         return redirect()
             ->route('admin.products.index')
             ->with('success', 'Producto actualizado.');
+    }
+
+    public function resolveRecommendedPrice(Request $request, ProductPricingResolver $resolver)
+    {
+        $data = $request->validate([
+            'category_id' => ['required', 'integer', 'exists:categories,id'],
+            'cost_price' => ['required', 'integer', 'min:0'],
+            'product_id' => ['nullable', 'integer', 'exists:products,id'],
+        ]);
+
+        $resolved = $resolver->resolve(
+            (int) $data['category_id'],
+            isset($data['product_id']) ? (int) $data['product_id'] : null,
+            (int) $data['cost_price']
+        );
+
+        $rule = $resolved['rule'];
+
+        return response()->json([
+            'ok' => true,
+            'recommended_price' => (int) ($resolved['recommended_price'] ?? 0),
+            'margin_percent' => (float) ($resolved['margin_percent'] ?? 0),
+            'rule' => $rule ? [
+                'id' => (int) $rule->id,
+                'name' => (string) $rule->name,
+            ] : null,
+        ]);
     }
 
     public function label(Product $product)

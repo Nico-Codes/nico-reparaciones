@@ -7,6 +7,7 @@
     ['route' => 'admin.orders.index', 'label' => 'Pedidos'],
     ['route' => 'admin.quick_sales.index', 'label' => 'Venta rapida'],
     ['route' => 'admin.products.index', 'label' => 'Productos'],
+    ['route' => 'admin.calculations.index', 'label' => 'Calculos'],
     ['route' => 'admin.pricing.index', 'label' => 'Precios'],
     ['route' => 'admin.deviceTypes.index', 'label' => 'Tipos de dispositivo'],
     ['route' => 'admin.deviceCatalog.index', 'label' => 'Catalogo de dispositivos'],

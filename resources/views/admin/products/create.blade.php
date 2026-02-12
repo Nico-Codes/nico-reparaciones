@@ -58,8 +58,14 @@
           </div>
 
           <div class="space-y-1">
-            <label>Precio *</label>
-            <input name="price" class="h-11" required value="{{ old('price') }}" inputmode="decimal" placeholder="0">
+            <label>Precio de costo *</label>
+            <input id="productCostInput" name="cost_price" class="h-11" required value="{{ old('cost_price') }}" inputmode="decimal" placeholder="0">
+          </div>
+
+          <div class="space-y-1">
+            <label>Precio de venta (recomendado)</label>
+            <input id="productPriceInput" name="price" class="h-11" value="{{ old('price') }}" inputmode="decimal" placeholder="Se completa automatico">
+            <div id="productPriceHint" class="text-xs text-zinc-500">Define categoria + costo para calcular automaticamente.</div>
           </div>
 
           <div class="space-y-1">
@@ -106,6 +112,12 @@
 
 <script>
   (() => {
+    const priceResolveUrl = @json($priceResolveUrl ?? '');
+    const categoryInput = document.querySelector('select[name=\"category_id\"]');
+    const costInput = document.getElementById('productCostInput');
+    const priceInput = document.getElementById('productPriceInput');
+    const priceHint = document.getElementById('productPriceHint');
+
     const input = document.getElementById('productImageInput');
     const preview = document.getElementById('productImagePreview');
     const empty = document.getElementById('productImagePreviewEmpty');
@@ -242,6 +254,48 @@
     });
 
     window.addEventListener('beforeunload', stopCamera);
+
+    const applyRecommendedPrice = async () => {
+      if (!priceResolveUrl || !categoryInput || !costInput || !priceInput || !priceHint) return;
+      const categoryId = String(categoryInput.value || '').trim();
+      const costRaw = String(costInput.value || '').trim();
+      const costValue = parseInt(costRaw, 10);
+
+      if (!categoryId || !Number.isFinite(costValue) || costValue < 0) {
+        priceHint.textContent = 'Define categoria + costo para calcular automaticamente.';
+        return;
+      }
+
+      const query = new URLSearchParams({
+        category_id: categoryId,
+        cost_price: String(costValue),
+      });
+
+      try {
+        const response = await fetch(`${priceResolveUrl}?${query.toString()}`, {
+          headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+          credentials: 'same-origin',
+        });
+        const data = await response.json().catch(() => null);
+        if (!response.ok || !data || !data.ok) {
+          priceHint.textContent = 'No se pudo calcular precio recomendado.';
+          return;
+        }
+
+        priceInput.value = String(data.recommended_price ?? '');
+        if (data.rule && data.rule.name) {
+          priceHint.textContent = `Regla: ${data.rule.name} (${data.margin_percent}% margen).`;
+        } else {
+          priceHint.textContent = `Sin regla especifica. Margen base: ${data.margin_percent}%.`;
+        }
+      } catch (_) {
+        priceHint.textContent = 'No se pudo calcular precio recomendado.';
+      }
+    };
+
+    categoryInput?.addEventListener('change', applyRecommendedPrice);
+    costInput?.addEventListener('input', applyRecommendedPrice);
+    applyRecommendedPrice();
   })();
 </script>
 @endsection

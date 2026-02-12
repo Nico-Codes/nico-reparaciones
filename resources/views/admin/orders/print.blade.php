@@ -21,6 +21,7 @@
 
   $st = (string)($order->status ?? 'pendiente');
   $stLabel = $statusMap[$st] ?? $st;
+  $autoprint = (string)request('autoprint', '') === '1';
 @endphp
 <!doctype html>
 <html lang="es">
@@ -151,4 +152,11 @@
     </div>
   </div>
 </body>
+@if($autoprint)
+  <script>
+    window.addEventListener('load', () => {
+      window.print();
+    });
+  </script>
+@endif
 </html>

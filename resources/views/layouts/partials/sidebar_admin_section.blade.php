@@ -31,12 +31,23 @@
       'active' => request()->routeIs('admin.products.*'),
     ],
     [
+      'route' => 'admin.calculations.index',
+      'label' => 'Calculos',
+      'icon' => \App\Support\BrandAssets::url('icon_settings'),
+      'active' => request()->routeIs('admin.calculations.*')
+        || request()->routeIs('admin.product_pricing_rules.*')
+        || request()->routeIs('admin.pricing.*')
+        || request()->routeIs('admin.repairTypes.*')
+        || request()->routeIs('admin.modelGroups.*'),
+    ],
+    [
       'route' => 'admin.pricing.index',
       'label' => 'Precios',
       'icon' => \App\Support\BrandAssets::url('icon_settings'),
       'active' => request()->routeIs('admin.pricing.*')
         || request()->routeIs('admin.repairTypes.*')
-        || request()->routeIs('admin.modelGroups.*'),
+        || request()->routeIs('admin.modelGroups.*')
+        || request()->routeIs('admin.product_pricing_rules.*'),
     ],
     [
       'route' => 'admin.deviceTypes.index',

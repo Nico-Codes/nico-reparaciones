@@ -3,6 +3,7 @@
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AdminBusinessSettingsController;
 use App\Http\Controllers\AdminCategoryController;
+use App\Http\Controllers\AdminCalculationSettingsController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AdminDeviceCatalogController;
 use App\Http\Controllers\AdminDeviceCatalogManageController;
@@ -15,6 +16,7 @@ use App\Http\Controllers\AdminOrderTicketController;
 use App\Http\Controllers\AdminOrderWhatsappTemplateController;
 use App\Http\Controllers\AdminPricingRuleController;
 use App\Http\Controllers\AdminProductController;
+use App\Http\Controllers\AdminProductPricingRuleController;
 use App\Http\Controllers\AdminQuickSaleController;
 use App\Http\Controllers\AdminRepairController;
 use App\Http\Controllers\AdminRepairPrintController;
@@ -192,6 +194,7 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'can:access-admin', 'admin.
     Route::get('/dashboard/export.csv', [AdminDashboardController::class, 'exportCsv'])->name('admin.dashboard.export');
     Route::get('/dashboard/export.xlsx', [AdminDashboardController::class, 'exportXlsx'])->name('admin.dashboard.export_xlsx');
     Route::post('/mantenimiento/migrar', [AdminMaintenanceController::class, 'migrate'])->name('admin.maintenance.migrate');
+    Route::get('/calculos', [AdminCalculationSettingsController::class, 'index'])->name('admin.calculations.index');
 
     // Pedidos
     Route::get('/pedidos', [AdminOrderController::class, 'index'])->name('admin.orders.index');
@@ -258,6 +261,7 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'can:access-admin', 'admin.
     Route::get('/productos', [AdminProductController::class, 'index'])->name('admin.products.index');
     Route::get('/productos/crear', [AdminProductController::class, 'create'])->name('admin.products.create');
     Route::post('/productos', [AdminProductController::class, 'store'])->name('admin.products.store');
+    Route::get('/productos/precio-recomendado/resolve', [AdminProductController::class, 'resolveRecommendedPrice'])->name('admin.product_pricing_rules.resolve');
     Route::get('/productos/{product}/editar', [AdminProductController::class, 'edit'])->name('admin.products.edit');
     Route::get('/productos/{product}/etiqueta', [AdminProductController::class, 'label'])->name('admin.products.label');
     Route::put('/productos/{product}', [AdminProductController::class, 'update'])->name('admin.products.update');
@@ -370,5 +374,11 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'can:access-admin', 'admin.
 
     // JSON resolver (para el cálculo automático en Crear Reparación)
     Route::get('/precios/resolve', [AdminPricingRuleController::class, 'resolve'])->name('admin.pricing.resolve');
+
+    // Reglas de cálculo para productos (costo -> venta)
+    Route::get('/calculos/productos', [AdminProductPricingRuleController::class, 'index'])->name('admin.product_pricing_rules.index');
+    Route::post('/calculos/productos', [AdminProductPricingRuleController::class, 'store'])->name('admin.product_pricing_rules.store');
+    Route::put('/calculos/productos/{rule}', [AdminProductPricingRuleController::class, 'update'])->name('admin.product_pricing_rules.update');
+    Route::delete('/calculos/productos/{rule}', [AdminProductPricingRuleController::class, 'destroy'])->name('admin.product_pricing_rules.destroy');
 
 });

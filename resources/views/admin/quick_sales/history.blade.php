@@ -95,6 +95,7 @@
                 <th class="py-2 pr-3">Items</th>
                 <th class="py-2 pr-3">Total</th>
                 <th class="py-2 pr-3">Admin</th>
+                <th class="py-2 pr-3 text-right">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -109,6 +110,12 @@
                   <td class="py-2 pr-3">{{ (int) $sale->items->sum('quantity') }}</td>
                   <td class="py-2 pr-3 font-black">{{ $money($sale->total) }}</td>
                   <td class="py-2 pr-3">{{ $sale->quickSaleAdmin ? trim(($sale->quickSaleAdmin->name ?? '').' '.($sale->quickSaleAdmin->last_name ?? '')) : '-' }}</td>
+                  <td class="py-2 pr-3">
+                    <div class="flex items-center justify-end gap-2">
+                      <a class="btn-outline btn-sm" href="{{ route('admin.orders.ticket', ['order' => $sale->id, 'autoprint' => 1, 'paper' => ($defaultTicketPaper ?? '80')]) }}" target="_blank" rel="noopener">Ticket</a>
+                      <a class="btn-outline btn-sm" href="{{ route('admin.orders.print', ['order' => $sale->id, 'autoprint' => 1]) }}" target="_blank" rel="noopener">A4</a>
+                    </div>
+                  </td>
                 </tr>
               @endforeach
             </tbody>

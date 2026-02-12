@@ -22,6 +22,14 @@
   $stLabel = $statusMap[$st] ?? $st;
 
   $autoprint = (string)request('autoprint', '') === '1';
+  $paperDefault = (string) ($settings->get('default_ticket_paper', '80') ?? '80');
+  if (!in_array($paperDefault, ['58', '80'], true)) {
+    $paperDefault = '80';
+  }
+  $paper = (string)request('paper', $paperDefault);
+  $is58 = $paper === '58';
+  $pageWidth = $is58 ? '58mm' : '80mm';
+  $contentWidth = $is58 ? '50mm' : '72mm';
 @endphp
 <!doctype html>
 <html lang="es">
@@ -33,7 +41,7 @@
     :root { --muted:#71717a; --border:#e4e4e7; }
     *{ box-sizing:border-box; }
     body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; color:#111827; background:#fff; }
-    .paper { width: 72mm; padding: 4mm; margin: 0 auto; }
+    .paper { width: {{ $contentWidth }}; padding: 4mm; margin: 0 auto; }
     .center { text-align:center; }
     .h1 { font-weight: 900; font-size: 14px; margin: 0; }
     .muted { color: var(--muted); font-size: 10px; }
@@ -51,10 +59,10 @@
     .btn { border:1px solid var(--border); background:#fff; padding:8px 10px; border-radius:10px; font-weight:900; cursor:pointer; font-size: 12px; }
     .btn-primary { background:#0ea5e9; border-color:#0ea5e9; color:#fff; }
 
-    @page { size: 80mm auto; margin: 4mm; }
+    @page { size: {{ $pageWidth }} auto; margin: 4mm; }
     @media print {
       .actions { display:none !important; }
-      .paper { width: 72mm; padding: 0; margin: 0; }
+      .paper { width: {{ $contentWidth }}; padding: 0; margin: 0; }
     }
   </style>
 </head>
@@ -121,6 +129,9 @@
 
     <div class="actions">
       <button class="btn btn-primary" onclick="window.print()">Imprimir</button>
+      <a class="btn" href="{{ route('admin.orders.ticket', ['order' => $order->id, 'paper' => '80']) }}">Ticket 80mm</a>
+      <a class="btn" href="{{ route('admin.orders.ticket', ['order' => $order->id, 'paper' => '58']) }}">Ticket 58mm</a>
+      <a class="btn" href="{{ route('admin.orders.print', ['order' => $order->id]) }}">A4</a>
       <a class="btn" href="{{ route('admin.orders.show', $order->id) }}">Volver</a>
     </div>
   </div>

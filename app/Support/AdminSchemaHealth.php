@@ -30,7 +30,12 @@ class AdminSchemaHealth
                 ['table' => 'products', 'column' => 'barcode', 'label' => 'products.barcode'],
                 ['table' => 'orders', 'column' => 'is_quick_sale', 'label' => 'orders.is_quick_sale'],
                 ['table' => 'orders', 'column' => 'quick_sale_admin_id', 'label' => 'orders.quick_sale_admin_id'],
+                ['table' => 'products', 'column' => 'cost_price', 'label' => 'products.cost_price'],
             ];
+
+            if (!Schema::hasTable('product_pricing_rules')) {
+                $issues[] = 'Tabla faltante: product_pricing_rules';
+            }
 
             foreach ($checks as $check) {
                 if (!Schema::hasTable($check['table'])) {

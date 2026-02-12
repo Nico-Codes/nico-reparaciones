@@ -63,7 +63,10 @@
         <label>Notas (opcional)</label>
         <textarea name="notes" rows="3">{{ old('notes') }}</textarea>
       </div>
-      <button class="btn-primary h-11 w-full justify-center" type="submit">Confirmar venta</button>
+      <div class="grid gap-2 sm:grid-cols-2">
+        <button class="btn-primary h-11 w-full justify-center" type="submit" name="after_action" value="view">Confirmar venta</button>
+        <button class="btn-outline h-11 w-full justify-center" type="submit" name="after_action" value="print_ticket">Confirmar e imprimir</button>
+      </div>
     </form>
 
     <form method="POST" action="{{ route('admin.quick_sales.clear') }}">

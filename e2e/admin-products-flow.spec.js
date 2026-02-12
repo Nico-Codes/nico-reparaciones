@@ -34,6 +34,7 @@ test('admin products flow: create, toggle, stock update and edit', async ({ page
   await page.locator('input[name="sku"]').fill(`E2E-${suffix}`);
   await page.locator('input[name="barcode"]').fill(`${suffix}`);
   await selectFirstNonEmptyOption(page.locator('select[name="category_id"]'));
+  await page.locator('input[name="cost_price"]').fill('9000');
   await page.locator('input[name="price"]').fill('12999');
   await page.locator('input[name="stock"]').fill('7');
   await page.locator('textarea[name="description"]').fill('Producto creado por flujo E2E');
@@ -69,6 +70,7 @@ test('admin products flow: create, toggle, stock update and edit', async ({ page
   await expect(page).toHaveURL(/\/admin\/productos\/\d+\/editar$/);
 
   await page.locator('input[name="name"]').fill(updatedName);
+  await page.locator('input[name="cost_price"]').fill('11000');
   await page.locator('input[name="price"]').fill('14999');
   await page.locator('input[name="stock"]').fill('15');
   await page.getByRole('button', { name: 'Guardar cambios' }).click();

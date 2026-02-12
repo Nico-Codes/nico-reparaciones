@@ -15,6 +15,7 @@ class Product extends Model
         'barcode',
         'brand',
         'quality',
+        'cost_price',
         'price',
         'stock',
         'short_description',
@@ -26,6 +27,7 @@ class Product extends Model
 
     protected $casts = [
         'price' => 'integer',
+        'cost_price' => 'integer',
         'stock' => 'integer',
         'featured' => 'boolean',
     ];

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderStatusHistory;
+use App\Models\BusinessSetting;
 use App\Models\Product;
 use App\Models\User;
 use App\Support\SimpleXlsxWriter;
@@ -204,6 +205,7 @@ class AdminQuickSaleController extends Controller
             'customer_phone' => ['nullable', 'string', 'max:30'],
             'payment_method' => ['required', 'in:' . implode(',', array_keys(Order::PAYMENT_METHODS))],
             'notes' => ['nullable', 'string', 'max:1000'],
+            'after_action' => ['nullable', 'in:view,print_ticket,print_a4'],
         ]);
 
         $order = DB::transaction(function () use ($cart, $data): Order {
@@ -281,6 +283,23 @@ class AdminQuickSaleController extends Controller
 
         session()->forget(self::CART_SESSION_KEY);
 
+        $afterAction = (string) ($data['after_action'] ?? 'view');
+        if ($afterAction === 'print_ticket') {
+            return redirect()
+                ->route('admin.orders.ticket', [
+                    'order' => $order->id,
+                    'autoprint' => 1,
+                    'paper' => $this->defaultTicketPaper(),
+                ])
+                ->with('success', 'Venta rapida confirmada. Ticket listo para imprimir.');
+        }
+
+        if ($afterAction === 'print_a4') {
+            return redirect()
+                ->route('admin.orders.print', ['order' => $order->id, 'autoprint' => 1])
+                ->with('success', 'Venta rapida confirmada. Hoja A4 lista para imprimir.');
+        }
+
         return redirect()
             ->route('admin.orders.show', $order)
             ->with('success', 'Venta rapida confirmada. Pedido #' . $order->id . ' generado.');
@@ -322,6 +341,7 @@ class AdminQuickSaleController extends Controller
             'admins' => $admins,
             'salesCount' => (int) ($totals->sales_count ?? 0),
             'salesTotal' => (int) ($totals->sales_total ?? 0),
+            'defaultTicketPaper' => $this->defaultTicketPaper(),
         ]);
     }
 
@@ -543,5 +563,12 @@ class AdminQuickSaleController extends Controller
         }
 
         return $rows;
+    }
+
+    private function defaultTicketPaper(): string
+    {
+        $paper = (string) BusinessSetting::getValue('default_ticket_paper', '80');
+
+        return in_array($paper, ['58', '80'], true) ? $paper : '80';
     }
 }

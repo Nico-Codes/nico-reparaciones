@@ -88,11 +88,13 @@ class AdminBusinessSettingsController extends Controller
             'shop_address' => 'nullable|string|max:1000',
             'shop_hours' => 'nullable|string|max:1000',
             'shop_phone' => 'nullable|string|max:50',
+            'default_ticket_paper' => 'nullable|string|in:58,80',
         ]);
 
         $this->persistSetting('shop_address', (string) ($data['shop_address'] ?? ''));
         $this->persistSetting('shop_hours', (string) ($data['shop_hours'] ?? ''));
         $this->persistSetting('shop_phone', (string) ($data['shop_phone'] ?? ''));
+        $this->persistSetting('default_ticket_paper', (string) ($data['default_ticket_paper'] ?? '80'));
 
         return back()->with('success', 'Configuracion guardada.');
     }
@@ -471,7 +473,7 @@ class AdminBusinessSettingsController extends Controller
     }
 
     /**
-     * @return array{shopAddress:string,shopHours:string,shopPhone:string}
+     * @return array{shopAddress:string,shopHours:string,shopPhone:string,defaultTicketPaper:string}
      */
     private function businessViewData(): array
     {
@@ -481,6 +483,7 @@ class AdminBusinessSettingsController extends Controller
             'shopAddress' => (string) ($settings->get('shop_address') ?? ''),
             'shopHours' => (string) ($settings->get('shop_hours') ?? ''),
             'shopPhone' => (string) ($settings->get('shop_phone') ?? ''),
+            'defaultTicketPaper' => (string) ($settings->get('default_ticket_paper') ?? '80'),
         ];
     }
 

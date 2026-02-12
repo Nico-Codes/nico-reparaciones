@@ -41,6 +41,15 @@
           <div class="text-xs text-zinc-500">Placeholder: <code>{shop_hours}</code></div>
         </div>
 
+        <div class="grid gap-2">
+          <label>Papel ticket por defecto</label>
+          <select name="default_ticket_paper" class="h-11">
+            <option value="80" @selected(old('default_ticket_paper', $defaultTicketPaper ?? '80') === '80')>80 mm</option>
+            <option value="58" @selected(old('default_ticket_paper', $defaultTicketPaper ?? '80') === '58')>58 mm</option>
+          </select>
+          <div class="text-xs text-zinc-500">Se usa en "Confirmar e imprimir" y en reimpresion de ventas rapidas.</div>
+        </div>
+
         <div class="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
           <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.settings.index') }}">Cancelar</a>
           <button class="btn-primary h-11 w-full justify-center sm:w-auto" type="submit">Guardar</button>
