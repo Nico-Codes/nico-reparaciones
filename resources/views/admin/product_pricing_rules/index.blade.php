@@ -7,13 +7,28 @@
   <div class="flex items-start justify-between gap-4 flex-wrap">
     <div class="page-head mb-0 w-full lg:w-auto">
       <div class="page-title">Reglas de productos (costo -> venta)</div>
-      <div class="page-subtitle">Defini porcentaje de margen por categoria/producto y rango de costo. Se aplica mejor coincidencia.</div>
+      <div class="page-subtitle">Define margen por categoria o producto. El sistema aplica la mejor coincidencia.</div>
     </div>
     <div class="flex w-full gap-2 flex-wrap sm:w-auto">
       <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.calculations.index') }}">Reglas de calculo</a>
       <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.products.index') }}">Productos</a>
     </div>
   </div>
+
+  @if (session('success'))
+    <div class="alert-success">{{ session('success') }}</div>
+  @endif
+
+  @if ($errors->any())
+    <div class="alert-error">
+      <div class="font-black">Hay errores para corregir</div>
+      <ul class="mt-2 list-disc pl-5 text-sm">
+        @foreach ($errors->all() as $error)
+          <li>{{ $error }}</li>
+        @endforeach
+      </ul>
+    </div>
+  @endif
 
   @if($schemaMissing ?? false)
     <div class="alert-warning">
@@ -22,16 +37,76 @@
       @if(Route::has('admin.maintenance.migrate') && (app()->environment(['local', 'development']) || filter_var((string) env('APP_ALLOW_WEB_MIGRATE', 'false'), FILTER_VALIDATE_BOOL)))
         <form method="POST" action="{{ route('admin.maintenance.migrate') }}" class="mt-3">
           @csrf
-          <button
-            type="submit"
-            class="btn-outline btn-sm"
-            data-confirm="Esto ejecutara php artisan migrate. ¿Continuar?">
-            Aplicar migraciones ahora
-          </button>
+          <button type="submit" class="btn-outline btn-sm" data-confirm="Esto ejecutara php artisan migrate. Continuar?">Aplicar migraciones ahora</button>
         </form>
       @endif
     </div>
   @endif
+
+  <div class="grid gap-4 lg:grid-cols-2">
+    <div class="card">
+      <div class="card-head">
+        <div class="font-black">Preferencias de calculo</div>
+      </div>
+      <div class="card-body">
+        <form method="POST" action="{{ route('admin.product_pricing_rules.settings.update') }}" class="space-y-3">
+          @csrf
+          <div>
+            <label>Margen por defecto (%)</label>
+            <input name="product_default_margin_percent" class="h-11" type="number" step="0.01" min="0" max="500" value="{{ old('product_default_margin_percent', $defaultMarginPercent ?? '35') }}" required>
+            <p class="mt-1 text-xs text-zinc-500">Se usa cuando no hay una regla puntual para el producto/categoria.</p>
+          </div>
+
+          <label class="inline-flex items-start gap-2 text-sm font-black text-zinc-800">
+            <input type="checkbox" name="product_prevent_negative_margin" value="1" class="mt-0.5 h-4 w-4 rounded border-zinc-300" @checked(old('product_prevent_negative_margin', $preventNegativeMargin ?? true))>
+            <span>Bloquear ventas con margen negativo (precio menor al costo)</span>
+          </label>
+
+          <div class="flex justify-end">
+            <button class="btn-primary h-11" type="submit">Guardar preferencias</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="card" data-product-pricing-simulator data-resolve-url="{{ route('admin.product_pricing_rules.resolve') }}">
+      <div class="card-head">
+        <div class="font-black">Simulador rapido</div>
+      </div>
+      <div class="card-body space-y-3">
+        <div>
+          <label>Categoria</label>
+          <select class="h-11" data-sim-category>
+            <option value="">Seleccionar categoria...</option>
+            @foreach($categories as $category)
+              <option value="{{ $category->id }}">{{ $category->name }}</option>
+            @endforeach
+          </select>
+        </div>
+
+        <div>
+          <label>Producto (opcional)</label>
+          <select class="h-11" data-sim-product>
+            <option value="">Todos</option>
+            @foreach($products as $product)
+              <option value="{{ $product->id }}">{{ $product->name }}</option>
+            @endforeach
+          </select>
+        </div>
+
+        <div>
+          <label>Costo</label>
+          <input class="h-11" type="number" min="0" step="1" value="5000" data-sim-cost>
+        </div>
+
+        <button class="btn-outline h-11 w-full justify-center" type="button" data-sim-run>Simular precio recomendado</button>
+
+        <div class="rounded-2xl border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-700" data-sim-result>
+          Completa categoria y costo para ver el resultado.
+        </div>
+      </div>
+    </div>
+  </div>
 
   <div class="card">
     <div class="card-head">
@@ -159,7 +234,7 @@
               </div>
             </div>
           </form>
-          <form id="delete-rule-{{ $rule->id }}" method="POST" action="{{ route('admin.product_pricing_rules.destroy', $rule) }}" class="hidden" onsubmit="return confirm('¿Eliminar regla?');">
+          <form id="delete-rule-{{ $rule->id }}" method="POST" action="{{ route('admin.product_pricing_rules.destroy', $rule) }}" class="hidden" onsubmit="return confirm('Eliminar regla?');">
             @csrf
             @method('DELETE')
           </form>
@@ -170,4 +245,86 @@
     </div>
   </div>
 </div>
+
+<script>
+(() => {
+  const root = document.querySelector('[data-product-pricing-simulator]');
+  if (!root) return;
+
+  const resolveUrl = root.getAttribute('data-resolve-url');
+  const categoryEl = root.querySelector('[data-sim-category]');
+  const productEl = root.querySelector('[data-sim-product]');
+  const costEl = root.querySelector('[data-sim-cost]');
+  const runBtn = root.querySelector('[data-sim-run]');
+  const resultEl = root.querySelector('[data-sim-result]');
+
+  if (!resolveUrl || !categoryEl || !costEl || !runBtn || !resultEl) return;
+
+  const formatMoney = (value) => {
+    const n = Number(value || 0);
+    return `$ ${n.toLocaleString('es-AR')}`;
+  };
+
+  runBtn.addEventListener('click', async () => {
+    const categoryId = Number(categoryEl.value || 0);
+    const cost = Number(costEl.value || 0);
+    const productId = Number((productEl && productEl.value) || 0);
+
+    if (!categoryId) {
+      resultEl.textContent = 'Selecciona una categoria para simular.';
+      return;
+    }
+
+    if (cost < 0 || Number.isNaN(cost)) {
+      resultEl.textContent = 'Ingresa un costo valido.';
+      return;
+    }
+
+    const params = new URLSearchParams({
+      category_id: String(categoryId),
+      cost_price: String(Math.round(cost)),
+    });
+
+    if (productId > 0) {
+      params.set('product_id', String(productId));
+    }
+
+    runBtn.disabled = true;
+    resultEl.textContent = 'Simulando...';
+
+    try {
+      const response = await fetch(`${resolveUrl}?${params.toString()}`, {
+        headers: { 'Accept': 'application/json' },
+      });
+      if (!response.ok) throw new Error('request_failed');
+
+      const data = await response.json();
+      if (!data || data.ok !== true) throw new Error('invalid_response');
+
+      const margin = Number(data.margin_percent || 0);
+      const recommended = Number(data.recommended_price || 0);
+      const ruleName = data.rule && data.rule.name ? data.rule.name : 'Margen por defecto';
+
+      resultEl.textContent = '';
+      const line1 = document.createElement('div');
+      line1.className = 'font-black text-zinc-900';
+      line1.textContent = `Precio recomendado: ${formatMoney(recommended)}`;
+
+      const line2 = document.createElement('div');
+      line2.className = 'mt-1';
+      line2.textContent = `Margen aplicado: ${margin}%`;
+
+      const line3 = document.createElement('div');
+      line3.className = 'mt-1 text-xs text-zinc-500';
+      line3.textContent = `Regla: ${ruleName}`;
+
+      resultEl.append(line1, line2, line3);
+    } catch (e) {
+      resultEl.textContent = 'No se pudo simular en este momento.';
+    } finally {
+      runBtn.disabled = false;
+    }
+  });
+})();
+</script>
 @endsection

@@ -331,7 +331,20 @@
                   </a>
                 @endif
 
-                @if(($has('account.edit') || ($emailUnverified && $has('verification.notice')) || $has('orders.index') || $has('repairs.my.index')) && $has('logout'))
+                @if($has('help.index'))
+                  <a class="dropdown-item" href="{{ route('help.index') }}">
+                    <span class="inline-flex items-center gap-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-5 h-5 text-sky-700" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="9"></circle>
+                        <path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.8-2.5 2.1-2.5 4"></path>
+                        <circle cx="12" cy="17" r="1"></circle>
+                      </svg>
+                      <span>Ayuda</span>
+                    </span>
+                  </a>
+                @endif
+
+                @if(($has('account.edit') || ($emailUnverified && $has('verification.notice')) || $has('orders.index') || $has('repairs.my.index') || $has('help.index')) && $has('logout'))
                   <div class="my-2 border-t border-zinc-200"></div>
                 @endif
 
@@ -511,6 +524,20 @@
                 </a>
               @endif
 
+              @if($has('help.index'))
+                <a class="sidebar-link {{ request()->routeIs('help.index') ? 'active' : '' }}"
+                   href="{{ route('help.index') }}">
+                  <span class="inline-flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-5 h-5 text-sky-700" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <circle cx="12" cy="12" r="9"></circle>
+                      <path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.8-2.5 2.1-2.5 4"></path>
+                      <circle cx="12" cy="17" r="1"></circle>
+                    </svg>
+                    <span>Ayuda</span>
+                  </span>
+                </a>
+              @endif
+
               {{-- Admin (solo si corresponde) --}}
               @include('layouts.partials.sidebar_admin_section')
 
@@ -529,6 +556,20 @@
               @endif
 
             @else
+
+              @if($has('help.index'))
+                <a class="sidebar-link {{ request()->routeIs('help.index') ? 'active' : '' }}"
+                   href="{{ route('help.index') }}">
+                  <span class="inline-flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-5 h-5 text-sky-700" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <circle cx="12" cy="12" r="9"></circle>
+                      <path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.8-2.5 2.1-2.5 4"></path>
+                      <circle cx="12" cy="17" r="1"></circle>
+                    </svg>
+                    <span>Ayuda</span>
+                  </span>
+                </a>
+              @endif
 
               @if($has('login'))
                 <a class="sidebar-link" href="{{ route('login') }}">
@@ -668,6 +709,7 @@
             @if($isAuth)
               @if($has('orders.index')) <a href="{{ route('orders.index') }}">Mis pedidos</a> @endif
               @if($has('repairs.my.index')) <a href="{{ route('repairs.my.index') }}">Mis reparaciones</a> @endif
+              @if($has('help.index')) <a href="{{ route('help.index') }}">Ayuda</a> @endif
               @if($has('logout'))
                 <form method="POST" action="{{ route('logout') }}">
                   @csrf
@@ -675,6 +717,7 @@
                 </form>
               @endif
             @else
+              @if($has('help.index')) <a href="{{ route('help.index') }}">Ayuda</a> @endif
               @if($has('login')) <a href="{{ route('login') }}">Ingresar</a> @endif
             @endif
 

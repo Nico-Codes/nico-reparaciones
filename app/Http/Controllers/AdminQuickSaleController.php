@@ -57,12 +57,16 @@ class AdminQuickSaleController extends Controller
 
         $products = $searchQuery->limit(20)->get();
         $cart = $this->cartWithProducts();
+        $marginSummary = $this->cartMarginSummary($cart);
+        $preventNegativeMargin = $this->boolSetting('product_prevent_negative_margin', true);
 
         return view('admin.quick_sales.index', [
             'products' => $products,
             'cart' => $cart,
             'cartTotal' => $this->cartTotal($cart),
             'cartItemsCount' => $this->cartItemsCount($cart),
+            'cartMarginSummary' => $marginSummary,
+            'preventNegativeMargin' => $preventNegativeMargin,
             'q' => $q,
             'paymentMethods' => Order::PAYMENT_METHODS,
             'quickSaleHistoryHref' => route('admin.quick_sales.history'),
@@ -143,11 +147,15 @@ class AdminQuickSaleController extends Controller
     public function ticketPartial(): Response
     {
         $cart = $this->cartWithProducts();
+        $marginSummary = $this->cartMarginSummary($cart);
+        $preventNegativeMargin = $this->boolSetting('product_prevent_negative_margin', true);
 
         return response()->view('admin.quick_sales.partials.ticket', [
             'cart' => $cart,
             'cartTotal' => $this->cartTotal($cart),
             'cartItemsCount' => $this->cartItemsCount($cart),
+            'cartMarginSummary' => $marginSummary,
+            'preventNegativeMargin' => $preventNegativeMargin,
             'paymentMethods' => Order::PAYMENT_METHODS,
         ]);
     }
@@ -199,6 +207,7 @@ class AdminQuickSaleController extends Controller
         if ($cart === []) {
             return back()->withErrors(['quick_sale' => 'No hay productos cargados en la venta rapida.']);
         }
+        $preventNegativeMargin = $this->boolSetting('product_prevent_negative_margin', true);
 
         $data = $request->validate([
             'customer_name' => ['required', 'string', 'max:120'],
@@ -208,7 +217,7 @@ class AdminQuickSaleController extends Controller
             'after_action' => ['nullable', 'in:view,print_ticket,print_a4'],
         ]);
 
-        $order = DB::transaction(function () use ($cart, $data): Order {
+        $order = DB::transaction(function () use ($cart, $data, $preventNegativeMargin): Order {
             $productIds = array_map(
                 static fn (array $line): int => (int) ($line['product_id'] ?? 0),
                 $cart
@@ -234,6 +243,14 @@ class AdminQuickSaleController extends Controller
                 if ((int) $product->stock < $quantity) {
                     throw ValidationException::withMessages([
                         'quick_sale' => "Stock insuficiente para {$product->name}.",
+                    ]);
+                }
+
+                $costPrice = (int) ($product->cost_price ?? 0);
+                $salePrice = (int) ($product->price ?? 0);
+                if ($preventNegativeMargin && $costPrice > 0 && $salePrice < $costPrice) {
+                    throw ValidationException::withMessages([
+                        'quick_sale' => "No se puede confirmar: {$product->name} tiene margen negativo (guard activo).",
                     ]);
                 }
 
@@ -567,8 +584,77 @@ class AdminQuickSaleController extends Controller
 
     private function defaultTicketPaper(): string
     {
+        if (!Schema::hasTable('business_settings')) {
+            return '80';
+        }
+
         $paper = (string) BusinessSetting::getValue('default_ticket_paper', '80');
 
         return in_array($paper, ['58', '80'], true) ? $paper : '80';
+    }
+
+    private function boolSetting(string $key, bool $default): bool
+    {
+        if (!Schema::hasTable('business_settings')) {
+            return $default;
+        }
+
+        return BusinessSetting::getValue($key, $default ? '1' : '0') === '1';
+    }
+
+    /**
+     * @param array<int, array{quantity:int,product:Product,subtotal:int}> $cart
+     * @return array{
+     *   total_cost:int,
+     *   total_revenue:int,
+     *   total_profit:int,
+     *   margin_percent:float|null,
+     *   negative_lines:int,
+     *   low_lines:int
+     * }
+     */
+    private function cartMarginSummary(array $cart): array
+    {
+        $totalCost = 0;
+        $totalRevenue = 0;
+        $negativeLines = 0;
+        $lowLines = 0;
+
+        foreach ($cart as $line) {
+            $product = $line['product'];
+            $qty = (int) ($line['quantity'] ?? 0);
+            $cost = (int) ($product->cost_price ?? 0);
+            $sale = (int) ($product->price ?? 0);
+            if ($qty <= 0) {
+                continue;
+            }
+
+            $lineCost = $cost * $qty;
+            $lineRevenue = $sale * $qty;
+            $lineProfit = $lineRevenue - $lineCost;
+
+            $totalCost += $lineCost;
+            $totalRevenue += $lineRevenue;
+
+            if ($cost > 0) {
+                if ($sale < $cost) {
+                    $negativeLines++;
+                } elseif ($sale === $cost || (($sale - $cost) / $cost) <= 0.10) {
+                    $lowLines++;
+                }
+            }
+        }
+
+        $totalProfit = $totalRevenue - $totalCost;
+        $marginPercent = $totalCost > 0 ? round(($totalProfit / $totalCost) * 100, 1) : null;
+
+        return [
+            'total_cost' => $totalCost,
+            'total_revenue' => $totalRevenue,
+            'total_profit' => $totalProfit,
+            'margin_percent' => $marginPercent,
+            'negative_lines' => $negativeLines,
+            'low_lines' => $lowLines,
+        ];
     }
 }

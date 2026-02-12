@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Models\BusinessSetting;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Support\ProductPricingResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 
 class AdminProductController extends Controller
@@ -76,6 +78,7 @@ class AdminProductController extends Controller
         return view('admin.products.create', [
             'categories' => $categories,
             'priceResolveUrl' => route('admin.product_pricing_rules.resolve'),
+            'preventNegativeMargin' => BusinessSetting::getValue('product_prevent_negative_margin', '1') === '1',
         ]);
     }
 
@@ -107,6 +110,7 @@ class AdminProductController extends Controller
         } else {
             $data['price'] = (int) $data['price'];
         }
+        $this->assertProductMarginGuard((int) $data['cost_price'], (int) $data['price']);
         $barcode = trim((string) ($data['barcode'] ?? ''));
         $data['barcode'] = $barcode !== '' ? $barcode : null;
 
@@ -128,6 +132,7 @@ class AdminProductController extends Controller
             'product' => $product,
             'categories' => $categories,
             'priceResolveUrl' => route('admin.product_pricing_rules.resolve'),
+            'preventNegativeMargin' => BusinessSetting::getValue('product_prevent_negative_margin', '1') === '1',
         ]);
     }
 
@@ -161,6 +166,7 @@ class AdminProductController extends Controller
         } else {
             $data['price'] = (int) $data['price'];
         }
+        $this->assertProductMarginGuard((int) $data['cost_price'], (int) $data['price']);
         $barcode = trim((string) ($data['barcode'] ?? ''));
         $data['barcode'] = $barcode !== '' ? $barcode : null;
 
@@ -421,6 +427,20 @@ class AdminProductController extends Controller
 
             $slug = $base . '-' . $i;
             $i++;
+        }
+    }
+
+    private function assertProductMarginGuard(int $costPrice, int $salePrice): void
+    {
+        $guardEnabled = BusinessSetting::getValue('product_prevent_negative_margin', '1') === '1';
+        if (!$guardEnabled) {
+            return;
+        }
+
+        if ($salePrice < $costPrice) {
+            throw ValidationException::withMessages([
+                'price' => 'El precio de venta no puede ser menor al costo (guard de margen activo).',
+            ]);
         }
     }
 

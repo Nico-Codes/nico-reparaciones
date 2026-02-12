@@ -5,6 +5,7 @@ use App\Http\Controllers\AdminBusinessSettingsController;
 use App\Http\Controllers\AdminCategoryController;
 use App\Http\Controllers\AdminCalculationSettingsController;
 use App\Http\Controllers\AdminDashboardController;
+use App\Http\Controllers\AdminHelpEntryController;
 use App\Http\Controllers\AdminDeviceCatalogController;
 use App\Http\Controllers\AdminDeviceCatalogManageController;
 use App\Http\Controllers\AdminDeviceTypeController;
@@ -30,6 +31,7 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\RepairLookupController;
 use App\Http\Controllers\RepairQuoteApprovalController;
+use App\Http\Controllers\HelpCenterController;
 use App\Http\Controllers\SiteManifestController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\UserRepairController;
@@ -49,6 +51,7 @@ Route::get('/tienda/sugerencias', [StoreController::class, 'suggestions'])
     ->name('store.suggestions');
 Route::get('/tienda/categoria/{category:slug}', [StoreController::class, 'category'])->name('store.category');
 Route::get('/producto/{slug}', [StoreController::class, 'product'])->name('store.product');
+Route::get('/ayuda', [HelpCenterController::class, 'index'])->name('help.index');
 
 /*
 |--------------------------------------------------------------------------
@@ -296,6 +299,14 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'can:access-admin', 'admin.
         ->name('admin.settings.assets.index');
     Route::get('/configuracion/correos', [AdminBusinessSettingsController::class, 'mailTemplates'])
         ->name('admin.settings.mail_templates.index');
+    Route::get('/configuracion/ayuda', [AdminHelpEntryController::class, 'index'])
+        ->name('admin.settings.help.index');
+    Route::post('/configuracion/ayuda', [AdminHelpEntryController::class, 'store'])
+        ->name('admin.settings.help.store');
+    Route::put('/configuracion/ayuda/{helpEntry}', [AdminHelpEntryController::class, 'update'])
+        ->name('admin.settings.help.update');
+    Route::delete('/configuracion/ayuda/{helpEntry}', [AdminHelpEntryController::class, 'destroy'])
+        ->name('admin.settings.help.destroy');
     Route::post('/configuracion/correos', [AdminBusinessSettingsController::class, 'updateMailTemplates'])
         ->name('admin.settings.mail_templates.update');
     Route::post('/configuracion/correos/{templateKey}/restaurar', [AdminBusinessSettingsController::class, 'resetMailTemplate'])
@@ -377,6 +388,7 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'can:access-admin', 'admin.
 
     // Reglas de cálculo para productos (costo -> venta)
     Route::get('/calculos/productos', [AdminProductPricingRuleController::class, 'index'])->name('admin.product_pricing_rules.index');
+    Route::post('/calculos/productos/config', [AdminProductPricingRuleController::class, 'updateSettings'])->name('admin.product_pricing_rules.settings.update');
     Route::post('/calculos/productos', [AdminProductPricingRuleController::class, 'store'])->name('admin.product_pricing_rules.store');
     Route::put('/calculos/productos/{rule}', [AdminProductPricingRuleController::class, 'update'])->name('admin.product_pricing_rules.update');
     Route::delete('/calculos/productos/{rule}', [AdminProductPricingRuleController::class, 'destroy'])->name('admin.product_pricing_rules.destroy');

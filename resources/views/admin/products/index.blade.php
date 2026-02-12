@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', 'Admin - Productos')
 
@@ -20,6 +20,29 @@
 
   $featuredBadge = fn($featured) => ((bool)$featured) ? 'badge-amber' : 'badge-zinc';
   $featuredLabel = fn($featured) => ((bool)$featured) ? 'Destacado' : 'Normal';
+
+  $marginPercent = function ($cost, $sale) {
+    $cost = (int) ($cost ?? 0);
+    $sale = (int) ($sale ?? 0);
+    if ($cost <= 0) return null;
+    return round((($sale - $cost) / $cost) * 100, 1);
+  };
+
+  $marginBadge = function ($cost, $sale) {
+    $cost = (int) ($cost ?? 0);
+    $sale = (int) ($sale ?? 0);
+    if ($cost <= 0) return 'badge-zinc';
+    if ($sale > $cost) return 'badge-emerald';
+    if ($sale === $cost) return 'badge-amber';
+    return 'badge-rose';
+  };
+
+  $marginLabel = function ($cost, $sale) use ($marginPercent) {
+    $m = $marginPercent($cost, $sale);
+    if ($m === null) return 'Margen: N/A';
+    if ($m > 0) return 'Margen: +' . rtrim(rtrim(number_format($m, 1, '.', ''), '0'), '.') . '%';
+    return 'Margen: ' . rtrim(rtrim(number_format($m, 1, '.', ''), '0'), '.') . '%';
+  };
 
   $q = $q ?? '';
 @endphp
@@ -119,6 +142,9 @@
 
   <div class="grid gap-3 md:hidden">
     @forelse($products as $p)
+      @php
+        $margin = $marginPercent($p->cost_price, $p->price);
+      @endphp
       <div class="card">
         <div class="card-body">
           <div class="flex gap-3">
@@ -134,30 +160,46 @@
               <div class="flex items-start justify-between gap-2">
                 <div class="min-w-0">
                   <div class="truncate font-black text-zinc-900">{{ $p->name }}</div>
-                  <div class="mt-1 text-xs text-zinc-500">SKU: <span class="font-semibold">{{ $p->sku ?? '—' }}</span></div>
-                  <div class="mt-1 text-xs text-zinc-500">Barcode: <span class="font-semibold">{{ $p->barcode ?? '—' }}</span></div>
-                  <div class="mt-1 text-xs text-zinc-500">Categoria: <span class="font-semibold">{{ $p->category?->name ?? '—' }}</span></div>
+                  <div class="mt-1 text-xs text-zinc-500">SKU: <span class="font-semibold">{{ $p->sku ?: '-' }}</span></div>
+                  <div class="mt-1 text-xs text-zinc-500">Barcode: <span class="font-semibold">{{ $p->barcode ?: '-' }}</span></div>
+                  <div class="mt-1 text-xs text-zinc-500">Categoria: <span class="font-semibold">{{ $p->category?->name ?: '-' }}</span></div>
                 </div>
                 <span class="{{ $stockBadge($p->stock) }} shrink-0" data-stock-label-for="{{ $p->id }}">{{ $stockLabel($p->stock) }}</span>
               </div>
 
-              <div class="mt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                <div class="text-lg font-black">{{ $money($p->price) }}</div>
-
-                <div class="flex items-center gap-2 flex-wrap justify-start">
-                  <form method="POST" action="{{ route('admin.products.toggleActive', $p) }}" data-admin-product-toggle="active" class="inline">
-                    @csrf
-                    <button type="submit" class="{{ $activeBadge($p->active) }} h-10 justify-center hover:opacity-90 transition" data-toggle-btn>{{ $activeLabel($p->active) }}</button>
-                  </form>
-
-                  <form method="POST" action="{{ route('admin.products.toggleFeatured', $p) }}" data-admin-product-toggle="featured" class="inline">
-                    @csrf
-                    <button type="submit" class="{{ $featuredBadge($p->featured) }} h-10 justify-center hover:opacity-90 transition" data-toggle-btn>{{ $featuredLabel($p->featured) }}</button>
-                  </form>
-
-                  <a class="btn-outline btn-sm h-10 justify-center" href="{{ route('admin.products.label', $p) }}" target="_blank" rel="noopener">Etiqueta</a>
-                  <a class="btn-outline btn-sm h-10 justify-center" href="{{ route('admin.products.edit', $p) }}">Editar</a>
+              <div class="mt-3 grid gap-2 sm:grid-cols-2">
+                <div>
+                  <div class="text-xs text-zinc-500">Venta</div>
+                  <div class="text-lg font-black">{{ $money($p->price) }}</div>
                 </div>
+                <div>
+                  <div class="text-xs text-zinc-500">Costo</div>
+                  <div class="text-lg font-black text-zinc-700">{{ $money($p->cost_price) }}</div>
+                </div>
+              </div>
+
+              <div class="mt-2 flex items-center gap-2 flex-wrap">
+                <span class="{{ $marginBadge($p->cost_price, $p->price) }}">{{ $marginLabel($p->cost_price, $p->price) }}</span>
+                @if($margin !== null)
+                  <span class="text-xs font-semibold {{ ((int)$p->price - (int)$p->cost_price) >= 0 ? 'text-emerald-700' : 'text-rose-700' }}">
+                    Utilidad: {{ $money(((int)$p->price - (int)$p->cost_price)) }}
+                  </span>
+                @endif
+              </div>
+
+              <div class="mt-3 flex items-center gap-2 flex-wrap justify-start">
+                <form method="POST" action="{{ route('admin.products.toggleActive', $p) }}" data-admin-product-toggle="active" class="inline">
+                  @csrf
+                  <button type="submit" class="{{ $activeBadge($p->active) }} h-10 justify-center hover:opacity-90 transition" data-toggle-btn>{{ $activeLabel($p->active) }}</button>
+                </form>
+
+                <form method="POST" action="{{ route('admin.products.toggleFeatured', $p) }}" data-admin-product-toggle="featured" class="inline">
+                  @csrf
+                  <button type="submit" class="{{ $featuredBadge($p->featured) }} h-10 justify-center hover:opacity-90 transition" data-toggle-btn>{{ $featuredLabel($p->featured) }}</button>
+                </form>
+
+                <a class="btn-outline btn-sm h-10 justify-center" href="{{ route('admin.products.label', $p) }}" target="_blank" rel="noopener">Etiqueta</a>
+                <a class="btn-outline btn-sm h-10 justify-center" href="{{ route('admin.products.edit', $p) }}">Editar</a>
               </div>
 
               <form method="POST" action="{{ route('admin.products.updateStock', $p) }}" data-admin-product-stock data-product-id="{{ $p->id }}" class="mt-2 flex items-center gap-2 flex-wrap">
@@ -184,7 +226,9 @@
             <th>SKU</th>
             <th>Barcode</th>
             <th>Categoria</th>
-            <th class="text-right">Precio</th>
+            <th class="text-right">Costo</th>
+            <th class="text-right">Venta</th>
+            <th class="text-right">Margen</th>
             <th class="text-right">Stock</th>
             <th class="text-right">Acciones</th>
           </tr>
@@ -192,6 +236,7 @@
 
         <tbody>
           @forelse($products as $p)
+            @php $margin = $marginPercent($p->cost_price, $p->price); @endphp
             <tr>
               <td class="align-top"><input type="checkbox" value="{{ $p->id }}" class="h-4 w-4 rounded border-zinc-300" data-bulk-checkbox></td>
               <td>
@@ -207,10 +252,19 @@
                   </div>
                 </div>
               </td>
-              <td class="font-semibold text-zinc-700">{{ $p->sku ?? '—' }}</td>
-              <td class="font-semibold text-zinc-700">{{ $p->barcode ?? '—' }}</td>
-              <td class="font-semibold text-zinc-700">{{ $p->category?->name ?? '—' }}</td>
+              <td class="font-semibold text-zinc-700">{{ $p->sku ?: '-' }}</td>
+              <td class="font-semibold text-zinc-700">{{ $p->barcode ?: '-' }}</td>
+              <td class="font-semibold text-zinc-700">{{ $p->category?->name ?: '-' }}</td>
+              <td class="text-right font-black text-zinc-700">{{ $money($p->cost_price) }}</td>
               <td class="text-right font-black">{{ $money($p->price) }}</td>
+              <td class="text-right">
+                <div class="inline-flex flex-col items-end gap-1">
+                  <span class="{{ $marginBadge($p->cost_price, $p->price) }}">{{ $marginLabel($p->cost_price, $p->price) }}</span>
+                  @if($margin !== null)
+                    <span class="text-xs font-semibold {{ ((int)$p->price - (int)$p->cost_price) >= 0 ? 'text-emerald-700' : 'text-rose-700' }}">{{ $money(((int)$p->price - (int)$p->cost_price)) }}</span>
+                  @endif
+                </div>
+              </td>
               <td class="text-right">
                 <form method="POST" action="{{ route('admin.products.updateStock', $p) }}" data-admin-product-stock data-product-id="{{ $p->id }}" class="inline-flex items-center justify-end gap-2">
                   @csrf
@@ -237,7 +291,7 @@
               </td>
             </tr>
           @empty
-            <tr><td colspan="8" class="py-8 text-center text-zinc-500">No hay productos.</td></tr>
+            <tr><td colspan="10" class="py-8 text-center text-zinc-500">No hay productos.</td></tr>
           @endforelse
         </tbody>
       </table>

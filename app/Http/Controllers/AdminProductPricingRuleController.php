@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Models\BusinessSetting;
 use App\Models\Product;
 use App\Models\ProductPricingRule;
 use Illuminate\Http\Request;
@@ -24,6 +25,8 @@ class AdminProductPricingRuleController extends Controller
                 'categories' => $categories,
                 'products' => $products,
                 'schemaMissing' => true,
+                'defaultMarginPercent' => (string) BusinessSetting::getValue('product_default_margin_percent', '35'),
+                'preventNegativeMargin' => BusinessSetting::getValue('product_prevent_negative_margin', '1') === '1',
             ]);
         }
 
@@ -42,7 +45,31 @@ class AdminProductPricingRuleController extends Controller
             'categories' => $categories,
             'products' => $products,
             'schemaMissing' => false,
+            'defaultMarginPercent' => (string) BusinessSetting::getValue('product_default_margin_percent', '35'),
+            'preventNegativeMargin' => BusinessSetting::getValue('product_prevent_negative_margin', '1') === '1',
         ]);
+    }
+
+    public function updateSettings(Request $request)
+    {
+        $data = $request->validate([
+            'product_default_margin_percent' => ['required', 'numeric', 'min:0', 'max:500'],
+            'product_prevent_negative_margin' => ['nullable'],
+        ]);
+
+        BusinessSetting::updateOrCreate(
+            ['key' => 'product_default_margin_percent'],
+            ['value' => (string) $data['product_default_margin_percent'], 'updated_by' => auth()->id()]
+        );
+
+        BusinessSetting::updateOrCreate(
+            ['key' => 'product_prevent_negative_margin'],
+            ['value' => $request->boolean('product_prevent_negative_margin') ? '1' : '0', 'updated_by' => auth()->id()]
+        );
+
+        return redirect()
+            ->route('admin.product_pricing_rules.index')
+            ->with('success', 'Preferencias de calculo de productos actualizadas.');
     }
 
     public function store(Request $request)

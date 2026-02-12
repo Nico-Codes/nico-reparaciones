@@ -69,8 +69,13 @@
 
           <div class="space-y-1">
             <label>Precio de venta (recomendado)</label>
-            <input id="productPriceInputEdit" name="price" class="h-11" value="{{ old('price', $product->price) }}" inputmode="decimal" placeholder="Se completa automatico">
+            <input id="productPriceInputEdit" name="price" class="h-11" value="{{ old('price', $product->price) }}" inputmode="decimal" placeholder="Ingresa precio o usa recomendado">
+            <div class="mt-2 flex flex-wrap items-center gap-2">
+              <button id="applyRecommendedPriceBtnEdit" type="button" class="btn-outline btn-sm h-9" disabled>Usar recomendado</button>
+              <span id="productRecommendedPriceBadgeEdit" class="badge-zinc hidden"></span>
+            </div>
             <div id="productPriceHintEdit" class="text-xs text-zinc-500">Ajusta costo/categoria para recalcular precio recomendado.</div>
+            <div id="productMarginAlertEdit" class="hidden rounded-xl border px-3 py-2 text-xs font-semibold"></div>
           </div>
 
           <div class="space-y-1">
@@ -138,11 +143,14 @@
 
 <script>
   (() => {
+    const preventNegativeMargin = @json((bool) ($preventNegativeMargin ?? true));
     const priceResolveUrl = @json($priceResolveUrl ?? '');
     const categoryInput = document.querySelector('select[name=\"category_id\"]');
     const costInput = document.getElementById('productCostInputEdit');
     const priceInput = document.getElementById('productPriceInputEdit');
     const priceHint = document.getElementById('productPriceHintEdit');
+    const marginAlert = document.getElementById('productMarginAlertEdit');
+    const form = document.getElementById('productForm');
     const productId = @json((int) $product->id);
 
     const input = document.getElementById('productImageInputEdit');
@@ -153,8 +161,7 @@
     const closeCameraBtn = document.getElementById('closeProductCameraEdit');
     const cameraWrap = document.getElementById('productCameraWrapEdit');
     const cameraVideo = document.getElementById('productCameraVideoEdit');
-    if (!input || !preview || !empty || !openCameraBtn || !captureCameraBtn || !closeCameraBtn || !cameraWrap || !cameraVideo) return;
-
+    const canUseCamera = !!(input && preview && empty && openCameraBtn && captureCameraBtn && closeCameraBtn && cameraWrap && cameraVideo);
     let stream = null;
 
     const toPreview = (file) => {
@@ -205,6 +212,7 @@
         stream.getTracks().forEach((t) => t.stop());
       }
       stream = null;
+      if (!canUseCamera) return;
       cameraVideo.srcObject = null;
       cameraWrap.classList.add('hidden');
       captureCameraBtn.classList.add('hidden');
@@ -222,6 +230,7 @@
           video: { facingMode: 'environment' },
           audio: false,
         });
+        if (!canUseCamera) return;
         cameraVideo.srcObject = stream;
         cameraWrap.classList.remove('hidden');
         captureCameraBtn.classList.remove('hidden');
@@ -231,60 +240,102 @@
       }
     };
 
-    input.addEventListener('change', async () => {
-      const file = input.files && input.files[0] ? input.files[0] : null;
-      if (!file) return;
+    if (canUseCamera) {
+      input.addEventListener('change', async () => {
+        const file = input.files && input.files[0] ? input.files[0] : null;
+        if (!file) return;
 
-      let finalFile = file;
-      try {
-        if (file.type.startsWith('image/')) {
-          const cropped = await cropToSquare(file);
-          if (cropped) {
-            finalFile = cropped;
-            setInputFile(cropped);
+        let finalFile = file;
+        try {
+          if (file.type.startsWith('image/')) {
+            const cropped = await cropToSquare(file);
+            if (cropped) {
+              finalFile = cropped;
+              setInputFile(cropped);
+            }
           }
+        } catch (_) {
+          finalFile = file;
         }
-      } catch (_) {
-        finalFile = file;
-      }
 
-      toPreview(finalFile);
-    });
+        toPreview(finalFile);
+      });
 
-    openCameraBtn.addEventListener('click', startCamera);
-    closeCameraBtn.addEventListener('click', stopCamera);
-    captureCameraBtn.addEventListener('click', async () => {
-      if (!cameraVideo.videoWidth || !cameraVideo.videoHeight) return;
+      openCameraBtn.addEventListener('click', startCamera);
+      closeCameraBtn.addEventListener('click', stopCamera);
+      captureCameraBtn.addEventListener('click', async () => {
+        if (!cameraVideo.videoWidth || !cameraVideo.videoHeight) return;
 
-      const side = Math.min(cameraVideo.videoWidth, cameraVideo.videoHeight);
-      const sx = Math.floor((cameraVideo.videoWidth - side) / 2);
-      const sy = Math.floor((cameraVideo.videoHeight - side) / 2);
-      const canvas = document.createElement('canvas');
-      canvas.width = side;
-      canvas.height = side;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-      ctx.drawImage(cameraVideo, sx, sy, side, side, 0, 0, side, side);
+        const side = Math.min(cameraVideo.videoWidth, cameraVideo.videoHeight);
+        const sx = Math.floor((cameraVideo.videoWidth - side) / 2);
+        const sy = Math.floor((cameraVideo.videoHeight - side) / 2);
+        const canvas = document.createElement('canvas');
+        canvas.width = side;
+        canvas.height = side;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        ctx.drawImage(cameraVideo, sx, sy, side, side, 0, 0, side, side);
 
-      const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.9));
-      if (!blob) return;
+        const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.9));
+        if (!blob) return;
 
-      const file = new File([blob], `producto_${Date.now()}_square.jpg`, { type: 'image/jpeg' });
-      setInputFile(file);
-      toPreview(file);
-      stopCamera();
-    });
+        const file = new File([blob], `producto_${Date.now()}_square.jpg`, { type: 'image/jpeg' });
+        setInputFile(file);
+        toPreview(file);
+        stopCamera();
+      });
+    }
 
     window.addEventListener('beforeunload', stopCamera);
 
+    const applyRecommendedBtn = document.getElementById('applyRecommendedPriceBtnEdit');
+    const recommendedBadge = document.getElementById('productRecommendedPriceBadgeEdit');
+    let suggestedPrice = null;
+
+    const money = (n) => {
+      const value = Number.isFinite(n) ? n : 0;
+      return '$ ' + new Intl.NumberFormat('es-AR').format(value);
+    };
+
+    const updateMarginGuardUI = () => {
+      if (!costInput || !priceInput || !marginAlert) return true;
+      const cost = parseInt(String(costInput.value || '').trim(), 10);
+      const price = parseInt(String(priceInput.value || '').trim(), 10);
+
+      marginAlert.classList.add('hidden');
+      marginAlert.textContent = '';
+      marginAlert.classList.remove('border-rose-200', 'bg-rose-50', 'text-rose-700', 'border-emerald-200', 'bg-emerald-50', 'text-emerald-700');
+
+      if (!Number.isFinite(cost) || !Number.isFinite(price) || cost < 0 || price < 0) {
+        return true;
+      }
+
+      if (price < cost) {
+        marginAlert.classList.remove('hidden');
+        marginAlert.classList.add('border-rose-200', 'bg-rose-50', 'text-rose-700');
+        marginAlert.textContent = preventNegativeMargin
+          ? 'Atencion: el precio de venta es menor al costo. Con el guard activo no se puede guardar.'
+          : 'Atencion: el precio de venta es menor al costo (margen negativo).';
+        return !preventNegativeMargin;
+      }
+
+      marginAlert.classList.remove('hidden');
+      marginAlert.classList.add('border-emerald-200', 'bg-emerald-50', 'text-emerald-700');
+      marginAlert.textContent = 'Margen valido.';
+      return true;
+    };
+
     const applyRecommendedPrice = async () => {
-      if (!priceResolveUrl || !categoryInput || !costInput || !priceInput || !priceHint) return;
+      if (!priceResolveUrl || !categoryInput || !costInput || !priceInput || !priceHint || !applyRecommendedBtn || !recommendedBadge) return;
       const categoryId = String(categoryInput.value || '').trim();
       const costRaw = String(costInput.value || '').trim();
       const costValue = parseInt(costRaw, 10);
 
       if (!categoryId || !Number.isFinite(costValue) || costValue < 0) {
         priceHint.textContent = 'Ajusta costo/categoria para recalcular precio recomendado.';
+        recommendedBadge.classList.add('hidden');
+        applyRecommendedBtn.disabled = true;
+        suggestedPrice = null;
         return;
       }
 
@@ -302,10 +353,23 @@
         const data = await response.json().catch(() => null);
         if (!response.ok || !data || !data.ok) {
           priceHint.textContent = 'No se pudo calcular precio recomendado.';
+          recommendedBadge.classList.add('hidden');
+          applyRecommendedBtn.disabled = true;
+          suggestedPrice = null;
           return;
         }
 
-        priceInput.value = String(data.recommended_price ?? '');
+        suggestedPrice = parseInt(String(data.recommended_price ?? '0'), 10);
+        if (!Number.isFinite(suggestedPrice) || suggestedPrice < 0) {
+          suggestedPrice = null;
+          recommendedBadge.classList.add('hidden');
+          applyRecommendedBtn.disabled = true;
+          return;
+        }
+
+        recommendedBadge.textContent = `Recomendado: ${money(suggestedPrice)}`;
+        recommendedBadge.classList.remove('hidden');
+        applyRecommendedBtn.disabled = false;
         if (data.rule && data.rule.name) {
           priceHint.textContent = `Regla: ${data.rule.name} (${data.margin_percent}% margen).`;
         } else {
@@ -313,12 +377,32 @@
         }
       } catch (_) {
         priceHint.textContent = 'No se pudo calcular precio recomendado.';
+        recommendedBadge.classList.add('hidden');
+        applyRecommendedBtn.disabled = true;
+        suggestedPrice = null;
       }
     };
 
+    applyRecommendedBtn?.addEventListener('click', () => {
+      if (!Number.isFinite(suggestedPrice)) return;
+      priceInput.value = String(suggestedPrice);
+      priceHint.textContent = 'Precio recomendado aplicado. Puedes ajustarlo manualmente si queres.';
+      updateMarginGuardUI();
+    });
+
     categoryInput?.addEventListener('change', applyRecommendedPrice);
     costInput?.addEventListener('input', applyRecommendedPrice);
+    costInput?.addEventListener('input', updateMarginGuardUI);
+    priceInput?.addEventListener('input', updateMarginGuardUI);
+    form?.addEventListener('submit', (event) => {
+      const ok = updateMarginGuardUI();
+      if (!ok) {
+        event.preventDefault();
+        priceInput.focus();
+      }
+    });
     applyRecommendedPrice();
+    updateMarginGuardUI();
   })();
 </script>
 @endsection
