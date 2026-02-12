@@ -80,6 +80,20 @@
         "ops:report:weekly": [
             "@php artisan ops:dashboard-report-email --ansi"
         ],
+        "ops:local:ready": [
+            "@php artisan config:clear --ansi",
+            "@php artisan ops:health-check --ansi",
+            "@php artisan ops:mail-test --to=admin@nico.local --force-sync --ansi",
+            "@php artisan ops:mail-test --to=admin@nico.local --ansi",
+            "@php artisan queue:work --once --queue=mail --stop-when-empty --ansi",
+            "@php artisan test --filter=\"AuthEmailFlowsTest|OrderConfirmationMailTest|AdminSettingsSmtpTest|OpsMailTestCommandTest|OpsHealthCheckCommandTest\" --ansi"
+        ],
+        "ops:e2e:critical": [
+            "npm run e2e:critical"
+        ],
+        "ops:e2e:full": [
+            "npm run e2e:full"
+        ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"

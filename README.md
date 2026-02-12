@@ -25,13 +25,19 @@
 - Prueba rapida de correo por terminal: `php artisan ops:mail-test --to=ops@tu-dominio.com` (agrega `--force-sync` para bypass de cola)
 - Mail async opcional (recomendado prod): `OPS_MAIL_ASYNC_ENABLED=true` + worker `php artisan queue:work --queue=mail,default --tries=3 --backoff=60`
 - En local, `nico-dev.bat start` levanta/detiene automaticamente Mailpit (`http://127.0.0.1:8025`) y el queue worker de mail si `OPS_MAIL_ASYNC_ENABLED=true`.
+- Validacion local completa (health + mail + tests criticos): `nico-local-ready.bat` o `composer run ops:local:ready`
 - Quality gate local: `composer quality`
 - Checklist de produccion: `docs/OPERACION_PRODUCCION.md`
 - Checklist de cierre mail local: `docs/MAIL_QA_CIERRE.md`
+- Checklist de validacion local integral: `docs/LOCAL_READY_CHECK.md`
 - E2E (Playwright):
   - Instalar navegador: `npm run e2e:install`
-  - Ejecutar suite completa: `npm run e2e`
+  - Ejecutar suite critica: `npm run e2e:critical`
+  - Ejecutar suite completa: `npm run e2e` o `npm run e2e:full`
+  - Runner local Windows: `nico-e2e-ready.bat` (critico) / `nico-e2e-ready.bat full`
+  - Ver reporte HTML: `npm run e2e:report`
   - Ejecutar contra un server ya levantado: `E2E_BASE_URL=http://127.0.0.1:8000 npm run e2e`
+- Checklist E2E local: `docs/E2E_LOCAL_READY_CHECK.md`
 
 ## About Laravel
 
