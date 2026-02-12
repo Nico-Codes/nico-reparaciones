@@ -211,6 +211,7 @@ class AuditLogCriticalActionsTest extends TestCase
     public function test_admin_weekly_report_manual_send_failure_creates_audit_log(): void
     {
         Mail::fake();
+        config()->set('ops.reports.dashboard_weekly_recipients', '');
 
         $admin = User::factory()->create(['role' => 'admin']);
 

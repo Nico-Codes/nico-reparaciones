@@ -22,10 +22,12 @@
 - Prune de backups viejos: `php artisan ops:backup --prune-only`
 - Test de alertas operativas: `php artisan ops:alert-test`
 - Envio manual reporte semanal dashboard: `php artisan ops:dashboard-report-email --range=30 --to=ops@tu-dominio.com` (tambien disponible en Admin > Configuracion)
+- Prueba rapida de correo por terminal: `php artisan ops:mail-test --to=ops@tu-dominio.com` (agrega `--force-sync` para bypass de cola)
 - Mail async opcional (recomendado prod): `OPS_MAIL_ASYNC_ENABLED=true` + worker `php artisan queue:work --queue=mail,default --tries=3 --backoff=60`
-- En local, `nico-dev.bat start` ya levanta/detiene automaticamente el queue worker de mail si `OPS_MAIL_ASYNC_ENABLED=true`.
+- En local, `nico-dev.bat start` levanta/detiene automaticamente Mailpit (`http://127.0.0.1:8025`) y el queue worker de mail si `OPS_MAIL_ASYNC_ENABLED=true`.
 - Quality gate local: `composer quality`
 - Checklist de produccion: `docs/OPERACION_PRODUCCION.md`
+- Checklist de cierre mail local: `docs/MAIL_QA_CIERRE.md`
 - E2E (Playwright):
   - Instalar navegador: `npm run e2e:install`
   - Ejecutar suite completa: `npm run e2e`

@@ -34,8 +34,12 @@ set "APP_HOST=127.0.0.1"
 set "APP_PORT=8000"
 set "VITE_PORT=5173"
 set "NGROK_API_PORT=4040"
+set "MAILPIT_EXE=%PROJECT_ROOT%tools\mailpit\mailpit.exe"
+set "MAILPIT_SMTP_PORT=1025"
+set "MAILPIT_UI_PORT=8025"
 set "DEV_RUNTIME_DIR=%PROJECT_ROOT%storage\app\dev"
 set "QUEUE_PID_FILE=%DEV_RUNTIME_DIR%\queue-worker.pid"
+set "MAILPIT_PID_FILE=%DEV_RUNTIME_DIR%\mailpit.pid"
 
 if /I "%~1"=="setup" goto :setup
 if /I "%~1"=="start" goto :start
@@ -46,7 +50,7 @@ if /I "%~1"=="help" goto :help
 echo.
 echo ================= NicoReparaciones =================
 echo 1^) Setup inicial (primera vez / PC nueva)
-echo 2^) Iniciar entorno (MySQL + Laravel + Vite + queue + ngrok)
+echo 2^) Iniciar entorno (MySQL + Laravel + Vite + Mailpit + queue + ngrok)
 echo 3^) Detener entorno
 echo Q^) Salir
 echo ================================================
@@ -108,6 +112,7 @@ where npm >nul 2>&1 || (echo [ERROR] npm no encontrado. Instala Node.js LTS. & g
 call :load_db_env
 call :load_ops_mail_env
 call :ensure_mysql_running || goto :end_fail
+call :ensure_mailpit
 
 if exist "public\hot" (
     echo - Limpiando public\hot
@@ -149,6 +154,7 @@ echo.
 echo [OK] Entorno iniciado.
 echo - Web local:   http://%APP_HOST%:%APP_PORT%
 echo - Vite local:  http://localhost:%VITE_PORT%
+echo - Mailpit UI:  http://127.0.0.1:%MAILPIT_UI_PORT%
 if exist "%NGROK_EXE%" echo - Panel ngrok: http://127.0.0.1:%NGROK_API_PORT%
 if /I "%OPS_MAIL_ASYNC_ENABLED%"=="true" (
     echo - Cola mail: activa ^(queue: %QUEUE_WORKER_QUEUES%^)
@@ -163,6 +169,7 @@ echo [STOP] Deteniendo servicios por puertos %APP_PORT%, %VITE_PORT% y %NGROK_AP
 powershell -NoProfile -Command "$ports=@(%APP_PORT%,%VITE_PORT%,%NGROK_API_PORT%); $pids=Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object { $ports -contains $_.LocalPort } | Select-Object -ExpandProperty OwningProcess -Unique; foreach($pid in $pids){ Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue }" >nul 2>&1
 
 call :stop_queue_worker
+call :stop_mailpit
 
 echo - Servicios detenidos (si estaban activos).
 goto :end_ok
@@ -235,34 +242,42 @@ if /I not "%OPS_MAIL_ASYNC_ENABLED%"=="true" (
 )
 
 if not exist "%DEV_RUNTIME_DIR%" mkdir "%DEV_RUNTIME_DIR%" >nul 2>&1
-
-if exist "%QUEUE_PID_FILE%" (
-    set "QPID="
-    set /p QPID=<"%QUEUE_PID_FILE%"
-    if not "!QPID!"=="" (
-        tasklist /FI "PID eq !QPID!" | findstr /R /C:" !QPID! " >nul 2>&1
-        if not errorlevel 1 (
-            echo - Queue worker ya activo (PID !QPID!).
-            exit /b 0
-        )
-    )
-    del /F /Q "%QUEUE_PID_FILE%" >nul 2>&1
-)
-
-echo - Iniciando queue worker: artisan queue:work --queue=%QUEUE_WORKER_QUEUES% --tries=%OPS_MAIL_TRIES% --backoff=%OPS_MAIL_BACKOFF%
-powershell -NoProfile -Command "$p = Start-Process -FilePath '%PHP_EXE%' -ArgumentList 'artisan queue:work --queue=%QUEUE_WORKER_QUEUES% --tries=%OPS_MAIL_TRIES% --backoff=%OPS_MAIL_BACKOFF%' -WorkingDirectory '%PROJECT_ROOT%' -WindowStyle Minimized -PassThru; Set-Content -Path '%QUEUE_PID_FILE%' -Value $p.Id" >nul 2>&1
+echo - Verificando queue worker de correo...
+powershell -NoProfile -Command "$root = '%PROJECT_ROOT%'; $existing = Get-CimInstance Win32_Process -Filter \"Name='php.exe'\" | Where-Object { $_.CommandLine -like '*artisan queue:work*' -and $_.CommandLine -like ('*' + $root + '*') }; if ($existing) { Set-Content -Path '%QUEUE_PID_FILE%' -Value $existing[0].ProcessId; exit 0 }; $args = 'artisan queue:work --queue=%QUEUE_WORKER_QUEUES% --tries=%OPS_MAIL_TRIES% --backoff=%OPS_MAIL_BACKOFF%'; $p = Start-Process -FilePath '%PHP_EXE%' -ArgumentList $args -WorkingDirectory '%PROJECT_ROOT%' -WindowStyle Minimized -PassThru; Set-Content -Path '%QUEUE_PID_FILE%' -Value $p.Id; exit 0;" >nul 2>&1
 if errorlevel 1 (
-    echo [WARN] No se pudo iniciar queue worker automaticamente.
+    echo [WARN] No se pudo iniciar/verificar queue worker automaticamente.
     exit /b 0
 )
 
 set "QPID="
-set /p QPID=<"%QUEUE_PID_FILE%"
-if "%QPID%"=="" (
-    echo [WARN] Queue worker iniciado, pero no se pudo guardar PID.
-) else (
-    echo - Queue worker iniciado (PID %QPID%).
+if exist "%QUEUE_PID_FILE%" set /p QPID=<"%QUEUE_PID_FILE%"
+if not "%QPID%"=="" echo - Queue worker activo (PID %QPID%).
+exit /b 0
+
+:ensure_mailpit
+if not exist "%DEV_RUNTIME_DIR%" mkdir "%DEV_RUNTIME_DIR%" >nul 2>&1
+
+if not exist "%MAILPIT_EXE%" (
+    echo [WARN] Mailpit no encontrado en tools\mailpit\mailpit.exe
+    echo        Descarga sugerida:
+    echo        curl.exe -L "https://github.com/axllent/mailpit/releases/download/v1.29.0/mailpit-windows-amd64.zip" -o "tools\mailpit\mailpit-windows-amd64.zip"
+    echo        tar -xf tools\mailpit\mailpit-windows-amd64.zip -C tools\mailpit
+    exit /b 0
 )
+
+netstat -ano | findstr /R /C:":%MAILPIT_SMTP_PORT% .*LISTENING" >nul 2>&1
+if not errorlevel 1 (
+    echo - Mailpit ya activo en puertos SMTP %MAILPIT_SMTP_PORT% / UI %MAILPIT_UI_PORT%.
+    exit /b 0
+)
+
+echo - Iniciando Mailpit...
+powershell -NoProfile -Command "$p = Start-Process -FilePath '%MAILPIT_EXE%' -ArgumentList '--smtp 127.0.0.1:%MAILPIT_SMTP_PORT% --listen 127.0.0.1:%MAILPIT_UI_PORT%' -WorkingDirectory '%PROJECT_ROOT%' -WindowStyle Minimized -PassThru; Set-Content -Path '%MAILPIT_PID_FILE%' -Value $p.Id" >nul 2>&1
+if errorlevel 1 (
+    echo [WARN] No se pudo iniciar Mailpit automaticamente.
+    exit /b 0
+)
+echo - Mailpit iniciado.
 exit /b 0
 
 :stop_queue_worker
@@ -279,6 +294,23 @@ if exist "%QUEUE_PID_FILE%" (
 )
 
 powershell -NoProfile -Command "$root = '%PROJECT_ROOT%'; $procs = Get-CimInstance Win32_Process -Filter \"Name='php.exe'\" | Where-Object { $_.CommandLine -like '*artisan queue:work*' -and $_.CommandLine -like ('*' + $root + '*') }; foreach($p in $procs){ Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue }" >nul 2>&1
+if exist "%QUEUE_PID_FILE%" del /F /Q "%QUEUE_PID_FILE%" >nul 2>&1
+exit /b 0
+
+:stop_mailpit
+if exist "%MAILPIT_PID_FILE%" (
+    set "MPID="
+    set /p MPID=<"%MAILPIT_PID_FILE%"
+    if not "%MPID%"=="" (
+        taskkill /PID %MPID% /F >nul 2>&1
+        if not errorlevel 1 (
+            echo - Mailpit detenido (PID %MPID%).
+        )
+    )
+    del /F /Q "%MAILPIT_PID_FILE%" >nul 2>&1
+)
+
+powershell -NoProfile -Command "$root = '%PROJECT_ROOT%'; $procs = Get-CimInstance Win32_Process -Filter \"Name='mailpit.exe'\" | Where-Object { $_.ExecutablePath -like ('*' + $root + '*') }; foreach($p in $procs){ Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue }" >nul 2>&1
 exit /b 0
 
 :ensure_mysql_running

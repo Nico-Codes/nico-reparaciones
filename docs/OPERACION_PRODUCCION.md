@@ -193,6 +193,13 @@ Comando manual:
 php artisan ops:dashboard-report-email --range=30 --to=ops@tu-dominio.com
 ```
 
+Prueba puntual de mail (smoke test):
+
+```bash
+php artisan ops:mail-test --to=ops@tu-dominio.com
+php artisan ops:mail-test --to=ops@tu-dominio.com --force-sync
+```
+
 Notas:
 
 - El comando adjunta CSV con KPIs + top productos.
