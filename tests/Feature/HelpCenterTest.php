@@ -58,6 +58,15 @@ class HelpCenterTest extends TestCase
     {
         $admin = User::factory()->create(['role' => 'admin']);
 
+        $configUpdate = $this->actingAs($admin)->post(route('admin.settings.help.config.update'), [
+            'help_whatsapp_message' => 'Hola, necesito ayuda con mi compra.',
+        ]);
+        $configUpdate->assertRedirect(route('admin.settings.help.index'));
+        $this->assertDatabaseHas('business_settings', [
+            'key' => 'help_whatsapp_message',
+            'value' => 'Hola, necesito ayuda con mi compra.',
+        ]);
+
         $create = $this->actingAs($admin)->post(route('admin.settings.help.store'), [
             'question' => 'No me llega mail',
             'answer' => 'Revisa spam y vuelve a intentar.',
@@ -93,4 +102,3 @@ class HelpCenterTest extends TestCase
         $this->assertDatabaseMissing('help_entries', ['id' => $entry->id]);
     }
 }
-

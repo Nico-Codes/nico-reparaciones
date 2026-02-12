@@ -18,7 +18,10 @@ class HelpCenterController extends Controller
             ->get();
 
         $shopPhoneRaw = (string) BusinessSetting::getValue('shop_phone', '');
-        $helpMessage = 'Hola! Necesito ayuda con un problema de mi cuenta/compra/reparacion.';
+        $helpMessage = (string) BusinessSetting::getValue(
+            'help_whatsapp_message',
+            'Hola! Necesito ayuda con un problema de mi cuenta/compra/reparacion.'
+        );
         $helpWhatsappUrl = WhatsApp::waMeUrlFromRaw($shopPhoneRaw, $helpMessage);
 
         return view('help.index', [

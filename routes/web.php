@@ -303,6 +303,8 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'can:access-admin', 'admin.
         ->name('admin.settings.help.index');
     Route::post('/configuracion/ayuda', [AdminHelpEntryController::class, 'store'])
         ->name('admin.settings.help.store');
+    Route::post('/configuracion/ayuda/config', [AdminHelpEntryController::class, 'updateConfig'])
+        ->name('admin.settings.help.config.update');
     Route::put('/configuracion/ayuda/{helpEntry}', [AdminHelpEntryController::class, 'update'])
         ->name('admin.settings.help.update');
     Route::delete('/configuracion/ayuda/{helpEntry}', [AdminHelpEntryController::class, 'destroy'])

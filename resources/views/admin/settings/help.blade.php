@@ -18,6 +18,28 @@
 
   <div class="card">
     <div class="card-head">
+      <div class="font-black">Configuracion de contacto</div>
+      <span class="badge-zinc">WhatsApp</span>
+    </div>
+    <div class="card-body">
+      <form id="helpWhatsappConfigForm" method="POST" action="{{ route('admin.settings.help.config.update') }}" class="grid gap-3">
+        @csrf
+        <div>
+          <label>Mensaje predefinido para el boton "Contactar por WhatsApp" *</label>
+          <textarea id="helpWhatsappMessageInput" name="help_whatsapp_message" rows="3" maxlength="500" required placeholder="Ej: Hola, necesito ayuda con mi pedido/reparacion.">{{ old('help_whatsapp_message', $helpWhatsappMessage ?? '') }}</textarea>
+          <div id="helpWhatsappMessageCounter" class="mt-1 text-xs text-zinc-500">0 / 500</div>
+          <div id="helpWhatsappMessageMinAlert" class="mt-1 hidden text-xs font-semibold text-amber-700">El mensaje es muy corto (minimo recomendado: 10 caracteres).</div>
+          <div class="mt-1 text-xs text-zinc-500">Este texto se envia automaticamente cuando el usuario abre el chat desde la pagina de ayuda.</div>
+        </div>
+        <div class="flex justify-end">
+          <button id="helpWhatsappMessageSubmitBtn" class="btn-primary h-11" type="submit">Guardar mensaje</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
       <div class="font-black">Nuevo item de ayuda</div>
       <span class="badge-sky">FAQ</span>
     </div>
@@ -70,8 +92,16 @@
       <span class="badge-zinc">{{ $entries->count() }} items</span>
     </div>
     <div class="card-body space-y-3">
+      <div class="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-center">
+        <input id="helpAdminSearchInput" class="h-11" placeholder="Buscar por problema o respuesta...">
+        <div class="text-xs text-zinc-500"><span id="helpAdminVisibleCount">{{ $entries->count() }}</span> visibles</div>
+      </div>
+
       @forelse($entries as $entry)
-        <div class="rounded-2xl border border-zinc-200 bg-zinc-50 p-3">
+        <div
+          class="rounded-2xl border border-zinc-200 bg-zinc-50 p-3"
+          data-help-admin-item
+          data-help-admin-search="{{ \Illuminate\Support\Str::lower($entry->question . ' ' . $entry->answer) }}">
           <form method="POST" action="{{ route('admin.settings.help.update', $entry) }}" class="grid gap-2 md:grid-cols-8">
             @csrf
             @method('PUT')
@@ -121,7 +151,67 @@
       @empty
         <div class="text-sm text-zinc-500">No hay items de ayuda cargados.</div>
       @endforelse
+      <div id="helpAdminEmptySearch" class="hidden text-sm text-zinc-500">No hay items que coincidan con la busqueda.</div>
     </div>
   </div>
 </div>
+
+<script>
+(() => {
+  const input = document.getElementById('helpWhatsappMessageInput');
+  const counter = document.getElementById('helpWhatsappMessageCounter');
+  const minAlert = document.getElementById('helpWhatsappMessageMinAlert');
+  const submitBtn = document.getElementById('helpWhatsappMessageSubmitBtn');
+  if (!input || !counter || !minAlert || !submitBtn) return;
+
+  const limit = 500;
+  const minLen = 10;
+  const update = () => {
+    const used = String(input.value || '').trim().length;
+    counter.textContent = `${used} / ${limit}`;
+    counter.className = used >= limit
+      ? 'mt-1 text-xs font-bold text-rose-700'
+      : 'mt-1 text-xs text-zinc-500';
+    minAlert.classList.toggle('hidden', used === 0 || used >= minLen);
+    submitBtn.disabled = used < minLen;
+    submitBtn.setAttribute('aria-disabled', used < minLen ? 'true' : 'false');
+    submitBtn.classList.toggle('opacity-60', used < minLen);
+    submitBtn.classList.toggle('cursor-not-allowed', used < minLen);
+  };
+
+  input.addEventListener('input', update);
+  update();
+})();
+
+(() => {
+  const input = document.getElementById('helpAdminSearchInput');
+  const count = document.getElementById('helpAdminVisibleCount');
+  const empty = document.getElementById('helpAdminEmptySearch');
+  const items = Array.from(document.querySelectorAll('[data-help-admin-item]'));
+  if (!input || !count || !empty || items.length === 0) return;
+
+  const normalize = (value) => String(value || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+
+  const update = () => {
+    const q = normalize(input.value);
+    let visible = 0;
+
+    items.forEach((item) => {
+      const source = normalize(item.getAttribute('data-help-admin-search'));
+      const match = q === '' || source.includes(q);
+      item.classList.toggle('hidden', !match);
+      if (match) visible++;
+    });
+
+    count.textContent = String(visible);
+    empty.classList.toggle('hidden', visible > 0);
+  };
+
+  input.addEventListener('input', update);
+})();
+</script>
 @endsection

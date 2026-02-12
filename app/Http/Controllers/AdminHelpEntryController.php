@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BusinessSetting;
 use App\Models\HelpEntry;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -19,7 +20,30 @@ class AdminHelpEntryController extends Controller
         return view('admin.settings.help', [
             'entries' => $entries,
             'audiences' => $this->audienceLabels(),
+            'helpWhatsappMessage' => (string) BusinessSetting::getValue(
+                'help_whatsapp_message',
+                'Hola! Necesito ayuda con un problema de mi cuenta/compra/reparacion.'
+            ),
         ]);
+    }
+
+    public function updateConfig(Request $request)
+    {
+        $data = $request->validate([
+            'help_whatsapp_message' => ['required', 'string', 'min:10', 'max:500'],
+        ]);
+
+        BusinessSetting::updateOrCreate(
+            ['key' => 'help_whatsapp_message'],
+            [
+                'value' => trim((string) $data['help_whatsapp_message']),
+                'updated_by' => auth()->id(),
+            ]
+        );
+
+        return redirect()
+            ->route('admin.settings.help.index')
+            ->with('success', 'Configuracion de ayuda actualizada.');
     }
 
     public function store(Request $request)
@@ -85,4 +109,3 @@ class AdminHelpEntryController extends Controller
         ];
     }
 }
-
