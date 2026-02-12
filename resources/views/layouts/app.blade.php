@@ -120,6 +120,14 @@
   if (is_array($cartAdded)) {
     $cartAddedName = trim((string)($cartAdded['name'] ?? $cartAdded['product_name'] ?? ''));
   }
+
+  $adminSchemaHealth = null;
+  $canRunMigrationsFromWeb = false;
+  if ($isAdmin && request()->is('admin*')) {
+    $adminSchemaHealth = \App\Support\AdminSchemaHealth::evaluate();
+    $canRunMigrationsFromWeb = app()->environment(['local', 'development'])
+      || filter_var((string) env('APP_ALLOW_WEB_MIGRATE', 'false'), FILTER_VALIDATE_BOOL);
+  }
 @endphp
 
 <body class="min-h-screen flex flex-col">
@@ -556,6 +564,63 @@
         @hasSection('suppress_global_alerts')
           {{-- En estas vistas mostramos los mensajes dentro del card --}}
         @else
+          @php
+            $maintenanceResolved = session('admin_maintenance_resolved', []);
+            $maintenanceRemaining = session('admin_maintenance_remaining', []);
+          @endphp
+
+          @if(is_array($maintenanceResolved) && count($maintenanceResolved) > 0)
+            <div class="alert-success mb-4">
+              <div class="font-black">Migraciones aplicadas: cambios resueltos</div>
+              <ul class="list-disc pl-5 mt-1 space-y-1">
+                @foreach($maintenanceResolved as $resolvedIssue)
+                  <li>{{ $resolvedIssue }}</li>
+                @endforeach
+              </ul>
+              @if(is_array($maintenanceRemaining) && count($maintenanceRemaining) > 0)
+                <div class="mt-2 font-black">Aun pendientes:</div>
+                <ul class="list-disc pl-5 mt-1 space-y-1">
+                  @foreach($maintenanceRemaining as $remainingIssue)
+                    <li>{{ $remainingIssue }}</li>
+                  @endforeach
+                </ul>
+              @endif
+            </div>
+          @endif
+
+          @if(is_array($adminSchemaHealth) && !($adminSchemaHealth['ok'] ?? true))
+            <div class="alert-warning mb-4">
+              <div class="font-black">Atencion: faltan migraciones/columnas requeridas en Admin</div>
+              <ul class="list-disc pl-5 mt-1 space-y-1">
+                @foreach(($adminSchemaHealth['issues'] ?? []) as $issue)
+                  <li>{{ $issue }}</li>
+                @endforeach
+              </ul>
+              @if(is_array($maintenanceResolved) && count($maintenanceResolved) > 0)
+                <div class="mt-2 font-black">Resueltas en la ultima ejecucion:</div>
+                <ul class="list-disc pl-5 mt-1 space-y-1">
+                  @foreach($maintenanceResolved as $resolvedIssue)
+                    <li>{{ $resolvedIssue }}</li>
+                  @endforeach
+                </ul>
+              @endif
+              <div class="mt-2 flex flex-wrap items-center gap-2">
+                <div class="text-xs font-bold">Ejecuta: <code>{{ $adminSchemaHealth['command'] ?? 'php artisan migrate' }}</code></div>
+                @if($canRunMigrationsFromWeb && $has('admin.maintenance.migrate'))
+                  <form method="POST" action="{{ route('admin.maintenance.migrate') }}">
+                    @csrf
+                    <button
+                      type="submit"
+                      class="btn-outline btn-sm h-8"
+                      data-confirm="Esto ejecutara php artisan migrate. ¿Continuar?">
+                      Aplicar migraciones ahora
+                    </button>
+                  </form>
+                @endif
+              </div>
+            </div>
+          @endif
+
           @if (session('success'))
             <div class="alert-success mb-4">{{ session('success') }}</div>
           @endif

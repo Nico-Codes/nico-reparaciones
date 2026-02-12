@@ -8,6 +8,7 @@ use App\Http\Controllers\AdminDeviceCatalogController;
 use App\Http\Controllers\AdminDeviceCatalogManageController;
 use App\Http\Controllers\AdminDeviceTypeController;
 use App\Http\Controllers\AdminModelGroupController;
+use App\Http\Controllers\AdminMaintenanceController;
 use App\Http\Controllers\AdminOrderController;
 use App\Http\Controllers\AdminOrderPrintController;
 use App\Http\Controllers\AdminOrderTicketController;
@@ -190,6 +191,7 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'can:access-admin', 'admin.
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
     Route::get('/dashboard/export.csv', [AdminDashboardController::class, 'exportCsv'])->name('admin.dashboard.export');
     Route::get('/dashboard/export.xlsx', [AdminDashboardController::class, 'exportXlsx'])->name('admin.dashboard.export_xlsx');
+    Route::post('/mantenimiento/migrar', [AdminMaintenanceController::class, 'migrate'])->name('admin.maintenance.migrate');
 
     // Pedidos
     Route::get('/pedidos', [AdminOrderController::class, 'index'])->name('admin.orders.index');
