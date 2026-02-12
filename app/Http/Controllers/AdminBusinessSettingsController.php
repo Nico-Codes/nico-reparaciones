@@ -21,7 +21,26 @@ class AdminBusinessSettingsController extends Controller
 {
     public function index()
     {
-        return view('admin.settings.index');
+        $business = $this->businessViewData();
+        $reports = $this->reportsViewData();
+        $mail = $this->mailViewData();
+
+        $businessFilled = 0;
+        foreach (['shopPhone', 'shopAddress', 'shopHours'] as $field) {
+            if (trim((string) ($business[$field] ?? '')) !== '') {
+                $businessFilled++;
+            }
+        }
+
+        $reportsRecipientsCount = $this->countEmails((string) ($reports['weeklyReportEmails'] ?? ''));
+        $smtpStatus = (string) ($mail['smtpHealth']['status'] ?? 'warning');
+
+        return view('admin.settings.index', [
+            'statusBusiness' => $businessFilled >= 2 ? 'Completo' : 'Basico',
+            'statusReports' => $reportsRecipientsCount > 0 ? 'Activo' : 'Sin destinatarios',
+            'statusSmtpLabel' => (string) ($mail['smtpHealth']['label'] ?? 'Incompleto'),
+            'statusSmtpTone' => $smtpStatus,
+        ]);
     }
 
     public function business()
