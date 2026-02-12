@@ -27,7 +27,7 @@
       <div class="page-title">Reportes automaticos</div>
       <div class="page-subtitle">Configura envio semanal de KPIs del dashboard.</div>
     </div>
-    <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.settings.index') }}">Volver a configuracion</a>
+    @include('admin.settings.partials.top_actions')
   </div>
 
   <div class="card">

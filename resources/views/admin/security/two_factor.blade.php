@@ -10,10 +10,7 @@
       <div class="page-subtitle">Activa verificacion TOTP para reforzar el acceso al panel admin.</div>
     </div>
 
-    <div class="flex w-full gap-2 flex-wrap sm:w-auto">
-      <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.settings.index') }}">Configuracion</a>
-      <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.dashboard') }}">Volver al panel</a>
-    </div>
+    @include('admin.settings.partials.top_actions')
   </div>
 
   @if(!empty($freshRecoveryCodes))

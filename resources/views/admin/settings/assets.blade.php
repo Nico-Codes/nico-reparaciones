@@ -19,12 +19,8 @@
       <div class="page-title">Identidad visual</div>
       <div class="page-subtitle">Sube y administra logos, íconos y favicons del sitio.</div>
     </div>
-
-    <div class="flex w-full gap-2 flex-wrap sm:w-auto">
-      <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.settings.index') }}">Configuración</a>
-      <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.dashboard') }}">Volver</a>
-    </div>
-  </div>
+    @include('admin.settings.partials.top_actions')
+</div>
 
   <div class="card">
     <div class="card-head">
@@ -119,3 +115,4 @@
   </div>
 </div>
 @endsection
+

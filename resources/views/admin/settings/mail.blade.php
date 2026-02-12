@@ -18,7 +18,7 @@
       <div class="page-title">Correo SMTP</div>
       <div class="page-subtitle">Valida configuracion de correo y envia una prueba.</div>
     </div>
-    <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.settings.index') }}">Volver a configuracion</a>
+    @include('admin.settings.partials.top_actions')
   </div>
 
   <div class="card">

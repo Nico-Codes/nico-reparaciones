@@ -9,7 +9,7 @@
       <div class="page-title">Datos del negocio</div>
       <div class="page-subtitle">Informacion base usada en mensajes y comprobantes.</div>
     </div>
-    <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.settings.index') }}">Volver a configuracion</a>
+    @include('admin.settings.partials.top_actions')
   </div>
 
   <div class="card">

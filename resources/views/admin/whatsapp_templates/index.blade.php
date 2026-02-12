@@ -9,12 +9,8 @@
       <h1 class="page-title">Plantillas WhatsApp</h1>
       <p class="page-subtitle">Editá mensajes por estado. Si dejás vacío, se usa el texto predeterminado del sistema.</p>
     </div>
-
-    <div class="flex w-full gap-2 flex-wrap sm:w-auto">
-      <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.settings.index') }}">Configuración</a>
-      <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.dashboard') }}">Volver</a>
-    </div>
-  </div>
+    @include('admin.settings.partials.top_actions')
+</div>
 
   <div class="card">
     <div class="card-head">
@@ -65,3 +61,4 @@
   </form>
 </div>
 @endsection
+
