@@ -14,6 +14,7 @@ use App\Http\Controllers\AdminOrderTicketController;
 use App\Http\Controllers\AdminOrderWhatsappTemplateController;
 use App\Http\Controllers\AdminPricingRuleController;
 use App\Http\Controllers\AdminProductController;
+use App\Http\Controllers\AdminQuickSaleController;
 use App\Http\Controllers\AdminRepairController;
 use App\Http\Controllers\AdminRepairPrintController;
 use App\Http\Controllers\AdminRepairTicketController;
@@ -199,6 +200,18 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'can:access-admin', 'admin.
     Route::post('/pedidos/{order}/whatsapp', [AdminOrderController::class, 'whatsappLog'])->name('admin.orders.whatsappLog');
     Route::post('/pedidos/{order}/whatsapp-ajax', [AdminOrderController::class, 'whatsappLogAjax'])->name('admin.orders.whatsappLogAjax');
 
+    // Venta rapida (mostrador)
+    Route::get('/ventas-rapidas', [AdminQuickSaleController::class, 'index'])->name('admin.quick_sales.index');
+    Route::get('/ventas-rapidas/ticket', [AdminQuickSaleController::class, 'ticketPartial'])->name('admin.quick_sales.ticket');
+    Route::get('/ventas-rapidas/historial', [AdminQuickSaleController::class, 'history'])->name('admin.quick_sales.history');
+    Route::get('/ventas-rapidas/historial/export.csv', [AdminQuickSaleController::class, 'exportCsv'])->name('admin.quick_sales.export_csv');
+    Route::get('/ventas-rapidas/historial/export.xlsx', [AdminQuickSaleController::class, 'exportXlsx'])->name('admin.quick_sales.export_xlsx');
+    Route::post('/ventas-rapidas/agregar', [AdminQuickSaleController::class, 'add'])->name('admin.quick_sales.add');
+    Route::post('/ventas-rapidas/item/{product}', [AdminQuickSaleController::class, 'updateItem'])->name('admin.quick_sales.update_item');
+    Route::delete('/ventas-rapidas/item/{product}', [AdminQuickSaleController::class, 'removeItem'])->name('admin.quick_sales.remove_item');
+    Route::post('/ventas-rapidas/limpiar', [AdminQuickSaleController::class, 'clear'])->name('admin.quick_sales.clear');
+    Route::post('/ventas-rapidas/confirmar', [AdminQuickSaleController::class, 'confirm'])->name('admin.quick_sales.confirm');
+
     // Reparaciones
     Route::get('/reparaciones', [AdminRepairController::class, 'index'])->name('admin.repairs.index');
     Route::get('/reparaciones/crear', [AdminRepairController::class, 'create'])->name('admin.repairs.create');
@@ -244,6 +257,7 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'can:access-admin', 'admin.
     Route::get('/productos/crear', [AdminProductController::class, 'create'])->name('admin.products.create');
     Route::post('/productos', [AdminProductController::class, 'store'])->name('admin.products.store');
     Route::get('/productos/{product}/editar', [AdminProductController::class, 'edit'])->name('admin.products.edit');
+    Route::get('/productos/{product}/etiqueta', [AdminProductController::class, 'label'])->name('admin.products.label');
     Route::put('/productos/{product}', [AdminProductController::class, 'update'])->name('admin.products.update');
     Route::delete('/productos/{product}', [AdminProductController::class, 'destroy'])->name('admin.products.destroy');
 

@@ -44,7 +44,13 @@ class Order extends Model
         'pickup_delegate_name',
         'pickup_delegate_phone',
         'notes',
+        'is_quick_sale',
+        'quick_sale_admin_id',
 
+    ];
+
+    protected $casts = [
+        'is_quick_sale' => 'boolean',
     ];
 
     // Normaliza teléfono a "solo números" al guardar
@@ -62,6 +68,11 @@ class Order extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function quickSaleAdmin()
+    {
+        return $this->belongsTo(User::class, 'quick_sale_admin_id');
     }
 
     public function items(): HasMany

@@ -30,7 +30,9 @@ class AdminProductController extends Controller
         if ($q !== '') {
             $query->where(function($sub) use ($q) {
                 $sub->where('name', 'like', "%{$q}%")
-                    ->orWhere('slug', 'like', "%{$q}%");
+                    ->orWhere('slug', 'like', "%{$q}%")
+                    ->orWhere('sku', 'like', "%{$q}%")
+                    ->orWhere('barcode', 'like', "%{$q}%");
             });
         }
 
@@ -78,6 +80,8 @@ class AdminProductController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
             'slug' => ['nullable', 'string', 'max:255'],
+            'sku' => ['required', 'string', 'max:64', 'regex:/^[A-Za-z0-9._-]+$/', 'unique:products,sku'],
+            'barcode' => ['nullable', 'string', 'max:64', 'regex:/^[0-9A-Za-z._-]+$/', 'unique:products,barcode'],
             'category_id' => ['required', 'exists:categories,id'],
             'price' => ['required', 'integer', 'min:0'],
             'stock' => ['required', 'integer', 'min:0'],
@@ -90,6 +94,9 @@ class AdminProductController extends Controller
         if ($seed === '') $seed = $data['name'];
 
         $data['slug'] = $this->uniqueSlug($seed);
+        $data['sku'] = strtoupper(trim((string) ($data['sku'] ?? '')));
+        $barcode = trim((string) ($data['barcode'] ?? ''));
+        $data['barcode'] = $barcode !== '' ? $barcode : null;
 
         if ($request->hasFile('image')) {
             $data['image_path'] = $request->file('image')->store('products', 'public');
@@ -113,6 +120,8 @@ class AdminProductController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
             'slug' => ['nullable', 'string', 'max:255'],
+            'sku' => ['required', 'string', 'max:64', 'regex:/^[A-Za-z0-9._-]+$/', 'unique:products,sku,' . $product->id],
+            'barcode' => ['nullable', 'string', 'max:64', 'regex:/^[0-9A-Za-z._-]+$/', 'unique:products,barcode,' . $product->id],
             'category_id' => ['required', 'exists:categories,id'],
             'price' => ['required', 'integer', 'min:0'],
             'stock' => ['required', 'integer', 'min:0'],
@@ -127,6 +136,9 @@ class AdminProductController extends Controller
         if ($seed === '') $seed = $data['name'];
 
         $data['slug'] = $this->uniqueSlug($seed, $product->id);
+        $data['sku'] = strtoupper(trim((string) ($data['sku'] ?? '')));
+        $barcode = trim((string) ($data['barcode'] ?? ''));
+        $data['barcode'] = $barcode !== '' ? $barcode : null;
 
         // Quitar imagen actual
         if ($request->boolean('remove_image')) {
@@ -154,6 +166,16 @@ class AdminProductController extends Controller
         return redirect()
             ->route('admin.products.index')
             ->with('success', 'Producto actualizado.');
+    }
+
+    public function label(Product $product)
+    {
+        $barcodeValue = trim((string) ($product->barcode ?: $product->sku));
+
+        return view('admin.products.label', [
+            'product' => $product,
+            'barcodeValue' => $barcodeValue,
+        ]);
     }
 
     public function destroy(Product $product)

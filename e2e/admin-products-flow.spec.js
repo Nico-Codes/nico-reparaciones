@@ -31,6 +31,8 @@ test('admin products flow: create, toggle, stock update and edit', async ({ page
   await expect(page).toHaveURL(/\/admin\/productos\/crear$/);
 
   await page.locator('input[name="name"]').fill(initialName);
+  await page.locator('input[name="sku"]').fill(`E2E-${suffix}`);
+  await page.locator('input[name="barcode"]').fill(`${suffix}`);
   await selectFirstNonEmptyOption(page.locator('select[name="category_id"]'));
   await page.locator('input[name="price"]').fill('12999');
   await page.locator('input[name="stock"]').fill('7');

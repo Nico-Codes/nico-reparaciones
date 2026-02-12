@@ -114,6 +114,7 @@
       <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.repairs.index') }}">Reparaciones</a>
       <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.products.index') }}">Productos</a>
       <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.settings.index') }}">Configuración</a>
+      <a class="btn-primary h-11 w-full justify-center sm:w-auto" href="{{ route('admin.quick_sales.index') }}">+ Nueva venta</a>
       <a class="btn-primary h-11 w-full justify-center sm:w-auto" href="{{ route('admin.repairs.create') }}">+ Nueva reparación</a>
     </div>
   </div>

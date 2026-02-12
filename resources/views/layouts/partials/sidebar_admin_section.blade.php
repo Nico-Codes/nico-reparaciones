@@ -19,6 +19,12 @@
       'active' => request()->routeIs('admin.orders.*'),
     ],
     [
+      'route' => 'admin.quick_sales.index',
+      'label' => 'Venta rapida',
+      'icon' => \App\Support\BrandAssets::url('icon_orders'),
+      'active' => request()->routeIs('admin.quick_sales.*'),
+    ],
+    [
       'route' => 'admin.products.index',
       'label' => 'Productos',
       'icon' => \App\Support\BrandAssets::url('icon_store'),
