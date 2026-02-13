@@ -13,7 +13,7 @@
     <a href="{{ route('admin.products.index') }}" class="btn-outline h-11 w-full justify-center sm:h-auto sm:w-auto">Volver</a>
   </div>
 
-  <form id="productFormCreate" method="POST" action="{{ route('admin.products.store') }}" enctype="multipart/form-data" class="space-y-4">
+  <form id="productFormCreate" method="POST" action="{{ route('admin.products.store') }}" enctype="multipart/form-data" class="space-y-4" data-disable-on-submit>
     @csrf
 
     <div class="card">
@@ -55,6 +55,21 @@
                 <option value="{{ $c->id }}" @selected((string)old('category_id') === (string)$c->id)>{{ $c->name }}</option>
               @endforeach
             </select>
+          </div>
+
+          <div class="space-y-1">
+            <label>Proveedor</label>
+            <select name="supplier_id" class="h-11">
+              <option value="">Sin proveedor</option>
+              @foreach(($suppliers ?? collect()) as $s)
+                <option value="{{ $s->id }}" @selected((string)old('supplier_id') === (string)$s->id)>{{ $s->name }}</option>
+              @endforeach
+            </select>
+          </div>
+
+          <div class="sm:col-span-2 space-y-1">
+            <label>Referencia de compra (opcional)</label>
+            <input name="purchase_reference" class="h-11" value="{{ old('purchase_reference') }}" placeholder="Ej: Factura 0081-000123, lote A12">
           </div>
 
           <div class="space-y-1">
@@ -282,24 +297,35 @@
 
       marginAlert.classList.add('hidden');
       marginAlert.textContent = '';
-      marginAlert.classList.remove('border-rose-200', 'bg-rose-50', 'text-rose-700', 'border-emerald-200', 'bg-emerald-50', 'text-emerald-700');
+      marginAlert.classList.remove('border-rose-200', 'bg-rose-50', 'text-rose-700', 'border-amber-200', 'bg-amber-50', 'text-amber-700', 'border-emerald-200', 'bg-emerald-50', 'text-emerald-700');
 
       if (!Number.isFinite(cost) || !Number.isFinite(price) || cost < 0 || price < 0) {
         return true;
       }
 
+      const diff = price - cost;
+      const marginPercent = cost > 0 ? ((diff / cost) * 100) : 0;
+      const marginLabel = `${marginPercent >= 0 ? '+' : ''}${marginPercent.toFixed(1)}%`;
+
       if (price < cost) {
         marginAlert.classList.remove('hidden');
         marginAlert.classList.add('border-rose-200', 'bg-rose-50', 'text-rose-700');
         marginAlert.textContent = preventNegativeMargin
-          ? 'Atencion: el precio de venta es menor al costo. Con el guard activo no se puede guardar.'
-          : 'Atencion: el precio de venta es menor al costo (margen negativo).';
+          ? `Atencion: margen ${marginLabel} (${money(diff)}). Con el guard activo no se puede guardar.`
+          : `Atencion: margen ${marginLabel} (${money(diff)}).`;
         return !preventNegativeMargin;
+      }
+
+      if (price === cost) {
+        marginAlert.classList.remove('hidden');
+        marginAlert.classList.add('border-amber-200', 'bg-amber-50', 'text-amber-700');
+        marginAlert.textContent = 'Margen 0.0% (sin utilidad).';
+        return true;
       }
 
       marginAlert.classList.remove('hidden');
       marginAlert.classList.add('border-emerald-200', 'bg-emerald-50', 'text-emerald-700');
-      marginAlert.textContent = 'Margen valido.';
+      marginAlert.textContent = `Margen ${marginLabel}. Utilidad: ${money(diff)}.`;
       return true;
     };
 

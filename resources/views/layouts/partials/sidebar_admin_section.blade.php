@@ -25,10 +25,22 @@
       'active' => request()->routeIs('admin.quick_sales.*'),
     ],
     [
+      'route' => 'admin.warranty_incidents.index',
+      'label' => 'Garantias',
+      'icon' => \App\Support\BrandAssets::url('icon_settings'),
+      'active' => request()->routeIs('admin.warranty_incidents.*'),
+    ],
+    [
       'route' => 'admin.products.index',
       'label' => 'Productos',
       'icon' => \App\Support\BrandAssets::url('icon_store'),
       'active' => request()->routeIs('admin.products.*'),
+    ],
+    [
+      'route' => 'admin.suppliers.index',
+      'label' => 'Proveedores',
+      'icon' => \App\Support\BrandAssets::url('icon_settings'),
+      'active' => request()->routeIs('admin.suppliers.*'),
     ],
     [
       'route' => 'admin.calculations.index',

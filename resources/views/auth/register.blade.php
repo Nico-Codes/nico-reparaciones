@@ -17,7 +17,7 @@
       </div>
     @endif
 
-    <form method="POST" action="{{ route('register.post') }}" class="space-y-4">
+    <form method="POST" action="{{ route('register.post') }}" class="space-y-4" data-disable-on-submit>
       @csrf
 
       <div class="grid gap-3 sm:grid-cols-2">
@@ -127,4 +127,3 @@
   </div>
 </div>
 @endsection
-

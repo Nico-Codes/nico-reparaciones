@@ -54,6 +54,47 @@ document.addEventListener('DOMContentLoaded', () => {
     },
     true
   );
+
+  const lockSubmitButtons = (form, submitter = null) => {
+    const buttons = new Set([
+      ...Array.from(form.querySelectorAll('button[type="submit"], input[type="submit"]')),
+      ...(submitter ? [submitter] : []),
+    ]);
+
+    buttons.forEach((button) => {
+      if (!(button instanceof HTMLElement)) return;
+      if (button.dataset.originalLabel === undefined) {
+        button.dataset.originalLabel = button.tagName === 'INPUT'
+          ? (button.value || '')
+          : (button.textContent || '');
+      }
+      button.setAttribute('aria-busy', 'true');
+      button.setAttribute('disabled', 'disabled');
+      button.classList.add('opacity-70', 'cursor-not-allowed');
+
+      const loadingText = button.getAttribute('data-loading-label') || 'Procesando...';
+      if (button.tagName === 'INPUT') {
+        button.value = loadingText;
+      } else {
+        button.textContent = loadingText;
+      }
+    });
+  };
+
+  document.addEventListener('submit', (e) => {
+    const form = e.target;
+    if (!(form instanceof HTMLFormElement)) return;
+    if (e.defaultPrevented) return;
+    if (!form.hasAttribute('data-disable-on-submit')) return;
+
+    if (form.dataset.submitting === '1') {
+      e.preventDefault();
+      return;
+    }
+
+    form.dataset.submitting = '1';
+    lockSubmitButtons(form, e.submitter instanceof HTMLElement ? e.submitter : null);
+  });
   // ----------------------------
   // Scroll lock (shared) — evita “zoom” por scrollbar
   // ----------------------------

@@ -162,6 +162,7 @@
                   <div class="truncate font-black text-zinc-900">{{ $p->name }}</div>
                   <div class="mt-1 text-xs text-zinc-500">SKU: <span class="font-semibold">{{ $p->sku ?: '-' }}</span></div>
                   <div class="mt-1 text-xs text-zinc-500">Barcode: <span class="font-semibold">{{ $p->barcode ?: '-' }}</span></div>
+                  <div class="mt-1 text-xs text-zinc-500">Proveedor: <span class="font-semibold">{{ $p->supplier?->name ?: '-' }}</span></div>
                   <div class="mt-1 text-xs text-zinc-500">Categoria: <span class="font-semibold">{{ $p->category?->name ?: '-' }}</span></div>
                 </div>
                 <span class="{{ $stockBadge($p->stock) }} shrink-0" data-stock-label-for="{{ $p->id }}">{{ $stockLabel($p->stock) }}</span>
@@ -226,6 +227,7 @@
             <th>SKU</th>
             <th>Barcode</th>
             <th>Categoria</th>
+            <th>Proveedor</th>
             <th class="text-right">Costo</th>
             <th class="text-right">Venta</th>
             <th class="text-right">Margen</th>
@@ -255,6 +257,7 @@
               <td class="font-semibold text-zinc-700">{{ $p->sku ?: '-' }}</td>
               <td class="font-semibold text-zinc-700">{{ $p->barcode ?: '-' }}</td>
               <td class="font-semibold text-zinc-700">{{ $p->category?->name ?: '-' }}</td>
+              <td class="font-semibold text-zinc-700">{{ $p->supplier?->name ?: '-' }}</td>
               <td class="text-right font-black text-zinc-700">{{ $money($p->cost_price) }}</td>
               <td class="text-right font-black">{{ $money($p->price) }}</td>
               <td class="text-right">
@@ -291,7 +294,7 @@
               </td>
             </tr>
           @empty
-            <tr><td colspan="10" class="py-8 text-center text-zinc-500">No hay productos.</td></tr>
+            <tr><td colspan="11" class="py-8 text-center text-zinc-500">No hay productos.</td></tr>
           @endforelse
         </tbody>
       </table>

@@ -25,7 +25,7 @@
         </div>
       @endif
 
-      <form method="POST" action="{{ route('admin.two_factor.challenge.verify') }}" class="grid gap-3">
+      <form method="POST" action="{{ route('admin.two_factor.challenge.verify') }}" class="grid gap-3" data-disable-on-submit>
         @csrf
         <div class="grid gap-2">
           <label for="code">Codigo 2FA o codigo de recuperacion</label>

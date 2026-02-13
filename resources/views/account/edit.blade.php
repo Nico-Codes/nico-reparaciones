@@ -39,7 +39,7 @@
           Tu correo <span class="font-bold">{{ $user->email }}</span> aun no esta verificado. Necesitas verificarlo para comprar y ver tus pedidos.
         </div>
 
-        <form method="POST" action="{{ route('verification.send') }}" class="mt-3">
+        <form method="POST" action="{{ route('verification.send') }}" class="mt-3" data-disable-on-submit>
           @csrf
           <button type="submit" class="btn-primary h-11 w-full sm:w-auto">Reenviar correo de verificacion</button>
         </form>
@@ -95,7 +95,7 @@
         </div>
       @endif
 
-      <form method="POST" action="{{ route('account.update') }}" class="grid gap-4">
+      <form method="POST" action="{{ route('account.update') }}" class="grid gap-4" data-disable-on-submit>
         @csrf
         @method('PUT')
 
@@ -192,7 +192,7 @@
         </div>
       @endif
 
-      <form method="POST" action="{{ route('account.password') }}" class="grid gap-4">
+      <form method="POST" action="{{ route('account.password') }}" class="grid gap-4" data-disable-on-submit>
         @csrf
         @method('PUT')
 

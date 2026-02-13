@@ -30,7 +30,7 @@
       </a>
     @endif
 
-    <form method="POST" action="{{ route('login.post') }}" class="space-y-4">
+    <form method="POST" action="{{ route('login.post') }}" class="space-y-4" data-disable-on-submit>
       @csrf
 
       <div>

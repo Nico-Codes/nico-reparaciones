@@ -11,6 +11,7 @@ class Repair extends Model
     protected $fillable = [
         'code',
         'user_id',
+        'supplier_id',
         'customer_name',
         'customer_phone',
 
@@ -149,6 +150,11 @@ class Repair extends Model
     public function repairType()
     {
         return $this->belongsTo(\App\Models\RepairType::class, 'repair_type_id');
+    }
+
+    public function supplier()
+    {
+        return $this->belongsTo(Supplier::class);
     }
 
     public static function allowedNextStatuses(string $from): array

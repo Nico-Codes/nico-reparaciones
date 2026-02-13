@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\BusinessSetting;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Models\Supplier;
 use App\Support\ProductPricingResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -28,7 +29,7 @@ class AdminProductController extends Controller
             ->orderBy('name')
             ->get();
 
-        $query = Product::with('category')->orderByDesc('id');
+        $query = Product::with(['category', 'supplier'])->orderByDesc('id');
 
         if ($q !== '') {
             $query->where(function($sub) use ($q) {
@@ -75,8 +76,10 @@ class AdminProductController extends Controller
     public function create()
     {
         $categories = Category::orderBy('name')->get();
+        $suppliers = Supplier::query()->where('active', true)->orderBy('name')->get(['id', 'name']);
         return view('admin.products.create', [
             'categories' => $categories,
+            'suppliers' => $suppliers,
             'priceResolveUrl' => route('admin.product_pricing_rules.resolve'),
             'preventNegativeMargin' => BusinessSetting::getValue('product_prevent_negative_margin', '1') === '1',
         ]);
@@ -90,6 +93,8 @@ class AdminProductController extends Controller
             'sku' => ['required', 'string', 'max:64', 'regex:/^[A-Za-z0-9._-]+$/', 'unique:products,sku'],
             'barcode' => ['nullable', 'string', 'max:64', 'regex:/^[0-9A-Za-z._-]+$/', 'unique:products,barcode'],
             'category_id' => ['required', 'exists:categories,id'],
+            'supplier_id' => ['nullable', 'integer', 'exists:suppliers,id'],
+            'purchase_reference' => ['nullable', 'string', 'max:120'],
             'cost_price' => ['required', 'integer', 'min:0'],
             'price' => ['nullable', 'integer', 'min:0'],
             'stock' => ['required', 'integer', 'min:0'],
@@ -128,9 +133,11 @@ class AdminProductController extends Controller
     public function edit(Product $product)
     {
         $categories = Category::orderBy('name')->get();
+        $suppliers = Supplier::query()->orderByDesc('active')->orderBy('name')->get(['id', 'name', 'active']);
         return view('admin.products.edit', [
             'product' => $product,
             'categories' => $categories,
+            'suppliers' => $suppliers,
             'priceResolveUrl' => route('admin.product_pricing_rules.resolve'),
             'preventNegativeMargin' => BusinessSetting::getValue('product_prevent_negative_margin', '1') === '1',
         ]);
@@ -144,6 +151,8 @@ class AdminProductController extends Controller
             'sku' => ['required', 'string', 'max:64', 'regex:/^[A-Za-z0-9._-]+$/', 'unique:products,sku,' . $product->id],
             'barcode' => ['nullable', 'string', 'max:64', 'regex:/^[0-9A-Za-z._-]+$/', 'unique:products,barcode,' . $product->id],
             'category_id' => ['required', 'exists:categories,id'],
+            'supplier_id' => ['nullable', 'integer', 'exists:suppliers,id'],
+            'purchase_reference' => ['nullable', 'string', 'max:120'],
             'cost_price' => ['required', 'integer', 'min:0'],
             'price' => ['nullable', 'integer', 'min:0'],
             'stock' => ['required', 'integer', 'min:0'],

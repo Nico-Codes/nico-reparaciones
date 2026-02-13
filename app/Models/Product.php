@@ -9,6 +9,8 @@ class Product extends Model
 {
     protected $fillable = [
         'category_id',
+        'supplier_id',
+        'purchase_reference',
         'name',
         'slug',
         'sku',
@@ -35,6 +37,11 @@ class Product extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function supplier(): BelongsTo
+    {
+        return $this->belongsTo(Supplier::class);
     }
 
     /**

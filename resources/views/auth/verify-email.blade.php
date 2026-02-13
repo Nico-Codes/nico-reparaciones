@@ -31,7 +31,7 @@
       </div>
     @endif
 
-    <form method="POST" action="{{ route('verification.send') }}" class="space-y-3">
+    <form method="POST" action="{{ route('verification.send') }}" class="space-y-3" data-disable-on-submit>
       @csrf
       <button class="btn-primary h-11 w-full justify-center">Reenviar correo de verificacion</button>
     </form>

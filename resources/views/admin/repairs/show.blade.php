@@ -72,6 +72,7 @@
 
     <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
       <a href="{{ route('admin.repairs.index') }}" class="btn-ghost btn-sm h-11 w-full justify-center sm:h-auto sm:w-auto">Volver</a>
+      <a href="{{ route('admin.warranty_incidents.create', ['repair_id' => $repair->id]) }}" class="btn-outline btn-sm h-11 w-full justify-center sm:h-auto sm:w-auto">Registrar garantia</a>
       <a href="{{ route('admin.repairs.print', $repair) }}" class="btn-outline btn-sm h-11 w-full justify-center sm:h-auto sm:w-auto" target="_blank" rel="noopener">Imprimir</a>
       <a href="{{ route('admin.repairs.ticket', $repair) }}" class="btn-outline btn-sm h-11 w-full justify-center sm:h-auto sm:w-auto" target="_blank" rel="noopener">Ticket</a>
 
@@ -176,7 +177,7 @@
 
             <div class="mt-2 hidden" data-collapse="repair_quick_status">
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <form method="POST" action="{{ route('admin.repairs.updateStatus', $repair) }}"
+                <form method="POST" action="{{ route('admin.repairs.updateStatus', $repair) }}" data-disable-on-submit
                       onsubmit="return confirm('¿Marcar como ENTREGADA la reparación {{ $repair->code ?? '' }}?');">
                   @csrf
                   <input type="hidden" name="status" value="delivered">
@@ -186,7 +187,7 @@
                   </button>
                 </form>
 
-                <form method="POST" action="{{ route('admin.repairs.updateStatus', $repair) }}"
+                <form method="POST" action="{{ route('admin.repairs.updateStatus', $repair) }}" data-disable-on-submit
                       onsubmit="return confirm('¿Cancelar la reparación {{ $repair->code ?? '' }}?');">
                   @csrf
                   <input type="hidden" name="status" value="cancelled">
@@ -263,7 +264,7 @@
           
         </div>
         <div class="card-body">
-          <form method="POST" action="{{ route('admin.repairs.updateStatus', $repair) }}" class="space-y-3">
+          <form method="POST" action="{{ route('admin.repairs.updateStatus', $repair) }}" data-disable-on-submit class="space-y-3">
             @csrf
 
             <div>
@@ -385,7 +386,7 @@
           <span class="badge-zinc">Se guarda en el momento</span>
         </div>
         <div class="card-body">
-          <form method="POST" action="{{ route('admin.repairs.update', $repair) }}" class="space-y-5">
+          <form method="POST" action="{{ route('admin.repairs.update', $repair) }}" data-disable-on-submit class="space-y-5">
             @csrf
             @method('PUT')
 
@@ -444,6 +445,17 @@
               <div>
                 <label for="customer_phone" class="block mb-1">Teléfono cliente</label>
                 <input id="customer_phone" name="customer_phone" class="h-11" value="{{ old('customer_phone', $repair->customer_phone) }}">
+              </div>
+              <div class="md:col-span-2">
+                <label for="supplier_id" class="block mb-1">Proveedor asociado</label>
+                <select id="supplier_id" name="supplier_id" class="h-11">
+                  <option value="">Sin asociar</option>
+                  @foreach($suppliers as $supplier)
+                    <option value="{{ $supplier->id }}" @selected((string) old('supplier_id', $repair->supplier_id) === (string) $supplier->id)>
+                      {{ $supplier->name }}@if(!$supplier->active) (inactivo)@endif
+                    </option>
+                  @endforeach
+                </select>
               </div>
 
               <div class="md:col-span-2">
@@ -790,3 +802,4 @@
 })();
 </script>
 @endsection
+

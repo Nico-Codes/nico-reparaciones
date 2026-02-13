@@ -36,7 +36,7 @@
     <a href="#repair_create_optional" class="nav-pill whitespace-nowrap">Opcionales</a>
   </div>
 
-  <form method="POST" action="{{ route('admin.repairs.store') }}" class="space-y-4">
+  <form method="POST" action="{{ route('admin.repairs.store') }}" class="space-y-4" data-disable-on-submit>
     @csrf
 
     {{-- Resumen en vivo (UX) --}}
@@ -362,6 +362,17 @@
               <label>Email de usuario (opcional, para asociar)</label>
               <input name="user_email" class="h-11" value="{{ old('user_email') }}" placeholder="cliente@email.com" />
               <div class="text-xs text-zinc-500">Si lo dejás vacío, queda como reparación “sin cuenta”.</div>
+            </div>
+
+            <div class="sm:col-span-2 space-y-1">
+              <label>Proveedor asociado (opcional)</label>
+              <select name="supplier_id" class="h-11">
+                <option value="">Sin asociar</option>
+                @foreach($suppliers as $supplier)
+                  <option value="{{ $supplier->id }}" @selected((string) old('supplier_id') === (string) $supplier->id)>{{ $supplier->name }}</option>
+                @endforeach
+              </select>
+              <div class="text-xs text-zinc-500">Se usa para trazabilidad y puntuación automática por garantía.</div>
             </div>
 
             <div class="sm:col-span-2 space-y-1">

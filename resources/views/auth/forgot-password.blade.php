@@ -23,7 +23,7 @@
       </div>
     @endif
 
-    <form method="POST" action="{{ route('password.email') }}" class="space-y-4">
+    <form method="POST" action="{{ route('password.email') }}" class="space-y-4" data-disable-on-submit>
       @csrf
 
       <div>
@@ -52,4 +52,3 @@
   </div>
 </div>
 @endsection
-

@@ -23,8 +23,10 @@ use App\Http\Controllers\AdminRepairController;
 use App\Http\Controllers\AdminRepairPrintController;
 use App\Http\Controllers\AdminRepairTicketController;
 use App\Http\Controllers\AdminRepairTypeController;
+use App\Http\Controllers\AdminSupplierController;
 use App\Http\Controllers\AdminTwoFactorController;
 use App\Http\Controllers\AdminUserController;
+use App\Http\Controllers\AdminWarrantyIncidentController;
 use App\Http\Controllers\AdminWhatsappTemplateController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CartController;
@@ -201,6 +203,12 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'can:access-admin', 'admin.
     Route::post('/ventas-rapidas/limpiar', [AdminQuickSaleController::class, 'clear'])->name('admin.quick_sales.clear');
     Route::post('/ventas-rapidas/confirmar', [AdminQuickSaleController::class, 'confirm'])->name('admin.quick_sales.confirm');
 
+    // Garantias y perdidas
+    Route::get('/garantias', [AdminWarrantyIncidentController::class, 'index'])->name('admin.warranty_incidents.index');
+    Route::get('/garantias/crear', [AdminWarrantyIncidentController::class, 'create'])->name('admin.warranty_incidents.create');
+    Route::post('/garantias', [AdminWarrantyIncidentController::class, 'store'])->name('admin.warranty_incidents.store');
+    Route::post('/garantias/{incident}/cerrar', [AdminWarrantyIncidentController::class, 'close'])->name('admin.warranty_incidents.close');
+
     // Reparaciones
     Route::get('/reparaciones', [AdminRepairController::class, 'index'])->name('admin.repairs.index');
     Route::get('/reparaciones/crear', [AdminRepairController::class, 'create'])->name('admin.repairs.create');
@@ -263,6 +271,12 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'can:access-admin', 'admin.
     Route::get('/usuarios', [AdminUserController::class, 'index'])->name('admin.users.index');
     Route::get('/usuarios/{user}', [AdminUserController::class, 'show'])->name('admin.users.show');
     Route::post('/usuarios/{user}/rol', [AdminUserController::class, 'updateRole'])->name('admin.users.updateRole');
+
+    // Proveedores
+    Route::get('/proveedores', [AdminSupplierController::class, 'index'])->name('admin.suppliers.index');
+    Route::post('/proveedores', [AdminSupplierController::class, 'store'])->name('admin.suppliers.store');
+    Route::put('/proveedores/{supplier}', [AdminSupplierController::class, 'update'])->name('admin.suppliers.update');
+    Route::post('/proveedores/{supplier}/toggle', [AdminSupplierController::class, 'toggle'])->name('admin.suppliers.toggle');
 
     // Configuracion del negocio
     Route::get('/configuracion', [AdminBusinessSettingsController::class, 'index'])->name('admin.settings.index');

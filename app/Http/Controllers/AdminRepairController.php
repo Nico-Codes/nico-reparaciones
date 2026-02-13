@@ -12,6 +12,7 @@ use App\Models\DeviceType;
 use App\Models\DeviceBrand;
 use App\Models\DeviceModel;
 use App\Models\DeviceIssueType;
+use App\Models\Supplier;
 use App\Support\AdminCountersCache;
 use App\Support\AuditLogger;
 
@@ -235,6 +236,7 @@ class AdminRepairController extends Controller
         $deviceTypes = DeviceType::where('active', true)->orderBy('name')->get();
         $issueTypes  = DeviceIssueType::where('active', true)->orderBy('name')->get();
         $repairTypes = \App\Models\RepairType::where('active', true)->orderBy('name')->get();
+        $suppliers = Supplier::query()->where('active', true)->orderBy('name')->get(['id', 'name']);
 
         return view('admin.repairs.create', compact(
             'statuses',
@@ -242,6 +244,7 @@ class AdminRepairController extends Controller
             'deviceTypes',
             'issueTypes',
             'repairTypes',
+            'suppliers',
         ));
     }
 
@@ -254,6 +257,7 @@ class AdminRepairController extends Controller
 
         $data = $request->validate([
             'user_email'      => 'nullable|email',
+            'supplier_id'     => 'nullable|integer|exists:suppliers,id',
             'customer_name'   => 'required|string|max:255',
             'customer_phone'  => ['required', 'string', 'max:30', 'regex:/^(?=(?:\\D*\\d){8,15}\\D*$)[0-9+()\\s-]{8,30}$/'],
             'device_type_id'  => 'required|exists:device_types,id',
@@ -341,6 +345,7 @@ class AdminRepairController extends Controller
 
         $repair = Repair::create([
             'user_id'        => $userId,
+            'supplier_id'    => isset($data['supplier_id']) ? (int) $data['supplier_id'] : null,
             'customer_name'  => $data['customer_name'],
             'customer_phone' => $data['customer_phone'],
             'device_type_id'  => $type->id,
@@ -426,6 +431,7 @@ class AdminRepairController extends Controller
             'waLogs'            => $waLogs,
             'waNotifiedCurrent' => $waNotifiedCurrent,
             'waNotifiedAt'      => $waNotifiedAt,
+            'suppliers'         => Supplier::query()->orderByDesc('active')->orderBy('name')->get(['id', 'name', 'active']),
         ]);
     }
 
@@ -438,6 +444,7 @@ class AdminRepairController extends Controller
         $data = $request->validate([
             'user_email'      => 'nullable|email',
             'unlink_user'     => 'nullable|boolean',
+            'supplier_id'     => 'nullable|integer|exists:suppliers,id',
 
             'customer_name'   => 'required|string|max:255',
             'customer_phone'  => ['required', 'string', 'max:30', 'regex:/^(?=(?:\\D*\\d){8,15}\\D*$)[0-9+()\\s-]{8,30}$/'],
@@ -525,6 +532,7 @@ class AdminRepairController extends Controller
 
         $repair->update([
             'user_id'         => $userId,
+            'supplier_id'     => isset($data['supplier_id']) ? (int) $data['supplier_id'] : null,
             'customer_name'   => $data['customer_name'],
             'customer_phone'  => $data['customer_phone'],
 

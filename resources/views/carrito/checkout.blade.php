@@ -79,7 +79,7 @@
         </div>
 
         <div class="card-body">
-          <form method="POST" action="{{ route('checkout.confirm') }}" class="grid gap-6" data-checkout-form>
+          <form method="POST" action="{{ route('checkout.confirm') }}" class="grid gap-6" data-checkout-form data-disable-on-submit>
             @csrf
             <input type="hidden" name="checkout_token" value="{{ old('checkout_token', $checkoutToken ?? '') }}">
 

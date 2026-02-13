@@ -105,7 +105,7 @@
       </div>
     @endif
 
-    <form method="POST" action="{{ route('admin.quick_sales.confirm') }}" class="grid gap-2">
+    <form method="POST" action="{{ route('admin.quick_sales.confirm') }}" class="grid gap-2" data-disable-on-submit>
       @csrf
       <div class="grid gap-1">
         <label>Nombre cliente *</label>
