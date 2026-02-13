@@ -137,7 +137,7 @@ class AdminSupplierPartSearchTest extends TestCase
         Http::fake([
             'provider-relevance.test/*' => Http::response([
                 'items' => [
-                    ['title' => 'Bateria universal 5000mah', 'price' => 9000, 'stock' => '3', 'url' => 'https://provider-relevance.test/a'],
+                    ['title' => 'Samsung A30 modulo generico', 'price' => 12000, 'stock' => '3', 'url' => 'https://provider-relevance.test/a'],
                     ['title' => 'Modulo Samsung A30 Incell', 'price' => 19000, 'stock' => '2', 'url' => 'https://provider-relevance.test/b'],
                 ],
             ], 200),
@@ -148,8 +148,78 @@ class AdminSupplierPartSearchTest extends TestCase
         $response->assertOk();
         $response->assertJsonPath('results.0.part_name', 'Modulo Samsung A30 Incell');
         $response->assertJsonPath('results.0.price', 19000);
-        $response->assertJsonPath('results.1.part_name', 'Bateria universal 5000mah');
-        $response->assertJsonPath('results.1.price', 9000);
+        $response->assertJsonPath('results.1.part_name', 'Samsung A30 modulo generico');
+        $response->assertJsonPath('results.1.price', 12000);
+    }
+
+    public function test_search_requires_all_query_words_in_result_name(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        Supplier::query()->create([
+            'name' => 'Proveedor Estricto',
+            'active' => true,
+            'search_enabled' => true,
+            'search_mode' => 'json',
+            'search_endpoint' => 'https://provider-strict.test/search?q={query}',
+            'search_config' => [
+                'items_path' => 'items',
+                'name_field' => 'title',
+                'price_field' => 'price',
+                'stock_field' => 'stock',
+                'url_field' => 'url',
+            ],
+        ]);
+
+        Http::fake([
+            'provider-strict.test/*' => Http::response([
+                'items' => [
+                    ['title' => 'Modulo Samsung A10', 'price' => 15000, 'stock' => '2', 'url' => 'https://provider-strict.test/a10'],
+                    ['title' => 'Modulo Samsung A20', 'price' => 12000, 'stock' => '2', 'url' => 'https://provider-strict.test/a20'],
+                ],
+            ], 200),
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('admin.suppliers.parts.search', ['q' => 'samsung a10']));
+
+        $response->assertOk();
+        $response->assertJsonPath('count', 1);
+        $response->assertJsonPath('results.0.part_name', 'Modulo Samsung A10');
+    }
+
+    public function test_strict_search_is_case_and_accent_insensitive(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        Supplier::query()->create([
+            'name' => 'Proveedor Accent',
+            'active' => true,
+            'search_enabled' => true,
+            'search_mode' => 'json',
+            'search_endpoint' => 'https://provider-accent.test/search?q={query}',
+            'search_config' => [
+                'items_path' => 'items',
+                'name_field' => 'title',
+                'price_field' => 'price',
+                'stock_field' => 'stock',
+                'url_field' => 'url',
+            ],
+        ]);
+
+        Http::fake([
+            'provider-accent.test/*' => Http::response([
+                'items' => [
+                    ['title' => 'Módulo SAMSUNG A10', 'price' => 15000, 'stock' => '2', 'url' => 'https://provider-accent.test/a10'],
+                    ['title' => 'Modulo Samsung A20', 'price' => 12000, 'stock' => '2', 'url' => 'https://provider-accent.test/a20'],
+                ],
+            ], 200),
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('admin.suppliers.parts.search', ['q' => 'modulo samsung a10']));
+
+        $response->assertOk();
+        $response->assertJsonPath('count', 1);
+        $response->assertJsonPath('results.0.part_name', 'Módulo SAMSUNG A10');
     }
 
     public function test_search_uses_fallback_query_variants_when_full_query_has_no_results(): void

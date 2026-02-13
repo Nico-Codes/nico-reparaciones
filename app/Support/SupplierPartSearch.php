@@ -113,6 +113,14 @@ class SupplierPartSearch
                 continue;
             }
 
+            $rows = array_values(array_filter($rows, function (array $row) use ($query): bool {
+                $name = (string) ($row['part_name'] ?? '');
+                return $this->matchesAllQueryTokens($query, $name);
+            }));
+            if (count($rows) === 0) {
+                continue;
+            }
+
             $unique = [];
             foreach ($rows as $row) {
                 $key = mb_strtolower(trim((string) ($row['url'] ?? ''))) . '|' .
@@ -608,6 +616,15 @@ class SupplierPartSearch
             return '';
         }
 
+        $value = strtr($value, [
+            'á' => 'a', 'à' => 'a', 'ä' => 'a', 'â' => 'a',
+            'é' => 'e', 'è' => 'e', 'ë' => 'e', 'ê' => 'e',
+            'í' => 'i', 'ì' => 'i', 'ï' => 'i', 'î' => 'i',
+            'ó' => 'o', 'ò' => 'o', 'ö' => 'o', 'ô' => 'o',
+            'ú' => 'u', 'ù' => 'u', 'ü' => 'u', 'û' => 'u',
+            'ñ' => 'n',
+        ]);
+
         $latin = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $value);
         if (is_string($latin) && $latin !== '') {
             $value = mb_strtolower($latin);
@@ -617,6 +634,28 @@ class SupplierPartSearch
         $value = preg_replace('/\s+/', ' ', $value) ?? '';
 
         return trim($value);
+    }
+
+    private function matchesAllQueryTokens(string $query, string $partName): bool
+    {
+        $q = $this->normalizeForSearch($query);
+        $name = $this->normalizeForSearch($partName);
+        if ($q === '' || $name === '') {
+            return false;
+        }
+
+        $tokens = array_values(array_filter(explode(' ', $q), static fn (string $t): bool => mb_strlen($t) >= 2));
+        if (count($tokens) === 0) {
+            return false;
+        }
+
+        foreach ($tokens as $token) {
+            if (!str_contains($name, $token)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

@@ -128,24 +128,27 @@ class AdminSupplierTest extends TestCase
             'name' => 'Proveedor Probe',
             'active' => true,
             'search_enabled' => true,
-            'search_mode' => 'html',
-            'search_endpoint' => 'https://probe-supplier.test/?s={query}&post_type=product',
+            'search_mode' => 'json',
+            'search_endpoint' => 'https://probe-supplier.test/search?q={query}',
             'search_config' => [
-                'candidate_paths' => ['/producto/'],
+                'items_path' => 'items',
+                'name_field' => 'title',
+                'price_field' => 'price',
+                'stock_field' => 'stock',
+                'url_field' => 'url',
             ],
         ]);
 
         Http::fake([
-            'probe-supplier.test/*' => Http::response('
-                <div class="item">
-                    <a href="https://probe-supplier.test/producto/modulo-a30/">Modulo A30</a>
-                    <span class="price">$ 12345</span>
-                </div>
-            ', 200),
+            'probe-supplier.test/*' => Http::response([
+                'items' => [
+                    ['title' => 'Modulo A30', 'price' => 12345, 'stock' => '2', 'url' => 'https://probe-supplier.test/a30'],
+                ],
+            ], 200),
         ]);
 
         $response = $this->actingAs($admin)->post(route('admin.suppliers.probe', $supplier), [
-            'q' => 'modulo a30',
+            'q' => 'modulo',
         ]);
 
         $response->assertRedirect();
@@ -158,7 +161,7 @@ class AdminSupplierTest extends TestCase
         $this->assertDatabaseHas('suppliers', [
             'id' => $supplier->id,
             'last_probe_status' => 'ok',
-            'last_probe_query' => 'modulo a30',
+            'last_probe_query' => 'modulo',
             'last_probe_count' => 1,
         ]);
     }
