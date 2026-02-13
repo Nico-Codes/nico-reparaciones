@@ -7,6 +7,7 @@ use App\Models\Repair;
 use App\Models\RepairStatusHistory;
 use App\Models\RepairWhatsappLog;
 use App\Models\RepairWhatsappTemplate;
+use App\Models\WarrantyIncident;
 use App\Models\User;
 use App\Models\DeviceType;
 use App\Models\DeviceBrand;
@@ -15,6 +16,7 @@ use App\Models\DeviceIssueType;
 use App\Models\Supplier;
 use App\Support\AdminCountersCache;
 use App\Support\AuditLogger;
+use App\Support\LedgerBook;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -739,6 +741,69 @@ class AdminRepairController extends Controller
     public function whatsappLogAjax(Request $request, Repair $repair)
     {
         return $this->logWhatsappAjax($request, $repair);
+    }
+
+    public function refundTotal(Request $request, Repair $repair)
+    {
+        $data = $request->validate([
+            'refund_reason' => ['required', 'string', 'max:255'],
+            'refunded_amount' => ['required', 'integer', 'min:1'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        if ($repair->refunded_total) {
+            return back()->withErrors(['refund_reason' => 'Esta reparacion ya tiene un reembolso total registrado.']);
+        }
+
+        $refundedAmount = (int) $data['refunded_amount'];
+        $maxReasonableAmount = (int) max((float) ($repair->final_price ?? 0), (float) ($repair->paid_amount ?? 0), 0);
+        if ($maxReasonableAmount > 0 && $refundedAmount > ($maxReasonableAmount * 2)) {
+            return back()->withErrors(['refunded_amount' => 'El monto de reembolso parece invalido.'])->withInput();
+        }
+
+        DB::transaction(function () use ($repair, $data, $refundedAmount): void {
+            $repair->update([
+                'refunded_total' => true,
+                'refunded_amount' => $refundedAmount,
+                'refund_reason' => trim((string) $data['refund_reason']),
+                'refunded_at' => now(),
+            ]);
+
+            WarrantyIncident::query()->create([
+                'source_type' => 'repair',
+                'status' => 'closed',
+                'title' => 'Reembolso total por garantia',
+                'reason' => trim((string) $data['refund_reason']),
+                'repair_id' => $repair->id,
+                'supplier_id' => $repair->supplier_id ? (int) $repair->supplier_id : null,
+                'quantity' => 1,
+                'unit_cost' => $refundedAmount,
+                'cost_origin' => 'manual',
+                'extra_cost' => 0,
+                'recovered_amount' => 0,
+                'loss_amount' => $refundedAmount,
+                'happened_at' => now(),
+                'resolved_at' => now(),
+                'notes' => trim((string) ($data['notes'] ?? '')) ?: 'Reembolso total generado desde reparaciones.',
+                'created_by' => auth()->id(),
+            ]);
+
+            LedgerBook::record([
+                'happened_at' => now(),
+                'direction' => 'outflow',
+                'amount' => $refundedAmount,
+                'category' => 'repair_refund_total',
+                'description' => 'Reembolso total reparacion #' . ($repair->code ?: $repair->id),
+                'source' => $repair,
+                'event_key' => 'repair_refund_total:' . $repair->id,
+                'created_by' => auth()->id(),
+                'meta' => [
+                    'refund_reason' => (string) $repair->refund_reason,
+                ],
+            ]);
+        });
+
+        return back()->with('success', 'Reembolso total registrado y perdida cargada en garantias.');
     }
 
     // WhatsApp Logs

@@ -44,6 +44,12 @@ class AdminWarrantyIncidentTest extends TestCase
         $this->assertSame(22000, (int) $incident->loss_amount);
         $this->assertSame('open', (string) $incident->status);
         $this->assertSame('manual', (string) $incident->cost_origin);
+        $this->assertDatabaseHas('ledger_entries', [
+            'event_key' => 'warranty_loss:' . $incident->id,
+            'direction' => 'outflow',
+            'category' => 'warranty_loss',
+            'amount' => 22000,
+        ]);
 
         $closeResponse = $this->actingAs($admin)->post(route('admin.warranty_incidents.close', $incident));
         $closeResponse->assertRedirect();
@@ -115,5 +121,11 @@ class AdminWarrantyIncidentTest extends TestCase
         $this->assertSame(15300, (int) $incident->unit_cost);
         $this->assertSame(15300, (int) $incident->loss_amount);
         $this->assertSame('repair', (string) $incident->cost_origin);
+        $this->assertDatabaseHas('ledger_entries', [
+            'event_key' => 'warranty_loss:' . $incident->id,
+            'direction' => 'outflow',
+            'category' => 'warranty_loss',
+            'amount' => 15300,
+        ]);
     }
 }

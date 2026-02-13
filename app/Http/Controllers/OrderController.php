@@ -8,6 +8,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderStatusHistory;
 use App\Models\Product;
+use App\Support\LedgerBook;
 use App\Support\MailDispatch;
 use App\Support\MailFailureMonitor;
 use Illuminate\Http\Request;
@@ -191,6 +192,21 @@ class OrderController extends Controller
 
                     $order->stock_deducted_at = now();
                     $order->save();
+
+                    LedgerBook::record([
+                        'happened_at' => now(),
+                        'direction' => 'inflow',
+                        'amount' => (int) $order->total,
+                        'category' => 'order_sale',
+                        'description' => 'Venta web pedido #' . $order->id,
+                        'source' => $order,
+                        'event_key' => 'order_sale:' . $order->id,
+                        'created_by' => Auth::id(),
+                        'meta' => [
+                            'payment_method' => (string) $order->payment_method,
+                            'is_quick_sale' => false,
+                        ],
+                    ]);
                 }, 3);
 
                 $request->session()->forget('cart');

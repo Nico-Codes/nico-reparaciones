@@ -218,6 +218,7 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'can:access-admin', 'admin.
     Route::put('/reparaciones/{repair}', [AdminRepairController::class, 'update'])->name('admin.repairs.update');
 
     Route::post('/reparaciones/{repair}/estado', [AdminRepairController::class, 'updateStatus'])->name('admin.repairs.updateStatus');
+    Route::post('/reparaciones/{repair}/reembolso-total', [AdminRepairController::class, 'refundTotal'])->name('admin.repairs.refundTotal');
 
     Route::post('/reparaciones/{repair}/whatsapp', [AdminRepairController::class, 'whatsappLog'])->name('admin.repairs.whatsappLog');
     Route::post('/reparaciones/{repair}/whatsapp-ajax', [AdminRepairController::class, 'whatsappLogAjax'])->name('admin.repairs.whatsappLogAjax');

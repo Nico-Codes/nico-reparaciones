@@ -52,6 +52,9 @@
             Garantía {{ $wActive ? 'vigente' : 'vencida' }} ({{ $wExp->format('d/m/Y') }})
           </span>
         @endif
+        @if($repair->refunded_total)
+          <span class="badge-rose">Reembolsada {{ $money((int)($repair->refunded_amount ?? 0)) }}</span>
+        @endif
       </div>
 
       <p class="page-subtitle mt-1">
@@ -206,6 +209,49 @@
             </div>
           </div>
 
+          <div class="pt-2 border-t border-zinc-200">
+            <button type="button"
+              class="btn-ghost btn-sm h-10 w-full justify-center"
+              data-toggle-collapse="repair_refund_total"
+              data-toggle-collapse-label="reembolso total"
+              aria-expanded="false">
+              {{ $repair->refunded_total ? 'Ver reembolso registrado' : 'Registrar reembolso total' }}
+            </button>
+
+            <div class="mt-2 hidden" data-collapse="repair_refund_total">
+              @if($repair->refunded_total)
+                <div class="rounded-2xl border border-rose-200 bg-rose-50 p-3 text-sm">
+                  <div class="font-black text-rose-800">Reembolso ya aplicado</div>
+                  <div class="mt-1 text-rose-900">Monto: {{ $money((int)($repair->refunded_amount ?? 0)) }}</div>
+                  <div class="mt-1 text-rose-900">Motivo: {{ $repair->refund_reason ?: '-' }}</div>
+                  <div class="mt-1 text-rose-900">Fecha: {{ $repair->refunded_at?->format('d/m/Y H:i') ?: '-' }}</div>
+                </div>
+              @else
+                <form method="POST" action="{{ route('admin.repairs.refundTotal', $repair) }}" class="space-y-2" data-disable-on-submit
+                      onsubmit="return confirm('Se registrara un reembolso total y una perdida en garantias. ¿Continuar?');">
+                  @csrf
+                  <div>
+                    <label for="refund_reason" class="block mb-1 text-sm">Motivo *</label>
+                    <input id="refund_reason" name="refund_reason" class="h-11" required
+                           value="{{ old('refund_reason') }}" placeholder="Ej: no se consigue el modulo / falla recurrente">
+                  </div>
+                  <div>
+                    <label for="refunded_amount" class="block mb-1 text-sm">Monto a devolver *</label>
+                    <input id="refunded_amount" name="refunded_amount" class="h-11" inputmode="numeric" required
+                           value="{{ old('refunded_amount', (int)($repair->final_price ?? 0)) }}">
+                  </div>
+                  <div>
+                    <label for="refund_notes" class="block mb-1 text-sm">Notas (opcional)</label>
+                    <textarea id="refund_notes" name="notes" rows="2" placeholder="Detalle interno para auditoria">{{ old('notes') }}</textarea>
+                  </div>
+                  <button class="btn-outline h-11 w-full justify-center text-rose-700 border-rose-300" type="submit">
+                    Confirmar reembolso total
+                  </button>
+                </form>
+              @endif
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -237,6 +283,12 @@
               <span class="text-zinc-500">Debe</span>
               <span class="{{ $due > 0 ? 'font-black text-rose-700' : 'font-black text-emerald-700' }} text-right">
                 {{ $money($due) }}
+              </span>
+            </div>
+            <div class="flex flex-col gap-0.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+              <span class="text-zinc-500">Reembolso total</span>
+              <span class="{{ $repair->refunded_total ? 'font-black text-rose-700' : 'font-black text-zinc-600' }} text-right">
+                {{ $repair->refunded_total ? $money((int)($repair->refunded_amount ?? 0)) : 'No' }}
               </span>
             </div>
 

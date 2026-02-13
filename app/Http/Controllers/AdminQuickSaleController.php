@@ -8,6 +8,7 @@ use App\Models\OrderStatusHistory;
 use App\Models\BusinessSetting;
 use App\Models\Product;
 use App\Models\User;
+use App\Support\LedgerBook;
 use App\Support\SimpleXlsxWriter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -294,6 +295,21 @@ class AdminQuickSaleController extends Controller
 
                 $product->decrement('stock', $quantity);
             }
+
+            LedgerBook::record([
+                'happened_at' => now(),
+                'direction' => 'inflow',
+                'amount' => (int) $order->total,
+                'category' => 'quick_sale',
+                'description' => 'Venta rapida pedido #' . $order->id,
+                'source' => $order,
+                'event_key' => 'quick_sale:' . $order->id,
+                'created_by' => auth()->id(),
+                'meta' => [
+                    'payment_method' => (string) $order->payment_method,
+                    'is_quick_sale' => true,
+                ],
+            ]);
 
             return $order;
         });

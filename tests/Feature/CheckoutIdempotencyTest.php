@@ -71,6 +71,13 @@ class CheckoutIdempotencyTest extends TestCase
 
         $this->assertDatabaseCount('orders', 1);
         $this->assertDatabaseCount('order_items', 1);
+        $this->assertDatabaseCount('ledger_entries', 1);
+        $this->assertDatabaseHas('ledger_entries', [
+            'event_key' => 'order_sale:' . $order->id,
+            'direction' => 'inflow',
+            'category' => 'order_sale',
+            'amount' => 6000,
+        ]);
         $this->assertDatabaseHas('products', [
             'id' => $product->id,
             'stock' => 8,

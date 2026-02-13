@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\Repair;
 use App\Models\Supplier;
 use App\Models\WarrantyIncident;
+use App\Support\LedgerBook;
 use Illuminate\Http\Request;
 
 class AdminWarrantyIncidentController extends Controller
@@ -213,7 +214,7 @@ class AdminWarrantyIncidentController extends Controller
             $supplierId = null;
         }
 
-        WarrantyIncident::query()->create([
+        $incident = WarrantyIncident::query()->create([
             'source_type' => $data['source_type'],
             'status' => 'open',
             'title' => $data['title'],
@@ -232,6 +233,23 @@ class AdminWarrantyIncidentController extends Controller
             'notes' => $data['notes'] ?? null,
             'created_by' => auth()->id(),
         ]);
+
+        if ($loss > 0) {
+            LedgerBook::record([
+                'happened_at' => $incident->happened_at ?? now(),
+                'direction' => 'outflow',
+                'amount' => $loss,
+                'category' => 'warranty_loss',
+                'description' => 'Garantia: ' . (string) $incident->title,
+                'source' => $incident,
+                'event_key' => 'warranty_loss:' . $incident->id,
+                'created_by' => auth()->id(),
+                'meta' => [
+                    'source_type' => (string) $incident->source_type,
+                    'cost_origin' => (string) ($incident->cost_origin ?? 'manual'),
+                ],
+            ]);
+        }
 
         return redirect()
             ->route('admin.warranty_incidents.index')

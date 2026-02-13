@@ -75,5 +75,12 @@ class AdminQuickSaleFlowTest extends TestCase
             'id' => $product->id,
             'stock' => 4,
         ]);
+
+        $this->assertDatabaseHas('ledger_entries', [
+            'event_key' => 'quick_sale:' . $order->id,
+            'direction' => 'inflow',
+            'category' => 'quick_sale',
+            'amount' => 10000,
+        ]);
     }
 }

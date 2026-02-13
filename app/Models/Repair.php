@@ -43,6 +43,10 @@ class Repair extends Model
         'warranty_days',
         'received_at',
         'delivered_at',
+        'refunded_total',
+        'refunded_amount',
+        'refund_reason',
+        'refunded_at',
         'notes',
     ];
 
@@ -53,9 +57,12 @@ class Repair extends Model
 
         'paid_amount'  => 'decimal:2',
         'warranty_days'=> 'integer',
+        'refunded_total' => 'boolean',
+        'refunded_amount' => 'integer',
 
         'received_at'  => 'datetime',
         'delivered_at' => 'datetime',
+        'refunded_at' => 'datetime',
     ];
 
     public const STATUSES = [
