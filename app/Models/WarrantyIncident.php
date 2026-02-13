@@ -16,6 +16,12 @@ class WarrantyIncident extends Model
         'closed' => 'Cerrado',
     ];
 
+    public const COST_ORIGINS = [
+        'manual' => 'Manual',
+        'repair' => 'Reparación',
+        'product' => 'Producto',
+    ];
+
     protected $fillable = [
         'source_type',
         'status',
@@ -27,6 +33,7 @@ class WarrantyIncident extends Model
         'supplier_id',
         'quantity',
         'unit_cost',
+        'cost_origin',
         'extra_cost',
         'recovered_amount',
         'loss_amount',
@@ -39,6 +46,7 @@ class WarrantyIncident extends Model
     protected $casts = [
         'quantity' => 'integer',
         'unit_cost' => 'integer',
+        'cost_origin' => 'string',
         'extra_cost' => 'integer',
         'recovered_amount' => 'integer',
         'loss_amount' => 'integer',

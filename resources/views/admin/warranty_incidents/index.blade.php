@@ -7,6 +7,13 @@
   $statusBadge = fn($status) => $status === 'closed'
     ? 'badge-zinc'
     : 'badge-amber';
+  $costOriginBadge = function ($origin) {
+    return match ((string) $origin) {
+      'repair' => 'badge-sky',
+      'product' => 'badge-emerald',
+      default => 'badge-zinc',
+    };
+  };
 @endphp
 
 @section('content')
@@ -97,6 +104,7 @@
             <th>Origen</th>
             <th>Detalle</th>
             <th>Proveedor</th>
+            <th>Origen costo</th>
             <th class="text-right">Costo</th>
             <th class="text-right">Recuperado</th>
             <th class="text-right">Perdida</th>
@@ -128,6 +136,12 @@
                   {{ $incident->supplier?->name ?? '-' }}
                 </span>
               </td>
+              <td>
+                @php $costOrigin = (string)($incident->cost_origin ?? 'manual'); @endphp
+                <span class="{{ $costOriginBadge($costOrigin) }}">
+                  {{ \App\Models\WarrantyIncident::COST_ORIGINS[$costOrigin] ?? 'Manual' }}
+                </span>
+              </td>
               <td class="text-right font-semibold">{{ $money(($incident->quantity * $incident->unit_cost) + $incident->extra_cost) }}</td>
               <td class="text-right font-semibold text-emerald-700">{{ $money($incident->recovered_amount) }}</td>
               <td class="text-right font-black {{ $incident->loss_amount > 0 ? 'text-rose-700' : 'text-zinc-700' }}">{{ $money($incident->loss_amount) }}</td>
@@ -145,7 +159,7 @@
             </tr>
           @empty
             <tr>
-              <td colspan="9" class="text-center py-8 text-zinc-500">No hay incidentes registrados.</td>
+              <td colspan="10" class="text-center py-8 text-zinc-500">No hay incidentes registrados.</td>
             </tr>
           @endforelse
         </tbody>

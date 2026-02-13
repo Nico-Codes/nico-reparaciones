@@ -144,6 +144,7 @@ class AdminWarrantyIncidentController extends Controller
             'supplier_id' => ['nullable', 'integer', 'exists:suppliers,id'],
             'quantity' => ['required', 'integer', 'min:1', 'max:999'],
             'unit_cost' => ['nullable', 'integer', 'min:0'],
+            'cost_origin' => ['nullable', 'in:manual,repair,product'],
             'extra_cost' => ['nullable', 'integer', 'min:0'],
             'recovered_amount' => ['nullable', 'integer', 'min:0'],
             'happened_at' => ['nullable', 'date'],
@@ -157,6 +158,7 @@ class AdminWarrantyIncidentController extends Controller
 
         $repairId = isset($data['repair_id']) ? (int) $data['repair_id'] : null;
         $productId = isset($data['product_id']) ? (int) $data['product_id'] : null;
+        $costOrigin = (string) ($data['cost_origin'] ?? 'manual');
 
         if ($data['source_type'] === 'repair' && !$repairId) {
             return back()->withErrors(['repair_id' => 'Selecciona la reparacion asociada.'])->withInput();
@@ -169,15 +171,33 @@ class AdminWarrantyIncidentController extends Controller
         if ($unitCost <= 0 && $repairId) {
             $repairPartsCost = (float) (Repair::query()->whereKey($repairId)->value('parts_cost') ?? 0);
             $unitCost = max(0, (int) round($repairPartsCost));
+            if ($unitCost > 0) {
+                $costOrigin = 'repair';
+            }
         }
 
         if ($unitCost <= 0 && $productId) {
             $productCost = (int) (Product::query()->whereKey($productId)->value('cost_price') ?? 0);
             $unitCost = max(0, $productCost);
+            if ($unitCost > 0) {
+                $costOrigin = 'product';
+            }
         }
 
         if ($unitCost <= 0) {
             return back()->withErrors(['unit_cost' => 'No se pudo resolver costo unitario automatico. Cargalo manualmente.'])->withInput();
+        }
+
+        if ($costOrigin === 'repair' && ($data['source_type'] !== 'repair' || !$repairId)) {
+            $costOrigin = 'manual';
+        }
+
+        if ($costOrigin === 'product' && ($data['source_type'] !== 'product' || !$productId)) {
+            $costOrigin = 'manual';
+        }
+
+        if (!isset(WarrantyIncident::COST_ORIGINS[$costOrigin])) {
+            $costOrigin = 'manual';
         }
 
         $loss = ($quantity * $unitCost) + $extraCost - $recovered;
@@ -204,6 +224,7 @@ class AdminWarrantyIncidentController extends Controller
             'supplier_id' => $supplierId,
             'quantity' => $quantity,
             'unit_cost' => $unitCost,
+            'cost_origin' => $costOrigin,
             'extra_cost' => $extraCost,
             'recovered_amount' => $recovered,
             'loss_amount' => $loss,

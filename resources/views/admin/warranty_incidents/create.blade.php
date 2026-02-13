@@ -112,6 +112,7 @@
         <div class="space-y-1">
           <label>Costo unitario *</label>
           <input id="wi_unit_cost" name="unit_cost" class="h-11" inputmode="numeric" required value="{{ old('unit_cost', 0) }}">
+          <input type="hidden" id="wi_cost_origin" name="cost_origin" value="{{ old('cost_origin', 'manual') }}">
           <div class="flex items-center gap-2 flex-wrap">
             <div class="text-xs text-zinc-500">Se autocompleta desde costo de reparación o costo del producto.</div>
             <span id="wi_cost_origin_badge" class="badge-zinc">Origen costo: Manual</span>
@@ -155,6 +156,7 @@
     const extra = document.getElementById('wi_extra_cost');
     const recovered = document.getElementById('wi_recovered');
     const preview = document.getElementById('wi_loss_preview');
+    const costOriginInput = document.getElementById('wi_cost_origin');
     const costOriginBadge = document.getElementById('wi_cost_origin_badge');
     const sourceType = document.getElementById('wi_source_type');
     const repairSelect = document.getElementById('wi_repair_id');
@@ -171,6 +173,9 @@
     const setCostOrigin = (origin) => {
       if (!costOriginBadge) return;
       const key = String(origin || 'manual').toLowerCase();
+      if (costOriginInput) {
+        costOriginInput.value = key;
+      }
       const label = key === 'repair'
         ? 'Origen costo: Reparación'
         : (key === 'product' ? 'Origen costo: Producto' : 'Origen costo: Manual');
@@ -250,6 +255,7 @@
         render();
       }
     });
+    setCostOrigin(costOriginInput?.value || 'manual');
     resolveAutoUnitCost();
     render();
   })();
