@@ -25,6 +25,12 @@
       'active' => request()->routeIs('admin.quick_sales.*'),
     ],
     [
+      'route' => 'admin.ledger.index',
+      'label' => 'Contabilidad',
+      'icon' => \App\Support\BrandAssets::url('icon_settings'),
+      'active' => request()->routeIs('admin.ledger.*'),
+    ],
+    [
       'route' => 'admin.warranty_incidents.index',
       'label' => 'Garantias',
       'icon' => \App\Support\BrandAssets::url('icon_settings'),

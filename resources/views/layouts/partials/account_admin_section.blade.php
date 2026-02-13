@@ -6,6 +6,7 @@
     ['route' => 'admin.repairs.index', 'label' => 'Reparaciones'],
     ['route' => 'admin.orders.index', 'label' => 'Pedidos'],
     ['route' => 'admin.quick_sales.index', 'label' => 'Venta rapida'],
+    ['route' => 'admin.ledger.index', 'label' => 'Contabilidad'],
     ['route' => 'admin.warranty_incidents.index', 'label' => 'Garantias'],
     ['route' => 'admin.products.index', 'label' => 'Productos'],
     ['route' => 'admin.suppliers.index', 'label' => 'Proveedores'],

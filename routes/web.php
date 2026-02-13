@@ -6,6 +6,7 @@ use App\Http\Controllers\AdminCategoryController;
 use App\Http\Controllers\AdminCalculationSettingsController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AdminHelpEntryController;
+use App\Http\Controllers\AdminLedgerController;
 use App\Http\Controllers\AdminDeviceCatalogController;
 use App\Http\Controllers\AdminDeviceCatalogManageController;
 use App\Http\Controllers\AdminDeviceTypeController;
@@ -179,6 +180,7 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'can:access-admin', 'admin.
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
     Route::get('/dashboard/export.csv', [AdminDashboardController::class, 'exportCsv'])->name('admin.dashboard.export');
     Route::get('/dashboard/export.xlsx', [AdminDashboardController::class, 'exportXlsx'])->name('admin.dashboard.export_xlsx');
+    Route::get('/contabilidad', [AdminLedgerController::class, 'index'])->name('admin.ledger.index');
     Route::post('/mantenimiento/migrar', [AdminMaintenanceController::class, 'migrate'])->name('admin.maintenance.migrate');
     Route::get('/calculos', [AdminCalculationSettingsController::class, 'index'])->name('admin.calculations.index');
 
