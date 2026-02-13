@@ -12,6 +12,8 @@ class Repair extends Model
         'code',
         'user_id',
         'supplier_id',
+        'supplier_part_name',
+        'purchase_reference',
         'customer_name',
         'customer_phone',
 

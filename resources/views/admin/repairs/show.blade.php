@@ -509,6 +509,14 @@
                   @endforeach
                 </select>
               </div>
+              <div>
+                <label for="supplier_part_name" class="block mb-1">Repuesto elegido</label>
+                <input id="supplier_part_name" name="supplier_part_name" class="h-11" value="{{ old('supplier_part_name', $repair->supplier_part_name) }}" placeholder="Ej: modulo samsung a30">
+              </div>
+              <div>
+                <label for="purchase_reference" class="block mb-1">Referencia de compra</label>
+                <input id="purchase_reference" name="purchase_reference" class="h-11" value="{{ old('purchase_reference', $repair->purchase_reference) }}" placeholder="URL o referencia">
+              </div>
 
               <div class="md:col-span-2">
                 @php

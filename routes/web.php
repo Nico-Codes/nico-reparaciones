@@ -25,6 +25,7 @@ use App\Http\Controllers\AdminRepairPrintController;
 use App\Http\Controllers\AdminRepairTicketController;
 use App\Http\Controllers\AdminRepairTypeController;
 use App\Http\Controllers\AdminSupplierController;
+use App\Http\Controllers\AdminSupplierPartSearchController;
 use App\Http\Controllers\AdminTwoFactorController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\AdminWarrantyIncidentController;
@@ -278,8 +279,17 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'can:access-admin', 'admin.
     // Proveedores
     Route::get('/proveedores', [AdminSupplierController::class, 'index'])->name('admin.suppliers.index');
     Route::post('/proveedores', [AdminSupplierController::class, 'store'])->name('admin.suppliers.store');
+    Route::post('/proveedores/importar-sugeridos', [AdminSupplierController::class, 'importDefaults'])->name('admin.suppliers.import_defaults');
+    Route::post('/proveedores/reordenar', [AdminSupplierController::class, 'reorder'])->name('admin.suppliers.reorder');
     Route::put('/proveedores/{supplier}', [AdminSupplierController::class, 'update'])->name('admin.suppliers.update');
     Route::post('/proveedores/{supplier}/toggle', [AdminSupplierController::class, 'toggle'])->name('admin.suppliers.toggle');
+    Route::post('/proveedores/{supplier}/probar-busqueda', [AdminSupplierController::class, 'probe'])->name('admin.suppliers.probe');
+    Route::get('/proveedores/repuestos/search', AdminSupplierPartSearchController::class)
+        ->middleware('throttle:60,1')
+        ->name('admin.suppliers.parts.search');
+    Route::get('/proveedores/repuestos/search/{supplier}', [AdminSupplierPartSearchController::class, 'bySupplier'])
+        ->middleware('throttle:60,1')
+        ->name('admin.suppliers.parts.search_by_supplier');
 
     // Configuracion del negocio
     Route::get('/configuracion', [AdminBusinessSettingsController::class, 'index'])->name('admin.settings.index');

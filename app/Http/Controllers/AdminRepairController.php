@@ -238,7 +238,26 @@ class AdminRepairController extends Controller
         $deviceTypes = DeviceType::where('active', true)->orderBy('name')->get();
         $issueTypes  = DeviceIssueType::where('active', true)->orderBy('name')->get();
         $repairTypes = \App\Models\RepairType::where('active', true)->orderBy('name')->get();
-        $suppliers = Supplier::query()->where('active', true)->orderBy('name')->get(['id', 'name']);
+        $suppliers = Supplier::query()
+            ->where('active', true)
+            ->orderBy('search_priority')
+            ->orderBy('name')
+            ->get(['id', 'name', 'search_priority']);
+
+        $supplierSearchQueue = Supplier::query()
+            ->where('active', true)
+            ->where('search_enabled', true)
+            ->whereNotNull('search_endpoint')
+            ->orderBy('search_priority')
+            ->orderBy('name')
+            ->get(['id', 'name', 'search_priority'])
+            ->map(fn (Supplier $s): array => [
+                'id' => (int) $s->id,
+                'name' => (string) $s->name,
+                'priority' => (int) ($s->search_priority ?? 100),
+            ])
+            ->values()
+            ->all();
 
         return view('admin.repairs.create', compact(
             'statuses',
@@ -247,6 +266,7 @@ class AdminRepairController extends Controller
             'issueTypes',
             'repairTypes',
             'suppliers',
+            'supplierSearchQueue',
         ));
     }
 
@@ -260,6 +280,8 @@ class AdminRepairController extends Controller
         $data = $request->validate([
             'user_email'      => 'nullable|email',
             'supplier_id'     => 'nullable|integer|exists:suppliers,id',
+            'supplier_part_name' => 'nullable|string|max:255',
+            'purchase_reference' => 'nullable|string|max:500',
             'customer_name'   => 'required|string|max:255',
             'customer_phone'  => ['required', 'string', 'max:30', 'regex:/^(?=(?:\\D*\\d){8,15}\\D*$)[0-9+()\\s-]{8,30}$/'],
             'device_type_id'  => 'required|exists:device_types,id',
@@ -348,6 +370,8 @@ class AdminRepairController extends Controller
         $repair = Repair::create([
             'user_id'        => $userId,
             'supplier_id'    => isset($data['supplier_id']) ? (int) $data['supplier_id'] : null,
+            'supplier_part_name' => isset($data['supplier_part_name']) ? trim((string) $data['supplier_part_name']) : null,
+            'purchase_reference' => isset($data['purchase_reference']) ? trim((string) $data['purchase_reference']) : null,
             'customer_name'  => $data['customer_name'],
             'customer_phone' => $data['customer_phone'],
             'device_type_id'  => $type->id,
@@ -447,6 +471,8 @@ class AdminRepairController extends Controller
             'user_email'      => 'nullable|email',
             'unlink_user'     => 'nullable|boolean',
             'supplier_id'     => 'nullable|integer|exists:suppliers,id',
+            'supplier_part_name' => 'nullable|string|max:255',
+            'purchase_reference' => 'nullable|string|max:500',
 
             'customer_name'   => 'required|string|max:255',
             'customer_phone'  => ['required', 'string', 'max:30', 'regex:/^(?=(?:\\D*\\d){8,15}\\D*$)[0-9+()\\s-]{8,30}$/'],
@@ -535,6 +561,8 @@ class AdminRepairController extends Controller
         $repair->update([
             'user_id'         => $userId,
             'supplier_id'     => isset($data['supplier_id']) ? (int) $data['supplier_id'] : null,
+            'supplier_part_name' => isset($data['supplier_part_name']) ? trim((string) $data['supplier_part_name']) : null,
+            'purchase_reference' => isset($data['purchase_reference']) ? trim((string) $data['purchase_reference']) : null,
             'customer_name'   => $data['customer_name'],
             'customer_phone'  => $data['customer_phone'],
 

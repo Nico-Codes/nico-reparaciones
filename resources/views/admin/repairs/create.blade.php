@@ -256,6 +256,52 @@
       </div>
     </div>
 
+    <div class="card" id="repair_parts_search"
+      data-part-search
+      data-search-url="{{ route('admin.suppliers.parts.search') }}"
+      data-search-by-supplier-base="{{ url('/admin/proveedores/repuestos/search') }}"
+      data-search-suppliers='@json($supplierSearchQueue)'>
+      <div class="card-head">
+        <div class="font-black">Buscador de repuestos en proveedores</div>
+        <span class="badge-zinc">Comparador</span>
+      </div>
+      <div class="card-body space-y-3">
+        <div class="grid gap-2 sm:grid-cols-[1fr_auto]">
+          <input type="text" class="h-11" placeholder="Ej: modulo samsung a30" data-part-search-query>
+          <button type="button" class="btn-outline h-11 justify-center w-full sm:w-auto" data-part-search-btn>Buscar</button>
+        </div>
+        <div class="text-xs text-zinc-500">Busca en proveedores activos con búsqueda habilitada y ordena por mejor precio.</div>
+        <div class="text-xs text-zinc-500" data-part-search-status></div>
+        <div class="grid gap-2 sm:grid-cols-2">
+          <div class="space-y-1">
+            <label>Repuesto elegido (auto)</label>
+            <input type="text" name="supplier_part_name" class="h-11" value="{{ old('supplier_part_name') }}" placeholder="Se completa al elegir resultado">
+          </div>
+          <div class="space-y-1">
+            <label>Referencia de compra (auto)</label>
+            <input type="text" name="purchase_reference" class="h-11" value="{{ old('purchase_reference') }}" placeholder="URL o referencia del proveedor">
+          </div>
+        </div>
+        <div class="hidden rounded-2xl border border-zinc-200" data-part-search-results-wrap>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-zinc-50">
+                <tr>
+                  <th class="px-3 py-2 text-left">Proveedor</th>
+                  <th class="px-3 py-2 text-left">Repuesto</th>
+                  <th class="px-3 py-2 text-left">Stock</th>
+                  <th class="px-3 py-2 text-right">Precio</th>
+                  <th class="px-3 py-2 text-right">Ahorro</th>
+                  <th class="px-3 py-2 text-right">Acción</th>
+                </tr>
+              </thead>
+              <tbody data-part-search-results></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="card" id="repair_create_finance">
       <div class="card-head">
         <div class="font-black">Costos, cobro y estado</div>
@@ -431,4 +477,228 @@
 
   </form>
 </div>
+
+<script>
+(() => {
+  const root = document.querySelector('[data-part-search]');
+  if (!root) return;
+
+  const searchUrl = root.dataset.searchUrl;
+  const bySupplierBase = root.dataset.searchBySupplierBase || '';
+  const suppliersQueue = (() => {
+    try {
+      const raw = JSON.parse(root.dataset.searchSuppliers || '[]');
+      return Array.isArray(raw) ? raw : [];
+    } catch (_e) {
+      return [];
+    }
+  })();
+  const queryInput = root.querySelector('[data-part-search-query]');
+  const searchBtn = root.querySelector('[data-part-search-btn]');
+  const resultsWrap = root.querySelector('[data-part-search-results-wrap]');
+  const resultsBody = root.querySelector('[data-part-search-results]');
+  const statusEl = root.querySelector('[data-part-search-status]');
+  const partsCostInput = document.querySelector('input[name="parts_cost"]');
+  const supplierSelect = document.querySelector('select[name="supplier_id"]');
+  const supplierPartInput = document.querySelector('input[name="supplier_part_name"]');
+  const purchaseReferenceInput = document.querySelector('input[name="purchase_reference"]');
+  let currentRun = 0;
+  let aggregatedRows = [];
+
+  const money = (value) => '$ ' + new Intl.NumberFormat('es-AR').format(Number(value || 0));
+  const escapeHtml = (value) => String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+
+  const enrichSavings = (rows) => {
+    const prices = rows
+      .map((row) => Number(row.price || 0))
+      .filter((price) => Number.isFinite(price) && price > 0);
+    const avg = prices.length > 0
+      ? Math.round(prices.reduce((a, b) => a + b, 0) / prices.length)
+      : 0;
+    const best = prices.length > 0 ? Math.min(...prices) : 0;
+
+    return rows.map((row) => {
+      const price = Number(row.price || 0);
+      const savingVsAvg = Math.max(0, avg - price);
+      const savingPctVsAvg = avg > 0 ? Math.round((savingVsAvg / avg) * 100) : 0;
+      return {
+        ...row,
+        saving_vs_avg: savingVsAvg,
+        saving_pct_vs_avg: savingPctVsAvg,
+        is_best_price: best > 0 && price === best,
+      };
+    });
+  };
+
+  const renderRows = (rows) => {
+    resultsBody.innerHTML = '';
+    if (!Array.isArray(rows) || rows.length === 0) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = '<td colspan="6" class="px-3 py-4 text-center text-zinc-500">Sin resultados para esta búsqueda.</td>';
+      resultsBody.appendChild(tr);
+      resultsWrap.classList.remove('hidden');
+      return;
+    }
+
+    const rowsToRender = enrichSavings(rows);
+    rowsToRender.forEach((row) => {
+      const tr = document.createElement('tr');
+      tr.className = 'border-t border-zinc-100';
+      const safeName = escapeHtml(row.supplier_name || '-');
+      const safePart = escapeHtml(row.part_name || '-');
+      const safeStock = escapeHtml(row.stock || '-');
+      const safeUrl = row.url ? escapeHtml(row.url) : '';
+      const saving = Number(row.saving_vs_avg || 0);
+      const savingPct = Number(row.saving_pct_vs_avg || 0);
+      const isBest = Boolean(row.is_best_price);
+      tr.innerHTML = `
+        <td class="px-3 py-2 font-semibold text-zinc-900">${safeName}</td>
+        <td class="px-3 py-2 text-zinc-700">${safePart}</td>
+        <td class="px-3 py-2 text-zinc-700">${safeStock}</td>
+        <td class="px-3 py-2 text-right font-black ${isBest ? 'text-emerald-700' : 'text-zinc-900'}">
+          ${money(row.price)}
+          ${isBest ? '<span class="badge-emerald ml-2">Mejor precio</span>' : ''}
+        </td>
+        <td class="px-3 py-2 text-right font-semibold ${saving > 0 ? 'text-emerald-700' : 'text-zinc-500'}">
+          ${saving > 0 ? `${money(saving)} (${savingPct}%)` : '-'}
+        </td>
+        <td class="px-3 py-2 text-right">
+          <button type="button" class="btn-ghost btn-sm h-9" data-part-apply>Usar</button>
+          ${row.url ? `<button type="button" class="btn-ghost btn-sm h-9" data-part-buy>Comprar</button>` : ''}
+          ${row.url ? `<a class="btn-ghost btn-sm h-9" href="${safeUrl}" target="_blank" rel="noopener">Abrir</a>` : ''}
+        </td>
+      `;
+
+      const applySelection = () => {
+        if (partsCostInput) {
+          partsCostInput.value = String(row.price || 0);
+          partsCostInput.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        if (supplierSelect && row.supplier_id) {
+          supplierSelect.value = String(row.supplier_id);
+          supplierSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        if (supplierPartInput) {
+          supplierPartInput.value = String(row.part_name || '');
+          supplierPartInput.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        if (purchaseReferenceInput) {
+          const ref = row.url
+            ? `${row.supplier_name || ''} | ${row.part_name || ''} | ${money(row.price)} | ${row.url}`
+            : `${row.supplier_name || ''} | ${row.part_name || ''} | ${money(row.price)}`;
+          purchaseReferenceInput.value = ref.trim();
+          purchaseReferenceInput.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+      };
+
+      const applyBtn = tr.querySelector('[data-part-apply]');
+      applyBtn?.addEventListener('click', applySelection);
+
+      const buyBtn = tr.querySelector('[data-part-buy]');
+      buyBtn?.addEventListener('click', () => {
+        applySelection();
+        if (row.url) {
+          window.open(String(row.url), '_blank', 'noopener');
+        }
+      });
+
+      resultsBody.appendChild(tr);
+    });
+
+    resultsWrap.classList.remove('hidden');
+  };
+
+  const appendUniqueRows = (incomingRows) => {
+    incomingRows.forEach((row) => {
+      const key = `${String(row.url || '').toLowerCase()}|${String(row.part_name || '').toLowerCase()}|${Number(row.price || 0)}`;
+      const exists = aggregatedRows.some((r) => {
+        const k = `${String(r.url || '').toLowerCase()}|${String(r.part_name || '').toLowerCase()}|${Number(r.price || 0)}`;
+        return k === key;
+      });
+      if (!exists) {
+        aggregatedRows.push(row);
+      }
+    });
+  };
+
+  const byRelevanceThenPrice = (rows) => {
+    return [...rows].sort((a, b) => {
+      const aScore = Number(a.relevance_score || 0);
+      const bScore = Number(b.relevance_score || 0);
+      if (bScore !== aScore) return bScore - aScore;
+      return Number(a.price || 0) - Number(b.price || 0);
+    });
+  };
+
+  const updateStatus = (text) => {
+    if (statusEl) statusEl.textContent = text;
+  };
+
+  const runSearch = async () => {
+    const q = String(queryInput?.value || '').trim();
+    if (q.length < 2) return;
+    currentRun += 1;
+    const runId = currentRun;
+    aggregatedRows = [];
+    renderRows([]);
+    resultsWrap.classList.remove('hidden');
+    searchBtn.disabled = true;
+    searchBtn.textContent = 'Buscando...';
+
+    const queue = suppliersQueue.length > 0 ? suppliersQueue : [];
+    if (queue.length === 0) {
+      updateStatus('No hay proveedores con búsqueda habilitada.');
+      searchBtn.disabled = false;
+      searchBtn.textContent = 'Buscar';
+      return;
+    }
+
+    try {
+      for (let i = 0; i < queue.length; i++) {
+        if (runId !== currentRun) return;
+        const supplier = queue[i];
+        updateStatus(`Buscando ${i + 1}/${queue.length}: ${supplier.name}...`);
+
+        const url = new URL(`${bySupplierBase}/${supplier.id}`, window.location.origin);
+        url.searchParams.set('q', q);
+        const res = await fetch(url.toString(), { headers: { Accept: 'application/json' } });
+        const data = await res.json();
+        const rows = Array.isArray(data?.results) ? data.results : [];
+        appendUniqueRows(rows);
+        const ordered = byRelevanceThenPrice(aggregatedRows);
+        renderRows(ordered);
+      }
+
+      if (aggregatedRows.length === 0) {
+        updateStatus('Sin resultados en los proveedores consultados.');
+      } else {
+        updateStatus(`Completado: ${aggregatedRows.length} resultado(s) en ${queue.length} proveedor(es).`);
+      }
+    } catch (_e) {
+      if (runId === currentRun) {
+        renderRows([]);
+        updateStatus('Error consultando proveedores. Revisa conexión o configuración.');
+      }
+    } finally {
+      if (runId === currentRun) {
+        searchBtn.disabled = false;
+        searchBtn.textContent = 'Buscar';
+      }
+    }
+  };
+
+  searchBtn?.addEventListener('click', runSearch);
+  queryInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      runSearch();
+    }
+  });
+})();
+</script>
 @endsection

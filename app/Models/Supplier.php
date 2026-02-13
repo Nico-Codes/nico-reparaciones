@@ -11,10 +11,24 @@ class Supplier extends Model
         'phone',
         'notes',
         'active',
+        'search_enabled',
+        'search_priority',
+        'search_mode',
+        'search_endpoint',
+        'search_config',
+        'last_probe_status',
+        'last_probe_query',
+        'last_probe_count',
+        'last_probe_error',
+        'last_probe_at',
     ];
 
     protected $casts = [
         'active' => 'boolean',
+        'search_enabled' => 'boolean',
+        'search_priority' => 'integer',
+        'search_config' => 'array',
+        'last_probe_at' => 'datetime',
     ];
 
     public function products()
