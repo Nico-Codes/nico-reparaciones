@@ -47,6 +47,7 @@ class AdminSupplierController extends Controller
                     'candidate_paths' => ['/producto/'],
                     'exclude_paths' => ['/categoria-producto/', 'add-to-cart='],
                     'context_window' => 12000,
+                    'stock_probe_product_page' => true,
                 ],
             ],
             [

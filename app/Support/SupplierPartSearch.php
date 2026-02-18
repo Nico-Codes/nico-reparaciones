@@ -92,6 +92,8 @@ class SupplierPartSearch
         $mode = trim((string) ($supplier->search_mode ?? 'json'));
         $config = is_array($supplier->search_config) ? $supplier->search_config : [];
         $seen = [];
+        $stockProbeCache = [];
+        $probeProductStock = $this->shouldProbeProductStock($supplier, $config);
 
         foreach ($this->queryVariants($query) as $variant) {
             $url = str_replace('{query}', urlencode($variant), (string) $supplier->search_endpoint);
@@ -111,6 +113,35 @@ class SupplierPartSearch
 
             if (count($rows) === 0) {
                 continue;
+            }
+
+            if ($probeProductStock) {
+                foreach ($rows as $idx => $row) {
+                    if (!is_array($row)) {
+                        continue;
+                    }
+
+                    $productUrl = trim((string) ($row['url'] ?? ''));
+                    if ($productUrl === '') {
+                        continue;
+                    }
+
+                    $probedStock = $this->detectStockFromProductUrl($productUrl, $stockProbeCache);
+                    if (!$this->isUnknownStockValue($probedStock)) {
+                        $rows[$idx]['stock'] = $probedStock;
+                        continue;
+                    }
+
+                    $currentStock = (string) ($row['stock'] ?? '-');
+                    $currentLow = mb_strtolower(trim($currentStock));
+                    if (
+                        str_contains($currentLow, 'sin stock')
+                        || str_contains($currentLow, 'agotado')
+                        || str_contains($currentLow, 'out of stock')
+                    ) {
+                        $rows[$idx]['stock'] = 'Consultar';
+                    }
+                }
             }
 
             $rows = array_values(array_filter($rows, function (array $row) use ($query): bool {
@@ -488,6 +519,101 @@ class SupplierPartSearch
         }
         if (str_contains($low, 'instock') || str_contains($low, 'en stock') || str_contains($low, 'hay stock')) {
             return 'En stock';
+        }
+
+        return '-';
+    }
+
+    /**
+     * @param array<string,mixed> $config
+     */
+    private function shouldProbeProductStock(Supplier $supplier, array $config): bool
+    {
+        if (array_key_exists('stock_probe_product_page', $config)) {
+            return (bool) $config['stock_probe_product_page'];
+        }
+
+        $name = mb_strtolower(trim((string) $supplier->name));
+        return str_contains($name, 'evophone');
+    }
+
+    private function isUnknownStockValue(string $value): bool
+    {
+        $v = mb_strtolower(trim($value));
+        return $v === '' || $v === '-' || $v === 'n/d' || $v === 's/d';
+    }
+
+    /**
+     * @param array<string,string> $cache
+     */
+    private function detectStockFromProductUrl(string $productUrl, array &$cache): string
+    {
+        $url = trim($productUrl);
+        if ($url === '') {
+            return '-';
+        }
+
+        if (isset($cache[$url])) {
+            return $cache[$url];
+        }
+
+        try {
+            $res = Http::timeout(6)
+                ->retry(1, 120)
+                ->get($url);
+
+            if (!$res->ok()) {
+                return $cache[$url] = '-';
+            }
+
+            $stock = $this->detectStockFromProductHtml((string) $res->body());
+            if ($stock !== '-') {
+                return $cache[$url] = $stock;
+            }
+        } catch (\Throwable) {
+            return $cache[$url] = '-';
+        }
+
+        return $cache[$url] = '-';
+    }
+
+    private function detectStockFromProductHtml(string $html): string
+    {
+        $low = mb_strtolower($html);
+
+        // 1) Señales fuertes de disponibilidad del producto principal (WooCommerce)
+        if (
+            preg_match('/class=["\'][^"\']*\bstock\s+in-stock\b[^"\']*["\']/i', $html) === 1
+            || preg_match('/availability["\']?\s*:\s*["\']?https?:\/\/schema\.org\/instock/i', $low) === 1
+            || preg_match('/"availability"\s*:\s*"https?:\/\/schema\.org\/instock"/i', $low) === 1
+            || preg_match('/\b(single_)?add_to_cart_button\b/i', $html) === 1
+            || str_contains($low, 'hay existencias')
+            || str_contains($low, 'en stock')
+            || str_contains($low, 'instock')
+        ) {
+            return 'En stock';
+        }
+
+        // 2) Señales fuertes de sin stock del producto principal
+        if (
+            preg_match('/class=["\'][^"\']*\bstock\s+out-of-stock\b[^"\']*["\']/i', $html) === 1
+            || preg_match('/availability["\']?\s*:\s*["\']?https?:\/\/schema\.org\/outofstock/i', $low) === 1
+            || preg_match('/"availability"\s*:\s*"https?:\/\/schema\.org\/outofstock"/i', $low) === 1
+            || str_contains($low, 'sin stock')
+            || str_contains($low, 'agotado')
+            || str_contains($low, 'out of stock')
+            || str_contains($low, 'outofstock')
+        ) {
+            return 'Sin stock';
+        }
+
+        // 3) Otros estados
+        if (
+            str_contains($low, 'backorder')
+            || str_contains($low, 'a pedido')
+            || str_contains($low, 'consultar')
+        ) {
+            return 'Consultar';
         }
 
         return '-';

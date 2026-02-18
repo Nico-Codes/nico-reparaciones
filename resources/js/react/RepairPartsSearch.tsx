@@ -43,6 +43,7 @@ export default function RepairPartsSearch({ rootSelector }: RepairPartsSearchPro
     const resultsWrap = root.querySelector<HTMLElement>('[data-part-search-results-wrap]');
     const resultsBody = root.querySelector<HTMLElement>('[data-part-search-results]');
     const statusEl = root.querySelector<HTMLElement>('[data-part-search-status]');
+    const countEl = root.querySelector<HTMLElement>('[data-part-search-count]');
     const progressWrap = root.querySelector<HTMLElement>('[data-part-search-progress-wrap]');
     const progressBar = root.querySelector<HTMLElement>('[data-part-search-progress-bar]');
 
@@ -55,6 +56,7 @@ export default function RepairPartsSearch({ rootSelector }: RepairPartsSearchPro
 
     let currentRun = 0;
     let aggregatedRows: PartSearchRow[] = [];
+    let lastQuery = '';
 
     const money = (value: unknown): string =>
       '$ ' + new Intl.NumberFormat('es-AR').format(Number(value || 0));
@@ -66,6 +68,40 @@ export default function RepairPartsSearch({ rootSelector }: RepairPartsSearchPro
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
+
+    const normalize = (value: string): string =>
+      value
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim();
+
+    const stockUi = (raw: unknown): { label: string; className: string } => {
+      const value = String(raw ?? '').trim();
+      const norm = normalize(value);
+      if (value === '' || value === '-' || norm === 'n/d' || norm === 's/d') {
+        return { label: 'No informado', className: 'badge-zinc' };
+      }
+      if (norm.includes('sin stock') || norm.includes('agotado') || norm.includes('out of stock')) {
+        return { label: value, className: 'badge-rose' };
+      }
+      if (norm.includes('en stock') || norm.includes('instock') || norm.includes('hay stock')) {
+        return { label: value, className: 'badge-emerald' };
+      }
+      return { label: value, className: 'badge-sky' };
+    };
+
+    const highlightMatch = (text: string): string => {
+      const q = normalize(lastQuery);
+      if (!q || q.length < 2) return escapeHtml(text);
+      const safe = escapeHtml(text);
+      const idx = normalize(text).indexOf(q);
+      if (idx < 0) return safe;
+      const before = escapeHtml(text.slice(0, idx));
+      const match = escapeHtml(text.slice(idx, idx + q.length));
+      const after = escapeHtml(text.slice(idx + q.length));
+      return `${before}<mark class="rounded bg-amber-100 px-1 text-zinc-900">${match}</mark>${after}`;
+    };
 
     const enrichSavings = (rows: PartSearchRow[]): PartSearchRow[] => {
       const prices = rows
@@ -113,6 +149,16 @@ export default function RepairPartsSearch({ rootSelector }: RepairPartsSearchPro
 
     const renderRows = (rows: PartSearchRow[]): void => {
       resultsBody.innerHTML = '';
+      if (countEl) {
+        if (rows.length > 0) {
+          countEl.classList.remove('hidden');
+          countEl.textContent = `${rows.length} resultado(s)`;
+        } else {
+          countEl.classList.add('hidden');
+          countEl.textContent = '';
+        }
+      }
+
       if (!Array.isArray(rows) || rows.length === 0) {
         const tr = document.createElement('tr');
         tr.innerHTML = '<td colspan="6" class="px-3 py-4 text-center text-zinc-500">Sin resultados para esta busqueda.</td>';
@@ -125,9 +171,10 @@ export default function RepairPartsSearch({ rootSelector }: RepairPartsSearchPro
       rowsToRender.forEach((row) => {
         const tr = document.createElement('tr');
         tr.className = 'border-t border-zinc-100';
-        const safeName = escapeHtml(row.supplier_name || '-');
-        const safePart = escapeHtml(row.part_name || '-');
-        const safeStock = escapeHtml(row.stock || '-');
+        const safeName = highlightMatch(String(row.supplier_name || '-'));
+        const safePart = highlightMatch(String(row.part_name || '-'));
+        const stock = stockUi(row.stock);
+        const safeStock = escapeHtml(stock.label);
         const safeUrl = row.url ? escapeHtml(row.url) : '';
         const saving = Number(row.saving_vs_avg || 0);
         const savingPct = Number(row.saving_pct_vs_avg || 0);
@@ -135,7 +182,7 @@ export default function RepairPartsSearch({ rootSelector }: RepairPartsSearchPro
         tr.innerHTML = `
           <td class="px-3 py-2 font-semibold text-zinc-900">${safeName}</td>
           <td class="px-3 py-2 text-zinc-700">${safePart}</td>
-          <td class="px-3 py-2 text-zinc-700">${safeStock}</td>
+          <td class="px-3 py-2 text-zinc-700"><span class="${stock.className} whitespace-nowrap">${safeStock}</span></td>
           <td class="px-3 py-2 text-right font-black ${isBest ? 'text-emerald-700' : 'text-zinc-900'}">
             ${money(row.price)}
             ${isBest ? '<span class="badge-emerald ml-2">Mejor precio</span>' : ''}
@@ -144,9 +191,11 @@ export default function RepairPartsSearch({ rootSelector }: RepairPartsSearchPro
             ${saving > 0 ? `${money(saving)} (${savingPct}%)` : '-'}
           </td>
           <td class="px-3 py-2 text-right">
-            <button type="button" class="btn-ghost btn-sm h-9" data-part-apply>Usar</button>
-            ${row.url ? '<button type="button" class="btn-ghost btn-sm h-9" data-part-buy>Comprar</button>' : ''}
-            ${row.url ? `<a class="btn-ghost btn-sm h-9" href="${safeUrl}" target="_blank" rel="noopener">Abrir</a>` : ''}
+            <div class="flex flex-wrap justify-end gap-1">
+              <button type="button" class="btn-ghost btn-sm h-9" data-part-apply>Usar</button>
+              ${row.url ? '<button type="button" class="btn-ghost btn-sm h-9" data-part-buy>Comprar</button>' : ''}
+              ${row.url ? `<a class="btn-ghost btn-sm h-9" href="${safeUrl}" target="_blank" rel="noopener">Abrir</a>` : ''}
+            </div>
           </td>
         `;
 
@@ -206,6 +255,7 @@ export default function RepairPartsSearch({ rootSelector }: RepairPartsSearchPro
         updateStatus('Escribe al menos 2 caracteres para buscar.');
         return;
       }
+      lastQuery = q;
 
       currentRun += 1;
       const runId = currentRun;
@@ -292,6 +342,7 @@ export default function RepairPartsSearch({ rootSelector }: RepairPartsSearchPro
       }
 
       queryInput.value = '';
+      lastQuery = '';
       resultsBody.innerHTML = '';
       resultsWrap.classList.add('hidden');
       updateStatus('');

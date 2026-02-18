@@ -278,8 +278,11 @@
           <button type="button" class="btn-outline h-11 justify-center w-full sm:w-auto" data-part-search-btn>Buscar</button>
           <button type="button" class="btn-ghost h-11 justify-center w-full sm:w-auto" data-part-search-clear>Limpiar</button>
         </div>
-        <div class="text-xs text-zinc-500">Busca en proveedores activos con búsqueda habilitada y ordena por mejor precio.</div>
-        <div class="text-xs text-zinc-500" data-part-search-status></div>
+        <div class="text-xs text-zinc-500">Busca en proveedores activos con búsqueda habilitada y ordena por relevancia (y luego precio).</div>
+        <div class="flex flex-wrap items-center gap-2 text-xs">
+          <div class="text-zinc-500" data-part-search-status></div>
+          <span class="hidden badge-zinc" data-part-search-count></span>
+        </div>
         <div class="hidden" data-part-search-progress-wrap>
           <div class="h-2 w-full overflow-hidden rounded-full bg-zinc-100">
             <div class="h-full w-0 rounded-full bg-sky-500 transition-all duration-300 ease-out" data-part-search-progress-bar></div>
@@ -297,7 +300,7 @@
         </div>
         <div class="hidden rounded-2xl border border-zinc-200" data-part-search-results-wrap>
           <div class="overflow-x-auto">
-            <table class="w-full text-sm">
+            <table class="w-full min-w-[720px] text-sm">
               <thead class="bg-zinc-50">
                 <tr>
                   <th class="px-3 py-2 text-left">Proveedor</th>
