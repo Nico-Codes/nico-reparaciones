@@ -481,34 +481,5 @@
 {{-- Toast simple (solo para el log de WhatsApp) --}}
 <div id="waToast" class="fixed bottom-4 right-4 z-[80] hidden rounded-xl bg-zinc-900 px-4 py-3 text-sm text-white shadow-xl"></div>
 
-<script>
-(function () {
-  const waBtn = document.querySelector('[data-wa-ajax]');
-  if (!waBtn) return;
-
-  const toast = document.getElementById('waToast');
-  const showToast = (msg) => {
-    if (!toast) return;
-    toast.textContent = msg;
-    toast.classList.remove('hidden');
-    setTimeout(() => toast.classList.add('hidden'), 1800);
-  };
-
-  waBtn.addEventListener('click', () => {
-    const url = waBtn.getAttribute('data-wa-ajax');
-    if (!url) return;
-
-    fetch(url, {
-      method: 'POST',
-      headers: {
-        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-        'Accept': 'application/json',
-      },
-    })
-      .then(r => r.ok ? r.json() : Promise.reject(r))
-      .then(() => showToast('Log de WhatsApp registrado ✅'))
-      .catch(() => showToast('No se pudo registrar el log ⚠️'));
-  });
-})();
-</script>
+<div data-react-order-show-whatsapp-log data-root-selector="#order_whatsapp"></div>
 @endsection

@@ -13,7 +13,7 @@
 </div>
 
 <div class="card p-4 max-w-3xl">
-  <form method="POST" action="{{ route('admin.pricing.store') }}" class="space-y-4">
+  <form method="POST" action="{{ route('admin.pricing.store') }}" class="space-y-4" data-pricing-create-form>
     @csrf
 
     @php
@@ -91,6 +91,7 @@
           <option value="margin" @selected($mode === 'margin')>Margen (porcentaje + mínimo)</option>
           <option value="fixed" @selected($mode === 'fixed')>Fijo</option>
         </select>
+        <div class="text-xs text-zinc-500" data-pricing-mode-hint></div>
       </div>
 
       <div class="space-y-1">
@@ -135,22 +136,5 @@
   </form>
 </div>
 
-<script>
-(() => {
-  const modeSelect = document.querySelector('[data-pricing-mode-select]');
-  if (!modeSelect) return;
-
-  const blocks = Array.from(document.querySelectorAll('[data-pricing-mode]'));
-
-  const sync = () => {
-    const mode = modeSelect.value || 'margin';
-    blocks.forEach(el => {
-      el.classList.toggle('hidden', el.dataset.pricingMode !== mode);
-    });
-  };
-
-  modeSelect.addEventListener('change', sync);
-  sync();
-})();
-</script>
+<div data-react-pricing-rule-create-mode data-selector="[data-pricing-create-form]"></div>
 @endsection

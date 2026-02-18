@@ -23,6 +23,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Ticket Reparación {{ $repair->code }}</title>
+  @include('layouts.partials.standalone_vite_assets')
   <style>
     :root { --muted:#71717a; --border:#e4e4e7; }
     *{ box-sizing:border-box; }
@@ -115,12 +116,6 @@
     </div>
   </div>
 
-  @if($autoprint)
-    <script>
-      window.addEventListener('load', () => {
-        window.print();
-      });
-    </script>
-  @endif
+  <div data-react-auto-print data-enabled="{{ $autoprint ? '1' : '0' }}" data-delay-ms="120"></div>
 </body>
 </html>

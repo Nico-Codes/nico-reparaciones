@@ -495,4 +495,6 @@
 </div>
 
 <div data-react-repair-parts-search data-root-selector="#repair_parts_search"></div>
+<div data-react-repair-catalog-enhancements></div>
+<div data-react-repair-create-ui-enhancements></div>
 @endsection

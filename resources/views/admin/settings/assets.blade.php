@@ -114,5 +114,6 @@
     </div>
   </div>
 </div>
+<div data-react-admin-asset-upload-enhancements></div>
 @endsection
 

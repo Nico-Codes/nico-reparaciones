@@ -49,9 +49,11 @@ test('checkout syncs updated product price and cart totals after admin price cha
   await adminRow.getByRole('link', { name: 'Editar' }).click();
 
   await expect(adminPage).toHaveURL(/\/admin\/productos\/\d+\/editar$/);
+  await adminPage.locator('input[name="sku"]').fill(`E2E-PRICE-SYNC-${Date.now()}`);
+  await adminPage.locator('input[name="cost_price"]').fill('9000');
   await adminPage.locator('input[name="price"]').fill('15000');
   await adminPage.getByRole('button', { name: 'Guardar cambios' }).click();
-  await expect(adminPage).toHaveURL(/\/admin\/productos/);
+  await expect(adminPage).toHaveURL(/\/admin\/productos$/);
 
   await shopperPage.goto('/checkout');
   await expect(shopperPage).toHaveURL(/\/carrito$/);

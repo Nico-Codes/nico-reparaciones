@@ -9,6 +9,25 @@ import RepairCreateAssistant from './RepairCreateAssistant';
 import RepairPartsSearch from './RepairPartsSearch';
 import SupplierReorder from './SupplierReorder';
 import WarrantyIncidentCreateEnhancements from './WarrantyIncidentCreateEnhancements';
+import PricingRuleCreateMode from './PricingRuleCreateMode';
+import OrderShowWhatsappLog from './OrderShowWhatsappLog';
+import RepairShowWhatsappLog from './RepairShowWhatsappLog';
+import AutoPrintOnLoad from './AutoPrintOnLoad';
+import ProductLabelBarcode from './ProductLabelBarcode';
+import StoreSearchSuggestions from './StoreSearchSuggestions';
+import CartCheckoutEnhancements from './CartCheckoutEnhancements';
+import ShellUi from './ShellUi';
+import RepairCatalogEnhancements from './RepairCatalogEnhancements';
+import GlobalUiEnhancements from './GlobalUiEnhancements';
+import AdminQuickActionsEnhancements from './AdminQuickActionsEnhancements';
+import RepairCreateUiEnhancements from './RepairCreateUiEnhancements';
+import AdminModelGroupsEnhancements from './AdminModelGroupsEnhancements';
+import AdminAssetUploadEnhancements from './AdminAssetUploadEnhancements';
+import GlobalFormEnhancements from './GlobalFormEnhancements';
+import ProductQtyEnhancements from './ProductQtyEnhancements';
+import AddToCartEnhancements from './AddToCartEnhancements';
+import GlobalCopyActionsEnhancements from './GlobalCopyActionsEnhancements';
+import AdminOrdersStatusEnhancements from './AdminOrdersStatusEnhancements';
 
 export function initReactIslands(): void {
   const helpNode = document.querySelector<HTMLElement>('[data-react-help-island]');
@@ -142,5 +161,126 @@ export function initReactIslands(): void {
         rootSelector={node.dataset.rootSelector || 'form[action*="warranty-incidents"]'}
       />
     );
+  });
+
+  const pricingModeNodes = document.querySelectorAll<HTMLElement>('[data-react-pricing-rule-create-mode]');
+  pricingModeNodes.forEach((node, index) => {
+    createRoot(node).render(
+      <PricingRuleCreateMode
+        selector={node.dataset.selector || '[data-pricing-create-form]'}
+      />
+    );
+  });
+
+  const orderShowNodes = document.querySelectorAll<HTMLElement>('[data-react-order-show-whatsapp-log]');
+  orderShowNodes.forEach((node, index) => {
+    createRoot(node).render(
+      <OrderShowWhatsappLog
+        rootSelector={node.dataset.rootSelector || '#order_whatsapp'}
+      />
+    );
+  });
+
+  const repairShowNodes = document.querySelectorAll<HTMLElement>('[data-react-repair-show-whatsapp-log]');
+  repairShowNodes.forEach((node, index) => {
+    createRoot(node).render(
+      <RepairShowWhatsappLog
+        rootSelector={node.dataset.rootSelector || 'body'}
+        csrfToken={node.dataset.csrfToken || ''}
+      />
+    );
+  });
+
+  const autoPrintNodes = document.querySelectorAll<HTMLElement>('[data-react-auto-print]');
+  autoPrintNodes.forEach((node, index) => {
+    const enabled = (node.dataset.enabled || '0') === '1';
+    const delayMs = Number(node.dataset.delayMs || '120');
+
+    createRoot(node).render(
+      <AutoPrintOnLoad enabled={enabled} delayMs={Number.isFinite(delayMs) ? delayMs : 120} />
+    );
+  });
+
+  const productLabelNodes = document.querySelectorAll<HTMLElement>('[data-react-product-label-barcode]');
+  productLabelNodes.forEach((node, index) => {
+    createRoot(node).render(
+      <ProductLabelBarcode
+        rootSelector={node.dataset.rootSelector || '[data-react-product-label-barcode]'}
+      />
+    );
+  });
+
+  const storeSearchNodes = document.querySelectorAll<HTMLElement>('[data-react-store-search-suggestions]');
+  storeSearchNodes.forEach((node, index) => {
+    createRoot(node).render(
+      <StoreSearchSuggestions
+        rootSelector={node.dataset.rootSelector || '[data-store-search]'}
+      />
+    );
+  });
+
+  const cartCheckoutNodes = document.querySelectorAll<HTMLElement>('[data-react-cart-checkout-enhancements]');
+  cartCheckoutNodes.forEach((node, index) => {
+    createRoot(node).render(<CartCheckoutEnhancements />);
+  });
+
+  const shellUiNodes = document.querySelectorAll<HTMLElement>('[data-react-shell-ui]');
+  shellUiNodes.forEach((node, index) => {
+    createRoot(node).render(<ShellUi />);
+  });
+
+  const repairCatalogNodes = document.querySelectorAll<HTMLElement>('[data-react-repair-catalog-enhancements]');
+  repairCatalogNodes.forEach((node, index) => {
+    createRoot(node).render(<RepairCatalogEnhancements />);
+  });
+
+  const globalUiNodes = document.querySelectorAll<HTMLElement>('[data-react-global-ui-enhancements]');
+  globalUiNodes.forEach((node, index) => {
+    createRoot(node).render(<GlobalUiEnhancements />);
+  });
+
+  const adminQuickActionsNodes = document.querySelectorAll<HTMLElement>('[data-react-admin-quick-actions-enhancements]');
+  adminQuickActionsNodes.forEach((node, index) => {
+    createRoot(node).render(<AdminQuickActionsEnhancements />);
+  });
+
+  const repairCreateUiNodes = document.querySelectorAll<HTMLElement>('[data-react-repair-create-ui-enhancements]');
+  repairCreateUiNodes.forEach((node, index) => {
+    createRoot(node).render(<RepairCreateUiEnhancements />);
+  });
+
+  const modelGroupsNodes = document.querySelectorAll<HTMLElement>('[data-react-admin-model-groups-enhancements]');
+  modelGroupsNodes.forEach((node, index) => {
+    createRoot(node).render(<AdminModelGroupsEnhancements />);
+  });
+
+  const assetUploadNodes = document.querySelectorAll<HTMLElement>('[data-react-admin-asset-upload-enhancements]');
+  assetUploadNodes.forEach((node, index) => {
+    createRoot(node).render(<AdminAssetUploadEnhancements />);
+  });
+
+  const globalFormNodes = document.querySelectorAll<HTMLElement>('[data-react-global-form-enhancements]');
+  globalFormNodes.forEach((node, index) => {
+    createRoot(node).render(<GlobalFormEnhancements />);
+  });
+
+  const qtyNodes = document.querySelectorAll<HTMLElement>('[data-react-product-qty-enhancements]');
+  qtyNodes.forEach((node, index) => {
+    createRoot(node).render(<ProductQtyEnhancements />);
+  });
+
+  const addToCartNodes = document.querySelectorAll<HTMLElement>('[data-react-add-to-cart-enhancements]');
+  addToCartNodes.forEach((node, index) => {
+    createRoot(node).render(<AddToCartEnhancements />);
+  });
+
+  const copyNodes = document.querySelectorAll<HTMLElement>('[data-react-copy-actions-enhancements]');
+  copyNodes.forEach((node, index) => {
+    createRoot(node).render(<GlobalCopyActionsEnhancements />);
+  });
+
+  const adminOrdersNodes = document.querySelectorAll<HTMLElement>('[data-react-admin-orders-status-enhancements]');
+  adminOrdersNodes.forEach((node, index) => {
+    createRoot(node).render(<AdminOrdersStatusEnhancements />);
   });
 }

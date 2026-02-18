@@ -26,11 +26,13 @@ test('store category visibility follows admin active toggle', async ({ page }) =
   await page.goto('/admin/productos/crear');
   await expect(page).toHaveURL(/\/admin\/productos\/crear$/);
   await page.locator('input[name="name"]').fill(productName);
+  await page.locator('input[name="sku"]').fill(`E2E-STORE-${suffix}`);
   await page.locator('select[name="category_id"]').selectOption({ label: categoryName });
+  await page.locator('input[name="cost_price"]').fill('12000');
   await page.locator('input[name="price"]').fill('15999');
   await page.locator('input[name="stock"]').fill('3');
   await page.getByRole('button', { name: 'Crear producto' }).click();
-  await expect(page).toHaveURL(/\/admin\/productos/);
+  await expect(page).toHaveURL(/\/admin\/productos$/);
 
   await page.goto('/tienda');
   await expect(page.locator('a.nav-pill', { hasText: categoryName })).toBeVisible();

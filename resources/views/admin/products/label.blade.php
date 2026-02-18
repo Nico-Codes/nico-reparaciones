@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Etiqueta producto #{{ $product->id }}</title>
+  @include('layouts.partials.standalone_vite_assets')
   <style>
     body { font-family: Arial, Helvetica, sans-serif; margin: 20px; color: #111827; }
     .sheet { max-width: 420px; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; }
@@ -37,24 +38,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-  <script>
-    (function () {
-      var value = @json($barcodeValue);
-      var el = document.getElementById('product-barcode');
-      if (!value || !el || typeof JsBarcode === 'undefined') return;
-
-      try {
-        JsBarcode(el, value, {
-          format: 'CODE128',
-          displayValue: false,
-          height: 64,
-          width: 1.7,
-          margin: 0
-        });
-      } catch (e) {
-        el.outerHTML = '<div style="font-size:12px;color:#6b7280;">No se pudo generar el codigo para este valor.</div>';
-      }
-    })();
-  </script>
+  <div data-react-product-label-barcode data-root-selector="[data-react-product-label-barcode]" data-barcode-value="{{ $barcodeValue }}"></div>
 </body>
 </html>

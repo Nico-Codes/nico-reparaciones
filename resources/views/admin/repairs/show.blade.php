@@ -800,66 +800,7 @@
   </div>
 </div>
 
-<script>
-(function () {
-  const toast = document.getElementById('waToast');
-  function showToast(text, isError) {
-    if (!toast) return;
-    toast.textContent = text || 'Listo.';
-    toast.classList.toggle('border-emerald-200', !isError);
-    toast.classList.toggle('bg-emerald-50', !isError);
-    toast.classList.toggle('text-emerald-900', !isError);
-
-    toast.classList.toggle('border-rose-200', !!isError);
-    toast.classList.toggle('bg-rose-50', !!isError);
-    toast.classList.toggle('text-rose-900', !!isError);
-
-    toast.classList.remove('hidden');
-    requestAnimationFrame(() => {
-      toast.classList.remove('opacity-0', 'translate-y-[-6px]');
-      toast.classList.add('opacity-100', 'translate-y-0');
-    });
-
-    clearTimeout(window.__waToastT);
-    window.__waToastT = setTimeout(() => {
-      toast.classList.add('opacity-0', 'translate-y-[-6px]');
-      toast.classList.remove('opacity-100', 'translate-y-0');
-      setTimeout(() => toast.classList.add('hidden'), 200);
-    }, 2600);
-  }
-
-  document.addEventListener('click', async (e) => {
-    const a = e.target.closest('[data-wa-open]');
-    if (!a) return;
-    e.preventDefault();
-
-    const url = a.getAttribute('href');
-    if (url) window.open(url, '_blank', 'noopener');
-
-    const ajaxUrl = a.dataset.waAjax;
-    if (!ajaxUrl) return;
-
-    try {
-      const res = await fetch(ajaxUrl, {
-        method: 'POST',
-        headers: {
-          'X-CSRF-TOKEN': '{{ csrf_token() }}',
-          'Accept': 'application/json'
-        }
-      });
-
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || data.ok !== true) {
-        showToast('No se pudo registrar el envío.', true);
-        return;
-      }
-
-      showToast(data.created ? 'Envío registrado.' : 'Ya estaba registrado recientemente.');
-    } catch (err) {
-      showToast('No se pudo registrar el envío.', true);
-    }
-  });
-})();
-</script>
+<div data-react-repair-show-whatsapp-log data-root-selector="body" data-csrf-token="{{ csrf_token() }}"></div>
+<div data-react-repair-catalog-enhancements></div>
 @endsection
 

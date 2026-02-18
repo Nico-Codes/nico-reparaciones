@@ -463,14 +463,16 @@ test('admin management routes handle create/update/toggle flows', async ({ page 
   const productName = `E2E Bulk Delete ${stamp}`;
   await page.goto('/admin/productos/crear');
   await page.locator('input[name="name"]').fill(productName);
+  await page.locator('input[name="sku"]').fill(`E2E-BULK-${stamp}`);
   const productCategoryId = await firstNonEmptyOptionValue(page.locator('select[name="category_id"]'));
   expect(productCategoryId).not.toBe('');
   await page.locator('select[name="category_id"]').selectOption(productCategoryId);
+  await page.locator('input[name="cost_price"]').fill('9000');
   await page.locator('input[name="price"]').fill('12345');
   await page.locator('input[name="stock"]').fill('4');
   await page.locator('textarea[name="description"]').fill('Producto E2E para cubrir bulk y delete');
   await page.getByRole('button', { name: 'Crear producto' }).click();
-  await expect(page).toHaveURL(/\/admin\/productos/);
+  await expect(page).toHaveURL(/\/admin\/productos$/);
 
   await page.goto(`/admin/productos?q=${encodeURIComponent(productName)}`);
   const productRow = page.locator('table tbody tr', { hasText: productName }).first();

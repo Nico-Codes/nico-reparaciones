@@ -305,4 +305,5 @@
     {{ $products->links() }}
   </div>
 </div>
+<div data-react-admin-quick-actions-enhancements></div>
 @endsection

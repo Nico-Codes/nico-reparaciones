@@ -159,4 +159,5 @@
     </div>
   @endif
 </div>
+<div data-react-admin-model-groups-enhancements></div>
 @endsection

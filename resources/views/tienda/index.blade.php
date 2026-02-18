@@ -308,4 +308,5 @@
     @endif
   </div>
 </div>
+<div data-react-store-search-suggestions data-root-selector="[data-store-search]"></div>
 @endsection

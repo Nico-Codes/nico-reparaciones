@@ -29,6 +29,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Pedido #{{ $order->id }} — Imprimir</title>
+  @include('layouts.partials.standalone_vite_assets')
   <style>
     :root { --border:#e4e4e7; --muted:#71717a; }
     *{ box-sizing:border-box; }
@@ -151,12 +152,6 @@
       Generado desde Admin — {{ config('app.name') }}
     </div>
   </div>
+  <div data-react-auto-print data-enabled="{{ $autoprint ? '1' : '0' }}" data-delay-ms="120"></div>
 </body>
-@if($autoprint)
-  <script>
-    window.addEventListener('load', () => {
-      window.print();
-    });
-  </script>
-@endif
 </html>
