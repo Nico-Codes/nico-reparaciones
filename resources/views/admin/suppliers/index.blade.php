@@ -70,8 +70,18 @@
                 draggable="true"
                 data-supplier-item
                 data-id="{{ $s->id }}">
-              <div class="text-sm font-semibold text-zinc-900">{{ $s->name }}</div>
-              <div class="text-xs text-zinc-500">Prioridad #{{ (int)($s->search_priority ?? 100) }}</div>
+              <div>
+                <div class="text-sm font-semibold text-zinc-900">{{ $s->name }}</div>
+                <div class="text-xs text-zinc-500" data-supplier-priority-label>Prioridad #{{ $loop->iteration }}</div>
+              </div>
+              <div class="flex items-center gap-1">
+                <button type="button" class="btn-ghost btn-sm h-8 w-8 p-0 justify-center" data-move="up" aria-label="Subir prioridad" title="Subir prioridad">
+                  <span aria-hidden="true">&#8593;</span>
+                </button>
+                <button type="button" class="btn-ghost btn-sm h-8 w-8 p-0 justify-center" data-move="down" aria-label="Bajar prioridad" title="Bajar prioridad">
+                  <span aria-hidden="true">&#8595;</span>
+                </button>
+              </div>
             </li>
           @endforeach
         </ul>
@@ -277,8 +287,6 @@
     </div>
   </div>
 </div>
-@endsection
-
 <script>
 (() => {
   const form = document.querySelector('[data-supplier-reorder-form]');
@@ -291,8 +299,16 @@
 
   const items = () => Array.from(list.querySelectorAll('[data-supplier-item]'));
   const refreshHidden = () => {
-    const ids = items().map((el) => Number(el.dataset.id || 0)).filter((id) => id > 0);
+    const allItems = items();
+    const ids = allItems.map((el) => Number(el.dataset.id || 0)).filter((id) => id > 0);
     hidden.value = JSON.stringify(ids);
+
+    allItems.forEach((el, index) => {
+      const label = el.querySelector('[data-supplier-priority-label]');
+      if (label) {
+        label.textContent = `Prioridad #${index + 1}`;
+      }
+    });
   };
 
   list.addEventListener('dragstart', (e) => {
@@ -300,6 +316,10 @@
     if (!target) return;
     dragEl = target;
     target.classList.add('opacity-50');
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', String(target.dataset.id || ''));
+    }
   });
 
   list.addEventListener('dragend', (e) => {
@@ -312,7 +332,15 @@
   list.addEventListener('dragover', (e) => {
     e.preventDefault();
     const target = e.target.closest('[data-supplier-item]');
-    if (!target || !dragEl || target === dragEl) return;
+    if (!target || target === dragEl) return;
+
+    if (!dragEl && e.dataTransfer) {
+      const draggedId = Number(e.dataTransfer.getData('text/plain') || 0);
+      if (draggedId > 0) {
+        dragEl = items().find((el) => Number(el.dataset.id || 0) === draggedId) || null;
+      }
+    }
+    if (!dragEl) return;
 
     const rect = target.getBoundingClientRect();
     const after = e.clientY > rect.top + rect.height / 2;
@@ -323,6 +351,22 @@
     }
   });
 
+  list.addEventListener('click', (e) => {
+    const button = e.target.closest('button[data-move]');
+    if (!button) return;
+    const row = button.closest('[data-supplier-item]');
+    if (!row) return;
+
+    if (button.dataset.move === 'up') {
+      const prev = row.previousElementSibling;
+      if (prev) prev.before(row);
+    } else if (button.dataset.move === 'down') {
+      const next = row.nextElementSibling;
+      if (next) next.after(row);
+    }
+    refreshHidden();
+  });
+
   form.addEventListener('submit', () => {
     refreshHidden();
   });
@@ -330,3 +374,4 @@
   refreshHidden();
 })();
 </script>
+@endsection
