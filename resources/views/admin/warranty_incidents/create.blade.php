@@ -127,7 +127,7 @@
           <input id="wi_recovered" name="recovered_amount" class="h-11" inputmode="numeric" value="{{ old('recovered_amount', 0) }}">
         </div>
         <div class="sm:col-span-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3">
-          <div class="text-xs font-black uppercase text-rose-700">Perdida neta estimada</div>
+          <div id="wi_loss_summary" class="text-xs font-black uppercase text-rose-700">Perdida neta estimada</div>
           <div id="wi_loss_preview" class="mt-1 text-2xl font-black text-rose-700">$ 0</div>
         </div>
       </div>
@@ -149,115 +149,5 @@
   </form>
 </div>
 
-<script>
-  (() => {
-    const qty = document.getElementById('wi_qty');
-    const unit = document.getElementById('wi_unit_cost');
-    const extra = document.getElementById('wi_extra_cost');
-    const recovered = document.getElementById('wi_recovered');
-    const preview = document.getElementById('wi_loss_preview');
-    const costOriginInput = document.getElementById('wi_cost_origin');
-    const costOriginBadge = document.getElementById('wi_cost_origin_badge');
-    const sourceType = document.getElementById('wi_source_type');
-    const repairSelect = document.getElementById('wi_repair_id');
-    const productSelect = document.getElementById('wi_product_id');
-    const supplierSelect = document.getElementById('wi_supplier_id');
-
-    const toInt = (el) => {
-      const n = parseInt(String(el?.value ?? '').trim(), 10);
-      return Number.isFinite(n) && n >= 0 ? n : 0;
-    };
-
-    const money = (value) => '$ ' + new Intl.NumberFormat('es-AR').format(value);
-    const currentUnit = () => toInt(unit);
-    const setCostOrigin = (origin) => {
-      if (!costOriginBadge) return;
-      const key = String(origin || 'manual').toLowerCase();
-      if (costOriginInput) {
-        costOriginInput.value = key;
-      }
-      const label = key === 'repair'
-        ? 'Origen costo: Reparación'
-        : (key === 'product' ? 'Origen costo: Producto' : 'Origen costo: Manual');
-      costOriginBadge.textContent = label;
-      costOriginBadge.className = key === 'repair'
-        ? 'badge-sky'
-        : (key === 'product' ? 'badge-emerald' : 'badge-zinc');
-    };
-    const setUnitIfResolved = (value) => {
-      const resolved = parseInt(String(value || '').trim(), 10);
-      if (!Number.isFinite(resolved) || resolved <= 0) return;
-      unit.value = String(resolved);
-    };
-
-    const resolveAutoUnitCost = () => {
-      const source = String(sourceType?.value || '');
-      if (source === 'repair') {
-        const option = repairSelect?.options?.[repairSelect.selectedIndex];
-        setUnitIfResolved(option?.dataset?.unitCost);
-        setCostOrigin('repair');
-        return;
-      }
-
-      if (source === 'product') {
-        const option = productSelect?.options?.[productSelect.selectedIndex];
-        setUnitIfResolved(option?.dataset?.unitCost);
-        setCostOrigin('product');
-        return;
-      }
-
-      if (currentUnit() <= 0) {
-        const productOption = productSelect?.options?.[productSelect.selectedIndex];
-        const repairOption = repairSelect?.options?.[repairSelect.selectedIndex];
-        setUnitIfResolved(productOption?.dataset?.unitCost || repairOption?.dataset?.unitCost);
-      }
-      setCostOrigin('manual');
-    };
-
-    const render = () => {
-      const total = (toInt(qty) * toInt(unit)) + toInt(extra) - toInt(recovered);
-      preview.textContent = money(total);
-      preview.classList.toggle('text-emerald-700', total <= 0);
-      preview.classList.toggle('text-rose-700', total > 0);
-    };
-
-    [qty, extra, recovered].forEach((el) => el?.addEventListener('input', render));
-    unit?.addEventListener('input', () => {
-      setCostOrigin('manual');
-      render();
-    });
-    sourceType?.addEventListener('change', () => {
-      resolveAutoUnitCost();
-      render();
-    });
-    repairSelect?.addEventListener('change', () => {
-      const option = repairSelect.options[repairSelect.selectedIndex];
-      const supplierId = String(option?.dataset?.supplierId || '').trim();
-      if (supplierSelect && supplierId !== '' && supplierId !== '0' && supplierSelect.value === '') {
-        supplierSelect.value = supplierId;
-      }
-      if (String(sourceType?.value || '') === 'repair') {
-        setUnitIfResolved(option?.dataset?.unitCost);
-        setCostOrigin('repair');
-        render();
-      }
-    });
-
-    productSelect?.addEventListener('change', () => {
-      const option = productSelect.options[productSelect.selectedIndex];
-      const supplierId = String(option?.dataset?.supplierId || '').trim();
-      if (supplierSelect && supplierId !== '' && supplierId !== '0' && supplierSelect.value === '') {
-        supplierSelect.value = supplierId;
-      }
-      if (String(sourceType?.value || '') === 'product') {
-        setUnitIfResolved(option?.dataset?.unitCost);
-        setCostOrigin('product');
-        render();
-      }
-    });
-    setCostOrigin(costOriginInput?.value || 'manual');
-    resolveAutoUnitCost();
-    render();
-  })();
-</script>
+<div data-react-warranty-incident-create data-root-selector=".mx-auto.w-full.max-w-4xl.space-y-5"></div>
 @endsection

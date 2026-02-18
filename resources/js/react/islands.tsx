@@ -7,6 +7,8 @@ import ProductPricingSimulator from './ProductPricingSimulator';
 import ProductFormEnhancements from './ProductFormEnhancements';
 import RepairCreateAssistant from './RepairCreateAssistant';
 import RepairPartsSearch from './RepairPartsSearch';
+import SupplierReorder from './SupplierReorder';
+import WarrantyIncidentCreateEnhancements from './WarrantyIncidentCreateEnhancements';
 
 export function initReactIslands(): void {
   const helpNode = document.querySelector<HTMLElement>('[data-react-help-island]');
@@ -120,6 +122,24 @@ export function initReactIslands(): void {
     createRoot(node).render(
       <RepairPartsSearch
         rootSelector={node.dataset.rootSelector || '#repair_parts_search'}
+      />
+    );
+  });
+
+  const supplierReorderNodes = document.querySelectorAll<HTMLElement>('[data-react-supplier-reorder]');
+  supplierReorderNodes.forEach((node, index) => {
+    createRoot(node).render(
+      <SupplierReorder
+        formSelector={node.dataset.formSelector || '[data-supplier-reorder-form]'}
+      />
+    );
+  });
+
+  const warrantyNodes = document.querySelectorAll<HTMLElement>('[data-react-warranty-incident-create]');
+  warrantyNodes.forEach((node, index) => {
+    createRoot(node).render(
+      <WarrantyIncidentCreateEnhancements
+        rootSelector={node.dataset.rootSelector || 'form[action*="warranty-incidents"]'}
       />
     );
   });
