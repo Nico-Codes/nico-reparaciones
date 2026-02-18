@@ -206,6 +206,7 @@ goto :end_ok
 echo.
 echo [LOCAL READY] Validando entorno local...
 call :resolve_php || exit /b 1
+where npm >nul 2>&1 || (echo [ERROR] npm no encontrado. Instala Node.js LTS. & exit /b 1)
 
 echo.
 echo [1/5] Limpiando cache de configuracion...
@@ -225,7 +226,11 @@ echo [4/5] Probando mail async y procesando cola...
 "%PHP_EXE%" artisan queue:work --once --queue=mail --stop-when-empty || exit /b 1
 
 echo.
-echo [5/5] Ejecutando tests criticos...
+echo [5/6] Verificando TypeScript/React frontend...
+call npm run typecheck || exit /b 1
+
+echo.
+echo [6/6] Ejecutando tests criticos...
 "%PHP_EXE%" artisan test --filter="AuthEmailFlowsTest|OrderConfirmationMailTest|AdminSettingsSmtpTest|OpsMailTestCommandTest|OpsHealthCheckCommandTest" || exit /b 1
 
 echo.
@@ -264,6 +269,7 @@ exit /b 0
 echo.
 echo [PROD PREFLIGHT] Ejecutando checks estrictos...
 call :resolve_php || exit /b 1
+where npm >nul 2>&1 || (echo [ERROR] npm no encontrado. Instala Node.js LTS. & exit /b 1)
 
 echo.
 echo [1/5] Health check estricto (modo produccion)...
@@ -282,7 +288,11 @@ echo [4/5] Cacheando vistas...
 "%PHP_EXE%" artisan view:cache || exit /b 1
 
 echo.
-echo [5/5] Health check estricto final (modo produccion)...
+echo [5/6] Compilando frontend (Vite build)...
+call npm run build || exit /b 1
+
+echo.
+echo [6/6] Health check estricto final (modo produccion)...
 "%PHP_EXE%" artisan ops:health-check --strict --assume-production || exit /b 1
 
 echo.
@@ -546,4 +556,3 @@ exit /b 0
 echo.
 echo [ERROR] El script termino con errores.
 exit /b 1
-

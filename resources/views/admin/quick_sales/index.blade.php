@@ -38,20 +38,12 @@
             <div class="text-xs text-zinc-500">Puedes escanear o escribir SKU/barcode y presionar Enter.</div>
           </div>
         </div>
-        <div class="card-body">
-          <form id="quickSaleScanForm" method="POST" action="{{ route('admin.quick_sales.add') }}" class="grid gap-2 sm:grid-cols-[1fr_140px_auto] sm:items-end">
-            @csrf
-            <div class="grid gap-1">
-              <label>Codigo (SKU o barcode)</label>
-              <input id="quickSaleCodeInput" name="code" class="h-11" placeholder="Ej: CAB-USB-C-001 o 7791234567890" autofocus>
-            </div>
-            <div class="grid gap-1">
-              <label>Cantidad</label>
-              <input id="quickSaleQtyInput" type="number" min="1" max="999" name="quantity" value="1" class="h-11">
-            </div>
-            <button id="quickSaleAddBtn" class="btn-primary h-11 w-full justify-center sm:w-auto" type="submit">Agregar</button>
-          </form>
-          <div id="quickSaleScanStatus" class="mt-2 hidden rounded-xl border px-3 py-2 text-sm"></div>
+        <div
+          data-react-quick-sale-scan
+          data-add-url="{{ route('admin.quick_sales.add') }}"
+          data-ticket-url="{{ route('admin.quick_sales.ticket') }}"
+          data-ticket-container-id="quickSaleTicketContainer"
+          data-csrf="{{ csrf_token() }}">
         </div>
       </div>
 
@@ -101,101 +93,4 @@
   </div>
 </div>
 
-<script>
-  (() => {
-    const form = document.getElementById('quickSaleScanForm');
-    const codeInput = document.getElementById('quickSaleCodeInput');
-    const qtyInput = document.getElementById('quickSaleQtyInput');
-    const addBtn = document.getElementById('quickSaleAddBtn');
-    const status = document.getElementById('quickSaleScanStatus');
-    const ticketContainer = document.getElementById('quickSaleTicketContainer');
-    if (!form || !codeInput || !qtyInput || !addBtn || !status || !ticketContainer) return;
-
-    const ticketUrl = @json(route('admin.quick_sales.ticket'));
-
-    const beep = () => {
-      try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.type = 'sine';
-        osc.frequency.value = 880;
-        gain.gain.value = 0.04;
-        osc.start();
-        setTimeout(() => {
-          osc.stop();
-          ctx.close();
-        }, 80);
-      } catch (_) {}
-    };
-
-    const flash = (ok, message) => {
-      status.className = ok
-        ? 'mt-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800'
-        : 'mt-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800';
-      status.textContent = message;
-      status.classList.remove('hidden');
-    };
-
-    const refreshTicket = async () => {
-      const response = await fetch(ticketUrl, {
-        headers: { 'X-Requested-With': 'XMLHttpRequest' },
-        credentials: 'same-origin',
-      });
-      if (!response.ok) return;
-      const html = await response.text();
-      ticketContainer.innerHTML = html;
-    };
-
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      const code = String(codeInput.value || '').trim();
-      if (code === '') {
-        flash(false, 'Ingresa un codigo para escanear o agregar.');
-        codeInput.focus();
-        return;
-      }
-
-      addBtn.disabled = true;
-      addBtn.setAttribute('aria-busy', 'true');
-
-      try {
-        const payload = new FormData(form);
-        const response = await fetch(form.action, {
-          method: 'POST',
-          headers: {
-            'Accept': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-          },
-          body: payload,
-          credentials: 'same-origin',
-        });
-
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok || !data.ok) {
-          const err = data.message || 'No se pudo agregar el producto.';
-          flash(false, err);
-          codeInput.focus();
-          codeInput.select();
-          return;
-        }
-
-        await refreshTicket();
-        flash(true, data.message || 'Producto agregado.');
-        beep();
-        codeInput.value = '';
-        qtyInput.value = '1';
-        codeInput.focus();
-      } catch (_) {
-        flash(false, 'Error de red al agregar el producto.');
-      } finally {
-        addBtn.disabled = false;
-        addBtn.removeAttribute('aria-busy');
-      }
-    });
-  })();
-</script>
 @endsection

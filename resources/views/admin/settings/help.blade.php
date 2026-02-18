@@ -154,64 +154,17 @@
       <div id="helpAdminEmptySearch" class="hidden text-sm text-zinc-500">No hay items que coincidan con la busqueda.</div>
     </div>
   </div>
+
+  <div
+    data-react-admin-settings-help
+    data-message-input-id="helpWhatsappMessageInput"
+    data-message-counter-id="helpWhatsappMessageCounter"
+    data-message-min-alert-id="helpWhatsappMessageMinAlert"
+    data-message-submit-id="helpWhatsappMessageSubmitBtn"
+    data-search-input-id="helpAdminSearchInput"
+    data-visible-count-id="helpAdminVisibleCount"
+    data-empty-search-id="helpAdminEmptySearch"
+    data-item-selector="[data-help-admin-item]"
+  ></div>
 </div>
-
-<script>
-(() => {
-  const input = document.getElementById('helpWhatsappMessageInput');
-  const counter = document.getElementById('helpWhatsappMessageCounter');
-  const minAlert = document.getElementById('helpWhatsappMessageMinAlert');
-  const submitBtn = document.getElementById('helpWhatsappMessageSubmitBtn');
-  if (!input || !counter || !minAlert || !submitBtn) return;
-
-  const limit = 500;
-  const minLen = 10;
-  const update = () => {
-    const used = String(input.value || '').trim().length;
-    counter.textContent = `${used} / ${limit}`;
-    counter.className = used >= limit
-      ? 'mt-1 text-xs font-bold text-rose-700'
-      : 'mt-1 text-xs text-zinc-500';
-    minAlert.classList.toggle('hidden', used === 0 || used >= minLen);
-    submitBtn.disabled = used < minLen;
-    submitBtn.setAttribute('aria-disabled', used < minLen ? 'true' : 'false');
-    submitBtn.classList.toggle('opacity-60', used < minLen);
-    submitBtn.classList.toggle('cursor-not-allowed', used < minLen);
-  };
-
-  input.addEventListener('input', update);
-  update();
-})();
-
-(() => {
-  const input = document.getElementById('helpAdminSearchInput');
-  const count = document.getElementById('helpAdminVisibleCount');
-  const empty = document.getElementById('helpAdminEmptySearch');
-  const items = Array.from(document.querySelectorAll('[data-help-admin-item]'));
-  if (!input || !count || !empty || items.length === 0) return;
-
-  const normalize = (value) => String(value || '')
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .trim();
-
-  const update = () => {
-    const q = normalize(input.value);
-    let visible = 0;
-
-    items.forEach((item) => {
-      const source = normalize(item.getAttribute('data-help-admin-search'));
-      const match = q === '' || source.includes(q);
-      item.classList.toggle('hidden', !match);
-      if (match) visible++;
-    });
-
-    count.textContent = String(visible);
-    empty.classList.toggle('hidden', visible > 0);
-  };
-
-  input.addEventListener('input', update);
-})();
-</script>
 @endsection

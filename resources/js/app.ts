@@ -16,6 +16,7 @@ import { initRepairDeviceCatalog } from './modules/repairDeviceCatalog';
 import { initAdminCategoriesQuickToggle } from './modules/adminCategoriesQuickToggle';
 import { initStoreSearchSuggestions } from './modules/storeSearchSuggestions';
 import { initCustomSelects } from './modules/customSelects';
+import { initReactIslands } from './react/islands';
 
 declare global {
   interface Window {
@@ -581,6 +582,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initAdminAssetUploadDropzones();
   initStoreSearchSuggestions();
   initCustomSelects();
+  initReactIslands();
 });
 
 
