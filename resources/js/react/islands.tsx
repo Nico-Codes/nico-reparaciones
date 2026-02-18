@@ -16,7 +16,6 @@ import AutoPrintOnLoad from './AutoPrintOnLoad';
 import ProductLabelBarcode from './ProductLabelBarcode';
 import StoreSearchSuggestions from './StoreSearchSuggestions';
 import CartCheckoutEnhancements from './CartCheckoutEnhancements';
-import ShellUi from './ShellUi';
 import RepairCatalogEnhancements from './RepairCatalogEnhancements';
 import GlobalUiEnhancements from './GlobalUiEnhancements';
 import AdminQuickActionsEnhancements from './AdminQuickActionsEnhancements';
@@ -236,11 +235,6 @@ export function initReactIslands(): void {
   const cartCheckoutNodes = document.querySelectorAll<HTMLElement>('[data-react-cart-checkout-enhancements]');
   cartCheckoutNodes.forEach((node, index) => {
     createRoot(node).render(<CartCheckoutEnhancements />);
-  });
-
-  const shellUiNodes = document.querySelectorAll<HTMLElement>('[data-react-shell-ui]');
-  shellUiNodes.forEach((node, index) => {
-    createRoot(node).render(<ShellUi />);
   });
 
   const repairCatalogNodes = document.querySelectorAll<HTMLElement>('[data-react-repair-catalog-enhancements]');
