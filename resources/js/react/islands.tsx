@@ -28,6 +28,7 @@ import ProductQtyEnhancements from './ProductQtyEnhancements';
 import AddToCartEnhancements from './AddToCartEnhancements';
 import GlobalCopyActionsEnhancements from './GlobalCopyActionsEnhancements';
 import AdminOrdersStatusEnhancements from './AdminOrdersStatusEnhancements';
+import StoreVisualEnhancements from './StoreVisualEnhancements';
 
 export function initReactIslands(): void {
   const helpNode = document.querySelector<HTMLElement>('[data-react-help-island]');
@@ -282,5 +283,10 @@ export function initReactIslands(): void {
   const adminOrdersNodes = document.querySelectorAll<HTMLElement>('[data-react-admin-orders-status-enhancements]');
   adminOrdersNodes.forEach((node, index) => {
     createRoot(node).render(<AdminOrdersStatusEnhancements />);
+  });
+
+  const storeVisualNodes = document.querySelectorAll<HTMLElement>('[data-react-store-visual-enhancements]');
+  storeVisualNodes.forEach((node, index) => {
+    createRoot(node).render(<StoreVisualEnhancements />);
   });
 }

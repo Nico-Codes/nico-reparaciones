@@ -21,7 +21,8 @@
 @endphp
 
 @section('content')
-  <div class="page-head">
+  <div class="store-shell">
+  <div class="page-head store-hero reveal-item">
     <div>
       <div class="page-title">Carrito</div>
       <div class="page-subtitle">Revisa tus productos antes de confirmar.</div>
@@ -30,7 +31,7 @@
   </div>
 
   @if(empty($cart))
-    <div class="card">
+    <div class="card reveal-item">
       <div class="card-body">
         <div class="font-black" data-testid="empty-cart-message">Tu carrito está vacío.</div>
         <div class="muted mt-1">Agrega productos desde la tienda.</div>
@@ -59,7 +60,7 @@
             if ($qty > $maxQty) $qty = $maxQty;
           @endphp
 
-          <div class="card" data-cart-item data-item-id="{{ $item['id'] }}" data-unit-price="{{ (float) $price }}">
+          <div class="card reveal-item" data-cart-item data-item-id="{{ $item['id'] }}" data-unit-price="{{ (float) $price }}">
             <div class="card-body p-3 sm:p-4">
               <div class="flex items-start gap-3">
                 <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-zinc-100 bg-zinc-50">
@@ -152,7 +153,7 @@
       </div>
 
       <div class="order-1 lg:order-2 lg:col-span-1" data-cart-summary-wrap>
-        <div class="card h-fit overflow-hidden">
+        <div class="card h-fit overflow-hidden reveal-item">
           <div class="card-head items-start">
             <div class="min-w-0">
               <div class="font-black">Resumen</div>
@@ -196,4 +197,5 @@
       </div>
     </div>
   @endif
+  </div>
 @endsection

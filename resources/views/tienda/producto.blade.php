@@ -11,7 +11,8 @@
 @endphp
 
 @section('content')
-  <div class="mb-4 rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-600">
+  <div class="store-shell">
+  <div class="mb-4 rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-600 reveal-item">
     <a href="{{ route('store.index') }}" class="font-black">Tienda</a>
     <span class="mx-2">/</span>
     @if($cat)
@@ -22,7 +23,7 @@
   </div>
 
   <div class="grid gap-5 lg:grid-cols-2 lg:items-start">
-    <div class="card overflow-hidden">
+    <div class="card overflow-hidden reveal-item">
       <div class="aspect-square bg-zinc-50 sm:aspect-[4/3]">
         @if($product->image_url)
           <img src="{{ $product->image_url }}" alt="{{ $product->name }}" class="h-full w-full object-cover">
@@ -34,7 +35,7 @@
       </div>
     </div>
 
-    <div class="card">
+    <div class="card reveal-item">
       <div class="card-body p-4 sm:p-5">
         <div class="page-title">{{ $product->name }}</div>
 
@@ -132,5 +133,6 @@
         </div>
       </div>
     </div>
+  </div>
   </div>
 @endsection

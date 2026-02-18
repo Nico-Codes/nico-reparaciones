@@ -20,7 +20,8 @@
 @endphp
 
 @section('content')
-  <div class="page-head">
+  <div class="store-shell">
+  <div class="page-head store-hero reveal-item">
     <div>
       <div class="page-title">Checkout</div>
       <div class="page-subtitle">Confirma tu pedido para retiro en local.</div>
@@ -39,7 +40,7 @@
   @endif
 
   @guest
-    <div class="card">
+    <div class="card reveal-item">
       <div class="card-body">
         <div class="font-black">Necesitas iniciar sesion para confirmar el pedido.</div>
         <div class="muted mt-1">Asi el pedido queda asociado a tu cuenta.</div>
@@ -55,7 +56,7 @@
   @endguest
 
   @if(empty($cart))
-    <div class="card">
+    <div class="card reveal-item">
       <div class="card-body">
         <div class="font-black" data-testid="empty-cart-message">Tu carrito está vacío.</div>
         <div class="muted mt-1">Agrega productos desde la tienda para confirmar.</div>
@@ -69,7 +70,7 @@
 
   <div class="grid gap-4 lg:grid-cols-5 lg:items-start">
     <div class="order-2 lg:order-1 lg:col-span-3">
-      <div class="card">
+      <div class="card reveal-item">
         <div class="card-head items-start">
           <div class="min-w-0">
             <div class="font-black">Confirmacion</div>
@@ -182,7 +183,7 @@
     </div>
 
     <div class="order-1 lg:order-2 lg:col-span-2 lg:sticky lg:top-20 lg:self-start">
-      <div class="card overflow-hidden">
+      <div class="card overflow-hidden reveal-item">
         <button type="button"
                 class="w-full flex items-center justify-between gap-3 border-b border-zinc-100 bg-zinc-50/70 px-4 py-3.5 lg:hidden"
                 data-summary-toggle
@@ -237,5 +238,6 @@
         </div>
       </div>
     </div>
+  </div>
   </div>
 @endsection

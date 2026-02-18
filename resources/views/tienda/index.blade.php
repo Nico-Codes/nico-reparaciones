@@ -19,8 +19,8 @@
   $sortVal = (string)($filters['sort'] ?? 'relevance');
 @endphp
 
-<div id="top" class="container-page py-5 sm:py-7 md:py-8">
-  <div class="page-head">
+<div id="top" class="container-page store-shell">
+  <div class="page-head store-hero">
     <div>
       <div class="page-title">Tienda</div>
       <div class="page-subtitle">Productos con stock real para retiro en local.</div>
@@ -38,7 +38,7 @@
   </div>
 
   @if(($categories ?? collect())->count())
-    <div class="card">
+    <div class="card reveal-item">
       <div class="card-body">
         @php
           $keep = [];
@@ -64,7 +64,7 @@
     </div>
   @endif
 
-  <div class="card mt-4">
+  <div class="card mt-4 store-toolbar" data-store-toolbar>
     <div class="card-body">
       <form method="GET" action="{{ $formAction }}" class="grid gap-3 md:grid-cols-12 md:items-end">
         <div class="md:col-span-7">
@@ -122,7 +122,7 @@
   </div>
 
   @if(($featuredProducts ?? collect())->count() && $qVal === '' && $sortVal === 'relevance')
-    <div class="mt-6 card">
+    <div class="mt-6 card reveal-item">
       <div class="card-head flex items-center justify-between">
         <div class="font-black">Destacados</div>
         <a href="#productos" class="btn-ghost btn-sm">Ver todos</a>
@@ -142,7 +142,7 @@
               }
             @endphp
 
-            <div class="product-card product-card-featured">
+            <div class="product-card product-card-featured reveal-item">
               <a class="product-image" href="{{ route('store.product', $product->slug) }}">
                 @if($img)
                   <img src="{{ $img }}" alt="{{ $product->name }}">
@@ -207,7 +207,7 @@
             }
           @endphp
 
-          <div class="product-card product-card-grid">
+          <div class="product-card product-card-grid reveal-item">
             <a class="product-image" href="{{ route('store.product', $product->slug) }}">
               @if($img)
                 <img src="{{ $img }}" alt="{{ $product->name }}">
@@ -279,7 +279,7 @@
         </div>
       @endif
     @else
-      <div class="card">
+      <div class="card reveal-item">
         <div class="card-body space-y-3">
           @if($qVal !== '')
             <div class="font-black">Sin resultados</div>

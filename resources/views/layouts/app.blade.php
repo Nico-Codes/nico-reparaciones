@@ -771,6 +771,7 @@
   <div data-react-add-to-cart-enhancements></div>
   <div data-react-copy-actions-enhancements></div>
   <div data-react-admin-orders-status-enhancements></div>
+  <div data-react-store-visual-enhancements></div>
   <div data-react-global-ui-enhancements></div>
   <div data-react-shell-ui></div>
   <div data-react-cart-checkout-enhancements></div>

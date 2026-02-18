@@ -5,11 +5,22 @@
 @source "../js/**/*.js";
 
 @layer base {
+  :root {
+    --brand-500: 14 165 233;
+    --brand-600: 2 132 199;
+    --brand-700: 3 105 161;
+    --surface-1: 255 255 255;
+    --surface-2: 244 244 245;
+  }
+
   body {
     font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Apple Color Emoji", "Segoe UI Emoji";
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     @apply bg-zinc-50 text-zinc-900;
+    background-image:
+      radial-gradient(1200px 500px at 8% -10%, rgba(14, 165, 233, 0.12), transparent 55%),
+      radial-gradient(900px 420px at 95% -20%, rgba(3, 105, 161, 0.07), transparent 52%);
   }
 
   a { @apply text-zinc-900; }
@@ -203,7 +214,10 @@
   /* =========================
      Cards
   ========================== */
-  .card { @apply bg-white border border-zinc-100 rounded-2xl shadow-sm; }
+  .card {
+    @apply bg-white border border-zinc-100 rounded-2xl;
+    box-shadow: 0 8px 30px -18px rgba(15, 23, 42, 0.28);
+  }
   .card-head { @apply px-4 py-3 border-b border-zinc-100 flex items-center justify-between gap-2; }
   .card-body { @apply p-4; }
 
@@ -223,7 +237,26 @@
 
   .btn-sm { @apply px-3 py-1.5 text-xs rounded-xl; }
 
-  .btn-primary { @apply bg-sky-600 text-white hover:bg-sky-700; }
+  .btn-primary {
+    @apply text-white;
+    background-color: rgb(var(--brand-600));
+    border-color: rgb(var(--brand-600));
+    background-image: linear-gradient(180deg, rgba(var(--brand-500), 1), rgba(var(--brand-600), 1));
+    box-shadow: 0 10px 20px -12px rgba(2, 132, 199, 0.65);
+  }
+  .btn-primary:hover {
+    background-color: rgb(var(--brand-700));
+    border-color: rgb(var(--brand-700));
+    background-image: linear-gradient(180deg, rgba(var(--brand-600), 1), rgba(var(--brand-700), 1));
+  }
+  .btn-primary:disabled,
+  .btn-primary[aria-disabled="true"] {
+    @apply cursor-not-allowed;
+    background-color: rgb(161 161 170);
+    border-color: rgb(161 161 170);
+    background-image: none;
+    box-shadow: none;
+  }
   .btn-outline { @apply bg-white border-zinc-200 hover:bg-zinc-50; }
   .btn-ghost { @apply bg-transparent hover:bg-zinc-100; }
   .btn-primary:hover,
@@ -383,7 +416,17 @@
      TIENDA — Product Card UI
   ========================== */
   .product-card {
-    @apply flex flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition hover:shadow-md;
+    @apply flex flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white transition;
+    box-shadow: 0 10px 24px -20px rgba(15, 23, 42, 0.5);
+    transition-property: transform, box-shadow, border-color, opacity;
+    transition-duration: 220ms;
+    transition-timing-function: ease;
+  }
+
+  .product-card:hover {
+    transform: translateY(-2px);
+    border-color: rgb(186 230 253);
+    box-shadow: 0 14px 32px -20px rgba(14, 116, 144, 0.45);
   }
 
   .product-image {
@@ -396,6 +439,11 @@
     height: 100%;
     object-fit: cover;
     display: block;
+    transition: transform 260ms ease;
+  }
+
+  .product-card:hover .product-image img {
+    transform: scale(1.025);
   }
 
   .product-image-placeholder {
@@ -648,7 +696,10 @@
     .icon-btn,
     .btn-cart,
     .dropdown-menu,
-    .dropdown-item {
+    .dropdown-item,
+    .product-card,
+    .product-image img,
+    .reveal-item {
       transition: none !important;
       transform: none !important;
     }
@@ -656,3 +707,36 @@
 
   .nr-no-transition { transition: none !important; }
 }
+  .store-shell {
+    @apply py-5 sm:py-7 md:py-8;
+  }
+
+  .store-hero {
+    @apply rounded-3xl border border-sky-100 bg-white/90 p-4 sm:p-5;
+    box-shadow: 0 16px 36px -26px rgba(2, 132, 199, 0.45);
+  }
+
+  .store-toolbar {
+    position: sticky;
+    top: 64px;
+    z-index: 25;
+    transition: box-shadow 180ms ease, border-color 180ms ease, background-color 180ms ease;
+    backdrop-filter: blur(6px);
+  }
+
+  .store-toolbar.is-stuck {
+    border-color: rgb(186 230 253);
+    box-shadow: 0 10px 24px -20px rgba(2, 132, 199, 0.55);
+    background-color: rgba(255, 255, 255, 0.95);
+  }
+
+  .reveal-item {
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 260ms ease, transform 260ms ease;
+  }
+
+  .reveal-item.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
