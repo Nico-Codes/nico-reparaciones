@@ -29,8 +29,21 @@ import AddToCartEnhancements from './AddToCartEnhancements';
 import GlobalCopyActionsEnhancements from './GlobalCopyActionsEnhancements';
 import AdminOrdersStatusEnhancements from './AdminOrdersStatusEnhancements';
 import StoreVisualEnhancements from './StoreVisualEnhancements';
+import ShellHeader from './ShellHeader';
 
 export function initReactIslands(): void {
+  const shellHeaderNodes = document.querySelectorAll<HTMLElement>('[data-react-shell-header]');
+  shellHeaderNodes.forEach((node) => {
+    const raw = node.dataset.shell || '{}';
+    let parsed: Record<string, unknown> = {};
+    try {
+      parsed = JSON.parse(raw) as Record<string, unknown>;
+    } catch (_e) {
+      parsed = {};
+    }
+    createRoot(node).render(<ShellHeader data={parsed as any} />);
+  });
+
   const helpNode = document.querySelector<HTMLElement>('[data-react-help-island]');
   if (helpNode) {
     const title = helpNode.dataset.title || 'Accesos rapidos';

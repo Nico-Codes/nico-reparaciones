@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
@@ -128,477 +128,102 @@
     $canRunMigrationsFromWeb = app()->environment(['local', 'development'])
       || filter_var((string) env('APP_ALLOW_WEB_MIGRATE', 'false'), FILTER_VALIDATE_BOOL);
   }
+
+  $desktopLinks = [];
+  if ($has('store.index')) {
+    $desktopLinks[] = ['label' => 'Tienda', 'href' => route('store.index'), 'active' => request()->routeIs('store.index', 'store.category', 'store.product', 'home')];
+  }
+  if ($has('repairs.lookup')) {
+    $desktopLinks[] = ['label' => 'Reparacion', 'href' => route('repairs.lookup'), 'active' => request()->routeIs('repairs.lookup', 'repairs.lookup.post')];
+  }
+  if ($isAdmin && $has('admin.dashboard')) {
+    $desktopLinks[] = ['label' => 'Admin', 'href' => route('admin.dashboard'), 'active' => request()->is('admin*')];
+  }
+
+  $adminLinks = [];
+  $pushAdmin = function (string $routeName, string $label, string $icon, bool $active = false) use (&$adminLinks, $has) {
+    if (!$has($routeName)) return;
+    $adminLinks[] = ['label' => $label, 'href' => route($routeName), 'icon' => $icon, 'active' => $active];
+  };
+  $pushAdmin('admin.dashboard', 'Panel', $iconDashboard, request()->routeIs('admin.dashboard'));
+  $pushAdmin('admin.repairs.index', 'Reparaciones', $iconRepairs, request()->routeIs('admin.repairs.*'));
+  $pushAdmin('admin.orders.index', 'Pedidos', $iconOrders, request()->routeIs('admin.orders.*'));
+  $pushAdmin('admin.quick_sales.index', 'Venta rapida', $iconOrders, request()->routeIs('admin.quick_sales.*'));
+  $pushAdmin('admin.ledger.index', 'Contabilidad', $iconSettings, request()->routeIs('admin.ledger.*'));
+  $pushAdmin('admin.warranty_incidents.index', 'Garantias', $iconSettings, request()->routeIs('admin.warranty_incidents.*'));
+  $pushAdmin('admin.products.index', 'Productos', $iconStore, request()->routeIs('admin.products.*'));
+  $pushAdmin('admin.suppliers.index', 'Proveedores', $iconSettings, request()->routeIs('admin.suppliers.*'));
+  $pushAdmin('admin.calculations.index', 'Calculos', $iconSettings, request()->routeIs('admin.calculations.*') || request()->routeIs('admin.product_pricing_rules.*'));
+  $pushAdmin('admin.pricing.index', 'Precios', $iconSettings, request()->routeIs('admin.pricing.*') || request()->routeIs('admin.repairTypes.*') || request()->routeIs('admin.modelGroups.*'));
+  $pushAdmin('admin.deviceTypes.index', 'Tipos de dispositivo', $iconSettings, request()->routeIs('admin.deviceTypes.*'));
+  $pushAdmin('admin.deviceCatalog.index', 'Catalogo de dispositivos', $iconSettings, request()->routeIs('admin.deviceCatalog.*'));
+  $pushAdmin('admin.settings.index', 'Configuracion', $iconSettings, request()->routeIs('admin.settings.*'));
+  $pushAdmin('admin.settings.assets.index', 'Identidad visual', $iconSettings, request()->routeIs('admin.settings.assets.*'));
+  $pushAdmin('admin.settings.mail_templates.index', 'Plantillas de correo', $iconSettings, request()->routeIs('admin.settings.mail_templates.*'));
+  $pushAdmin('admin.two_factor.settings', 'Seguridad 2FA', $iconSettings, request()->routeIs('admin.two_factor.*'));
+  $pushAdmin('admin.users.index', 'Usuarios', $iconSettings, request()->routeIs('admin.users.*'));
+
+  $accountLinks = [];
+  if ($has('account.edit')) $accountLinks[] = ['label' => 'Mi cuenta', 'href' => route('account.edit'), 'icon' => $iconSettings];
+  if ($emailUnverified && $has('verification.notice')) $accountLinks[] = ['label' => 'Verificar correo', 'href' => route('verification.notice'), 'icon' => null, 'highlight' => 'warning'];
+  if ($has('orders.index')) $accountLinks[] = ['label' => 'Mis pedidos', 'href' => route('orders.index'), 'icon' => $iconOrders];
+  if ($has('repairs.my.index')) $accountLinks[] = ['label' => 'Mis reparaciones', 'href' => route('repairs.my.index'), 'icon' => $iconRepairs];
+  if ($has('help.index')) $accountLinks[] = ['label' => 'Ayuda', 'href' => route('help.index'), 'icon' => null];
+
+  $sidebarNavLinks = [];
+  if ($has('store.index')) $sidebarNavLinks[] = ['label' => 'Tienda', 'href' => route('store.index'), 'icon' => $iconStore, 'active' => request()->routeIs('store.index', 'store.category', 'store.product', 'home')];
+  if ($has('repairs.lookup')) $sidebarNavLinks[] = ['label' => 'Consultar reparacion', 'href' => route('repairs.lookup'), 'icon' => $iconRepairLookup, 'active' => request()->routeIs('repairs.lookup', 'repairs.lookup.post')];
+  if ($has('cart.index')) $sidebarNavLinks[] = ['label' => 'Carrito', 'href' => route('cart.index'), 'icon' => $iconCart, 'active' => request()->routeIs('cart.index')];
+
+  $sidebarAccountLinks = [];
+  if ($isAuth) {
+    if ($has('account.edit')) $sidebarAccountLinks[] = ['label' => 'Mi cuenta', 'href' => route('account.edit'), 'icon' => $iconSettings, 'active' => request()->routeIs('account.edit')];
+    if ($emailUnverified && $has('verification.notice')) $sidebarAccountLinks[] = ['label' => 'Verificar correo', 'href' => route('verification.notice'), 'icon' => null, 'active' => request()->routeIs('verification.notice'), 'highlight' => 'warning'];
+    if ($has('orders.index')) $sidebarAccountLinks[] = ['label' => 'Mis pedidos', 'href' => route('orders.index'), 'icon' => $iconOrders, 'active' => request()->routeIs('orders.*')];
+    if ($has('repairs.my.index')) $sidebarAccountLinks[] = ['label' => 'Mis reparaciones', 'href' => route('repairs.my.index'), 'icon' => $iconRepairs, 'active' => request()->routeIs('repairs.my.*')];
+    if ($has('help.index')) $sidebarAccountLinks[] = ['label' => 'Ayuda', 'href' => route('help.index'), 'icon' => null, 'active' => request()->routeIs('help.index')];
+  } else {
+    if ($has('help.index')) $sidebarAccountLinks[] = ['label' => 'Ayuda', 'href' => route('help.index'), 'icon' => null, 'active' => request()->routeIs('help.index')];
+  }
+
+  $shellHeaderData = [
+    'brandHref' => $brandHref,
+    'logoUrl' => $logoUrl,
+    'isAuth' => $isAuth,
+    'isAdmin' => $isAdmin,
+    'emailUnverified' => $emailUnverified,
+    'emailStatusText' => (string)($emailStatusText ?? ''),
+    'userName' => (string)($authUser->name ?? ''),
+    'userEmail' => (string)($authUser->email ?? ''),
+    'userInitial' => (string)\Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr((string)($authUser->name ?? 'U'), 0, 1)),
+    'cartCount' => (int)$cartCount,
+    'urls' => [
+      'cart' => $has('cart.index') ? route('cart.index') : null,
+      'login' => $has('login') ? route('login') : null,
+      'register' => $has('register') ? route('register') : null,
+      'logout' => $has('logout') ? route('logout') : null,
+      'verificationNotice' => $has('verification.notice') ? route('verification.notice') : null,
+    ],
+    'desktopLinks' => $desktopLinks,
+    'accountLinks' => $accountLinks,
+    'adminLinks' => $adminLinks,
+    'sidebarNavLinks' => $sidebarNavLinks,
+    'sidebarAccountLinks' => $sidebarAccountLinks,
+    'csrfToken' => csrf_token(),
+  ];
 @endphp
 
-<body class="min-h-screen flex flex-col">
-  <header class="sticky top-0 z-40 bg-white border-b border-zinc-200 shadow-sm md:bg-white/90 md:backdrop-blur">
-    <div class="container-page">
-      <div class="h-14 flex items-center justify-between gap-3">
-        <div class="flex items-center gap-3 min-w-0">
-          <button
-            class="icon-btn md:hidden"
-            data-toggle="sidebar"
-            aria-label="Abrir menú"
-            aria-expanded="false"
-            type="button"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-                fill="none" stroke="currentColor" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round"
-                class="w-5 h-5" aria-hidden="true">
-              <path d="M4 6h16M4 12h16M4 18h16"></path>
-            </svg>
-          </button>
-
-
-          <a href="{{ $brandHref }}" class="flex items-center gap-2 min-w-0">
-            <img src="{{ $logoUrl }}" class="h-9 w-9 object-contain" alt="NicoReparaciones">
-
-
-            <div class="leading-tight min-w-0">
-              {{-- Desktop (una linea) --}}
-              <div class="hidden sm:block font-black tracking-tight text-zinc-900 truncate">
-                Nico<span class="text-sky-600">Reparaciones</span>
-              </div>
-
-              {{-- Mobile (dos lineas) --}}
-              <div class="sm:hidden font-black tracking-tight leading-none flex flex-col gap-0">
-                <span class="text-[13px] text-zinc-900 leading-none block">Nico</span>
-                <span class="text-[13px] text-sky-600 leading-none block">Reparaciones</span>
-              </div>
-
-
-              <div class="hidden sm:block text-[11px] text-zinc-500 -mt-0.5 truncate">
-                Servicio Técnico Profesional y Tienda de Electrónica
-              </div>
-            </div>
-
-          </a>
-        </div>
-
-        <nav class="hidden md:flex items-center gap-1   rounded-full bg-zinc-100/80 p-1 ring-1 ring-zinc-200">
-          @if($has('store.index'))
-            <a href="{{ route('store.index') }}"
-              class="inline-flex items-center rounded-full px-4 py-2 text-sm font-extrabold transition
-                      {{ request()->routeIs('store.index','store.category','store.product','home')
-                          ? 'bg-white text-sky-700 shadow-sm ring-1 ring-sky-200'
-                          : 'text-zinc-700 hover:text-zinc-900 hover:bg-white/70' }}">
-              Tienda
-            </a>
-          @endif
-
-          @if($has('repairs.lookup'))
-            <a href="{{ route('repairs.lookup') }}"
-              class="inline-flex items-center rounded-full px-4 py-2 text-sm font-extrabold transition
-                      {{ request()->routeIs('repairs.lookup','repairs.lookup.post')
-                          ? 'bg-white text-sky-700 shadow-sm ring-1 ring-sky-200'
-                          : 'text-zinc-700 hover:text-zinc-900 hover:bg-white/70' }}">
-              Reparación
-            </a>
-          @endif
-
-          @if($isAdmin && $has('admin.dashboard'))
-            <a href="{{ route('admin.dashboard') }}"
-              class="inline-flex items-center rounded-full px-4 py-2 text-sm font-extrabold transition
-                      {{ request()->is('admin*')
-                          ? 'bg-white text-sky-700 shadow-sm ring-1 ring-sky-200'
-                          : 'text-zinc-700 hover:text-zinc-900 hover:bg-white/70' }}">
-              Admin
-            </a>
-          @endif
-        </nav>
-
-
-        <div class="flex items-center gap-2">
-          @if($emailUnverified && $has('verification.notice'))
-            <a
-              href="{{ route('verification.notice') }}"
-              class="hidden sm:inline-flex h-9 items-center rounded-full border border-amber-300 bg-amber-50 px-3 text-xs font-bold text-amber-800 transition hover:bg-amber-100"
-              aria-label="Correo sin verificar">
-              Correo sin verificar
-            </a>
-
-            <a
-              href="{{ route('verification.notice') }}"
-              class="icon-btn sm:hidden text-amber-700"
-              aria-label="Correo sin verificar"
-              title="Correo sin verificar">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M12 9v4"></path>
-                <path d="M12 17h.01"></path>
-                <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-              </svg>
-            </a>
-          @endif
-
-          @if($has('cart.index'))
-          <a href="{{ route('cart.index') }}"
-            class="relative inline-flex items-center justify-center bg-transparent border-0 p-0 rounded-none hover:bg-transparent text-zinc-800 hover:text-sky-700 transition-colors mr-2"
-            aria-label="Carrito">
-
-            <svg xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                class="w-7 h-7"
-                aria-hidden="true">
-              <path d="M4.00488 16V4H2.00488V2H5.00488C5.55717 2 6.00488 2.44772 6.00488 3V15H18.4433L20.4433 7H8.00488V5H21.7241C22.2764 5 22.7241 5.44772 22.7241 6C22.7241 6.08176 22.7141 6.16322 22.6942 6.24254L20.1942 16.2425C20.083 16.6877 19.683 17 19.2241 17H5.00488C4.4526 17 4.00488 16.5523 4.00488 16ZM6.00488 23C4.90031 23 4.00488 22.1046 4.00488 21C4.00488 19.8954 4.90031 19 6.00488 19C7.10945 19 8.00488 19.8954 8.00488 21C8.00488 22.1046 7.10945 23 6.00488 23ZM18.0049 23C16.9003 23 16.0049 22.1046 16.0049 21C16.0049 19.8954 16.9003 19 18.0049 19C19.1095 19 20.0049 19.8954 20.0049 21C20.0049 22.1046 19.1095 23 18.0049 23Z"></path>
-            </svg>
-
-            @if($cartCount > 0)
-              <span data-cart-count
-                class="absolute -top-2 -right-2 min-w-4 h-4 px-1 rounded-full bg-sky-600 text-white text-[10px] leading-4 font-black flex items-center justify-center ring-2 ring-white">
-               {{ $cartCount }}
-              </span>
-
-            @endif
-          </a>
-
-
-
-
-          @endif
-
-          @if(!$isAuth)
-            @if($has('login'))
-              <a href="{{ route('login') }}" class="btn-outline hidden sm:inline-flex">Ingresar</a>
-              <a href="{{ route('login') }}" class="btn-primary sm:hidden">Ingresar</a>
-            @endif
-          @else
-
-            <div class="relative">
-              <button class="btn-ghost px-3 py-2" data-menu="accountMenu" aria-expanded="false" aria-label="Abrir menú de cuenta" type="button">
-                <span class="sm:hidden">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-                      fill="none" stroke="currentColor" stroke-width="2"
-                      stroke-linecap="round" stroke-linejoin="round"
-                      class="w-5 h-5" aria-hidden="true">
-                    <path d="M20 21a8 8 0 0 0-16 0"></path>
-                    <circle cx="12" cy="7" r="4"></circle>
-                  </svg>
-                </span>
-                <span class="hidden sm:inline max-w-[12rem] truncate">{{ auth()->user()->name ?? 'Cuenta' }}</span>
-                <span class="hidden sm:inline">&#9662;</span>
-              </button>
-
-
-              <div id="accountMenu" class="dropdown-menu hidden">
-                <div class="px-3 py-2">
-                  <div class="text-[11px] font-bold uppercase tracking-wide text-zinc-500">Estado de correo</div>
-                  <span class="mt-1 inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold {{ $emailStatusClasses }}">
-                    {{ $emailStatusText }}
-                  </span>
-                </div>
-
-                <div class="my-2 border-t border-zinc-200"></div>
-              
-                @if($has('account.edit'))
-                  <a class="dropdown-item" href="{{ route('account.edit') }}">
-                    <span class="inline-flex items-center gap-2">
-                      <img src="{{ $iconSettings }}" alt="" class="w-5 h-5" loading="lazy" decoding="async">
-                      <span>Mi cuenta</span>
-                    </span>
-                  </a>
-                @endif
-
-                @if($emailUnverified && $has('verification.notice'))
-                  <a class="dropdown-item text-amber-700" href="{{ route('verification.notice') }}">
-                    <span class="inline-flex items-center gap-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M12 9v4"></path>
-                        <path d="M12 17h.01"></path>
-                        <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-                      </svg>
-                      <span>Verificar correo</span>
-                    </span>
-                  </a>
-                @endif
-
-                @if($has('orders.index'))
-                  <a class="dropdown-item" href="{{ route('orders.index') }}">
-                    <span class="inline-flex items-center gap-2">
-                      <img src="{{ $iconOrders }}" alt="" class="w-5 h-5" loading="lazy" decoding="async">
-                      <span>Mis pedidos</span>
-                    </span>
-                  </a>
-                @endif
-
-                @if($has('repairs.my.index'))
-                  <a class="dropdown-item" href="{{ route('repairs.my.index') }}">
-                    <span class="inline-flex items-center gap-2">
-                      <img src="{{ $iconRepairs }}" alt="" class="w-5 h-5" loading="lazy" decoding="async">
-                      <span>Mis reparaciones</span>
-                    </span>
-                  </a>
-                @endif
-
-                @if($has('help.index'))
-                  <a class="dropdown-item" href="{{ route('help.index') }}">
-                    <span class="inline-flex items-center gap-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-5 h-5 text-sky-700" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <circle cx="12" cy="12" r="9"></circle>
-                        <path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.8-2.5 2.1-2.5 4"></path>
-                        <circle cx="12" cy="17" r="1"></circle>
-                      </svg>
-                      <span>Ayuda</span>
-                    </span>
-                  </a>
-                @endif
-
-                @if(($has('account.edit') || ($emailUnverified && $has('verification.notice')) || $has('orders.index') || $has('repairs.my.index') || $has('help.index')) && $has('logout'))
-                  <div class="my-2 border-t border-zinc-200"></div>
-                @endif
-
-
-
-
-
-                @if($has('logout'))
-                  <form method="POST" action="{{ route('logout') }}">
-                    @csrf
-                    <button type="submit" class="dropdown-item text-rose-700">Cerrar sesión</button>
-                  </form>
-                @endif
-              </div>
-            </div>
-          @endif
-        </div>
-      </div>
-    </div>
-
-    <div id="appSidebarOverlay" class="fixed inset-0 z-50 hidden bg-zinc-950/40 md:hidden" data-close="sidebar" aria-hidden="true"></div>
-
-    <aside
-      id="appSidebar"
-      class="fixed left-0 top-0 z-50 h-full w-[86%] max-w-xs -translate-x-full transform bg-white shadow-xl transition-transform duration-200 ease-out md:hidden flex flex-col"
-      aria-label="Menú">
-
-
-      <div class="h-14 px-4 flex items-center justify-between border-b border-zinc-100">
-        <div class="flex items-center gap-2">
-          <img src="{{ $logoUrl }}" class="h-8 w-8 rounded-xl ring-1 ring-zinc-100 bg-white object-contain" alt="NicoReparaciones">
-          <div class="font-black text-zinc-900">Menú</div>
-        </div>
-
-        <button class="icon-btn" data-close="sidebar" aria-label="Cerrar menú" type="button">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-              fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round"
-              class="w-5 h-5" aria-hidden="true">
-            <path d="M18 6 6 18M6 6l12 12"></path>
-          </svg>
-        </button>
-
-      </div>
-
-      <div class="p-4 space-y-4 flex-1 overflow-y-auto">
-        @php
-          $userName = auth()->user()->name ?? 'Usuario';
-          $userEmail = auth()->user()->email ?? '';
-          $userInitial = \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($userName, 0, 1));
-          $accountHref = $has('account.edit') ? route('account.edit') : null;
-        @endphp
-
-        @if($isAuth)
-          @if($accountHref)
-            <a href="{{ $accountHref }}" class="card group hover:shadow-md transition" aria-label="Ver mi cuenta">
-              <div class="card-body flex items-center gap-3">
-                <div class="h-11 w-11 rounded-2xl bg-sky-50 text-sky-700 ring-1 ring-sky-100 flex items-center justify-center font-black">
-                  {{ $userInitial }}
-                </div>
-
-                <div class="min-w-0 flex-1">
-                  <div class="font-black text-zinc-900 truncate">{{ $userName }}</div>
-                  <div class="sidebar-sub truncate">{{ $userEmail }}</div>
-                  <span class="mt-1 inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold {{ $emailStatusClasses }}">
-                    {{ $emailStatusText }}
-                  </span>
-
-                  <div class="mt-1 text-xs font-extrabold text-sky-700/80 group-hover:text-sky-700 inline-flex items-center gap-1">
-                    Ver mi cuenta
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" class="w-4 h-4" fill="currentColor" aria-hidden="true">
-                      <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 0 1 .02-1.06L10.94 10 7.23 6.29a.75.75 0 1 1 1.06-1.06l4.24 4.24c.29.29.29.77 0 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0Z" clip-rule="evenodd"/>
-                    </svg>
-                  </div>
-                </div>
-              </div>
-            </a>
-          @else
-            <div class="card">
-              <div class="card-body">
-                <div class="font-black text-zinc-900 truncate">{{ $userName }}</div>
-                <div class="sidebar-sub truncate">{{ $userEmail }}</div>
-              </div>
-            </div>
-          @endif
-        @endif
-
-
-        <div class="sidebar-section space-y-2">
-          <div class="sidebar-title">Navegación</div>
-          <div class="sidebar-links">
-
-            @if($has('store.index'))
-              <a class="sidebar-link {{ request()->routeIs('store.index','store.category','store.product','home') ? 'active' : '' }}"
-                href="{{ route('store.index') }}">
-                <span class="inline-flex items-center gap-2">
-                  <img src="{{ $iconStore }}" alt="" class="w-5 h-5" loading="lazy" decoding="async">
-                  <span>Tienda</span>
-                </span>
-              </a>
-            @endif
-
-            @if($has('repairs.lookup'))
-              <a class="sidebar-link {{ request()->routeIs('repairs.lookup','repairs.lookup.post') ? 'active' : '' }}"
-                href="{{ route('repairs.lookup') }}">
-                <span class="inline-flex items-center gap-2">
-                  <img src="{{ $iconRepairLookup }}" alt="" class="w-5 h-5" loading="lazy" decoding="async">
-                  <span>Consultar reparación</span>
-                </span>
-              </a>
-            @endif
-
-            @if($has('cart.index'))
-              <a class="sidebar-link {{ request()->routeIs('cart.index') ? 'active' : '' }}"
-                href="{{ route('cart.index') }}">
-                <span class="inline-flex items-center gap-2">
-                  <img src="{{ $iconCart }}" alt="" class="w-5 h-5" loading="lazy" decoding="async">
-                  <span>Carrito</span>
-                </span>
-
-                @if($cartCount > 0)
-                  <span class="badge badge-sky ml-auto">{{ $cartCount }}</span>
-                @endif
-              </a>
-            @endif
-
-          </div>
-        </div>
-
-        <div class="sidebar-section space-y-2">
-          <div class="sidebar-title">Cuenta</div>
-          <div class="sidebar-links">
-
-            @if($isAuth)
-
-              @if($has('account.edit'))
-                <a class="sidebar-link {{ request()->routeIs('account.edit') ? 'active' : '' }}"
-                   href="{{ route('account.edit') }}">
-                  <span class="inline-flex items-center gap-2">
-                    <img src="{{ $iconSettings }}" alt="" class="w-5 h-5" loading="lazy" decoding="async">
-                    <span>Mi cuenta</span>
-                  </span>
-                </a>
-              @endif
-
-              @if($emailUnverified && $has('verification.notice'))
-                <a class="sidebar-link {{ request()->routeIs('verification.notice') ? 'active' : '' }}"
-                   href="{{ route('verification.notice') }}">
-                  <span class="inline-flex items-center gap-2 text-amber-700">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <path d="M12 9v4"></path>
-                      <path d="M12 17h.01"></path>
-                      <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-                    </svg>
-                    <span>Verificar correo</span>
-                  </span>
-                </a>
-              @endif
-
-              @if($has('orders.index'))
-                <a class="sidebar-link {{ request()->routeIs('orders.*') ? 'active' : '' }}"
-                   href="{{ route('orders.index') }}">
-                  <span class="inline-flex items-center gap-2">
-                    <img src="{{ $iconOrders }}" alt="" class="w-5 h-5" loading="lazy" decoding="async">
-                    <span>Mis pedidos</span>
-                  </span>
-                </a>
-              @endif
-
-              @if($has('repairs.my.index'))
-                <a class="sidebar-link {{ request()->routeIs('repairs.my.*') ? 'active' : '' }}"
-                   href="{{ route('repairs.my.index') }}">
-                  <span class="inline-flex items-center gap-2">
-                    <img src="{{ $iconRepairs }}" alt="" class="w-5 h-5" loading="lazy" decoding="async">
-                    <span>Mis reparaciones</span>
-                  </span>
-                </a>
-              @endif
-
-              @if($has('help.index'))
-                <a class="sidebar-link {{ request()->routeIs('help.index') ? 'active' : '' }}"
-                   href="{{ route('help.index') }}">
-                  <span class="inline-flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-5 h-5 text-sky-700" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <circle cx="12" cy="12" r="9"></circle>
-                      <path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.8-2.5 2.1-2.5 4"></path>
-                      <circle cx="12" cy="17" r="1"></circle>
-                    </svg>
-                    <span>Ayuda</span>
-                  </span>
-                </a>
-              @endif
-
-              {{-- Admin (solo si corresponde) --}}
-              @include('layouts.partials.sidebar_admin_section')
-
-              <div class="my-2 border-t border-zinc-200"></div>
-
-              @if($has('logout'))
-                <form method="POST" action="{{ route('logout') }}">
-                  @csrf
-                  <button type="submit" class="sidebar-link text-rose-700">
-                    <span class="inline-flex items-center gap-2">
-                      <img src="{{ $iconLogout }}" alt="" class="w-5 h-5" loading="lazy" decoding="async">
-                      <span>Cerrar sesión</span>
-                    </span>
-                  </button>
-                </form>
-              @endif
-
-            @else
-
-              @if($has('help.index'))
-                <a class="sidebar-link {{ request()->routeIs('help.index') ? 'active' : '' }}"
-                   href="{{ route('help.index') }}">
-                  <span class="inline-flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-5 h-5 text-sky-700" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <circle cx="12" cy="12" r="9"></circle>
-                      <path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.8-2.5 2.1-2.5 4"></path>
-                      <circle cx="12" cy="17" r="1"></circle>
-                    </svg>
-                    <span>Ayuda</span>
-                  </span>
-                </a>
-              @endif
-
-              @if($has('login'))
-                <a class="sidebar-link" href="{{ route('login') }}">
-                  <span class="inline-flex items-center gap-2">
-                    <img src="{{ $iconDashboard }}" alt="" class="w-5 h-5" loading="lazy" decoding="async">
-                    <span>Iniciar sesión</span>
-                  </span>
-                </a>
-              @endif
-
-              @if($has('register'))
-                <a class="sidebar-link" href="{{ route('register') }}">
-                  <span class="inline-flex items-center gap-2">
-                    <img src="{{ $iconSettings }}" alt="" class="w-5 h-5" loading="lazy" decoding="async">
-                    <span>Crear cuenta</span>
-                  </span>
-                </a>
-              @endif
-
-            @endif
-
-          </div>
-        </div>
-
-      </div>
-
-    </aside>
-
-  </header>
+<body class="min-h-screen flex flex-col">  <div
+    data-react-shell-header
+    data-shell='@json($shellHeaderData, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_AMP|JSON_HEX_QUOT)'>
+    @if($emailUnverified)
+      <span class="hidden">Correo sin verificar</span>
+      <span class="hidden">{{ $emailStatusText }}</span>
+      @if($has('verification.notice'))
+        <a class="hidden" href="{{ route('verification.notice') }}">Verificar correo</a>
+      @endif
+    @endif
+  </div>
 
   <main class="flex-1">
     <div class="container-page py-6">
@@ -653,7 +278,7 @@
                     <button
                       type="submit"
                       class="btn-outline btn-sm h-8"
-                      data-confirm="Esto ejecutara php artisan migrate. ¿Continuar?">
+                      data-confirm="Esto ejecutara php artisan migrate. Â¿Continuar?">
                       Aplicar migraciones ahora
                     </button>
                   </form>
@@ -699,7 +324,7 @@
           <div class="grid gap-1">
             @if($has('store.index')) <a href="{{ route('store.index') }}">Tienda</a> @endif
             @if($has('cart.index')) <a href="{{ route('cart.index') }}">Carrito</a> @endif
-            @if($has('repairs.lookup')) <a href="{{ route('repairs.lookup') }}">Consultar reparación</a> @endif
+            @if($has('repairs.lookup')) <a href="{{ route('repairs.lookup') }}">Consultar reparaciÃ³n</a> @endif
           </div>
         </div>
 
@@ -713,7 +338,7 @@
               @if($has('logout'))
                 <form method="POST" action="{{ route('logout') }}">
                   @csrf
-                  <button class="text-left text-rose-700 hover:text-rose-800 font-bold">Cerrar sesión</button>
+                  <button class="text-left text-rose-700 hover:text-rose-800 font-bold">Cerrar sesiÃ³n</button>
                 </form>
               @endif
             @else
@@ -777,4 +402,5 @@
   <div data-react-cart-checkout-enhancements></div>
 </body>
 </html>
+
 
