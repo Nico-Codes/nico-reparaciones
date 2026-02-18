@@ -2,13 +2,29 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BusinessSetting;
 use App\Models\Category;
 use App\Models\Product;
+use App\Support\BrandAssets;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
 class StoreController extends Controller
 {
+    private function storeHeroConfig(): array
+    {
+        $settings = BusinessSetting::allValues();
+
+        $title = trim((string) ($settings->get('store_home_hero_title') ?? ''));
+        $subtitle = trim((string) ($settings->get('store_home_hero_subtitle') ?? ''));
+
+        return [
+            'image' => BrandAssets::url('store_home_hero'),
+            'title' => $title !== '' ? $title : 'Novedades y ofertas en accesorios',
+            'subtitle' => $subtitle !== '' ? $subtitle : 'Descubre ingresos recientes y productos destacados con stock real.',
+        ];
+    }
+
     private function normalizeSearchTerm(string $value): string
     {
         $value = mb_strtolower(trim($value), 'UTF-8');
@@ -151,6 +167,7 @@ class StoreController extends Controller
             'products' => $products,
             'filters' => ['q' => $q, 'sort' => $sort],
             'category' => null,
+            'storeHero' => $this->storeHeroConfig(),
         ]);
     }
 
@@ -195,6 +212,7 @@ class StoreController extends Controller
             'products' => $products,
             'filters' => ['q' => $q, 'sort' => $sort],
             'category' => $category,
+            'storeHero' => $this->storeHeroConfig(),
         ]);
     }
 

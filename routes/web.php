@@ -305,6 +305,8 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'can:access-admin', 'admin.
         ->name('admin.settings.smtp_test.send');
     Route::get('/configuracion/identidad-visual', [AdminBusinessSettingsController::class, 'assets'])
         ->name('admin.settings.assets.index');
+    Route::get('/configuracion/portada-tienda', [AdminBusinessSettingsController::class, 'storeHero'])
+        ->name('admin.settings.store_hero.index');
     Route::get('/configuracion/correos', [AdminBusinessSettingsController::class, 'mailTemplates'])
         ->name('admin.settings.mail_templates.index');
     Route::get('/configuracion/ayuda', [AdminHelpEntryController::class, 'index'])

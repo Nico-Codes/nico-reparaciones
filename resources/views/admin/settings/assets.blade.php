@@ -10,6 +10,7 @@
     'favicons' => 'Favicons e íconos de app',
   ];
 
+  $groupLabels['store'] = 'Portada de tienda';
   $assetsByGroup = collect($brandAssets ?? [])->sortBy('label')->groupBy('group');
 @endphp
 

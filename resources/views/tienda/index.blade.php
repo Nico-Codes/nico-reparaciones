@@ -17,25 +17,33 @@
 
   $qVal = (string)($filters['q'] ?? '');
   $sortVal = (string)($filters['sort'] ?? 'relevance');
+  $storeHeroData = $storeHero ?? [];
+  $showStoreFrontHero = empty($currentCategorySafe);
 @endphp
 
-<div id="top" class="container-page store-shell">
-  <div class="page-head store-hero">
-    <div>
-      <div class="page-title">Tienda</div>
-      <div class="page-subtitle">Productos con stock real para retiro en local.</div>
-    </div>
+<div id="top" class="container-page store-shell {{ $showStoreFrontHero ? 'store-shell--hero' : '' }}">
+  @if($showStoreFrontHero)
+    <section class="store-front-hero store-front-hero--fullbleed store-front-hero--flush reveal-item" style="background-image: url('{{ $storeHeroData['image'] ?? asset('brand/logo.png') }}');">
+      <div aria-hidden="true"></div>
+    </section>
+  @else
+    <div class="page-head store-hero">
+      <div>
+        <div class="page-title">Tienda</div>
+        <div class="page-subtitle">Productos con stock real para retiro en local.</div>
+      </div>
 
-    <div class="grid w-full gap-2 sm:w-auto sm:grid-cols-2">
-      <a href="{{ route('cart.index') }}" class="btn-primary h-11 w-full justify-center sm:w-auto">
-        Ver carrito
-        @if($cartCount > 0)
-          <span class="badge-zinc ml-1">{{ $cartCount }}</span>
-        @endif
-      </a>
-      <a href="{{ route('repairs.lookup') }}" class="btn-outline h-11 w-full justify-center sm:w-auto">Consultar reparacion</a>
+      <div class="grid w-full gap-2 sm:w-auto sm:grid-cols-2">
+        <a href="{{ route('cart.index') }}" class="btn-primary h-11 w-full justify-center sm:w-auto">
+          Ver carrito
+          @if($cartCount > 0)
+            <span class="badge-zinc ml-1">{{ $cartCount }}</span>
+          @endif
+        </a>
+        <a href="{{ route('repairs.lookup') }}" class="btn-outline h-11 w-full justify-center sm:w-auto">Consultar reparacion</a>
+      </div>
     </div>
-  </div>
+  @endif
 
   @if(($categories ?? collect())->count())
     <div class="card reveal-item">

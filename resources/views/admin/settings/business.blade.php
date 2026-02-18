@@ -50,6 +50,27 @@
           <div class="text-xs text-zinc-500">Se usa en "Confirmar e imprimir" y en reimpresion de ventas rapidas.</div>
         </div>
 
+        <div class="rounded-2xl border border-zinc-200 bg-zinc-50 p-3 text-xs text-zinc-600">
+          Portada de tienda: la imagen se cambia desde <span class="font-black text-zinc-900">Configuracion &gt; Identidad visual &gt; Fondo portada tienda</span>.
+        </div>
+
+        <div class="grid gap-2">
+          <label>Titulo portada tienda (opcional)</label>
+          <input
+            class="h-11"
+            name="store_home_hero_title"
+            value="{{ old('store_home_hero_title', $storeHomeHeroTitle ?? '') }}"
+            placeholder="Ej: Novedades de la semana">
+        </div>
+
+        <div class="grid gap-2">
+          <label>Texto portada tienda (opcional)</label>
+          <textarea
+            name="store_home_hero_subtitle"
+            rows="3"
+            placeholder="Ej: Ingresaron nuevos modulos, cables y accesorios.">{{ old('store_home_hero_subtitle', $storeHomeHeroSubtitle ?? '') }}</textarea>
+        </div>
+
         <div class="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
           <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.settings.index') }}">Cancelar</a>
           <button class="btn-primary h-11 w-full justify-center sm:w-auto" type="submit">Guardar</button>

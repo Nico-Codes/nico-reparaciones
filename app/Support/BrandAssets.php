@@ -72,6 +72,13 @@ class BrandAssets
             'extensions' => ['svg', 'png', 'jpg', 'jpeg', 'webp'],
             'max_kb' => 2048,
         ],
+        'store_home_hero' => [
+            'label' => 'Fondo portada tienda',
+            'group' => 'store',
+            'fallback' => 'brand/logo.png',
+            'extensions' => ['png', 'jpg', 'jpeg', 'webp'],
+            'max_kb' => 6144,
+        ],
         'favicon_ico' => [
             'label' => 'Favicon .ico',
             'group' => 'favicons',

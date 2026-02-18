@@ -118,6 +118,18 @@
         <div class="mt-3 text-xs font-bold text-sky-700">Abrir modulo</div>
       </a>
 
+      <a href="{{ route('admin.settings.store_hero.index') }}" class="card reveal-item p-4 transition hover:-translate-y-0.5 hover:shadow-md">
+        <div class="flex items-center justify-between gap-3">
+          <div class="font-black text-zinc-900">Portada tienda</div>
+          <img src="{{ $iconStore }}" alt="" class="h-5 w-5 opacity-80" loading="lazy" decoding="async">
+        </div>
+        <div class="mt-1 text-sm text-zinc-600">Cambia la imagen de fondo principal sin tocar codigo.</div>
+        <div class="mt-2">
+          <span class="inline-flex rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-bold text-zinc-700">Modulo</span>
+        </div>
+        <div class="mt-3 text-xs font-bold text-sky-700">Abrir modulo</div>
+      </a>
+
       <a href="{{ route('admin.two_factor.settings') }}" class="card reveal-item p-4 transition hover:-translate-y-0.5 hover:shadow-md">
         <div class="flex items-center justify-between gap-3">
           <div class="font-black text-zinc-900">Seguridad 2FA</div>

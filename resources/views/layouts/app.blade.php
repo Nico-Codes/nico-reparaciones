@@ -22,6 +22,14 @@
 
     $useHot = file_exists($hotPath);
     $useManifest = file_exists($manifestPath);
+    $requestHost = request()->getHost();
+    $isLocalHost = in_array($requestHost, ['127.0.0.1', 'localhost'], true);
+
+    // Si la web se abre por tunel (ngrok/cloudflare/etc), no usamos Vite hot
+    // porque el cliente remoto no puede alcanzar localhost:5173.
+    if ($useHot && !$isLocalHost && $useManifest) {
+      $useHot = false;
+    }
 
     // En build: generamos tags con rutas relativas (/build/...)
     $manifestCss = [];
@@ -216,6 +224,17 @@
 <body class="min-h-screen flex flex-col">  <div
     data-react-shell-header
     data-shell='@json($shellHeaderData, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_AMP|JSON_HEX_QUOT)'>
+    <header class="sticky top-0 z-40 bg-white border-b border-zinc-200 shadow-sm">
+      <div class="container-page h-14 flex items-center justify-between gap-3">
+        <a href="{{ $brandHref }}" class="flex items-center gap-2 min-w-0">
+          <img src="{{ $logoUrl }}" class="h-9 w-9 object-contain" alt="NicoReparaciones" />
+          <div class="font-black tracking-tight text-zinc-900 truncate">Nico<span class="text-sky-600">Reparaciones</span></div>
+        </a>
+        @if($has('cart.index'))
+          <a href="{{ route('cart.index') }}" class="btn-ghost h-9 px-3">Carrito</a>
+        @endif
+      </div>
+    </header>
     @if($emailUnverified)
       <span class="hidden">Correo sin verificar</span>
       <span class="hidden">{{ $emailStatusText }}</span>

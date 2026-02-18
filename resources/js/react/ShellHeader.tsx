@@ -55,6 +55,10 @@ export default function ShellHeader({ data }: Props) {
   const [sidebarAdminOpen, setSidebarAdminOpen] = useState(data.isAdmin && data.adminLinks.some((link) => link.active));
 
   const accountRef = useRef<HTMLDivElement | null>(null);
+  const accountButtonRef = useRef<HTMLButtonElement | null>(null);
+  const accountMenuRef = useRef<HTMLDivElement | null>(null);
+  const accountMenuId = 'account-menu';
+  const accountButtonId = 'account-menu-button';
 
   const hasAdminLinks = data.isAdmin && data.adminLinks.length > 0;
 
@@ -76,6 +80,7 @@ export default function ShellHeader({ data }: Props) {
       if (event.key !== 'Escape') return;
       setAccountOpen(false);
       setSidebarOpen(false);
+      accountButtonRef.current?.focus();
     };
 
     const onClickOutside = (event: MouseEvent) => {
@@ -98,7 +103,25 @@ export default function ShellHeader({ data }: Props) {
 
   const openAccountMenu = () => setAccountOpen(true);
   const closeAccountMenu = () => setAccountOpen(false);
+  const closeAccountMenuWithFocus = () => {
+    setAccountOpen(false);
+    accountButtonRef.current?.focus();
+  };
   const toggleAccountMenu = () => setAccountOpen((prev) => !prev);
+
+  const accountMenuItems = () => {
+    if (!accountMenuRef.current) return [] as HTMLElement[];
+    return Array.from(accountMenuRef.current.querySelectorAll<HTMLElement>('[data-account-menu-item]'));
+  };
+
+  const focusAccountItem = (index: number) => {
+    const items = accountMenuItems();
+    if (!items.length) return;
+    const safeIndex = Math.max(0, Math.min(index, items.length - 1));
+    items[safeIndex]?.focus();
+  };
+
+  const focusFirstAccountItem = () => focusAccountItem(0);
 
   return (
     <header className="sticky top-0 z-40 bg-white border-b border-zinc-200 shadow-sm md:bg-white/90 md:backdrop-blur">
@@ -185,11 +208,22 @@ export default function ShellHeader({ data }: Props) {
                 onMouseEnter={openAccountMenu}
                 onMouseLeave={closeAccountMenu}>
                 <button
+                  id={accountButtonId}
+                  ref={accountButtonRef}
                   className="btn-ghost px-3 py-2"
                   aria-expanded={accountOpen ? 'true' : 'false'}
+                  aria-haspopup="menu"
+                  aria-controls={accountMenuId}
                   aria-label="Abrir menu de cuenta"
                   type="button"
-                  onClick={toggleAccountMenu}>
+                  onClick={toggleAccountMenu}
+                  onKeyDown={(event) => {
+                    if (event.key === 'ArrowDown' || event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      setAccountOpen(true);
+                      window.setTimeout(() => focusFirstAccountItem(), 0);
+                    }
+                  }}>
                   <span className="sm:hidden">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5" aria-hidden="true">
                       <path d="M20 21a8 8 0 0 0-16 0" />
@@ -202,7 +236,48 @@ export default function ShellHeader({ data }: Props) {
                 <div className="absolute right-0 top-full h-2 w-64" aria-hidden="true" />
 
                 <div
+                  id={accountMenuId}
+                  ref={accountMenuRef}
+                  role="menu"
+                  aria-labelledby={accountButtonId}
                   className={`dropdown-menu top-full ${accountOpen ? 'is-open' : 'hidden'}`}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Escape') {
+                      event.preventDefault();
+                      closeAccountMenuWithFocus();
+                      return;
+                    }
+
+                    const items = accountMenuItems();
+                    if (!items.length) return;
+
+                    const currentIndex = items.findIndex((item) => item === document.activeElement);
+
+                    if (event.key === 'ArrowDown') {
+                      event.preventDefault();
+                      const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % items.length : 0;
+                      focusAccountItem(nextIndex);
+                      return;
+                    }
+
+                    if (event.key === 'ArrowUp') {
+                      event.preventDefault();
+                      const prevIndex = currentIndex >= 0 ? (currentIndex - 1 + items.length) % items.length : items.length - 1;
+                      focusAccountItem(prevIndex);
+                      return;
+                    }
+
+                    if (event.key === 'Home') {
+                      event.preventDefault();
+                      focusAccountItem(0);
+                      return;
+                    }
+
+                    if (event.key === 'End') {
+                      event.preventDefault();
+                      focusAccountItem(items.length - 1);
+                    }
+                  }}
                   style={{ overflow: 'visible', maxHeight: 'none' }}>
                   <div className="px-3 py-2">
                     <div className="text-[11px] font-bold uppercase tracking-wide text-zinc-500">Estado de correo</div>
@@ -214,7 +289,15 @@ export default function ShellHeader({ data }: Props) {
                   <div className="my-2 border-t border-zinc-200" />
 
                   {data.accountLinks.map((link) => (
-                    <a key={link.label} className={`dropdown-item ${link.highlight === 'warning' ? 'text-amber-700' : ''}`} href={link.href} onClick={() => setAccountOpen(false)}>
+                    <a
+                      key={link.label}
+                      role="menuitem"
+                      data-account-menu-item
+                      className={`dropdown-item ${
+                        link.active ? 'bg-sky-50 text-sky-700 ring-1 ring-sky-100' : ''
+                      } ${link.highlight === 'warning' ? 'text-amber-700' : ''}`}
+                      href={link.href}
+                      onClick={() => setAccountOpen(false)}>
                       <span className="inline-flex items-center gap-2">
                         {link.icon ? <img src={link.icon} alt="" className="w-5 h-5" loading="lazy" decoding="async" /> : <WarnIcon />}
                         <span>{link.label}</span>
@@ -227,7 +310,14 @@ export default function ShellHeader({ data }: Props) {
                       <div className="my-2 border-t border-zinc-200" />
                       <form method="POST" action={data.urls.logout}>
                         <input type="hidden" name="_token" value={data.csrfToken} />
-                        <button type="submit" className="dropdown-item text-rose-700">Cerrar sesion</button>
+                        <button
+                          type="submit"
+                          role="menuitem"
+                          data-account-menu-item
+                          className="dropdown-item text-rose-700"
+                          onClick={() => setAccountOpen(false)}>
+                          Cerrar sesion
+                        </button>
                       </form>
                     </>
                   ) : null}

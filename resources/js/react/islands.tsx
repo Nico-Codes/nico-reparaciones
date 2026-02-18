@@ -29,8 +29,34 @@ import GlobalCopyActionsEnhancements from './GlobalCopyActionsEnhancements';
 import AdminOrdersStatusEnhancements from './AdminOrdersStatusEnhancements';
 import StoreVisualEnhancements from './StoreVisualEnhancements';
 import ShellHeader from './ShellHeader';
+import AdminRepairsHeader from './AdminRepairsHeader';
+import AdminRepairsFilters from './AdminRepairsFilters';
 
 export function initReactIslands(): void {
+  const adminRepairsHeaderNodes = document.querySelectorAll<HTMLElement>('[data-react-admin-repairs-header]');
+  adminRepairsHeaderNodes.forEach((node) => {
+    const raw = node.dataset.payload || '{}';
+    let parsed: Record<string, unknown> = {};
+    try {
+      parsed = JSON.parse(raw) as Record<string, unknown>;
+    } catch (_e) {
+      parsed = {};
+    }
+    createRoot(node).render(<AdminRepairsHeader {...(parsed as any)} />);
+  });
+
+  const adminRepairsFiltersNodes = document.querySelectorAll<HTMLElement>('[data-react-admin-repairs-filters]');
+  adminRepairsFiltersNodes.forEach((node) => {
+    const raw = node.dataset.payload || '{}';
+    let parsed: Record<string, unknown> = {};
+    try {
+      parsed = JSON.parse(raw) as Record<string, unknown>;
+    } catch (_e) {
+      parsed = {};
+    }
+    createRoot(node).render(<AdminRepairsFilters {...(parsed as any)} />);
+  });
+
   const shellHeaderNodes = document.querySelectorAll<HTMLElement>('[data-react-shell-header]');
   shellHeaderNodes.forEach((node) => {
     const raw = node.dataset.shell || '{}';

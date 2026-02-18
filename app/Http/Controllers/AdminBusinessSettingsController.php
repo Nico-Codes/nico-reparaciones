@@ -75,6 +75,18 @@ class AdminBusinessSettingsController extends Controller
         ]);
     }
 
+    public function storeHero()
+    {
+        $assets = BrandAssets::resolved();
+
+        return view('admin.settings.store_hero', array_merge(
+            $this->businessViewData(),
+            [
+                'heroAsset' => $assets['store_home_hero'] ?? null,
+            ]
+        ));
+    }
+
     public function mailTemplates()
     {
         return view('admin.settings.mail_templates', [
@@ -89,12 +101,16 @@ class AdminBusinessSettingsController extends Controller
             'shop_hours' => 'nullable|string|max:1000',
             'shop_phone' => 'nullable|string|max:50',
             'default_ticket_paper' => 'nullable|string|in:58,80',
+            'store_home_hero_title' => 'nullable|string|max:120',
+            'store_home_hero_subtitle' => 'nullable|string|max:240',
         ]);
 
         $this->persistSetting('shop_address', (string) ($data['shop_address'] ?? ''));
         $this->persistSetting('shop_hours', (string) ($data['shop_hours'] ?? ''));
         $this->persistSetting('shop_phone', (string) ($data['shop_phone'] ?? ''));
         $this->persistSetting('default_ticket_paper', (string) ($data['default_ticket_paper'] ?? '80'));
+        $this->persistSetting('store_home_hero_title', (string) ($data['store_home_hero_title'] ?? ''));
+        $this->persistSetting('store_home_hero_subtitle', (string) ($data['store_home_hero_subtitle'] ?? ''));
 
         return back()->with('success', 'Configuracion guardada.');
     }
@@ -473,7 +489,7 @@ class AdminBusinessSettingsController extends Controller
     }
 
     /**
-     * @return array{shopAddress:string,shopHours:string,shopPhone:string,defaultTicketPaper:string}
+     * @return array{shopAddress:string,shopHours:string,shopPhone:string,defaultTicketPaper:string,storeHomeHeroTitle:string,storeHomeHeroSubtitle:string}
      */
     private function businessViewData(): array
     {
@@ -484,6 +500,8 @@ class AdminBusinessSettingsController extends Controller
             'shopHours' => (string) ($settings->get('shop_hours') ?? ''),
             'shopPhone' => (string) ($settings->get('shop_phone') ?? ''),
             'defaultTicketPaper' => (string) ($settings->get('default_ticket_paper') ?? '80'),
+            'storeHomeHeroTitle' => (string) ($settings->get('store_home_hero_title') ?? ''),
+            'storeHomeHeroSubtitle' => (string) ($settings->get('store_home_hero_subtitle') ?? ''),
         ];
     }
 

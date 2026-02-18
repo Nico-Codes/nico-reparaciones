@@ -1,0 +1,104 @@
+@extends('layouts.app')
+
+@section('title', 'Admin - Portada de tienda')
+
+@section('content')
+<div class="store-shell space-y-6">
+  <div class="flex items-start justify-between gap-4 flex-wrap rounded-3xl border border-sky-100 bg-white/90 p-4 reveal-item">
+    <div class="page-head mb-0 w-full lg:w-auto">
+      <div class="page-title">Portada de tienda</div>
+      <div class="page-subtitle">Administra la imagen principal que se muestra al entrar a la tienda.</div>
+    </div>
+    @include('admin.settings.partials.top_actions')
+  </div>
+
+  <div class="grid gap-4 lg:grid-cols-2">
+    <div class="card reveal-item">
+      <div class="card-head">
+        <div class="font-black">Imagen de fondo</div>
+        <span class="{{ ($heroAsset['is_custom'] ?? false) ? 'badge-emerald' : 'badge-zinc' }}">
+          {{ ($heroAsset['is_custom'] ?? false) ? 'Personalizada' : 'Por defecto' }}
+        </span>
+      </div>
+      <div class="card-body space-y-3">
+        @if($heroAsset)
+          <div class="h-44 overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50">
+            <img src="{{ $heroAsset['url'] }}" alt="Portada tienda" class="h-full w-full object-cover">
+          </div>
+
+          <form
+            method="POST"
+            action="{{ route('admin.settings.assets.update', $heroAsset['key']) }}"
+            enctype="multipart/form-data"
+            class="space-y-2"
+            data-asset-upload-form
+          >
+            @csrf
+
+            <input
+              type="file"
+              name="file"
+              accept="{{ $heroAsset['accept'] }}"
+              class="hidden"
+              data-asset-file-input
+              required
+            >
+
+            <button
+              type="button"
+              class="h-11 w-full rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 px-3 text-xs font-semibold text-zinc-700 hover:bg-zinc-100 transition"
+              data-asset-dropzone
+            >
+              Arrastra una imagen o haz click para elegir
+            </button>
+
+            <div class="hidden rounded-xl border border-zinc-200 bg-white px-2 py-1 text-xs font-semibold text-zinc-700" data-asset-file-name></div>
+
+            <div class="text-[11px] text-zinc-500">
+              Formatos: {{ $heroAsset['extensions_label'] }} | Max: {{ $heroAsset['max_kb'] }} KB
+            </div>
+
+            <button type="submit" class="btn-primary h-11 w-full justify-center disabled:opacity-50 disabled:cursor-not-allowed" data-asset-submit disabled>
+              Guardar imagen
+            </button>
+          </form>
+
+          @if($heroAsset['is_custom'] ?? false)
+            <form
+              method="POST"
+              action="{{ route('admin.settings.assets.reset', $heroAsset['key']) }}"
+              onsubmit="return confirm('Restaurar imagen por defecto?')"
+            >
+              @csrf
+              @method('DELETE')
+              <button type="submit" class="btn-outline h-11 w-full justify-center">Restaurar por defecto</button>
+            </form>
+          @endif
+        @endif
+      </div>
+    </div>
+
+    <div class="card reveal-item">
+      <div class="card-head">
+        <div class="font-black">Textos opcionales</div>
+      </div>
+      <div class="card-body">
+        <form method="POST" action="{{ route('admin.settings.update') }}" class="space-y-3">
+          @csrf
+          <div class="grid gap-2">
+            <label>Titulo (opcional)</label>
+            <input class="h-11" name="store_home_hero_title" value="{{ old('store_home_hero_title', $storeHomeHeroTitle ?? '') }}" placeholder="Ej: Novedades de la semana">
+          </div>
+          <div class="grid gap-2">
+            <label>Texto (opcional)</label>
+            <textarea name="store_home_hero_subtitle" rows="4" placeholder="Ej: Ingresaron nuevos modulos y accesorios.">{{ old('store_home_hero_subtitle', $storeHomeHeroSubtitle ?? '') }}</textarea>
+          </div>
+          <button class="btn-primary h-11 w-full justify-center" type="submit">Guardar textos</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+<div data-react-admin-asset-upload-enhancements></div>
+@endsection
+
