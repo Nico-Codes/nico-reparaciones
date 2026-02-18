@@ -1,22 +1,24 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
-@section('title', 'Admin — WhatsApp (Pedidos)')
+@section('title', 'Admin - WhatsApp (Pedidos)')
 
 @section('content')
-<div class="space-y-6">
-  <div class="flex items-start justify-between gap-4 flex-wrap">
-    <div class="page-head mb-0 w-full lg:w-auto">
-      <h1 class="page-title">Plantillas WhatsApp — Pedidos</h1>
-      <p class="page-subtitle">Editá mensajes por estado. Si dejás vacío, se usa el texto predeterminado del sistema.</p>
+<div class="store-shell space-y-6">
+  <div class="reveal-item rounded-3xl border border-zinc-200/80 bg-gradient-to-r from-white via-sky-50/60 to-white p-4 sm:p-6">
+    <div class="flex items-start justify-between gap-4 flex-wrap">
+      <div class="page-head mb-0 w-full lg:w-auto">
+        <h1 class="page-title">Plantillas WhatsApp - Pedidos</h1>
+        <p class="page-subtitle">Edita mensajes por estado. Si dejas vacio, se usa el texto predeterminado.</p>
+      </div>
+      @include('admin.settings.partials.top_actions')
     </div>
-    @include('admin.settings.partials.top_actions')
-</div>
+  </div>
 
-  <div class="card">
+  <div class="reveal-item card">
     <div class="card-head">
       <div>
         <div class="font-extrabold text-zinc-900">Variables disponibles</div>
-        <div class="text-xs text-zinc-500">Podés combinarlos como quieras en cada plantilla.</div>
+        <div class="text-xs text-zinc-500">Puedes combinarlas como quieras en cada plantilla.</div>
       </div>
     </div>
     <div class="card-body text-sm">
@@ -34,7 +36,7 @@
   <form method="POST" action="{{ route('admin.orders_whatsapp_templates.update') }}" class="space-y-4">
     @csrf
 
-    <div class="grid gap-4 lg:grid-cols-2">
+    <div class="reveal-item grid gap-4 lg:grid-cols-2">
       @foreach($statuses as $key => $label)
         <div class="card">
           <div class="card-head">
@@ -57,4 +59,3 @@
   </form>
 </div>
 @endsection
-

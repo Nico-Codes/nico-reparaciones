@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', 'Admin - Contabilidad')
 
@@ -8,22 +8,24 @@
 @endphp
 
 @section('content')
-<div class="space-y-5">
-  <div class="flex items-start justify-between gap-3 flex-wrap">
+<div class="store-shell space-y-6">
+  <div class="reveal-item rounded-3xl border border-zinc-200/80 bg-gradient-to-r from-white via-sky-50/60 to-white p-4 sm:p-6">
     <div class="page-head mb-0">
-      <div class="page-title">Contabilidad</div>
-      <div class="page-subtitle">Libro unificado de ingresos y egresos.</div>
+      <div>
+        <div class="page-title">Contabilidad</div>
+        <div class="page-subtitle">Libro unificado de ingresos y egresos.</div>
+      </div>
+      <a href="{{ route('admin.dashboard') }}" class="btn-outline h-11 w-full sm:w-auto justify-center">Panel</a>
     </div>
-    <a href="{{ route('admin.dashboard') }}" class="btn-outline h-11 w-full sm:w-auto justify-center">Panel</a>
   </div>
 
-  <div class="grid gap-3 sm:grid-cols-3">
+  <div class="reveal-item grid gap-3 sm:grid-cols-3">
     <div class="card"><div class="card-body"><div class="text-xs font-black uppercase text-zinc-500">Ingresos</div><div class="text-3xl font-black mt-1 text-emerald-700">{{ $money($inflowTotal) }}</div></div></div>
     <div class="card"><div class="card-body"><div class="text-xs font-black uppercase text-zinc-500">Egresos</div><div class="text-3xl font-black mt-1 text-rose-700">{{ $money($outflowTotal) }}</div></div></div>
     <div class="card"><div class="card-body"><div class="text-xs font-black uppercase text-zinc-500">Neto</div><div class="text-3xl font-black mt-1 {{ $netTotal >= 0 ? 'text-emerald-700' : 'text-rose-700' }}">{{ $money($netTotal) }}</div><div class="text-xs text-zinc-500 mt-1">Asientos: {{ (int)$entriesCount }}</div></div></div>
   </div>
 
-  <div class="card">
+  <div class="reveal-item card">
     <div class="card-head">
       <div>
         <div class="font-black">Resultado por categoría</div>
@@ -41,9 +43,7 @@
               <div class="mt-1 text-xs text-zinc-500">Asientos: {{ (int)$row['entries_count'] }}</div>
               <div class="mt-2 text-xs text-zinc-600">Ingreso: <span class="font-black text-emerald-700">{{ $money((int)$row['inflow_total']) }}</span></div>
               <div class="mt-1 text-xs text-zinc-600">Egreso: <span class="font-black text-rose-700">{{ $money((int)$row['outflow_total']) }}</span></div>
-              <div class="mt-2 text-sm font-black {{ (int)$row['net_total'] >= 0 ? 'text-emerald-700' : 'text-rose-700' }}">
-                Neto: {{ $money((int)$row['net_total']) }}
-              </div>
+              <div class="mt-2 text-sm font-black {{ (int)$row['net_total'] >= 0 ? 'text-emerald-700' : 'text-rose-700' }}">Neto: {{ $money((int)$row['net_total']) }}</div>
             </div>
           @endforeach
         </div>
@@ -51,7 +51,7 @@
     </div>
   </div>
 
-  <div class="card">
+  <div class="reveal-item card">
     <div class="card-body">
       <form method="GET" class="grid gap-2 sm:grid-cols-2 lg:grid-cols-6">
         <input name="q" value="{{ $q }}" placeholder="Buscar descripcion, evento o tipo..." class="h-11 lg:col-span-2">
@@ -81,7 +81,7 @@
     </div>
   </div>
 
-  <div class="card">
+  <div class="reveal-item card">
     <div class="table-wrap">
       <table class="table">
         <thead>

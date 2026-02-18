@@ -1,22 +1,24 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', 'Admin - Nuevo incidente de garantia')
 
 @section('content')
-<div class="mx-auto w-full max-w-4xl space-y-5">
-  <div class="flex items-start justify-between gap-3 flex-wrap">
+<div class="store-shell mx-auto w-full max-w-4xl space-y-6">
+  <div class="reveal-item rounded-3xl border border-zinc-200/80 bg-gradient-to-r from-white via-sky-50/60 to-white p-4 sm:p-6">
     <div class="page-head mb-0">
-      <div class="page-title">Nuevo incidente de garantia</div>
-      <div class="page-subtitle">Registra perdida real por garantia para no perder trazabilidad.</div>
-    </div>
+      <div>
+        <div class="page-title">Nuevo incidente de garantia</div>
+        <div class="page-subtitle">Registra perdida real por garantia para mantener trazabilidad.</div>
+      </div>
 
-    <a href="{{ route('admin.warranty_incidents.index') }}" class="btn-outline h-11 w-full sm:w-auto justify-center">Volver</a>
+      <a href="{{ route('admin.warranty_incidents.index') }}" class="btn-outline h-11 w-full sm:w-auto justify-center">Volver</a>
+    </div>
   </div>
 
   <form method="POST" action="{{ route('admin.warranty_incidents.store') }}" class="space-y-4" data-disable-on-submit>
     @csrf
 
-    <div class="card">
+    <div class="reveal-item card">
       <div class="card-head">
         <div class="font-black">Datos del incidente</div>
         <span class="badge-zinc">Garantia</span>
@@ -48,11 +50,7 @@
           <select id="wi_repair_id" name="repair_id" class="h-11">
             <option value="">Sin asociar</option>
             @foreach($recentRepairs as $repair)
-              <option
-                value="{{ $repair->id }}"
-                data-supplier-id="{{ (int)($repair->supplier_id ?? 0) }}"
-                data-unit-cost="{{ (int) round((float)($repair->parts_cost ?? 0)) }}"
-                @selected((int) old('repair_id', $selectedRepair?->id) === (int) $repair->id)>
+              <option value="{{ $repair->id }}" data-supplier-id="{{ (int)($repair->supplier_id ?? 0) }}" data-unit-cost="{{ (int) round((float)($repair->parts_cost ?? 0)) }}" @selected((int) old('repair_id', $selectedRepair?->id) === (int) $repair->id)>
                 {{ $repair->code ?: ('#'.$repair->id) }} - {{ $repair->customer_name }}
               </option>
             @endforeach
@@ -64,11 +62,7 @@
           <select id="wi_product_id" name="product_id" class="h-11">
             <option value="">Sin asociar</option>
             @foreach($recentProducts as $product)
-              <option
-                value="{{ $product->id }}"
-                data-supplier-id="{{ (int)($product->supplier_id ?? 0) }}"
-                data-unit-cost="{{ (int)($product->cost_price ?? 0) }}"
-                @selected((int) old('product_id', $selectedProduct?->id) === (int) $product->id)>
+              <option value="{{ $product->id }}" data-supplier-id="{{ (int)($product->supplier_id ?? 0) }}" data-unit-cost="{{ (int)($product->cost_price ?? 0) }}" @selected((int) old('product_id', $selectedProduct?->id) === (int) $product->id)>
                 {{ $product->name }}{{ $product->sku ? ' ('.$product->sku.')' : '' }}
               </option>
             @endforeach
@@ -83,7 +77,7 @@
               <option value="{{ $supplier->id }}" @selected((int) old('supplier_id', $selectedSupplier?->id) === (int) $supplier->id)>{{ $supplier->name }}</option>
             @endforeach
           </select>
-          <div class="text-xs text-zinc-500">Puedes dejarlo manual o se autocompleta al elegir producto.</div>
+          <div class="text-xs text-zinc-500">Puedes dejarlo manual o autocompletar desde el producto.</div>
         </div>
 
         <div class="space-y-1">
@@ -98,7 +92,7 @@
       </div>
     </div>
 
-    <div class="card">
+    <div class="reveal-item card">
       <div class="card-head">
         <div class="font-black">Costos y recupero</div>
         <span class="badge-zinc">Finanzas</span>
@@ -114,7 +108,7 @@
           <input id="wi_unit_cost" name="unit_cost" class="h-11" inputmode="numeric" required value="{{ old('unit_cost', 0) }}">
           <input type="hidden" id="wi_cost_origin" name="cost_origin" value="{{ old('cost_origin', 'manual') }}">
           <div class="flex items-center gap-2 flex-wrap">
-            <div class="text-xs text-zinc-500">Se autocompleta desde costo de reparación o costo del producto.</div>
+            <div class="text-xs text-zinc-500">Se autocompleta desde costo de reparacion o costo del producto.</div>
             <span id="wi_cost_origin_badge" class="badge-zinc">Origen costo: Manual</span>
           </div>
         </div>
@@ -133,7 +127,7 @@
       </div>
     </div>
 
-    <div class="card">
+    <div class="reveal-item card">
       <div class="card-body">
         <div class="space-y-1">
           <label>Notas internas (opcional)</label>
@@ -149,5 +143,5 @@
   </form>
 </div>
 
-<div data-react-warranty-incident-create data-root-selector=".mx-auto.w-full.max-w-4xl.space-y-5"></div>
+<div data-react-warranty-incident-create data-root-selector=".store-shell.mx-auto.w-full.max-w-4xl.space-y-6"></div>
 @endsection

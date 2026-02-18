@@ -1,12 +1,10 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', 'Admin - Garantias y perdidas')
 
 @php
   $money = fn($n) => '$ ' . number_format((float)($n ?? 0), 0, ',', '.');
-  $statusBadge = fn($status) => $status === 'closed'
-    ? 'badge-zinc'
-    : 'badge-amber';
+  $statusBadge = fn($status) => $status === 'closed' ? 'badge-zinc' : 'badge-amber';
   $costOriginBadge = function ($origin) {
     return match ((string) $origin) {
       'repair' => 'badge-sky',
@@ -17,31 +15,33 @@
 @endphp
 
 @section('content')
-<div class="space-y-5">
-  <div class="flex items-start justify-between gap-3 flex-wrap">
+<div class="store-shell space-y-6">
+  <div class="reveal-item rounded-3xl border border-zinc-200/80 bg-gradient-to-r from-white via-sky-50/60 to-white p-4 sm:p-6">
     <div class="page-head mb-0">
-      <div class="page-title">Garantias y perdidas</div>
-      <div class="page-subtitle">Registro de costos por garantias en reparaciones y productos.</div>
-    </div>
+      <div>
+        <div class="page-title">Garantias y perdidas</div>
+        <div class="page-subtitle">Registro de costos por garantias en reparaciones y productos.</div>
+      </div>
 
-    <div class="flex gap-2 w-full sm:w-auto">
-      <a href="{{ route('admin.dashboard') }}" class="btn-outline h-11 w-full sm:w-auto justify-center">Panel</a>
-      <a href="{{ route('admin.warranty_incidents.create') }}" class="btn-primary h-11 w-full sm:w-auto justify-center">+ Nuevo incidente</a>
+      <div class="flex gap-2 w-full sm:w-auto">
+        <a href="{{ route('admin.dashboard') }}" class="btn-outline h-11 w-full sm:w-auto justify-center">Panel</a>
+        <a href="{{ route('admin.warranty_incidents.create') }}" class="btn-primary h-11 w-full sm:w-auto justify-center">+ Nuevo incidente</a>
+      </div>
     </div>
   </div>
 
   @if(session('success'))
-    <div class="alert-success">{{ session('success') }}</div>
+    <div class="reveal-item alert-success">{{ session('success') }}</div>
   @endif
 
-  <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+  <div class="reveal-item grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
     <div class="card"><div class="card-body"><div class="text-xs text-zinc-500 uppercase font-black">Total incidentes</div><div class="text-3xl font-black mt-1">{{ (int)($summary['total_count'] ?? 0) }}</div></div></div>
     <div class="card"><div class="card-body"><div class="text-xs text-zinc-500 uppercase font-black">Abiertos</div><div class="text-3xl font-black mt-1 text-amber-700">{{ (int)($summary['open_count'] ?? 0) }}</div></div></div>
     <div class="card"><div class="card-body"><div class="text-xs text-zinc-500 uppercase font-black">Cerrados</div><div class="text-3xl font-black mt-1 text-zinc-700">{{ (int)($summary['closed_count'] ?? 0) }}</div></div></div>
     <div class="card"><div class="card-body"><div class="text-xs text-zinc-500 uppercase font-black">Perdida acumulada</div><div class="text-3xl font-black mt-1 text-rose-700">{{ $money((int)($summary['total_loss'] ?? 0)) }}</div></div></div>
   </div>
 
-  <div class="card">
+  <div class="reveal-item card">
     <div class="card-head">
       <div>
         <div class="font-black">Proveedores con mas perdida</div>
@@ -65,7 +65,7 @@
     </div>
   </div>
 
-  <div class="card">
+  <div class="reveal-item card">
     <div class="card-body">
       <form method="GET" class="grid gap-2 sm:grid-cols-2 lg:grid-cols-6">
         <input name="q" value="{{ $q }}" placeholder="Buscar titulo, motivo o nota..." class="h-11 lg:col-span-2">
@@ -95,7 +95,7 @@
     </div>
   </div>
 
-  <div class="card">
+  <div class="reveal-item card">
     <div class="table-wrap">
       <table class="table">
         <thead>
@@ -116,9 +116,7 @@
           @forelse($incidents as $incident)
             <tr>
               <td class="text-sm">{{ optional($incident->happened_at)->format('d/m/Y H:i') ?: '-' }}</td>
-              <td>
-                <span class="badge-zinc">{{ $sourceTypes[$incident->source_type] ?? $incident->source_type }}</span>
-              </td>
+              <td><span class="badge-zinc">{{ $sourceTypes[$incident->source_type] ?? $incident->source_type }}</span></td>
               <td>
                 <div class="font-semibold text-zinc-900">{{ $incident->title }}</div>
                 @if($incident->source_type === 'repair' && $incident->repair)
@@ -131,16 +129,10 @@
                   <div class="text-xs text-zinc-500 mt-1">{{ $incident->reason }}</div>
                 @endif
               </td>
-              <td>
-                <span class="text-sm {{ $incident->supplier?->name ? 'text-zinc-800 font-semibold' : 'text-zinc-400' }}">
-                  {{ $incident->supplier?->name ?? '-' }}
-                </span>
-              </td>
+              <td><span class="text-sm {{ $incident->supplier?->name ? 'text-zinc-800 font-semibold' : 'text-zinc-400' }}">{{ $incident->supplier?->name ?? '-' }}</span></td>
               <td>
                 @php $costOrigin = (string)($incident->cost_origin ?? 'manual'); @endphp
-                <span class="{{ $costOriginBadge($costOrigin) }}">
-                  {{ \App\Models\WarrantyIncident::COST_ORIGINS[$costOrigin] ?? 'Manual' }}
-                </span>
+                <span class="{{ $costOriginBadge($costOrigin) }}">{{ \App\Models\WarrantyIncident::COST_ORIGINS[$costOrigin] ?? 'Manual' }}</span>
               </td>
               <td class="text-right font-semibold">{{ $money(($incident->quantity * $incident->unit_cost) + $incident->extra_cost) }}</td>
               <td class="text-right font-semibold text-emerald-700">{{ $money($incident->recovered_amount) }}</td>
@@ -158,17 +150,13 @@
               </td>
             </tr>
           @empty
-            <tr>
-              <td colspan="10" class="text-center py-8 text-zinc-500">No hay incidentes registrados.</td>
-            </tr>
+            <tr><td colspan="10" class="text-center py-8 text-zinc-500">No hay incidentes registrados.</td></tr>
           @endforelse
         </tbody>
       </table>
     </div>
   </div>
 
-  <div>
-    {{ $incidents->links() }}
-  </div>
+  <div>{{ $incidents->links() }}</div>
 </div>
 @endsection
