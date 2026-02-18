@@ -126,7 +126,7 @@
 
     <div class="sep"></div>
 
-    <div class="center muted" style="font-weight:900">Gracias por tu compra 🙌</div>
+    <div class="center muted" style="font-weight:900">Gracias por tu compra</div>
 
     <div class="actions">
       <button class="btn btn-primary" onclick="window.print()">Imprimir</button>

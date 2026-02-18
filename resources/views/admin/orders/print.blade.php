@@ -1,4 +1,4 @@
-@php
+﻿@php
   $money = fn($n) => '$ ' . number_format((float)($n ?? 0), 0, ',', '.');
 
   $statusMap = [
@@ -14,10 +14,9 @@
   $companyAddress = $settings->get('shop_address', '');
   $companyPhone   = $settings->get('shop_phone', '');
 
-
-  $customerName  = $order->pickup_name ?: ($order->user?->name ?? '—');
-  $customerPhone = $order->pickup_phone ?: ($order->user?->phone ?? '—');
-  $customerEmail = $order->user?->email ?? '—';
+  $customerName  = $order->pickup_name ?: ($order->user?->name ?? '-');
+  $customerPhone = $order->pickup_phone ?: ($order->user?->phone ?? '-');
+  $customerEmail = $order->user?->email ?? '-';
 
   $st = (string)($order->status ?? 'pendiente');
   $stLabel = $statusMap[$st] ?? $st;
@@ -28,7 +27,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Pedido #{{ $order->id }} — Imprimir</title>
+  <title>Pedido #{{ $order->id }} - Imprimir</title>
   @include('layouts.partials.standalone_vite_assets')
   <style>
     :root { --border:#e4e4e7; --muted:#71717a; }
@@ -75,7 +74,7 @@
       <div class="right">
         <div class="h1" style="font-size:20px">Pedido #{{ $order->id }}</div>
         <div class="muted">Estado: <b>{{ $stLabel }}</b></div>
-        <div class="muted">Creado: {{ $order->created_at?->format('d/m/Y H:i') ?? '—' }}</div>
+        <div class="muted">Creado: {{ $order->created_at?->format('d/m/Y H:i') ?? '-' }}</div>
         @if($order->payment_method)
           <div class="muted">Pago: <b>{{ $order->payment_method }}</b></div>
         @endif
@@ -94,7 +93,7 @@
           <div class="value">{{ $customerName }}</div>
         </div>
         <div class="col">
-          <div class="label">Teléfono</div>
+          <div class="label">Telefono</div>
           <div class="value">{{ $customerPhone }}</div>
         </div>
         <div class="col">
@@ -113,7 +112,6 @@
 
     <div class="card">
       <div class="label">Items</div>
-
       <table>
         <thead>
           <tr>
@@ -127,9 +125,8 @@
           @foreach($order->items as $it)
             @php
               $name = $it->product_name ?: ($it->product?->name ?? 'Producto');
-                $qty = (int)($it->quantity ?? 1);
-                $price = (float)($it->price ?? 0);
-
+              $qty = (int)($it->quantity ?? 1);
+              $price = (float)($it->price ?? 0);
               $sub = $qty * $price;
             @endphp
             <tr>
@@ -148,9 +145,7 @@
       </div>
     </div>
 
-    <div class="muted" style="margin-top:12px">
-      Generado desde Admin — {{ config('app.name') }}
-    </div>
+    <div class="muted" style="margin-top:12px">Generado desde Admin - {{ config('app.name') }}</div>
   </div>
   <div data-react-auto-print data-enabled="{{ $autoprint ? '1' : '0' }}" data-delay-ms="120"></div>
 </body>

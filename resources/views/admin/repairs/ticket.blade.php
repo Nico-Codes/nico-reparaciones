@@ -1,4 +1,4 @@
-@php
+﻿@php
   $money = fn($n) => '$ ' . number_format((float)($n ?? 0), 0, ',', '.');
 
   $companyName = $settings->get('company_name', config('app.name'));
@@ -7,9 +7,9 @@
   $companyPhone   = $settings->get('shop_phone', '');
 
   $device = trim(($repair->device_brand ?? '') . ' ' . ($repair->device_model ?? ''));
-  $device = $device !== '' ? $device : '—';
+  $device = $device !== '' ? $device : '-';
 
-  $statusLabel = \App\Models\Repair::STATUSES[$repair->status] ?? (string)($repair->status ?? '—');
+  $statusLabel = \App\Models\Repair::STATUSES[$repair->status] ?? (string)($repair->status ?? '-');
 
   $final = (float)($repair->final_price ?? 0);
   $paid  = (float)($repair->paid_amount ?? 0);
@@ -22,7 +22,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Ticket Reparación {{ $repair->code }}</title>
+  <title>Ticket Reparacion {{ $repair->code }}</title>
   @include('layouts.partials.standalone_vite_assets')
   <style>
     :root { --muted:#71717a; --border:#e4e4e7; }
@@ -60,11 +60,11 @@
 
     <div class="sep"></div>
 
-    <div class="row"><span>Reparación</span><b>{{ $repair->code }}</b></div>
-    <div class="row"><span>Recibido</span><b>{{ $repair->received_at?->format('d/m/Y H:i') ?? '—' }}</b></div>
+    <div class="row"><span>Reparacion</span><b>{{ $repair->code }}</b></div>
+    <div class="row"><span>Recibido</span><b>{{ $repair->received_at?->format('d/m/Y H:i') ?? '-' }}</b></div>
     <div class="row"><span>Estado</span><b>{{ $statusLabel }}</b></div>
     @if($repair->warranty_days)
-      <div class="row"><span>Garantía</span><b>{{ (int)$repair->warranty_days }} días</b></div>
+      <div class="row"><span>Garantia</span><b>{{ (int)$repair->warranty_days }} dias</b></div>
     @endif
 
     <div class="sep"></div>
@@ -76,11 +76,11 @@
     <div class="sep"></div>
 
     <div class="block-title">Falla reportada</div>
-    <div class="block">{{ $repair->issue_reported ?: '—' }}</div>
+    <div class="block">{{ $repair->issue_reported ?: '-' }}</div>
 
     @if($repair->diagnosis)
       <div class="sep"></div>
-      <div class="block-title">Diagnóstico</div>
+      <div class="block-title">Diagnostico</div>
       <div class="block">{{ $repair->diagnosis }}</div>
     @endif
 
@@ -95,7 +95,7 @@
 
     @if($repair->payment_method)
       <div class="sep"></div>
-      <div class="row"><span>Método</span><b>{{ \App\Models\Repair::PAYMENT_METHODS[$repair->payment_method] ?? $repair->payment_method }}</b></div>
+      <div class="row"><span>Metodo</span><b>{{ \App\Models\Repair::PAYMENT_METHODS[$repair->payment_method] ?? $repair->payment_method }}</b></div>
     @endif
 
     @if($repair->payment_notes)
@@ -106,8 +106,8 @@
 
     <div class="sep"></div>
     <div class="center muted" style="font-weight:900">
-      Con este comprobante retirás tu equipo.<br>
-      Conservá el código: {{ $repair->code }}
+      Con este comprobante retiras tu equipo.<br>
+      Conserva el codigo: {{ $repair->code }}
     </div>
 
     <div class="actions">

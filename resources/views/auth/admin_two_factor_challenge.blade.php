@@ -4,7 +4,8 @@
 @section('suppress_global_alerts', true)
 
 @section('content')
-<div class="mx-auto w-full max-w-md">
+<div class="store-shell space-y-6">
+  <div class="reveal-item mx-auto w-full max-w-md">
   <div class="card">
     <div class="card-head">
       <div>
@@ -47,6 +48,7 @@
         <button type="submit" class="btn-outline h-11 w-full justify-center">Cerrar sesion</button>
       </form>
     </div>
+  </div>
   </div>
 </div>
 @endsection
