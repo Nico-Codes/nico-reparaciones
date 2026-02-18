@@ -61,7 +61,8 @@
 @endphp
 
 @section('content')
-  <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+  <div class="store-shell">
+  <div class="mb-5 flex flex-col gap-3 rounded-3xl border border-sky-100 bg-white/90 p-4 sm:flex-row sm:items-start sm:justify-between reveal-item">
     <div class="min-w-0">
       <div class="page-title">Pedido #{{ $order->id }}</div>
       <div class="page-subtitle">{{ $order->created_at?->format('d/m/Y H:i') }}</div>
@@ -73,7 +74,7 @@
     </div>
   </div>
 
-  <div class="mb-5 rounded-2xl border border-zinc-200 bg-white p-4">
+  <div class="mb-5 rounded-2xl border border-zinc-200 bg-white p-4 reveal-item">
     <div class="text-sm text-zinc-700">
       <span class="font-black text-zinc-900">Estado:</span> {{ $statusHint }}
     </div>
@@ -102,7 +103,7 @@
   </div>
 
   <div class="grid gap-4 lg:grid-cols-3 lg:items-start">
-    <div class="card lg:col-span-2">
+    <div class="card lg:col-span-2 reveal-item">
       <div class="card-head items-start">
         <div class="font-black">Items</div>
         <span class="badge-sky">{{ $items->count() }} producto{{ $items->count() === 1 ? '' : 's' }}</span>
@@ -156,7 +157,7 @@
       </div>
     </div>
 
-    <div class="card h-fit lg:sticky lg:top-20">
+    <div class="card h-fit lg:sticky lg:top-20 reveal-item">
       <div class="card-head">
         <div class="font-black">Detalles</div>
         <span class="badge-sky">Retiro</span>
@@ -223,5 +224,6 @@
         </div>
       </div>
     </div>
+  </div>
   </div>
 @endsection

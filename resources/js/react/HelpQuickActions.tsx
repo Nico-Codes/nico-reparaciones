@@ -16,9 +16,10 @@ export default function HelpQuickActions({
   secondaryHref,
 }: HelpQuickActionsProps) {
   return (
-    <div className="card">
+    <div className="card overflow-hidden">
       <div className="card-body flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
+          <div className="text-xs font-black uppercase tracking-wide text-sky-700">Atajos</div>
           <div className="font-black text-zinc-900">{title}</div>
           <div className="text-sm text-zinc-600">{subtitle}</div>
         </div>

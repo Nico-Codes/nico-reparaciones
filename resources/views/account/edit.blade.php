@@ -4,7 +4,8 @@
 @section('suppress_global_alerts', '1')
 
 @section('content')
-  <div class="page-head">
+  <div class="store-shell">
+  <div class="page-head store-hero reveal-item">
     <div class="page-title">Mi cuenta</div>
     <div class="page-subtitle">Actualiza tus datos. Se usan para asociar pedidos y contactarte.</div>
   </div>
@@ -13,7 +14,7 @@
     $emailIsVerified = !is_null($user->email_verified_at);
   @endphp
 
-  <div class="card mb-4 max-w-2xl">
+  <div class="card mb-4 max-w-2xl reveal-item">
     <div class="card-head items-start">
       <div class="font-black">Estado del correo</div>
       @if($emailIsVerified)
@@ -47,12 +48,12 @@
     </div>
   </div>
 
-  <div class="mb-4 grid max-w-2xl grid-cols-2 gap-2">
-    <a href="#profile" class="btn-ghost h-11 w-full justify-center">Perfil</a>
-    <a href="#security" class="btn-ghost h-11 w-full justify-center">Seguridad</a>
+  <div class="mb-4 grid max-w-2xl grid-cols-2 gap-2 reveal-item">
+    <a href="#profile" class="nav-pill nav-pill-active h-11 w-full justify-center">Perfil</a>
+    <a href="#security" class="nav-pill h-11 w-full justify-center">Seguridad</a>
   </div>
 
-  <div class="card max-w-2xl" id="profile">
+  <div class="card max-w-2xl reveal-item" id="profile">
     <div class="card-head items-start">
       <div class="font-black">Datos del perfil</div>
       <span class="badge-sky shrink-0">Obligatorio para comprar</span>
@@ -173,7 +174,7 @@
     </div>
   </div>
 
-  <div class="card mt-4 max-w-2xl" id="security">
+  <div class="card mt-4 max-w-2xl reveal-item" id="security">
     <div class="card-head items-start">
       <div class="font-black">Seguridad</div>
       <span class="badge-zinc shrink-0">Contraseña</span>
@@ -263,5 +264,6 @@
         </div>
       </form>
     </div>
+  </div>
   </div>
 @endsection

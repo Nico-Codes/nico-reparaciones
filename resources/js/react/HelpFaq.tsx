@@ -47,7 +47,7 @@ export default function HelpFaq({
 
   return (
     <div className="space-y-6">
-      <div className="card">
+      <div className="card overflow-hidden">
         <div className="card-body">
           <div className="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-center">
             <input
@@ -56,7 +56,9 @@ export default function HelpFaq({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
-            <div className="text-xs text-zinc-500">{filtered.length} resultados</div>
+            <div className="inline-flex items-center rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs font-bold text-zinc-600">
+              {filtered.length} resultados
+            </div>
           </div>
         </div>
       </div>
@@ -71,16 +73,16 @@ export default function HelpFaq({
             const isOpen = openIndex === index;
 
             return (
-              <article className="card" key={`${entry.question}-${index}`}>
+              <article className="card overflow-hidden" key={`${entry.question}-${index}`}>
                 <button
                   type="button"
-                  className="card-body flex w-full items-center justify-between gap-3 text-left"
+                  className="card-body flex w-full items-center justify-between gap-3 text-left hover:bg-zinc-50/70"
                   aria-expanded={isOpen}
                   onClick={() => setOpenIndex(isOpen ? null : index)}
                 >
                   <h2 className="text-base font-black text-zinc-900">{entry.question}</h2>
                   <svg
-                    className={`h-5 w-5 shrink-0 text-zinc-500 transition-transform duration-300 ease-out ${isOpen ? 'rotate-180' : ''}`}
+                    className={`h-5 w-5 shrink-0 text-zinc-500 transition-transform duration-300 ease-out ${isOpen ? 'rotate-180 text-sky-700' : ''}`}
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -97,8 +99,8 @@ export default function HelpFaq({
                     isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
                   }`}
                 >
-                  <div className="px-4 pt-1 pb-12 sm:px-5 sm:pb-12">
-                    <p className="mb-3 whitespace-pre-line text-sm leading-relaxed text-zinc-700">
+                  <div className="border-t border-zinc-100 px-4 pt-3 pb-6 sm:px-5 sm:pb-7">
+                    <p className="mb-2 whitespace-pre-line text-sm leading-relaxed text-zinc-700">
                       {entry.answer}
                     </p>
                   </div>

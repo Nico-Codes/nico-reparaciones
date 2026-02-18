@@ -14,13 +14,13 @@
     'answer' => (string) $entry->answer,
   ])->values();
 @endphp
-<div class="mx-auto w-full max-w-4xl space-y-6">
-  <div class="page-head mb-0">
+<div class="store-shell mx-auto w-full max-w-4xl space-y-6">
+  <div class="page-head mb-0 store-hero reveal-item">
     <div class="page-title">Centro de ayuda</div>
     <div class="page-subtitle">Respuestas rapidas para problemas comunes de cuenta, compras y reparaciones.</div>
   </div>
 
-  <div
+  <div class="reveal-item"
     data-react-help-island
     data-title="Accesos rapidos"
     data-subtitle="Atajos utiles para resolver acciones frecuentes desde la ayuda."
@@ -31,7 +31,7 @@
   </div>
 
   <script id="helpFaqData" type="application/json">@json($helpEntriesPayload)</script>
-  <div
+  <div class="reveal-item"
     data-react-help-faq-island
     data-source-id="helpFaqData"
     data-empty-data-text="No hay contenido de ayuda disponible en este momento."
@@ -40,7 +40,7 @@
   </div>
 
   @if(!empty($helpWhatsappUrl))
-    <div class="card">
+    <div class="card reveal-item">
       <div class="card-body flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div class="font-black text-zinc-900">No encontraste solucion?</div>

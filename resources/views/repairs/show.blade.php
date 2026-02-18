@@ -74,7 +74,8 @@
 @endphp
 
 @section('content')
-  <div class="flex items-start justify-between gap-3 mb-5">
+  <div class="store-shell">
+  <div class="flex items-start justify-between gap-3 mb-5 rounded-3xl border border-sky-100 bg-white/90 p-4 reveal-item">
     <div class="min-w-0">
       <div class="page-title">Reparación</div>
       <div class="page-subtitle">
@@ -86,7 +87,7 @@
   </div>
 
   {{-- Estado + pasos --}}
-  <div class="rounded-2xl border border-zinc-200 bg-white p-4 mb-5">
+  <div class="rounded-2xl border border-zinc-200 bg-white p-4 mb-5 reveal-item">
     <div class="text-sm text-zinc-700">
       <span class="font-black text-zinc-900">Estado:</span> {{ $statusHint }}
     </div>
@@ -115,7 +116,7 @@
 
   <div class="grid gap-4 lg:grid-cols-3">
     {{-- Detalle --}}
-    <div class="lg:col-span-2 card">
+    <div class="lg:col-span-2 card reveal-item">
       <div class="card-head">
         <div class="font-black">Detalle</div>
         <span class="badge-sky">{{ $repair->created_at?->format('d/m/Y') }}</span>
@@ -212,7 +213,7 @@
     </div>
 
     {{-- Acciones --}}
-    <div class="card h-fit">
+    <div class="card h-fit reveal-item">
       <div class="card-head">
         <div class="font-black">Acciones</div>
         <span class="badge-sky">Consulta</span>
@@ -236,5 +237,6 @@
         @endif
       </div>
     </div>
+  </div>
   </div>
 @endsection

@@ -33,12 +33,13 @@
 @endphp
 
 @section('content')
-  <div class="page-head">
+  <div class="store-shell">
+  <div class="page-head store-hero reveal-item">
     <div class="page-title">Mis reparaciones</div>
     <div class="page-subtitle">Seguimiento del estado de tu equipo.</div>
   </div>
 
-  <div class="flex flex-col sm:flex-row gap-2 mb-5">
+  <div class="flex flex-col sm:flex-row gap-2 mb-5 reveal-item">
     @if($has('repairs.lookup'))
       <a href="{{ route('repairs.lookup') }}" class="btn-outline w-full sm:w-auto">Consultar por código</a>
     @endif
@@ -52,7 +53,7 @@
 
   <div class="grid gap-3">
     @forelse($repairs as $repair)
-      <a href="{{ route('repairs.my.show', $repair) }}" class="card group hover:shadow-md transition">
+      <a href="{{ route('repairs.my.show', $repair) }}" class="card group reveal-item hover:shadow-md transition">
         <div class="card-body">
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0">
@@ -75,12 +76,14 @@
               </div>
             </div>
 
-            <div class="text-zinc-400 group-hover:text-zinc-600 transition shrink-0">→</div>
+            <svg class="h-4 w-4 shrink-0 text-zinc-400 transition group-hover:text-zinc-600" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
           </div>
         </div>
       </a>
     @empty
-      <div class="card">
+      <div class="card reveal-item">
         <div class="card-body">
           <div class="font-black">No tenés reparaciones asociadas.</div>
           <div class="muted mt-1">Si te pasamos un código, también podés consultarla sin cuenta.</div>
@@ -100,4 +103,5 @@
       {{ $repairs->links() }}
     </div>
   @endif
+  </div>
 @endsection

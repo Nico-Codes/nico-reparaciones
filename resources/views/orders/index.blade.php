@@ -29,7 +29,8 @@
 @endphp
 
 @section('content')
-  <div class="page-head">
+  <div class="store-shell">
+  <div class="page-head store-hero reveal-item">
     <div>
       <div class="page-title">Mis pedidos</div>
       <div class="page-subtitle">Consulta estado y detalle de cada compra.</div>
@@ -40,15 +41,15 @@
     @endif
   </div>
 
-  <div class="card mb-4">
+  <div class="card mb-4 reveal-item">
     <div class="card-body grid gap-3 p-3 sm:p-4 md:flex md:items-center md:justify-between">
       <div class="grid grid-cols-2 gap-2 md:flex md:gap-2">
-        <a class="btn-ghost h-11 w-full justify-center md:w-auto {{ $tab === 'activos' ? 'bg-zinc-100' : '' }}"
+      <a class="nav-pill h-11 w-full justify-center md:w-auto {{ $tab === 'activos' ? 'nav-pill-active' : '' }}"
            href="{{ route('orders.index', ['tab' => 'activos', 'q' => $q ?: null]) }}">
           Activos
         </a>
 
-        <a class="btn-ghost h-11 w-full justify-center md:w-auto {{ $tab === 'historial' ? 'bg-zinc-100' : '' }}"
+        <a class="nav-pill h-11 w-full justify-center md:w-auto {{ $tab === 'historial' ? 'nav-pill-active' : '' }}"
            href="{{ route('orders.index', ['tab' => 'historial', 'q' => $q ?: null]) }}">
           Historial
         </a>
@@ -71,7 +72,7 @@
         $itemsCount = (int)($order->items_count ?? ($order->items?->count() ?? 0));
       @endphp
 
-      <a href="{{ route('orders.show', $order) }}" class="card group transition hover:shadow-md active:scale-[0.995]">
+      <a href="{{ route('orders.show', $order) }}" class="card group reveal-item transition hover:shadow-md active:scale-[0.995]">
         <div class="card-body p-4 sm:p-5">
           <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div class="min-w-0">
@@ -95,12 +96,14 @@
 
           <div class="mt-4 flex items-center justify-between">
             <span class="text-xs text-zinc-500">Ver detalle</span>
-            <span class="text-zinc-400 transition group-hover:text-zinc-600">></span>
+            <svg class="h-4 w-4 text-zinc-400 transition group-hover:text-zinc-600" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
           </div>
         </div>
       </a>
     @empty
-      <div class="card">
+      <div class="card reveal-item">
         <div class="card-body">
           <div class="font-black">Todavia no tienes pedidos.</div>
           <div class="muted mt-1">Cuando compres, los veras aqui.</div>
@@ -119,5 +122,5 @@
       {{ $orders->links() }}
     </div>
   @endif
+  </div>
 @endsection
-
