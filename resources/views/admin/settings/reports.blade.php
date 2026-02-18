@@ -21,8 +21,8 @@
   ];
 @endphp
 
-<div class="space-y-6">
-  <div class="flex items-start justify-between gap-4 flex-wrap">
+<div class="store-shell space-y-6">
+  <div class="flex items-start justify-between gap-4 flex-wrap rounded-3xl border border-sky-100 bg-white/90 p-4 reveal-item">
     <div class="page-head mb-0 w-full lg:w-auto">
       <div class="page-title">Reportes automaticos</div>
       <div class="page-subtitle">Configura envio semanal de KPIs del dashboard.</div>
@@ -30,7 +30,7 @@
     @include('admin.settings.partials.top_actions')
   </div>
 
-  <div class="card">
+  <div class="card reveal-item">
     <div class="card-body grid gap-4">
       <form method="POST" action="{{ route('admin.settings.reports.update') }}" class="grid gap-4">
         @csrf

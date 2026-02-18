@@ -3,24 +3,26 @@
 @section('title', 'Admin - Reglas de productos')
 
 @section('content')
-<div class="space-y-6">
-  <div class="flex items-start justify-between gap-4 flex-wrap">
-    <div class="page-head mb-0 w-full lg:w-auto">
-      <div class="page-title">Reglas de productos (costo -> venta)</div>
-      <div class="page-subtitle">Define margen por categoria o producto. El sistema aplica la mejor coincidencia.</div>
-    </div>
-    <div class="flex w-full gap-2 flex-wrap sm:w-auto">
-      <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.calculations.index') }}">Reglas de calculo</a>
-      <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.products.index') }}">Productos</a>
+<div class="store-shell space-y-6">
+  <div class="reveal-item rounded-3xl border border-zinc-200/80 bg-gradient-to-r from-white via-sky-50/60 to-white p-4 sm:p-6">
+    <div class="page-head mb-0">
+      <div>
+        <div class="page-title">Reglas de productos (costo -> venta)</div>
+        <div class="page-subtitle">Define margen por categoria o producto. El sistema aplica la mejor coincidencia.</div>
+      </div>
+      <div class="flex w-full gap-2 flex-wrap sm:w-auto">
+        <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.calculations.index') }}">Reglas de calculo</a>
+        <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.products.index') }}">Productos</a>
+      </div>
     </div>
   </div>
 
   @if (session('success'))
-    <div class="alert-success">{{ session('success') }}</div>
+    <div class="reveal-item alert-success">{{ session('success') }}</div>
   @endif
 
   @if ($errors->any())
-    <div class="alert-error">
+    <div class="reveal-item alert-error">
       <div class="font-black">Hay errores para corregir</div>
       <ul class="mt-2 list-disc pl-5 text-sm">
         @foreach ($errors->all() as $error)
@@ -31,7 +33,7 @@
   @endif
 
   @if($schemaMissing ?? false)
-    <div class="alert-warning">
+    <div class="reveal-item alert-warning">
       <div class="font-black">Faltan migraciones para reglas de productos</div>
       <div class="mt-1">No existe la tabla <code>product_pricing_rules</code>. Ejecuta <code>php artisan migrate</code> para habilitar este modulo.</div>
       @if(Route::has('admin.maintenance.migrate') && (app()->environment(['local', 'development']) || filter_var((string) env('APP_ALLOW_WEB_MIGRATE', 'false'), FILTER_VALIDATE_BOOL)))
@@ -43,7 +45,7 @@
     </div>
   @endif
 
-  <div class="grid gap-4 lg:grid-cols-2">
+  <div class="reveal-item grid gap-4 lg:grid-cols-2">
     <div class="card">
       <div class="card-head">
         <div class="font-black">Preferencias de calculo</div>
@@ -54,7 +56,7 @@
           <div>
             <label>Margen por defecto (%)</label>
             <input name="product_default_margin_percent" class="h-11" type="number" step="0.01" min="0" max="500" value="{{ old('product_default_margin_percent', $defaultMarginPercent ?? '35') }}" required>
-            <p class="mt-1 text-xs text-zinc-500">Se usa cuando no hay una regla puntual para el producto/categoria.</p>
+            <p class="mt-1 text-xs text-zinc-500">Se usa cuando no hay una regla puntual para el producto o categoria.</p>
           </div>
 
           <label class="inline-flex items-start gap-2 text-sm font-black text-zinc-800">
@@ -108,7 +110,7 @@
     </div>
   </div>
 
-  <div class="card">
+  <div class="reveal-item card">
     <div class="card-head">
       <div class="font-black">Nueva regla</div>
     </div>
@@ -174,7 +176,7 @@
     </div>
   </div>
 
-  <div class="card">
+  <div class="reveal-item card">
     <div class="card-head">
       <div class="font-black">Reglas cargadas</div>
       <span class="badge-zinc">{{ $rules->count() }} reglas</span>

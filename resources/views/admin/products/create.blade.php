@@ -3,8 +3,8 @@
 @section('title', 'Admin - Nuevo producto')
 
 @section('content')
-<div class="mx-auto w-full max-w-4xl">
-  <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+<div class="store-shell mx-auto w-full max-w-4xl">
+  <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between rounded-3xl border border-sky-100 bg-white/90 p-4 reveal-item">
     <div class="page-head mb-0 w-full sm:w-auto">
       <div class="page-title">Nuevo producto</div>
       <div class="page-subtitle">Crea un producto con identificacion rapida para venta.</div>
@@ -16,7 +16,7 @@
   <form id="productFormCreate" method="POST" action="{{ route('admin.products.store') }}" enctype="multipart/form-data" class="space-y-4" data-disable-on-submit>
     @csrf
 
-    <div class="card">
+    <div class="card reveal-item">
       <div class="card-head">
         <div class="font-black">Datos del producto</div>
         <span class="badge-zinc">Catalogo</span>

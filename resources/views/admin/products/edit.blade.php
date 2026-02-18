@@ -7,8 +7,8 @@
   $hasImage = !empty($product->image_url);
 @endphp
 
-<div class="mx-auto w-full max-w-4xl">
-  <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+<div class="store-shell mx-auto w-full max-w-4xl">
+  <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between rounded-3xl border border-sky-100 bg-white/90 p-4 reveal-item">
     <div class="page-head mb-0 w-full sm:w-auto">
       <div class="page-title">Editar producto</div>
       <div class="page-subtitle">Actualiza identificacion, precio, stock, categoria e imagen.</div>
@@ -25,7 +25,7 @@
     @csrf
     @method('PUT')
 
-    <div class="card">
+    <div class="card reveal-item">
       <div class="card-head">
         <div class="font-black">Datos del producto</div>
         <span class="badge-zinc">ID #{{ $product->id }}</span>

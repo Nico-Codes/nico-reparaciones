@@ -7,7 +7,15 @@
 @endphp
 
 @section('content')
-  <div class="card mb-4">
+  <div class="store-shell space-y-4">
+  <div class="page-head store-hero reveal-item mb-0">
+    <div class="page-title">Usuarios</div>
+    <div class="page-subtitle">
+      Admins: {{ $roleCounts['admin'] ?? 0 }} | Users: {{ $roleCounts['user'] ?? 0 }}
+    </div>
+  </div>
+
+  <div class="card reveal-item mb-4">
     <div class="card-body">
       <div class="flex items-start justify-between gap-3 flex-wrap">
         <div>
@@ -43,7 +51,7 @@
 
   <div class="grid gap-3">
     @forelse($users as $u)
-      <div class="card">
+      <div class="card reveal-item">
         <div class="card-body">
           <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
@@ -71,7 +79,7 @@
         </div>
       </div>
     @empty
-      <div class="card">
+      <div class="card reveal-item">
         <div class="card-body text-zinc-500">
           No hay usuarios para mostrar.
         </div>
@@ -82,4 +90,6 @@
   <div class="mt-4">
     {{ $users->links() }}
   </div>
+  </div>
 @endsection
+

@@ -14,8 +14,8 @@
     default => 'bg-rose-100 text-rose-800',
   };
 @endphp
-<div class="space-y-6">
-  <div class="flex items-start justify-between gap-4 flex-wrap">
+<div class="store-shell space-y-6">
+  <div class="flex items-start justify-between gap-4 flex-wrap rounded-3xl border border-sky-100 bg-white/90 p-4 reveal-item">
     <div class="page-head mb-0 w-full lg:w-auto">
       <div class="page-title">Configuracion</div>
       <div class="page-subtitle">Centro de control para ajustes del sistema.</div>
@@ -29,7 +29,7 @@
   <div class="space-y-3">
     <div class="text-xs font-black uppercase tracking-wide text-zinc-500">Uso diario</div>
     <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-      <a href="{{ route('admin.settings.mail.index') }}" class="card border-sky-200/70 bg-sky-50/30 p-4 transition hover:-translate-y-0.5 hover:shadow-md">
+      <a href="{{ route('admin.settings.mail.index') }}" class="card reveal-item border-sky-200/70 bg-sky-50/30 p-4 transition hover:-translate-y-0.5 hover:shadow-md">
         <div class="flex items-center justify-between gap-3">
           <div class="font-black text-zinc-900">Correo SMTP</div>
           <img src="{{ $iconSettings }}" alt="" class="h-5 w-5 opacity-80" loading="lazy" decoding="async">
@@ -41,7 +41,7 @@
         <div class="mt-3 text-xs font-bold text-sky-700">Abrir modulo</div>
       </a>
 
-      <a href="{{ route('admin.settings.reports.index') }}" class="card border-sky-200/70 bg-sky-50/30 p-4 transition hover:-translate-y-0.5 hover:shadow-md">
+      <a href="{{ route('admin.settings.reports.index') }}" class="card reveal-item border-sky-200/70 bg-sky-50/30 p-4 transition hover:-translate-y-0.5 hover:shadow-md">
         <div class="flex items-center justify-between gap-3">
           <div class="font-black text-zinc-900">Reportes automaticos</div>
           <img src="{{ $iconDashboard }}" alt="" class="h-5 w-5 opacity-80" loading="lazy" decoding="async">
@@ -53,7 +53,7 @@
         <div class="mt-3 text-xs font-bold text-sky-700">Abrir modulo</div>
       </a>
 
-      <a href="{{ route('admin.settings.business') }}" class="card border-sky-200/70 bg-sky-50/30 p-4 transition hover:-translate-y-0.5 hover:shadow-md">
+      <a href="{{ route('admin.settings.business') }}" class="card reveal-item border-sky-200/70 bg-sky-50/30 p-4 transition hover:-translate-y-0.5 hover:shadow-md">
         <div class="flex items-center justify-between gap-3">
           <div class="font-black text-zinc-900">Datos del negocio</div>
           <img src="{{ $iconSettings }}" alt="" class="h-5 w-5 opacity-80" loading="lazy" decoding="async">
@@ -65,7 +65,7 @@
         <div class="mt-3 text-xs font-bold text-sky-700">Abrir modulo</div>
       </a>
 
-      <a href="{{ route('admin.calculations.index') }}" class="card border-sky-200/70 bg-sky-50/30 p-4 transition hover:-translate-y-0.5 hover:shadow-md">
+      <a href="{{ route('admin.calculations.index') }}" class="card reveal-item border-sky-200/70 bg-sky-50/30 p-4 transition hover:-translate-y-0.5 hover:shadow-md">
         <div class="flex items-center justify-between gap-3">
           <div class="font-black text-zinc-900">Reglas de calculo</div>
           <img src="{{ $iconSettings }}" alt="" class="h-5 w-5 opacity-80" loading="lazy" decoding="async">
@@ -82,7 +82,7 @@
   <div class="space-y-3">
     <div class="text-xs font-black uppercase tracking-wide text-zinc-500">Configuracion avanzada</div>
     <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-      <a href="{{ route('admin.settings.mail_templates.index') }}" class="card p-4 transition hover:-translate-y-0.5 hover:shadow-md">
+      <a href="{{ route('admin.settings.mail_templates.index') }}" class="card reveal-item p-4 transition hover:-translate-y-0.5 hover:shadow-md">
         <div class="flex items-center justify-between gap-3">
           <div class="font-black text-zinc-900">Plantillas de correo</div>
           <img src="{{ $iconSettings }}" alt="" class="h-5 w-5 opacity-80" loading="lazy" decoding="async">
@@ -94,7 +94,7 @@
         <div class="mt-3 text-xs font-bold text-sky-700">Abrir modulo</div>
       </a>
 
-      <a href="{{ route('admin.settings.help.index') }}" class="card p-4 transition hover:-translate-y-0.5 hover:shadow-md">
+      <a href="{{ route('admin.settings.help.index') }}" class="card reveal-item p-4 transition hover:-translate-y-0.5 hover:shadow-md">
         <div class="flex items-center justify-between gap-3">
           <div class="font-black text-zinc-900">Centro de ayuda</div>
           <img src="{{ $iconSettings }}" alt="" class="h-5 w-5 opacity-80" loading="lazy" decoding="async">
@@ -106,7 +106,7 @@
         <div class="mt-3 text-xs font-bold text-sky-700">Abrir modulo</div>
       </a>
 
-      <a href="{{ route('admin.settings.assets.index') }}" class="card p-4 transition hover:-translate-y-0.5 hover:shadow-md">
+      <a href="{{ route('admin.settings.assets.index') }}" class="card reveal-item p-4 transition hover:-translate-y-0.5 hover:shadow-md">
         <div class="flex items-center justify-between gap-3">
           <div class="font-black text-zinc-900">Identidad visual</div>
           <img src="{{ $iconStore }}" alt="" class="h-5 w-5 opacity-80" loading="lazy" decoding="async">
@@ -118,7 +118,7 @@
         <div class="mt-3 text-xs font-bold text-sky-700">Abrir modulo</div>
       </a>
 
-      <a href="{{ route('admin.two_factor.settings') }}" class="card p-4 transition hover:-translate-y-0.5 hover:shadow-md">
+      <a href="{{ route('admin.two_factor.settings') }}" class="card reveal-item p-4 transition hover:-translate-y-0.5 hover:shadow-md">
         <div class="flex items-center justify-between gap-3">
           <div class="font-black text-zinc-900">Seguridad 2FA</div>
           <img src="{{ $iconSettings }}" alt="" class="h-5 w-5 opacity-80" loading="lazy" decoding="async">
@@ -130,7 +130,7 @@
         <div class="mt-3 text-xs font-bold text-sky-700">Abrir modulo</div>
       </a>
 
-      <a href="{{ route('admin.whatsapp_templates.index') }}" class="card p-4 transition hover:-translate-y-0.5 hover:shadow-md">
+      <a href="{{ route('admin.whatsapp_templates.index') }}" class="card reveal-item p-4 transition hover:-translate-y-0.5 hover:shadow-md">
         <div class="flex items-center justify-between gap-3">
           <div class="font-black text-zinc-900">Plantillas WhatsApp</div>
           <img src="{{ $iconOrders }}" alt="" class="h-5 w-5 opacity-80" loading="lazy" decoding="async">
@@ -142,7 +142,7 @@
         <div class="mt-3 text-xs font-bold text-sky-700">Abrir modulo</div>
       </a>
 
-      <a href="{{ route('admin.orders_whatsapp_templates.index') }}" class="card p-4 transition hover:-translate-y-0.5 hover:shadow-md">
+      <a href="{{ route('admin.orders_whatsapp_templates.index') }}" class="card reveal-item p-4 transition hover:-translate-y-0.5 hover:shadow-md">
         <div class="flex items-center justify-between gap-3">
           <div class="font-black text-zinc-900">WhatsApp pedidos</div>
           <img src="{{ $iconOrders }}" alt="" class="h-5 w-5 opacity-80" loading="lazy" decoding="async">

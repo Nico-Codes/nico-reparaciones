@@ -7,17 +7,19 @@
 @endphp
 
 @section('content')
-<div class="space-y-6">
-  <div class="flex items-start justify-between gap-4 flex-wrap">
+<div class="store-shell space-y-6">
+  <div class="reveal-item rounded-3xl border border-zinc-200/80 bg-gradient-to-r from-white via-sky-50/60 to-white p-4 sm:p-6">
     <div class="page-head mb-0">
-      <div class="page-title">Historial de ventas rapidas</div>
-      <div class="page-subtitle">Control diario de ventas de mostrador, con filtros y exportacion.</div>
-    </div>
+      <div>
+        <div class="page-title">Historial de ventas rapidas</div>
+        <div class="page-subtitle">Control diario de ventas de mostrador, con filtros y exportacion.</div>
+      </div>
 
-    <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.quick_sales.index') }}">Volver a venta rapida</a>
+      <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.quick_sales.index') }}">Volver a venta rapida</a>
+    </div>
   </div>
 
-  <div class="card">
+  <div class="reveal-item card">
     <div class="card-head">
       <div class="font-black">Filtros</div>
       <div class="inline-flex gap-2">
@@ -60,7 +62,7 @@
     </div>
   </div>
 
-  <div class="grid gap-3 sm:grid-cols-2">
+  <div class="reveal-item grid gap-3 sm:grid-cols-2">
     <div class="card">
       <div class="card-body">
         <div class="text-sm text-zinc-500">Ventas encontradas</div>
@@ -75,7 +77,7 @@
     </div>
   </div>
 
-  <div class="card">
+  <div class="reveal-item card">
     <div class="card-head">
       <div class="font-black">Detalle</div>
       <span class="badge-zinc">{{ $sales->total() }} registros</span>

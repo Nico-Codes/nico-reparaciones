@@ -48,8 +48,8 @@
 @endphp
 
 @section('content')
-<div class="space-y-6" data-admin-products>
-  <div class="flex items-start justify-between gap-4 flex-wrap">
+<div class="store-shell space-y-6" data-admin-products>
+  <div class="flex items-start justify-between gap-4 flex-wrap rounded-3xl border border-sky-100 bg-white/90 p-4 reveal-item">
     <div class="page-head mb-0">
       <div class="page-title">Productos</div>
       <div class="page-subtitle">Administra catalogo con identificacion por SKU y codigo de barras.</div>
@@ -65,7 +65,7 @@
     <div class="alert-success">{{ session('success') }}</div>
   @endif
 
-  <div class="card">
+  <div class="card reveal-item">
     <div class="card-body">
       <form method="GET" class="flex flex-col sm:flex-row gap-2">
         <input name="q" value="{{ $q }}" placeholder="Buscar por nombre, slug, SKU o barcode..." class="h-11" />
@@ -113,7 +113,7 @@
     </div>
   </div>
 
-  <div class="card hidden" data-products-bulk-bar>
+  <div class="card reveal-item hidden" data-products-bulk-bar>
     <div class="card-body flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
       <div class="text-sm text-zinc-600">
         <span class="font-black" data-bulk-count>0</span> seleccionados
@@ -145,7 +145,7 @@
       @php
         $margin = $marginPercent($p->cost_price, $p->price);
       @endphp
-      <div class="card">
+      <div class="card reveal-item">
         <div class="card-body">
           <div class="flex gap-3">
             <div class="h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50">
@@ -213,11 +213,11 @@
         </div>
       </div>
     @empty
-      <div class="card"><div class="card-body text-sm text-zinc-600">No hay productos todavia.</div></div>
+      <div class="card reveal-item"><div class="card-body text-sm text-zinc-600">No hay productos todavia.</div></div>
     @endforelse
   </div>
 
-  <div class="card hidden md:block">
+  <div class="card reveal-item hidden md:block">
     <div class="table-wrap">
       <table class="table">
         <thead>

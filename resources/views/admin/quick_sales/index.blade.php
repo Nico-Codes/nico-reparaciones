@@ -7,17 +7,19 @@
 @endphp
 
 @section('content')
-<div class="space-y-6">
-  <div class="flex items-start justify-between gap-4 flex-wrap">
+<div class="store-shell space-y-6">
+  <div class="reveal-item rounded-3xl border border-zinc-200/80 bg-gradient-to-r from-white via-sky-50/60 to-white p-4 sm:p-6">
     <div class="page-head mb-0">
-      <div class="page-title">Venta rapida</div>
-      <div class="page-subtitle">Escanea SKU o barcode para cargar productos y confirmar venta en segundos.</div>
-    </div>
+      <div>
+        <div class="page-title">Venta rapida</div>
+        <div class="page-subtitle">Escanea SKU o barcode para cargar productos y confirmar venta en segundos.</div>
+      </div>
 
-    <div class="flex w-full gap-2 flex-wrap sm:w-auto">
-      <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ $quickSaleHistoryHref }}">Historial</a>
-      <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.orders.index') }}">Ver pedidos</a>
-      <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.products.index') }}">Productos</a>
+      <div class="flex w-full gap-2 flex-wrap sm:w-auto">
+        <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ $quickSaleHistoryHref }}">Historial</a>
+        <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.orders.index') }}">Ver pedidos</a>
+        <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.products.index') }}">Productos</a>
+      </div>
     </div>
   </div>
 
@@ -29,7 +31,7 @@
     <div class="alert-success">{{ session('success') }}</div>
   @endif
 
-  <div class="grid gap-4 xl:grid-cols-3">
+  <div class="reveal-item grid gap-4 xl:grid-cols-3">
     <div class="xl:col-span-2 space-y-4">
       <div class="card">
         <div class="card-head">

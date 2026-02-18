@@ -33,19 +33,21 @@
 @endphp
 
 @section('content')
-  <div class="space-y-5">
-  <div class="flex items-start justify-between gap-3 flex-wrap">
+  <div class="store-shell space-y-6">
+  <div class="reveal-item rounded-3xl border border-zinc-200/80 bg-gradient-to-r from-white via-sky-50/60 to-white p-4 sm:p-6">
     <div class="page-head mb-0">
-      <div class="page-title">Proveedores</div>
-      <div class="page-subtitle">Gestiona tus lugares de compra para trazabilidad de fallas.</div>
-    </div>
+      <div>
+        <div class="page-title">Proveedores</div>
+        <div class="page-subtitle">Gestiona tus lugares de compra para trazabilidad de fallas.</div>
+      </div>
 
-    <div class="flex gap-2 w-full sm:w-auto">
-      <form method="POST" action="{{ route('admin.suppliers.import_defaults') }}" data-disable-on-submit class="w-full sm:w-auto">
-        @csrf
-        <button class="btn-outline h-11 w-full sm:w-auto justify-center" type="submit">Importar sugeridos</button>
-      </form>
-      <a href="{{ route('admin.warranty_incidents.index') }}" class="btn-outline h-11 w-full sm:w-auto justify-center">Ver garantias</a>
+      <div class="flex gap-2 w-full sm:w-auto">
+        <form method="POST" action="{{ route('admin.suppliers.import_defaults') }}" data-disable-on-submit class="w-full sm:w-auto">
+          @csrf
+          <button class="btn-outline h-11 w-full sm:w-auto justify-center" type="submit">Importar sugeridos</button>
+        </form>
+        <a href="{{ route('admin.warranty_incidents.index') }}" class="btn-outline h-11 w-full sm:w-auto justify-center">Ver garantias</a>
+      </div>
     </div>
   </div>
 
@@ -56,7 +58,7 @@
     <div class="alert-warning">{{ session('warning') }}</div>
   @endif
 
-  <div class="card">
+  <div class="reveal-item card">
     <div class="card-head">
       <div class="font-black">Prioridad de busqueda</div>
       <span class="badge-zinc">Arrastra para ordenar</span>
@@ -94,7 +96,7 @@
     </div>
   </div>
 
-  <div class="card">
+  <div class="reveal-item card">
     <div class="card-body">
       <form method="GET" action="{{ route('admin.suppliers.index') }}" class="flex flex-col gap-2 sm:flex-row sm:items-end">
         <div class="space-y-1 w-full sm:max-w-sm">
@@ -106,7 +108,7 @@
     </div>
   </div>
 
-  <div class="card">
+  <div class="reveal-item card">
     <div class="card-head">
       <div class="font-black">Nuevo proveedor</div>
     </div>
@@ -159,7 +161,7 @@
     </div>
   </div>
 
-  <div class="card">
+  <div class="reveal-item card">
     <div class="table-wrap">
       <table class="table">
         <thead>

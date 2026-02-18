@@ -7,7 +7,8 @@
 @endphp
 
 @section('content')
-  <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div class="store-shell">
+  <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-3xl border border-sky-100 bg-white/90 p-4 reveal-item">
     <div>
       <div class="text-lg font-semibold">Usuario #{{ $user->id }}</div>
       <div class="text-sm text-zinc-500">Gestión de rol y datos de registro</div>
@@ -16,7 +17,7 @@
   </div>
 
   <div class="grid md:grid-cols-2 gap-4">
-    <div class="card">
+    <div class="card reveal-item">
       <div class="card-body">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -34,7 +35,7 @@
       </div>
     </div>
 
-    <div class="card">
+    <div class="card reveal-item">
       <div class="card-body">
         <div class="font-semibold mb-2">Rol del usuario</div>
 
@@ -56,4 +57,6 @@
       </div>
     </div>
   </div>
+  </div>
 @endsection
+

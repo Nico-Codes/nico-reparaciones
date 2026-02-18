@@ -10,9 +10,9 @@
 @endphp
 
 @section('content')
-<div class="space-y-6" data-admin-categories>
+<div class="store-shell space-y-6" data-admin-categories>
 
-  <div class="flex items-start justify-between gap-4 flex-wrap">
+  <div class="flex items-start justify-between gap-4 flex-wrap rounded-3xl border border-sky-100 bg-white/90 p-4 reveal-item">
     <div class="page-head mb-0 w-full lg:w-auto">
       <div class="page-title">Categorías</div>
       <div class="page-subtitle">Organizá tu catálogo. Total: <span class="font-black">{{ $count }}</span></div>
@@ -31,7 +31,7 @@
   {{-- Mobile (cards) --}}
   <div class="grid gap-3 md:hidden">
     @forelse($categories as $c)
-      <div class="card">
+      <div class="card reveal-item">
         <div class="card-body">
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0">
@@ -77,12 +77,12 @@
         </div>
       </div>
     @empty
-      <div class="card"><div class="card-body text-sm text-zinc-600">No hay categorías todavía.</div></div>
+      <div class="card reveal-item"><div class="card-body text-sm text-zinc-600">No hay categorías todavía.</div></div>
     @endforelse
   </div>
 
   {{-- Desktop (table) --}}
-  <div class="card hidden md:block">
+  <div class="card reveal-item hidden md:block">
     <div class="table-wrap">
       <table class="table">
         <thead>
@@ -144,3 +144,4 @@
 </div>
 <div data-react-admin-quick-actions-enhancements></div>
 @endsection
+

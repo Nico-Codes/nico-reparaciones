@@ -3,8 +3,8 @@
 @section('title', 'Admin — Nueva categoría')
 
 @section('content')
-<div class="mx-auto w-full max-w-3xl">
-  <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+<div class="store-shell mx-auto w-full max-w-3xl">
+  <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between rounded-3xl border border-sky-100 bg-white/90 p-4 reveal-item">
     <div class="page-head mb-0 w-full sm:w-auto">
       <div class="page-title">Nueva categoría</div>
       <div class="page-subtitle">Creá una categoría para ordenar el catálogo.</div>
@@ -16,7 +16,7 @@
   <form method="POST" action="{{ route('admin.categories.store') }}" class="space-y-4">
     @csrf
 
-    <div class="card">
+    <div class="card reveal-item">
       <div class="card-head">
         <div class="font-black">Datos de la categoría</div>
         <span class="badge-zinc">Catálogo</span>
@@ -56,3 +56,4 @@
   </form>
 </div>
 @endsection
+
