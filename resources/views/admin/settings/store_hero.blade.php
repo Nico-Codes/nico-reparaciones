@@ -13,92 +13,97 @@
   </div>
 
   <div class="grid gap-4 lg:grid-cols-2">
-    <div class="card reveal-item">
-      <div class="card-head">
-        <div class="font-black">Imagen de fondo</div>
-        <span class="{{ ($heroAsset['is_custom'] ?? false) ? 'badge-emerald' : 'badge-zinc' }}">
-          {{ ($heroAsset['is_custom'] ?? false) ? 'Personalizada' : 'Por defecto' }}
-        </span>
-      </div>
-      <div class="card-body space-y-3">
-        @if($heroAsset)
-          <div class="h-44 overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50">
-            <img src="{{ $heroAsset['url'] }}" alt="Portada tienda" class="h-full w-full object-cover">
-          </div>
-
-          <form
-            method="POST"
-            action="{{ route('admin.settings.assets.update', $heroAsset['key']) }}"
-            enctype="multipart/form-data"
-            class="space-y-2"
-            data-asset-upload-form
-          >
-            @csrf
-
-            <input
-              type="file"
-              name="file"
-              accept="{{ $heroAsset['accept'] }}"
-              class="hidden"
-              data-asset-file-input
-              required
-            >
-
-            <button
-              type="button"
-              class="h-11 w-full rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 px-3 text-xs font-semibold text-zinc-700 hover:bg-zinc-100 transition"
-              data-asset-dropzone
-            >
-              Arrastra una imagen o haz click para elegir
-            </button>
-
-            <div class="hidden rounded-xl border border-zinc-200 bg-white px-2 py-1 text-xs font-semibold text-zinc-700" data-asset-file-name></div>
-
-            <div class="text-[11px] text-zinc-500">
-              Formatos: {{ $heroAsset['extensions_label'] }} | Max: {{ $heroAsset['max_kb'] }} KB
+    @foreach([
+      ['title' => 'Imagen desktop/tablet', 'asset' => $heroAssetDesktop ?? null],
+      ['title' => 'Imagen movil', 'asset' => $heroAssetMobile ?? null],
+    ] as $heroBlock)
+      @php($asset = $heroBlock['asset'])
+      <div class="card reveal-item">
+        <div class="card-head">
+          <div class="font-black">{{ $heroBlock['title'] }}</div>
+          <span class="{{ ($asset['is_custom'] ?? false) ? 'badge-emerald' : 'badge-zinc' }}">
+            {{ ($asset['is_custom'] ?? false) ? 'Personalizada' : 'Por defecto' }}
+          </span>
+        </div>
+        <div class="card-body space-y-3">
+          @if($asset)
+            <div class="h-44 overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50">
+              <img src="{{ $asset['url'] }}" alt="{{ $heroBlock['title'] }}" class="h-full w-full object-cover">
             </div>
 
-            <button type="submit" class="btn-primary h-11 w-full justify-center disabled:opacity-50 disabled:cursor-not-allowed" data-asset-submit disabled>
-              Guardar imagen
-            </button>
-          </form>
-
-          @if($heroAsset['is_custom'] ?? false)
             <form
               method="POST"
-              action="{{ route('admin.settings.assets.reset', $heroAsset['key']) }}"
-              onsubmit="return confirm('Restaurar imagen por defecto?')"
+              action="{{ route('admin.settings.assets.update', $asset['key']) }}"
+              enctype="multipart/form-data"
+              class="space-y-2"
+              data-asset-upload-form
             >
               @csrf
-              @method('DELETE')
-              <button type="submit" class="btn-outline h-11 w-full justify-center">Restaurar por defecto</button>
-            </form>
-          @endif
-        @endif
-      </div>
-    </div>
 
-    <div class="card reveal-item">
-      <div class="card-head">
-        <div class="font-black">Textos opcionales</div>
+              <input
+                type="file"
+                name="file"
+                accept="{{ $asset['accept'] }}"
+                class="hidden"
+                data-asset-file-input
+                required
+              >
+
+              <button
+                type="button"
+                class="h-11 w-full rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 px-3 text-xs font-semibold text-zinc-700 hover:bg-zinc-100 transition"
+                data-asset-dropzone
+              >
+                Arrastra una imagen o haz click para elegir
+              </button>
+
+              <div class="hidden rounded-xl border border-zinc-200 bg-white px-2 py-1 text-xs font-semibold text-zinc-700" data-asset-file-name></div>
+
+              <div class="text-[11px] text-zinc-500">
+                Formatos: {{ $asset['extensions_label'] }} | Max: {{ $asset['max_kb'] }} KB
+              </div>
+
+              <button type="submit" class="btn-primary h-11 w-full justify-center disabled:opacity-50 disabled:cursor-not-allowed" data-asset-submit disabled>
+                Guardar imagen
+              </button>
+            </form>
+
+            @if($asset['is_custom'] ?? false)
+              <form
+                method="POST"
+                action="{{ route('admin.settings.assets.reset', $asset['key']) }}"
+                onsubmit="return confirm('Restaurar imagen por defecto?')"
+              >
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="btn-outline h-11 w-full justify-center">Restaurar por defecto</button>
+              </form>
+            @endif
+          @endif
+        </div>
       </div>
-      <div class="card-body">
-        <form method="POST" action="{{ route('admin.settings.update') }}" class="space-y-3">
-          @csrf
-          <div class="grid gap-2">
-            <label>Titulo (opcional)</label>
-            <input class="h-11" name="store_home_hero_title" value="{{ old('store_home_hero_title', $storeHomeHeroTitle ?? '') }}" placeholder="Ej: Novedades de la semana">
-          </div>
-          <div class="grid gap-2">
-            <label>Texto (opcional)</label>
-            <textarea name="store_home_hero_subtitle" rows="4" placeholder="Ej: Ingresaron nuevos modulos y accesorios.">{{ old('store_home_hero_subtitle', $storeHomeHeroSubtitle ?? '') }}</textarea>
-          </div>
-          <button class="btn-primary h-11 w-full justify-center" type="submit">Guardar textos</button>
-        </form>
-      </div>
+    @endforeach
+  </div>
+
+  <div class="card reveal-item">
+    <div class="card-head">
+      <div class="font-black">Textos opcionales</div>
+    </div>
+    <div class="card-body">
+      <form method="POST" action="{{ route('admin.settings.update') }}" class="space-y-3">
+        @csrf
+        <div class="grid gap-2">
+          <label>Titulo (opcional)</label>
+          <input class="h-11" name="store_home_hero_title" value="{{ old('store_home_hero_title', $storeHomeHeroTitle ?? '') }}" placeholder="Ej: Novedades de la semana">
+        </div>
+        <div class="grid gap-2">
+          <label>Texto (opcional)</label>
+          <textarea name="store_home_hero_subtitle" rows="4" placeholder="Ej: Ingresaron nuevos modulos y accesorios.">{{ old('store_home_hero_subtitle', $storeHomeHeroSubtitle ?? '') }}</textarea>
+        </div>
+        <button class="btn-primary h-11 w-full justify-center sm:w-auto" type="submit">Guardar textos</button>
+      </form>
     </div>
   </div>
 </div>
 <div data-react-admin-asset-upload-enhancements></div>
 @endsection
-

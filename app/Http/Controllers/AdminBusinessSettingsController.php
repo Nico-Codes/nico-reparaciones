@@ -82,7 +82,8 @@ class AdminBusinessSettingsController extends Controller
         return view('admin.settings.store_hero', array_merge(
             $this->businessViewData(),
             [
-                'heroAsset' => $assets['store_home_hero'] ?? null,
+                'heroAssetDesktop' => $assets['store_home_hero_desktop'] ?? null,
+                'heroAssetMobile' => $assets['store_home_hero_mobile'] ?? null,
             ]
         ));
     }

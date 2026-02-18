@@ -19,7 +19,8 @@ class StoreController extends Controller
         $subtitle = trim((string) ($settings->get('store_home_hero_subtitle') ?? ''));
 
         return [
-            'image' => BrandAssets::url('store_home_hero'),
+            'imageDesktop' => BrandAssets::url('store_home_hero_desktop'),
+            'imageMobile' => BrandAssets::url('store_home_hero_mobile'),
             'title' => $title !== '' ? $title : 'Novedades y ofertas en accesorios',
             'subtitle' => $subtitle !== '' ? $subtitle : 'Descubre ingresos recientes y productos destacados con stock real.',
         ];

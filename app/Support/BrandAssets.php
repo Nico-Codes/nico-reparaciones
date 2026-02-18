@@ -72,12 +72,19 @@ class BrandAssets
             'extensions' => ['svg', 'png', 'jpg', 'jpeg', 'webp'],
             'max_kb' => 2048,
         ],
-        'store_home_hero' => [
-            'label' => 'Fondo portada tienda',
+        'store_home_hero_desktop' => [
+            'label' => 'Fondo portada tienda (desktop/tablet)',
             'group' => 'store',
             'fallback' => 'brand/logo.png',
             'extensions' => ['png', 'jpg', 'jpeg', 'webp'],
             'max_kb' => 6144,
+        ],
+        'store_home_hero_mobile' => [
+            'label' => 'Fondo portada tienda (movil)',
+            'group' => 'store',
+            'fallback' => 'brand/logo.png',
+            'extensions' => ['png', 'jpg', 'jpeg', 'webp'],
+            'max_kb' => 4096,
         ],
         'favicon_ico' => [
             'label' => 'Favicon .ico',

@@ -23,8 +23,16 @@
 
 <div id="top" class="container-page store-shell {{ $showStoreFrontHero ? 'store-shell--hero' : '' }}">
   @if($showStoreFrontHero)
-    <section class="store-front-hero store-front-hero--fullbleed store-front-hero--flush reveal-item" style="background-image: url('{{ $storeHeroData['image'] ?? asset('brand/logo.png') }}');">
-      <div aria-hidden="true"></div>
+    <section class="store-front-hero store-front-hero--fullbleed store-front-hero--flush reveal-item">
+      <picture class="store-front-hero__picture" aria-hidden="true">
+        <source media="(max-width: 767px)" srcset="{{ $storeHeroData['imageMobile'] ?? asset('brand/logo.png') }}">
+        <img
+          class="store-front-hero__image"
+          src="{{ $storeHeroData['imageDesktop'] ?? asset('brand/logo.png') }}"
+          alt=""
+          loading="eager"
+          decoding="async">
+      </picture>
     </section>
   @else
     <div class="page-head store-hero">
