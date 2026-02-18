@@ -41,8 +41,8 @@
 @endphp
 
 @section('content')
-<div class="space-y-6">
-  <div class="flex items-start justify-between gap-4 flex-wrap">
+<div class="store-shell space-y-6">
+  <div class="flex items-start justify-between gap-4 flex-wrap rounded-3xl border border-sky-100 bg-white/90 p-4 reveal-item">
     <div class="page-head mb-0">
       <div class="page-title">Reparaciones</div>
       <div class="page-subtitle">Listado y control rápido de reparaciones.</div>
@@ -118,7 +118,7 @@
   @endif
 
   {{-- Filtros --}}
-  <div class="card">
+  <div class="card reveal-item">
     <div class="card-body">
       <form method="GET" class="grid gap-3 sm:grid-cols-6">
         <div class="sm:col-span-2">
@@ -168,7 +168,7 @@
   {{-- Mobile (cards) --}}
   <div class="grid gap-3 md:hidden">
     @forelse($repairs as $repair)
-      <div class="card">
+      <div class="card reveal-item">
         <div class="card-body">
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0">
@@ -255,12 +255,12 @@
         </div>
       </div>
     @empty
-      <div class="card"><div class="card-body text-sm text-zinc-600">No hay reparaciones.</div></div>
+      <div class="card reveal-item"><div class="card-body text-sm text-zinc-600">No hay reparaciones.</div></div>
     @endforelse
   </div>
 
   {{-- Desktop (table) --}}
-  <div class="card hidden md:block">
+  <div class="card reveal-item hidden md:block">
     <div class="table-wrap">
       <table class="table">
         <thead>
@@ -360,3 +360,7 @@
   </div>
 </div>
 @endsection
+
+
+
+

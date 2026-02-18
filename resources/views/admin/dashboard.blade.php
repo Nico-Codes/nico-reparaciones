@@ -97,9 +97,9 @@
 @endphp
 
 @section('content')
-<div class="space-y-6">
+<div class="store-shell space-y-6">
   {{-- Header --}}
-  <div class="flex items-end justify-between gap-3 flex-wrap">
+  <div class="flex items-end justify-between gap-3 flex-wrap rounded-3xl border border-sky-100 bg-white/90 p-4 reveal-item">
     <div class="page-head mb-0 w-full lg:w-auto">
       <h1 class="page-title">Panel Admin</h1>
       <p class="page-subtitle">
@@ -202,7 +202,7 @@
 
   {{-- KPIs (por rango + operativos) --}}
   <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-    <div class="card">
+    <div class="card reveal-item">
       <div class="card-body">
         <div class="text-xs font-black uppercase text-zinc-500">Pedidos · últimos {{ (int)$rangeDays }} días</div>
         <div class="flex items-end justify-between gap-2 mt-1">
@@ -217,7 +217,7 @@
       </div>
     </div>
 
-    <div class="card">
+    <div class="card reveal-item">
       <div class="card-body">
         <div class="text-xs font-black uppercase text-zinc-500">Ventas entregadas · últimos {{ (int)$rangeDays }} días</div>
         <div class="flex items-end justify-between gap-2 mt-1">
@@ -230,7 +230,7 @@
       </div>
     </div>
 
-    <div class="card">
+    <div class="card reveal-item">
       <div class="card-body">
         <div class="text-xs font-black uppercase text-zinc-500">Reparaciones · últimos {{ (int)$rangeDays }} días</div>
         <div class="flex items-end justify-between gap-2 mt-1">
@@ -245,7 +245,7 @@
       </div>
     </div>
 
-    <div class="card">
+    <div class="card reveal-item">
       <div class="card-body">
         <div class="text-xs font-black uppercase text-zinc-500">WhatsApp pendientes (estado actual)</div>
         <div class="text-3xl font-extrabold mt-1">{{ (int)(($ordersWaPending ?? 0) + ($repairsWaPending ?? 0)) }}</div>
@@ -271,7 +271,7 @@
 
   {{-- KPI extra de negocio --}}
   <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-    <div class="card">
+    <div class="card reveal-item">
       <div class="card-body">
         <div class="text-xs font-black uppercase text-zinc-500">Ticket promedio (entregados)</div>
         <div class="flex items-end justify-between gap-2 mt-1">
@@ -284,7 +284,7 @@
       </div>
     </div>
 
-    <div class="card">
+    <div class="card reveal-item">
       <div class="card-body">
         <div class="text-xs font-black uppercase text-zinc-500">Tasa de entrega</div>
         <div class="flex items-end justify-between gap-2 mt-1">
@@ -303,7 +303,7 @@
       </div>
     </div>
 
-    <div class="card">
+    <div class="card reveal-item">
       <div class="card-body">
         <div class="text-xs font-black uppercase text-zinc-500">Tiempo medio reparacion entregada</div>
         <div class="flex items-end justify-between gap-2 mt-1">
@@ -316,7 +316,7 @@
       </div>
     </div>
 
-    <div class="card">
+    <div class="card reveal-item">
       <div class="card-body">
         <div class="text-xs font-black uppercase text-zinc-500">Presupuestos esperando aprobacion</div>
         <div class="text-3xl font-extrabold mt-1">{{ (int)($waitingApprovalCount ?? 0) }}</div>
@@ -343,7 +343,7 @@
     <div class="grid gap-3 lg:grid-cols-2 hidden" data-collapse="dash_charts">
 
     {{-- Ventas 6 meses --}}
-    <div class="card">
+    <div class="card reveal-item">
       <div class="card-head">
         <div>
           <div class="font-extrabold">Ventas (entregado) · últimos 6 meses</div>
@@ -378,7 +378,7 @@
     </div>
 
     {{-- Actividad --}}
-    <div class="card">
+    <div class="card reveal-item">
       <div class="card-head">
         <div>
           <div class="font-extrabold">Actividad · Pedidos vs Reparaciones</div>
@@ -429,7 +429,7 @@
   {{-- Estados + Stock bajo --}}
   <div class="grid gap-3 lg:grid-cols-3">
     {{-- Pedidos por estado --}}
-    <div class="card">
+    <div class="card reveal-item">
       <div class="card-head">
         <div class="font-extrabold">Pedidos por estado</div>
         <a class="btn-outline btn-sm" href="{{ route('admin.orders.index') }}">Ver</a>
@@ -448,7 +448,7 @@
     </div>
 
     {{-- Reparaciones por estado --}}
-    <div class="card">
+    <div class="card reveal-item">
       <div class="card-head">
         <div class="font-extrabold">Reparaciones por estado</div>
         <a class="btn-outline btn-sm" href="{{ route('admin.repairs.index') }}">Ver</a>
@@ -467,7 +467,7 @@
     </div>
 
     {{-- Stock bajo --}}
-    <div class="card">
+    <div class="card reveal-item">
       <div class="card-head">
         <div>
           <div class="font-extrabold">Stock bajo</div>
@@ -505,7 +505,7 @@
 
   {{-- Top productos + Actividad reciente --}}
   <div class="grid gap-3 lg:grid-cols-2">
-    <div class="card">
+    <div class="card reveal-item">
       <div class="card-head">
         <div class="min-w-0">
           <div class="font-extrabold">Top productos (últimos {{ (int)$rangeDays }} días)</div>
@@ -564,7 +564,7 @@
       </div>
     </div>
 
-    <div class="card">
+    <div class="card reveal-item">
       <div class="card-head">
         <div>
           <div class="font-extrabold">Actividad reciente</div>
@@ -635,3 +635,6 @@
   </div>
 </div>
 @endsection
+
+
+

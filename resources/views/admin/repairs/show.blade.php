@@ -40,8 +40,8 @@
 @endphp
 
 @section('content')
-<div class="container-page py-6">
-  <div class="page-head">
+<div class="container-page store-shell">
+  <div class="page-head store-hero reveal-item">
     <div>
       <div class="flex flex-wrap items-center gap-2">
         <h1 class="page-title">{{ $repair->code ?? '—' }}</h1>
@@ -122,7 +122,7 @@
       @endphp
 
       {{-- Acciones rápidas --}}
-      <div class="card" id="repair_actions">
+      <div class="card reveal-item" id="repair_actions">
         <div class="card-head">
           <div class="font-black">Acciones rápidas</div>
           <span class="badge-zinc">{{ $repair->code ?? '—' }}</span>
@@ -255,7 +255,7 @@
         </div>
       </div>
 
-      <div class="card" id="repair_summary">
+      <div class="card reveal-item" id="repair_summary">
         <div class="card-head">
           <div class="font-black">Resumen</div>
           <span class="badge-zinc">Código: {{ $repair->code ?? '—' }}</span>
@@ -309,7 +309,7 @@
         </div>
       </div>
 
-      <div class="card" id="repair_status">
+      <div class="card reveal-item" id="repair_status">
         <div class="card-head">
           <div class="font-black">Cambiar estado</div>
           <span class="{{ $badge($repair->status) }}">{{ $statusLabel }}</span>
@@ -347,7 +347,7 @@
         </div>
       </div>
 
-      <div class="card">
+      <div class="card reveal-item">
         <div class="card-head">
           <div class="font-black">Historial</div>
 
@@ -390,7 +390,7 @@
 
 
       {{-- Logs de WhatsApp --}}
-      <div class="card">
+      <div class="card reveal-item">
         <div class="card-head">
           <div class="font-black">Logs WhatsApp</div>
 
@@ -432,7 +432,7 @@
 
     {{-- Columna derecha: edición completa --}}
     <div class="lg:col-span-2 space-y-4" id="repair_edit">
-      <div class="card">
+      <div class="card reveal-item">
         <div class="card-head">
           <div class="font-black">Editar reparación</div>
           <span class="badge-zinc">Se guarda en el momento</span>
@@ -803,4 +803,7 @@
 <div data-react-repair-show-whatsapp-log data-root-selector="body" data-csrf-token="{{ csrf_token() }}"></div>
 <div data-react-repair-catalog-enhancements></div>
 @endsection
+
+
+
 

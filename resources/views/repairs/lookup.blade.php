@@ -1,29 +1,29 @@
 @extends('layouts.app')
 
-@section('title', 'Consultar reparación')
+@section('title', 'Consultar reparacion')
 
 @php
   $has = fn($name) => \Illuminate\Support\Facades\Route::has($name);
 @endphp
 
 @section('content')
-  <div class="max-w-xl mx-auto">
-    <div class="page-head">
-      <div class="page-title">Consultar reparación</div>
-      <div class="page-subtitle">Ingresá el código y el teléfono que dejaste en el local.</div>
+  <div class="store-shell max-w-xl mx-auto">
+    <div class="page-head store-hero reveal-item">
+      <div class="page-title">Consultar reparacion</div>
+      <div class="page-subtitle">Ingresa el codigo y el telefono que dejaste en el local.</div>
     </div>
 
-    <div class="card">
+    <div class="card reveal-item">
       <div class="card-body">
         <div class="rounded-2xl border border-zinc-100 bg-zinc-50 p-3 text-sm text-zinc-700">
-          <span class="font-black text-zinc-900">Tip:</span> el teléfono puede ir con espacios o guiones, lo normalizamos automáticamente.
+          <span class="font-black text-zinc-900">Tip:</span> el telefono puede ir con espacios o guiones, lo normalizamos automaticamente.
         </div>
 
-        <form method="POST" action="{{ route('repairs.lookup.post') }}" class="mt-4 grid gap-4">
+        <form method="POST" action="{{ route('repairs.lookup.post') }}" class="mt-4 grid gap-4" data-disable-on-submit>
           @csrf
 
           <div>
-            <label for="code">Código</label>
+            <label for="code">Codigo</label>
             <input
               id="code"
               name="code"
@@ -35,7 +35,7 @@
           </div>
 
           <div>
-            <label for="phone">Teléfono</label>
+            <label for="phone">Telefono</label>
             <input
               id="phone"
               name="phone"
@@ -48,16 +48,16 @@
           </div>
 
           <div class="grid gap-2">
-            <button class="btn-primary w-full" type="submit">Buscar</button>
+            <button class="btn-primary h-11 w-full justify-center" type="submit">Buscar</button>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
               @if($has('store.index'))
-                <a href="{{ route('store.index') }}" class="btn-outline w-full">Ir a la tienda</a>
+                <a href="{{ route('store.index') }}" class="btn-outline h-11 w-full justify-center">Ir a la tienda</a>
               @endif
 
               @auth
                 @if($has('repairs.my.index'))
-                  <a href="{{ route('repairs.my.index') }}" class="btn-ghost w-full">Mis reparaciones</a>
+                  <a href="{{ route('repairs.my.index') }}" class="btn-ghost h-11 w-full justify-center">Mis reparaciones</a>
                 @endif
               @endauth
             </div>

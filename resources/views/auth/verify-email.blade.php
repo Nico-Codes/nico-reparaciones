@@ -4,10 +4,16 @@
 @section('suppress_global_alerts', '1')
 
 @section('content')
-<div class="mx-auto w-full max-w-md px-4 py-6 sm:py-8">
-  <div class="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
+<div class="store-shell mx-auto w-full max-w-md px-4">
+  <div class="store-hero mb-4 reveal-item">
+    <h1 class="text-xl font-black tracking-tight text-zinc-900">Verifica tu correo</h1>
+    <p class="mt-1 text-sm text-zinc-600">Es un paso rapido para proteger tu cuenta y confirmar pedidos.</p>
+  </div>
+
+  <div class="card rounded-3xl p-5 sm:p-6 reveal-item">
     <div class="mb-4">
-      <h1 class="text-xl font-black tracking-tight text-zinc-900">Verifica tu correo</h1>
+      <div class="text-xs font-black uppercase tracking-wide text-sky-700">Verificacion</div>
+      <h2 class="text-lg font-black tracking-tight text-zinc-900">Confirma tu email</h2>
       <p class="mt-1 text-sm text-zinc-600">
         Te enviamos un enlace de verificacion a <span class="font-semibold text-zinc-900">{{ auth()->user()->email }}</span>.
       </p>

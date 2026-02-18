@@ -61,10 +61,10 @@
 @endphp
 
 @section('content')
-<div class="container-page py-6"
+<div class="container-page store-shell"
      data-admin-orders-filter="{{ $currentStatus === '' ? 'all' : $currentStatus }}"
      data-admin-order-transitions='@json(\App\Models\Order::TRANSITIONS)'>
-  <div class="page-head">
+  <div class="page-head store-hero reveal-item">
     <div class="min-w-0">
       <div class="page-title">Pedidos (Admin)</div>
       <div class="page-subtitle">Listado y control rápido de pedidos.</div>
@@ -192,7 +192,7 @@
 
 
 
-      <div class="card" data-admin-order-card data-order-id="{{ $order->id }}" data-status="{{ $st }}">
+      <div class="card reveal-item" data-admin-order-card data-order-id="{{ $order->id }}" data-status="{{ $st }}">
         <div class="card-body">
           <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
             <div class="min-w-0">
@@ -366,7 +366,7 @@
         </div>
       </div>
     @empty
-      <div class="card">
+      <div class="card reveal-item">
         <div class="card-body">
           <div class="font-black text-zinc-900">No hay pedidos</div>
           <div class="muted mt-1">

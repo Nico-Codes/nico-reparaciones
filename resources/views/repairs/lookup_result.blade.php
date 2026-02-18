@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Resultado reparación')
+@section('title', 'Resultado reparacion')
 
 @php
   $badge = function(string $s) {
@@ -21,9 +21,9 @@
   $statusHint = fn(string $s) => match($s) {
     'received' => 'Recibido en el taller.',
     'diagnosing' => 'Estamos diagnosticando.',
-    'waiting_approval' => 'Esperando tu aprobación.',
-    'repairing' => 'Reparación en curso.',
-    'ready_pickup' => '¡Listo para retirar!',
+    'waiting_approval' => 'Esperando tu aprobacion.',
+    'repairing' => 'Reparacion en curso.',
+    'ready_pickup' => 'Listo para retirar.',
     'delivered' => 'Entregado.',
     'cancelled' => 'Cancelado.',
     default => 'Estado actualizado.',
@@ -35,28 +35,28 @@
 @endphp
 
 @section('content')
-  <div class="max-w-2xl mx-auto">
-    <div class="page-head">
+  <div class="store-shell max-w-2xl mx-auto">
+    <div class="page-head store-hero reveal-item">
       <div class="page-title">Resultado</div>
-      <div class="page-subtitle">Estado actual de tu reparación.</div>
+      <div class="page-subtitle">Estado actual de tu reparacion.</div>
     </div>
 
     @if(!$repair)
-      <div class="card">
+      <div class="card reveal-item">
         <div class="card-body">
-          <div class="font-black text-zinc-900 text-lg">No encontramos una reparación con esos datos.</div>
+          <div class="font-black text-zinc-900 text-lg">No encontramos una reparacion con esos datos.</div>
           <div class="muted mt-1">
-            Revisá que el <span class="font-black text-zinc-900">código</span> y el <span class="font-black text-zinc-900">teléfono</span> estén bien escritos.
+            Revisa que el <span class="font-black text-zinc-900">codigo</span> y el <span class="font-black text-zinc-900">telefono</span> esten bien escritos.
           </div>
 
           <div class="mt-4 rounded-2xl border border-zinc-100 bg-zinc-50 p-3 text-sm text-zinc-700">
-            Si el problema sigue, escribinos y lo vemos rápido desde el sistema.
+            Si el problema sigue, escribinos y lo vemos rapido desde el sistema.
           </div>
 
           <div class="mt-5 flex flex-col sm:flex-row gap-2">
-            <a href="{{ route('repairs.lookup') }}" class="btn-primary w-full sm:w-auto">Nueva consulta</a>
+            <a href="{{ route('repairs.lookup') }}" class="btn-primary h-11 w-full justify-center sm:w-auto">Nueva consulta</a>
             @if($has('store.index'))
-              <a href="{{ route('store.index') }}" class="btn-outline w-full sm:w-auto">Ir a la tienda</a>
+              <a href="{{ route('store.index') }}" class="btn-outline h-11 w-full justify-center sm:w-auto">Ir a la tienda</a>
             @endif
           </div>
         </div>
@@ -71,8 +71,8 @@
 
       $stepName = fn($s) => match($s) {
         'received' => 'Recibido',
-        'diagnosing' => 'Diagnóstico',
-        'waiting_approval' => 'Aprobación',
+        'diagnosing' => 'Diagnostico',
+        'waiting_approval' => 'Aprobacion',
         'repairing' => 'Reparando',
         'ready_pickup' => 'Listo',
         'delivered' => 'Entregado',
@@ -80,7 +80,7 @@
       };
     @endphp
 
-    <div class="card">
+    <div class="card reveal-item">
       <div class="card-body">
         <div class="flex items-start justify-between gap-3">
           <div class="min-w-0">
@@ -88,8 +88,8 @@
               {{ $repair->device_brand }} {{ $repair->device_model }}
             </div>
             <div class="muted mt-1">
-              Código: <span class="font-black text-zinc-900">{{ $repair->code }}</span>
-              <span class="text-zinc-300">·</span>
+              Codigo: <span class="font-black text-zinc-900">{{ $repair->code }}</span>
+              <span class="text-zinc-300">|</span>
               Actualizado: <span class="font-black text-zinc-900">{{ $repair->updated_at?->format('d/m/Y H:i') }}</span>
             </div>
           </div>
@@ -130,23 +130,23 @@
 
           @if($repair->diagnosis)
             <div>
-              <div class="muted">Diagnóstico</div>
+              <div class="muted">Diagnostico</div>
               <div class="text-sm text-zinc-800">{{ $repair->diagnosis }}</div>
             </div>
           @endif
         </div>
 
         <div class="mt-5 flex flex-col sm:flex-row gap-2">
-          <a href="{{ route('repairs.lookup') }}" class="btn-outline w-full sm:w-auto">Nueva consulta</a>
+          <a href="{{ route('repairs.lookup') }}" class="btn-outline h-11 w-full justify-center sm:w-auto">Nueva consulta</a>
 
           @auth
             @if($has('repairs.my.index'))
-              <a href="{{ route('repairs.my.index') }}" class="btn-ghost w-full sm:w-auto">Mis reparaciones</a>
+              <a href="{{ route('repairs.my.index') }}" class="btn-ghost h-11 w-full justify-center sm:w-auto">Mis reparaciones</a>
             @endif
           @endauth
 
           @if($has('store.index'))
-            <a href="{{ route('store.index') }}" class="btn-primary w-full sm:w-auto">Ir a la tienda</a>
+            <a href="{{ route('store.index') }}" class="btn-primary h-11 w-full justify-center sm:w-auto">Ir a la tienda</a>
           @endif
         </div>
       </div>

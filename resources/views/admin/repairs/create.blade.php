@@ -19,8 +19,8 @@
 
 
 @section('content')
-<div class="mx-auto w-full max-w-4xl">
-  <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+<div class="store-shell mx-auto w-full max-w-4xl">
+  <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between rounded-3xl border border-sky-100 bg-white/90 p-4 reveal-item">
     <div class="page-head mb-0 w-full sm:w-auto">
       <div class="page-title">Nueva reparación</div>
       <div class="page-subtitle">Cargá lo básico. Después podés editar todo desde el detalle.</div>
@@ -47,7 +47,7 @@
     @csrf
 
     {{-- Resumen en vivo (UX) --}}
-    <div class="card" data-repair-create-summary>
+    <div class="card reveal-item" data-repair-create-summary>
       <div class="card-head">
         <div class="flex items-center gap-2">
           <div class="font-black">Resumen</div>
@@ -92,7 +92,7 @@
     {{-- (botón de opcionales movido al final para mantener la pantalla limpia) --}}
 
 
-    <div class="card" id="repair_create_client">
+    <div class="card reveal-item" id="repair_create_client">
       <div class="card-head">
         <div class="font-black">Cliente y equipo</div>
         <span class="badge-zinc">Datos</span>
@@ -195,7 +195,7 @@
       </div>
     </div>
 
-    <div class="card" id="repair_create_issue">
+    <div class="card reveal-item" id="repair_create_issue">
       <div class="card-head">
         <div class="font-black">Falla y diagnóstico</div>
         <span class="badge-zinc">Taller</span>
@@ -263,7 +263,7 @@
       </div>
     </div>
 
-    <div class="card" id="repair_parts_search"
+    <div class="card reveal-item" id="repair_parts_search"
       data-part-search
       data-search-url="{{ route('admin.suppliers.parts.search') }}"
       data-search-by-supplier-base="{{ url('/admin/proveedores/repuestos/search') }}"
@@ -318,7 +318,7 @@
       </div>
     </div>
 
-    <div class="card" id="repair_create_finance">
+    <div class="card reveal-item" id="repair_create_finance">
       <div class="card-head">
         <div class="font-black">Costos, cobro y estado</div>
         <span class="badge-zinc">Finanzas</span>
@@ -412,7 +412,7 @@
 
     </div>
 
-      <div class="card {{ $advOpen ? '' : 'hidden' }}" id="repair_create_optional" data-advanced-fields>
+      <div class="card reveal-item {{ $advOpen ? '' : 'hidden' }}" id="repair_create_optional" data-advanced-fields>
         <div class="card-head">
           <div class="font-black">Campos opcionales</div>
           <span class="badge-zinc">Podés ignorarlos</span>
@@ -498,3 +498,6 @@
 <div data-react-repair-catalog-enhancements></div>
 <div data-react-repair-create-ui-enhancements></div>
 @endsection
+
+
+

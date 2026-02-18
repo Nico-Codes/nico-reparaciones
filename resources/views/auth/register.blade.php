@@ -4,11 +4,17 @@
 @section('suppress_global_alerts', '1')
 
 @section('content')
-<div class="mx-auto w-full max-w-md px-4 py-6 sm:py-8">
-  <div class="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
+<div class="store-shell mx-auto w-full max-w-md px-4">
+  <div class="store-hero mb-4 reveal-item">
+    <h1 class="text-xl font-black tracking-tight text-zinc-900">Crear cuenta</h1>
+    <p class="mt-1 text-sm text-zinc-600">Registrate para comprar y seguir tus pedidos.</p>
+  </div>
+
+  <div class="card rounded-3xl p-5 sm:p-6 reveal-item">
     <div class="mb-5">
-      <h1 class="text-xl font-black tracking-tight text-zinc-900">Crear cuenta</h1>
-      <p class="mt-1 text-sm text-zinc-600">Registrate para comprar y seguir tus pedidos.</p>
+      <div class="text-xs font-black uppercase tracking-wide text-sky-700">Nueva cuenta</div>
+      <h2 class="text-lg font-black tracking-tight text-zinc-900">Comencemos</h2>
+      <p class="mt-1 text-sm text-zinc-600">Completa tus datos para continuar.</p>
     </div>
 
     @if ($errors->any())

@@ -43,13 +43,13 @@
 
 
 @section('content')
-<div class="container-page py-6"
+<div class="container-page store-shell"
      data-admin-order-card
      data-order-id="{{ $order->id }}"
      data-status="{{ (string)($order->status ?? 'pendiente') }}"
      data-admin-order-transitions='@json(\App\Models\Order::TRANSITIONS)'>
 
-  <div class="mb-4 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+  <div class="mb-4 flex flex-col gap-4 rounded-3xl border border-sky-100 bg-white/90 p-4 reveal-item lg:flex-row lg:items-start lg:justify-between">
     <div class="min-w-0">
       <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
         <a href="{{ route('admin.orders.index') }}" class="btn-ghost h-11 w-full justify-center sm:h-auto sm:w-auto">← Volver</a>
@@ -171,7 +171,7 @@
     <div class="space-y-4 lg:col-span-1">
       
 
-      <div class="card" id="order_actions">
+      <div class="card reveal-item" id="order_actions">
         <div class="card-head">
           <div class="font-black">Acciones rápidas</div>
           <span class="badge-zinc">Pedido #{{ $order->id }}</span>
@@ -238,7 +238,7 @@
         </div>
       </div>
 
-      <div class="card" id="order_customer">
+      <div class="card reveal-item" id="order_customer">
         <div class="card-head">
           <div class="font-black">Cliente</div>
           <span class="badge-zinc">{{ $order->payment_method ?: '—' }}</span>
@@ -285,7 +285,7 @@
         </div>
       </div>
 
-      <div class="card">
+      <div class="card reveal-item">
         <div class="card-head">
           <div class="font-black">Actualizar estado</div>
           <span class="{{ $badge($order->status) }}" data-admin-order-status-badge>
@@ -320,7 +320,7 @@
         </div>
       </div>
 
-      <div class="card" id="order_whatsapp">
+      <div class="card reveal-item" id="order_whatsapp">
         <div class="card-head">
           <div class="font-black">WhatsApp</div>
           <span class="badge-zinc">{{ $waPhone ?: '—' }}</span>
@@ -404,7 +404,7 @@
 
     {{-- Columna derecha: items --}}
     <div class="lg:col-span-2" id="order_items">
-      <div class="card">
+      <div class="card reveal-item">
         <div class="card-head">
           <div class="font-black">Items del pedido</div>
           <div class="font-black">{{ $money($order->total) }}</div>
