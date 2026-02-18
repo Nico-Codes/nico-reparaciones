@@ -1,8 +1,8 @@
-export function initUICollapsibles() {
-  const btns = document.querySelectorAll('[data-toggle-collapse]');
+export function initUICollapsibles(): void {
+  const btns = document.querySelectorAll<HTMLElement>('[data-toggle-collapse]');
   if (!btns.length) return;
 
-  const esc = (s) => (window.CSS && CSS.escape)
+  const esc = (s: string): string => (window.CSS && CSS.escape)
     ? CSS.escape(s)
     : String(s).replace(/[^a-zA-Z0-9_-]/g, '\\$&');
 
@@ -10,7 +10,7 @@ export function initUICollapsibles() {
     const key = btn.getAttribute('data-toggle-collapse');
     if (!key) return;
 
-    const block = document.querySelector(`[data-collapse="${esc(key)}"]`);
+    const block = document.querySelector<HTMLElement>(`[data-collapse="${esc(key)}"]`);
     if (!block) return;
 
     const STORE = `nr_collapse_${key}`;
@@ -19,7 +19,7 @@ export function initUICollapsibles() {
     const noStore = btn.hasAttribute('data-toggle-collapse-no-store');
     const chevron = btn.querySelector('[data-collapse-chevron]');
 
-    const setOpen = (open) => {
+    const setOpen = (open: boolean): void => {
       block.classList.toggle('hidden', !open);
       btn.setAttribute('aria-expanded', open ? 'true' : 'false');
 
@@ -41,7 +41,7 @@ export function initUICollapsibles() {
       try {
         const saved = localStorage.getItem(STORE);
         if (saved !== null) open = (saved === '1');
-      } catch (_) {}
+      } catch (_e) {}
     }
 
     setOpen(open);
@@ -50,7 +50,7 @@ export function initUICollapsibles() {
       open = !open;
       setOpen(open);
       if (!noStore) {
-        try { localStorage.setItem(STORE, open ? '1' : '0'); } catch (_) {}
+        try { localStorage.setItem(STORE, open ? '1' : '0'); } catch (_e) {}
       }
     });
   });

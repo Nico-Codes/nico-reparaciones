@@ -1,31 +1,43 @@
-export function initStoreSearchSuggestions() {
+﻿type SuggestionItem = {
+  url?: string;
+  name?: string;
+  brand?: string;
+  category?: string;
+  price?: number | string;
+};
+
+function asInput(el: Element | null): HTMLInputElement | null {
+  return el instanceof HTMLInputElement ? el : null;
+}
+
+export function initStoreSearchSuggestions(): void {
   const RECENT_KEY = 'nr_store_recent_searches';
   const RECENT_LIMIT = 6;
 
-  const roots = Array.from(document.querySelectorAll('[data-store-search]'));
+  const roots = Array.from(document.querySelectorAll<HTMLElement>('[data-store-search]'));
   if (!roots.length) return;
 
   roots.forEach((root) => {
-    const input = root.querySelector('[data-store-search-input]');
-    const panel = root.querySelector('[data-store-search-panel]');
-    const list = root.querySelector('[data-store-search-list]');
+    const input = asInput(root.querySelector('[data-store-search-input]'));
+    const panel = root.querySelector<HTMLElement>('[data-store-search-panel]');
+    const list = root.querySelector<HTMLElement>('[data-store-search-list]');
     const url = root.getAttribute('data-store-suggestions-url') || '';
     const category = (root.getAttribute('data-store-search-category') || '').trim();
 
     if (!input || !panel || !list || !url) return;
 
-    let timer = null;
-    let controller = null;
+    let timer: number | null = null;
+    let controller: AbortController | null = null;
     let lastQuery = '';
 
-    const normalizeQuery = (value) => {
+    const normalizeQuery = (value: unknown): string => {
       return String(value || '')
         .trim()
         .replace(/\s+/g, ' ')
         .slice(0, 80);
     };
 
-    const readRecent = () => {
+    const readRecent = (): string[] => {
       try {
         const raw = window.localStorage.getItem(RECENT_KEY);
         if (!raw) return [];
@@ -37,18 +49,18 @@ export function initStoreSearchSuggestions() {
           .map((item) => normalizeQuery(item))
           .filter((item) => item.length >= 2)
           .slice(0, RECENT_LIMIT);
-      } catch (_) {
+      } catch (_e) {
         return [];
       }
     };
 
-    const writeRecent = (items) => {
+    const writeRecent = (items: string[]): void => {
       try {
         window.localStorage.setItem(RECENT_KEY, JSON.stringify(items.slice(0, RECENT_LIMIT)));
-      } catch (_) {}
+      } catch (_e) {}
     };
 
-    const saveRecent = (query) => {
+    const saveRecent = (query: string): void => {
       const normalized = normalizeQuery(query);
       if (normalized.length < 2) return;
 
@@ -57,19 +69,19 @@ export function initStoreSearchSuggestions() {
       writeRecent(merged);
     };
 
-    const hidePanel = () => {
+    const hidePanel = (): void => {
       panel.classList.add('hidden');
     };
 
-    const showPanel = () => {
+    const showPanel = (): void => {
       panel.classList.remove('hidden');
     };
 
-    const clearList = () => {
+    const clearList = (): void => {
       list.innerHTML = '';
     };
 
-    const renderRecent = () => {
+    const renderRecent = (): void => {
       const items = readRecent();
       clearList();
 
@@ -108,7 +120,7 @@ export function initStoreSearchSuggestions() {
       showPanel();
     };
 
-    const renderEmpty = (query) => {
+    const renderEmpty = (query: string): void => {
       clearList();
       const row = document.createElement('div');
       row.className = 'px-3 py-2 text-sm text-zinc-500';
@@ -117,7 +129,7 @@ export function initStoreSearchSuggestions() {
       showPanel();
     };
 
-    const renderItems = (items) => {
+    const renderItems = (items: SuggestionItem[]): void => {
       clearList();
 
       items.forEach((item) => {
@@ -132,7 +144,7 @@ export function initStoreSearchSuggestions() {
         const meta = document.createElement('div');
         meta.className = 'truncate text-xs text-zinc-500';
 
-        const parts = [];
+        const parts: string[] = [];
         if (item.brand) parts.push(String(item.brand));
         if (item.category) parts.push(String(item.category));
         if (Number.isFinite(Number(item.price))) {
@@ -154,7 +166,7 @@ export function initStoreSearchSuggestions() {
       showPanel();
     };
 
-    const fetchSuggestions = async (query) => {
+    const fetchSuggestions = async (query: string): Promise<void> => {
       if (controller) controller.abort();
       controller = new AbortController();
 
@@ -177,7 +189,7 @@ export function initStoreSearchSuggestions() {
           return;
         }
 
-        const data = await response.json().catch(() => ({}));
+        const data = (await response.json().catch(() => ({}))) as { items?: SuggestionItem[] };
         if ((input.value || '').trim() !== query) return;
 
         const items = Array.isArray(data?.items) ? data.items : [];
@@ -188,7 +200,7 @@ export function initStoreSearchSuggestions() {
 
         renderItems(items);
       } catch (error) {
-        if (error?.name !== 'AbortError') {
+        if (!(error instanceof DOMException && error.name === 'AbortError')) {
           hidePanel();
         }
       }
@@ -199,7 +211,9 @@ export function initStoreSearchSuggestions() {
       if (query === lastQuery) return;
       lastQuery = query;
 
-      window.clearTimeout(timer);
+      if (timer !== null) {
+        window.clearTimeout(timer);
+      }
 
       if (query.length < 2) {
         renderRecent();
@@ -207,7 +221,7 @@ export function initStoreSearchSuggestions() {
       }
 
       timer = window.setTimeout(() => {
-        fetchSuggestions(query);
+        void fetchSuggestions(query);
       }, 180);
     });
 
@@ -228,6 +242,7 @@ export function initStoreSearchSuggestions() {
     });
 
     document.addEventListener('click', (event) => {
+      if (!(event.target instanceof Node)) return;
       if (!root.contains(event.target)) {
         hidePanel();
       }
@@ -241,7 +256,9 @@ export function initStoreSearchSuggestions() {
     }
 
     list.addEventListener('click', (event) => {
-      if (event.target.closest('a[href]')) {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      if (target.closest('a[href]')) {
         saveRecent(input.value);
       }
     });

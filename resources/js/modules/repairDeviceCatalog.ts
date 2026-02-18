@@ -1,30 +1,30 @@
-export function initRepairDeviceCatalog() {
-  // ✅ Repair Create: pricing auto (costos automáticos)
+﻿export function initRepairDeviceCatalog() {
+  // âœ… Repair Create: pricing auto (costos automÃ¡ticos)
   const initRepairPricingAuto = () => {
-  const root = document.querySelector('[data-repair-pricing-auto]');
+  const root = document.querySelector('[data-repair-pricing-auto]') as any;
   if (!root) return;
 
-  const form = root.closest('form');
+  const form = root.closest('form') as any;
   if (!form) return;
 
-  const partsEl = form.querySelector('[data-parts-cost]');
-  const laborEl = form.querySelector('[data-labor-cost]');
-  const shipEl = form.querySelector('[data-shipping-enabled]');
-  const shipAmtEl = form.querySelector('[data-shipping-amount]');
-  const profitEl = form.querySelector('[data-profit-display]') || form.querySelector('[data-profit-suggested]');
-  const totalEl = form.querySelector('[data-total-display]') || form.querySelector('[data-suggested-total]');
+  const partsEl = form.querySelector('[data-parts-cost]') as any;
+  const laborEl = form.querySelector('[data-labor-cost]') as any;
+  const shipEl = form.querySelector('[data-shipping-enabled]') as any;
+  const shipAmtEl = form.querySelector('[data-shipping-amount]') as any;
+  const profitEl = form.querySelector('[data-profit-display]') || form.querySelector('[data-profit-suggested]') as any;
+  const totalEl = form.querySelector('[data-total-display]') || form.querySelector('[data-suggested-total]') as any;
 
-  const finalEl = form.querySelector('[data-final-price]');
-  const finalAutoEl = form.querySelector('[data-final-auto]');
-  const ruleLabelEl = form.querySelector('[data-pricing-rule-label]');
-  const ruleActionEl = form.querySelector('[data-pricing-rule-action]');
+  const finalEl = form.querySelector('[data-final-price]') as any;
+  const finalAutoEl = form.querySelector('[data-final-auto]') as any;
+  const ruleLabelEl = form.querySelector('[data-pricing-rule-label]') as any;
+  const ruleActionEl = form.querySelector('[data-pricing-rule-action]') as any;
 
   const pricingResolveUrl = '/admin/precios/resolve';
   const pricingCreateBase = root.dataset.pricingCreateBase || '/admin/precios/crear';
   const pricingEditBase = root.dataset.pricingEditBase || '/admin/precios';
 
   const getSelected = (name) => {
-    const el = form.querySelector(`[name="${name}"]`);
+    const el = form.querySelector(`[name="${name}"]`) as any;
     return el ? String(el.value || '') : '';
   };
 
@@ -89,7 +89,7 @@ export function initRepairDeviceCatalog() {
     let suggested = 0;
 
     if (currentRule && currentRule.mode === 'fixed') {
-      // ✅ modo fijo: total fijo + envío (ganancia sugerida = fijo - repuesto)
+      // âœ… modo fijo: total fijo + envÃ­o (ganancia sugerida = fijo - repuesto)
       const fixed = Number(currentRule.fixed_total || 0);
       profit = Math.max(0, fixed - parts);
       suggested = fixed + (shipOn ? shipAmt : 0);
@@ -122,7 +122,7 @@ export function initRepairDeviceCatalog() {
     // si falta info, reset
     if (!deviceTypeId || !repairTypeId) {
       currentRule = null;
-      if (ruleLabelEl) ruleLabelEl.textContent = 'Regla: —';
+      if (ruleLabelEl) ruleLabelEl.textContent = 'Regla: â€”';
       updateRuleAction({ ruleId: null, groupId: null });
       compute();
       return;
@@ -144,7 +144,7 @@ export function initRepairDeviceCatalog() {
 
       currentRule = data?.rule || null;
 
-      // set shipping default si viene en la regla (solo si el campo está en 0/vacío)
+      // set shipping default si viene en la regla (solo si el campo estÃ¡ en 0/vacÃ­o)
       if (currentRule && shipAmtEl) {
         const curShip = Number(shipAmtEl.value || 0);
         if (!curShip && currentRule.shipping_default != null) {
@@ -155,11 +155,11 @@ export function initRepairDeviceCatalog() {
       // label + link
       if (ruleLabelEl) {
         if (!currentRule) {
-          ruleLabelEl.textContent = 'Regla: —';
+          ruleLabelEl.textContent = 'Regla: â€”';
         } else if (currentRule.mode === 'fixed') {
-          ruleLabelEl.textContent = `Regla: Fijo $${fmtMoney(currentRule.fixed_total || 0)} (+ envío $${fmtMoney(currentRule.shipping_default || 0)})`;
+          ruleLabelEl.textContent = `Regla: Fijo $${fmtMoney(currentRule.fixed_total || 0)} (+ envÃ­o $${fmtMoney(currentRule.shipping_default || 0)})`;
         } else {
-          ruleLabelEl.textContent = `Regla: x${currentRule.multiplier || 0} (min $${fmtMoney(currentRule.min_profit || 0)}) (+ envío $${fmtMoney(currentRule.shipping_default || 0)})`;
+          ruleLabelEl.textContent = `Regla: x${currentRule.multiplier || 0} (min $${fmtMoney(currentRule.min_profit || 0)}) (+ envÃ­o $${fmtMoney(currentRule.shipping_default || 0)})`;
         }
       }
 
@@ -167,7 +167,7 @@ export function initRepairDeviceCatalog() {
       compute();
     } catch (e) {
       currentRule = null;
-      if (ruleLabelEl) ruleLabelEl.textContent = 'Regla: —';
+      if (ruleLabelEl) ruleLabelEl.textContent = 'Regla: â€”';
       updateRuleAction({ ruleId: null, groupId: null });
       compute();
     }
@@ -176,7 +176,7 @@ export function initRepairDeviceCatalog() {
   const debouncedResolve = () => {
     clearTimeout(resolveTimer);
     resolveTimer = setTimeout(() => {
-      if (ruleLabelEl) ruleLabelEl.textContent = 'Regla: calculando…';
+      if (ruleLabelEl) ruleLabelEl.textContent = 'Regla: calculandoâ€¦';
       updateRuleAction({ ruleId: null, groupId: null });
       resolveRule();
     }, 350);
@@ -221,13 +221,13 @@ export function initRepairDeviceCatalog() {
   initRepairPricingAuto();
 
 
-  const blocks = document.querySelectorAll('[data-repair-device-catalog]');
+  const blocks = document.querySelectorAll('[data-repair-device-catalog]') as any;
   if (!blocks.length) return;
 
   const headers = { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' };
 
   const getCsrf = () =>
-    document.querySelector('input[name="_token"]')?.value || '';
+    document.querySelector<HTMLInputElement>('input[name="_token"]')?.value || '';
 
   const setOptions = (select, items, placeholder, selectedId = null) => {
     select.innerHTML = '';
@@ -253,12 +253,12 @@ export function initRepairDeviceCatalog() {
   };
 
   blocks.forEach(block => {
-    const typeSel  = block.querySelector('[data-device-type]');
-    const brandSel = block.querySelector('[data-device-brand]');
-    const modelSel = block.querySelector('[data-device-model]');
+    const typeSel  = block.querySelector('[data-device-type]') as any;
+    const brandSel = block.querySelector('[data-device-brand]') as any;
+    const modelSel = block.querySelector('[data-device-model]') as any;
 
-    const brandSearch = block.querySelector('[data-brand-search]');
-    const modelSearch = block.querySelector('[data-model-search]');
+    const brandSearch = block.querySelector('[data-brand-search]') as any;
+    const modelSearch = block.querySelector('[data-model-search]') as any;
 
     let brandsList = [];
     let modelsList = [];
@@ -266,17 +266,17 @@ export function initRepairDeviceCatalog() {
     const mode = block.dataset.catalogMode || 'create'; // create | edit
 
 
-    // ✅ NUEVO: control de carga de modelos (evita “parpadeos” si cambiás rápido)
+    // âœ… NUEVO: control de carga de modelos (evita â€œparpadeosâ€ si cambiÃ¡s rÃ¡pido)
     let modelsLoadSeq = 0;
     let modelsLoadTimer = null;
 
 
-    // ✅ Helpers: “desplegar” el select como listbox mientras buscás
+    // âœ… Helpers: â€œdesplegarâ€ el select como listbox mientras buscÃ¡s
     const openList = (sel) => {
       if (!sel) return;
       const n = sel.options?.length || 0;
       if (n <= 1) return; // solo placeholder
-      sel.size = Math.min(6, Math.max(2, n)); // ✅ más cómodo en móvil
+      sel.size = Math.min(6, Math.max(2, n)); // âœ… mÃ¡s cÃ³modo en mÃ³vil
     };
 
 
@@ -285,25 +285,25 @@ export function initRepairDeviceCatalog() {
       sel.size = 1;
     };
 
-    const btnAddBrand = block.querySelector('[data-add-brand]');
-    const brandForm = block.querySelector('[data-add-brand-form]');
-    const brandInput = block.querySelector('[data-add-brand-input]');
-    const btnSaveBrand = block.querySelector('[data-save-brand]');
-    const btnCancelBrand = block.querySelector('[data-cancel-brand]');
+    const btnAddBrand = block.querySelector('[data-add-brand]') as any;
+    const brandForm = block.querySelector('[data-add-brand-form]') as any;
+    const brandInput = block.querySelector('[data-add-brand-input]') as any;
+    const btnSaveBrand = block.querySelector('[data-save-brand]') as any;
+    const btnCancelBrand = block.querySelector('[data-cancel-brand]') as any;
 
-    const btnAddModel = block.querySelector('[data-add-model]');
-    const modelForm = block.querySelector('[data-add-model-form]');
-    const modelInput = block.querySelector('[data-add-model-input]');
-    const btnSaveModel = block.querySelector('[data-save-model]');
-    const btnCancelModel = block.querySelector('[data-cancel-model]');
+    const btnAddModel = block.querySelector('[data-add-model]') as any;
+    const modelForm = block.querySelector('[data-add-model-form]') as any;
+    const modelInput = block.querySelector('[data-add-model-input]') as any;
+    const btnSaveModel = block.querySelector('[data-save-model]') as any;
+    const btnCancelModel = block.querySelector('[data-cancel-model]') as any;
 
     const loadBrands = async (typeId, selected=null) => {
       brandSel.disabled = true;
       modelSel.disabled = true;
       btnAddModel.disabled = true;
 
-      setOptions(brandSel, [], 'Cargando marcas…');
-      setOptions(modelSel, [], '— Elegí una marca primero —');
+      setOptions(brandSel, [], 'Cargando marcasâ€¦');
+      setOptions(modelSel, [], 'â€” ElegÃ­ una marca primero â€”');
 
       const selectedBrandId = selected || brandSel.dataset.selected || '';
 
@@ -317,7 +317,7 @@ export function initRepairDeviceCatalog() {
       if (brandSearch) { brandSearch.disabled = false; brandSearch.value = ''; }
       if (btnAddBrand) btnAddBrand.disabled = false;
 
-      setOptions(brandSel, brandsList, '— Elegí una marca —', selectedBrandId);
+      setOptions(brandSel, brandsList, 'â€” ElegÃ­ una marca â€”', selectedBrandId);
     };
 
 
@@ -325,7 +325,7 @@ export function initRepairDeviceCatalog() {
       modelSel.disabled = true;
       btnAddModel.disabled = true;
 
-      setOptions(modelSel, [], 'Cargando modelos…');
+      setOptions(modelSel, [], 'Cargando modelosâ€¦');
 
       const selectedModelId = selected || modelSel.dataset.selected || '';
 
@@ -334,7 +334,7 @@ export function initRepairDeviceCatalog() {
 
       const j = await fetchJson(`/admin/device-catalog/models?${qs.toString()}`);
 
-      // ✅ si cambiaste de marca mientras cargaba, ignorar este resultado
+      // âœ… si cambiaste de marca mientras cargaba, ignorar este resultado
       if (expectedSeq !== null && expectedSeq !== modelsLoadSeq) return;
 
       modelsList = j.models || [];
@@ -345,10 +345,10 @@ export function initRepairDeviceCatalog() {
       if (modelSearch) {
         modelSearch.disabled = false;
         modelSearch.value = '';
-        modelSearch.placeholder = modelSearch.getAttribute('placeholder') || 'Buscar modelo…';
+        modelSearch.placeholder = modelSearch.getAttribute('placeholder') || 'Buscar modeloâ€¦';
       }
 
-      setOptions(modelSel, modelsList, '— Elegí un modelo —', selectedModelId);
+      setOptions(modelSel, modelsList, 'â€” ElegÃ­ un modelo â€”', selectedModelId);
     };
 
 
@@ -358,10 +358,10 @@ export function initRepairDeviceCatalog() {
       const typeId = typeSel.value || '';
 
       // reset marca + modelo (siempre que cambia tipo)
-      brandSel.innerHTML = '<option value="">— Elegí un tipo primero —</option>';
+      brandSel.innerHTML = '<option value="">â€” ElegÃ­ un tipo primero â€”</option>';
       brandSel.disabled = true;
 
-      modelSel.innerHTML = '<option value="">— Elegí una marca primero —</option>';
+      modelSel.innerHTML = '<option value="">â€” ElegÃ­ una marca primero â€”</option>';
       modelSel.disabled = true;
 
       btnAddModel.disabled = true;
@@ -385,46 +385,46 @@ export function initRepairDeviceCatalog() {
 
       await loadBrands(typeId);
 
-      // ✅ UX: al terminar, te manda directo a Marca
+      // âœ… UX: al terminar, te manda directo a Marca
       setTimeout(() => brandSearch?.focus?.(), 0);
     });
 
 
 
     brandSel?.addEventListener('change', async () => {
-      // ✅ si estás navegando la lista con flechas, NO recargues modelos todavía
+      // âœ… si estÃ¡s navegando la lista con flechas, NO recargues modelos todavÃ­a
       if (brandSel?.dataset?.nrKbNav === '1' && document.activeElement === brandSel) return;
 
       const brandId = brandSel.value || '';
 
       // reset modelo (siempre que cambia marca)
-      modelSel.innerHTML = '<option value="">— Elegí una marca primero —</option>';
+      modelSel.innerHTML = '<option value="">â€” ElegÃ­ una marca primero â€”</option>';
       modelSel.disabled = true;
       btnAddModel.disabled = true;
 
       if (modelSearch) {
         modelSearch.value = '';
         modelSearch.disabled = true;
-        modelSearch.placeholder = 'Cargando modelos…';
+        modelSearch.placeholder = 'Cargando modelosâ€¦';
       }
 
       modelsList = [];
 
       if (!brandId) return;
 
-      // ✅ delay suave para evitar “cambio muy rápido” y confusión
+      // âœ… delay suave para evitar â€œcambio muy rÃ¡pidoâ€ y confusiÃ³n
       const seq = ++modelsLoadSeq;
       if (modelsLoadTimer) clearTimeout(modelsLoadTimer);
 
-      // mantener un toque el estado “cargando”
-      setOptions(modelSel, [], 'Cargando modelos…');
+      // mantener un toque el estado â€œcargandoâ€
+      setOptions(modelSel, [], 'Cargando modelosâ€¦');
 
         modelsLoadTimer = setTimeout(() => {
           (async () => {
             try {
               await loadModels(brandId, null, seq);
 
-              // ✅ si esta carga sigue siendo la vigente, enfocamos Modelo
+              // âœ… si esta carga sigue siendo la vigente, enfocamos Modelo
               if (seq === modelsLoadSeq) {
                 setTimeout(() => modelSearch?.focus?.(), 0);
               }
@@ -448,9 +448,9 @@ export function initRepairDeviceCatalog() {
         ? brandsList
         : brandsList.filter(b => (b.name || '').toLowerCase().includes(q));
 
-      setOptions(brandSel, filtered, '— Elegí una marca —', current);
+      setOptions(brandSel, filtered, 'â€” ElegÃ­ una marca â€”', current);
 
-      // ✅ “Despliega” automáticamente
+      // âœ… â€œDespliegaâ€ automÃ¡ticamente
       openList(brandSel);
     };
 
@@ -463,9 +463,9 @@ export function initRepairDeviceCatalog() {
         ? modelsList
         : modelsList.filter(m => (m.name || '').toLowerCase().includes(q));
 
-      setOptions(modelSel, filtered, '— Elegí un modelo —', current);
+      setOptions(modelSel, filtered, 'â€” ElegÃ­ un modelo â€”', current);
 
-      // ✅ “Despliega” automáticamente
+      // âœ… â€œDespliegaâ€ automÃ¡ticamente
       openList(modelSel);
     };
 
@@ -473,7 +473,7 @@ export function initRepairDeviceCatalog() {
     brandSearch?.addEventListener('input', applyBrandFilter);
     modelSearch?.addEventListener('input', applyModelFilter);
 
-          // ✅ Si escriben exacto y salen del input, auto-selecciona (evita errores por no apretar Enter)
+          // âœ… Si escriben exacto y salen del input, auto-selecciona (evita errores por no apretar Enter)
     brandSearch?.addEventListener('blur', () => {
       setTimeout(() => {
         if (document.activeElement === brandSel) return; // si fue a elegir con mouse/flechas, no molestamos
@@ -505,13 +505,13 @@ export function initRepairDeviceCatalog() {
     });
 
 
-    // ✅ Mantener la lista abierta cuando pasás del input al select (para poder navegar con flechas)
+    // âœ… Mantener la lista abierta cuando pasÃ¡s del input al select (para poder navegar con flechas)
       const keepListWhileInteracting = (searchEl, selEl) => {
       if (!searchEl || !selEl) return;
 
       const syncInputFromSelect = () => {
         const label = selEl.options[selEl.selectedIndex]?.text || '';
-        if (label && !label.startsWith('—')) searchEl.value = label;
+        if (label && !label.startsWith('â€”')) searchEl.value = label;
       };
 
       const setPrev = () => { selEl.dataset.nrPrevValue = String(selEl.value || ''); };
@@ -525,7 +525,7 @@ export function initRepairDeviceCatalog() {
         syncInputFromSelect();
         closeList(selEl);
 
-        // si cambió realmente, forzar un change “final” (para que marca cargue modelos una sola vez)
+        // si cambiÃ³ realmente, forzar un change â€œfinalâ€ (para que marca cargue modelos una sola vez)
         if (changed()) selEl.dispatchEvent(new Event('change', { bubbles: true }));
         setPrev();
       };
@@ -550,7 +550,7 @@ export function initRepairDeviceCatalog() {
       searchEl.addEventListener('blur', maybeClose);
       selEl.addEventListener('blur', maybeClose);
 
-      // ✅ teclado dentro del select
+      // âœ… teclado dentro del select
       selEl.addEventListener('keydown', (e) => {
         if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
           startKbNav();
@@ -572,18 +572,18 @@ export function initRepairDeviceCatalog() {
         }
       });
 
-      // ✅ si el change es por flechas mientras está enfocado, NO cerrar ni sync
+      // âœ… si el change es por flechas mientras estÃ¡ enfocado, NO cerrar ni sync
       selEl.addEventListener('change', () => {
         if (selEl.dataset.nrKbNav === '1' && document.activeElement === selEl) return;
 
-        // mouse click / selección externa: confirmar
+        // mouse click / selecciÃ³n externa: confirmar
         stopKbNav();
         syncInputFromSelect();
         closeList(selEl);
         setPrev();
       });
 
-      // ✅ desde el input, ↓/↑ pasa al select para navegar sin cerrar
+      // âœ… desde el input, â†“/â†‘ pasa al select para navegar sin cerrar
       searchEl.addEventListener('keydown', (e) => {
         if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
         if (searchEl.disabled) return;
@@ -647,7 +647,7 @@ export function initRepairDeviceCatalog() {
 
         // refleja el nombre exacto en el input
         const label = brandSel.options[brandSel.selectedIndex]?.text || q;
-        if (label && !label.startsWith('—')) brandSearch.value = label;
+        if (label && !label.startsWith('â€”')) brandSearch.value = label;
 
         brandSel.dispatchEvent(new Event('change', { bubbles: true })); // carga modelos
         closeList(brandSel);
@@ -673,12 +673,12 @@ export function initRepairDeviceCatalog() {
         modelSel.dispatchEvent(new Event('change', { bubbles: true }));
 
         const label = modelSel.options[modelSel.selectedIndex]?.text || q;
-        if (label && !label.startsWith('—')) modelSearch.value = label;
+        if (label && !label.startsWith('â€”')) modelSearch.value = label;
 
         closeList(modelSel);
 
         // salto a "Falla principal" si existe
-        document.querySelector('[data-issue-search]')?.focus?.();
+        (document.querySelector('[data-issue-search]') as any)?.focus?.();
         return;
       }
 
@@ -714,7 +714,7 @@ export function initRepairDeviceCatalog() {
       const j = await fetchJson('/admin/device-catalog/brands', { method: 'POST', body: fd });
       await loadBrands(typeId, j.brand?.id);
       btnCancelBrand?.click();
-      window.openToast?.('Marca agregada ✅', 'OK');
+      (window as any).openToast?.('Marca agregada âœ…', 'OK');
     });
 
     // agregar modelo
@@ -746,7 +746,7 @@ export function initRepairDeviceCatalog() {
       const j = await fetchJson('/admin/device-catalog/models', { method: 'POST', body: fd });
       await loadModels(brandId, j.model?.id);
       btnCancelModel?.click();
-      window.openToast?.('Modelo agregado ✅', 'OK');
+      (window as any).openToast?.('Modelo agregado âœ…', 'OK');
     });
 
     brandInput?.addEventListener('keydown', (e) => {
@@ -774,3 +774,12 @@ export function initRepairDeviceCatalog() {
     }
   });
 }
+
+
+
+
+
+
+
+
+

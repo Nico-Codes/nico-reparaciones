@@ -1,7 +1,7 @@
 const SELECT_WRAPPER_CLASS = 'nr-select';
 const OPEN_CLASS = 'is-open';
 
-function closeAll(except = null) {
+function closeAll(except: HTMLElement | null = null): void {
   document.querySelectorAll(`.${SELECT_WRAPPER_CLASS}.${OPEN_CLASS}`).forEach((wrap) => {
     if (except && wrap === except) return;
     wrap.classList.remove(OPEN_CLASS);
@@ -12,7 +12,15 @@ function closeAll(except = null) {
   });
 }
 
-function buildOptions(select, menu, trigger, wrap) {
+function buildOptions(
+  select: HTMLSelectElement,
+  menu: HTMLDivElement,
+  trigger: HTMLButtonElement,
+  wrap: HTMLDivElement
+): void {
+  const label = trigger.querySelector('.nr-select-label');
+  if (!label) return;
+
   menu.innerHTML = '';
 
   Array.from(select.options).forEach((opt) => {
@@ -29,14 +37,14 @@ function buildOptions(select, menu, trigger, wrap) {
 
     if (opt.selected) {
       item.classList.add('is-selected');
-      trigger.querySelector('.nr-select-label').textContent = opt.textContent || '';
+      label.textContent = opt.textContent || '';
     }
 
     item.addEventListener('click', () => {
       if (opt.disabled) return;
       select.value = opt.value;
       select.dispatchEvent(new Event('change', { bubbles: true }));
-      trigger.querySelector('.nr-select-label').textContent = opt.textContent || '';
+      label.textContent = opt.textContent || '';
       closeAll();
       trigger.focus();
     });
@@ -46,15 +54,14 @@ function buildOptions(select, menu, trigger, wrap) {
 
   if (!select.value && select.options.length > 0) {
     const first = select.options[0];
-    trigger.querySelector('.nr-select-label').textContent = first?.textContent || '';
+    label.textContent = first?.textContent || '';
   }
 
   wrap.classList.toggle('is-disabled', !!select.disabled);
   trigger.disabled = !!select.disabled;
 }
 
-function enhanceSelect(select) {
-  if (!(select instanceof HTMLSelectElement)) return;
+function enhanceSelect(select: HTMLSelectElement): void {
   if (select.dataset.customSelectReady === '1') return;
   if (select.multiple) return;
   if (select.hasAttribute('data-native-select')) return;
@@ -101,8 +108,11 @@ function enhanceSelect(select) {
 
   select.addEventListener('change', () => {
     const selected = select.options[select.selectedIndex];
-    trigger.querySelector('.nr-select-label').textContent = selected?.textContent || '';
-    menu.querySelectorAll('.nr-select-option').forEach((btn) => {
+    const label = trigger.querySelector('.nr-select-label');
+    if (label) {
+      label.textContent = selected?.textContent || '';
+    }
+    menu.querySelectorAll<HTMLButtonElement>('.nr-select-option').forEach((btn) => {
       btn.classList.toggle('is-selected', btn.dataset.value === select.value);
     });
   });
@@ -113,8 +123,8 @@ function enhanceSelect(select) {
   observer.observe(select, { childList: true, subtree: true, attributes: true });
 }
 
-export function initCustomSelects() {
-  document.querySelectorAll('select').forEach(enhanceSelect);
+export function initCustomSelects(): void {
+  document.querySelectorAll<HTMLSelectElement>('select').forEach(enhanceSelect);
 
   document.addEventListener('click', (e) => {
     const target = e.target;

@@ -1,4 +1,4 @@
-export function initCartAndCheckout({ $, afterPaint, openToast }) {
+﻿export function initCartAndCheckout({ $, afterPaint, openToast }) {
   const serverOverlay = $('#cartAddedOverlay');
   if (serverOverlay?.dataset?.cartAdded === '1') {
     const serverName =
@@ -10,7 +10,7 @@ export function initCartAndCheckout({ $, afterPaint, openToast }) {
   }
 
   // ----------------------------
-  // Checkout: resumen colapsable móvil + siempre abierto desktop
+  // Checkout: resumen colapsable mÃ³vil + siempre abierto desktop
   // ----------------------------
   const sumBtn = $('[data-summary-toggle]');
   const sumBody = $('[data-summary-body]');
@@ -23,7 +23,7 @@ export function initCartAndCheckout({ $, afterPaint, openToast }) {
 
     sumBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
     sumBody.style.display = open ? 'block' : 'none';
-    if (sumIcon) sumIcon.textContent = open ? '▴' : '▾';
+    if (sumIcon) sumIcon.textContent = open ? 'â–´' : 'â–¾';
   };
 
   const syncSummary = () => {
@@ -107,14 +107,14 @@ export function initCartAndCheckout({ $, afterPaint, openToast }) {
   document.addEventListener(
     'submit',
     (e) => {
-      const form = e.target;
+      const form = e.target as HTMLElement | null;
       if (form?.dataset?.preserveScroll === '1') saveScroll();
     },
     true
   );
 
   // ---------------------------------------------
-  // Carrito: eliminar ítem sin recargar (fade + collapse)
+  // Carrito: eliminar Ã­tem sin recargar (fade + collapse)
   // ---------------------------------------------
   const formatARS = (value) => {
     const n = Number(value || 0);
@@ -159,22 +159,22 @@ export function initCartAndCheckout({ $, afterPaint, openToast }) {
     };
 
     // ---------------------------------------------
-    // Carrito: habilitar/deshabilitar checkout según stock (sin recargar)
+    // Carrito: habilitar/deshabilitar checkout segÃºn stock (sin recargar)
     // ---------------------------------------------
     const updateCartCheckoutState = () => {
-      const btn = document.querySelector('[data-checkout-btn]');
-      const warn = document.querySelector('[data-stock-warning]');
+      const btn = document.querySelector<HTMLElement>('[data-checkout-btn]');
+      const warn = document.querySelector<HTMLElement>('[data-stock-warning]');
       if (!btn) return;
 
       let hasIssue = false;
 
-      document.querySelectorAll('form[data-cart-qty] [data-qty-input]').forEach((input) => {
+      document.querySelectorAll<HTMLInputElement>('form[data-cart-qty] [data-qty-input]').forEach((input) => {
         if (hasIssue) return;
 
         const max = parseInt(input.getAttribute('max') || '0', 10);
         const val = parseInt(input.value || '0', 10);
 
-        // si está disabled (sin stock) => bloquea checkout
+        // si estÃ¡ disabled (sin stock) => bloquea checkout
         if (input.disabled) {
           hasIssue = true;
           return;
@@ -236,7 +236,9 @@ export function initCartAndCheckout({ $, afterPaint, openToast }) {
   };
 
   document.addEventListener('click', async (e) => {
-    const btn = e.target.closest('[data-copy-target]');
+    const target = e.target;
+    if (!(target instanceof Element)) return;
+    const btn = target.closest('[data-copy-target]');
     if (!btn) return;
 
     e.preventDefault();
@@ -244,21 +246,23 @@ export function initCartAndCheckout({ $, afterPaint, openToast }) {
     const sel = btn.getAttribute('data-copy-target');
     if (!sel) return;
 
-    const el = document.querySelector(sel);
+    const el = document.querySelector<HTMLElement>(sel);
     if (!el) return;
 
-    const text = (typeof el.value === 'string') ? el.value : (el.textContent || '');
+    const text = (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement)
+      ? el.value
+      : (el.textContent || '');
     const ok = await copyToClipboard(text);
 
-    showMiniToast(ok ? (btn.getAttribute('data-copy-toast') || 'Copiado ✅') : 'No se pudo copiar');
+    showMiniToast(ok ? (btn.getAttribute('data-copy-toast') || 'Copiado âœ…') : 'No se pudo copiar');
   });
 
   const setNavbarCartCount = (count) => {
-    const cartLink = document.querySelector('a[aria-label="Carrito"]');
+    const cartLink = document.querySelector<HTMLAnchorElement>('a[aria-label="Carrito"]');
     if (!cartLink) return;
 
     const next = Math.max(0, parseInt(count, 10) || 0);
-    let badge = cartLink.querySelector('[data-cart-count]');
+    let badge = cartLink.querySelector<HTMLElement>('[data-cart-count]');
 
     if (next <= 0) {
       badge?.remove();
@@ -292,8 +296,8 @@ export function initCartAndCheckout({ $, afterPaint, openToast }) {
     badge.textContent = String(next);
   };
 
-  const animateCollapseRemove = (el) =>
-    new Promise((resolve) => {
+  const animateCollapseRemove = (el: HTMLElement | null) =>
+    new Promise<void>((resolve) => {
       if (!el) return resolve();
 
       el.style.overflow = 'hidden';
@@ -318,15 +322,15 @@ export function initCartAndCheckout({ $, afterPaint, openToast }) {
       );
     });
 
-  const cartGrid = document.querySelector('[data-cart-grid]');
+  const cartGrid = document.querySelector<HTMLElement>('[data-cart-grid]');
   if (cartGrid) {
     const storeUrl = cartGrid.dataset.storeUrl || '/tienda';
     const renderEmptyCart = () => {
       cartGrid.innerHTML = `
         <div class="card">
           <div class="card-body">
-            <div class="font-black" data-testid="empty-cart-message">Tu carrito está vacío.</div>
-            <div class="muted" style="margin-top:4px">Agregá productos desde la tienda.</div>
+            <div class="font-black" data-testid="empty-cart-message">Tu carrito estÃ¡ vacÃ­o.</div>
+            <div class="muted" style="margin-top:4px">AgregÃ¡ productos desde la tienda.</div>
             <div style="margin-top:14px">
               <a href="${storeUrl}" class="btn-primary">Ir a la tienda</a>
             </div>
@@ -335,14 +339,14 @@ export function initCartAndCheckout({ $, afterPaint, openToast }) {
       `;
     };
 
-    cartGrid.querySelectorAll('form[data-cart-remove]').forEach((form) => {
+    cartGrid.querySelectorAll<HTMLFormElement>('form[data-cart-remove]').forEach((form) => {
       form.addEventListener('submit', async (ev) => {
         ev.preventDefault();
 
-        const btn = form.querySelector('button[type="submit"]');
+        const btn = form.querySelector<HTMLButtonElement>('button[type="submit"]');
         if (btn) btn.disabled = true;
 
-        const card = form.closest('[data-cart-item]');
+        const card = form.closest<HTMLElement>('[data-cart-item]');
 
         try {
           const res = await fetch(form.action, {
@@ -360,12 +364,12 @@ export function initCartAndCheckout({ $, afterPaint, openToast }) {
 
           await animateCollapseRemove(card);
 
-          const itemsCountEl = document.querySelector('[data-cart-items-count]');
-          const totalEl = document.querySelector('[data-cart-total]');
+          const itemsCountEl = document.querySelector<HTMLElement>('[data-cart-items-count]');
+          const totalEl = document.querySelector<HTMLElement>('[data-cart-total]');
 
           if (itemsCountEl && typeof data.itemsCount !== 'undefined') {
             const n = parseInt(data.itemsCount, 10) || 0;
-            itemsCountEl.textContent = `${n} ítem${n === 1 ? '' : 's'}`;
+            itemsCountEl.textContent = `${n} Ã­tem${n === 1 ? '' : 's'}`;
           }
 
           if (totalEl && typeof data.total !== 'undefined') {
@@ -389,9 +393,9 @@ export function initCartAndCheckout({ $, afterPaint, openToast }) {
       });
     });
 
-    const clearForm = cartGrid.querySelector('form[data-cart-clear]');
+    const clearForm = cartGrid.querySelector<HTMLFormElement>('form[data-cart-clear]');
     if (clearForm) {
-      const btn = clearForm.querySelector('button[type="submit"]');
+      const btn = clearForm.querySelector<HTMLButtonElement>('button[type="submit"]');
 
       clearForm.addEventListener('submit', async (ev) => {
         ev.preventDefault();
@@ -412,11 +416,11 @@ export function initCartAndCheckout({ $, afterPaint, openToast }) {
           const data = await res.json();
           if (!data?.ok) throw new Error('bad json');
 
-          const itemsWrap = cartGrid.querySelector('[data-cart-items-wrap]');
-          const summaryWrap = cartGrid.querySelector('[data-cart-summary-wrap]');
+          const itemsWrap = cartGrid.querySelector<HTMLElement>('[data-cart-items-wrap]');
+          const summaryWrap = cartGrid.querySelector<HTMLElement>('[data-cart-summary-wrap]');
 
-          const fadeOut = (el) =>
-            new Promise((resolve) => {
+          const fadeOut = (el: HTMLElement | null) =>
+            new Promise<void>((resolve) => {
               if (!el) return resolve();
               el.style.willChange = 'opacity, transform';
               el.style.transition = 'opacity 180ms ease, transform 180ms ease';
@@ -431,10 +435,10 @@ export function initCartAndCheckout({ $, afterPaint, openToast }) {
 
           await Promise.all([fadeOut(itemsWrap), fadeOut(summaryWrap)]);
 
-          const itemsCountEl = document.querySelector('[data-cart-items-count]');
-          const totalEl = document.querySelector('[data-cart-total]');
+          const itemsCountEl = document.querySelector<HTMLElement>('[data-cart-items-count]');
+          const totalEl = document.querySelector<HTMLElement>('[data-cart-total]');
 
-          if (itemsCountEl) itemsCountEl.textContent = '0 ítems';
+          if (itemsCountEl) itemsCountEl.textContent = '0 Ã­tems';
           if (totalEl) totalEl.textContent = formatARS(0);
 
           setNavbarCartCount(0);
@@ -451,12 +455,12 @@ export function initCartAndCheckout({ $, afterPaint, openToast }) {
   }
 
   // ---------------------------------------------
-  // Carrito: control de cantidad (− / input / +)
+  // Carrito: control de cantidad (âˆ’ / input / +)
   // ---------------------------------------------
-  document.querySelectorAll('form[data-cart-qty]').forEach((form) => {
-    const input = form.querySelector('[data-qty-input]');
-    const minus = form.querySelector('[data-qty-minus]');
-    const plus = form.querySelector('[data-qty-plus]');
+  document.querySelectorAll<HTMLFormElement>('form[data-cart-qty]').forEach((form) => {
+    const input = form.querySelector<HTMLInputElement>('[data-qty-input]');
+    const minus = form.querySelector<HTMLButtonElement>('[data-qty-minus]');
+    const plus = form.querySelector<HTMLButtonElement>('[data-qty-plus]');
     if (!input) return;
 
     const getMax = () => {
@@ -474,8 +478,8 @@ export function initCartAndCheckout({ $, afterPaint, openToast }) {
       if (plus) plus.disabled = v >= max;
     };
 
-    // ✅ UI instantánea (optimista): subtotal + total sin esperar al backend
-    const card = form.closest('[data-cart-item]');
+    // âœ… UI instantÃ¡nea (optimista): subtotal + total sin esperar al backend
+    const card = form.closest<HTMLElement>('[data-cart-item]');
 
     const getUnitPrice = () => {
       const v = parseFloat(card?.dataset?.unitPrice || '0');
@@ -493,22 +497,22 @@ export function initCartAndCheckout({ $, afterPaint, openToast }) {
       let items = 0;
       let total = 0;
 
-      document.querySelectorAll('form[data-cart-qty] [data-qty-input]').forEach((inp) => {
+      document.querySelectorAll<HTMLInputElement>('form[data-cart-qty] [data-qty-input]').forEach((inp) => {
         const q = parseInt(inp.value || '0', 10) || 0;
         items += q;
 
-        const c = inp.closest('[data-cart-item]');
+        const c = inp.closest<HTMLElement>('[data-cart-item]');
         const unit = parseFloat(c?.dataset?.unitPrice || '0');
         if (Number.isFinite(unit)) total += unit * q;
       });
 
-      const itemsCountEl = document.querySelector('[data-cart-items-count]');
-      const totalEl = document.querySelector('[data-cart-total]');
+      const itemsCountEl = document.querySelector<HTMLElement>('[data-cart-items-count]');
+      const totalEl = document.querySelector<HTMLElement>('[data-cart-total]');
 
-      if (itemsCountEl) itemsCountEl.textContent = `${items} ítem${items === 1 ? '' : 's'}`;
+      if (itemsCountEl) itemsCountEl.textContent = `${items} Ã­tem${items === 1 ? '' : 's'}`;
       if (totalEl) totalEl.textContent = formatARS(total);
 
-      // badge del navbar (queda “vivo” mientras tocas + / -)
+      // badge del navbar (queda â€œvivoâ€ mientras tocas + / -)
       setNavbarCartCount(items);
     };
 
@@ -526,7 +530,7 @@ export function initCartAndCheckout({ $, afterPaint, openToast }) {
     updateLocalCartTotals();
 
 
-    const postFormJsonQty = async (form, { timeoutMs = 12000 } = {}) => {
+    const postFormJsonQty = async (form: HTMLFormElement, { timeoutMs = 12000 } = {}) => {
       const controller = new AbortController();
       const timer = window.setTimeout(() => controller.abort(), timeoutMs);
 
@@ -548,8 +552,8 @@ export function initCartAndCheckout({ $, afterPaint, openToast }) {
       }
     };
 
-    const collapseRemoveCard = (card) =>
-      new Promise((resolve) => {
+    const collapseRemoveCard = (card: HTMLElement | null) =>
+      new Promise<void>((resolve) => {
         if (!card) return resolve();
 
         card.style.willChange = 'max-height, opacity, margin, padding';
@@ -577,11 +581,11 @@ export function initCartAndCheckout({ $, afterPaint, openToast }) {
         );
       });
 
-      // ✅ BATCH / DEBOUNCE:
+      // âœ… BATCH / DEBOUNCE:
       // En vez de mandar 1 request por cada click, mandamos 1 solo con el valor final.
       let inFlight = false;
-      let desiredQty = getVal();          // último valor que el usuario quiere
-      let lastAppliedQty = desiredQty;    // último valor confirmado (servidor)
+      let desiredQty = getVal();          // Ãºltimo valor que el usuario quiere
+      let lastAppliedQty = desiredQty;    // Ãºltimo valor confirmado (servidor)
       let sendTimer = null;
 
       const scheduleSend = () => {
@@ -598,7 +602,7 @@ export function initCartAndCheckout({ $, afterPaint, openToast }) {
 
         inFlight = true;
 
-        // aseguramos que el form mande el último valor
+        // aseguramos que el form mande el Ãºltimo valor
         desiredQty = clamp(desiredQty);
         setVal(desiredQty);
 
@@ -609,18 +613,18 @@ export function initCartAndCheckout({ $, afterPaint, openToast }) {
           const data = await postFormJsonQty(form, { timeoutMs: 12000 });
           if (!data?.ok) throw new Error('bad json');
 
-          const card = form.closest('[data-cart-item]');
+          const card = form.closest<HTMLElement>('[data-cart-item]');
 
-          // ✅ eliminado por falta de stock
+          // âœ… eliminado por falta de stock
           if (data.removed) {
             await collapseRemoveCard(card);
 
-            const itemsCountEl = document.querySelector('[data-cart-items-count]');
-            const totalEl = document.querySelector('[data-cart-total]');
+            const itemsCountEl = document.querySelector<HTMLElement>('[data-cart-items-count]');
+            const totalEl = document.querySelector<HTMLElement>('[data-cart-total]');
 
             if (itemsCountEl && typeof data.itemsCount !== 'undefined') {
               const n = parseInt(data.itemsCount, 10) || 0;
-              itemsCountEl.textContent = `${n} ítem${n === 1 ? '' : 's'}`;
+              itemsCountEl.textContent = `${n} Ã­tem${n === 1 ? '' : 's'}`;
             }
             if (totalEl && typeof data.total !== 'undefined') {
               totalEl.textContent = formatARS(data.total);
@@ -631,15 +635,15 @@ export function initCartAndCheckout({ $, afterPaint, openToast }) {
             }
 
             if (data.empty) {
-              const cartGrid = document.querySelector('[data-cart-grid]');
+              const cartGrid = document.querySelector<HTMLElement>('[data-cart-grid]');
               const storeUrl = cartGrid?.dataset?.storeUrl || '/tienda';
 
               if (cartGrid) {
                 cartGrid.innerHTML = `
                   <div class="card">
                     <div class="card-body">
-                      <div class="font-black" data-testid="empty-cart-message">Tu carrito está vacío.</div>
-                      <div class="muted" style="margin-top:4px">Agregá productos desde la tienda.</div>
+                      <div class="font-black" data-testid="empty-cart-message">Tu carrito estÃ¡ vacÃ­o.</div>
+                      <div class="muted" style="margin-top:4px">AgregÃ¡ productos desde la tienda.</div>
                       <div style="margin-top:14px">
                         <a href="${storeUrl}" class="btn-primary">Ir a la tienda</a>
                       </div>
@@ -653,7 +657,7 @@ export function initCartAndCheckout({ $, afterPaint, openToast }) {
             return;
           }
 
-          // ✅ stock máximo actualizado
+          // âœ… stock mÃ¡ximo actualizado
           if (typeof data.maxStock !== 'undefined') {
             const m = parseInt(data.maxStock, 10);
             if (Number.isFinite(m) && m > 0) {
@@ -661,7 +665,7 @@ export function initCartAndCheckout({ $, afterPaint, openToast }) {
               const stockEl = card?.querySelector('[data-stock-available]');
               if (stockEl) stockEl.textContent = String(m);
 
-              // re-clamp solo si el usuario no cambió mientras volaba el request
+              // re-clamp solo si el usuario no cambiÃ³ mientras volaba el request
               if (desiredQty === qtyWeSent) {
                 desiredQty = clamp(desiredQty);
                 input.value = String(desiredQty);
@@ -670,7 +674,7 @@ export function initCartAndCheckout({ $, afterPaint, openToast }) {
             }
           }
 
-          // ✅ cantidad final que quedó en servidor (clamp del backend)
+          // âœ… cantidad final que quedÃ³ en servidor (clamp del backend)
           if (typeof data.quantity !== 'undefined') {
             const serverQty = parseInt(data.quantity, 10);
             if (Number.isFinite(serverQty) && serverQty > 0) {
@@ -692,12 +696,12 @@ export function initCartAndCheckout({ $, afterPaint, openToast }) {
             lineEl.textContent = formatARS(data.lineSubtotal);
           }
 
-          const itemsCountEl = document.querySelector('[data-cart-items-count]');
-          const totalEl = document.querySelector('[data-cart-total]');
+          const itemsCountEl = document.querySelector<HTMLElement>('[data-cart-items-count]');
+          const totalEl = document.querySelector<HTMLElement>('[data-cart-total]');
 
           if (itemsCountEl && typeof data.itemsCount !== 'undefined') {
             const n = parseInt(data.itemsCount, 10) || 0;
-            itemsCountEl.textContent = `${n} ítem${n === 1 ? '' : 's'}`;
+            itemsCountEl.textContent = `${n} Ã­tem${n === 1 ? '' : 's'}`;
           }
           if (totalEl && typeof data.total !== 'undefined') {
             totalEl.textContent = formatARS(data.total);
@@ -708,21 +712,21 @@ export function initCartAndCheckout({ $, afterPaint, openToast }) {
           }
 
         } catch (e) {
-          if (e?.name === 'AbortError') showMiniToast('Tardó mucho en actualizar. Reintentá.');
-          else showMiniToast('No se pudo actualizar el carrito. Reintentá.');
+          if (e?.name === 'AbortError') showMiniToast('TardÃ³ mucho en actualizar. ReintentÃ¡.');
+          else showMiniToast('No se pudo actualizar el carrito. ReintentÃ¡.');
         } finally {
           inFlight = false;
           updateCartCheckoutState();
 
-          // Si el usuario siguió tocando mientras el request estaba en vuelo,
-          // reprogramamos envío con el último desiredQty.
+          // Si el usuario siguiÃ³ tocando mientras el request estaba en vuelo,
+          // reprogramamos envÃ­o con el Ãºltimo desiredQty.
           if (form.isConnected && desiredQty !== lastAppliedQty) {
             scheduleSend();
           }
         }
       };
 
-      // Botones (+ / -) — NO mandan request inmediato, solo programan
+      // Botones (+ / -) â€” NO mandan request inmediato, solo programan
       minus?.addEventListener('click', (e) => {
         e.preventDefault();
         desiredQty = clamp(getVal() - 1);
@@ -737,7 +741,7 @@ export function initCartAndCheckout({ $, afterPaint, openToast }) {
 
         if (v >= max) {
           syncButtons();
-          showMiniToast('Máximo stock disponible.');
+          showMiniToast('MÃ¡ximo stock disponible.');
           return;
         }
 
@@ -786,3 +790,6 @@ export function initCartAndCheckout({ $, afterPaint, openToast }) {
     formatARS,
   };
 }
+
+
+

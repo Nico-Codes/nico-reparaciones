@@ -1,24 +1,24 @@
-export function initAdminAssetUploadDropzones() {
-  const forms = document.querySelectorAll('[data-asset-upload-form]');
+﻿function setDroppedFile(input: HTMLInputElement, file: File): boolean {
+  if (!input || !file || typeof DataTransfer === 'undefined') return false;
+  const dt = new DataTransfer();
+  dt.items.add(file);
+  input.files = dt.files;
+  return true;
+}
+
+export function initAdminAssetUploadDropzones(): void {
+  const forms = document.querySelectorAll<HTMLElement>('[data-asset-upload-form]');
   if (!forms.length) return;
 
-  const setDroppedFile = (input, file) => {
-    if (!input || !file || typeof DataTransfer === 'undefined') return false;
-    const dt = new DataTransfer();
-    dt.items.add(file);
-    input.files = dt.files;
-    return true;
-  };
-
   forms.forEach((form) => {
-    const input = form.querySelector('[data-asset-file-input]');
-    const dropzone = form.querySelector('[data-asset-dropzone]');
-    const submit = form.querySelector('[data-asset-submit]');
-    const fileName = form.querySelector('[data-asset-file-name]');
+    const input = form.querySelector<HTMLInputElement>('[data-asset-file-input]');
+    const dropzone = form.querySelector<HTMLElement>('[data-asset-dropzone]');
+    const submit = form.querySelector<HTMLButtonElement | HTMLInputElement>('[data-asset-submit]');
+    const fileName = form.querySelector<HTMLElement>('[data-asset-file-name]');
 
     if (!input || !dropzone || !submit) return;
 
-    const updateState = () => {
+    const updateState = (): void => {
       const hasFile = !!(input.files && input.files.length > 0);
       submit.disabled = !hasFile;
 
@@ -30,10 +30,10 @@ export function initAdminAssetUploadDropzones() {
       }
 
       fileName.classList.remove('hidden');
-      fileName.textContent = 'Archivo: ' + input.files[0].name;
+      fileName.textContent = 'Archivo: ' + (input.files?.[0]?.name || '');
     };
 
-    const clearDragState = () => {
+    const clearDragState = (): void => {
       dropzone.classList.remove('border-sky-400', 'bg-sky-50', 'text-sky-700');
     };
 
@@ -56,7 +56,7 @@ export function initAdminAssetUploadDropzones() {
       }
     });
 
-    dropzone.addEventListener('drop', (e) => {
+    dropzone.addEventListener('drop', (e: DragEvent) => {
       e.preventDefault();
       clearDragState();
 

@@ -5,6 +5,7 @@
     "scripts": {
         "build": "vite build",
         "dev": "vite",
+        "typecheck": "tsc --noEmit",
         "e2e": "playwright test",
         "e2e:full": "playwright test",
         "e2e:critical": "node scripts/e2e-critical.mjs",
@@ -15,12 +16,14 @@
         "e2e:install": "playwright install chromium"
     },
     "devDependencies": {
+        "@types/node": "^24.3.0",
         "@playwright/test": "^1.56.1",
         "@tailwindcss/vite": "^4.0.0",
         "axios": "^1.11.0",
         "concurrently": "^9.0.1",
         "laravel-vite-plugin": "^2.0.0",
         "tailwindcss": "^4.0.0",
+        "typescript": "^5.9.2",
         "vite": "^7.0.7"
     }
 }

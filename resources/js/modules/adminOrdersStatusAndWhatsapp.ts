@@ -1,4 +1,10 @@
-export function initAdminOrdersStatusAndWhatsapp({ afterPaint, lockScroll, unlockScroll, showMiniToast }) {
+﻿type AdminOrderModuleOptions = {
+  afterPaint: (fn: () => void) => void;
+  lockScroll: (key: string) => void;
+  unlockScroll: (key: string) => void;
+  showMiniToast: (message: string) => void;
+};
+export function initAdminOrdersStatusAndWhatsapp({ afterPaint, lockScroll, unlockScroll, showMiniToast }: AdminOrderModuleOptions) {
   const adminBadgeClass = (st) => {
     switch (st) {
       case 'pendiente': return 'badge-amber';
@@ -12,7 +18,7 @@ export function initAdminOrdersStatusAndWhatsapp({ afterPaint, lockScroll, unloc
   };
 
   // Bottom-sheet confirm (reutiliza el estilo del toast)
-  let adminConfirm = null;
+  let adminConfirm: null | { open: (args: { title?: string; message?: string; okText?: string; cancelText?: string }) => Promise<boolean> } = null;
 
   const ensureAdminConfirm = () => {
     if (adminConfirm) return adminConfirm;
@@ -27,10 +33,10 @@ export function initAdminOrdersStatusAndWhatsapp({ afterPaint, lockScroll, unloc
           <div class="rounded-t-3xl bg-white p-4 shadow-2xl">
             <div class="flex items-start justify-between gap-3">
               <div class="min-w-0">
-                <div class="font-black text-zinc-900" id="nrAdminConfirmTitle">¿Notificar?</div>
-                <div class="text-sm text-zinc-600 mt-1" id="nrAdminConfirmMsg">—</div>
+                <div class="font-black text-zinc-900" id="nrAdminConfirmTitle">Â¿Notificar?</div>
+                <div class="text-sm text-zinc-600 mt-1" id="nrAdminConfirmMsg">â€”</div>
               </div>
-              <button type="button" class="icon-btn" data-admin-confirm-cancel aria-label="Cerrar">✕</button>
+              <button type="button" class="icon-btn" data-admin-confirm-cancel aria-label="Cerrar">âœ•</button>
             </div>
 
             <div class="mt-4 flex gap-2">
@@ -51,9 +57,9 @@ export function initAdminOrdersStatusAndWhatsapp({ afterPaint, lockScroll, unloc
     const sheet = document.getElementById('nrAdminConfirmSheet');
     const titleEl = document.getElementById('nrAdminConfirmTitle');
     const msgEl = document.getElementById('nrAdminConfirmMsg');
-    const okBtn = overlay.querySelector('[data-admin-confirm-ok]');
+    const okBtn = overlay.querySelector<HTMLButtonElement>('[data-admin-confirm-ok]');
 
-    let resolver = null;
+    let resolver: null | ((val: boolean) => void) = null;
 
     const close = (val) => {
       overlay.classList.add('pointer-events-none', 'opacity-0');
@@ -79,10 +85,10 @@ export function initAdminOrdersStatusAndWhatsapp({ afterPaint, lockScroll, unloc
 
     adminConfirm = {
       open: ({ title, message, okText, cancelText }) =>
-        new Promise((resolve) => {
+        new Promise<boolean>((resolve) => {
           resolver = resolve;
 
-          if (titleEl) titleEl.textContent = title || '¿Notificar por WhatsApp?';
+          if (titleEl) titleEl.textContent = title || 'Â¿Notificar por WhatsApp?';
           if (msgEl) msgEl.textContent = message || '';
           if (okText) okBtn.textContent = okText;
 
@@ -101,7 +107,7 @@ export function initAdminOrdersStatusAndWhatsapp({ afterPaint, lockScroll, unloc
     return adminConfirm;
   };
 
-    const postFormJson = async (form) => {
+    const postFormJson = async (form: HTMLFormElement) => {
       const res = await fetch(form.action, {
         method: 'POST',
         headers: { 'X-Requested-With': 'XMLHttpRequest', Accept: 'application/json' },
@@ -116,9 +122,9 @@ export function initAdminOrdersStatusAndWhatsapp({ afterPaint, lockScroll, unloc
       const msg =
         (data && (data.message || data.error)) ||
         (data && data.errors && Object.values(data.errors).flat().join(' ')) ||
-        'No se pudo completar la acción.';
+        'No se pudo completar la acciÃ³n.';
 
-      const err = new Error(msg);
+      const err = new Error(msg) as Error & { status?: number; data?: unknown };
       err.status = res.status;
       err.data = data;
       throw err;
@@ -133,7 +139,7 @@ export function initAdminOrdersStatusAndWhatsapp({ afterPaint, lockScroll, unloc
   };
 
   const getAdminOrdersFilter = () => {
-    // 1) Preferimos lo que viene del Blade (más confiable)
+    // 1) Preferimos lo que viene del Blade (mÃ¡s confiable)
     const root = document.querySelector('[data-admin-orders-filter]');
     const domVal = (root?.getAttribute('data-admin-orders-filter') || '').trim();
     if (domVal && domVal !== 'all') return domVal;
@@ -206,7 +212,7 @@ export function initAdminOrdersStatusAndWhatsapp({ afterPaint, lockScroll, unloc
     return parsed;
   };
 
-  const syncStatusOptions = (card, currentStatus) => {
+  const syncStatusOptions = (card: HTMLElement, currentStatus: string) => {
     const transitions = getAdminOrderTransitions(card);
     const allowed = Array.isArray(transitions?.[currentStatus])
       ? transitions[currentStatus].map((v) => String(v))
@@ -214,7 +220,7 @@ export function initAdminOrdersStatusAndWhatsapp({ afterPaint, lockScroll, unloc
     const allowedSet = new Set(allowed);
     let hasEnabledOption = false;
 
-    card.querySelectorAll('[data-admin-order-set-status]').forEach((b) => {
+    card.querySelectorAll<HTMLButtonElement>('[data-admin-order-set-status]').forEach((b) => {
       const btnStatus = String(b.getAttribute('data-status') || '').trim();
       const isCur = btnStatus === currentStatus;
       const canPick = isCur || allowedSet.has(btnStatus);
@@ -228,7 +234,7 @@ export function initAdminOrdersStatusAndWhatsapp({ afterPaint, lockScroll, unloc
       if (!shouldDisable) hasEnabledOption = true;
     });
 
-    const menuBtn = card.querySelector('[data-admin-order-status-btn]');
+    const menuBtn = card.querySelector<HTMLButtonElement>('[data-admin-order-status-btn]');
     if (menuBtn) {
       menuBtn.disabled = !hasEnabledOption;
       menuBtn.classList.toggle('opacity-60', !hasEnabledOption);
@@ -246,15 +252,15 @@ export function initAdminOrdersStatusAndWhatsapp({ afterPaint, lockScroll, unloc
       <div class="card">
         <div class="card-body">
           <div class="font-black text-zinc-900">No hay pedidos</div>
-          <div class="muted mt-1">Probá cambiar el estado o ajustar la búsqueda.</div>
+          <div class="muted mt-1">ProbÃ¡ cambiar el estado o ajustar la bÃºsqueda.</div>
         </div>
       </div>
     `;
   };
 
-  // Animación "más visible" para admin (fade + slide + collapse)
-  const animateAdminOut = (el) =>
-    new Promise((resolve) => {
+  // AnimaciÃ³n "mÃ¡s visible" para admin (fade + slide + collapse)
+  const animateAdminOut = (el: HTMLElement | null) =>
+    new Promise<void>((resolve) => {
       if (!el) return resolve();
 
       el.style.overflow = 'hidden';
@@ -308,25 +314,25 @@ export function initAdminOrdersStatusAndWhatsapp({ afterPaint, lockScroll, unloc
     };
 
 
-  document.querySelectorAll('[data-admin-order-card]').forEach((card) => {
-    const statusForm = card.querySelector('form[data-admin-order-status-form]');
-    const waForm = card.querySelector('form[data-admin-order-wa-form]');
-    const badgeEls = card.querySelectorAll('[data-admin-order-status-badge]');
-    const waLink = card.querySelector('[data-admin-order-wa-link]');
-    const waOpenBtn = card.querySelector('[data-admin-order-wa-open]');
-    const waBadge = card.querySelector('[data-admin-order-wa-badge]');
-    const waLastBadge = card.querySelector('[data-admin-order-wa-last]');
+  document.querySelectorAll<HTMLElement>('[data-admin-order-card]').forEach((card) => {
+    const statusForm = card.querySelector<HTMLFormElement>('form[data-admin-order-status-form]');
+    const waForm = card.querySelector<HTMLFormElement>('form[data-admin-order-wa-form]');
+    const badgeEls = card.querySelectorAll<HTMLElement>('[data-admin-order-status-badge]');
+    const waLink = card.querySelector<HTMLAnchorElement>('[data-admin-order-wa-link]');
+    const waOpenBtn = card.querySelector<HTMLElement>('[data-admin-order-wa-open]');
+    const waBadge = card.querySelector<HTMLElement>('[data-admin-order-wa-badge]');
+    const waLastBadge = card.querySelector<HTMLElement>('[data-admin-order-wa-last]');
 
-    const waMsgEls = card.querySelectorAll('[data-admin-order-wa-message]');
+    const waMsgEls = card.querySelectorAll<HTMLElement>('[data-admin-order-wa-message]');
 
-    const menuBtn = card.querySelector('[data-admin-order-status-btn]');
+    const menuBtn = card.querySelector<HTMLButtonElement>('[data-admin-order-status-btn]');
     const menuId = menuBtn?.getAttribute('data-menu');
     const menu = menuId ? document.getElementById(menuId) : null;
     const initialStatus = String(card.dataset.status || '').trim();
 
     syncStatusOptions(card, initialStatus);
 
-    // Botón WhatsApp en el detalle: abrir WA y registrar log (sin confirm)
+    // BotÃ³n WhatsApp en el detalle: abrir WA y registrar log (sin confirm)
     if (waOpenBtn && waForm) {
       waOpenBtn.addEventListener('click', async (e) => {
         const href = waLink?.getAttribute('href') || waOpenBtn.getAttribute('href');
@@ -337,7 +343,7 @@ export function initAdminOrdersStatusAndWhatsapp({ afterPaint, lockScroll, unloc
 
         try {
           const data = await postFormJson(waForm);
-          showMiniToast(data?.created ? 'Log WhatsApp registrado ✅' : 'Ya había un log reciente ✅');
+          showMiniToast(data?.created ? 'Log WhatsApp registrado âœ…' : 'Ya habÃ­a un log reciente âœ…');
 
           if (waBadge) {
             waBadge.textContent = 'WA OK';
@@ -345,7 +351,7 @@ export function initAdminOrdersStatusAndWhatsapp({ afterPaint, lockScroll, unloc
             waBadge.dataset.waState = 'ok';
           }
 
-          // actualizar "Último"
+          // actualizar "Ãšltimo"
           if (data?.log) {
             const lastAt = card.querySelector('[data-admin-wa-last-at]');
             const lastBy = card.querySelector('[data-admin-wa-last-by]');
@@ -365,18 +371,18 @@ export function initAdminOrdersStatusAndWhatsapp({ afterPaint, lockScroll, unloc
 
               const st = document.createElement('div');
               st.className = 'font-extrabold text-zinc-900';
-              st.textContent = data.log.status_label || data.log.status || '—';
+              st.textContent = data.log.status_label || data.log.status || 'â€”';
 
               const at = document.createElement('div');
               at.className = 'text-xs text-zinc-500';
-              at.textContent = data.log.sent_at || '—';
+              at.textContent = data.log.sent_at || 'â€”';
 
               title.appendChild(st);
               title.appendChild(at);
 
               const by = document.createElement('div');
               by.className = 'text-xs text-zinc-500 mt-1';
-              by.textContent = data.log.sent_by || '—';
+              by.textContent = data.log.sent_by || 'â€”';
 
               const details = document.createElement('details');
               details.className = 'mt-2';
@@ -400,14 +406,14 @@ export function initAdminOrdersStatusAndWhatsapp({ afterPaint, lockScroll, unloc
             }
           }
         } catch (_) {
-          showMiniToast('No se pudo registrar el log ⚠️');
+          showMiniToast('No se pudo registrar el log âš ï¸');
         }
 
 
       });
     }
 
-    card.querySelectorAll('[data-admin-order-set-status]').forEach((btn) => {
+    card.querySelectorAll<HTMLButtonElement>('[data-admin-order-set-status]').forEach((btn) => {
       btn.addEventListener('click', async (e) => {
         e.preventDefault();
 
@@ -425,8 +431,8 @@ export function initAdminOrdersStatusAndWhatsapp({ afterPaint, lockScroll, unloc
 
         const prevSt = String(card.dataset.status || '').trim();
 
-        const stInput = statusForm.querySelector('input[name="status"]');
-        const cmInput = statusForm.querySelector('input[name="comment"]');
+        const stInput = statusForm.querySelector<HTMLInputElement>('input[name="status"]');
+        const cmInput = statusForm.querySelector<HTMLInputElement>('input[name="comment"]');
         if (stInput) stInput.value = next;
         if (cmInput) cmInput.value = '';
 
@@ -448,13 +454,13 @@ export function initAdminOrdersStatusAndWhatsapp({ afterPaint, lockScroll, unloc
           // dropdown: activo + disable current
           syncStatusOptions(card, newSt);
 
-          // UI: badges (puede haber 1 o más en la vista)
+          // UI: badges (puede haber 1 o mÃ¡s en la vista)
           badgeEls.forEach((el) => {
             setValueOrText(el, data.status_label || newSt);
             el.className = adminBadgeClass(newSt);
           });
 
-          showMiniToast('Estado actualizado ✅');
+          showMiniToast('Estado actualizado âœ…');
 
           // WhatsApp (si backend devuelve wa.url/message)
           const waUrl = data?.wa?.url || null;
@@ -478,12 +484,12 @@ export function initAdminOrdersStatusAndWhatsapp({ afterPaint, lockScroll, unloc
             waMsgEls.forEach((el) => setValueOrText(el, waMsg));
           }
 
-          // Si hay WA, confirmamos si notificar (como ya venías haciendo)
+          // Si hay WA, confirmamos si notificar (como ya venÃ­as haciendo)
           if (waUrl) {
             const confirmUI = ensureAdminConfirm();
             const ok = await confirmUI.open({
-              title: '¿Notificar por WhatsApp?',
-              message: `Pedido #${data.order_id} → ${data.status_label || newSt}`,
+              title: 'Â¿Notificar por WhatsApp?',
+              message: `Pedido #${data.order_id} â†’ ${data.status_label || newSt}`,
               okText: 'Abrir WhatsApp',
               cancelText: 'Ahora no',
             });
@@ -499,7 +505,7 @@ export function initAdminOrdersStatusAndWhatsapp({ afterPaint, lockScroll, unloc
                   const data = await postFormJson(waForm);
 
                   setWaBadgeState(waBadge, 'ok');
-                  if (waLastBadge) waLastBadge.textContent = data?.notified_at_label || 'recién';
+                  if (waLastBadge) waLastBadge.textContent = data?.notified_at_label || 'reciÃ©n';
 
                   const nextKey = waStateToTabKey('ok');
                   if (prevKey && nextKey && prevKey !== nextKey) {
@@ -507,7 +513,7 @@ export function initAdminOrdersStatusAndWhatsapp({ afterPaint, lockScroll, unloc
                     bumpAdminOrdersWaTab(nextKey, +1);
                   }
 
-                  showMiniToast(data?.created ? 'Log WhatsApp registrado ✅' : 'Ya había un log reciente ✅');
+                  showMiniToast(data?.created ? 'Log WhatsApp registrado âœ…' : 'Ya habÃ­a un log reciente âœ…');
 
                   const waFilter = getAdminOrdersWaFilter();
                   if (waFilter && !matchesWaFilter(waFilter, 'ok')) {
@@ -517,7 +523,7 @@ export function initAdminOrdersStatusAndWhatsapp({ afterPaint, lockScroll, unloc
                   }
 
                 } catch (_) {
-                  showMiniToast('No se pudo registrar el log ⚠️');
+                  showMiniToast('No se pudo registrar el log âš ï¸');
                 }
               }
 
@@ -526,7 +532,7 @@ export function initAdminOrdersStatusAndWhatsapp({ afterPaint, lockScroll, unloc
 
           const nextWaState = String(data?.wa?.state || (waUrl ? 'pending' : 'no_phone'));
           setWaBadgeState(waBadge, nextWaState);
-          if (waLastBadge) waLastBadge.textContent = data?.wa?.notified_at_label || '—';
+          if (waLastBadge) waLastBadge.textContent = data?.wa?.notified_at_label || 'â€”';
 
           // si permanece en el status actual, ajusto contadores por cambio de estado WA
           if (!leavingStatusGroup) {
@@ -538,7 +544,7 @@ export function initAdminOrdersStatusAndWhatsapp({ afterPaint, lockScroll, unloc
             }
           }
 
-          // Remoción final por filtros
+          // RemociÃ³n final por filtros
           const waFilter = getAdminOrdersWaFilter();
           const finalWaState = waBadge?.dataset?.waState || nextWaState;
           const removeByWa = !!(waFilter && !matchesWaFilter(waFilter, finalWaState));
@@ -560,7 +566,7 @@ export function initAdminOrdersStatusAndWhatsapp({ afterPaint, lockScroll, unloc
 
           } catch (err) {
             if (err && err.status === 422) {
-              showMiniToast(err.message || 'No se pudo actualizar el estado ⚠️');
+              showMiniToast(err.message || 'No se pudo actualizar el estado âš ï¸');
             } else {
               statusForm.submit();
             }
@@ -574,3 +580,6 @@ export function initAdminOrdersStatusAndWhatsapp({ afterPaint, lockScroll, unloc
 
   });
 }
+
+
+
