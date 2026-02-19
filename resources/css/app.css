@@ -777,8 +777,10 @@
     height: var(--hero-fade-size, 96px);
     background: linear-gradient(
       to bottom,
-      rgba(var(--hero-fade-desktop), calc(var(--hero-fade-intensity, 42) / 100)) 0%,
-      rgba(var(--hero-fade-desktop), calc((var(--hero-fade-intensity, 42) / 100) * 0.45)) 42%,
+      rgb(var(--hero-fade-desktop)) 0%,
+      rgb(var(--hero-fade-desktop)) var(--hero-fade-hold, 12%),
+      rgba(var(--hero-fade-desktop), var(--hero-fade-mid-alpha, 0.58)) 52%,
+      rgba(var(--hero-fade-desktop), calc(var(--hero-fade-mid-alpha, 0.58) * 0.28)) 76%,
       #fafafa 100%
     );
   }
@@ -787,8 +789,10 @@
     .store-front-fade::before {
       background: linear-gradient(
         to bottom,
-        rgba(var(--hero-fade-mobile), calc(var(--hero-fade-intensity, 42) / 100)) 0%,
-        rgba(var(--hero-fade-mobile), calc((var(--hero-fade-intensity, 42) / 100) * 0.45)) 42%,
+        rgb(var(--hero-fade-mobile)) 0%,
+        rgb(var(--hero-fade-mobile)) var(--hero-fade-hold, 12%),
+        rgba(var(--hero-fade-mobile), var(--hero-fade-mid-alpha, 0.58)) 52%,
+        rgba(var(--hero-fade-mobile), calc(var(--hero-fade-mid-alpha, 0.58) * 0.28)) 76%,
         #fafafa 100%
       );
     }

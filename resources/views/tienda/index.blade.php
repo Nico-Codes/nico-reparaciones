@@ -29,7 +29,7 @@
     </section>
     <div
       class="store-front-fade store-front-hero--fullbleed"
-      style="--hero-fade-desktop: {{ $storeHeroData['fadeRgbDesktop'] ?? '14, 165, 233' }}; --hero-fade-mobile: {{ $storeHeroData['fadeRgbMobile'] ?? ($storeHeroData['fadeRgbDesktop'] ?? '14, 165, 233') }}; --hero-fade-intensity: {{ (int)($storeHeroData['fadeIntensity'] ?? 42) }}; --hero-fade-size: {{ (int)($storeHeroData['fadeSize'] ?? 96) }}px;"
+      style="--hero-fade-desktop: {{ $storeHeroData['fadeRgbDesktop'] ?? '14, 165, 233' }}; --hero-fade-mobile: {{ $storeHeroData['fadeRgbMobile'] ?? ($storeHeroData['fadeRgbDesktop'] ?? '14, 165, 233') }}; --hero-fade-intensity: {{ (int)($storeHeroData['fadeIntensity'] ?? 42) }}; --hero-fade-size: {{ (int)($storeHeroData['fadeSize'] ?? 96) }}px; --hero-fade-hold: {{ (int)($storeHeroData['fadeHold'] ?? 12) }}%; --hero-fade-mid-alpha: {{ $storeHeroData['fadeMidAlpha'] ?? '0.58' }};"
       aria-hidden="true"></div>
   @else
     <div class="page-head store-hero">

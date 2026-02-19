@@ -132,6 +132,37 @@
               value="{{ old('store_home_hero_fade_size', (int)($storeHomeHeroFadeSize ?? 96)) }}">
           </div>
         </div>
+        <div class="grid gap-2">
+          <label>Color manual del degradado (hex)</label>
+          <div class="flex items-center gap-2">
+            <input
+              type="color"
+              class="h-11 w-16 rounded-xl border border-zinc-300 bg-white p-1"
+              value="{{ old('store_home_hero_fade_color_manual', ($storeHomeHeroFadeColorManual ?? '') !== '' ? $storeHomeHeroFadeColorManual : '#0EA5E9') }}"
+              oninput="this.nextElementSibling.value=this.value">
+            <input
+              type="text"
+              name="store_home_hero_fade_color_manual"
+              class="h-11 uppercase"
+              maxlength="7"
+              pattern="^#([A-Fa-f0-9]{6})$"
+              value="{{ old('store_home_hero_fade_color_manual', $storeHomeHeroFadeColorManual ?? '') }}"
+              placeholder="#0EA5E9">
+          </div>
+          <div class="text-xs text-zinc-500">
+            Opcional. Si lo completas, se usa este color para el degradado en todos los dispositivos.
+            Si lo dejas vacio, el color se calcula automaticamente desde la imagen.
+          </div>
+        </div>
+        <label class="inline-flex items-center gap-2 text-sm font-semibold text-zinc-700">
+          <input
+            type="checkbox"
+            name="store_home_hero_fade_high_contrast"
+            value="1"
+            @checked(old('store_home_hero_fade_high_contrast', ($storeHomeHeroFadeHighContrast ?? false) ? '1' : '0') === '1')
+            class="h-4 w-4 rounded border-zinc-300 text-sky-600 focus:ring-sky-300">
+          Modo contraste alto del degradado
+        </label>
         <div class="text-xs text-zinc-500">
           El degradado se superpone sobre el bloque siguiente al hero y no agrega altura extra al layout.
         </div>

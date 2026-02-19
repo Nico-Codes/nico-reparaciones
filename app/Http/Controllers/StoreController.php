@@ -18,13 +18,32 @@ class StoreController extends Controller
         $title = trim((string) ($settings->get('store_home_hero_title') ?? ''));
         $subtitle = trim((string) ($settings->get('store_home_hero_subtitle') ?? ''));
 
-        $desktopColorRgb = $this->hexToRgbTriplet((string) ($settings->get('store_home_hero_desktop_color') ?? '')) ?? '14, 165, 233';
-        $mobileColorRgb = $this->hexToRgbTriplet((string) ($settings->get('store_home_hero_mobile_color') ?? '')) ?? $desktopColorRgb;
+        $manualHex = strtoupper(trim((string) ($settings->get('store_home_hero_fade_color_manual') ?? '')));
+        $manualRgb = $this->hexToRgbTriplet($manualHex);
+
+        $desktopColorRgb = $this->edgeColorRgbFromAsset('store_home_hero_desktop')
+            ?? $this->hexToRgbTriplet((string) ($settings->get('store_home_hero_desktop_color') ?? ''))
+            ?? '14, 165, 233';
+        $mobileColorRgb = $this->edgeColorRgbFromAsset('store_home_hero_mobile')
+            ?? $this->hexToRgbTriplet((string) ($settings->get('store_home_hero_mobile_color') ?? ''))
+            ?? $desktopColorRgb;
+        if ($manualRgb !== null) {
+            $desktopColorRgb = $manualRgb;
+            $mobileColorRgb = $manualRgb;
+        }
         $fadeIntensity = (int) ($settings->get('store_home_hero_fade_intensity') ?? 42);
         $fadeSize = (int) ($settings->get('store_home_hero_fade_size') ?? 96);
+        $fadeHighContrast = ((string) ($settings->get('store_home_hero_fade_high_contrast') ?? '0')) === '1';
 
         $fadeIntensity = max(0, min(100, $fadeIntensity));
         $fadeSize = max(24, min(260, $fadeSize));
+        $fadeHold = 6 + (int) round($fadeIntensity * 0.18);
+        $fadeMidAlpha = 0.25 + ($fadeIntensity / 100) * 0.55;
+
+        if ($fadeHighContrast) {
+            $fadeHold = min(34, $fadeHold + 8);
+            $fadeMidAlpha = min(0.95, $fadeMidAlpha + 0.18);
+        }
 
         return [
             'imageDesktop' => BrandAssets::url('store_home_hero_desktop'),
@@ -35,7 +54,92 @@ class StoreController extends Controller
             'fadeRgbMobile' => $mobileColorRgb,
             'fadeIntensity' => $fadeIntensity,
             'fadeSize' => $fadeSize,
+            'fadeHold' => $fadeHold,
+            'fadeMidAlpha' => number_format($fadeMidAlpha, 3, '.', ''),
+            'fadeColorManualHex' => $manualHex,
         ];
+    }
+
+    private function edgeColorRgbFromAsset(string $assetKey): ?string
+    {
+        if (!function_exists('imagecreatefromstring')) {
+            return null;
+        }
+
+        $resolved = \App\Support\BrandAssets::resolved();
+        $asset = $resolved[$assetKey] ?? null;
+        $relativePath = (string) ($asset['path'] ?? '');
+        if ($relativePath === '') {
+            return null;
+        }
+
+        $absolutePath = public_path($relativePath);
+        if (!is_file($absolutePath)) {
+            return null;
+        }
+
+        $raw = @file_get_contents($absolutePath);
+        if ($raw === false || $raw === '') {
+            return null;
+        }
+
+        $src = @imagecreatefromstring($raw);
+        if ($src === false) {
+            return null;
+        }
+
+        $thumb = imagecreatetruecolor(24, 24);
+        if ($thumb === false) {
+            imagedestroy($src);
+            return null;
+        }
+
+        imagecopyresampled(
+            $thumb,
+            $src,
+            0,
+            0,
+            0,
+            0,
+            24,
+            24,
+            (int) imagesx($src),
+            (int) imagesy($src)
+        );
+
+        $sumR = 0;
+        $sumG = 0;
+        $sumB = 0;
+        $count = 0;
+
+        for ($y = 20; $y <= 23; $y++) {
+            for ($x = 1; $x <= 22; $x++) {
+                $rgb = imagecolorat($thumb, $x, $y);
+                $r = ($rgb >> 16) & 0xFF;
+                $g = ($rgb >> 8) & 0xFF;
+                $b = $rgb & 0xFF;
+                if ($r > 245 && $g > 245 && $b > 245) {
+                    continue;
+                }
+                $sumR += $r;
+                $sumG += $g;
+                $sumB += $b;
+                $count++;
+            }
+        }
+
+        imagedestroy($thumb);
+        imagedestroy($src);
+
+        if ($count === 0) {
+            return null;
+        }
+
+        $r = (int) round($sumR / $count);
+        $g = (int) round($sumG / $count);
+        $b = (int) round($sumB / $count);
+
+        return $r . ', ' . $g . ', ' . $b;
     }
 
     private function hexToRgbTriplet(string $hex): ?string

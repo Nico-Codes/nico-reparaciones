@@ -106,6 +106,8 @@ class AdminBusinessSettingsController extends Controller
             'store_home_hero_subtitle' => 'nullable|string|max:240',
             'store_home_hero_fade_intensity' => 'nullable|integer|min:0|max:100',
             'store_home_hero_fade_size' => 'nullable|integer|min:24|max:260',
+            'store_home_hero_fade_high_contrast' => 'nullable|boolean',
+            'store_home_hero_fade_color_manual' => ['nullable', 'string', 'regex:/^#([A-Fa-f0-9]{6})$/'],
         ]);
 
         $this->persistSetting('shop_address', (string) ($data['shop_address'] ?? ''));
@@ -116,6 +118,8 @@ class AdminBusinessSettingsController extends Controller
         $this->persistSetting('store_home_hero_subtitle', (string) ($data['store_home_hero_subtitle'] ?? ''));
         $this->persistSetting('store_home_hero_fade_intensity', (string) ($data['store_home_hero_fade_intensity'] ?? '42'));
         $this->persistSetting('store_home_hero_fade_size', (string) ($data['store_home_hero_fade_size'] ?? '96'));
+        $this->persistSetting('store_home_hero_fade_high_contrast', $request->boolean('store_home_hero_fade_high_contrast') ? '1' : '0');
+        $this->persistSetting('store_home_hero_fade_color_manual', strtoupper((string) ($data['store_home_hero_fade_color_manual'] ?? '')));
 
         return back()->with('success', 'Configuracion guardada.');
     }
@@ -532,7 +536,7 @@ class AdminBusinessSettingsController extends Controller
             return null;
         }
 
-        $thumb = imagecreatetruecolor(1, 1);
+        $thumb = imagecreatetruecolor(24, 24);
         if ($thumb === false) {
             imagedestroy($src);
             return null;
@@ -545,16 +549,48 @@ class AdminBusinessSettingsController extends Controller
             0,
             0,
             0,
-            1,
-            1,
+            24,
+            24,
             (int) imagesx($src),
             (int) imagesy($src)
         );
 
-        $rgb = imagecolorat($thumb, 0, 0);
-        $r = ($rgb >> 16) & 0xFF;
-        $g = ($rgb >> 8) & 0xFF;
-        $b = $rgb & 0xFF;
+        // Prioriza la franja inferior real de la imagen para evitar "cortes"
+        // entre el hero y el inicio del degradado.
+        $sumR = 0;
+        $sumG = 0;
+        $sumB = 0;
+        $count = 0;
+
+        for ($y = 20; $y <= 23; $y++) {
+            for ($x = 1; $x <= 22; $x++) {
+                $rgb = imagecolorat($thumb, $x, $y);
+                $r = ($rgb >> 16) & 0xFF;
+                $g = ($rgb >> 8) & 0xFF;
+                $b = $rgb & 0xFF;
+
+                // Evita píxeles casi blancos que "apagan" el color dominante.
+                if ($r > 240 && $g > 240 && $b > 240) {
+                    continue;
+                }
+
+                $sumR += $r;
+                $sumG += $g;
+                $sumB += $b;
+                $count++;
+            }
+        }
+
+        if ($count === 0) {
+            $rgb = imagecolorat($thumb, 12, 22);
+            $r = ($rgb >> 16) & 0xFF;
+            $g = ($rgb >> 8) & 0xFF;
+            $b = $rgb & 0xFF;
+        } else {
+            $r = (int) round($sumR / $count);
+            $g = (int) round($sumG / $count);
+            $b = (int) round($sumB / $count);
+        }
 
         imagedestroy($thumb);
         imagedestroy($src);
@@ -563,7 +599,7 @@ class AdminBusinessSettingsController extends Controller
     }
 
     /**
-     * @return array{shopAddress:string,shopHours:string,shopPhone:string,defaultTicketPaper:string,storeHomeHeroTitle:string,storeHomeHeroSubtitle:string,storeHomeHeroFadeIntensity:int,storeHomeHeroFadeSize:int}
+     * @return array{shopAddress:string,shopHours:string,shopPhone:string,defaultTicketPaper:string,storeHomeHeroTitle:string,storeHomeHeroSubtitle:string,storeHomeHeroFadeIntensity:int,storeHomeHeroFadeSize:int,storeHomeHeroFadeHighContrast:bool,storeHomeHeroFadeColorManual:string}
      */
     private function businessViewData(): array
     {
@@ -578,6 +614,8 @@ class AdminBusinessSettingsController extends Controller
             'storeHomeHeroSubtitle' => (string) ($settings->get('store_home_hero_subtitle') ?? ''),
             'storeHomeHeroFadeIntensity' => (int) ($settings->get('store_home_hero_fade_intensity') ?? 42),
             'storeHomeHeroFadeSize' => (int) ($settings->get('store_home_hero_fade_size') ?? 96),
+            'storeHomeHeroFadeHighContrast' => ((string) ($settings->get('store_home_hero_fade_high_contrast') ?? '0')) === '1',
+            'storeHomeHeroFadeColorManual' => strtoupper((string) ($settings->get('store_home_hero_fade_color_manual') ?? '')),
         ];
     }
 
