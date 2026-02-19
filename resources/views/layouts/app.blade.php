@@ -20,10 +20,23 @@
     $hotPath = public_path('hot');
     $manifestPath = public_path('build/manifest.json');
 
-    $useHot = file_exists($hotPath);
+    $useHot = false;
     $useManifest = file_exists($manifestPath);
     $requestHost = request()->getHost();
     $isLocalHost = in_array($requestHost, ['127.0.0.1', 'localhost'], true);
+
+    if (file_exists($hotPath)) {
+      $hotUrl = trim((string) @file_get_contents($hotPath));
+      if ($hotUrl !== '') {
+        // Evita pantalla sin CSS cuando queda public/hot pero Vite ya no esta corriendo.
+        $hotClient = rtrim($hotUrl, '/') . '/@vite/client';
+        $hotContext = stream_context_create([
+          'http' => ['timeout' => 0.25],
+          'ssl' => ['verify_peer' => false, 'verify_peer_name' => false],
+        ]);
+        $useHot = @file_get_contents($hotClient, false, $hotContext) !== false;
+      }
+    }
 
     // Si la web se abre por tunel (ngrok/cloudflare/etc), no usamos Vite hot
     // porque el cliente remoto no puede alcanzar localhost:5173.

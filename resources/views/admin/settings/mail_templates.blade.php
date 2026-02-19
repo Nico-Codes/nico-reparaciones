@@ -45,7 +45,7 @@
                 formaction="{{ route('admin.settings.mail_templates.reset', ['templateKey' => $templateKey]) }}"
                 formmethod="POST"
                 formnovalidate
-                data-confirm="Se restaurara esta plantilla a los valores por defecto. ¿Continuar?">
+                data-confirm="Se restaurara esta plantilla a los valores por defecto. Continuar?">
                 Restaurar por defecto
               </button>
             </div>
@@ -90,3 +90,4 @@
   </div>
 </div>
 @endsection
+

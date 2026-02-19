@@ -116,7 +116,7 @@
   </div>
 
   @if(($categories ?? collect())->count())
-    <div class="card mt-4 reveal-item">
+    <div class="card mt-4 reveal-item store-categories">
       <div class="card-body">
         @php
           $keep = [];

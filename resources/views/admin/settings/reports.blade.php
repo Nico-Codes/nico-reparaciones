@@ -31,6 +31,14 @@
   </div>
 
   <div class="card reveal-item">
+    <div class="card-head">
+      <div>
+        <div class="font-black">Reportes semanales</div>
+        <div class="text-xs text-zinc-500">Define destinatarios y frecuencia para el envio automatico de resumenes.</div>
+      </div>
+      <span class="badge-sky">Email</span>
+    </div>
+
     <div class="card-body grid gap-4">
       <form method="POST" action="{{ route('admin.settings.reports.update') }}" class="grid gap-4">
         @csrf
@@ -80,6 +88,7 @@
         </div>
 
         <div class="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
+          <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.settings.index') }}">Volver a configuracion</a>
           <button class="btn-primary h-11 w-full justify-center sm:w-auto" type="submit">
             Guardar reporte semanal
           </button>
