@@ -50,33 +50,6 @@
     </div>
   @endif
 
-  @if(($categories ?? collect())->count())
-    <div class="card reveal-item">
-      <div class="card-body">
-        @php
-          $keep = [];
-          if (request()->filled('q')) $keep['q'] = request('q');
-          if (request()->filled('sort')) $keep['sort'] = request('sort');
-        @endphp
-
-        <div class="flex gap-2 overflow-x-auto overscroll-x-contain pb-1 md:flex-wrap md:overflow-visible">
-          <a href="{{ route('store.index', $keep) }}" class="nav-pill shrink-0 whitespace-nowrap {{ empty($currentCategorySafe) ? 'nav-pill-active' : '' }}">
-            Todas
-          </a>
-
-          @foreach($categories as $cat)
-            <a
-              href="{{ route('store.category', ['category' => $cat->slug] + $keep) }}"
-              class="nav-pill shrink-0 whitespace-nowrap {{ ($currentCategorySafe?->id === $cat->id) ? 'nav-pill-active' : '' }}"
-            >
-              {{ $cat->name }}
-            </a>
-          @endforeach
-        </div>
-      </div>
-    </div>
-  @endif
-
   <div class="card mt-4 store-toolbar" data-store-toolbar>
     <div class="card-body">
       <form method="GET" action="{{ $formAction }}" class="grid gap-3 md:grid-cols-12 md:items-end">
@@ -133,6 +106,33 @@
       </form>
     </div>
   </div>
+
+  @if(($categories ?? collect())->count())
+    <div class="card mt-4 reveal-item">
+      <div class="card-body">
+        @php
+          $keep = [];
+          if (request()->filled('q')) $keep['q'] = request('q');
+          if (request()->filled('sort')) $keep['sort'] = request('sort');
+        @endphp
+
+        <div class="flex gap-2 overflow-x-auto overscroll-x-contain pb-1 md:flex-wrap md:overflow-visible">
+          <a href="{{ route('store.index', $keep) }}" class="nav-pill shrink-0 whitespace-nowrap {{ empty($currentCategorySafe) ? 'nav-pill-active' : '' }}">
+            Todas
+          </a>
+
+          @foreach($categories as $cat)
+            <a
+              href="{{ route('store.category', ['category' => $cat->slug] + $keep) }}"
+              class="nav-pill shrink-0 whitespace-nowrap {{ ($currentCategorySafe?->id === $cat->id) ? 'nav-pill-active' : '' }}"
+            >
+              {{ $cat->name }}
+            </a>
+          @endforeach
+        </div>
+      </div>
+    </div>
+  @endif
 
   @if(($featuredProducts ?? collect())->count() && $qVal === '' && $sortVal === 'relevance')
     <div class="mt-6 card reveal-item">
