@@ -17,11 +17,20 @@
 
   $qVal = (string)($filters['q'] ?? '');
   $sortVal = (string)($filters['sort'] ?? 'relevance');
+  $sortOptions = [
+    'relevance' => 'Relevancia',
+    'newest' => 'Mas nuevos',
+    'price_asc' => 'Menor precio',
+    'price_desc' => 'Mayor precio',
+    'name_asc' => 'Nombre A-Z',
+    'name_desc' => 'Nombre Z-A',
+    'stock_desc' => 'Mas stock',
+  ];
   $storeHeroData = $storeHero ?? [];
   $showStoreFrontHero = empty($currentCategorySafe);
 @endphp
 
-<div id="top" class="container-page store-shell {{ $showStoreFrontHero ? 'store-shell--hero' : '' }}">
+<div id="top" data-store-shell class="container-page store-shell {{ $showStoreFrontHero ? 'store-shell--hero' : '' }}">
   @if($showStoreFrontHero)
     @php
       $heroDesktopUrl = $storeHeroData['imageDesktop'] ?? asset('brand/logo.png');
@@ -60,7 +69,7 @@
 
   <div class="card mt-4 store-toolbar" data-store-toolbar>
     <div class="card-body">
-      <form method="GET" action="{{ $formAction }}" class="grid gap-3 md:grid-cols-12 md:items-end">
+      <form method="GET" action="{{ $formAction }}" data-store-nav-form class="grid gap-3 md:grid-cols-12 md:items-end">
         <div class="md:col-span-7">
           <div class="text-xs font-black text-zinc-700">Buscar</div>
           <div
@@ -75,7 +84,7 @@
               placeholder="Ej: iPhone, display, bateria..."
               autocomplete="off"
               data-store-search-input
-              class="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-base font-semibold text-zinc-900 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-200/40 sm:text-sm"
+              class="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 pr-14 text-base font-semibold text-zinc-900 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-200/40 md:pr-4 sm:text-sm"
             >
 
             <div
@@ -85,26 +94,50 @@
             >
               <div class="max-h-64 overflow-y-auto" data-store-search-list></div>
             </div>
+
+            <button
+              type="button"
+              class="store-mobile-sort-btn md:hidden absolute right-1 top-1"
+              data-store-mobile-sort-toggle
+              aria-label="Ordenar resultados"
+              aria-expanded="false"
+              aria-controls="store-mobile-sort-menu">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 7h12M4 12h16M4 17h9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </button>
+
+            <div id="store-mobile-sort-menu" class="store-mobile-sort-menu hidden md:hidden" data-store-mobile-sort-menu>
+              <div class="store-mobile-sort-title">Ordenar por</div>
+              <div class="grid gap-1">
+                @foreach($sortOptions as $sortOptionValue => $sortOptionLabel)
+                  <button
+                    type="button"
+                    class="store-mobile-sort-option {{ $sortVal === $sortOptionValue ? 'is-active' : '' }}"
+                    data-store-mobile-sort-option
+                    data-sort-value="{{ $sortOptionValue }}">
+                    {{ $sortOptionLabel }}
+                  </button>
+                @endforeach
+              </div>
+            </div>
           </div>
         </div>
 
-        <div class="md:col-span-3">
+        <div class="hidden md:block md:col-span-3">
           <div class="text-xs font-black text-zinc-700">Ordenar</div>
           <select
             name="sort"
             class="mt-1 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-base font-semibold text-zinc-900 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-200/40 sm:text-sm"
+            data-store-sort-select
           >
-            <option value="relevance" {{ $sortVal === 'relevance' ? 'selected' : '' }}>Relevancia</option>
-            <option value="newest" {{ $sortVal === 'newest' ? 'selected' : '' }}>Mas nuevos</option>
-            <option value="price_asc" {{ $sortVal === 'price_asc' ? 'selected' : '' }}>Menor precio</option>
-            <option value="price_desc" {{ $sortVal === 'price_desc' ? 'selected' : '' }}>Mayor precio</option>
-            <option value="name_asc" {{ $sortVal === 'name_asc' ? 'selected' : '' }}>Nombre A-Z</option>
-            <option value="name_desc" {{ $sortVal === 'name_desc' ? 'selected' : '' }}>Nombre Z-A</option>
-            <option value="stock_desc" {{ $sortVal === 'stock_desc' ? 'selected' : '' }}>Mas stock</option>
+            @foreach($sortOptions as $sortOptionValue => $sortOptionLabel)
+              <option value="{{ $sortOptionValue }}" {{ $sortVal === $sortOptionValue ? 'selected' : '' }}>{{ $sortOptionLabel }}</option>
+            @endforeach
           </select>
         </div>
 
-        <div class="md:col-span-2 grid gap-2 sm:grid-cols-2 md:flex md:items-center">
+        <div class="hidden md:flex md:col-span-2 md:items-center md:gap-2">
           <button type="submit" class="btn-primary w-full justify-center">Aplicar</button>
 
           @if($qVal !== '' || ($sortVal !== 'relevance'))
@@ -115,35 +148,37 @@
     </div>
   </div>
 
-  @if(($categories ?? collect())->count())
-    <div class="card mt-4 reveal-item store-categories">
-      <div class="card-body">
-        @php
-          $keep = [];
-          if (request()->filled('q')) $keep['q'] = request('q');
-          if (request()->filled('sort')) $keep['sort'] = request('sort');
-        @endphp
+  <div data-store-results-shell>
+    @if(($categories ?? collect())->count())
+      <div class="card mt-4 reveal-item store-categories">
+        <div class="card-body">
+          @php
+            $keep = [];
+            if (request()->filled('q')) $keep['q'] = request('q');
+            if (request()->filled('sort')) $keep['sort'] = request('sort');
+          @endphp
 
-        <div class="flex gap-2 overflow-x-auto overscroll-x-contain pb-1 md:flex-wrap md:overflow-visible">
-          <a href="{{ route('store.index', $keep) }}" class="nav-pill shrink-0 whitespace-nowrap {{ empty($currentCategorySafe) ? 'nav-pill-active' : '' }}">
-            Todas
-          </a>
-
-          @foreach($categories as $cat)
-            <a
-              href="{{ route('store.category', ['category' => $cat->slug] + $keep) }}"
-              class="nav-pill shrink-0 whitespace-nowrap {{ ($currentCategorySafe?->id === $cat->id) ? 'nav-pill-active' : '' }}"
-            >
-              {{ $cat->name }}
+          <div class="flex gap-2 overflow-x-auto overscroll-x-contain pb-1 md:flex-wrap md:overflow-visible">
+            <a href="{{ route('store.index', $keep) }}" data-store-nav-link class="nav-pill shrink-0 whitespace-nowrap {{ empty($currentCategorySafe) ? 'nav-pill-active' : '' }}">
+              Todas
             </a>
-          @endforeach
+
+            @foreach($categories as $cat)
+              <a
+                href="{{ route('store.category', ['category' => $cat->slug] + $keep) }}"
+                data-store-nav-link
+                class="nav-pill shrink-0 whitespace-nowrap {{ ($currentCategorySafe?->id === $cat->id) ? 'nav-pill-active' : '' }}"
+              >
+                {{ $cat->name }}
+              </a>
+            @endforeach
+          </div>
         </div>
       </div>
-    </div>
-  @endif
+    @endif
 
-  @if(($featuredProducts ?? collect())->count() && $qVal === '' && $sortVal === 'relevance')
-    <div class="mt-6 card reveal-item">
+    @if(($featuredProducts ?? collect())->count() && $qVal === '' && $sortVal === 'relevance')
+      <div class="mt-6 card reveal-item">
       <div class="card-head flex items-center justify-between">
         <div class="font-black">Destacados</div>
         <a href="#productos" class="btn-ghost btn-sm">Ver todos</a>
@@ -210,12 +245,12 @@
           @endforeach
         </div>
       </div>
-    </div>
-  @endif
+      </div>
+    @endif
 
-  <div class="mt-8" id="productos">
-    @if(($products ?? collect())->count())
-      <div class="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-5">
+    <div class="mt-8" id="productos">
+      @if(($products ?? collect())->count())
+        <div class="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-5">
         @foreach($products as $product)
           @php
             $hasStock = (int)($product->stock ?? 0) > 0;
@@ -277,56 +312,57 @@
             </div>
           </div>
         @endforeach
-      </div>
+        </div>
 
-      @php
-        $hasPaginator = method_exists($products, 'links');
-        $hasPages = $hasPaginator && method_exists($products, 'hasPages') ? $products->hasPages() : false;
-      @endphp
+        @php
+          $hasPaginator = method_exists($products, 'links');
+          $hasPages = $hasPaginator && method_exists($products, 'hasPages') ? $products->hasPages() : false;
+        @endphp
 
-      @if($hasPaginator)
-        <div class="mt-6 flex flex-col gap-2">
-          @if(method_exists($products, 'total') && $products->total() > 0)
-            <div class="muted text-sm">
-              Mostrando {{ $products->firstItem() }}-{{ $products->lastItem() }} de {{ $products->total() }}
-            </div>
+        @if($hasPaginator)
+          <div class="mt-6 flex flex-col gap-2">
+            @if(method_exists($products, 'total') && $products->total() > 0)
+              <div class="muted text-sm">
+                Mostrando {{ $products->firstItem() }}-{{ $products->lastItem() }} de {{ $products->total() }}
+              </div>
+            @endif
+
+            @if($hasPages)
+              <div>
+                {{ $products->onEachSide(1)->fragment('productos')->links() }}
+              </div>
+            @endif
           @endif
-
-          @if($hasPages)
-            <div>
-              {{ $products->onEachSide(1)->fragment('productos')->links() }}
-            </div>
-          @endif
+        </div>
+      @else
+        <div class="card reveal-item">
+          <div class="card-body space-y-3">
+            @if($qVal !== '')
+              <div class="font-black">Sin resultados</div>
+              <div class="muted">
+                No encontramos productos para "{{ $qVal }}"
+                @if($currentCategorySafe) en "{{ $currentCategorySafe->name }}" @endif.
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <a class="btn-outline" href="{{ $formAction }}">Limpiar busqueda</a>
+                @if($currentCategorySafe)
+                  <a class="btn-outline" href="{{ route('store.index') }}">Ver todas</a>
+                @endif
+              </div>
+            @elseif($currentCategorySafe)
+              <div class="font-black">Categoria sin productos</div>
+              <div class="muted">Todavia no hay productos en "{{ $currentCategorySafe->name }}".</div>
+              <div>
+                <a class="btn-outline" href="{{ route('store.index') }}">Ver todas</a>
+              </div>
+            @else
+              <div class="font-black">No hay productos</div>
+              <div class="muted">Todavia no hay productos para mostrar.</div>
+            @endif
+          </div>
         </div>
       @endif
-    @else
-      <div class="card reveal-item">
-        <div class="card-body space-y-3">
-          @if($qVal !== '')
-            <div class="font-black">Sin resultados</div>
-            <div class="muted">
-              No encontramos productos para "{{ $qVal }}"
-              @if($currentCategorySafe) en "{{ $currentCategorySafe->name }}" @endif.
-            </div>
-            <div class="flex flex-wrap gap-2">
-              <a class="btn-outline" href="{{ $formAction }}">Limpiar busqueda</a>
-              @if($currentCategorySafe)
-                <a class="btn-outline" href="{{ route('store.index') }}">Ver todas</a>
-              @endif
-            </div>
-          @elseif($currentCategorySafe)
-            <div class="font-black">Categoria sin productos</div>
-            <div class="muted">Todavia no hay productos en "{{ $currentCategorySafe->name }}".</div>
-            <div>
-              <a class="btn-outline" href="{{ route('store.index') }}">Ver todas</a>
-            </div>
-          @else
-            <div class="font-black">No hay productos</div>
-            <div class="muted">Todavia no hay productos para mostrar.</div>
-          @endif
-        </div>
-      </div>
-    @endif
+    </div>
   </div>
 </div>
 <div data-react-store-search-suggestions data-root-selector="[data-store-search]"></div>

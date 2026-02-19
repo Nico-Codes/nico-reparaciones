@@ -32,7 +32,36 @@ import ShellHeader from './ShellHeader';
 import AdminRepairsHeader from './AdminRepairsHeader';
 import AdminRepairsFilters from './AdminRepairsFilters';
 
+declare global {
+  interface Window {
+    NR_REINIT_STORE_ISLANDS?: () => void;
+  }
+}
+
+function mountStoreIslands(): void {
+  const storeSearchNodes = document.querySelectorAll<HTMLElement>('[data-react-store-search-suggestions]');
+  storeSearchNodes.forEach((node) => {
+    if (node.dataset.reactMounted === '1') return;
+    node.dataset.reactMounted = '1';
+    createRoot(node).render(
+      <StoreSearchSuggestions
+        rootSelector={node.dataset.rootSelector || '[data-store-search]'}
+      />
+    );
+  });
+
+  const storeVisualNodes = document.querySelectorAll<HTMLElement>('[data-react-store-visual-enhancements]');
+  storeVisualNodes.forEach((node) => {
+    if (node.dataset.reactMounted === '1') return;
+    node.dataset.reactMounted = '1';
+    createRoot(node).render(<StoreVisualEnhancements />);
+  });
+
+}
+
 export function initReactIslands(): void {
+  window.NR_REINIT_STORE_ISLANDS = mountStoreIslands;
+
   const adminRepairsHeaderNodes = document.querySelectorAll<HTMLElement>('[data-react-admin-repairs-header]');
   adminRepairsHeaderNodes.forEach((node) => {
     const raw = node.dataset.payload || '{}';
@@ -249,14 +278,7 @@ export function initReactIslands(): void {
     );
   });
 
-  const storeSearchNodes = document.querySelectorAll<HTMLElement>('[data-react-store-search-suggestions]');
-  storeSearchNodes.forEach((node, index) => {
-    createRoot(node).render(
-      <StoreSearchSuggestions
-        rootSelector={node.dataset.rootSelector || '[data-store-search]'}
-      />
-    );
-  });
+  mountStoreIslands();
 
   const cartCheckoutNodes = document.querySelectorAll<HTMLElement>('[data-react-cart-checkout-enhancements]');
   cartCheckoutNodes.forEach((node, index) => {
@@ -318,8 +340,4 @@ export function initReactIslands(): void {
     createRoot(node).render(<AdminOrdersStatusEnhancements />);
   });
 
-  const storeVisualNodes = document.querySelectorAll<HTMLElement>('[data-react-store-visual-enhancements]');
-  storeVisualNodes.forEach((node, index) => {
-    createRoot(node).render(<StoreVisualEnhancements />);
-  });
 }
