@@ -104,6 +104,8 @@ class AdminBusinessSettingsController extends Controller
             'default_ticket_paper' => 'nullable|string|in:58,80',
             'store_home_hero_title' => 'nullable|string|max:120',
             'store_home_hero_subtitle' => 'nullable|string|max:240',
+            'store_home_hero_fade_intensity' => 'nullable|integer|min:0|max:100',
+            'store_home_hero_fade_size' => 'nullable|integer|min:24|max:260',
         ]);
 
         $this->persistSetting('shop_address', (string) ($data['shop_address'] ?? ''));
@@ -112,6 +114,8 @@ class AdminBusinessSettingsController extends Controller
         $this->persistSetting('default_ticket_paper', (string) ($data['default_ticket_paper'] ?? '80'));
         $this->persistSetting('store_home_hero_title', (string) ($data['store_home_hero_title'] ?? ''));
         $this->persistSetting('store_home_hero_subtitle', (string) ($data['store_home_hero_subtitle'] ?? ''));
+        $this->persistSetting('store_home_hero_fade_intensity', (string) ($data['store_home_hero_fade_intensity'] ?? '42'));
+        $this->persistSetting('store_home_hero_fade_size', (string) ($data['store_home_hero_fade_size'] ?? '96'));
 
         return back()->with('success', 'Configuracion guardada.');
     }
@@ -411,6 +415,15 @@ class AdminBusinessSettingsController extends Controller
             ['value' => $newRelativePath, 'updated_by' => auth()->id()]
         );
 
+        $heroColorSettingKey = $this->heroColorSettingKeyForAsset($assetKey);
+        if ($heroColorSettingKey !== null) {
+            $absolutePath = public_path($newRelativePath);
+            $dominantHex = $this->extractDominantHexColorFromImage($absolutePath);
+            if ($dominantHex !== null) {
+                $this->persistSetting($heroColorSettingKey, $dominantHex);
+            }
+        }
+
         $this->deleteManagedAssetFile($oldRelativePath);
         BrandAssets::clearRuntimeCache();
 
@@ -428,6 +441,11 @@ class AdminBusinessSettingsController extends Controller
         $oldRelativePath = (string) BusinessSetting::where('key', $settingKey)->value('value');
 
         BusinessSetting::where('key', $settingKey)->delete();
+
+        $heroColorSettingKey = $this->heroColorSettingKeyForAsset($assetKey);
+        if ($heroColorSettingKey !== null) {
+            BusinessSetting::where('key', $heroColorSettingKey)->delete();
+        }
 
         $this->deleteManagedAssetFile($oldRelativePath);
         BrandAssets::clearRuntimeCache();
@@ -489,8 +507,63 @@ class AdminBusinessSettingsController extends Controller
         return 'tpl_' . $templateKey . '_' . $fieldKey;
     }
 
+    private function heroColorSettingKeyForAsset(string $assetKey): ?string
+    {
+        return match ($assetKey) {
+            'store_home_hero_desktop' => 'store_home_hero_desktop_color',
+            'store_home_hero_mobile' => 'store_home_hero_mobile_color',
+            default => null,
+        };
+    }
+
+    private function extractDominantHexColorFromImage(string $absolutePath): ?string
+    {
+        if (!is_file($absolutePath) || !function_exists('imagecreatefromstring')) {
+            return null;
+        }
+
+        $raw = @file_get_contents($absolutePath);
+        if ($raw === false || $raw === '') {
+            return null;
+        }
+
+        $src = @imagecreatefromstring($raw);
+        if ($src === false) {
+            return null;
+        }
+
+        $thumb = imagecreatetruecolor(1, 1);
+        if ($thumb === false) {
+            imagedestroy($src);
+            return null;
+        }
+
+        imagecopyresampled(
+            $thumb,
+            $src,
+            0,
+            0,
+            0,
+            0,
+            1,
+            1,
+            (int) imagesx($src),
+            (int) imagesy($src)
+        );
+
+        $rgb = imagecolorat($thumb, 0, 0);
+        $r = ($rgb >> 16) & 0xFF;
+        $g = ($rgb >> 8) & 0xFF;
+        $b = $rgb & 0xFF;
+
+        imagedestroy($thumb);
+        imagedestroy($src);
+
+        return sprintf('#%02X%02X%02X', $r, $g, $b);
+    }
+
     /**
-     * @return array{shopAddress:string,shopHours:string,shopPhone:string,defaultTicketPaper:string,storeHomeHeroTitle:string,storeHomeHeroSubtitle:string}
+     * @return array{shopAddress:string,shopHours:string,shopPhone:string,defaultTicketPaper:string,storeHomeHeroTitle:string,storeHomeHeroSubtitle:string,storeHomeHeroFadeIntensity:int,storeHomeHeroFadeSize:int}
      */
     private function businessViewData(): array
     {
@@ -503,6 +576,8 @@ class AdminBusinessSettingsController extends Controller
             'defaultTicketPaper' => (string) ($settings->get('default_ticket_paper') ?? '80'),
             'storeHomeHeroTitle' => (string) ($settings->get('store_home_hero_title') ?? ''),
             'storeHomeHeroSubtitle' => (string) ($settings->get('store_home_hero_subtitle') ?? ''),
+            'storeHomeHeroFadeIntensity' => (int) ($settings->get('store_home_hero_fade_intensity') ?? 42),
+            'storeHomeHeroFadeSize' => (int) ($settings->get('store_home_hero_fade_size') ?? 96),
         ];
     }
 

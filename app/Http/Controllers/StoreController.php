@@ -18,12 +18,39 @@ class StoreController extends Controller
         $title = trim((string) ($settings->get('store_home_hero_title') ?? ''));
         $subtitle = trim((string) ($settings->get('store_home_hero_subtitle') ?? ''));
 
+        $desktopColorRgb = $this->hexToRgbTriplet((string) ($settings->get('store_home_hero_desktop_color') ?? '')) ?? '14, 165, 233';
+        $mobileColorRgb = $this->hexToRgbTriplet((string) ($settings->get('store_home_hero_mobile_color') ?? '')) ?? $desktopColorRgb;
+        $fadeIntensity = (int) ($settings->get('store_home_hero_fade_intensity') ?? 42);
+        $fadeSize = (int) ($settings->get('store_home_hero_fade_size') ?? 96);
+
+        $fadeIntensity = max(0, min(100, $fadeIntensity));
+        $fadeSize = max(24, min(260, $fadeSize));
+
         return [
             'imageDesktop' => BrandAssets::url('store_home_hero_desktop'),
             'imageMobile' => BrandAssets::url('store_home_hero_mobile'),
             'title' => $title !== '' ? $title : 'Novedades y ofertas en accesorios',
             'subtitle' => $subtitle !== '' ? $subtitle : 'Descubre ingresos recientes y productos destacados con stock real.',
+            'fadeRgbDesktop' => $desktopColorRgb,
+            'fadeRgbMobile' => $mobileColorRgb,
+            'fadeIntensity' => $fadeIntensity,
+            'fadeSize' => $fadeSize,
         ];
+    }
+
+    private function hexToRgbTriplet(string $hex): ?string
+    {
+        $hex = strtoupper(trim($hex));
+        if (!preg_match('/^#([A-F0-9]{6})$/', $hex, $matches)) {
+            return null;
+        }
+
+        $value = $matches[1];
+        $r = hexdec(substr($value, 0, 2));
+        $g = hexdec(substr($value, 2, 2));
+        $b = hexdec(substr($value, 4, 2));
+
+        return $r . ', ' . $g . ', ' . $b;
     }
 
     private function normalizeSearchTerm(string $value): string

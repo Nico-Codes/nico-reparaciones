@@ -736,18 +736,17 @@
     box-shadow: none;
   }
 
-  .store-front-hero__picture {
-    position: absolute;
-    inset: 0;
-    display: block;
+  .store-front-hero {
+    background-image: var(--hero-desktop);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
   }
 
-  .store-front-hero__image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: center;
-    display: block;
+  @media (max-width: 767px) {
+    .store-front-hero {
+      background-image: var(--hero-mobile);
+    }
   }
 
   .store-front-hero--fullbleed {
@@ -762,14 +761,37 @@
     margin-top: -1.5rem;
   }
 
-  .store-front-hero::after {
+  .store-front-fade {
+    position: relative;
+    height: 0;
+    margin-top: -1px;
+    z-index: 20;
+    pointer-events: none;
+  }
+
+  .store-front-fade::before {
     content: "";
     position: absolute;
     inset-inline: 0;
-    bottom: 0;
-    height: 46%;
-    background: linear-gradient(to bottom, rgba(250, 250, 250, 0), rgba(250, 250, 250, 0.92) 58%, rgba(250, 250, 250, 1) 100%);
-    pointer-events: none;
+    top: 0;
+    height: var(--hero-fade-size, 96px);
+    background: linear-gradient(
+      to bottom,
+      rgba(var(--hero-fade-desktop), calc(var(--hero-fade-intensity, 42) / 100)) 0%,
+      rgba(var(--hero-fade-desktop), calc((var(--hero-fade-intensity, 42) / 100) * 0.45)) 42%,
+      #fafafa 100%
+    );
+  }
+
+  @media (max-width: 767px) {
+    .store-front-fade::before {
+      background: linear-gradient(
+        to bottom,
+        rgba(var(--hero-fade-mobile), calc(var(--hero-fade-intensity, 42) / 100)) 0%,
+        rgba(var(--hero-fade-mobile), calc((var(--hero-fade-intensity, 42) / 100) * 0.45)) 42%,
+        #fafafa 100%
+      );
+    }
   }
 
   .store-front-hero__overlay {

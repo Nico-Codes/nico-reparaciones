@@ -31,6 +31,14 @@
               <img src="{{ $asset['url'] }}" alt="{{ $heroBlock['title'] }}" class="h-full w-full object-cover">
             </div>
 
+            <div class="rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs text-zinc-600">
+              @if($asset['key'] === 'store_home_hero_desktop')
+                Recomendado: <span class="font-black text-zinc-900">1920 x 900 px</span> (tambien sirve 2000 x 900).
+              @elseif($asset['key'] === 'store_home_hero_mobile')
+                Recomendado: <span class="font-black text-zinc-900">900 x 1200 px</span> (formato vertical).
+              @endif
+            </div>
+
             <form
               method="POST"
               action="{{ route('admin.settings.assets.update', $asset['key']) }}"
@@ -87,7 +95,7 @@
 
   <div class="card reveal-item">
     <div class="card-head">
-      <div class="font-black">Textos opcionales</div>
+      <div class="font-black">Textos y degradado</div>
     </div>
     <div class="card-body">
       <form method="POST" action="{{ route('admin.settings.update') }}" class="space-y-3">
@@ -99,6 +107,33 @@
         <div class="grid gap-2">
           <label>Texto (opcional)</label>
           <textarea name="store_home_hero_subtitle" rows="4" placeholder="Ej: Ingresaron nuevos modulos y accesorios.">{{ old('store_home_hero_subtitle', $storeHomeHeroSubtitle ?? '') }}</textarea>
+        </div>
+        <div class="grid gap-2 sm:grid-cols-2">
+          <div class="grid gap-2">
+            <label>Intensidad del degradado (0-100)</label>
+            <input
+              type="number"
+              min="0"
+              max="100"
+              step="1"
+              class="h-11"
+              name="store_home_hero_fade_intensity"
+              value="{{ old('store_home_hero_fade_intensity', (int)($storeHomeHeroFadeIntensity ?? 42)) }}">
+          </div>
+          <div class="grid gap-2">
+            <label>Extension del degradado (px)</label>
+            <input
+              type="number"
+              min="24"
+              max="260"
+              step="1"
+              class="h-11"
+              name="store_home_hero_fade_size"
+              value="{{ old('store_home_hero_fade_size', (int)($storeHomeHeroFadeSize ?? 96)) }}">
+          </div>
+        </div>
+        <div class="text-xs text-zinc-500">
+          El degradado se superpone sobre el bloque siguiente al hero y no agrega altura extra al layout.
         </div>
         <button class="btn-primary h-11 w-full justify-center sm:w-auto" type="submit">Guardar textos</button>
       </form>
