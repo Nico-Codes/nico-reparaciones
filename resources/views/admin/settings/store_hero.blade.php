@@ -33,9 +33,9 @@
 
             <div class="rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs text-zinc-600">
               @if($asset['key'] === 'store_home_hero_desktop')
-                Recomendado: <span class="font-black text-zinc-900">1920 x 900 px</span> (tambien sirve 2000 x 900).
+                Recomendado: <span class="font-black text-zinc-900">1920 x 500 px</span> (opcional retina: 3840 x 1000). El hero usa alto fijo y puede recortar laterales.
               @elseif($asset['key'] === 'store_home_hero_mobile')
-                Recomendado: <span class="font-black text-zinc-900">900 x 1200 px</span> (formato vertical).
+                Recomendado: <span class="font-black text-zinc-900">1280 x 720 px</span> (opcional: 1920 x 1080). Mantener elementos importantes centrados.
               @endif
             </div>
 

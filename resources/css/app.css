@@ -732,9 +732,9 @@
     position: relative;
     width: 100%;
     max-width: 100vw;
-    height: 420px !important;
-    min-height: 420px !important;
-    max-height: 420px !important;
+    height: 500px !important;
+    min-height: 500px !important;
+    max-height: 500px !important;
     margin-left: auto;
     margin-right: auto;
     border-radius: 1.5rem;
