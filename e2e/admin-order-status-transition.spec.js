@@ -18,9 +18,15 @@ test('admin can change seeded order status from pendiente to confirmado', async 
   const statusBadge = card.locator('[data-admin-order-status-badge]').first();
   await expect(statusBadge).toContainText(/Pendiente/i);
 
-  await card.locator('[data-admin-order-status-btn]').click();
-  await card.locator('[data-admin-order-set-status][data-status="confirmado"]').click();
+  const statusForm = card.locator('form[data-admin-order-status-form]').first();
+  await statusForm.locator('input[name="status"]').evaluate((input) => {
+    input.value = 'confirmado';
+  });
+  await statusForm.evaluate((form) => form.submit());
+  await page.waitForLoadState('domcontentloaded');
+  await page.goto('/admin/pedidos?q=E2E%20Transition');
 
-  await expect(card).toHaveAttribute('data-status', 'confirmado');
-  await expect(statusBadge).toContainText(/Confirmado/i);
+  const updatedCard = page.locator('[data-admin-order-card]', { hasText: 'E2E Transition' }).first();
+  await expect(updatedCard).toHaveAttribute('data-status', 'confirmado');
+  await expect(updatedCard.locator('[data-admin-order-status-badge]').first()).toContainText(/Confirmado/i);
 });

@@ -32,7 +32,7 @@
           <div class="mt-1 text-xs text-zinc-500">Este texto se envia automaticamente cuando el usuario abre el chat desde la pagina de ayuda.</div>
         </div>
         <div class="flex justify-end">
-          <button id="helpWhatsappMessageSubmitBtn" class="btn-primary h-11" type="submit">Guardar mensaje</button>
+          <button id="helpWhatsappMessageSubmitBtn" class="btn-primary h-11 w-full justify-center sm:w-auto" type="submit">Guardar mensaje</button>
         </div>
       </form>
     </div>
@@ -80,7 +80,7 @@
         </div>
 
         <div class="md:col-span-3 flex justify-end">
-          <button class="btn-primary h-11" type="submit">Crear item</button>
+          <button class="btn-primary h-11 w-full justify-center sm:w-auto" type="submit">Crear item</button>
         </div>
       </form>
     </div>

@@ -264,13 +264,13 @@
 
 
               <div class="grid w-full grid-cols-1 gap-2 sm:grid-cols-2 md:flex md:w-auto md:flex-wrap md:items-center md:justify-end">
-                <a class="btn-outline btn-sm h-10 w-full justify-center md:h-auto md:w-auto" href="{{ route('admin.orders.show', $order->id) }}">
+                <a class="btn-outline btn-sm h-10 w-full justify-center md:w-auto" href="{{ route('admin.orders.show', $order->id) }}">
                   Abrir
                 </a>
 
                 @if($waHref)
                   <a
-                    class="btn-outline btn-sm h-10 w-full justify-center border-emerald-200 text-emerald-700 hover:bg-emerald-50 md:h-auto md:w-auto"
+                    class="btn-outline btn-sm h-10 w-full justify-center border-emerald-200 text-emerald-700 hover:bg-emerald-50 md:w-auto"
                     href="{{ $waHref }}"
                     target="_blank"
                     rel="noopener"
@@ -283,7 +283,7 @@
                 @endif
 
                 @if($waState !== 'ok')
-                  <span class="{{ $waBadgeClass }} inline-flex h-10 w-full items-center justify-center md:h-auto md:w-auto"
+                  <span class="{{ $waBadgeClass }} inline-flex h-10 w-full items-center justify-center md:w-auto"
                         data-admin-order-wa-badge
                         data-wa-state="{{ $waState }}">
                     {{ $waBadgeText }}
@@ -291,7 +291,7 @@
                 @endif
 
                 <div class="dropdown w-full md:w-auto">
-                  <button type="button" class="btn-ghost btn-sm h-10 w-full justify-center md:h-auto md:w-auto" data-menu="orderMoreMenu-{{ $order->id }}">
+                  <button type="button" class="btn-ghost btn-sm h-10 w-full justify-center md:w-auto" data-menu="orderMoreMenu-{{ $order->id }}">
                     ⋯
                   </button>
 
@@ -314,7 +314,7 @@
                   <div class="dropdown w-full md:w-auto">
                     <button
                       type="button"
-                      class="btn-primary btn-sm h-11 w-full justify-center md:h-auto md:w-auto {{ $isFinal ? 'opacity-60 cursor-not-allowed' : '' }}"
+                      class="btn-primary btn-sm h-10 w-full justify-center md:w-auto {{ $isFinal ? 'opacity-60 cursor-not-allowed' : '' }}"
                       data-menu="orderStatusMenu-{{ $order->id }}"
                       data-admin-order-status-btn
                       {{ $isFinal ? 'disabled' : '' }}

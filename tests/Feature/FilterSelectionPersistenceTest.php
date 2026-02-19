@@ -29,8 +29,8 @@ class FilterSelectionPersistenceTest extends TestCase
         $response = $this->actingAs($admin)->get('/admin/reparaciones?wa=pending');
 
         $response->assertOk();
-        $response->assertSee('name="wa"', false);
-        $response->assertSee('<option value="pending" selected>Pendiente</option>', false);
+        $response->assertSee('data-react-admin-repairs-filters', false);
+        $response->assertSee('&amp;quot;wa&amp;quot;:&amp;quot;pending&amp;quot;', false);
     }
 
     public function test_admin_products_filters_remain_selected_in_view(): void

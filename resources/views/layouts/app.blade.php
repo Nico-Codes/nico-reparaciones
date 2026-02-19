@@ -297,7 +297,7 @@
                     <button
                       type="submit"
                       class="btn-outline btn-sm h-8"
-                      data-confirm="Esto ejecutara php artisan migrate. Â¿Continuar?">
+                      data-confirm="Esto ejecutara php artisan migrate. ¿Continuar?">
                       Aplicar migraciones ahora
                     </button>
                   </form>
@@ -343,7 +343,7 @@
           <div class="grid gap-1">
             @if($has('store.index')) <a href="{{ route('store.index') }}">Tienda</a> @endif
             @if($has('cart.index')) <a href="{{ route('cart.index') }}">Carrito</a> @endif
-            @if($has('repairs.lookup')) <a href="{{ route('repairs.lookup') }}">Consultar reparaciÃ³n</a> @endif
+            @if($has('repairs.lookup')) <a href="{{ route('repairs.lookup') }}">Consultar reparacion</a> @endif
           </div>
         </div>
 
@@ -357,7 +357,7 @@
               @if($has('logout'))
                 <form method="POST" action="{{ route('logout') }}">
                   @csrf
-                  <button class="text-left text-rose-700 hover:text-rose-800 font-bold">Cerrar sesiÃ³n</button>
+                  <button class="text-left text-rose-700 hover:text-rose-800 font-bold">Cerrar sesion</button>
                 </form>
               @endif
             @else

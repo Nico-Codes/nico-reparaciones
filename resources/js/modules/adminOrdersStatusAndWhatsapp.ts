@@ -33,10 +33,10 @@ export function initAdminOrdersStatusAndWhatsapp({ afterPaint, lockScroll, unloc
           <div class="rounded-t-3xl bg-white p-4 shadow-2xl">
             <div class="flex items-start justify-between gap-3">
               <div class="min-w-0">
-                <div class="font-black text-zinc-900" id="nrAdminConfirmTitle">Â¿Notificar?</div>
-                <div class="text-sm text-zinc-600 mt-1" id="nrAdminConfirmMsg">â€”</div>
+                <div class="font-black text-zinc-900" id="nrAdminConfirmTitle">¿Notificar?</div>
+                <div class="text-sm text-zinc-600 mt-1" id="nrAdminConfirmMsg">-</div>
               </div>
-              <button type="button" class="icon-btn" data-admin-confirm-cancel aria-label="Cerrar">âœ•</button>
+              <button type="button" class="icon-btn" data-admin-confirm-cancel aria-label="Cerrar">×</button>
             </div>
 
             <div class="mt-4 flex gap-2">
@@ -88,7 +88,7 @@ export function initAdminOrdersStatusAndWhatsapp({ afterPaint, lockScroll, unloc
         new Promise<boolean>((resolve) => {
           resolver = resolve;
 
-          if (titleEl) titleEl.textContent = title || 'Â¿Notificar por WhatsApp?';
+          if (titleEl) titleEl.textContent = title || '¿Notificar por WhatsApp?';
           if (msgEl) msgEl.textContent = message || '';
           if (okText) okBtn.textContent = okText;
 
@@ -122,7 +122,7 @@ export function initAdminOrdersStatusAndWhatsapp({ afterPaint, lockScroll, unloc
       const msg =
         (data && (data.message || data.error)) ||
         (data && data.errors && Object.values(data.errors).flat().join(' ')) ||
-        'No se pudo completar la acciÃ³n.';
+        'No se pudo completar la accion.';
 
       const err = new Error(msg) as Error & { status?: number; data?: unknown };
       err.status = res.status;
@@ -252,7 +252,7 @@ export function initAdminOrdersStatusAndWhatsapp({ afterPaint, lockScroll, unloc
       <div class="card">
         <div class="card-body">
           <div class="font-black text-zinc-900">No hay pedidos</div>
-          <div class="muted mt-1">ProbÃ¡ cambiar el estado o ajustar la bÃºsqueda.</div>
+          <div class="muted mt-1">Proba cambiar el estado o ajustar la busqueda.</div>
         </div>
       </div>
     `;
@@ -343,7 +343,7 @@ export function initAdminOrdersStatusAndWhatsapp({ afterPaint, lockScroll, unloc
 
         try {
           const data = await postFormJson(waForm);
-          showMiniToast(data?.created ? 'Log WhatsApp registrado âœ…' : 'Ya habÃ­a un log reciente âœ…');
+          showMiniToast(data?.created ? 'Log WhatsApp registrado OK' : 'Ya habia un log reciente OK');
 
           if (waBadge) {
             waBadge.textContent = 'WA OK';
@@ -371,18 +371,18 @@ export function initAdminOrdersStatusAndWhatsapp({ afterPaint, lockScroll, unloc
 
               const st = document.createElement('div');
               st.className = 'font-extrabold text-zinc-900';
-              st.textContent = data.log.status_label || data.log.status || 'â€”';
+              st.textContent = data.log.status_label || data.log.status || '-';
 
               const at = document.createElement('div');
               at.className = 'text-xs text-zinc-500';
-              at.textContent = data.log.sent_at || 'â€”';
+              at.textContent = data.log.sent_at || '-';
 
               title.appendChild(st);
               title.appendChild(at);
 
               const by = document.createElement('div');
               by.className = 'text-xs text-zinc-500 mt-1';
-              by.textContent = data.log.sent_by || 'â€”';
+              by.textContent = data.log.sent_by || '-';
 
               const details = document.createElement('details');
               details.className = 'mt-2';
@@ -406,7 +406,7 @@ export function initAdminOrdersStatusAndWhatsapp({ afterPaint, lockScroll, unloc
             }
           }
         } catch (_) {
-          showMiniToast('No se pudo registrar el log âš ï¸');
+          showMiniToast('No se pudo registrar el log');
         }
 
 
@@ -460,7 +460,7 @@ export function initAdminOrdersStatusAndWhatsapp({ afterPaint, lockScroll, unloc
             el.className = adminBadgeClass(newSt);
           });
 
-          showMiniToast('Estado actualizado âœ…');
+          showMiniToast('Estado actualizado OK');
 
           // WhatsApp (si backend devuelve wa.url/message)
           const waUrl = data?.wa?.url || null;
@@ -488,8 +488,8 @@ export function initAdminOrdersStatusAndWhatsapp({ afterPaint, lockScroll, unloc
           if (waUrl) {
             const confirmUI = ensureAdminConfirm();
             const ok = await confirmUI.open({
-              title: 'Â¿Notificar por WhatsApp?',
-              message: `Pedido #${data.order_id} â†’ ${data.status_label || newSt}`,
+              title: '¿Notificar por WhatsApp?',
+              message: `Pedido #${data.order_id} -> ${data.status_label || newSt}`,
               okText: 'Abrir WhatsApp',
               cancelText: 'Ahora no',
             });
@@ -505,7 +505,7 @@ export function initAdminOrdersStatusAndWhatsapp({ afterPaint, lockScroll, unloc
                   const data = await postFormJson(waForm);
 
                   setWaBadgeState(waBadge, 'ok');
-                  if (waLastBadge) waLastBadge.textContent = data?.notified_at_label || 'reciÃ©n';
+                  if (waLastBadge) waLastBadge.textContent = data?.notified_at_label || 'recien';
 
                   const nextKey = waStateToTabKey('ok');
                   if (prevKey && nextKey && prevKey !== nextKey) {
@@ -513,7 +513,7 @@ export function initAdminOrdersStatusAndWhatsapp({ afterPaint, lockScroll, unloc
                     bumpAdminOrdersWaTab(nextKey, +1);
                   }
 
-                  showMiniToast(data?.created ? 'Log WhatsApp registrado âœ…' : 'Ya habÃ­a un log reciente âœ…');
+                  showMiniToast(data?.created ? 'Log WhatsApp registrado OK' : 'Ya habia un log reciente OK');
 
                   const waFilter = getAdminOrdersWaFilter();
                   if (waFilter && !matchesWaFilter(waFilter, 'ok')) {
@@ -523,7 +523,7 @@ export function initAdminOrdersStatusAndWhatsapp({ afterPaint, lockScroll, unloc
                   }
 
                 } catch (_) {
-                  showMiniToast('No se pudo registrar el log âš ï¸');
+                  showMiniToast('No se pudo registrar el log');
                 }
               }
 
@@ -532,7 +532,7 @@ export function initAdminOrdersStatusAndWhatsapp({ afterPaint, lockScroll, unloc
 
           const nextWaState = String(data?.wa?.state || (waUrl ? 'pending' : 'no_phone'));
           setWaBadgeState(waBadge, nextWaState);
-          if (waLastBadge) waLastBadge.textContent = data?.wa?.notified_at_label || 'â€”';
+          if (waLastBadge) waLastBadge.textContent = data?.wa?.notified_at_label || '-';
 
           // si permanece en el status actual, ajusto contadores por cambio de estado WA
           if (!leavingStatusGroup) {
@@ -566,7 +566,7 @@ export function initAdminOrdersStatusAndWhatsapp({ afterPaint, lockScroll, unloc
 
           } catch (err) {
             if (err && err.status === 422) {
-              showMiniToast(err.message || 'No se pudo actualizar el estado âš ï¸');
+              showMiniToast(err.message || 'No se pudo actualizar el estado');
             } else {
               statusForm.submit();
             }
