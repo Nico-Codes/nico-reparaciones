@@ -124,7 +124,7 @@ export default function ShellHeader({ data }: Props) {
   const focusFirstAccountItem = () => focusAccountItem(0);
 
   return (
-    <header className="sticky top-0 z-40 bg-white border-b border-zinc-200 shadow-sm md:bg-white/90 md:backdrop-blur">
+    <header className="sticky top-0 z-[80] bg-white border-b border-zinc-200 shadow-sm md:bg-white/90 md:backdrop-blur">
       <div className="container-page">
         <div className="h-14 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
@@ -329,13 +329,13 @@ export default function ShellHeader({ data }: Props) {
       </div>
 
       <div
-        className={`fixed inset-0 z-50 bg-zinc-950/40 md:hidden ${sidebarOpen ? '' : 'hidden'}`}
+        className={`fixed inset-0 z-[90] bg-zinc-950/40 md:hidden ${sidebarOpen ? '' : 'hidden'}`}
         aria-hidden="true"
         onClick={() => setSidebarOpen(false)}
       />
 
       <aside
-        className={`fixed left-0 top-0 z-50 h-full w-[86%] max-w-xs transform bg-white shadow-xl transition-transform duration-200 ease-out md:hidden flex flex-col ${
+          className={`fixed left-0 top-0 z-[100] h-full w-[86%] max-w-xs transform bg-white shadow-xl transition-transform duration-200 ease-out md:hidden flex flex-col ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
         aria-label="Menu">
