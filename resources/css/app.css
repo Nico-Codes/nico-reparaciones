@@ -730,23 +730,40 @@
 
   .store-front-hero {
     position: relative;
-    min-height: clamp(260px, 44vw, 420px);
+    width: 100%;
+    max-width: 100vw;
+    height: 420px !important;
+    min-height: 420px !important;
+    max-height: 420px !important;
+    margin-left: auto;
+    margin-right: auto;
     border-radius: 1.5rem;
     overflow: hidden;
     box-shadow: none;
+    background-color: rgb(var(--hero-fade-desktop, 14, 165, 233));
   }
 
-  .store-front-hero {
-    background-image: var(--hero-desktop);
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
+  .store-front-hero__picture {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 100%;
+    min-height: 100%;
   }
 
-  @media (max-width: 767px) {
-    .store-front-hero {
-      background-image: var(--hero-mobile);
-    }
+  .store-front-hero__media {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 100%;
+    min-height: 100%;
+    max-width: none;
+    object-fit: cover;
+    object-position: center;
   }
 
   .store-front-hero--fullbleed {

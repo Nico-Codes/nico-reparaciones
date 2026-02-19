@@ -23,9 +23,17 @@
 
 <div id="top" class="container-page store-shell {{ $showStoreFrontHero ? 'store-shell--hero' : '' }}">
   @if($showStoreFrontHero)
+    @php
+      $heroDesktopUrl = $storeHeroData['imageDesktop'] ?? asset('brand/logo.png');
+      $heroMobileUrl = $storeHeroData['imageMobile'] ?? $heroDesktopUrl;
+    @endphp
     <section
       class="store-front-hero store-front-hero--fullbleed store-front-hero--flush reveal-item"
-      style="--hero-desktop:url('{{ $storeHeroData['imageDesktop'] ?? asset('brand/logo.png') }}'); --hero-mobile:url('{{ $storeHeroData['imageMobile'] ?? asset('brand/logo.png') }}');">
+      style="--hero-fade-desktop: {{ $storeHeroData['fadeRgbDesktop'] ?? '14, 165, 233' }}; --hero-fade-mobile: {{ $storeHeroData['fadeRgbMobile'] ?? ($storeHeroData['fadeRgbDesktop'] ?? '14, 165, 233') }};">
+      <picture class="store-front-hero__picture" aria-hidden="true" style="display:block;width:100%;height:100%;">
+        <source media="(max-width: 767px)" srcset="{{ $heroMobileUrl }}">
+        <img src="{{ $heroDesktopUrl }}" alt="" class="store-front-hero__media" loading="eager" decoding="async" style="display:block;width:100%;height:100%;object-fit:cover;object-position:center;">
+      </picture>
     </section>
     <div
       class="store-front-fade store-front-hero--fullbleed"
