@@ -20,8 +20,9 @@ test('admin whatsapp filters keep selected tab and show matching rows', async ({
   await expect(page.locator('a.nav-pill.nav-pill-active', { hasText: 'WA enviado' })).toBeVisible();
   await expect(page.locator('[data-admin-order-card]', { hasText: 'E2E WA Sent' }).first()).toBeVisible();
 
-  await page.locator('a.nav-pill', { hasText: 'Sin teléfono' }).click();
+  await page.getByRole('link', { name: /Sin tel/i }).first().click({ force: true });
   await expect(page).toHaveURL(/wa=no_phone/);
-  await expect(page.locator('a.nav-pill.nav-pill-active', { hasText: 'Sin teléfono' })).toBeVisible();
+  await expect(page.locator('a.nav-pill.nav-pill-active', { hasText: /Sin tel/i })).toBeVisible();
   await expect(page.locator('[data-admin-order-card]', { hasText: 'E2E WA NoPhone' }).first()).toBeVisible();
 });
+

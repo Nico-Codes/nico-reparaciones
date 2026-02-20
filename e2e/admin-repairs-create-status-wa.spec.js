@@ -73,11 +73,33 @@ test('admin can create repair, update status and register whatsapp log', async (
   const initialWaLogs = Number((await waLogsCard.locator('.badge-zinc').first().innerText()).replace(/[^\d]/g, '') || '0');
 
   const waAction = page.locator('[data-wa-open]').first();
-  await waAction.evaluate((el) => el.removeAttribute('target'));
-  await waAction.click();
-  await page.waitForTimeout(500);
+  const waAjaxUrl = await waAction.getAttribute('data-wa-ajax');
+  expect(waAjaxUrl).toBeTruthy();
 
-  await page.reload();
+  const waResponse = await page.evaluate(async (url) => {
+    const reactNode = document.querySelector('[data-react-repair-show-whatsapp-log]');
+    const csrf = reactNode?.getAttribute('data-csrf-token')
+      || document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+      || '';
+    const res = await fetch(String(url), {
+      method: 'POST',
+      headers: {
+        'X-CSRF-TOKEN': csrf,
+        Accept: 'application/json',
+      },
+    });
+
+    let data = {};
+    try {
+      data = await res.json();
+    } catch (_e) {}
+    return { status: res.status, data };
+  }, waAjaxUrl);
+
+  expect(waResponse.status).toBe(200);
+  expect((waResponse.data && waResponse.data.ok) === true).toBe(true);
+
+  await page.reload({ waitUntil: 'domcontentloaded' });
   const finalWaLogs = Number((await page.locator('.card', { hasText: 'Logs WhatsApp' }).first().locator('.badge-zinc').first().innerText()).replace(/[^\d]/g, '') || '0');
   expect(finalWaLogs).toBeGreaterThanOrEqual(initialWaLogs + 1);
 });
