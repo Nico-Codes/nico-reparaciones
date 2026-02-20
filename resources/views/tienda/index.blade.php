@@ -80,13 +80,13 @@
               data-store-search-category="{{ $currentCategorySafe?->slug ?? '' }}"
             >
               <input
-                name="q"
-                value="{{ $qVal }}"
-                placeholder="Ej: iPhone, display, bateria..."
-                autocomplete="off"
-                data-store-search-input
-                class="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-base font-semibold text-zinc-900 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-200/40 sm:text-sm"
-              >
+              name="q"
+              value="{{ $qVal }}"
+              placeholder="Ej: iPhone, display, bateria..."
+              autocomplete="off"
+              data-store-search-input
+              class="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-base font-semibold text-zinc-900 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-200/40 sm:text-sm md:h-11 md:py-0"
+            >
 
               <div
                 class="absolute inset-x-0 top-full z-20 mt-2 hidden rounded-2xl border border-zinc-200 bg-white p-1 shadow-xl"
@@ -130,7 +130,7 @@
           <div class="text-xs font-black text-zinc-700">Ordenar</div>
           <select
             name="sort"
-            class="mt-1 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-base font-semibold text-zinc-900 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-200/40 sm:text-sm"
+            class="mt-1 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-base font-semibold text-zinc-900 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-200/40 sm:text-sm md:h-11 md:py-0"
             data-store-sort-select
           >
             @foreach($sortOptions as $sortOptionValue => $sortOptionLabel)
@@ -140,10 +140,10 @@
         </div>
 
         <div class="hidden md:flex md:col-span-2 md:items-center md:gap-2">
-          <button type="submit" class="btn-primary w-full justify-center">Aplicar</button>
+          <button type="submit" class="btn-primary h-11 w-full justify-center md:min-w-28">Aplicar</button>
 
           @if($qVal !== '' || ($sortVal !== 'relevance'))
-            <a href="{{ $formAction }}" class="btn-outline w-full justify-center">Limpiar</a>
+            <a href="{{ $formAction }}" class="btn-outline h-11 w-full justify-center md:min-w-28">Limpiar</a>
           @endif
         </div>
       </form>
