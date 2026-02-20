@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use Illuminate\Support\Carbon;
 use Throwable;
 
 class AdminBusinessSettingsController extends Controller
@@ -170,6 +171,31 @@ class AdminBusinessSettingsController extends Controller
                 },
             ],
             'weekly_report_range_days' => 'required|integer|in:7,30,90',
+            'operational_alerts_emails' => [
+                'nullable',
+                'string',
+                'max:2000',
+                static function (string $attribute, mixed $value, \Closure $fail): void {
+                    $raw = trim((string) $value);
+                    if ($raw === '') {
+                        return;
+                    }
+
+                    $emails = array_values(array_filter(array_map(
+                        static fn (string $item): string => trim($item),
+                        explode(',', $raw)
+                    )));
+
+                    foreach ($emails as $email) {
+                        if (filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+                            $fail("El campo {$attribute} contiene un email invalido: {$email}");
+
+                            return;
+                        }
+                    }
+                },
+            ],
+            'operational_alerts_dedupe_minutes' => 'required|integer|min:5|max:10080',
         ]);
 
         $emails = collect(explode(',', (string) ($data['weekly_report_emails'] ?? '')))
@@ -183,16 +209,26 @@ class AdminBusinessSettingsController extends Controller
         $this->persistSetting(OpsDashboardReportSettings::KEY_DAY, (string) $data['weekly_report_day']);
         $this->persistSetting(OpsDashboardReportSettings::KEY_TIME, (string) $data['weekly_report_time']);
         $this->persistSetting(OpsDashboardReportSettings::KEY_RANGE_DAYS, (string) $data['weekly_report_range_days']);
+        $operationalAlertsEmails = collect(explode(',', (string) ($data['operational_alerts_emails'] ?? '')))
+            ->map(static fn (string $item): string => trim($item))
+            ->filter(static fn (string $item): bool => $item !== '')
+            ->unique()
+            ->values()
+            ->implode(', ');
+        $this->persistSetting('ops_operational_alerts_emails', $operationalAlertsEmails);
+        $this->persistSetting('ops_operational_alerts_dedupe_minutes', (string) ((int) $data['operational_alerts_dedupe_minutes']));
 
         $after = [
             'emails' => $emails,
             'day' => (string) $data['weekly_report_day'],
             'time' => (string) $data['weekly_report_time'],
             'range_days' => (int) $data['weekly_report_range_days'],
+            'operational_alerts_emails' => $operationalAlertsEmails,
+            'operational_alerts_dedupe_minutes' => (int) $data['operational_alerts_dedupe_minutes'],
         ];
 
         $changedKeys = [];
-        foreach (['emails', 'day', 'time', 'range_days'] as $field) {
+        foreach (['emails', 'day', 'time', 'range_days', 'operational_alerts_emails', 'operational_alerts_dedupe_minutes'] as $field) {
             if ((string) ($before[$field] ?? '') !== (string) ($after[$field] ?? '')) {
                 $changedKeys[] = $field;
             }
@@ -347,6 +383,23 @@ class AdminBusinessSettingsController extends Controller
         }
 
         return back()->with('success', 'Resumen de alertas operativas enviado correctamente.');
+    }
+
+    public function clearOperationalAlertsHistory(Request $request)
+    {
+        $keys = [
+            'ops_operational_alerts_last_status',
+            'ops_operational_alerts_last_run_at',
+            'ops_operational_alerts_last_recipients',
+            'ops_operational_alerts_last_summary',
+            'ops_operational_alerts_last_error',
+            'ops_operational_alerts_last_signature',
+            'ops_operational_alerts_last_sent_at',
+        ];
+
+        BusinessSetting::query()->whereIn('key', $keys)->delete();
+
+        return back()->with('success', 'Historial de alertas operativas limpiado.');
     }
 
     public function sendSmtpTestEmail(Request $request)
@@ -510,11 +563,18 @@ class AdminBusinessSettingsController extends Controller
      */
     private function currentWeeklyReportConfig(): array
     {
+        $operationalAlertsDedupe = (int) BusinessSetting::getValue('ops_operational_alerts_dedupe_minutes', '');
+        if ($operationalAlertsDedupe <= 0) {
+            $operationalAlertsDedupe = (int) config('ops.alerts.operational_dedupe_minutes', 360);
+        }
+
         return [
             'emails' => OpsDashboardReportSettings::recipientsRaw(),
             'day' => OpsDashboardReportSettings::day(),
             'time' => OpsDashboardReportSettings::time(),
             'range_days' => OpsDashboardReportSettings::rangeDays(),
+            'operational_alerts_emails' => (string) (BusinessSetting::getValue('ops_operational_alerts_emails', (string) config('ops.alerts.operational_email_recipients', ''))),
+            'operational_alerts_dedupe_minutes' => max(5, min(10080, $operationalAlertsDedupe)),
         ];
     }
 
@@ -644,15 +704,43 @@ class AdminBusinessSettingsController extends Controller
     }
 
     /**
-     * @return array{weeklyReportEmails:string,weeklyReportDay:string,weeklyReportTime:string,weeklyReportRangeDays:int}
+     * @return array{weeklyReportEmails:string,weeklyReportDay:string,weeklyReportTime:string,weeklyReportRangeDays:int,operationalAlertsEmails:string,operationalAlertsDedupeMinutes:int,operationalAlertsLastStatus:string,operationalAlertsLastRunAt:?string,operationalAlertsLastRecipients:string,operationalAlertsLastSummary:array<string,mixed>,operationalAlertsLastError:string}
      */
     private function reportsViewData(): array
     {
+        $operationalAlertsDedupe = (int) BusinessSetting::getValue('ops_operational_alerts_dedupe_minutes', '');
+        if ($operationalAlertsDedupe <= 0) {
+            $operationalAlertsDedupe = (int) config('ops.alerts.operational_dedupe_minutes', 360);
+        }
+
+        $lastSummaryRaw = (string) BusinessSetting::getValue('ops_operational_alerts_last_summary', '{}');
+        $lastSummary = json_decode($lastSummaryRaw, true);
+        if (!is_array($lastSummary)) {
+            $lastSummary = [];
+        }
+
+        $lastRunAtRaw = trim((string) BusinessSetting::getValue('ops_operational_alerts_last_run_at', ''));
+        $lastRunAt = null;
+        if ($lastRunAtRaw !== '') {
+            try {
+                $lastRunAt = Carbon::parse($lastRunAtRaw)->format('d/m/Y H:i');
+            } catch (Throwable) {
+                $lastRunAt = $lastRunAtRaw;
+            }
+        }
+
         return [
             'weeklyReportEmails' => OpsDashboardReportSettings::recipientsRaw(),
             'weeklyReportDay' => OpsDashboardReportSettings::day(),
             'weeklyReportTime' => OpsDashboardReportSettings::time(),
             'weeklyReportRangeDays' => OpsDashboardReportSettings::rangeDays(),
+            'operationalAlertsEmails' => (string) (BusinessSetting::getValue('ops_operational_alerts_emails', (string) config('ops.alerts.operational_email_recipients', ''))),
+            'operationalAlertsDedupeMinutes' => max(5, min(10080, $operationalAlertsDedupe)),
+            'operationalAlertsLastStatus' => (string) BusinessSetting::getValue('ops_operational_alerts_last_status', ''),
+            'operationalAlertsLastRunAt' => $lastRunAt,
+            'operationalAlertsLastRecipients' => (string) BusinessSetting::getValue('ops_operational_alerts_last_recipients', ''),
+            'operationalAlertsLastSummary' => $lastSummary,
+            'operationalAlertsLastError' => (string) BusinessSetting::getValue('ops_operational_alerts_last_error', ''),
         ];
     }
 

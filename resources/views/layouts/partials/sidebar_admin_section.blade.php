@@ -1,4 +1,14 @@
 @php
+  $adminAlertsUnseenCount = 0;
+  if ($isAdmin && isset($authUser) && $authUser && $has('admin.alerts.index')) {
+    try {
+      $adminAlertsSummary = (new \App\Support\AdminAlertCenter($authUser))->summary();
+      $adminAlertsUnseenCount = max(0, (int) ($adminAlertsSummary['unseen_count'] ?? 0));
+    } catch (\Throwable $e) {
+      $adminAlertsUnseenCount = 0;
+    }
+  }
+
   $adminLinks = [
     [
       'route' => 'admin.dashboard',
@@ -17,6 +27,13 @@
       'label' => 'Pedidos',
       'icon' => \App\Support\BrandAssets::url('icon_orders'),
       'active' => request()->routeIs('admin.orders.*'),
+    ],
+    [
+      'route' => 'admin.alerts.index',
+      'label' => 'Alertas',
+      'icon' => \App\Support\BrandAssets::url('icon_settings'),
+      'active' => request()->routeIs('admin.alerts.*'),
+      'badge_count' => $adminAlertsUnseenCount,
     ],
     [
       'route' => 'admin.quick_sales.index',
@@ -148,6 +165,11 @@
             <span class="inline-flex items-center gap-2">
               <img src="{{ $l['icon'] }}" alt="" class="w-5 h-5" loading="lazy" decoding="async">
               <span>{{ $l['label'] }}</span>
+              @if(($l['badge_count'] ?? 0) > 0)
+                <span class="inline-flex min-w-5 h-5 items-center justify-center rounded-full bg-sky-600 px-1.5 text-[10px] font-black leading-none text-white">
+                  {{ ($l['badge_count'] ?? 0) > 99 ? '99+' : (int) $l['badge_count'] }}
+                </span>
+              @endif
             </span>
           </a>
         @endif

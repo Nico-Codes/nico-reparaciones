@@ -1,10 +1,20 @@
 @php
   $iconDashboard = \App\Support\BrandAssets::url('icon_dashboard');
+  $adminAlertsUnseenCount = 0;
+  if ($isAdmin && isset($authUser) && $authUser && $has('admin.alerts.index')) {
+    try {
+      $adminAlertsSummary = (new \App\Support\AdminAlertCenter($authUser))->summary();
+      $adminAlertsUnseenCount = max(0, (int) ($adminAlertsSummary['unseen_count'] ?? 0));
+    } catch (\Throwable $e) {
+      $adminAlertsUnseenCount = 0;
+    }
+  }
 
   $adminLinks = [
     ['route' => 'admin.dashboard', 'label' => 'Panel'],
     ['route' => 'admin.repairs.index', 'label' => 'Reparaciones'],
     ['route' => 'admin.orders.index', 'label' => 'Pedidos'],
+    ['route' => 'admin.alerts.index', 'label' => 'Alertas', 'badge_count' => $adminAlertsUnseenCount],
     ['route' => 'admin.quick_sales.index', 'label' => 'Venta rapida'],
     ['route' => 'admin.ledger.index', 'label' => 'Contabilidad'],
     ['route' => 'admin.warranty_incidents.index', 'label' => 'Garantias'],
@@ -56,7 +66,14 @@
     <div class="ml-3 pl-3 border-l border-zinc-200 space-y-1">
       @foreach($adminLinks as $l)
         @if($has($l['route']))
-          <a class="dropdown-item" href="{{ route($l['route']) }}">{{ $l['label'] }}</a>
+          <a class="dropdown-item flex items-center justify-between gap-2" href="{{ route($l['route']) }}">
+            <span>{{ $l['label'] }}</span>
+            @if(($l['badge_count'] ?? 0) > 0)
+              <span class="inline-flex min-w-5 h-5 items-center justify-center rounded-full bg-sky-600 px-1.5 text-[10px] font-black leading-none text-white">
+                {{ ($l['badge_count'] ?? 0) > 99 ? '99+' : (int) $l['badge_count'] }}
+              </span>
+            @endif
+          </a>
         @endif
       @endforeach
     </div>

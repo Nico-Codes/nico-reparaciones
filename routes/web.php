@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AdminBusinessSettingsController;
+use App\Http\Controllers\AdminAlertCenterController;
 use App\Http\Controllers\AdminCategoryController;
 use App\Http\Controllers\AdminCalculationSettingsController;
 use App\Http\Controllers\AdminDashboardController;
@@ -179,6 +180,11 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'can:access-admin', 'admin.
 
     Route::get('/', [AdminDashboardController::class, 'index'])->name('admin');
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
+    Route::get('/alertas', [AdminAlertCenterController::class, 'index'])->name('admin.alerts.index');
+    Route::post('/alertas/marcar-todas', [AdminAlertCenterController::class, 'markAllSeen'])->name('admin.alerts.mark_all_seen');
+    Route::post('/alertas/{alertKey}/marcar-vista', [AdminAlertCenterController::class, 'markSeen'])
+        ->where('alertKey', '[A-Za-z0-9_\-]+')
+        ->name('admin.alerts.mark_seen');
     Route::get('/dashboard/export.csv', [AdminDashboardController::class, 'exportCsv'])->name('admin.dashboard.export');
     Route::get('/dashboard/export.xlsx', [AdminDashboardController::class, 'exportXlsx'])->name('admin.dashboard.export_xlsx');
     Route::get('/contabilidad', [AdminLedgerController::class, 'index'])->name('admin.ledger.index');
@@ -303,6 +309,8 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'can:access-admin', 'admin.
         ->name('admin.settings.reports.send');
     Route::post('/configuracion/reportes/alertas-operativas/enviar', [AdminBusinessSettingsController::class, 'sendOperationalAlerts'])
         ->name('admin.settings.reports.operational_alerts.send');
+    Route::post('/configuracion/reportes/alertas-operativas/limpiar', [AdminBusinessSettingsController::class, 'clearOperationalAlertsHistory'])
+        ->name('admin.settings.reports.operational_alerts.clear');
     Route::post('/configuracion/mail/prueba', [AdminBusinessSettingsController::class, 'sendSmtpTestEmail'])
         ->name('admin.settings.smtp_test.send');
     Route::get('/configuracion/identidad-visual', [AdminBusinessSettingsController::class, 'assets'])

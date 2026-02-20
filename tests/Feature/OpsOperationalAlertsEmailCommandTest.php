@@ -74,6 +74,14 @@ class OpsOperationalAlertsEmailCommandTest extends TestCase
             $this->assertDatabaseHas('business_settings', [
                 'key' => 'ops_operational_alerts_last_sent_at',
             ]);
+            $this->assertDatabaseHas('business_settings', [
+                'key' => 'ops_operational_alerts_last_status',
+                'value' => 'sent',
+            ]);
+            $this->assertDatabaseHas('business_settings', [
+                'key' => 'ops_operational_alerts_last_recipients',
+                'value' => 'admin-alerts@example.com',
+            ]);
         } finally {
             Carbon::setTestNow();
         }
@@ -116,5 +124,52 @@ class OpsOperationalAlertsEmailCommandTest extends TestCase
             Carbon::setTestNow();
         }
     }
-}
 
+    public function test_operational_alerts_command_uses_business_settings_recipients_and_dedupe(): void
+    {
+        Mail::fake();
+        Carbon::setTestNow(Carbon::create(2026, 2, 20, 12, 0, 0));
+
+        try {
+            config()->set('ops.alerts.operational_email_recipients', '');
+            config()->set('ops.alerts.operational_dedupe_minutes', 360);
+            config()->set('ops.mail.async_enabled', false);
+
+            BusinessSetting::updateOrCreate(['key' => 'ops_operational_alerts_emails'], ['value' => 'custom-alerts@example.com']);
+            BusinessSetting::updateOrCreate(['key' => 'ops_operational_alerts_dedupe_minutes'], ['value' => '5']);
+            BusinessSetting::updateOrCreate(['key' => 'ops_alert_order_stale_hours'], ['value' => '24']);
+
+            $customer = User::factory()->create();
+            $order = Order::create([
+                'user_id' => $customer->id,
+                'status' => 'pendiente',
+                'payment_method' => 'local',
+                'total' => 1800,
+                'pickup_name' => 'Cliente settings',
+                'pickup_phone' => '3415555011',
+            ]);
+            $order->forceFill([
+                'created_at' => now()->copy()->subHours(28),
+                'updated_at' => now()->copy()->subHours(28),
+            ])->saveQuietly();
+
+            $this->artisan('ops:operational-alerts-email')
+                ->assertExitCode(0);
+
+            Mail::assertSent(AdminOperationalAlertsMail::class, function (AdminOperationalAlertsMail $mail): bool {
+                return $mail->hasTo('custom-alerts@example.com');
+            });
+
+            $this->assertDatabaseHas('business_settings', [
+                'key' => 'ops_operational_alerts_last_status',
+                'value' => 'sent',
+            ]);
+            $this->assertDatabaseHas('business_settings', [
+                'key' => 'ops_operational_alerts_last_recipients',
+                'value' => 'custom-alerts@example.com',
+            ]);
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+}

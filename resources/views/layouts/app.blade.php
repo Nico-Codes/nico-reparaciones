@@ -161,14 +161,31 @@
     $desktopLinks[] = ['label' => 'Admin', 'href' => route('admin.dashboard'), 'active' => request()->is('admin*')];
   }
 
+  $adminAlertsUnseenCount = 0;
+  if ($isAdmin && $has('admin.alerts.index')) {
+    try {
+      $adminAlertsSummary = (new \App\Support\AdminAlertCenter($authUser))->summary();
+      $adminAlertsUnseenCount = max(0, (int) ($adminAlertsSummary['unseen_count'] ?? 0));
+    } catch (\Throwable $e) {
+      $adminAlertsUnseenCount = 0;
+    }
+  }
+
   $adminLinks = [];
-  $pushAdmin = function (string $routeName, string $label, string $icon, bool $active = false) use (&$adminLinks, $has) {
+  $pushAdmin = function (string $routeName, string $label, string $icon, bool $active = false, int $badgeCount = 0) use (&$adminLinks, $has) {
     if (!$has($routeName)) return;
-    $adminLinks[] = ['label' => $label, 'href' => route($routeName), 'icon' => $icon, 'active' => $active];
+    $adminLinks[] = [
+      'label' => $label,
+      'href' => route($routeName),
+      'icon' => $icon,
+      'active' => $active,
+      'badgeCount' => max(0, $badgeCount),
+    ];
   };
   $pushAdmin('admin.dashboard', 'Panel', $iconDashboard, request()->routeIs('admin.dashboard'));
   $pushAdmin('admin.repairs.index', 'Reparaciones', $iconRepairs, request()->routeIs('admin.repairs.*'));
   $pushAdmin('admin.orders.index', 'Pedidos', $iconOrders, request()->routeIs('admin.orders.*'));
+  $pushAdmin('admin.alerts.index', 'Alertas', $iconSettings, request()->routeIs('admin.alerts.*'), $adminAlertsUnseenCount);
   $pushAdmin('admin.quick_sales.index', 'Venta rapida', $iconOrders, request()->routeIs('admin.quick_sales.*'));
   $pushAdmin('admin.ledger.index', 'Contabilidad', $iconSettings, request()->routeIs('admin.ledger.*'));
   $pushAdmin('admin.warranty_incidents.index', 'Garantias', $iconSettings, request()->routeIs('admin.warranty_incidents.*'));

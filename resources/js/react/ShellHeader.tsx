@@ -7,6 +7,7 @@ type LinkItem = {
   active?: boolean;
   icon?: string | null;
   highlight?: 'warning' | null;
+  badgeCount?: number;
 };
 
 type ShellHeaderData = {
@@ -46,6 +47,16 @@ function WarnIcon() {
       <path d="M12 17h.01" />
       <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
     </svg>
+  );
+}
+
+function LinkBadge({ count }: { count?: number }) {
+  if (!count || count <= 0) return null;
+  const safeCount = count > 99 ? '99+' : String(count);
+  return (
+    <span className="inline-flex min-w-5 h-5 items-center justify-center rounded-full bg-sky-600 px-1.5 text-[10px] font-black leading-none text-white">
+      {safeCount}
+    </span>
   );
 }
 
@@ -407,6 +418,7 @@ export default function ShellHeader({ data }: Props) {
                           <span className="inline-flex items-center gap-2">
                             {link.icon ? <img src={link.icon} alt="" className="w-5 h-5" loading="lazy" decoding="async" /> : null}
                             <span>{link.label}</span>
+                            <LinkBadge count={link.badgeCount} />
                           </span>
                         </a>
                       ))}

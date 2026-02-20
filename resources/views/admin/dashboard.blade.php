@@ -111,6 +111,7 @@
     <div class="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
       <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('store.index') }}">Ver tienda</a>
       <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.orders.index') }}">Pedidos</a>
+      <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.alerts.index') }}">Alertas</a>
       <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.repairs.index') }}">Reparaciones</a>
       <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.products.index') }}">Productos</a>
       <a class="btn-outline h-11 w-full justify-center sm:w-auto" href="{{ route('admin.suppliers.index') }}">Proveedores</a>

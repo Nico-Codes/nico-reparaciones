@@ -25,6 +25,8 @@ class AdminSettingsWeeklyReportTest extends TestCase
             'weekly_report_day' => 'wednesday',
             'weekly_report_time' => '09:30',
             'weekly_report_range_days' => 30,
+            'operational_alerts_emails' => 'alerts@example.com, alerts@example.com',
+            'operational_alerts_dedupe_minutes' => 240,
         ]);
 
         $response->assertRedirect();
@@ -46,6 +48,14 @@ class AdminSettingsWeeklyReportTest extends TestCase
             'key' => 'ops_weekly_report_range_days',
             'value' => '30',
         ]);
+        $this->assertDatabaseHas('business_settings', [
+            'key' => 'ops_operational_alerts_emails',
+            'value' => 'alerts@example.com',
+        ]);
+        $this->assertDatabaseHas('business_settings', [
+            'key' => 'ops_operational_alerts_dedupe_minutes',
+            'value' => '240',
+        ]);
     }
 
     public function test_invalid_weekly_report_email_list_is_rejected(): void
@@ -57,6 +67,8 @@ class AdminSettingsWeeklyReportTest extends TestCase
             'weekly_report_day' => 'monday',
             'weekly_report_time' => '08:00',
             'weekly_report_range_days' => 7,
+            'operational_alerts_emails' => '',
+            'operational_alerts_dedupe_minutes' => 360,
         ]);
 
         $response->assertSessionHasErrors('weekly_report_emails');
@@ -98,6 +110,7 @@ class AdminSettingsWeeklyReportTest extends TestCase
             'weekly_report_day' => 'monday',
             'weekly_report_time' => '08:00',
             'weekly_report_range_days' => 30,
+            'operational_alerts_dedupe_minutes' => 360,
         ]);
         $updateResponse->assertForbidden();
 
@@ -106,6 +119,9 @@ class AdminSettingsWeeklyReportTest extends TestCase
 
         $sendOperationalResponse = $this->actingAs($user)->post(route('admin.settings.reports.operational_alerts.send'));
         $sendOperationalResponse->assertForbidden();
+
+        $clearOperationalResponse = $this->actingAs($user)->post(route('admin.settings.reports.operational_alerts.clear'));
+        $clearOperationalResponse->assertForbidden();
     }
 
     public function test_admin_can_send_operational_alerts_now_from_settings_screen(): void
@@ -144,5 +160,41 @@ class AdminSettingsWeeklyReportTest extends TestCase
         } finally {
             Carbon::setTestNow();
         }
+    }
+
+    public function test_reports_settings_view_shows_operational_alerts_last_execution_summary(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        BusinessSetting::updateOrCreate(['key' => 'ops_operational_alerts_last_status'], ['value' => 'sent']);
+        BusinessSetting::updateOrCreate(['key' => 'ops_operational_alerts_last_run_at'], ['value' => '2026-02-20 11:15:00']);
+        BusinessSetting::updateOrCreate(['key' => 'ops_operational_alerts_last_recipients'], ['value' => 'ops@example.com']);
+        BusinessSetting::updateOrCreate(['key' => 'ops_operational_alerts_last_summary'], ['value' => json_encode(['orders' => 2, 'repairs' => 1])]);
+
+        $response = $this->actingAs($admin)->get(route('admin.settings.reports.index'));
+        $response->assertOk();
+        $response->assertSee('Última ejecución de alertas operativas');
+        $response->assertSee('ops@example.com');
+        $response->assertSee('Pedidos alertados');
+        $response->assertSee('Reparaciones alertadas');
+    }
+
+    public function test_admin_can_clear_operational_alerts_history(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        BusinessSetting::updateOrCreate(['key' => 'ops_operational_alerts_last_status'], ['value' => 'sent']);
+        BusinessSetting::updateOrCreate(['key' => 'ops_operational_alerts_last_run_at'], ['value' => '2026-02-20 11:15:00']);
+        BusinessSetting::updateOrCreate(['key' => 'ops_operational_alerts_last_recipients'], ['value' => 'ops@example.com']);
+        BusinessSetting::updateOrCreate(['key' => 'ops_operational_alerts_last_summary'], ['value' => json_encode(['orders' => 2, 'repairs' => 1])]);
+
+        $response = $this->actingAs($admin)->post(route('admin.settings.reports.operational_alerts.clear'));
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+
+        $this->assertDatabaseMissing('business_settings', ['key' => 'ops_operational_alerts_last_status']);
+        $this->assertDatabaseMissing('business_settings', ['key' => 'ops_operational_alerts_last_run_at']);
+        $this->assertDatabaseMissing('business_settings', ['key' => 'ops_operational_alerts_last_recipients']);
+        $this->assertDatabaseMissing('business_settings', ['key' => 'ops_operational_alerts_last_summary']);
     }
 }

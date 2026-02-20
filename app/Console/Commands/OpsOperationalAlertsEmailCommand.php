@@ -24,6 +24,11 @@ class OpsOperationalAlertsEmailCommand extends Command
 
     private const SETTING_LAST_SIGNATURE = 'ops_operational_alerts_last_signature';
     private const SETTING_LAST_SENT_AT = 'ops_operational_alerts_last_sent_at';
+    private const SETTING_LAST_STATUS = 'ops_operational_alerts_last_status';
+    private const SETTING_LAST_ERROR = 'ops_operational_alerts_last_error';
+    private const SETTING_LAST_RECIPIENTS = 'ops_operational_alerts_last_recipients';
+    private const SETTING_LAST_SUMMARY = 'ops_operational_alerts_last_summary';
+    private const SETTING_LAST_RUN_AT = 'ops_operational_alerts_last_run_at';
 
     public function handle(): int
     {
@@ -89,6 +94,17 @@ class OpsOperationalAlertsEmailCommand extends Command
         $totalAlerts = $ordersCount + $repairsCount;
 
         if ($totalAlerts <= 0) {
+            $this->persistExecutionMeta(
+                status: 'no_alerts',
+                recipients: [],
+                summary: [
+                    'orders' => 0,
+                    'repairs' => 0,
+                    'order_threshold_hours' => $orderThresholdHours,
+                    'repair_threshold_days' => $repairThresholdDays,
+                ],
+                error: null
+            );
             $this->line('No operational alerts at this time.');
             return self::SUCCESS;
         }
@@ -108,17 +124,50 @@ class OpsOperationalAlertsEmailCommand extends Command
         $forceSend = (bool) $this->option('force');
 
         if (!$forceSend && !$changedSignature && $isWithinDedupeWindow) {
+            $this->persistExecutionMeta(
+                status: 'deduped',
+                recipients: [],
+                summary: [
+                    'orders' => $ordersCount,
+                    'repairs' => $repairsCount,
+                    'order_threshold_hours' => $orderThresholdHours,
+                    'repair_threshold_days' => $repairThresholdDays,
+                ],
+                error: null
+            );
             $this->line('Skipped (dedupe): same signature still within dedupe window.');
             return self::SUCCESS;
         }
 
         $recipients = $this->resolveRecipients((string) ($this->option('to') ?? ''));
         if ($recipients === []) {
+            $this->persistExecutionMeta(
+                status: 'failed',
+                recipients: [],
+                summary: [
+                    'orders' => $ordersCount,
+                    'repairs' => $repairsCount,
+                    'order_threshold_hours' => $orderThresholdHours,
+                    'repair_threshold_days' => $repairThresholdDays,
+                ],
+                error: 'No recipients found for operational alerts.'
+            );
             $this->error('No recipients found for operational alerts.');
             return self::FAILURE;
         }
 
         if ((bool) $this->option('dry-run')) {
+            $this->persistExecutionMeta(
+                status: 'dry_run',
+                recipients: $recipients,
+                summary: [
+                    'orders' => $ordersCount,
+                    'repairs' => $repairsCount,
+                    'order_threshold_hours' => $orderThresholdHours,
+                    'repair_threshold_days' => $repairThresholdDays,
+                ],
+                error: null
+            );
             $this->line('Dry-run operational alerts');
             $this->line('Recipients: '.implode(', ', $recipients));
             $this->line('Orders: '.$ordersCount.' | Repairs: '.$repairsCount);
@@ -135,6 +184,17 @@ class OpsOperationalAlertsEmailCommand extends Command
                 $repairs
             ));
         } catch (Throwable $e) {
+            $this->persistExecutionMeta(
+                status: 'failed',
+                recipients: $recipients,
+                summary: [
+                    'orders' => $ordersCount,
+                    'repairs' => $repairsCount,
+                    'order_threshold_hours' => $orderThresholdHours,
+                    'repair_threshold_days' => $repairThresholdDays,
+                ],
+                error: $e->getMessage()
+            );
             app(MailFailureMonitor::class)->reportSyncFailure($e, [
                 'event' => 'ops.operational_alerts',
                 'orders_count' => $ordersCount,
@@ -147,6 +207,17 @@ class OpsOperationalAlertsEmailCommand extends Command
 
         $this->persistSetting(self::SETTING_LAST_SIGNATURE, $signature);
         $this->persistSetting(self::SETTING_LAST_SENT_AT, now()->toDateTimeString());
+        $this->persistExecutionMeta(
+            status: 'sent',
+            recipients: $recipients,
+            summary: [
+                'orders' => $ordersCount,
+                'repairs' => $repairsCount,
+                'order_threshold_hours' => $orderThresholdHours,
+                'repair_threshold_days' => $repairThresholdDays,
+            ],
+            error: null
+        );
 
         $verb = MailDispatch::asyncEnabled() ? 'queued for' : 'sent to';
         $this->info('Operational alerts '.$verb.': '.implode(', ', $recipients));
@@ -168,6 +239,11 @@ class OpsOperationalAlertsEmailCommand extends Command
 
     private function resolveDedupeMinutes(): int
     {
+        $settingValue = (int) BusinessSetting::getValue('ops_operational_alerts_dedupe_minutes', '');
+        if ($settingValue > 0) {
+            return max(5, min(10080, $settingValue));
+        }
+
         $configValue = (int) config('ops.alerts.operational_dedupe_minutes', 360);
         return max(5, min(10080, $configValue));
     }
@@ -180,6 +256,11 @@ class OpsOperationalAlertsEmailCommand extends Command
         $fromOption = $this->parseEmails($toOption);
         if ($fromOption !== []) {
             return $fromOption;
+        }
+
+        $fromSettings = $this->parseEmails((string) BusinessSetting::getValue('ops_operational_alerts_emails', ''));
+        if ($fromSettings !== []) {
+            return $fromSettings;
         }
 
         $configured = (string) config('ops.alerts.operational_email_recipients', '');
@@ -226,5 +307,21 @@ class OpsOperationalAlertsEmailCommand extends Command
             ['key' => $key],
             ['value' => $value]
         );
+    }
+
+    /**
+     * @param array<int, string> $recipients
+     * @param array<string, int> $summary
+     */
+    private function persistExecutionMeta(string $status, array $recipients, array $summary, ?string $error): void
+    {
+        $this->persistSetting(self::SETTING_LAST_STATUS, $status);
+        $this->persistSetting(self::SETTING_LAST_RUN_AT, now()->toDateTimeString());
+        $this->persistSetting(self::SETTING_LAST_RECIPIENTS, implode(', ', $recipients));
+        $this->persistSetting(
+            self::SETTING_LAST_SUMMARY,
+            json_encode($summary, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '{}'
+        );
+        $this->persistSetting(self::SETTING_LAST_ERROR, $error ? mb_substr($error, 0, 1000) : '');
     }
 }
