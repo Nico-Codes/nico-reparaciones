@@ -102,6 +102,8 @@ class AdminBusinessSettingsController extends Controller
             'shop_hours' => 'nullable|string|max:1000',
             'shop_phone' => 'nullable|string|max:50',
             'default_ticket_paper' => 'nullable|string|in:58,80',
+            'ops_alert_order_stale_hours' => 'nullable|integer|min:1|max:720',
+            'ops_alert_repair_stale_days' => 'nullable|integer|min:1|max:180',
             'store_home_hero_title' => 'nullable|string|max:120',
             'store_home_hero_subtitle' => 'nullable|string|max:240',
             'store_home_hero_fade_intensity' => 'nullable|integer|min:0|max:100',
@@ -114,6 +116,8 @@ class AdminBusinessSettingsController extends Controller
         $this->persistSetting('shop_hours', (string) ($data['shop_hours'] ?? ''));
         $this->persistSetting('shop_phone', (string) ($data['shop_phone'] ?? ''));
         $this->persistSetting('default_ticket_paper', (string) ($data['default_ticket_paper'] ?? '80'));
+        $this->persistSetting('ops_alert_order_stale_hours', (string) ($data['ops_alert_order_stale_hours'] ?? '24'));
+        $this->persistSetting('ops_alert_repair_stale_days', (string) ($data['ops_alert_repair_stale_days'] ?? '3'));
         $this->persistSetting('store_home_hero_title', (string) ($data['store_home_hero_title'] ?? ''));
         $this->persistSetting('store_home_hero_subtitle', (string) ($data['store_home_hero_subtitle'] ?? ''));
         $this->persistSetting('store_home_hero_fade_intensity', (string) ($data['store_home_hero_fade_intensity'] ?? '42'));
@@ -325,6 +329,24 @@ class AdminBusinessSettingsController extends Controller
         ]);
 
         return back()->with('success', 'Reporte semanal enviado correctamente.');
+    }
+
+    public function sendOperationalAlerts(Request $request)
+    {
+        $exitCode = Artisan::call('ops:operational-alerts-email', [
+            '--force' => true,
+        ]);
+
+        $output = trim((string) Artisan::output());
+        if ($exitCode !== 0) {
+            return back()->withErrors([
+                'operational_alerts_send' => $output !== ''
+                    ? $output
+                    : 'No se pudo enviar el resumen de alertas operativas.',
+            ]);
+        }
+
+        return back()->with('success', 'Resumen de alertas operativas enviado correctamente.');
     }
 
     public function sendSmtpTestEmail(Request $request)
@@ -599,7 +621,7 @@ class AdminBusinessSettingsController extends Controller
     }
 
     /**
-     * @return array{shopAddress:string,shopHours:string,shopPhone:string,defaultTicketPaper:string,storeHomeHeroTitle:string,storeHomeHeroSubtitle:string,storeHomeHeroFadeIntensity:int,storeHomeHeroFadeSize:int,storeHomeHeroFadeHighContrast:bool,storeHomeHeroFadeColorManual:string}
+     * @return array{shopAddress:string,shopHours:string,shopPhone:string,defaultTicketPaper:string,opsAlertOrderStaleHours:int,opsAlertRepairStaleDays:int,storeHomeHeroTitle:string,storeHomeHeroSubtitle:string,storeHomeHeroFadeIntensity:int,storeHomeHeroFadeSize:int,storeHomeHeroFadeHighContrast:bool,storeHomeHeroFadeColorManual:string}
      */
     private function businessViewData(): array
     {
@@ -610,6 +632,8 @@ class AdminBusinessSettingsController extends Controller
             'shopHours' => (string) ($settings->get('shop_hours') ?? ''),
             'shopPhone' => (string) ($settings->get('shop_phone') ?? ''),
             'defaultTicketPaper' => (string) ($settings->get('default_ticket_paper') ?? '80'),
+            'opsAlertOrderStaleHours' => max(1, min(720, (int) ($settings->get('ops_alert_order_stale_hours') ?? 24))),
+            'opsAlertRepairStaleDays' => max(1, min(180, (int) ($settings->get('ops_alert_repair_stale_days') ?? 3))),
             'storeHomeHeroTitle' => (string) ($settings->get('store_home_hero_title') ?? ''),
             'storeHomeHeroSubtitle' => (string) ($settings->get('store_home_hero_subtitle') ?? ''),
             'storeHomeHeroFadeIntensity' => (int) ($settings->get('store_home_hero_fade_intensity') ?? 42),

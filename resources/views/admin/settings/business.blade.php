@@ -50,6 +50,37 @@
           <div class="text-xs text-zinc-500">Se usa en "Confirmar e imprimir" y en reimpresion de ventas rapidas.</div>
         </div>
 
+        <div class="rounded-2xl border border-zinc-200 bg-zinc-50 p-3">
+          <div class="text-sm font-black text-zinc-900">Alertas operativas (dashboard)</div>
+          <div class="mt-1 text-xs text-zinc-600">Define cuando un pedido o reparacion se considera demorado.</div>
+
+          <div class="mt-3 grid gap-3 sm:grid-cols-2">
+            <div class="grid gap-2">
+              <label>Pedido demorado (horas)</label>
+              <input
+                class="h-11"
+                type="number"
+                min="1"
+                max="720"
+                name="ops_alert_order_stale_hours"
+                value="{{ old('ops_alert_order_stale_hours', $opsAlertOrderStaleHours ?? 24) }}">
+              <div class="text-xs text-zinc-500">Estados: pendiente, confirmado, preparando.</div>
+            </div>
+
+            <div class="grid gap-2">
+              <label>Reparacion demorada (dias)</label>
+              <input
+                class="h-11"
+                type="number"
+                min="1"
+                max="180"
+                name="ops_alert_repair_stale_days"
+                value="{{ old('ops_alert_repair_stale_days', $opsAlertRepairStaleDays ?? 3) }}">
+              <div class="text-xs text-zinc-500">Estados: recibido, diagnosticando, esperando aprobacion, reparando.</div>
+            </div>
+          </div>
+        </div>
+
         <div class="rounded-2xl border border-zinc-200 bg-zinc-50 p-3 text-xs text-zinc-600">
           Portada de tienda: la imagen se cambia desde <span class="font-black text-zinc-900">Configuracion &gt; Identidad visual &gt; Fondo portada tienda</span>.
         </div>

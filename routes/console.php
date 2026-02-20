@@ -34,3 +34,7 @@ $weeklyTime = OpsDashboardReportSettings::time();
 Schedule::command('ops:dashboard-report-email')
     ->weeklyOn($weeklyDay, $weeklyTime)
     ->withoutOverlapping();
+
+Schedule::command('ops:operational-alerts-email')
+    ->dailyAt((string) config('ops.schedules.operational_alerts_time', '10:00'))
+    ->withoutOverlapping();

@@ -301,6 +301,8 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'can:access-admin', 'admin.
         ->name('admin.settings.reports.update');
     Route::post('/configuracion/reportes/dashboard/enviar', [AdminBusinessSettingsController::class, 'sendWeeklyReport'])
         ->name('admin.settings.reports.send');
+    Route::post('/configuracion/reportes/alertas-operativas/enviar', [AdminBusinessSettingsController::class, 'sendOperationalAlerts'])
+        ->name('admin.settings.reports.operational_alerts.send');
     Route::post('/configuracion/mail/prueba', [AdminBusinessSettingsController::class, 'sendSmtpTestEmail'])
         ->name('admin.settings.smtp_test.send');
     Route::get('/configuracion/identidad-visual', [AdminBusinessSettingsController::class, 'assets'])

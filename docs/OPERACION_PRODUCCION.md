@@ -193,6 +193,12 @@ Comando manual:
 php artisan ops:dashboard-report-email --range=30 --to=ops@tu-dominio.com
 ```
 
+Alertas operativas (pedidos/reparaciones demoradas):
+
+```bash
+php artisan ops:operational-alerts-email --force
+```
+
 Prueba puntual de mail (smoke test):
 
 ```bash

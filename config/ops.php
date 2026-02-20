@@ -4,6 +4,7 @@ return [
     'schedules' => [
         'health_check_time' => env('OPS_HEALTH_CHECK_TIME', '03:00'),
         'backup_time' => env('OPS_BACKUP_TIME', '03:15'),
+        'operational_alerts_time' => env('OPS_OPERATIONAL_ALERTS_TIME', '10:00'),
     ],
 
     'backups' => [
@@ -28,5 +29,10 @@ return [
         'tries' => (int) env('OPS_MAIL_TRIES', 3),
         'backoff_seconds' => (string) env('OPS_MAIL_BACKOFF_SECONDS', '60,300,900'),
         'alerts_on_failure' => (bool) env('OPS_MAIL_ALERTS_ON_FAILURE', true),
+    ],
+
+    'alerts' => [
+        'operational_email_recipients' => (string) env('OPS_OPERATIONAL_ALERTS_EMAILS', ''),
+        'operational_dedupe_minutes' => (int) env('OPS_OPERATIONAL_ALERTS_DEDUPE_MINUTES', 360),
     ],
 ];

@@ -327,6 +327,84 @@
     </div>
   </div>
 
+  {{-- Alertas operativas --}}
+  <div class="grid gap-3 lg:grid-cols-2">
+    <div class="card reveal-item">
+      <div class="card-head">
+        <div>
+          <div class="font-extrabold">Alertas pedidos demorados</div>
+          <div class="text-xs text-zinc-500">Mas de {{ (int)($orderStaleHours ?? 24) }} h en pendiente/confirmado/preparando.</div>
+        </div>
+        <a class="btn-outline btn-sm h-10 w-full justify-center sm:w-auto" href="{{ route('admin.orders.index') }}">Ir a pedidos</a>
+      </div>
+      <div class="card-body">
+        <div class="mb-3 text-sm text-zinc-700">
+          Total con alerta:
+          <span class="font-black {{ (int)($ordersStaleCount ?? 0) > 0 ? 'text-rose-700' : 'text-zinc-900' }}">{{ (int)($ordersStaleCount ?? 0) }}</span>
+        </div>
+        @if(empty($ordersStaleList) || $ordersStaleList->count() === 0)
+          <div class="text-sm text-zinc-600">Sin pedidos demorados. Todo ok.</div>
+        @else
+          <div class="space-y-2">
+            @foreach($ordersStaleList as $o)
+              @php $st = (string)($o->status ?? 'pendiente'); @endphp
+              <a href="{{ route('admin.orders.show', $o) }}" class="block rounded-2xl border border-zinc-100 bg-white px-3 py-2 hover:bg-zinc-50">
+                <div class="flex items-center justify-between gap-2">
+                  <div class="font-black text-zinc-900">Pedido #{{ $o->id }}</div>
+                  <span class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold {{ $badgeOrder($st) }}">
+                    {{ $orderStatuses[$st] ?? $st }}
+                  </span>
+                </div>
+                <div class="mt-1 text-xs text-zinc-500">
+                  {{ $o->created_at?->diffForHumans() }} | {{ $o->pickup_name ?: 'Cliente sin nombre' }}
+                </div>
+              </a>
+            @endforeach
+          </div>
+        @endif
+      </div>
+    </div>
+
+    <div class="card reveal-item">
+      <div class="card-head">
+        <div>
+          <div class="font-extrabold">Alertas reparaciones demoradas</div>
+          <div class="text-xs text-zinc-500">Mas de {{ (int)($repairStaleDays ?? 3) }} dias en estados activos.</div>
+        </div>
+        <a class="btn-outline btn-sm h-10 w-full justify-center sm:w-auto" href="{{ route('admin.repairs.index') }}">Ir a reparaciones</a>
+      </div>
+      <div class="card-body">
+        <div class="mb-3 text-sm text-zinc-700">
+          Total con alerta:
+          <span class="font-black {{ (int)($repairsStaleCount ?? 0) > 0 ? 'text-rose-700' : 'text-zinc-900' }}">{{ (int)($repairsStaleCount ?? 0) }}</span>
+        </div>
+        @if(empty($repairsStaleList) || $repairsStaleList->count() === 0)
+          <div class="text-sm text-zinc-600">Sin reparaciones demoradas. Todo ok.</div>
+        @else
+          <div class="space-y-2">
+            @foreach($repairsStaleList as $r)
+              @php
+                $rst = (string)($r->status ?? 'received');
+                $title = $r->code ?: ('#'.$r->id);
+              @endphp
+              <a href="{{ route('admin.repairs.show', $r) }}" class="block rounded-2xl border border-zinc-100 bg-white px-3 py-2 hover:bg-zinc-50">
+                <div class="flex items-center justify-between gap-2">
+                  <div class="font-black text-zinc-900">Reparacion {{ $title }}</div>
+                  <span class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold {{ $badgeRepair($rst) }}">
+                    {{ $repairStatuses[$rst] ?? $rst }}
+                  </span>
+                </div>
+                <div class="mt-1 text-xs text-zinc-500">
+                  {{ $r->created_at?->diffForHumans() }} | {{ $r->customer_name ?: 'Cliente sin nombre' }}
+                </div>
+              </a>
+            @endforeach
+          </div>
+        @endif
+      </div>
+    </div>
+  </div>
+
   {{-- Charts --}}
     <div class="flex items-center justify-between gap-3">
       <div>

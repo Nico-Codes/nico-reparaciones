@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BusinessSetting;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Repair;
@@ -141,6 +142,33 @@ class AdminDashboardController extends Controller
             ->where('status', 'waiting_approval')
             ->where('created_at', '<', now()->copy()->subHours(48))
             ->count();
+
+        $orderStaleHours = max(1, min(720, (int) BusinessSetting::getValue('ops_alert_order_stale_hours', '24')));
+        $repairStaleDays = max(1, min(180, (int) BusinessSetting::getValue('ops_alert_repair_stale_days', '3')));
+        $orderStaleStatuses = ['pendiente', 'confirmado', 'preparando'];
+        $repairStaleStatuses = ['received', 'diagnosing', 'waiting_approval', 'repairing'];
+
+        $ordersStaleQuery = Order::query()
+            ->whereIn('status', $orderStaleStatuses)
+            ->where('created_at', '<', now()->copy()->subHours($orderStaleHours));
+
+        $ordersStaleCount = (int) (clone $ordersStaleQuery)->count();
+        $ordersStaleList = (clone $ordersStaleQuery)
+            ->select(['id', 'status', 'pickup_name', 'created_at'])
+            ->latest('created_at')
+            ->limit(6)
+            ->get();
+
+        $repairsStaleQuery = Repair::query()
+            ->whereIn('status', $repairStaleStatuses)
+            ->where('created_at', '<', now()->copy()->subDays($repairStaleDays));
+
+        $repairsStaleCount = (int) (clone $repairsStaleQuery)->count();
+        $repairsStaleList = (clone $repairsStaleQuery)
+            ->select(['id', 'code', 'status', 'customer_name', 'created_at'])
+            ->latest('created_at')
+            ->limit(6)
+            ->get();
 
         $orderCounts = Order::query()
             ->selectRaw('status, COUNT(*) as c')
@@ -317,6 +345,12 @@ class AdminDashboardController extends Controller
             'avgRepairTurnaroundDeltaPct' => $avgRepairTurnaroundDeltaPct,
             'waitingApprovalCount' => $waitingApprovalCount,
             'waitingApprovalOver48h' => $waitingApprovalOver48h,
+            'orderStaleHours' => $orderStaleHours,
+            'repairStaleDays' => $repairStaleDays,
+            'ordersStaleCount' => $ordersStaleCount,
+            'repairsStaleCount' => $repairsStaleCount,
+            'ordersStaleList' => $ordersStaleList,
+            'repairsStaleList' => $repairsStaleList,
 
             'ordersTotal' => $ordersTotal,
             'ordersActive' => $ordersActive,

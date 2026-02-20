@@ -3,9 +3,12 @@
 namespace Tests\Feature;
 
 use App\Mail\AdminDashboardWeeklyReportMail;
+use App\Mail\AdminOperationalAlertsMail;
 use App\Models\BusinessSetting;
+use App\Models\Order;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
@@ -100,5 +103,46 @@ class AdminSettingsWeeklyReportTest extends TestCase
 
         $sendResponse = $this->actingAs($user)->post(route('admin.settings.reports.send'));
         $sendResponse->assertForbidden();
+
+        $sendOperationalResponse = $this->actingAs($user)->post(route('admin.settings.reports.operational_alerts.send'));
+        $sendOperationalResponse->assertForbidden();
+    }
+
+    public function test_admin_can_send_operational_alerts_now_from_settings_screen(): void
+    {
+        Mail::fake();
+        Carbon::setTestNow(Carbon::create(2026, 2, 20, 12, 0, 0));
+
+        try {
+            config()->set('ops.mail.async_enabled', false);
+            config()->set('ops.alerts.operational_email_recipients', 'ops@example.com');
+
+            $admin = User::factory()->create(['role' => 'admin']);
+            $customer = User::factory()->create();
+
+            BusinessSetting::updateOrCreate(['key' => 'ops_alert_order_stale_hours'], ['value' => '24']);
+
+            $order = Order::create([
+                'user_id' => $customer->id,
+                'status' => 'pendiente',
+                'payment_method' => 'local',
+                'total' => 2500,
+                'pickup_name' => 'Cliente alerta',
+                'pickup_phone' => '3415551234',
+            ]);
+            $order->forceFill([
+                'created_at' => now()->copy()->subHours(30),
+                'updated_at' => now()->copy()->subHours(30),
+            ])->saveQuietly();
+
+            $response = $this->actingAs($admin)->post(route('admin.settings.reports.operational_alerts.send'));
+
+            $response->assertRedirect();
+            $response->assertSessionHas('success');
+
+            Mail::assertSent(AdminOperationalAlertsMail::class);
+        } finally {
+            Carbon::setTestNow();
+        }
     }
 }

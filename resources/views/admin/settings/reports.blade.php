@@ -104,6 +104,16 @@
         <input type="hidden" name="weekly_report_range_days" value="{{ old('weekly_report_range_days', $weeklyReportRangeDays ?? 30) }}">
         <button class="btn-outline h-11 w-full justify-center sm:w-auto" type="submit">Enviar reporte ahora</button>
       </form>
+
+      <div class="rounded-2xl border border-zinc-200 bg-zinc-50 p-3 text-xs text-zinc-600">
+        Alertas operativas automaticas: se ejecuta <code>ops:operational-alerts-email</code> diariamente.
+        Si no configuras destinatarios especificos, se envian a admins o a los emails del reporte semanal.
+      </div>
+
+      <form method="POST" action="{{ route('admin.settings.reports.operational_alerts.send') }}" class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+        @csrf
+        <button class="btn-outline h-11 w-full justify-center sm:w-auto" type="submit">Enviar alerta operativa ahora</button>
+      </form>
     </div>
   </div>
 </div>
