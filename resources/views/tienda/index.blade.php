@@ -72,32 +72,34 @@
       <form method="GET" action="{{ $formAction }}" data-store-nav-form class="grid gap-3 md:grid-cols-12 md:items-end">
         <div class="md:col-span-7">
           <div class="text-xs font-black text-zinc-700">Buscar</div>
-          <div
-            class="relative mt-1"
-            data-store-search
-            data-store-suggestions-url="{{ route('store.suggestions') }}"
-            data-store-search-category="{{ $currentCategorySafe?->slug ?? '' }}"
-          >
-            <input
-              name="q"
-              value="{{ $qVal }}"
-              placeholder="Ej: iPhone, display, bateria..."
-              autocomplete="off"
-              data-store-search-input
-              class="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 pr-14 text-base font-semibold text-zinc-900 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-200/40 md:pr-4 sm:text-sm"
-            >
-
+          <div class="store-mobile-search-row mt-1">
             <div
-              class="absolute inset-x-0 top-full z-20 mt-2 hidden rounded-2xl border border-zinc-200 bg-white p-1 shadow-xl"
-              data-store-search-panel
-              aria-live="polite"
+              class="relative flex-1 min-w-0"
+              data-store-search
+              data-store-suggestions-url="{{ route('store.suggestions') }}"
+              data-store-search-category="{{ $currentCategorySafe?->slug ?? '' }}"
             >
-              <div class="max-h-64 overflow-y-auto" data-store-search-list></div>
+              <input
+                name="q"
+                value="{{ $qVal }}"
+                placeholder="Ej: iPhone, display, bateria..."
+                autocomplete="off"
+                data-store-search-input
+                class="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-base font-semibold text-zinc-900 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-200/40 sm:text-sm"
+              >
+
+              <div
+                class="absolute inset-x-0 top-full z-20 mt-2 hidden rounded-2xl border border-zinc-200 bg-white p-1 shadow-xl"
+                data-store-search-panel
+                aria-live="polite"
+              >
+                <div class="max-h-64 overflow-y-auto" data-store-search-list></div>
+              </div>
             </div>
 
             <button
               type="button"
-              class="store-mobile-sort-btn md:hidden absolute right-1 top-1"
+              class="store-mobile-sort-btn md:hidden"
               data-store-mobile-sort-toggle
               aria-label="Ordenar resultados"
               aria-expanded="false"
