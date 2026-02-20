@@ -26,7 +26,15 @@
     <div class="card overflow-hidden reveal-item">
       <div class="aspect-square bg-zinc-50 sm:aspect-[4/3]">
         @if($product->image_url)
-          <img src="{{ $product->image_url }}" alt="{{ $product->name }}" class="h-full w-full object-cover">
+          <img
+            src="{{ $product->image_url }}"
+            alt="{{ $product->name }}"
+            class="h-full w-full object-cover"
+            loading="eager"
+            fetchpriority="high"
+            decoding="async"
+            width="1200"
+            height="1200">
         @else
           <div class="flex h-full w-full items-center justify-center text-sm font-black text-zinc-400">
             Sin imagen

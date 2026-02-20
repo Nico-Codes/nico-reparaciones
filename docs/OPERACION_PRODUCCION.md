@@ -221,7 +221,42 @@ php artisan up
 php artisan ops:health-check --strict
 ```
 
-## 7. Operacion continua
+## 7. Performance de servidor web (Apache/Nginx)
+
+Objetivo: mejorar TTFB percibido y carga inicial sin tocar logica de negocio.
+
+- Activar compresion (`gzip`/`brotli`) para `css/js/json/svg`.
+- Cache largo para assets versionados (`public/build/*`): `Cache-Control: public, max-age=31536000, immutable`.
+- HTML/respuestas dinamicas: `no-store` (evita cache de sesiones/panel).
+
+En Apache (este proyecto) ya se agrego en `public/.htaccess`:
+
+- `mod_deflate` (compresion)
+- `mod_expires` (TTL por tipo de archivo)
+- `mod_headers` (cache headers + `Vary: Accept-Encoding`)
+
+Si migras a Nginx, replica la misma estrategia de headers.
+
+### OPcache (PHP)
+
+Recomendado en produccion para bajar latencia en PHP:
+
+```ini
+opcache.enable=1
+opcache.enable_cli=0
+opcache.memory_consumption=192
+opcache.interned_strings_buffer=16
+opcache.max_accelerated_files=20000
+opcache.validate_timestamps=1
+opcache.revalidate_freq=2
+```
+
+Notas:
+
+- En hosting compartido suele venir activo por defecto.
+- En VPS propio, aplicar en `php.ini` y reiniciar PHP-FPM/Apache.
+
+## 8. Operacion continua
 
 - Revisar `storage/logs` diariamente (errores 5xx, auth y DB).
 - Rotar backups y verificar espacio en disco.

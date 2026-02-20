@@ -203,7 +203,14 @@
             <div class="product-card product-card-featured reveal-item">
               <a class="product-image" href="{{ route('store.product', $product->slug) }}">
                 @if($img)
-                  <img src="{{ $img }}" alt="{{ $product->name }}">
+                  <img
+                    src="{{ $img }}"
+                    alt="{{ $product->name }}"
+                    loading="{{ $loop->first ? 'eager' : 'lazy' }}"
+                    fetchpriority="{{ $loop->first ? 'high' : 'low' }}"
+                    decoding="async"
+                    width="640"
+                    height="640">
                 @else
                   <div class="product-image-placeholder">Sin imagen</div>
                 @endif
@@ -268,7 +275,14 @@
           <div class="product-card product-card-grid reveal-item">
             <a class="product-image" href="{{ route('store.product', $product->slug) }}">
               @if($img)
-                <img src="{{ $img }}" alt="{{ $product->name }}">
+                <img
+                  src="{{ $img }}"
+                  alt="{{ $product->name }}"
+                  loading="lazy"
+                  fetchpriority="low"
+                  decoding="async"
+                  width="640"
+                  height="640">
               @else
                 <div class="product-image-placeholder">Sin imagen</div>
               @endif

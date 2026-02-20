@@ -10,7 +10,9 @@ declare global {
 }
 
 window.NR_APP_VERSION = 'react-islands-core-v1';
-console.log('[NR] app.ts cargado:', window.NR_APP_VERSION);
+if (import.meta.env.DEV) {
+  console.log('[NR] app.ts cargado:', window.NR_APP_VERSION);
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   try {
