@@ -46,7 +46,81 @@ export default function CartCheckoutEnhancements() {
 
     const checkoutForm = document.querySelector<HTMLFormElement>('[data-checkout-form]');
     if (checkoutForm) {
+      const paymentPreview = document.querySelector<HTMLElement>('[data-checkout-payment-preview]');
+      const paymentLabels: Record<string, string> = {
+        local: 'Pago en el local',
+        mercado_pago: 'Mercado Pago',
+        transferencia: 'Transferencia',
+      };
+
+      const delegateNameInput = checkoutForm.querySelector<HTMLInputElement>('[data-checkout-delegate-name]');
+      const delegatePhoneInput = checkoutForm.querySelector<HTMLInputElement>('[data-checkout-delegate-phone]');
+      const validationAlert = checkoutForm.querySelector<HTMLElement>('[data-checkout-validation-alert]');
+
+      const phoneRegex = /^(?=(?:\D*\d){8,15}\D*$)[0-9+()\s-]{8,30}$/;
+
+      const setValidationAlert = (message: string | null) => {
+        if (!validationAlert) return;
+        if (!message) {
+          validationAlert.classList.add('hidden');
+          validationAlert.textContent = '';
+          return;
+        }
+        validationAlert.textContent = message;
+        validationAlert.classList.remove('hidden');
+      };
+
+      const normalize = (value: string | null | undefined) => String(value || '').trim();
+
+      const validateDelegateSection = (): string | null => {
+        const nameValue = normalize(delegateNameInput?.value);
+        const phoneValue = normalize(delegatePhoneInput?.value);
+
+        if (nameValue === '' && phoneValue === '') return null;
+        if (nameValue === '' || phoneValue === '') {
+          return 'Para retiro por tercero, completa nombre y telefono de quien retira.';
+        }
+        if (!phoneRegex.test(phoneValue)) {
+          return 'El telefono de quien retira no es valido. Usa entre 8 y 15 digitos.';
+        }
+        return null;
+      };
+
+      const updatePaymentPreview = () => {
+        if (!paymentPreview) return;
+        const selected = checkoutForm.querySelector<HTMLInputElement>('input[name="payment_method"]:checked');
+        const key = selected?.value || 'local';
+        paymentPreview.textContent = paymentLabels[key] || 'Pago en el local';
+      };
+
+      updatePaymentPreview();
+      checkoutForm.querySelectorAll<HTMLInputElement>('input[name="payment_method"]').forEach((input) => {
+        const onChange = () => updatePaymentPreview();
+        input.addEventListener('change', onChange);
+        cleanups.push(() => input.removeEventListener('change', onChange));
+      });
+
+      if (delegateNameInput || delegatePhoneInput) {
+        const onDelegateInput = () => {
+          setValidationAlert(validateDelegateSection());
+        };
+
+        delegateNameInput?.addEventListener('input', onDelegateInput);
+        delegatePhoneInput?.addEventListener('input', onDelegateInput);
+        cleanups.push(() => delegateNameInput?.removeEventListener('input', onDelegateInput));
+        cleanups.push(() => delegatePhoneInput?.removeEventListener('input', onDelegateInput));
+      }
+
       const onSubmit = (e: SubmitEvent) => {
+        const delegateError = validateDelegateSection();
+        if (delegateError) {
+          e.preventDefault();
+          setValidationAlert(delegateError);
+          validationAlert?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return;
+        }
+        setValidationAlert(null);
+
         const btn = checkoutForm.querySelector<HTMLButtonElement>('[data-checkout-submit]');
         if (!btn) return;
         if (btn.disabled || btn.getAttribute('aria-busy') === 'true') {

@@ -84,6 +84,8 @@
             @csrf
             <input type="hidden" name="checkout_token" value="{{ old('checkout_token', $checkoutToken ?? '') }}">
 
+            <div class="hidden rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-900" data-checkout-validation-alert role="alert"></div>
+
             <div class="grid gap-3">
               <label class="text-sm font-black text-zinc-700">Metodo de pago</label>
 
@@ -146,19 +148,20 @@
               <div class="mt-4 grid gap-3 sm:grid-cols-2">
                 <div>
                   <label for="pickup_delegate_name">Nombre de quien retira</label>
-                  <input id="pickup_delegate_name" name="pickup_delegate_name" value="{{ old('pickup_delegate_name') }}" placeholder="Ej: Juan Perez">
+                  <input id="pickup_delegate_name" name="pickup_delegate_name" value="{{ old('pickup_delegate_name') }}" placeholder="Ej: Juan Perez" maxlength="255" data-checkout-delegate-name>
                 </div>
 
                 <div>
                   <label for="pickup_delegate_phone">Telefono de quien retira</label>
-                  <input id="pickup_delegate_phone" name="pickup_delegate_phone" value="{{ old('pickup_delegate_phone') }}" placeholder="Ej: 341 555-0000">
+                  <input id="pickup_delegate_phone" name="pickup_delegate_phone" value="{{ old('pickup_delegate_phone') }}" placeholder="Ej: 341 555-0000" maxlength="30" data-checkout-delegate-phone>
                 </div>
               </div>
+              <div class="mt-2 text-xs text-zinc-500">Si cargas uno de los dos datos, debes completar el otro.</div>
             </details>
 
             <div>
               <label for="notes">Notas (opcional)</label>
-              <textarea id="notes" name="notes" class="min-h-28" placeholder="Ej: paso a retirar a la tarde">{{ old('notes') }}</textarea>
+              <textarea id="notes" name="notes" class="min-h-28" placeholder="Ej: paso a retirar a la tarde" maxlength="800">{{ old('notes') }}</textarea>
             </div>
 
             <div class="grid gap-2 sm:flex sm:flex-row">
@@ -205,6 +208,19 @@
         </div>
 
         <div class="card-body grid gap-4" data-summary-body style="display:none;">
+          <div class="rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm">
+            <div class="text-xs font-black uppercase tracking-wide text-zinc-500">Pago seleccionado</div>
+            <div class="mt-1 font-black text-zinc-900" data-checkout-payment-preview>
+              @if($pm === 'mercado_pago')
+                Mercado Pago
+              @elseif($pm === 'transferencia')
+                Transferencia
+              @else
+                Pago en el local
+              @endif
+            </div>
+          </div>
+
           <div class="grid gap-2">
             @foreach($cart as $item)
               @php

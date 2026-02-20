@@ -57,7 +57,7 @@ class OrderController extends Controller
 
         $data = $request->validate([
             'payment_method' => ['required', 'in:local,mercado_pago,transferencia'],
-            'notes' => ['nullable', 'string'],
+            'notes' => ['nullable', 'string', 'max:800'],
             'pickup_delegate_name' => ['nullable', 'string', 'max:255', 'required_with:pickup_delegate_phone'],
             'pickup_delegate_phone' => ['nullable', 'string', 'max:30', 'required_with:pickup_delegate_name', 'regex:/^(?=(?:\\D*\\d){8,15}\\D*$)[0-9+()\\s-]{8,30}$/'],
             'checkout_token' => ['required', 'string', 'max:64'],
