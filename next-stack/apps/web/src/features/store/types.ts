@@ -1,0 +1,34 @@
+export type StoreCategory = {
+  id: string;
+  name: string;
+  slug: string;
+  productsCount: number;
+};
+
+export type StoreProduct = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  price: number;
+  stock: number;
+  featured: boolean;
+  active: boolean;
+  sku: string | null;
+  barcode: string | null;
+  category: { id: string; name: string; slug: string } | null;
+  createdAt: string;
+};
+
+export type StoreProductsResponse = {
+  items: StoreProduct[];
+  meta: {
+    total: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
+    q: string;
+    category: string | null;
+    sort: 'relevance' | 'price_asc' | 'price_desc' | 'newest';
+  };
+};

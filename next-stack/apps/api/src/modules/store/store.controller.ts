@@ -1,0 +1,46 @@
+import { Controller, Get, NotFoundException, Param, Query } from '@nestjs/common';
+import { StoreService } from './store.service.js';
+
+@Controller('store')
+export class StoreController {
+  constructor(private readonly storeService: StoreService) {}
+
+  @Get('categories')
+  async categories() {
+    const items = await this.storeService.listCategories();
+    return { items };
+  }
+
+  @Get('products')
+  async products(
+    @Query('q') q?: string,
+    @Query('category') category?: string,
+    @Query('sort') sort?: string,
+    @Query('page') pageRaw?: string,
+    @Query('pageSize') pageSizeRaw?: string,
+  ) {
+    const page = pageRaw ? Number(pageRaw) : 1;
+    const pageSize = pageSizeRaw ? Number(pageSizeRaw) : 24;
+    return this.storeService.listProducts({
+      q,
+      category,
+      sort: this.normalizeSort(sort),
+      page: Number.isFinite(page) ? page : 1,
+      pageSize: Number.isFinite(pageSize) ? pageSize : 24,
+    });
+  }
+
+  @Get('products/:slug')
+  async productDetail(@Param('slug') slug: string) {
+    const product = await this.storeService.getProductBySlug(slug);
+    if (!product) {
+      throw new NotFoundException('Producto no encontrado');
+    }
+    return { item: product };
+  }
+
+  private normalizeSort(sort?: string): 'relevance' | 'price_asc' | 'price_desc' | 'newest' {
+    if (sort === 'price_asc' || sort === 'price_desc' || sort === 'newest') return sort;
+    return 'relevance';
+  }
+}

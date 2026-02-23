@@ -1,0 +1,19 @@
+{
+  "name": "nico-reparaciones-next-stack",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace @nico/api & npm run dev --workspace @nico/web",
+    "dev:api": "npm run dev --workspace @nico/api",
+    "dev:web": "npm run dev --workspace @nico/web",
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "db:generate": "npm run db:generate --workspace @nico/api",
+    "db:migrate": "npm run db:migrate --workspace @nico/api",
+    "db:studio": "npm run db:studio --workspace @nico/api"
+  }
+}
