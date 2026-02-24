@@ -1,4 +1,4 @@
-pimport { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import type { User, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 

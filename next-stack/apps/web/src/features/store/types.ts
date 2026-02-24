@@ -10,6 +10,9 @@ export type StoreProduct = {
   name: string;
   slug: string;
   description: string | null;
+  imageUrl?: string | null;
+  imagePath?: string | null;
+  imageLegacy?: string | null;
   price: number;
   stock: number;
   featured: boolean;

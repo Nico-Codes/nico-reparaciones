@@ -95,6 +95,9 @@ export class StoreService {
         name: p.name,
         slug: p.slug,
         description: p.description,
+        imagePath: p.imagePath,
+        imageLegacy: p.imageLegacy,
+        imageUrl: this.resolveProductImageUrl(p.imagePath, p.imageLegacy),
         price: Number(p.price),
         stock: p.stock,
         featured: p.featured,
@@ -166,6 +169,9 @@ export class StoreService {
         name: p.name,
         slug: p.slug,
         description: p.description,
+        imagePath: p.imagePath,
+        imageLegacy: p.imageLegacy,
+        imageUrl: this.resolveProductImageUrl(p.imagePath, p.imageLegacy),
         price: Number(p.price),
         stock: p.stock,
         featured: p.featured,
@@ -178,6 +184,24 @@ export class StoreService {
     } catch {
       return null;
     }
+  }
+
+  private resolveProductImageUrl(imagePath?: string | null, imageLegacy?: string | null) {
+    const base = (process.env.STORE_IMAGE_BASE_URL || 'http://127.0.0.1:8000').replace(/\/+$/, '');
+
+    if (imagePath && imagePath.trim() !== '') {
+      const path = imagePath.replace(/^\/+/, '');
+      return `${base}/storage/${path}`;
+    }
+
+    if (imageLegacy && imageLegacy.trim() !== '') {
+      if (/^https?:\/\//i.test(imageLegacy)) return imageLegacy;
+      const raw = imageLegacy.replace(/^\/+/, '');
+      const path = raw.includes('/') ? raw : `products/${raw}`;
+      return `${base}/storage/${path}`;
+    }
+
+    return null;
   }
 
   private orderBy(sort: NonNullable<ListProductsParams['sort']>) {

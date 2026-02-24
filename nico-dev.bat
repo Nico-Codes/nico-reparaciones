@@ -173,7 +173,7 @@ where npm >nul 2>&1 || (echo [ERROR] npm no encontrado. Instala Node.js LTS. & g
 
 netstat -ano | findstr /R /C:":%NEXT_API_PORT% .*LISTENING" >nul 2>&1
 if errorlevel 1 (
-    echo - Iniciando API NestJS (puerto %NEXT_API_PORT%)...
+    echo - Iniciando API NestJS ^(puerto %NEXT_API_PORT%^)...
     start "" /min cmd /c "cd /d ""%NEXT_STACK_ROOT%"" && npm run dev:api"
 ) else (
     echo - API ya activa en puerto %NEXT_API_PORT%.
@@ -181,7 +181,7 @@ if errorlevel 1 (
 
 netstat -ano | findstr /R /C:":%NEXT_WEB_PORT% .*LISTENING" >nul 2>&1
 if errorlevel 1 (
-    echo - Iniciando Web React/Vite (puerto %NEXT_WEB_PORT%)...
+    echo - Iniciando Web React/Vite ^(puerto %NEXT_WEB_PORT%^)...
     start "" /min cmd /c "cd /d ""%NEXT_STACK_ROOT%"" && npm run dev:web"
 ) else (
     echo - Web ya activa en puerto %NEXT_WEB_PORT%.
@@ -191,7 +191,7 @@ timeout /t 3 >nul
 echo.
 echo [OK] Next-stack iniciado.
 echo - API: http://127.0.0.1:%NEXT_API_PORT%/api/health
-echo - Web: http://127.0.0.1:%NEXT_WEB_PORT%
+echo - Web: http://localhost:%NEXT_WEB_PORT%
 echo [TIP] Si falla DB, revisa: npm --prefix "%NEXT_STACK_ROOT%" run db:check
 goto :end_ok
 

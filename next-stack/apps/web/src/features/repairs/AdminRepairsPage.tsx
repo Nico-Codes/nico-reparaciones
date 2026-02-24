@@ -394,10 +394,9 @@ export function AdminRepairsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50">
-      <div className="mx-auto max-w-6xl px-4 py-8">
-        <h1 className="text-2xl font-black tracking-tight">Admin Reparaciones (Next)</h1>
-        <p className="mt-1 text-sm text-zinc-600">Alta rápida + listado + cambio de estado (MVP).</p>
+    <div>
+        <h1 className="text-2xl font-black tracking-tight">Admin reparaciones</h1>
+        <p className="mt-1 text-sm text-zinc-600">Alta rapida, listado, filtros y detalle editable.</p>
 
         {error ? <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">{error}</div> : null}
 
@@ -710,7 +709,6 @@ export function AdminRepairsPage() {
             </div>
           </section>
         </div>
-      </div>
     </div>
   );
 }
