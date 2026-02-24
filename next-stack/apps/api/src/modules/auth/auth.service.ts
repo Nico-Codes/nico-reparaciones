@@ -57,7 +57,7 @@ export class AuthService {
         to: user.email,
         vars: {
           user_name: user.name,
-          verify_url: `${process.env.APP_URL ?? 'http://localhost:5174'}/auth/verify-email?token=${verification.rawToken}`,
+          verify_url: `${this.getWebBaseUrl()}/auth/verify-email?token=${verification.rawToken}`,
         },
       });
     }
@@ -135,7 +135,7 @@ export class AuthService {
         to: user.email,
         vars: {
           user_name: user.name,
-          verify_url: `${process.env.APP_URL ?? 'http://localhost:5174'}/auth/verify-email?token=${verification.rawToken}`,
+          verify_url: `${this.getWebBaseUrl()}/auth/verify-email?token=${verification.rawToken}`,
         },
       });
     }
@@ -193,7 +193,7 @@ export class AuthService {
         to: user.email,
         vars: {
           user_name: user.name,
-          reset_url: `${process.env.APP_URL ?? 'http://localhost:5174'}/auth/reset-password?token=${reset.rawToken}`,
+          reset_url: `${this.getWebBaseUrl()}/auth/reset-password?token=${reset.rawToken}`,
         },
       });
     }
@@ -356,12 +356,26 @@ export class AuthService {
 
   private isPreviewEnabled() {
     const env = (process.env.NODE_ENV ?? '').toLowerCase();
+    const explicit = (process.env.MAIL_PREVIEW_TOKENS ?? '').trim();
+    if (explicit === '1' || explicit.toLowerCase() === 'true') return true;
+    if (explicit === '0' || explicit.toLowerCase() === 'false') return false;
     return env !== 'production';
   }
 
   private isBootstrapAllowed() {
     const env = (process.env.NODE_ENV ?? '').toLowerCase();
+    const explicit = (process.env.ALLOW_ADMIN_BOOTSTRAP ?? '').trim();
+    if (explicit === '1' || explicit.toLowerCase() === 'true') return true;
+    if (explicit === '0' || explicit.toLowerCase() === 'false') return false;
     return env !== 'production';
+  }
+
+  private getWebBaseUrl() {
+    return (
+      (process.env.WEB_URL ?? '').trim() ||
+      (process.env.APP_URL ?? '').trim() ||
+      'http://localhost:5174'
+    ).replace(/\/$/, '');
   }
 
   private async createEmailVerificationToken(userId: string) {

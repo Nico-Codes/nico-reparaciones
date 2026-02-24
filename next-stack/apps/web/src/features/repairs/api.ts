@@ -1,5 +1,5 @@
 import { authStorage } from '@/features/auth/storage';
-import type { RepairItem } from './types';
+import type { PublicRepairLookupItem, RepairItem, RepairTimelineEvent } from './types';
 
 const API_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:3001';
 
@@ -18,21 +18,45 @@ async function authRequest<T>(path: string, init?: RequestInit): Promise<T> {
   return data as T;
 }
 
+async function publicRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(`${API_URL}/api${path}`, {
+    ...init,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(init?.headers ?? {}),
+    },
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error((data?.error?.message as string) || (data?.message as string) || `Error ${res.status}`);
+  return data as T;
+}
+
 export const repairsApi = {
+  publicLookup(input: { repairId: string; customerPhone: string }) {
+    return publicRequest<{ ok: boolean; found: boolean; message?: string; item?: PublicRepairLookupItem }>('/repairs/lookup', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  },
   my() {
     return authRequest<{ items: RepairItem[] }>('/repairs/my');
   },
   myDetail(id: string) {
     return authRequest<{ item: RepairItem }>('/repairs/my/' + encodeURIComponent(id));
   },
-  adminList(params?: { status?: string; q?: string }) {
+  adminList(params?: { status?: string; q?: string; from?: string; to?: string }) {
     const qs = new URLSearchParams();
     if (params?.status) qs.set('status', params.status);
     if (params?.q) qs.set('q', params.q);
+    if (params?.from) qs.set('from', params.from);
+    if (params?.to) qs.set('to', params.to);
     return authRequest<{ items: RepairItem[] }>('/repairs/admin' + (qs.size ? `?${qs.toString()}` : ''));
   },
+  adminStats() {
+    return authRequest<{ total: number; readyPickup: number; deliveredToday: number; byStatus: Record<string, number> }>('/repairs/admin/stats');
+  },
   adminDetail(id: string) {
-    return authRequest<{ item: RepairItem }>(`/repairs/admin/${encodeURIComponent(id)}`);
+    return authRequest<{ item: RepairItem; timeline?: RepairTimelineEvent[] }>(`/repairs/admin/${encodeURIComponent(id)}`);
   },
   adminCreate(input: Partial<RepairItem> & { customerName: string }) {
     return authRequest<RepairItem>('/repairs/admin', {

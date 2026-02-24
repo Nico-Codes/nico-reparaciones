@@ -29,6 +29,7 @@ import {
   resetPasswordSchema,
   verifyEmailSchema,
 } from '@nico/contracts';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service.js';
 import { CurrentUser } from './current-user.decorator.js';
 import type { AuthenticatedUser } from './auth.types.js';
@@ -40,12 +41,14 @@ export class AuthController {
   constructor(@Inject(AuthService) private readonly authService: AuthService) {}
 
   @Post('register')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @UsePipes(new ZodValidationPipe(registerSchema))
   async register(@Body() input: RegisterInput) {
     return this.authService.register(input);
   }
 
   @Post('login')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   @UsePipes(new ZodValidationPipe(loginSchema))
   async login(@Body() input: LoginInput) {
@@ -53,6 +56,7 @@ export class AuthController {
   }
 
   @Post('refresh')
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   @UsePipes(new ZodValidationPipe(refreshTokenSchema))
   async refresh(@Body() input: RefreshTokenInput) {
@@ -60,6 +64,7 @@ export class AuthController {
   }
 
   @Post('verify-email/request')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   async requestEmailVerification(@Headers('authorization') authorization?: string) {
     const token = this.extractBearerToken(authorization);
     if (!token) throw new UnauthorizedException('Token faltante');
@@ -67,12 +72,14 @@ export class AuthController {
   }
 
   @Post('verify-email/confirm')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @UsePipes(new ZodValidationPipe(verifyEmailSchema))
   async confirmEmailVerification(@Body() input: VerifyEmailInput) {
     return this.authService.confirmEmailVerification(input);
   }
 
   @Post('forgot-password')
+  @Throttle({ default: { limit: 8, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   @UsePipes(new ZodValidationPipe(forgotPasswordSchema))
   async forgotPassword(@Body() input: ForgotPasswordInput) {
@@ -80,6 +87,7 @@ export class AuthController {
   }
 
   @Post('reset-password')
+  @Throttle({ default: { limit: 8, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   @UsePipes(new ZodValidationPipe(resetPasswordSchema))
   async resetPassword(@Body() input: ResetPasswordInput) {
@@ -87,6 +95,7 @@ export class AuthController {
   }
 
   @Post('bootstrap-admin')
+  @Throttle({ default: { limit: 3, ttl: 300_000 } })
   @UsePipes(new ZodValidationPipe(bootstrapAdminSchema))
   async bootstrapAdmin(@Body() input: BootstrapAdminInput) {
     return this.authService.bootstrapAdmin(input);

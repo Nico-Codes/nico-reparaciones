@@ -16,3 +16,25 @@ export type RepairItem = {
   createdAt: string;
   updatedAt: string;
 };
+
+export type PublicRepairLookupItem = {
+  id: string;
+  customerName: string;
+  customerPhoneMasked: string | null;
+  deviceBrand: string | null;
+  deviceModel: string | null;
+  issueLabel: string | null;
+  status: string;
+  quotedPrice: number | null;
+  finalPrice: number | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type RepairTimelineEvent = {
+  id: string;
+  eventType: string;
+  message: string | null;
+  meta: unknown;
+  createdAt: string;
+};

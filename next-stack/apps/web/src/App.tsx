@@ -26,6 +26,7 @@ import { MyOrdersPage } from '@/features/orders/MyOrdersPage';
 import { OrderDetailPage } from '@/features/orders/OrderDetailPage';
 import { AdminRepairsPage } from '@/features/repairs/AdminRepairsPage';
 import { MyRepairsPage } from '@/features/repairs/MyRepairsPage';
+import { PublicRepairLookupPage } from '@/features/repairs/PublicRepairLookupPage';
 import { RepairDetailPage } from '@/features/repairs/RepairDetailPage';
 import { StorePage } from '@/features/store/StorePage';
 import { StoreProductDetailPage } from '@/features/store/StoreProductDetailPage';
@@ -43,6 +44,7 @@ function HomePage() {
           <nav className="hidden items-center gap-2 md:flex">
             <Link className="rounded-full px-3 py-1.5 text-sm font-semibold hover:bg-zinc-100" to="/">Inicio</Link>
             <Link className="rounded-full px-3 py-1.5 text-sm font-semibold hover:bg-zinc-100" to="/store">Tienda</Link>
+            <Link className="rounded-full px-3 py-1.5 text-sm font-semibold hover:bg-zinc-100" to="/reparacion">Consulta reparación</Link>
             <Link className="rounded-full px-3 py-1.5 text-sm font-semibold hover:bg-zinc-100" to="/cart">Carrito{cartCount ? ` (${cartCount})` : ''}</Link>
             <Link className="rounded-full px-3 py-1.5 text-sm font-semibold hover:bg-zinc-100" to="/orders">Mis pedidos</Link>
             <Link className="rounded-full px-3 py-1.5 text-sm font-semibold hover:bg-zinc-100" to="/repairs">Mis reparaciones</Link>
@@ -122,6 +124,8 @@ export default function App() {
       <Route path="/auth/bootstrap-admin" element={<BootstrapAdminPage />} />
       <Route path="/store" element={<StorePage />} />
       <Route path="/store/:slug" element={<StoreProductDetailPage />} />
+      <Route path="/reparacion" element={<PublicRepairLookupPage />} />
+      <Route path="/repair-lookup" element={<PublicRepairLookupPage />} />
       <Route path="/help" element={<HelpPage />} />
       <Route path="/cart" element={<CartPage />} />
       <Route path="/checkout" element={<RequireAuth><CheckoutPage /></RequireAuth>} />

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { deviceCatalogApi } from '@/features/deviceCatalog/api';
 import { repairsApi } from './api';
-import type { RepairItem } from './types';
+import type { RepairItem, RepairTimelineEvent } from './types';
 
 const STATUSES = ['RECEIVED', 'DIAGNOSING', 'WAITING_APPROVAL', 'REPAIRING', 'READY_PICKUP', 'DELIVERED', 'CANCELLED'] as const;
 
@@ -18,9 +18,15 @@ export function AdminRepairsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [q, setQ] = useState('');
+  const [debouncedQ, setDebouncedQ] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+  const [stats, setStats] = useState<{ total: number; readyPickup: number; deliveredToday: number; byStatus: Record<string, number> } | null>(null);
+  const [loadingStats, setLoadingStats] = useState(true);
   const [selectedRepairId, setSelectedRepairId] = useState<string | null>(null);
   const [selectedRepair, setSelectedRepair] = useState<RepairItem | null>(null);
+  const [selectedRepairTimeline, setSelectedRepairTimeline] = useState<RepairTimelineEvent[]>([]);
   const [loadingSelectedRepair, setLoadingSelectedRepair] = useState(false);
   const [savingSelectedRepair, setSavingSelectedRepair] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -83,7 +89,12 @@ export function AdminRepairsPage() {
     setLoading(true);
     setError('');
     try {
-      const res = await repairsApi.adminList({ q, status: statusFilter || undefined });
+      const res = await repairsApi.adminList({
+        q: debouncedQ,
+        status: statusFilter || undefined,
+        from: fromDate || undefined,
+        to: toDate || undefined,
+      });
       setItems(res.items);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error cargando reparaciones');
@@ -93,8 +104,25 @@ export function AdminRepairsPage() {
   }
 
   useEffect(() => {
+    const t = window.setTimeout(() => setDebouncedQ(q.trim()), 250);
+    return () => window.clearTimeout(t);
+  }, [q]);
+
+  useEffect(() => {
     void load();
-  }, [q, statusFilter]);
+  }, [debouncedQ, statusFilter, fromDate, toDate]);
+
+  async function loadStats() {
+    setLoadingStats(true);
+    try {
+      const res = await repairsApi.adminStats();
+      setStats(res);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error cargando estadisticas');
+    } finally {
+      setLoadingStats(false);
+    }
+  }
 
   async function loadRules() {
     setLoadingRules(true);
@@ -110,6 +138,10 @@ export function AdminRepairsPage() {
 
   useEffect(() => {
     void loadRules();
+  }, []);
+
+  useEffect(() => {
+    void loadStats();
   }, []);
 
   async function loadCatalog() {
@@ -165,6 +197,7 @@ export function AdminRepairsPage() {
   useEffect(() => {
     if (!selectedRepairId) {
       setSelectedRepair(null);
+      setSelectedRepairTimeline([]);
       return;
     }
     setLoadingSelectedRepair(true);
@@ -173,6 +206,7 @@ export function AdminRepairsPage() {
         const item = res.item;
         hydratingEditRef.current = true;
         setSelectedRepair(item);
+        setSelectedRepairTimeline(res.timeline ?? []);
         setEditBrandId(item.deviceBrandId || '');
         setEditModelId(item.deviceModelId || '');
         setEditIssueId(item.deviceIssueTypeId || '');
@@ -241,6 +275,7 @@ export function AdminRepairsPage() {
       setSelectedIssueId('');
       setPriceSuggestion(null);
       await load();
+      await loadStats();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error creando reparación');
     } finally {
@@ -253,6 +288,10 @@ export function AdminRepairsPage() {
       const res = await repairsApi.adminUpdateStatus(id, { status });
       setItems((prev) => prev.map((r) => (r.id === id ? res.item : r)));
       setSelectedRepair((prev) => (prev?.id === id ? res.item : prev));
+      void loadStats();
+      if (selectedRepairId === id) {
+        void repairsApi.adminDetail(id).then((detail) => setSelectedRepairTimeline(detail.timeline ?? [])).catch(() => {});
+      }
       if (selectedRepairId === id) {
         setEditForm((prev) => ({ ...prev, status: res.item.status }));
       }
@@ -283,8 +322,10 @@ export function AdminRepairsPage() {
       });
       setSelectedRepair(res.item);
       setItems((prev) => prev.map((r) => (r.id === res.item.id ? res.item : r)));
+      void loadStats();
+      void repairsApi.adminDetail(selectedRepairId).then((detail) => setSelectedRepairTimeline(detail.timeline ?? [])).catch(() => {});
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error guardando reparaciÃ³n');
+      setError(err instanceof Error ? err.message : 'Error guardando reparacion');
     } finally {
       setSavingSelectedRepair(false);
     }
@@ -359,6 +400,17 @@ export function AdminRepairsPage() {
         <p className="mt-1 text-sm text-zinc-600">Alta rápida + listado + cambio de estado (MVP).</p>
 
         {error ? <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">{error}</div> : null}
+
+        <section className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <StatCard label="Total" value={loadingStats ? '...' : String(stats?.total ?? 0)} />
+          <StatCard label="Listas para retiro" value={loadingStats ? '...' : String(stats?.readyPickup ?? 0)} tone="emerald" />
+          <StatCard label="Entregadas hoy" value={loadingStats ? '...' : String(stats?.deliveredToday ?? 0)} tone="sky" />
+          <StatCard
+            label="En curso"
+            value={loadingStats ? '...' : String(Math.max(0, (stats?.total ?? 0) - ((stats?.byStatus?.DELIVERED ?? 0) + (stats?.byStatus?.CANCELLED ?? 0))))}
+            tone="amber"
+          />
+        </section>
 
         <div className="mt-4 grid gap-4 xl:grid-cols-[420px_1fr]">
           <div className="space-y-4">
@@ -458,11 +510,48 @@ export function AdminRepairsPage() {
 
           <section className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
             <div className="mb-3 flex flex-wrap gap-2">
-              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar cliente / modelo / falla..." className="h-10 flex-1 min-w-[220px] rounded-xl border border-zinc-200 px-3 text-sm" />
+              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar ID / cliente / telefono / modelo / falla..." className="h-10 flex-1 min-w-[220px] rounded-xl border border-zinc-200 px-3 text-sm" />
               <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="h-10 min-w-[200px] rounded-xl border border-zinc-200 px-3 text-sm">
                 <option value="">Todos los estados</option>
                 {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
+              <input
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                className="h-10 rounded-xl border border-zinc-200 px-3 text-sm"
+                aria-label="Desde"
+                title="Desde"
+              />
+              <input
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                className="h-10 rounded-xl border border-zinc-200 px-3 text-sm"
+                aria-label="Hasta"
+                title="Hasta"
+              />
+              {(fromDate || toDate) ? (
+                <button
+                  type="button"
+                  onClick={() => { setFromDate(''); setToDate(''); }}
+                  className="h-10 rounded-xl border border-zinc-200 bg-white px-3 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
+                >
+                  Limpiar fechas
+                </button>
+              ) : null}
+            </div>
+            <div className="mb-3 flex flex-wrap gap-2">
+              <StatusChip label="Todos" count={stats?.total ?? 0} active={statusFilter === ''} onClick={() => setStatusFilter('')} />
+              {STATUSES.map((s) => (
+                <StatusChip
+                  key={s}
+                  label={s}
+                  count={stats?.byStatus?.[s] ?? 0}
+                  active={statusFilter === s}
+                  onClick={() => setStatusFilter((prev) => (prev === s ? '' : s))}
+                />
+              ))}
             </div>
             {loading ? (
               <div className="rounded-xl border border-zinc-200 p-3 text-sm">Cargando...</div>
@@ -504,7 +593,7 @@ export function AdminRepairsPage() {
             <div className="mt-4 border-t border-zinc-200 pt-4">
               {!selectedRepairId ? (
                 <div className="rounded-xl border border-dashed border-zinc-300 p-3 text-sm text-zinc-600">
-                  SeleccionÃ¡ una reparaciÃ³n para ver y editar el detalle.
+                  Selecciona una reparacion para ver y editar el detalle.
                 </div>
               ) : loadingSelectedRepair ? (
                 <div className="rounded-xl border border-zinc-200 p-3 text-sm">Cargando detalle...</div>
@@ -514,7 +603,7 @@ export function AdminRepairsPage() {
                 <form onSubmit={saveSelectedRepair} className="space-y-3">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <div className="text-xs font-bold uppercase tracking-wide text-zinc-500">Detalle de reparaciÃ³n</div>
+                      <div className="text-xs font-bold uppercase tracking-wide text-zinc-500">Detalle de reparacion</div>
                       <div className="mt-1 text-sm font-black break-all text-zinc-900">{selectedRepair.id}</div>
                       <div className="text-xs text-zinc-500">{new Date(selectedRepair.createdAt).toLocaleString('es-AR')}</div>
                     </div>
@@ -530,19 +619,19 @@ export function AdminRepairsPage() {
 
                   <div className="grid gap-2 sm:grid-cols-2">
                     <Field label="Cliente *" value={editForm.customerName} onChange={(v) => setEditForm((p) => ({ ...p, customerName: v }))} required />
-                    <Field label="TelÃ©fono" value={editForm.customerPhone} onChange={(v) => setEditForm((p) => ({ ...p, customerPhone: v }))} />
+                    <Field label="Telefono" value={editForm.customerPhone} onChange={(v) => setEditForm((p) => ({ ...p, customerPhone: v }))} />
                   </div>
 
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                     <SelectField
-                      label="Marca (catÃ¡logo)"
+                      label="Marca (catalogo)"
                       value={editBrandId}
                       onChange={setEditBrandId}
                       options={brands.map((b) => ({ value: b.id, label: b.name }))}
                       placeholder="Seleccionar"
                     />
                     <SelectField
-                      label="Modelo (catÃ¡logo)"
+                      label="Modelo (catalogo)"
                       value={editModelId}
                       onChange={setEditModelId}
                       options={editModels.filter((m) => !editBrandId || m.brandId === editBrandId).map((m) => ({ value: m.id, label: m.name }))}
@@ -550,7 +639,7 @@ export function AdminRepairsPage() {
                       disabled={!editBrandId}
                     />
                     <SelectField
-                      label="Falla (catÃ¡logo)"
+                      label="Falla (catalogo)"
                       value={editIssueId}
                       onChange={setEditIssueId}
                       options={issues.map((i) => ({ value: i.id, label: i.name }))}
@@ -597,6 +686,25 @@ export function AdminRepairsPage() {
                       {savingSelectedRepair ? 'Guardando...' : 'Guardar cambios'}
                     </Button>
                   </div>
+
+                  <div className="rounded-xl border border-zinc-200 bg-zinc-50/70 p-3">
+                    <div className="mb-2 text-xs font-bold uppercase tracking-wide text-zinc-500">Historial</div>
+                    {selectedRepairTimeline.length === 0 ? (
+                      <div className="text-sm text-zinc-600">Sin eventos registrados.</div>
+                    ) : (
+                      <div className="space-y-2">
+                        {selectedRepairTimeline.map((ev) => (
+                          <div key={ev.id} className="rounded-lg border border-zinc-200 bg-white px-3 py-2">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <div className="text-xs font-black text-zinc-800">{ev.eventType}</div>
+                              <div className="text-[11px] text-zinc-500">{new Date(ev.createdAt).toLocaleString('es-AR')}</div>
+                            </div>
+                            {ev.message ? <div className="mt-1 text-sm text-zinc-700">{ev.message}</div> : null}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </form>
               )}
             </div>
@@ -613,6 +721,47 @@ function Field({ label, value, onChange, type = 'text', required = false }: { la
       <span className="mb-1 block text-sm font-bold text-zinc-700">{label}</span>
       <input type={type} value={value} onChange={(e) => onChange(e.target.value)} required={required} className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm" />
     </label>
+  );
+}
+
+function StatCard({ label, value, tone = 'zinc' }: { label: string; value: string; tone?: 'zinc' | 'emerald' | 'sky' | 'amber' }) {
+  const styles = {
+    zinc: 'border-zinc-200 bg-white text-zinc-900',
+    emerald: 'border-emerald-200 bg-emerald-50 text-emerald-900',
+    sky: 'border-sky-200 bg-sky-50 text-sky-900',
+    amber: 'border-amber-200 bg-amber-50 text-amber-900',
+  } as const;
+
+  return (
+    <div className={`rounded-2xl border p-4 shadow-sm ${styles[tone]}`}>
+      <div className="text-xs font-bold uppercase tracking-wide opacity-70">{label}</div>
+      <div className="mt-2 text-2xl font-black tracking-tight">{value}</div>
+    </div>
+  );
+}
+
+function StatusChip({
+  label,
+  count,
+  active,
+  onClick,
+}: {
+  label: string;
+  count: number;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold transition ${
+        active ? 'border-sky-300 bg-sky-50 text-sky-800' : 'border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300'
+      }`}
+    >
+      <span>{label}</span>
+      <span className={`rounded-full px-1.5 py-0.5 text-[10px] ${active ? 'bg-sky-100' : 'bg-zinc-100'}`}>{count}</span>
+    </button>
   );
 }
 

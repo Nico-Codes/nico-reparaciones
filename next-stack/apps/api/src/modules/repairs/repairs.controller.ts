@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Inject, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Inject, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { z } from 'zod';
 import { CurrentUser } from '../auth/current-user.decorator.js';
 import type { AuthenticatedUser } from '../auth/auth.types.js';
@@ -43,9 +43,28 @@ const updateRepairSchema = z.object({
   status: z.string().min(1).optional(),
 });
 
+const publicLookupSchema = z.object({
+  repairId: z.string().trim().min(6).max(191),
+  customerPhone: z.string().trim().min(6).max(60),
+});
+
+function zodBadRequest(parsed: z.SafeParseError<unknown>) {
+  return new BadRequestException({
+    message: 'Validacion invalida',
+    errors: parsed.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })),
+  });
+}
+
 @Controller('repairs')
 export class RepairsController {
   constructor(@Inject(RepairsService) private readonly repairsService: RepairsService) {}
+
+  @Post('lookup')
+  publicLookup(@Body() body: unknown) {
+    const parsed = publicLookupSchema.safeParse(body);
+    if (!parsed.success) throw zodBadRequest(parsed);
+    return this.repairsService.publicLookup(parsed.data.repairId, parsed.data.customerPhone);
+  }
 
   @Get('my')
   @UseGuards(JwtAuthGuard)
@@ -64,8 +83,20 @@ export class RepairsController {
   @Get('admin')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
-  adminList(@Query('status') status?: string, @Query('q') q?: string) {
-    return this.repairsService.adminList({ status, q });
+  adminList(
+    @Query('status') status?: string,
+    @Query('q') q?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    return this.repairsService.adminList({ status, q, from, to });
+  }
+
+  @Get('admin/stats')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  adminStats() {
+    return this.repairsService.adminStats();
   }
 
   @Get('admin/:id')
@@ -80,12 +111,7 @@ export class RepairsController {
   @Roles('ADMIN')
   adminCreate(@Body() body: unknown) {
     const parsed = createRepairSchema.safeParse(body);
-    if (!parsed.success) {
-      return {
-        message: 'Validación inválida',
-        errors: parsed.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })),
-      };
-    }
+    if (!parsed.success) throw zodBadRequest(parsed);
     return this.repairsService.create(parsed.data);
   }
 
@@ -94,12 +120,7 @@ export class RepairsController {
   @Roles('ADMIN')
   adminUpdateStatus(@Param('id') id: string, @Body() body: unknown) {
     const parsed = updateStatusSchema.safeParse(body);
-    if (!parsed.success) {
-      return {
-        message: 'Validación inválida',
-        errors: parsed.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })),
-      };
-    }
+    if (!parsed.success) throw zodBadRequest(parsed);
     return this.repairsService.adminUpdateStatus(id, parsed.data.status, parsed.data.finalPrice, parsed.data.notes);
   }
 
@@ -108,12 +129,8 @@ export class RepairsController {
   @Roles('ADMIN')
   adminUpdate(@Param('id') id: string, @Body() body: unknown) {
     const parsed = updateRepairSchema.safeParse(body);
-    if (!parsed.success) {
-      return {
-        message: 'ValidaciÃ³n invÃ¡lida',
-        errors: parsed.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })),
-      };
-    }
+    if (!parsed.success) throw zodBadRequest(parsed);
     return this.repairsService.adminUpdate(id, parsed.data);
   }
 }
+

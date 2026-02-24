@@ -10,9 +10,16 @@
     "dev": "npm run dev --workspace @nico/api & npm run dev --workspace @nico/web",
     "dev:api": "npm run dev --workspace @nico/api",
     "dev:web": "npm run dev --workspace @nico/web",
+    "start:prod:api": "npm run start:prod --workspace @nico/api",
+    "start:prod:web": "npm run preview:prod --workspace @nico/web",
     "qa": "npm run typecheck && npm run build",
+    "qa:preprod": "npm run deploy:check && npm run qa && npm run smoke:web",
+    "qa:full": "npm run env:check && npm run qa:backend:full && npm run smoke:web",
+    "qa:frontend:e2e": "node ./scripts/qa-frontend-e2e.mjs",
     "qa:backend:full": "node ./scripts/qa-backend-full.mjs",
+    "smoke:web": "node ./scripts/smoke-web.mjs",
     "env:check": "node ./scripts/env-check.mjs",
+    "deploy:check": "node ./scripts/deploy-check.mjs",
     "smoke:api": "node ./scripts/smoke-api.mjs",
     "smoke:backend": "node ./scripts/smoke-backend.mjs",
     "build": "npm run build --workspaces --if-present",
@@ -20,8 +27,14 @@
     "db:generate": "npm run db:generate --workspace @nico/api",
     "db:check": "npm run db:check --workspace @nico/api",
     "db:migrate": "npm run db:migrate --workspace @nico/api",
+    "db:migrate:deploy": "npm run db:migrate:deploy --workspace @nico/api",
     "db:push": "npm run db:push --workspace @nico/api",
+    "db:push:skip-generate": "npm run db:push:skip-generate --workspace @nico/api",
     "db:studio": "npm run db:studio --workspace @nico/api",
-    "db:seed": "npm run db:seed --workspace @nico/api"
+    "db:seed": "npm run db:seed --workspace @nico/api",
+    "db:seed:demo": "npm run db:seed:demo --workspace @nico/api"
+  },
+  "devDependencies": {
+    "playwright": "^1.58.2"
   }
 }

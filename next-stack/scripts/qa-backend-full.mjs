@@ -105,7 +105,7 @@ async function main() {
   const migrateCode = await runNpmScript('db:migrate');
   if (migrateCode !== 0) {
     console.warn('[qa:backend:full] WARN: db:migrate falló. Intentando fallback con db:push (útil en PostgreSQL antiguos/locales).');
-    if ((await runNpmScript('db:push')) !== 0) process.exit(1);
+    if ((await runNpmScript('db:push:skip-generate')) !== 0) process.exit(1);
   }
 
   console.log('[qa:backend:full] Paso 4/6: db:seed');

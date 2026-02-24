@@ -3,6 +3,24 @@ import { PrismaClient, Prisma } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+function env(name: string) {
+  return (process.env[name] ?? '').trim();
+}
+
+function isTruthy(value: string) {
+  return ['1', 'true', 'yes', 'on'].includes(value.toLowerCase());
+}
+
+function assertSeedAllowed() {
+  const nodeEnv = env('NODE_ENV').toLowerCase();
+  const allowDemoSeed = isTruthy(env('ALLOW_DEMO_SEED'));
+  if (nodeEnv === 'production' && !allowDemoSeed) {
+    throw new Error(
+      'Seed demo bloqueado en producción. Si es intencional, seteá ALLOW_DEMO_SEED=1 temporalmente.',
+    );
+  }
+}
+
 function slugify(input: string) {
   return input
     .normalize('NFD')
@@ -260,6 +278,7 @@ async function seedSettings() {
 }
 
 async function main() {
+  assertSeedAllowed();
   console.log('[seed] iniciando...');
   await seedCategoriesAndProducts();
   await seedDeviceCatalogAndPricing();
