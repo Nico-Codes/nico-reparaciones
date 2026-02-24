@@ -9,6 +9,11 @@ REM   1) Doble click en este .bat (menu interactivo)
 REM   2) O por consola:
 REM      - nico-dev.bat setup   (primera vez / PC nueva)
 REM      - nico-dev.bat start   (iniciar entorno + worker de cola mail si aplica)
+REM      - nico-dev.bat next-setup   (setup del stack migrado React/Nest/Prisma)
+REM      - nico-dev.bat next-start   (iniciar API + Web del next-stack)
+REM      - nico-dev.bat next-stop    (detener API/Web del next-stack)
+REM      - nico-dev.bat next-qa      (QA full del next-stack)
+REM      - nico-dev.bat next-preprod (checks preproduccion del next-stack)
 REM      - nico-dev.bat stop    (detener entorno)
 REM      - nico-dev.bat local-ready
 REM      - nico-dev.bat e2e
@@ -39,6 +44,10 @@ set "NGROK_EXE=D:\Descargas\ngrok-v3-stable-windows-amd64\ngrok.exe"
 set "APP_HOST=127.0.0.1"
 set "APP_PORT=8000"
 set "VITE_PORT=5173"
+set "NEXT_STACK_ROOT=%PROJECT_ROOT%next-stack"
+set "NEXT_API_PORT=3001"
+set "NEXT_WEB_PORT=5174"
+set "NEXT_WEB_PREVIEW_PORT=4174"
 set "NGROK_API_PORT=4040"
 set "MAILPIT_EXE=%PROJECT_ROOT%tools\mailpit\mailpit.exe"
 set "MAILPIT_SMTP_PORT=1025"
@@ -50,6 +59,11 @@ set "MAILPIT_PID_FILE=%DEV_RUNTIME_DIR%\mailpit.pid"
 if /I "%~1"=="setup" goto :setup
 if /I "%~1"=="start" goto :start
 if /I "%~1"=="stop" goto :stop
+if /I "%~1"=="next-setup" goto :next_setup
+if /I "%~1"=="next-start" goto :next_start
+if /I "%~1"=="next-stop" goto :next_stop
+if /I "%~1"=="next-qa" goto :next_qa
+if /I "%~1"=="next-preprod" goto :next_preprod
 if /I "%~1"=="local-ready" goto :local_ready
 if /I "%~1"=="e2e" goto :e2e_ready
 if /I "%~1"=="e2e-full" set "RUN_E2E_FULL=1" & goto :e2e_ready
@@ -61,6 +75,7 @@ if /I "%~1"=="help" goto :help
 :menu
 echo.
 echo ================= NicoReparaciones =================
+echo [Stack Laravel legacy]
 echo 1^) Setup inicial (primera vez / PC nueva)
 echo 2^) Iniciar entorno (MySQL + Laravel + Vite + Mailpit + queue + ngrok)
 echo 3^) Detener entorno
@@ -69,10 +84,22 @@ echo 5^) E2E critico
 echo 6^) E2E full
 echo 7^) Preflight produccion (estricto)
 echo 8^) Project ready (local ready + e2e critico)
+echo.
+echo [Next Stack migrado]
+echo 9^) Next setup (npm + prisma checks)
+echo A^) Next start (API + Web)
+echo B^) Next stop
+echo C^) Next QA full
+echo D^) Next preprod (deploy-check + qa:preprod)
 echo Q^) Salir
 echo ================================================
-choice /C 12345678Q /N /M "Selecciona opcion [1/2/3/4/5/6/7/8/Q]: "
-if errorlevel 9 goto :end_ok
+choice /C 123456789ABCDQ /N /M "Selecciona opcion [1-9,A-D,Q]: "
+if errorlevel 14 goto :end_ok
+if errorlevel 13 goto :next_preprod
+if errorlevel 12 goto :next_qa
+if errorlevel 11 goto :next_stop
+if errorlevel 10 goto :next_start
+if errorlevel 9 goto :next_setup
 if errorlevel 8 goto :project_ready
 if errorlevel 7 goto :prod_preflight
 if errorlevel 6 set "RUN_E2E_FULL=1" & goto :e2e_ready
@@ -88,12 +115,118 @@ echo Uso:
 echo   nico-dev.bat setup
 echo   nico-dev.bat start
 echo   nico-dev.bat stop
+echo   nico-dev.bat next-setup
+echo   nico-dev.bat next-start
+echo   nico-dev.bat next-stop
+echo   nico-dev.bat next-qa
+echo   nico-dev.bat next-preprod
 echo   nico-dev.bat local-ready
 echo   nico-dev.bat e2e
 echo   nico-dev.bat e2e-full
 echo   nico-dev.bat prod-preflight
 echo   nico-dev.bat project-ready
 echo   nico-dev.bat project-ready-full
+goto :end_ok
+
+:next_setup
+echo.
+echo [NEXT-SETUP] Preparando next-stack (React + Nest + Prisma)...
+if not exist "%NEXT_STACK_ROOT%\package.json" (
+    echo [ERROR] No se encontro next-stack en: %NEXT_STACK_ROOT%
+    goto :end_fail
+)
+where npm >nul 2>&1 || (echo [ERROR] npm no encontrado. Instala Node.js LTS. & goto :end_fail)
+
+if not exist "%NEXT_STACK_ROOT%\.env" (
+    if exist "%NEXT_STACK_ROOT%\.env.example" (
+        echo - Creando next-stack\.env desde .env.example...
+        copy /Y "%NEXT_STACK_ROOT%\.env.example" "%NEXT_STACK_ROOT%\.env" >nul || (echo [ERROR] No se pudo crear next-stack\.env & goto :end_fail)
+    ) else (
+        echo [WARN] No existe next-stack\.env.example. Crea next-stack\.env manualmente.
+    )
+) else (
+    echo - next-stack\.env ya existe.
+)
+
+echo - npm install (next-stack)
+call npm --prefix "%NEXT_STACK_ROOT%" install || goto :end_fail
+
+echo - Prisma generate (next-stack)
+call npm --prefix "%NEXT_STACK_ROOT%" run db:generate || goto :end_fail
+
+echo - Env check (next-stack)
+call npm --prefix "%NEXT_STACK_ROOT%" run env:check || goto :end_fail
+
+echo.
+echo [OK] Next setup completado.
+echo     Siguiente paso: nico-dev.bat next-start
+goto :end_ok
+
+:next_start
+echo.
+echo [NEXT-START] Iniciando API + Web del next-stack...
+if not exist "%NEXT_STACK_ROOT%\package.json" (
+    echo [ERROR] No se encontro next-stack en: %NEXT_STACK_ROOT%
+    goto :end_fail
+)
+where npm >nul 2>&1 || (echo [ERROR] npm no encontrado. Instala Node.js LTS. & goto :end_fail)
+
+netstat -ano | findstr /R /C:":%NEXT_API_PORT% .*LISTENING" >nul 2>&1
+if errorlevel 1 (
+    echo - Iniciando API NestJS (puerto %NEXT_API_PORT%)...
+    start "" /min cmd /c "cd /d ""%NEXT_STACK_ROOT%"" && npm run dev:api"
+) else (
+    echo - API ya activa en puerto %NEXT_API_PORT%.
+)
+
+netstat -ano | findstr /R /C:":%NEXT_WEB_PORT% .*LISTENING" >nul 2>&1
+if errorlevel 1 (
+    echo - Iniciando Web React/Vite (puerto %NEXT_WEB_PORT%)...
+    start "" /min cmd /c "cd /d ""%NEXT_STACK_ROOT%"" && npm run dev:web"
+) else (
+    echo - Web ya activa en puerto %NEXT_WEB_PORT%.
+)
+
+timeout /t 3 >nul
+echo.
+echo [OK] Next-stack iniciado.
+echo - API: http://127.0.0.1:%NEXT_API_PORT%/api/health
+echo - Web: http://127.0.0.1:%NEXT_WEB_PORT%
+echo [TIP] Si falla DB, revisa: npm --prefix "%NEXT_STACK_ROOT%" run db:check
+goto :end_ok
+
+:next_stop
+echo.
+echo [NEXT-STOP] Deteniendo next-stack (puertos %NEXT_API_PORT%, %NEXT_WEB_PORT%, %NEXT_WEB_PREVIEW_PORT%)...
+powershell -NoProfile -Command "$ports=@(%NEXT_API_PORT%,%NEXT_WEB_PORT%,%NEXT_WEB_PREVIEW_PORT%); $pids=Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object { $ports -contains $_.LocalPort } | Select-Object -ExpandProperty OwningProcess -Unique; foreach($pid in $pids){ Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue }" >nul 2>&1
+echo - Next-stack detenido (si estaba activo).
+goto :end_ok
+
+:next_qa
+echo.
+echo [NEXT-QA] Ejecutando QA full del next-stack...
+if not exist "%NEXT_STACK_ROOT%\package.json" (
+    echo [ERROR] No se encontro next-stack en: %NEXT_STACK_ROOT%
+    goto :end_fail
+)
+where npm >nul 2>&1 || (echo [ERROR] npm no encontrado. Instala Node.js LTS. & goto :end_fail)
+call npm --prefix "%NEXT_STACK_ROOT%" run qa:full || goto :end_fail
+echo.
+echo [OK] QA full completado.
+goto :end_ok
+
+:next_preprod
+echo.
+echo [NEXT-PREPROD] Ejecutando checks de preproduccion del next-stack...
+if not exist "%NEXT_STACK_ROOT%\package.json" (
+    echo [ERROR] No se encontro next-stack en: %NEXT_STACK_ROOT%
+    goto :end_fail
+)
+where npm >nul 2>&1 || (echo [ERROR] npm no encontrado. Instala Node.js LTS. & goto :end_fail)
+call npm --prefix "%NEXT_STACK_ROOT%" run deploy:check || goto :end_fail
+call npm --prefix "%NEXT_STACK_ROOT%" run qa:preprod || goto :end_fail
+echo.
+echo [OK] Next preprod completado.
 goto :end_ok
 
 :setup
