@@ -1,6 +1,7 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { CartService } from '../cart/cart.service.js';
+import { MailService } from '../mail/mail.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 type CheckoutInput = {
@@ -9,11 +10,17 @@ type CheckoutInput = {
   paymentMethod?: string | null;
 };
 
+type AdminListInput = {
+  status?: string;
+  q?: string;
+};
+
 @Injectable()
 export class OrdersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly cartService: CartService,
+    private readonly mailService: MailService,
   ) {}
 
   async checkout(input: CheckoutInput) {
@@ -71,6 +78,7 @@ export class OrdersService {
           },
         },
         include: {
+          user: { select: { id: true, name: true, email: true } },
           items: true,
         },
       });
@@ -86,6 +94,18 @@ export class OrdersService {
 
       return created;
     });
+
+    if ((order as any).user?.email) {
+      void this.mailService.sendTemplate({
+        templateKey: 'order_created',
+        to: (order as any).user.email,
+        vars: {
+          user_name: (order as any).user.name,
+          order_id: order.id,
+          order_total: `$${Number(order.total).toLocaleString('es-AR')}`,
+        },
+      });
+    }
 
     return this.serializeOrder(order);
   }
@@ -117,6 +137,66 @@ export class OrdersService {
     return { item: this.serializeOrder(order) };
   }
 
+  async adminOrders(params?: AdminListInput) {
+    const q = (params?.q ?? '').trim();
+    const status = this.normalizeStatus(params?.status);
+    const orders = await this.prisma.order.findMany({
+      where: {
+        ...(status ? { status } : {}),
+        ...(q
+          ? {
+              OR: [
+                { id: { contains: q, mode: 'insensitive' } },
+                { paymentMethod: { contains: q, mode: 'insensitive' } },
+                { user: { is: { name: { contains: q, mode: 'insensitive' } } } },
+                { user: { is: { email: { contains: q, mode: 'insensitive' } } } },
+                { items: { some: { nameSnapshot: { contains: q, mode: 'insensitive' } } } },
+              ],
+            }
+          : {}),
+      },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+        items: { orderBy: { createdAt: 'asc' } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
+    return { items: orders.map((o) => this.serializeOrder(o as any)) };
+  }
+
+  async adminOrderDetail(orderId: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+        items: { orderBy: { createdAt: 'asc' } },
+      },
+    });
+    if (!order) throw new NotFoundException('Pedido no encontrado');
+    return { item: this.serializeOrder(order as any) };
+  }
+
+  async adminUpdateStatus(orderId: string, statusRaw: string) {
+    const status = this.normalizeStatus(statusRaw) ?? 'PENDIENTE';
+    const order = await this.prisma.order.update({
+      where: { id: orderId },
+      data: { status },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+        items: { orderBy: { createdAt: 'asc' } },
+      },
+    });
+    return { item: this.serializeOrder(order as any) };
+  }
+
+  private normalizeStatus(statusRaw?: string) {
+    const value = (statusRaw ?? '').trim().toUpperCase();
+    if (!value) return null;
+    const allowed = new Set(['PENDIENTE', 'CONFIRMADO', 'PREPARANDO', 'LISTO_RETIRO', 'ENTREGADO', 'CANCELADO']);
+    return allowed.has(value) ? (value as any) : null;
+  }
+
   private serializeOrder(order: {
     id: string;
     status: string;
@@ -125,6 +205,11 @@ export class OrdersService {
     isQuickSale: boolean;
     createdAt: Date;
     updatedAt: Date;
+    user?: {
+      id: string;
+      name: string;
+      email: string;
+    } | null;
     items?: Array<{
       id: string;
       productId: string | null;
@@ -142,6 +227,13 @@ export class OrdersService {
       isQuickSale: order.isQuickSale,
       createdAt: order.createdAt.toISOString(),
       updatedAt: order.updatedAt.toISOString(),
+      user: order.user
+        ? {
+            id: order.user.id,
+            name: order.user.name,
+            email: order.user.email,
+          }
+        : null,
       items: (order.items ?? []).map((i) => ({
         id: i.id,
         productId: i.productId,

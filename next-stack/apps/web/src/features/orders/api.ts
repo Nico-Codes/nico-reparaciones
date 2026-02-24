@@ -34,4 +34,19 @@ export const ordersApi = {
   myOrder(id: string) {
     return authRequest<{ item: OrderItem }>('/orders/my/' + encodeURIComponent(id), { method: 'GET' });
   },
+  adminOrders(params?: { status?: string; q?: string }) {
+    const qs = new URLSearchParams();
+    if (params?.status) qs.set('status', params.status);
+    if (params?.q) qs.set('q', params.q);
+    return authRequest<{ items: OrderItem[] }>('/orders/admin' + (qs.size ? `?${qs.toString()}` : ''), { method: 'GET' });
+  },
+  adminOrder(id: string) {
+    return authRequest<{ item: OrderItem }>('/orders/admin/' + encodeURIComponent(id), { method: 'GET' });
+  },
+  adminUpdateStatus(id: string, status: string) {
+    return authRequest<{ item: OrderItem }>(`/orders/admin/${encodeURIComponent(id)}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
+  },
 };

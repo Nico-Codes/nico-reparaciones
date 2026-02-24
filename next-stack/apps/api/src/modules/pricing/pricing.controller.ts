@@ -9,6 +9,9 @@ const repairRuleSchema = z.object({
   name: z.string().trim().min(2).max(190),
   active: z.boolean().optional(),
   priority: z.number().int().min(-9999).max(9999).optional(),
+  deviceBrandId: z.string().trim().max(191).optional().nullable(),
+  deviceModelId: z.string().trim().max(191).optional().nullable(),
+  deviceIssueTypeId: z.string().trim().max(191).optional().nullable(),
   deviceBrand: z.string().trim().max(120).optional().nullable(),
   deviceModel: z.string().trim().max(120).optional().nullable(),
   issueLabel: z.string().trim().max(190).optional().nullable(),
@@ -55,10 +58,13 @@ export class PricingController {
 
   @Get('repairs/resolve')
   resolveRepairPrice(
+    @Query('deviceBrandId') deviceBrandId?: string,
+    @Query('deviceModelId') deviceModelId?: string,
+    @Query('deviceIssueTypeId') deviceIssueTypeId?: string,
     @Query('deviceBrand') deviceBrand?: string,
     @Query('deviceModel') deviceModel?: string,
     @Query('issueLabel') issueLabel?: string,
   ) {
-    return this.pricingService.resolveRepairPrice({ deviceBrand, deviceModel, issueLabel });
+    return this.pricingService.resolveRepairPrice({ deviceBrandId, deviceModelId, deviceIssueTypeId, deviceBrand, deviceModel, issueLabel });
   }
 }

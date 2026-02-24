@@ -17,6 +17,7 @@ import * as bcrypt from 'bcryptjs';
 import { createHash, randomBytes } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { UsersService } from './users.service.js';
+import { MailService } from '../mail/mail.service.js';
 
 export type JwtPayload = {
   sub: string;
@@ -30,6 +31,7 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     private readonly prisma: PrismaService,
+    private readonly mailService: MailService,
   ) {}
 
   async register(input: RegisterInput) {
@@ -48,6 +50,16 @@ export class AuthService {
 
     const tokens = await this.issueTokens(user.id, user.email, user.role);
     const verification = await this.createEmailVerificationToken(user.id);
+    if (verification.rawToken) {
+      void this.mailService.sendTemplate({
+        templateKey: 'verify_email',
+        to: user.email,
+        vars: {
+          user_name: user.name,
+          verify_url: `${process.env.APP_URL ?? 'http://localhost:5174'}/auth/verify-email?token=${verification.rawToken}`,
+        },
+      });
+    }
 
     return {
       user: this.usersService.toPublicUser(user),
@@ -116,6 +128,16 @@ export class AuthService {
     }
 
     const verification = await this.createEmailVerificationToken(user.id);
+    if (verification.rawToken) {
+      void this.mailService.sendTemplate({
+        templateKey: 'verify_email',
+        to: user.email,
+        vars: {
+          user_name: user.name,
+          verify_url: `${process.env.APP_URL ?? 'http://localhost:5174'}/auth/verify-email?token=${verification.rawToken}`,
+        },
+      });
+    }
     return {
       ok: true,
       status: 'pending',
@@ -164,6 +186,16 @@ export class AuthService {
     }
 
     const reset = await this.createPasswordResetToken(user.id);
+    if (reset.rawToken) {
+      void this.mailService.sendTemplate({
+        templateKey: 'reset_password',
+        to: user.email,
+        vars: {
+          user_name: user.name,
+          reset_url: `${process.env.APP_URL ?? 'http://localhost:5174'}/auth/reset-password?token=${reset.rawToken}`,
+        },
+      });
+    }
     return {
       ok: true,
       message: 'Si el email existe, se envio un enlace de recuperacion',
@@ -346,6 +378,7 @@ export class AuthService {
 
     return {
       expiresAt,
+      rawToken,
       previewToken: this.isPreviewEnabled() ? rawToken : null,
     };
   }
@@ -365,6 +398,7 @@ export class AuthService {
 
     return {
       expiresAt,
+      rawToken,
       previewToken: this.isPreviewEnabled() ? rawToken : null,
     };
   }

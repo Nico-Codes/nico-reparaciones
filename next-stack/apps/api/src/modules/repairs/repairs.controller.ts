@@ -10,6 +10,9 @@ import { RepairsService } from './repairs.service.js';
 const createRepairSchema = z.object({
   customerName: z.string().trim().min(2).max(190),
   customerPhone: z.string().trim().max(60).optional().nullable(),
+  deviceBrandId: z.string().trim().max(191).optional().nullable(),
+  deviceModelId: z.string().trim().max(191).optional().nullable(),
+  deviceIssueTypeId: z.string().trim().max(191).optional().nullable(),
   deviceBrand: z.string().trim().max(120).optional().nullable(),
   deviceModel: z.string().trim().max(120).optional().nullable(),
   issueLabel: z.string().trim().max(190).optional().nullable(),
@@ -23,6 +26,21 @@ const updateStatusSchema = z.object({
   status: z.string().min(1),
   finalPrice: z.number().nonnegative().optional().nullable(),
   notes: z.string().trim().max(2000).optional().nullable(),
+});
+
+const updateRepairSchema = z.object({
+  customerName: z.string().trim().min(2).max(190).optional(),
+  customerPhone: z.string().trim().max(60).optional().nullable(),
+  deviceBrandId: z.string().trim().max(191).optional().nullable(),
+  deviceModelId: z.string().trim().max(191).optional().nullable(),
+  deviceIssueTypeId: z.string().trim().max(191).optional().nullable(),
+  deviceBrand: z.string().trim().max(120).optional().nullable(),
+  deviceModel: z.string().trim().max(120).optional().nullable(),
+  issueLabel: z.string().trim().max(190).optional().nullable(),
+  notes: z.string().trim().max(2000).optional().nullable(),
+  quotedPrice: z.number().nonnegative().optional().nullable(),
+  finalPrice: z.number().nonnegative().optional().nullable(),
+  status: z.string().min(1).optional(),
 });
 
 @Controller('repairs')
@@ -83,5 +101,19 @@ export class RepairsController {
       };
     }
     return this.repairsService.adminUpdateStatus(id, parsed.data.status, parsed.data.finalPrice, parsed.data.notes);
+  }
+
+  @Patch('admin/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  adminUpdate(@Param('id') id: string, @Body() body: unknown) {
+    const parsed = updateRepairSchema.safeParse(body);
+    if (!parsed.success) {
+      return {
+        message: 'ValidaciÃ³n invÃ¡lida',
+        errors: parsed.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })),
+      };
+    }
+    return this.repairsService.adminUpdate(id, parsed.data);
   }
 }

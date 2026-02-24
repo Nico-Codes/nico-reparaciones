@@ -13,6 +13,11 @@ export type OrderItem = {
   total: number;
   paymentMethod: string | null;
   isQuickSale: boolean;
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+  } | null;
   createdAt: string;
   updatedAt: string;
   items: OrderLine[];

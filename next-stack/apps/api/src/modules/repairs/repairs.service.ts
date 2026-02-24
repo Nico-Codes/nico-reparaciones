@@ -1,10 +1,13 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, type Repair } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 type CreateRepairInput = {
   customerName: string;
   customerPhone?: string | null;
+  deviceBrandId?: string | null;
+  deviceModelId?: string | null;
+  deviceIssueTypeId?: string | null;
   deviceBrand?: string | null;
   deviceModel?: string | null;
   issueLabel?: string | null;
@@ -14,24 +17,33 @@ type CreateRepairInput = {
   userId?: string | null;
 };
 
+type UpdateRepairInput = Partial<Omit<CreateRepairInput, 'userId'>> & {
+  customerName?: string;
+  status?: string;
+};
+
 @Injectable()
 export class RepairsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(input: CreateRepairInput) {
+    const data: Prisma.RepairUncheckedCreateInput = {
+      userId: input.userId ?? null,
+      deviceBrandId: this.cleanNullable(input.deviceBrandId),
+      deviceModelId: this.cleanNullable(input.deviceModelId),
+      deviceIssueTypeId: this.cleanNullable(input.deviceIssueTypeId),
+      customerName: input.customerName.trim(),
+      customerPhone: this.cleanNullable(input.customerPhone),
+      deviceBrand: this.cleanNullable(input.deviceBrand),
+      deviceModel: this.cleanNullable(input.deviceModel),
+      issueLabel: this.cleanNullable(input.issueLabel),
+      notes: this.cleanNullable(input.notes),
+      quotedPrice: input.quotedPrice != null ? new Prisma.Decimal(input.quotedPrice) : null,
+      finalPrice: input.finalPrice != null ? new Prisma.Decimal(input.finalPrice) : null,
+      status: 'RECEIVED',
+    };
     const repair = await this.prisma.repair.create({
-      data: {
-        userId: input.userId ?? null,
-        customerName: input.customerName.trim(),
-        customerPhone: this.cleanNullable(input.customerPhone),
-        deviceBrand: this.cleanNullable(input.deviceBrand),
-        deviceModel: this.cleanNullable(input.deviceModel),
-        issueLabel: this.cleanNullable(input.issueLabel),
-        notes: this.cleanNullable(input.notes),
-        quotedPrice: input.quotedPrice != null ? new Prisma.Decimal(input.quotedPrice) : null,
-        finalPrice: input.finalPrice != null ? new Prisma.Decimal(input.finalPrice) : null,
-        status: 'RECEIVED',
-      },
+      data,
     });
 
     return this.serializeRepair(repair);
@@ -82,6 +94,30 @@ export class RepairsService {
     return { item: this.serializeRepair(repair) };
   }
 
+  async adminUpdate(id: string, input: UpdateRepairInput) {
+    const data: Prisma.RepairUncheckedUpdateInput = {};
+
+    if (input.customerName !== undefined) data.customerName = input.customerName.trim();
+    if (input.customerPhone !== undefined) data.customerPhone = this.cleanNullable(input.customerPhone);
+    if (input.deviceBrandId !== undefined) data.deviceBrandId = this.cleanNullable(input.deviceBrandId);
+    if (input.deviceModelId !== undefined) data.deviceModelId = this.cleanNullable(input.deviceModelId);
+    if (input.deviceIssueTypeId !== undefined) data.deviceIssueTypeId = this.cleanNullable(input.deviceIssueTypeId);
+    if (input.deviceBrand !== undefined) data.deviceBrand = this.cleanNullable(input.deviceBrand);
+    if (input.deviceModel !== undefined) data.deviceModel = this.cleanNullable(input.deviceModel);
+    if (input.issueLabel !== undefined) data.issueLabel = this.cleanNullable(input.issueLabel);
+    if (input.notes !== undefined) data.notes = this.cleanNullable(input.notes);
+    if (input.quotedPrice !== undefined) data.quotedPrice = input.quotedPrice == null ? null : new Prisma.Decimal(input.quotedPrice);
+    if (input.finalPrice !== undefined) data.finalPrice = input.finalPrice == null ? null : new Prisma.Decimal(input.finalPrice);
+    if (input.status !== undefined) data.status = this.normalizeStatus(input.status);
+
+    const repair = await this.prisma.repair.update({
+      where: { id },
+      data,
+    });
+
+    return { item: this.serializeRepair(repair) };
+  }
+
   async myRepairs(userId: string) {
     const items = await this.prisma.repair.findMany({
       where: { userId },
@@ -125,24 +161,13 @@ export class RepairsService {
       | 'CANCELLED';
   }
 
-  private serializeRepair(repair: {
-    id: string;
-    userId: string | null;
-    customerName: string;
-    customerPhone: string | null;
-    deviceBrand: string | null;
-    deviceModel: string | null;
-    issueLabel: string | null;
-    status: string;
-    quotedPrice: Prisma.Decimal | null;
-    finalPrice: Prisma.Decimal | null;
-    notes: string | null;
-    createdAt: Date;
-    updatedAt: Date;
-  }) {
+  private serializeRepair(repair: Repair) {
     return {
       id: repair.id,
       userId: repair.userId,
+      deviceBrandId: repair.deviceBrandId ?? null,
+      deviceModelId: repair.deviceModelId ?? null,
+      deviceIssueTypeId: repair.deviceIssueTypeId ?? null,
       customerName: repair.customerName,
       customerPhone: repair.customerPhone,
       deviceBrand: repair.deviceBrand,

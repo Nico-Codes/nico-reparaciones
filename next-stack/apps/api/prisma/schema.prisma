@@ -148,6 +148,9 @@ model OrderItem {
 model Repair {
   id            String       @id @default(cuid())
   userId        String?
+  deviceBrandId String?
+  deviceModelId String?
+  deviceIssueTypeId String?
   customerName  String
   customerPhone String?
   deviceBrand   String?
@@ -160,6 +163,10 @@ model Repair {
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
   user          User?        @relation(fields: [userId], references: [id])
+
+  @@index([deviceBrandId])
+  @@index([deviceModelId])
+  @@index([deviceIssueTypeId])
 }
 
 model RepairPricingRule {
@@ -167,6 +174,9 @@ model RepairPricingRule {
   name          String
   active        Boolean  @default(true)
   priority      Int      @default(0)
+  deviceBrandId String?
+  deviceModelId String?
+  deviceIssueTypeId String?
   deviceBrand   String?
   deviceModel   String?
   issueLabel    String?
@@ -177,4 +187,89 @@ model RepairPricingRule {
   updatedAt     DateTime @updatedAt
 
   @@index([active, priority])
+  @@index([deviceBrandId])
+  @@index([deviceModelId])
+  @@index([deviceIssueTypeId])
+}
+
+model DeviceBrand {
+  id        String        @id @default(cuid())
+  name      String
+  slug      String        @unique
+  active    Boolean       @default(true)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  models    DeviceModel[]
+
+  @@index([active])
+}
+
+model DeviceModel {
+  id         String      @id @default(cuid())
+  brandId    String
+  name       String
+  slug       String
+  active     Boolean     @default(true)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  brand      DeviceBrand @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@unique([brandId, slug])
+  @@index([brandId, active])
+}
+
+model DeviceIssueType {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([active])
+}
+
+model AppSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String?
+  group     String   @default("general")
+  label     String?
+  type      String   @default("text")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([group])
+}
+
+model WhatsAppLog {
+  id         String   @id @default(cuid())
+  channel    String   @default("general")
+  templateKey String?
+  targetType String?
+  targetId    String?
+  phone      String?
+  recipient  String?
+  status     String   @default("SENT")
+  message    String?
+  metaJson   String?
+  createdAt  DateTime @default(now())
+
+  @@index([channel, createdAt])
+  @@index([templateKey])
+  @@index([targetType, targetId])
+}
+
+model HelpFaqItem {
+  id        String   @id @default(cuid())
+  question  String
+  answer    String
+  category  String?  @default("general")
+  active    Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([active, sortOrder])
+  @@index([category])
 }

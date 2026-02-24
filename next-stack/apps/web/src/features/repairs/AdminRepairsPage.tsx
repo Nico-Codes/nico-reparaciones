@@ -1,16 +1,28 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { deviceCatalogApi } from '@/features/deviceCatalog/api';
 import { repairsApi } from './api';
 import type { RepairItem } from './types';
 
 const STATUSES = ['RECEIVED', 'DIAGNOSING', 'WAITING_APPROVAL', 'REPAIRING', 'READY_PICKUP', 'DELIVERED', 'CANCELLED'] as const;
 
 export function AdminRepairsPage() {
+  const hydratingEditRef = useRef(false);
+  const [brands, setBrands] = useState<Array<{ id: string; name: string; slug: string; active: boolean }>>([]);
+  const [models, setModels] = useState<Array<{ id: string; brandId: string; name: string; slug: string; active: boolean; brand: { id: string; name: string; slug: string } }>>([]);
+  const [issues, setIssues] = useState<Array<{ id: string; name: string; slug: string; active: boolean }>>([]);
+  const [selectedBrandId, setSelectedBrandId] = useState('');
+  const [selectedModelId, setSelectedModelId] = useState('');
+  const [selectedIssueId, setSelectedIssueId] = useState('');
   const [items, setItems] = useState<RepairItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [q, setQ] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [selectedRepairId, setSelectedRepairId] = useState<string | null>(null);
+  const [selectedRepair, setSelectedRepair] = useState<RepairItem | null>(null);
+  const [loadingSelectedRepair, setLoadingSelectedRepair] = useState(false);
+  const [savingSelectedRepair, setSavingSelectedRepair] = useState(false);
   const [saving, setSaving] = useState(false);
   const [resolvingPrice, setResolvingPrice] = useState(false);
   const [priceSuggestion, setPriceSuggestion] = useState<null | {
@@ -33,6 +45,10 @@ export function AdminRepairsPage() {
     notes: string | null;
   }>>([]);
   const [loadingRules, setLoadingRules] = useState(true);
+  const [editBrandId, setEditBrandId] = useState('');
+  const [editModelId, setEditModelId] = useState('');
+  const [editIssueId, setEditIssueId] = useState('');
+  const [editModels, setEditModels] = useState<Array<{ id: string; brandId: string; name: string; slug: string; active: boolean; brand: { id: string; name: string; slug: string } }>>([]);
   const [ruleForm, setRuleForm] = useState({
     name: '',
     priority: '0',
@@ -49,6 +65,17 @@ export function AdminRepairsPage() {
     deviceModel: '',
     issueLabel: '',
     quotedPrice: '',
+    notes: '',
+  });
+  const [editForm, setEditForm] = useState({
+    customerName: '',
+    customerPhone: '',
+    deviceBrand: '',
+    deviceModel: '',
+    issueLabel: '',
+    status: 'RECEIVED',
+    quotedPrice: '',
+    finalPrice: '',
     notes: '',
   });
 
@@ -85,6 +112,111 @@ export function AdminRepairsPage() {
     void loadRules();
   }, []);
 
+  async function loadCatalog() {
+    try {
+      const [brandsRes, issuesRes] = await Promise.all([deviceCatalogApi.brands(), deviceCatalogApi.issues()]);
+      setBrands(brandsRes.items.filter((b) => b.active));
+      setIssues(issuesRes.items.filter((i) => i.active));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error cargando catálogo');
+    }
+  }
+
+  async function loadModelsByBrand(brandId?: string) {
+    try {
+      const res = await deviceCatalogApi.models(brandId || undefined);
+      setModels(res.items.filter((m) => m.active));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error cargando modelos');
+    }
+  }
+
+  useEffect(() => {
+    void loadCatalog();
+    void loadModelsByBrand();
+  }, []);
+
+  async function loadEditModelsByBrand(brandId?: string) {
+    try {
+      const res = await deviceCatalogApi.models(brandId || undefined);
+      setEditModels(res.items.filter((m) => m.active));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error cargando modelos');
+    }
+  }
+
+  useEffect(() => {
+    setSelectedModelId('');
+    const selectedBrand = brands.find((b) => b.id === selectedBrandId);
+    setForm((prev) => ({ ...prev, deviceBrand: selectedBrand?.name ?? '' }));
+    void loadModelsByBrand(selectedBrandId || undefined);
+  }, [selectedBrandId]);
+
+  useEffect(() => {
+    const selectedModel = models.find((m) => m.id === selectedModelId);
+    setForm((prev) => ({ ...prev, deviceModel: selectedModel?.name ?? '' }));
+  }, [selectedModelId, models]);
+
+  useEffect(() => {
+    const selectedIssue = issues.find((i) => i.id === selectedIssueId);
+    setForm((prev) => ({ ...prev, issueLabel: selectedIssue?.name ?? '' }));
+  }, [selectedIssueId, issues]);
+
+  useEffect(() => {
+    if (!selectedRepairId) {
+      setSelectedRepair(null);
+      return;
+    }
+    setLoadingSelectedRepair(true);
+    void repairsApi.adminDetail(selectedRepairId)
+      .then((res) => {
+        const item = res.item;
+        hydratingEditRef.current = true;
+        setSelectedRepair(item);
+        setEditBrandId(item.deviceBrandId || '');
+        setEditModelId(item.deviceModelId || '');
+        setEditIssueId(item.deviceIssueTypeId || '');
+        setEditForm({
+          customerName: item.customerName || '',
+          customerPhone: item.customerPhone || '',
+          deviceBrand: item.deviceBrand || '',
+          deviceModel: item.deviceModel || '',
+          issueLabel: item.issueLabel || '',
+          status: item.status,
+          quotedPrice: item.quotedPrice != null ? String(item.quotedPrice) : '',
+          finalPrice: item.finalPrice != null ? String(item.finalPrice) : '',
+          notes: item.notes || '',
+        });
+        void loadEditModelsByBrand(item.deviceBrandId || undefined);
+      })
+      .catch((err) => setError(err instanceof Error ? err.message : 'Error cargando detalle'))
+      .finally(() => setLoadingSelectedRepair(false));
+  }, [selectedRepairId]);
+
+  useEffect(() => {
+    if (!selectedRepair) return;
+    const selectedBrand = brands.find((b) => b.id === editBrandId);
+    setEditForm((prev) => ({ ...prev, deviceBrand: selectedBrand?.name ?? prev.deviceBrand }));
+    if (hydratingEditRef.current) {
+      hydratingEditRef.current = false;
+    } else {
+      setEditModelId('');
+    }
+    void loadEditModelsByBrand(editBrandId || undefined);
+  }, [editBrandId]);
+
+  useEffect(() => {
+    const selectedModel = editModels.find((m) => m.id === editModelId);
+    if (!selectedModel) return;
+    setEditForm((prev) => ({ ...prev, deviceModel: selectedModel.name }));
+  }, [editModelId, editModels]);
+
+  useEffect(() => {
+    const selectedIssue = issues.find((i) => i.id === editIssueId);
+    if (!selectedIssue) return;
+    setEditForm((prev) => ({ ...prev, issueLabel: selectedIssue.name }));
+  }, [editIssueId, issues]);
+
   async function createRepair(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
@@ -94,6 +226,9 @@ export function AdminRepairsPage() {
       await repairsApi.adminCreate({
         customerName: form.customerName,
         customerPhone: form.customerPhone || null,
+        deviceBrandId: selectedBrandId || null,
+        deviceModelId: selectedModelId || null,
+        deviceIssueTypeId: selectedIssueId || null,
         deviceBrand: form.deviceBrand || null,
         deviceModel: form.deviceModel || null,
         issueLabel: form.issueLabel || null,
@@ -101,6 +236,9 @@ export function AdminRepairsPage() {
         quotedPrice,
       });
       setForm({ customerName: '', customerPhone: '', deviceBrand: '', deviceModel: '', issueLabel: '', quotedPrice: '', notes: '' });
+      setSelectedBrandId('');
+      setSelectedModelId('');
+      setSelectedIssueId('');
       setPriceSuggestion(null);
       await load();
     } catch (err) {
@@ -114,8 +252,41 @@ export function AdminRepairsPage() {
     try {
       const res = await repairsApi.adminUpdateStatus(id, { status });
       setItems((prev) => prev.map((r) => (r.id === id ? res.item : r)));
+      setSelectedRepair((prev) => (prev?.id === id ? res.item : prev));
+      if (selectedRepairId === id) {
+        setEditForm((prev) => ({ ...prev, status: res.item.status }));
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error actualizando estado');
+    }
+  }
+
+  async function saveSelectedRepair(e: React.FormEvent) {
+    e.preventDefault();
+    if (!selectedRepairId) return;
+    setSavingSelectedRepair(true);
+    setError('');
+    try {
+      const res = await repairsApi.adminUpdate(selectedRepairId, {
+        customerName: editForm.customerName,
+        customerPhone: editForm.customerPhone || null,
+        deviceBrandId: editBrandId || null,
+        deviceModelId: editModelId || null,
+        deviceIssueTypeId: editIssueId || null,
+        deviceBrand: editForm.deviceBrand || null,
+        deviceModel: editForm.deviceModel || null,
+        issueLabel: editForm.issueLabel || null,
+        status: editForm.status,
+        quotedPrice: editForm.quotedPrice ? Number(editForm.quotedPrice) : null,
+        finalPrice: editForm.finalPrice ? Number(editForm.finalPrice) : null,
+        notes: editForm.notes || null,
+      });
+      setSelectedRepair(res.item);
+      setItems((prev) => prev.map((r) => (r.id === res.item.id ? res.item : r)));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error guardando reparaciÃ³n');
+    } finally {
+      setSavingSelectedRepair(false);
     }
   }
 
@@ -124,6 +295,9 @@ export function AdminRepairsPage() {
     setError('');
     try {
       const res = await repairsApi.pricingResolve({
+        deviceBrandId: selectedBrandId || undefined,
+        deviceModelId: selectedModelId || undefined,
+        deviceIssueTypeId: selectedIssueId || undefined,
         deviceBrand: form.deviceBrand || undefined,
         deviceModel: form.deviceModel || undefined,
         issueLabel: form.issueLabel || undefined,
@@ -153,6 +327,9 @@ export function AdminRepairsPage() {
       await repairsApi.pricingRulesCreate({
         name: ruleForm.name,
         priority: Number(ruleForm.priority || 0),
+        deviceBrandId: selectedBrandId || null,
+        deviceModelId: selectedModelId || null,
+        deviceIssueTypeId: selectedIssueId || null,
         deviceBrand: ruleForm.deviceBrand || null,
         deviceModel: ruleForm.deviceModel || null,
         issueLabel: ruleForm.issueLabel || null,
@@ -189,6 +366,30 @@ export function AdminRepairsPage() {
             <div className="text-sm font-bold uppercase tracking-wide text-zinc-500">Nueva reparación</div>
             <Field label="Cliente *" value={form.customerName} onChange={(v) => setForm({ ...form, customerName: v })} required />
             <Field label="Teléfono" value={form.customerPhone} onChange={(v) => setForm({ ...form, customerPhone: v })} />
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+              <SelectField
+                label="Marca (catálogo)"
+                value={selectedBrandId}
+                onChange={setSelectedBrandId}
+                options={brands.map((b) => ({ value: b.id, label: b.name }))}
+                placeholder="Seleccionar"
+              />
+              <SelectField
+                label="Modelo (catálogo)"
+                value={selectedModelId}
+                onChange={setSelectedModelId}
+                options={models.filter((m) => !selectedBrandId || m.brandId === selectedBrandId).map((m) => ({ value: m.id, label: m.name }))}
+                placeholder={selectedBrandId ? 'Seleccionar' : 'Primero marca'}
+                disabled={!selectedBrandId}
+              />
+              <SelectField
+                label="Falla (catálogo)"
+                value={selectedIssueId}
+                onChange={setSelectedIssueId}
+                options={issues.map((i) => ({ value: i.id, label: i.name }))}
+                placeholder="Seleccionar"
+              />
+            </div>
             <div className="grid grid-cols-2 gap-2">
               <Field label="Marca" value={form.deviceBrand} onChange={(v) => setForm({ ...form, deviceBrand: v })} />
               <Field label="Modelo" value={form.deviceModel} onChange={(v) => setForm({ ...form, deviceModel: v })} />
@@ -270,7 +471,14 @@ export function AdminRepairsPage() {
             ) : (
               <div className="space-y-3">
                 {items.map((r) => (
-                  <div key={r.id} className="rounded-xl border border-zinc-200 p-3">
+                  <button
+                    key={r.id}
+                    type="button"
+                    onClick={() => setSelectedRepairId(r.id)}
+                    className={`block w-full rounded-xl border p-3 text-left transition ${
+                      selectedRepairId === r.id ? 'border-sky-300 bg-sky-50/60' : 'border-zinc-200 hover:border-zinc-300'
+                    }`}
+                  >
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
                         <div className="font-black text-zinc-900">{r.customerName}</div>
@@ -288,10 +496,110 @@ export function AdminRepairsPage() {
                       </select>
                       <span className="rounded-full border border-sky-200 bg-sky-50 px-2 py-1 text-xs font-bold text-sky-700">{r.status}</span>
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             )}
+
+            <div className="mt-4 border-t border-zinc-200 pt-4">
+              {!selectedRepairId ? (
+                <div className="rounded-xl border border-dashed border-zinc-300 p-3 text-sm text-zinc-600">
+                  SeleccionÃ¡ una reparaciÃ³n para ver y editar el detalle.
+                </div>
+              ) : loadingSelectedRepair ? (
+                <div className="rounded-xl border border-zinc-200 p-3 text-sm">Cargando detalle...</div>
+              ) : !selectedRepair ? (
+                <div className="rounded-xl border border-zinc-200 p-3 text-sm">No se pudo cargar el detalle.</div>
+              ) : (
+                <form onSubmit={saveSelectedRepair} className="space-y-3">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <div className="text-xs font-bold uppercase tracking-wide text-zinc-500">Detalle de reparaciÃ³n</div>
+                      <div className="mt-1 text-sm font-black break-all text-zinc-900">{selectedRepair.id}</div>
+                      <div className="text-xs text-zinc-500">{new Date(selectedRepair.createdAt).toLocaleString('es-AR')}</div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <span className="rounded-full border border-zinc-200 bg-zinc-50 px-2 py-1 font-bold text-zinc-700">
+                        Estado: {editForm.status}
+                      </span>
+                      <span className="rounded-full border border-zinc-200 bg-zinc-50 px-2 py-1 font-bold text-zinc-700">
+                        Actualizado: {new Date(selectedRepair.updatedAt).toLocaleDateString('es-AR')}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <Field label="Cliente *" value={editForm.customerName} onChange={(v) => setEditForm((p) => ({ ...p, customerName: v }))} required />
+                    <Field label="TelÃ©fono" value={editForm.customerPhone} onChange={(v) => setEditForm((p) => ({ ...p, customerPhone: v }))} />
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                    <SelectField
+                      label="Marca (catÃ¡logo)"
+                      value={editBrandId}
+                      onChange={setEditBrandId}
+                      options={brands.map((b) => ({ value: b.id, label: b.name }))}
+                      placeholder="Seleccionar"
+                    />
+                    <SelectField
+                      label="Modelo (catÃ¡logo)"
+                      value={editModelId}
+                      onChange={setEditModelId}
+                      options={editModels.filter((m) => !editBrandId || m.brandId === editBrandId).map((m) => ({ value: m.id, label: m.name }))}
+                      placeholder={editBrandId ? 'Seleccionar' : 'Primero marca'}
+                      disabled={!editBrandId}
+                    />
+                    <SelectField
+                      label="Falla (catÃ¡logo)"
+                      value={editIssueId}
+                      onChange={setEditIssueId}
+                      options={issues.map((i) => ({ value: i.id, label: i.name }))}
+                      placeholder="Seleccionar"
+                    />
+                  </div>
+
+                  <div className="grid gap-2 sm:grid-cols-3">
+                    <Field label="Marca" value={editForm.deviceBrand} onChange={(v) => setEditForm((p) => ({ ...p, deviceBrand: v }))} />
+                    <Field label="Modelo" value={editForm.deviceModel} onChange={(v) => setEditForm((p) => ({ ...p, deviceModel: v }))} />
+                    <Field label="Falla" value={editForm.issueLabel} onChange={(v) => setEditForm((p) => ({ ...p, issueLabel: v }))} />
+                  </div>
+
+                  <div className="grid gap-2 sm:grid-cols-3">
+                    <label className="block">
+                      <span className="mb-1 block text-sm font-bold text-zinc-700">Estado</span>
+                      <select
+                        value={editForm.status}
+                        onChange={(e) => setEditForm((p) => ({ ...p, status: e.target.value }))}
+                        className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm"
+                      >
+                        {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </label>
+                    <Field label="Presupuesto" type="number" value={editForm.quotedPrice} onChange={(v) => setEditForm((p) => ({ ...p, quotedPrice: v }))} />
+                    <Field label="Precio final" type="number" value={editForm.finalPrice} onChange={(v) => setEditForm((p) => ({ ...p, finalPrice: v }))} />
+                  </div>
+
+                  <label className="block">
+                    <span className="mb-1 block text-sm font-bold text-zinc-700">Notas</span>
+                    <textarea
+                      value={editForm.notes}
+                      onChange={(e) => setEditForm((p) => ({ ...p, notes: e.target.value }))}
+                      rows={4}
+                      className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm"
+                    />
+                  </label>
+
+                  <div className="flex flex-wrap justify-end gap-2">
+                    <Button type="button" variant="outline" onClick={() => setSelectedRepairId(null)}>
+                      Cerrar detalle
+                    </Button>
+                    <Button disabled={savingSelectedRepair}>
+                      {savingSelectedRepair ? 'Guardando...' : 'Guardar cambios'}
+                    </Button>
+                  </div>
+                </form>
+              )}
+            </div>
           </section>
         </div>
       </div>
@@ -304,6 +612,41 @@ function Field({ label, value, onChange, type = 'text', required = false }: { la
     <label className="block">
       <span className="mb-1 block text-sm font-bold text-zinc-700">{label}</span>
       <input type={type} value={value} onChange={(e) => onChange(e.target.value)} required={required} className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm" />
+    </label>
+  );
+}
+
+function SelectField({
+  label,
+  value,
+  onChange,
+  options,
+  placeholder,
+  disabled = false,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: Array<{ value: string; label: string }>;
+  placeholder: string;
+  disabled?: boolean;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-sm font-bold text-zinc-700">{label}</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        disabled={disabled}
+        className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm disabled:bg-zinc-100 disabled:text-zinc-400"
+      >
+        <option value="">{placeholder}</option>
+        {options.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
     </label>
   );
 }

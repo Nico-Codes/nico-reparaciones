@@ -1,8 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, type RepairPricingRule } from '../../../../../node_modules/.prisma/client/index.js';
+import { Prisma, type RepairPricingRule } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 type ResolveInput = {
+  deviceBrandId?: string | null;
+  deviceModelId?: string | null;
+  deviceIssueTypeId?: string | null;
   deviceBrand?: string | null;
   deviceModel?: string | null;
   issueLabel?: string | null;
@@ -12,12 +15,21 @@ type CreateOrUpdateRuleInput = {
   name: string;
   active?: boolean;
   priority?: number;
+  deviceBrandId?: string | null;
+  deviceModelId?: string | null;
+  deviceIssueTypeId?: string | null;
   deviceBrand?: string | null;
   deviceModel?: string | null;
   issueLabel?: string | null;
   basePrice: number;
   profitPercent?: number;
   notes?: string | null;
+};
+
+type RepairPricingRuleWithCatalogIds = RepairPricingRule & {
+  deviceBrandId?: string | null;
+  deviceModelId?: string | null;
+  deviceIssueTypeId?: string | null;
 };
 
 @Injectable()
@@ -52,6 +64,9 @@ export class PricingService {
   }
 
   async resolveRepairPrice(input: ResolveInput) {
+    const brandId = this.nullableId(input.deviceBrandId);
+    const modelId = this.nullableId(input.deviceModelId);
+    const issueTypeId = this.nullableId(input.deviceIssueTypeId);
     const brand = this.norm(input.deviceBrand);
     const model = this.norm(input.deviceModel);
     const issue = this.norm(input.issueLabel);
@@ -64,7 +79,7 @@ export class PricingService {
 
     const scored = activeRules
       .map((rule) => {
-        const score = this.matchRuleScore(rule, { brand, model, issue });
+        const score = this.matchRuleScore(rule, { brandId, modelId, issueTypeId, brand, model, issue });
         return { rule, score };
       })
       .filter((x) => x.score > 0)
@@ -75,7 +90,7 @@ export class PricingService {
     if (!best) {
       return {
         matched: false,
-        input: { deviceBrand: brand, deviceModel: model, issueLabel: issue },
+        input: { deviceBrandId: brandId, deviceModelId: modelId, deviceIssueTypeId: issueTypeId, deviceBrand: brand, deviceModel: model, issueLabel: issue },
         suggestion: null,
       };
     }
@@ -86,7 +101,7 @@ export class PricingService {
 
     return {
       matched: true,
-      input: { deviceBrand: brand, deviceModel: model, issueLabel: issue },
+      input: { deviceBrandId: brandId, deviceModelId: modelId, deviceIssueTypeId: issueTypeId, deviceBrand: brand, deviceModel: model, issueLabel: issue },
       rule: this.serializeRule(best),
       suggestion: {
         basePrice,
@@ -96,12 +111,34 @@ export class PricingService {
     };
   }
 
-  private matchRuleScore(rule: RepairPricingRule, text: { brand: string; model: string; issue: string }) {
+  private matchRuleScore(
+    rule: RepairPricingRuleWithCatalogIds,
+    text: { brandId: string | null; modelId: string | null; issueTypeId: string | null; brand: string; model: string; issue: string },
+  ) {
     const rb = this.norm(rule.deviceBrand);
     const rm = this.norm(rule.deviceModel);
     const ri = this.norm(rule.issueLabel);
+    const rBrandId = this.nullableId(rule.deviceBrandId);
+    const rModelId = this.nullableId(rule.deviceModelId);
+    const rIssueTypeId = this.nullableId(rule.deviceIssueTypeId);
     let score = 0;
     let constrained = 0;
+
+    if (rBrandId) {
+      constrained++;
+      if (!text.brandId || text.brandId !== rBrandId) return 0;
+      score += 220;
+    }
+    if (rModelId) {
+      constrained++;
+      if (!text.modelId || text.modelId !== rModelId) return 0;
+      score += 320;
+    }
+    if (rIssueTypeId) {
+      constrained++;
+      if (!text.issueTypeId || text.issueTypeId !== rIssueTypeId) return 0;
+      score += 260;
+    }
 
     if (rb) {
       constrained++;
@@ -130,11 +167,14 @@ export class PricingService {
     return score;
   }
 
-  private ruleCreateData(input: CreateOrUpdateRuleInput): Prisma.RepairPricingRuleCreateInput {
+  private ruleCreateData(input: CreateOrUpdateRuleInput): Prisma.RepairPricingRuleUncheckedCreateInput {
     return {
       name: input.name.trim(),
       active: input.active ?? true,
       priority: Number(input.priority ?? 0),
+      deviceBrandId: this.nullableId(input.deviceBrandId),
+      deviceModelId: this.nullableId(input.deviceModelId),
+      deviceIssueTypeId: this.nullableId(input.deviceIssueTypeId),
       deviceBrand: this.nullable(input.deviceBrand),
       deviceModel: this.nullable(input.deviceModel),
       issueLabel: this.nullable(input.issueLabel),
@@ -144,11 +184,14 @@ export class PricingService {
     };
   }
 
-  private ruleUpdateData(input: Partial<CreateOrUpdateRuleInput>): Prisma.RepairPricingRuleUpdateInput {
-    const data: Prisma.RepairPricingRuleUpdateInput = {};
+  private ruleUpdateData(input: Partial<CreateOrUpdateRuleInput>): Prisma.RepairPricingRuleUncheckedUpdateInput {
+    const data: Prisma.RepairPricingRuleUncheckedUpdateInput = {};
     if (input.name !== undefined) data.name = input.name.trim();
     if (input.active !== undefined) data.active = input.active;
     if (input.priority !== undefined) data.priority = Number(input.priority ?? 0);
+    if (input.deviceBrandId !== undefined) data.deviceBrandId = this.nullableId(input.deviceBrandId);
+    if (input.deviceModelId !== undefined) data.deviceModelId = this.nullableId(input.deviceModelId);
+    if (input.deviceIssueTypeId !== undefined) data.deviceIssueTypeId = this.nullableId(input.deviceIssueTypeId);
     if (input.deviceBrand !== undefined) data.deviceBrand = this.nullable(input.deviceBrand);
     if (input.deviceModel !== undefined) data.deviceModel = this.nullable(input.deviceModel);
     if (input.issueLabel !== undefined) data.issueLabel = this.nullable(input.issueLabel);
@@ -163,6 +206,11 @@ export class PricingService {
     return v || null;
   }
 
+  private nullableId(value?: string | null) {
+    const v = (value ?? '').trim();
+    return v || null;
+  }
+
   private norm(value?: string | null) {
     return (value ?? '')
       .toLowerCase()
@@ -172,12 +220,15 @@ export class PricingService {
       .trim();
   }
 
-  private serializeRule(rule: RepairPricingRule) {
+  private serializeRule(rule: RepairPricingRuleWithCatalogIds) {
     return {
       id: rule.id,
       name: rule.name,
       active: rule.active,
       priority: rule.priority,
+      deviceBrandId: rule.deviceBrandId ?? null,
+      deviceModelId: rule.deviceModelId ?? null,
+      deviceIssueTypeId: rule.deviceIssueTypeId ?? null,
       deviceBrand: rule.deviceBrand,
       deviceModel: rule.deviceModel,
       issueLabel: rule.issueLabel,

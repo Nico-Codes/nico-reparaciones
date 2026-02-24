@@ -31,9 +31,21 @@ export const repairsApi = {
     if (params?.q) qs.set('q', params.q);
     return authRequest<{ items: RepairItem[] }>('/repairs/admin' + (qs.size ? `?${qs.toString()}` : ''));
   },
+  adminDetail(id: string) {
+    return authRequest<{ item: RepairItem }>(`/repairs/admin/${encodeURIComponent(id)}`);
+  },
   adminCreate(input: Partial<RepairItem> & { customerName: string }) {
     return authRequest<RepairItem>('/repairs/admin', {
       method: 'POST',
+      body: JSON.stringify(input),
+    });
+  },
+  adminUpdate(
+    id: string,
+    input: Partial<Pick<RepairItem, 'customerName' | 'customerPhone' | 'deviceBrandId' | 'deviceModelId' | 'deviceIssueTypeId' | 'deviceBrand' | 'deviceModel' | 'issueLabel' | 'quotedPrice' | 'finalPrice' | 'notes' | 'status'>>,
+  ) {
+    return authRequest<{ item: RepairItem }>(`/repairs/admin/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
       body: JSON.stringify(input),
     });
   },
@@ -43,16 +55,19 @@ export const repairsApi = {
       body: JSON.stringify(input),
     });
   },
-  pricingResolve(input: { deviceBrand?: string; deviceModel?: string; issueLabel?: string }) {
+  pricingResolve(input: { deviceBrandId?: string; deviceModelId?: string; deviceIssueTypeId?: string; deviceBrand?: string; deviceModel?: string; issueLabel?: string }) {
     const qs = new URLSearchParams();
+    if (input.deviceBrandId) qs.set('deviceBrandId', input.deviceBrandId);
+    if (input.deviceModelId) qs.set('deviceModelId', input.deviceModelId);
+    if (input.deviceIssueTypeId) qs.set('deviceIssueTypeId', input.deviceIssueTypeId);
     if (input.deviceBrand) qs.set('deviceBrand', input.deviceBrand);
     if (input.deviceModel) qs.set('deviceModel', input.deviceModel);
     if (input.issueLabel) qs.set('issueLabel', input.issueLabel);
     return authRequest<{
       matched: boolean;
-      rule?: { id: string; name: string; basePrice: number; profitPercent: number; priority: number };
+      rule?: { id: string; name: string; basePrice: number; profitPercent: number; priority: number; deviceBrandId?: string | null; deviceModelId?: string | null; deviceIssueTypeId?: string | null };
       suggestion?: { basePrice: number; profitPercent: number; suggestedTotal: number };
-      input: { deviceBrand: string; deviceModel: string; issueLabel: string };
+      input: { deviceBrandId?: string | null; deviceModelId?: string | null; deviceIssueTypeId?: string | null; deviceBrand: string; deviceModel: string; issueLabel: string };
     }>(`/pricing/repairs/resolve${qs.size ? `?${qs.toString()}` : ''}`);
   },
   pricingRulesList() {
@@ -61,6 +76,9 @@ export const repairsApi = {
       name: string;
       active: boolean;
       priority: number;
+      deviceBrandId?: string | null;
+      deviceModelId?: string | null;
+      deviceIssueTypeId?: string | null;
       deviceBrand: string | null;
       deviceModel: string | null;
       issueLabel: string | null;
@@ -73,6 +91,9 @@ export const repairsApi = {
     name: string;
     active?: boolean;
     priority?: number;
+    deviceBrandId?: string | null;
+    deviceModelId?: string | null;
+    deviceIssueTypeId?: string | null;
     deviceBrand?: string | null;
     deviceModel?: string | null;
     issueLabel?: string | null;
