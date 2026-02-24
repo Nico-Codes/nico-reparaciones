@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Inject, Post } from '@nestjs/common';
 import { z } from 'zod';
 import { CartService } from './cart.service.js';
 
@@ -13,7 +13,7 @@ const cartQuoteSchema = z.object({
 
 @Controller('cart')
 export class CartController {
-  constructor(private readonly cartService: CartService) {}
+  constructor(@Inject(CartService) private readonly cartService: CartService) {}
 
   @Post('quote')
   async quote(@Body() body: unknown) {

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch, Param, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Patch, Param, Query, UseGuards } from '@nestjs/common';
 import { CurrentUser } from '../auth/current-user.decorator.js';
 import type { AuthenticatedUser } from '../auth/auth.types.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
@@ -70,7 +70,7 @@ const helpFaqPatchSchema = helpFaqCreateSchema.partial();
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('ADMIN')
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(@Inject(AdminService) private readonly adminService: AdminService) {}
 
   @Get('ping')
   ping(@CurrentUser() user: AuthenticatedUser | null) {

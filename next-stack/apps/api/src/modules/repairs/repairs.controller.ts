@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { z } from 'zod';
 import { CurrentUser } from '../auth/current-user.decorator.js';
 import type { AuthenticatedUser } from '../auth/auth.types.js';
@@ -45,7 +45,7 @@ const updateRepairSchema = z.object({
 
 @Controller('repairs')
 export class RepairsController {
-  constructor(private readonly repairsService: RepairsService) {}
+  constructor(@Inject(RepairsService) private readonly repairsService: RepairsService) {}
 
   @Get('my')
   @UseGuards(JwtAuthGuard)

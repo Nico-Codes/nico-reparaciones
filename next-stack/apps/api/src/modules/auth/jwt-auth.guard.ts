@@ -1,5 +1,6 @@
 import {
   CanActivate,
+  Inject,
   Injectable,
   UnauthorizedException,
   type ExecutionContext,
@@ -9,7 +10,7 @@ import type { RequestWithUser } from './auth.types.js';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
-  constructor(private readonly authService: AuthService) {}
+  constructor(@Inject(AuthService) private readonly authService: AuthService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest<RequestWithUser>();

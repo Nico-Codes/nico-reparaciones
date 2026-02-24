@@ -1,5 +1,6 @@
 import {
   CanActivate,
+  Inject,
   ForbiddenException,
   Injectable,
   type ExecutionContext,
@@ -10,7 +11,7 @@ import type { RequestWithUser } from './auth.types.js';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
-  constructor(private readonly reflector: Reflector) {}
+  constructor(@Inject(Reflector) private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
     const roles = this.reflector.getAllAndOverride<Array<'USER' | 'ADMIN'>>(ROLES_KEY, [

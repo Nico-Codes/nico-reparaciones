@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Inject, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { z } from 'zod';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { Roles } from '../auth/roles.decorator.js';
@@ -26,7 +26,7 @@ const repairRulePatchSchema = repairRuleSchema.partial();
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('ADMIN')
 export class PricingController {
-  constructor(private readonly pricingService: PricingService) {}
+  constructor(@Inject(PricingService) private readonly pricingService: PricingService) {}
 
   @Get('repairs/rules')
   listRepairRules() {

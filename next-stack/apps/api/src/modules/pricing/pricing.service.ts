@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { Prisma, type RepairPricingRule } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 
@@ -34,7 +34,7 @@ type RepairPricingRuleWithCatalogIds = RepairPricingRule & {
 
 @Injectable()
 export class PricingService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   async listRepairRules() {
     const rules = await this.prisma.repairPricingRule.findMany({

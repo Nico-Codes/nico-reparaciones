@@ -1,13 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { Prisma, type AppSetting, type HelpFaqItem, type UserRole, type WhatsAppLog } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 @Injectable()
 export class AdminService {
-  constructor(private readonly prisma: PrismaService) {}
-
-  private get db() {
-    return this.prisma as any;
-  }
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  private readonly openRepairStatuses = ['RECEIVED', 'DIAGNOSING', 'WAITING_APPROVAL', 'REPAIRING', 'READY_PICKUP'] as const;
+  private readonly pendingOrderStatuses = ['PENDIENTE', 'CONFIRMADO', 'PREPARANDO'] as const;
 
   async dashboard() {
     const now = new Date();
@@ -33,11 +32,11 @@ export class AdminService {
       this.prisma.product.count({ where: { active: true, stock: { gt: 0, lte: 5 } } }),
       this.prisma.product.count({ where: { active: true, stock: { lte: 0 } } }),
       this.prisma.repair.count({
-        where: { status: { in: ['RECEIVED', 'DIAGNOSING', 'WAITING_APPROVAL', 'REPAIRING', 'READY_PICKUP'] as any } },
+        where: { status: { in: [...this.openRepairStatuses] } },
       }),
-      this.prisma.repair.count({ where: { status: 'READY_PICKUP' as any } }),
+      this.prisma.repair.count({ where: { status: 'READY_PICKUP' } }),
       this.prisma.repair.count({ where: { createdAt: { gte: startToday } } }),
-      this.prisma.order.count({ where: { status: { in: ['PENDIENTE', 'CONFIRMADO', 'PREPARANDO'] as any } } }),
+      this.prisma.order.count({ where: { status: { in: [...this.pendingOrderStatuses] } } }),
       this.prisma.order.count({ where: { createdAt: { gte: startToday } } }),
       this.prisma.order.aggregate({
         _sum: { total: true },
@@ -57,7 +56,7 @@ export class AdminService {
       }),
     ]);
 
-    const monthRevenue = Number((ordersMonthAgg._sum.total as any) ?? 0);
+    const monthRevenue = Number(ordersMonthAgg._sum.total ?? 0);
 
     const alerts = [];
     if (outOfStockProducts > 0) alerts.push({ id: 'stock-out', severity: 'high', title: 'Productos sin stock', value: outOfStockProducts });
@@ -117,10 +116,10 @@ export class AdminService {
 
   async users(params?: { q?: string; role?: string }) {
     const q = (params?.q ?? '').trim();
-    const role = (params?.role ?? '').trim().toUpperCase();
+    const role = this.parseUserRole(params?.role);
     const items = await this.prisma.user.findMany({
       where: {
-        ...(role === 'USER' || role === 'ADMIN' ? { role: role as any } : {}),
+        ...(role ? { role } : {}),
         ...(q
           ? {
               OR: [
@@ -148,8 +147,8 @@ export class AdminService {
   }
 
   async updateUserRole(targetUserId: string, roleRaw: string, actorUserId?: string | null) {
-    const role = (roleRaw ?? '').trim().toUpperCase();
-    if (role !== 'USER' && role !== 'ADMIN') {
+    const role = this.parseUserRole(roleRaw);
+    if (!role) {
       return { message: 'Rol inválido' };
     }
 
@@ -159,7 +158,7 @@ export class AdminService {
 
     const user = await this.prisma.user.update({
       where: { id: targetUserId },
-      data: { role: role as any },
+      data: { role },
     });
 
     return {
@@ -176,7 +175,7 @@ export class AdminService {
   }
 
   async settings() {
-    const existing = await this.db.appSetting.findMany({
+    const existing = await this.prisma.appSetting.findMany({
       orderBy: [{ group: 'asc' }, { key: 'asc' }],
     });
 
@@ -190,7 +189,7 @@ export class AdminService {
       { key: 'mail_from_address', group: 'email', label: 'Email remitente', type: 'email', value: '' },
     ];
 
-    const byKey = new Map((existing as any[]).map((s: any) => [s.key, s]));
+    const byKey = new Map<string, AppSetting>(existing.map((s) => [s.key, s]));
     const merged = defaults.map((d) => {
       const found = byKey.get(d.key);
       return found
@@ -216,9 +215,9 @@ export class AdminService {
           };
     });
 
-    const extra = (existing as any[])
-      .filter((s: any) => !defaults.some((d) => d.key === s.key))
-      .map((s: any) => ({
+    const extra = existing
+      .filter((s) => !defaults.some((d) => d.key === s.key))
+      .map((s) => ({
         id: s.id,
         key: s.key,
         value: s.value ?? '',
@@ -245,15 +244,23 @@ export class AdminService {
 
     const results = [];
     for (const item of cleaned) {
-      const saved = await this.db.appSetting.upsert({
+      const createData: Prisma.AppSettingCreateInput = {
+        key: item.key,
+        value: item.value,
+        group: item.group,
+        label: item.label,
+        type: item.type,
+      };
+      const updateData: Prisma.AppSettingUpdateInput = {
+        value: item.value,
+        group: item.group,
+        label: item.label,
+        type: item.type,
+      };
+      const saved = await this.prisma.appSetting.upsert({
         where: { key: item.key },
-        create: item as any,
-        update: {
-          value: item.value,
-          group: item.group,
-          label: item.label,
-          type: item.type,
-        } as any,
+        create: createData,
+        update: updateData,
       });
       results.push({
         id: saved.id,
@@ -303,12 +310,12 @@ export class AdminService {
       `mail_template.${t.templateKey}.enabled`,
     ]);
 
-    const existing = await this.db.appSetting.findMany({
+    const existing = await this.prisma.appSetting.findMany({
       where: { key: { in: keys } },
       orderBy: { key: 'asc' },
     });
 
-    const map = new Map((existing as any[]).map((s: any) => [s.key, s]));
+    const map = new Map<string, AppSetting>(existing.map((s) => [s.key, s]));
     return {
       items: templates.map((t) => {
         const subjectKey = `mail_template.${t.templateKey}.subject`;
@@ -343,7 +350,7 @@ export class AdminService {
       ];
 
       for (const s of upserts) {
-        await this.db.appSetting.upsert({
+        await this.prisma.appSetting.upsert({
           where: { key: s.key },
           create: {
             key: s.key,
@@ -396,10 +403,10 @@ export class AdminService {
       `whatsapp_template.${t.templateKey}.body`,
       `whatsapp_template.${t.templateKey}.enabled`,
     ]);
-    const rows = (await this.db.appSetting.findMany({
+    const rows = await this.prisma.appSetting.findMany({
       where: { key: { in: keys } },
       orderBy: { key: 'asc' },
-    })) as any[];
+    });
     const map = new Map(rows.map((r) => [r.key, r.value ?? '']));
 
     return {
@@ -419,7 +426,7 @@ export class AdminService {
     const items = input.filter((i) => allowed.has(i.templateKey));
     for (const t of items) {
       const base = `whatsapp_template.${t.templateKey}`;
-      await this.db.appSetting.upsert({
+      await this.prisma.appSetting.upsert({
         where: { key: `${base}.body` },
         create: {
           key: `${base}.body`,
@@ -430,7 +437,7 @@ export class AdminService {
         },
         update: { value: t.body, group: 'whatsapp_templates', type: 'textarea' },
       });
-      await this.db.appSetting.upsert({
+      await this.prisma.appSetting.upsert({
         where: { key: `${base}.enabled` },
         create: {
           key: `${base}.enabled`,
@@ -450,7 +457,7 @@ export class AdminService {
     const status = (params?.status ?? '').trim();
     const q = (params?.q ?? '').trim();
 
-    const rows = (await this.db.whatsAppLog.findMany({
+    const rows = await this.prisma.whatsAppLog.findMany({
       where: {
         ...(channel ? { channel } : {}),
         ...(status ? { status } : {}),
@@ -468,10 +475,10 @@ export class AdminService {
       },
       orderBy: { createdAt: 'desc' },
       take: 200,
-    })) as any[];
+    });
 
     return {
-      items: rows.map((r) => ({
+      items: rows.map((r: WhatsAppLog) => ({
         id: r.id,
         channel: r.channel,
         templateKey: r.templateKey,
@@ -498,7 +505,7 @@ export class AdminService {
     message?: string | null;
     meta?: Record<string, unknown> | null;
   }) {
-    const row = await this.db.whatsAppLog.create({
+    const row = await this.prisma.whatsAppLog.create({
       data: {
         channel: (input.channel ?? '').trim() || 'general',
         templateKey: this.cleanNullable(input.templateKey),
@@ -532,7 +539,7 @@ export class AdminService {
     const q = (params?.q ?? '').trim();
     const category = (params?.category ?? '').trim();
     const active = (params?.active ?? '').trim();
-    const rows = (await this.db.helpFaqItem.findMany({
+    const rows = await this.prisma.helpFaqItem.findMany({
       where: {
         ...(category ? { category } : {}),
         ...(active === '1' ? { active: true } : active === '0' ? { active: false } : {}),
@@ -548,10 +555,10 @@ export class AdminService {
       },
       orderBy: [{ active: 'desc' }, { sortOrder: 'asc' }, { createdAt: 'asc' }],
       take: 300,
-    })) as any[];
+    });
 
     return {
-      items: rows.map((r) => ({
+      items: rows.map((r: HelpFaqItem) => ({
         id: r.id,
         question: r.question,
         answer: r.answer,
@@ -565,7 +572,7 @@ export class AdminService {
   }
 
   async helpFaqCreate(input: { question: string; answer: string; category?: string | null; active?: boolean; sortOrder?: number }) {
-    const row = await this.db.helpFaqItem.create({
+    const row = await this.prisma.helpFaqItem.create({
       data: {
         question: input.question.trim(),
         answer: input.answer.trim(),
@@ -581,14 +588,14 @@ export class AdminService {
     id: string,
     input: Partial<{ question: string; answer: string; category: string | null; active: boolean; sortOrder: number }>,
   ) {
-    const data: any = {};
+    const data: Prisma.HelpFaqItemUpdateInput = {};
     if (input.question !== undefined) data.question = input.question.trim();
     if (input.answer !== undefined) data.answer = input.answer.trim();
     if (input.category !== undefined) data.category = this.cleanNullable(input.category) ?? 'general';
     if (input.active !== undefined) data.active = input.active;
     if (input.sortOrder !== undefined) data.sortOrder = Number(input.sortOrder ?? 0);
 
-    const row = await this.db.helpFaqItem.update({
+    const row = await this.prisma.helpFaqItem.update({
       where: { id },
       data,
     });
@@ -619,7 +626,12 @@ export class AdminService {
     return v || null;
   }
 
-  private serializeHelpFaq(r: any) {
+  private parseUserRole(value?: string | null): UserRole | null {
+    const normalized = (value ?? '').trim().toUpperCase();
+    return normalized === 'USER' || normalized === 'ADMIN' ? (normalized as UserRole) : null;
+  }
+
+  private serializeHelpFaq(r: HelpFaqItem) {
     return {
       id: r.id,
       question: r.question,

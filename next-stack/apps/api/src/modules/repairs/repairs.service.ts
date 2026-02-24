@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, type Repair } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 
@@ -24,7 +24,7 @@ type UpdateRepairInput = Partial<Omit<CreateRepairInput, 'userId'>> & {
 
 @Injectable()
 export class RepairsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   async create(input: CreateRepairInput) {
     const data: Prisma.RepairUncheckedCreateInput = {

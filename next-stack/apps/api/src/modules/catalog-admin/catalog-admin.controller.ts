@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch, Post, Query, Param, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Patch, Post, Query, Param, UseGuards } from '@nestjs/common';
 import { z } from 'zod';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { Roles } from '../auth/roles.decorator.js';
@@ -31,7 +31,7 @@ const productPatchSchema = productCreateSchema.partial();
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('ADMIN')
 export class CatalogAdminController {
-  constructor(private readonly service: CatalogAdminService) {}
+  constructor(@Inject(CatalogAdminService) private readonly service: CatalogAdminService) {}
 
   @Get('categories')
   categories() {
@@ -71,4 +71,3 @@ export class CatalogAdminController {
     return this.service.updateProduct(id, parsed.data);
   }
 }
-

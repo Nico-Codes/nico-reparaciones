@@ -31,6 +31,16 @@ function assert(condition, message, context) {
   }
 }
 
+function extractTokens(payload) {
+  const root = payload && typeof payload === 'object' ? payload : {};
+  const nested = root && typeof root.tokens === 'object' ? root.tokens : null;
+  const src = nested ?? root;
+  return {
+    accessToken: typeof src.accessToken === 'string' ? src.accessToken : null,
+    refreshToken: typeof src.refreshToken === 'string' ? src.refreshToken : null,
+  };
+}
+
 async function main() {
   const startedAt = Date.now();
   logStep('START', { api });
@@ -57,9 +67,10 @@ async function main() {
     body: JSON.stringify({ email: adminEmail, password: adminPassword }),
   });
   assert(login.res.ok, 'login fallo', { status: login.res.status, body: login.data });
-  assert(login.data?.accessToken && login.data?.refreshToken, 'login sin tokens', login.data);
-  const accessToken = login.data.accessToken;
-  const refreshToken = login.data.refreshToken;
+  const loginTokens = extractTokens(login.data);
+  assert(loginTokens.accessToken && loginTokens.refreshToken, 'login sin tokens', login.data);
+  const accessToken = loginTokens.accessToken;
+  const refreshToken = loginTokens.refreshToken;
   logStep('login', { ok: true });
 
   const me = await req('/auth/me', {
@@ -74,7 +85,8 @@ async function main() {
     body: JSON.stringify({ refreshToken }),
   });
   assert(refresh.res.ok, 'refresh fallo', { status: refresh.res.status, body: refresh.data });
-  assert(refresh.data?.accessToken && refresh.data?.refreshToken, 'refresh sin tokens', refresh.data);
+  const refreshTokens = extractTokens(refresh.data);
+  assert(refreshTokens.accessToken && refreshTokens.refreshToken, 'refresh sin tokens', refresh.data);
   logStep('auth/refresh', { ok: true });
 
   const categories = await req('/store/categories');
@@ -111,22 +123,23 @@ async function main() {
 
     const checkout = await req('/orders/checkout', {
       method: 'POST',
-      headers: { Authorization: `Bearer ${refresh.data.accessToken}` },
+      headers: { Authorization: `Bearer ${refreshTokens.accessToken}` },
       body: JSON.stringify({
         items: [{ productId: firstBuyable.id, quantity: 1 }],
         paymentMethod: 'EFECTIVO',
       }),
     });
     assert(checkout.res.ok, 'orders/checkout fallo', { status: checkout.res.status, body: checkout.data });
-    assert(checkout.data?.item?.id, 'orders/checkout sin item.id', checkout.data);
-    createdOrderId = checkout.data.item.id;
-    logStep('orders/checkout', { orderId: createdOrderId, total: checkout.data.item.total });
+    const checkoutOrder = checkout.data?.item ?? checkout.data;
+    assert(checkoutOrder?.id, 'orders/checkout sin item.id', checkout.data);
+    createdOrderId = checkoutOrder.id;
+    logStep('orders/checkout', { orderId: createdOrderId, total: checkoutOrder.total });
   } else {
     logStep('orders/checkout', { skipped: 'sin productos disponibles' });
   }
 
   const orderMy = await req('/orders/my', {
-    headers: { Authorization: `Bearer ${refresh.data.accessToken}` },
+    headers: { Authorization: `Bearer ${refreshTokens.accessToken}` },
   });
   assert(orderMy.res.ok, 'orders/my fallo', { status: orderMy.res.status, body: orderMy.data });
   assert(Array.isArray(orderMy.data?.items), 'orders/my payload invalido', orderMy.data);
@@ -134,7 +147,7 @@ async function main() {
 
   if (createdOrderId) {
     const orderMyDetail = await req(`/orders/my/${encodeURIComponent(createdOrderId)}`, {
-      headers: { Authorization: `Bearer ${refresh.data.accessToken}` },
+      headers: { Authorization: `Bearer ${refreshTokens.accessToken}` },
     });
     assert(orderMyDetail.res.ok, 'orders/my/:id fallo', { status: orderMyDetail.res.status, body: orderMyDetail.data });
     assert(orderMyDetail.data?.item?.id === createdOrderId, 'orders/my/:id no coincide', orderMyDetail.data);
@@ -142,19 +155,19 @@ async function main() {
   }
 
   const adminPing = await req('/admin/ping', {
-    headers: { Authorization: `Bearer ${refresh.data.accessToken}` },
+    headers: { Authorization: `Bearer ${refreshTokens.accessToken}` },
   });
   assert(adminPing.res.ok, 'admin/ping fallo', { status: adminPing.res.status, body: adminPing.data });
   logStep('admin/ping', { ok: true });
 
   const adminDashboard = await req('/admin/dashboard', {
-    headers: { Authorization: `Bearer ${refresh.data.accessToken}` },
+    headers: { Authorization: `Bearer ${refreshTokens.accessToken}` },
   });
   assert(adminDashboard.res.ok, 'admin/dashboard fallo', { status: adminDashboard.res.status, body: adminDashboard.data });
   logStep('admin/dashboard', { ok: true });
 
   const adminSettings = await req('/admin/settings', {
-    headers: { Authorization: `Bearer ${refresh.data.accessToken}` },
+    headers: { Authorization: `Bearer ${refreshTokens.accessToken}` },
   });
   assert(adminSettings.res.ok, 'admin/settings fallo', { status: adminSettings.res.status, body: adminSettings.data });
   assert(Array.isArray(adminSettings.data?.items), 'admin/settings payload invalido', adminSettings.data);
@@ -166,7 +179,7 @@ async function main() {
   logStep('help', { count: help.data.items.length });
 
   const pricingResolve = await req('/pricing/repairs/resolve?deviceBrand=Samsung&deviceModel=A10&issueLabel=Modulo', {
-    headers: { Authorization: `Bearer ${refresh.data.accessToken}` },
+    headers: { Authorization: `Bearer ${refreshTokens.accessToken}` },
   });
   assert(pricingResolve.res.ok, 'pricing resolve fallo', { status: pricingResolve.res.status, body: pricingResolve.data });
   assert(typeof pricingResolve.data?.matched === 'boolean', 'pricing resolve payload invalido', pricingResolve.data);
@@ -174,7 +187,7 @@ async function main() {
 
   const createRepair = await req('/repairs/admin', {
     method: 'POST',
-    headers: { Authorization: `Bearer ${refresh.data.accessToken}` },
+    headers: { Authorization: `Bearer ${refreshTokens.accessToken}` },
     body: JSON.stringify({
       customerName: 'Cliente Smoke',
       customerPhone: '+5491111111111',
@@ -191,14 +204,14 @@ async function main() {
   logStep('repairs/admin create', { repairId });
 
   const repairsAdminList = await req('/repairs/admin', {
-    headers: { Authorization: `Bearer ${refresh.data.accessToken}` },
+    headers: { Authorization: `Bearer ${refreshTokens.accessToken}` },
   });
   assert(repairsAdminList.res.ok, 'repairs/admin list fallo', { status: repairsAdminList.res.status, body: repairsAdminList.data });
   assert(Array.isArray(repairsAdminList.data?.items), 'repairs/admin list payload invalido', repairsAdminList.data);
   logStep('repairs/admin list', { count: repairsAdminList.data.items.length });
 
   const repairDetail = await req(`/repairs/admin/${encodeURIComponent(repairId)}`, {
-    headers: { Authorization: `Bearer ${refresh.data.accessToken}` },
+    headers: { Authorization: `Bearer ${refreshTokens.accessToken}` },
   });
   assert(repairDetail.res.ok, 'repairs/admin/:id fallo', { status: repairDetail.res.status, body: repairDetail.data });
   assert(repairDetail.data?.item?.id === repairId, 'repairs/admin/:id no coincide', repairDetail.data);
@@ -206,7 +219,7 @@ async function main() {
 
   const repairUpdate = await req(`/repairs/admin/${encodeURIComponent(repairId)}`, {
     method: 'PATCH',
-    headers: { Authorization: `Bearer ${refresh.data.accessToken}` },
+    headers: { Authorization: `Bearer ${refreshTokens.accessToken}` },
     body: JSON.stringify({
       status: 'DIAGNOSING',
       finalPrice: 0,
@@ -218,7 +231,7 @@ async function main() {
   logStep('repairs/admin PATCH', { status: repairUpdate.data.item.status });
 
   const whatsappTemplates = await req('/admin/whatsapp-templates', {
-    headers: { Authorization: `Bearer ${refresh.data.accessToken}` },
+    headers: { Authorization: `Bearer ${refreshTokens.accessToken}` },
   });
   assert(whatsappTemplates.res.ok, 'admin/whatsapp-templates fallo', { status: whatsappTemplates.res.status, body: whatsappTemplates.data });
   assert(Array.isArray(whatsappTemplates.data?.items), 'whatsapp templates payload invalido', whatsappTemplates.data);

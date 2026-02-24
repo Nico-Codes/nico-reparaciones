@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Inject, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { z } from 'zod';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { Roles } from '../auth/roles.decorator.js';
@@ -28,7 +28,7 @@ const issueSchema = z.object({
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('ADMIN')
 export class DeviceCatalogController {
-  constructor(private readonly service: DeviceCatalogService) {}
+  constructor(@Inject(DeviceCatalogService) private readonly service: DeviceCatalogService) {}
 
   @Get('brands')
   brands() {

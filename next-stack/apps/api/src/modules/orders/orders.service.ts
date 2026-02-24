@@ -1,5 +1,5 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma, type OrderStatus } from '@prisma/client';
 import { CartService } from '../cart/cart.service.js';
 import { MailService } from '../mail/mail.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -15,12 +15,31 @@ type AdminListInput = {
   q?: string;
 };
 
+type OrderWithItems = Prisma.OrderGetPayload<{
+  include: { items: true };
+}>;
+
+type OrderWithUserAndItems = Prisma.OrderGetPayload<{
+  include: {
+    user: { select: { id: true; name: true; email: true } };
+    items: true;
+  };
+}>;
+
+type SerializableOrder = OrderWithItems & {
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+  } | null;
+};
+
 @Injectable()
 export class OrdersService {
   constructor(
-    private readonly prisma: PrismaService,
-    private readonly cartService: CartService,
-    private readonly mailService: MailService,
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(CartService) private readonly cartService: CartService,
+    @Inject(MailService) private readonly mailService: MailService,
   ) {}
 
   async checkout(input: CheckoutInput) {
@@ -95,12 +114,12 @@ export class OrdersService {
       return created;
     });
 
-    if ((order as any).user?.email) {
+    if (order.user?.email) {
       void this.mailService.sendTemplate({
         templateKey: 'order_created',
-        to: (order as any).user.email,
+        to: order.user.email,
         vars: {
-          user_name: (order as any).user.name,
+          user_name: order.user.name,
           order_id: order.id,
           order_total: `$${Number(order.total).toLocaleString('es-AR')}`,
         },
@@ -162,7 +181,7 @@ export class OrdersService {
       orderBy: { createdAt: 'desc' },
       take: 100,
     });
-    return { items: orders.map((o) => this.serializeOrder(o as any)) };
+    return { items: orders.map((o) => this.serializeOrder(o)) };
   }
 
   async adminOrderDetail(orderId: string) {
@@ -174,7 +193,7 @@ export class OrdersService {
       },
     });
     if (!order) throw new NotFoundException('Pedido no encontrado');
-    return { item: this.serializeOrder(order as any) };
+    return { item: this.serializeOrder(order) };
   }
 
   async adminUpdateStatus(orderId: string, statusRaw: string) {
@@ -187,38 +206,17 @@ export class OrdersService {
         items: { orderBy: { createdAt: 'asc' } },
       },
     });
-    return { item: this.serializeOrder(order as any) };
+    return { item: this.serializeOrder(order) };
   }
 
-  private normalizeStatus(statusRaw?: string) {
+  private normalizeStatus(statusRaw?: string): OrderStatus | null {
     const value = (statusRaw ?? '').trim().toUpperCase();
     if (!value) return null;
-    const allowed = new Set(['PENDIENTE', 'CONFIRMADO', 'PREPARANDO', 'LISTO_RETIRO', 'ENTREGADO', 'CANCELADO']);
-    return allowed.has(value) ? (value as any) : null;
+    const allowed = new Set<OrderStatus>(['PENDIENTE', 'CONFIRMADO', 'PREPARANDO', 'LISTO_RETIRO', 'ENTREGADO', 'CANCELADO']);
+    return allowed.has(value as OrderStatus) ? (value as OrderStatus) : null;
   }
 
-  private serializeOrder(order: {
-    id: string;
-    status: string;
-    total: Prisma.Decimal;
-    paymentMethod: string | null;
-    isQuickSale: boolean;
-    createdAt: Date;
-    updatedAt: Date;
-    user?: {
-      id: string;
-      name: string;
-      email: string;
-    } | null;
-    items?: Array<{
-      id: string;
-      productId: string | null;
-      nameSnapshot: string;
-      unitPrice: Prisma.Decimal;
-      quantity: number;
-      lineTotal: Prisma.Decimal;
-    }>;
-  }) {
+  private serializeOrder(order: SerializableOrder) {
     return {
       id: order.id,
       status: order.status,

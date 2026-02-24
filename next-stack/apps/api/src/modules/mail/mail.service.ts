@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { AppSetting } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import nodemailer from 'nodemailer';
@@ -10,7 +10,7 @@ export class MailService {
   private readonly logger = new Logger(MailService.name);
   private transporterPromise: Promise<any | null> | null = null;
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   async sendTemplate(input: {
     templateKey: TemplateKey;

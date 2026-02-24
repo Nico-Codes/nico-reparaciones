@@ -5,6 +5,7 @@ import {
   Headers,
   HttpCode,
   HttpStatus,
+  Inject,
   Post,
   UnauthorizedException,
   UseGuards,
@@ -36,7 +37,7 @@ import { ZodValidationPipe } from './zod-validation.pipe.js';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(@Inject(AuthService) private readonly authService: AuthService) {}
 
   @Post('register')
   @UsePipes(new ZodValidationPipe(registerSchema))

@@ -1,9 +1,9 @@
-import { Controller, Get, NotFoundException, Param, Query } from '@nestjs/common';
+import { Controller, Get, Inject, NotFoundException, Param, Query } from '@nestjs/common';
 import { StoreService } from './store.service.js';
 
 @Controller('store')
 export class StoreController {
-  constructor(private readonly storeService: StoreService) {}
+  constructor(@Inject(StoreService) private readonly storeService: StoreService) {}
 
   @Get('categories')
   async categories() {

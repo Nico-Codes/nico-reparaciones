@@ -11,12 +11,16 @@
     "dev:api": "npm run dev --workspace @nico/api",
     "dev:web": "npm run dev --workspace @nico/web",
     "qa": "npm run typecheck && npm run build",
+    "qa:backend:full": "node ./scripts/qa-backend-full.mjs",
+    "env:check": "node ./scripts/env-check.mjs",
     "smoke:api": "node ./scripts/smoke-api.mjs",
     "smoke:backend": "node ./scripts/smoke-backend.mjs",
     "build": "npm run build --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "db:generate": "npm run db:generate --workspace @nico/api",
+    "db:check": "npm run db:check --workspace @nico/api",
     "db:migrate": "npm run db:migrate --workspace @nico/api",
+    "db:push": "npm run db:push --workspace @nico/api",
     "db:studio": "npm run db:studio --workspace @nico/api",
     "db:seed": "npm run db:seed --workspace @nico/api"
   }

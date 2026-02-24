@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 
@@ -8,9 +8,13 @@ type ProductListParams = {
   active?: string;
 };
 
+type ProductWithCategory = Prisma.ProductGetPayload<{
+  include: { category: { select: { id: true; name: true; slug: true } } };
+}>;
+
 @Injectable()
 export class CatalogAdminService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   async categories() {
     const items = await this.prisma.category.findMany({
@@ -82,7 +86,7 @@ export class CatalogAdminService {
       take: 200,
     });
     return {
-      items: items.map((p) => this.serializeProduct(p as any)),
+      items: items.map((p) => this.serializeProduct(p)),
     };
   }
 
@@ -99,23 +103,24 @@ export class CatalogAdminService {
     barcode?: string | null;
     categoryId?: string | null;
   }) {
+    const data: Prisma.ProductUncheckedCreateInput = {
+      name: input.name.trim(),
+      slug: input.slug.trim(),
+      description: this.nullable(input.description),
+      price: new Prisma.Decimal(Number(input.price ?? 0)),
+      costPrice: input.costPrice == null ? null : new Prisma.Decimal(Number(input.costPrice)),
+      stock: Math.max(0, Math.trunc(input.stock ?? 0)),
+      active: input.active ?? true,
+      featured: input.featured ?? false,
+      sku: this.nullable(input.sku),
+      barcode: this.nullable(input.barcode),
+      categoryId: this.nullable(input.categoryId),
+    };
     const item = await this.prisma.product.create({
-      data: {
-        name: input.name.trim(),
-        slug: input.slug.trim(),
-        description: this.nullable(input.description),
-        price: new Prisma.Decimal(Number(input.price ?? 0)),
-        costPrice: input.costPrice == null ? null : new Prisma.Decimal(Number(input.costPrice)),
-        stock: Math.max(0, Math.trunc(input.stock ?? 0)),
-        active: input.active ?? true,
-        featured: input.featured ?? false,
-        sku: this.nullable(input.sku),
-        barcode: this.nullable(input.barcode),
-        categoryId: this.nullable(input.categoryId),
-      } as any,
+      data,
       include: { category: { select: { id: true, name: true, slug: true } } },
     });
-    return { item: this.serializeProduct(item as any) };
+    return { item: this.serializeProduct(item) };
   }
 
   async updateProduct(id: string, input: {
@@ -134,7 +139,7 @@ export class CatalogAdminService {
     const existing = await this.prisma.product.findUnique({ where: { id }, select: { id: true } });
     if (!existing) throw new NotFoundException('Producto no encontrado');
 
-    const data: any = {};
+    const data: Prisma.ProductUncheckedUpdateInput = {};
     if (input.name !== undefined) data.name = input.name.trim();
     if (input.slug !== undefined) data.slug = input.slug.trim();
     if (input.description !== undefined) data.description = this.nullable(input.description);
@@ -152,7 +157,7 @@ export class CatalogAdminService {
       data,
       include: { category: { select: { id: true, name: true, slug: true } } },
     });
-    return { item: this.serializeProduct(item as any) };
+    return { item: this.serializeProduct(item) };
   }
 
   private nullable(v?: string | null) {
@@ -160,7 +165,7 @@ export class CatalogAdminService {
     return x || null;
   }
 
-  private serializeProduct(p: any) {
+  private serializeProduct(p: ProductWithCategory) {
     return {
       id: p.id,
       name: p.name,
@@ -180,4 +185,3 @@ export class CatalogAdminService {
     };
   }
 }
-

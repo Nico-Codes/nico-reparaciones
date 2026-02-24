@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 type CartQuoteItemInput = {
@@ -8,7 +8,7 @@ type CartQuoteItemInput = {
 
 @Injectable()
 export class CartService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   async quote(items: CartQuoteItemInput[]) {
     if (!Array.isArray(items) || items.length === 0) {
