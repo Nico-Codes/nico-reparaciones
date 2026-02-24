@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
 import { whatsappApi, type WhatsappLogItem, type WhatsappTemplateItem } from './whatsappApi';
 
 export function AdminWhatsappPage() {
@@ -86,26 +85,26 @@ export function AdminWhatsappPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50">
-      <div className="mx-auto max-w-7xl px-4 py-8">
-        <div className="flex flex-wrap items-end justify-between gap-3">
+    <div className="store-shell">
+      <div className="page-head store-hero">
           <div>
-            <h1 className="text-2xl font-black tracking-tight">WhatsApp: Plantillas y Logs (Next)</h1>
+            <div className="page-title">WhatsApp: Plantillas y logs</div>
             <p className="mt-1 text-sm text-zinc-600">Editá mensajes base y registrá/consultá acciones enviadas.</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" asChild><Link to="/admin">Volver a admin</Link></Button>
-            <Button onClick={() => void saveTemplates()} disabled={loading || savingTemplates}>
+            <Link to="/admin" className="btn-outline h-11 justify-center px-4">Volver a admin</Link>
+            <button className="btn-primary h-11 justify-center px-4" type="button" onClick={() => void saveTemplates()} disabled={loading || savingTemplates}>
               {savingTemplates ? 'Guardando...' : 'Guardar plantillas'}
-            </Button>
+            </button>
           </div>
-        </div>
+      </div>
 
         {error ? <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">{error}</div> : null}
         {success ? <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">{success}</div> : null}
 
-        <div className="mt-4 grid gap-4 xl:grid-cols-[1fr_1fr]">
-          <section className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+      <div className="mt-4 grid gap-4 xl:grid-cols-[1fr_1fr]">
+          <section className="card">
+            <div className="card-body p-4">
             <div className="text-sm font-bold uppercase tracking-wide text-zinc-500">Plantillas WhatsApp</div>
             {loading ? (
               <div className="mt-3 rounded-xl border border-zinc-200 p-3 text-sm">Cargando...</div>
@@ -142,10 +141,12 @@ export function AdminWhatsappPage() {
                 ))}
               </div>
             )}
+            </div>
           </section>
 
           <section className="space-y-4">
-            <section className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+            <section className="card">
+              <div className="card-body p-4">
               <div className="text-sm font-bold uppercase tracking-wide text-zinc-500">Registrar log manual</div>
               <form className="mt-3 grid gap-2" onSubmit={(e) => void createManualLog(e)}>
                 <div className="grid grid-cols-2 gap-2">
@@ -166,14 +167,16 @@ export function AdminWhatsappPage() {
                   <input value={logForm.phone} onChange={(e) => setLogForm((p) => ({ ...p, phone: e.target.value }))} placeholder="Teléfono" className="h-10 rounded-xl border border-zinc-200 px-3 text-sm" />
                 </div>
                 <textarea value={logForm.message} onChange={(e) => setLogForm((p) => ({ ...p, message: e.target.value }))} rows={3} placeholder="Mensaje enviado / nota..." className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm" />
-                <Button className="w-full">Guardar log</Button>
+                <button className="btn-primary h-11 w-full justify-center" type="submit">Guardar log</button>
               </form>
+              </div>
             </section>
 
-            <section className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+            <section className="card">
+              <div className="card-body p-4">
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <div className="text-sm font-bold uppercase tracking-wide text-zinc-500">Logs WhatsApp</div>
-                <Button variant="outline" onClick={() => void reloadLogs()}>Actualizar logs</Button>
+                <button className="btn-outline h-10 justify-center px-4" type="button" onClick={() => void reloadLogs()}>Actualizar logs</button>
               </div>
               <div className="grid gap-2 md:grid-cols-3">
                 <input value={logFilter.q} onChange={(e) => setLogFilter((p) => ({ ...p, q: e.target.value }))} placeholder="Buscar..." className="h-10 rounded-xl border border-zinc-200 px-3 text-sm" />
@@ -187,7 +190,7 @@ export function AdminWhatsappPage() {
                 </select>
               </div>
               <div className="mt-2">
-                <Button variant="outline" onClick={() => void reloadLogs()}>Aplicar filtros</Button>
+                <button className="btn-outline h-10 justify-center px-4" type="button" onClick={() => void reloadLogs()}>Aplicar filtros</button>
               </div>
 
               <div className="mt-3 max-h-[32rem] space-y-2 overflow-auto pr-1">
@@ -212,11 +215,12 @@ export function AdminWhatsappPage() {
                   ))
                 )}
               </div>
+              </div>
             </section>
           </section>
         </div>
-      </div>
     </div>
   );
 }
+
 

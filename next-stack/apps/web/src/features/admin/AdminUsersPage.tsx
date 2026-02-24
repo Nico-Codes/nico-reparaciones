@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
 import { authStorage } from '@/features/auth/storage';
 import { adminUsersApi, type AdminUserRow } from './usersApi';
 
@@ -51,17 +50,14 @@ export function AdminUsersPage() {
   }), [items]);
 
   return (
-    <div className="min-h-screen bg-zinc-50">
-      <div className="mx-auto max-w-7xl px-4 py-8">
-        <div className="flex flex-wrap items-end justify-between gap-3">
+    <div className="store-shell">
+      <div className="page-head store-hero">
           <div>
-            <h1 className="text-2xl font-black tracking-tight">Admin Usuarios (Next)</h1>
-            <p className="mt-1 text-sm text-zinc-600">Listado de usuarios y cambio de roles (USER/ADMIN).</p>
+            <div className="page-title">Usuarios</div>
+            <div className="page-subtitle">Listado de usuarios y cambio de roles (USER/ADMIN).</div>
           </div>
-          <Button variant="outline" asChild>
-            <Link to="/admin">Volver a admin</Link>
-          </Button>
-        </div>
+          <Link to="/admin" className="btn-outline h-11 w-full justify-center sm:w-auto">Volver a admin</Link>
+      </div>
 
         {error ? <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">{error}</div> : null}
 
@@ -71,7 +67,8 @@ export function AdminUsersPage() {
           <Stat label="Emails verificados" value={String(stats.verified)} />
         </div>
 
-        <section className="mt-4 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+      <section className="mt-4 card">
+        <div className="card-body p-4">
           <div className="mb-3 grid gap-2 md:grid-cols-[1fr_180px_auto]">
             <input
               value={q}
@@ -84,7 +81,7 @@ export function AdminUsersPage() {
               <option value="ADMIN">ADMIN</option>
               <option value="USER">USER</option>
             </select>
-            <Button variant="outline" onClick={() => void load()}>Actualizar</Button>
+            <button className="btn-outline h-10 justify-center px-4" type="button" onClick={() => void load()}>Actualizar</button>
           </div>
 
           {loading ? (
@@ -125,8 +122,8 @@ export function AdminUsersPage() {
               })}
             </div>
           )}
-        </section>
-      </div>
+        </div>
+      </section>
     </div>
   );
 }
@@ -139,4 +136,3 @@ function Stat({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
-

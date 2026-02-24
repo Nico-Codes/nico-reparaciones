@@ -32,6 +32,6 @@ export type StoreProductsResponse = {
     totalPages: number;
     q: string;
     category: string | null;
-    sort: 'relevance' | 'price_asc' | 'price_desc' | 'newest';
+    sort: 'relevance' | 'price_asc' | 'price_desc' | 'newest' | 'name_asc' | 'name_desc' | 'stock_desc';
   };
 };

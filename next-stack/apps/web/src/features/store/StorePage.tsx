@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Search, SlidersHorizontal, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,9 +9,12 @@ import type { StoreCategory, StoreProduct, StoreProductsResponse } from './types
 
 const SORT_OPTIONS = [
   { value: 'relevance', label: 'Relevancia' },
-  { value: 'newest', label: 'Mas nuevos' },
+  { value: 'newest', label: 'Más nuevos' },
   { value: 'price_asc', label: 'Menor precio' },
   { value: 'price_desc', label: 'Mayor precio' },
+  { value: 'name_asc', label: 'Nombre A-Z' },
+  { value: 'name_desc', label: 'Nombre Z-A' },
+  { value: 'stock_desc', label: 'Más stock' },
 ] as const;
 
 export function StorePage() {
@@ -245,7 +248,7 @@ export function StorePage() {
 
         <div className="mt-4 flex items-center justify-between gap-2 text-sm text-zinc-600">
           <div>
-            {loading ? 'Cargando productos...' : `${productsData?.meta.total ?? 0} productos · Categoria: ${selectedCategoryLabel}`}
+            {loading ? 'Cargando productos...' : `${productsData?.meta.total ?? 0} productos · Categoría: ${selectedCategoryLabel}`}
           </div>
           {(q || category || sort !== 'relevance') ? (
             <button
@@ -294,7 +297,7 @@ export function StorePage() {
                 <div className="card-body space-y-3">
                   <div className="font-black">No hay productos</div>
                   <div className="muted">
-                    {q ? `No encontramos productos para "${q}"` : 'Todavia no hay productos para mostrar.'}
+                    {q ? `No encontramos productos para "${q}"` : 'Todavía no hay productos para mostrar.'}
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <Link className="btn-outline" to="/store">Ver todas</Link>
@@ -393,3 +396,4 @@ function StoreFeaturedCard({ product }: { product: StoreProduct }) {
     </div>
   );
 }
+

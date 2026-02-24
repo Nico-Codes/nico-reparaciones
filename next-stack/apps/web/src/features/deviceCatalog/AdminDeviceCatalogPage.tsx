@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Button } from '@/components/ui/button';
+﻿import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { deviceCatalogApi } from './api';
 
 function slugify(value: string) {
@@ -54,14 +54,19 @@ export function AdminDeviceCatalogPage() {
   const selectableBrands = useMemo(() => brands.filter((b) => b.active), [brands]);
 
   return (
-    <div className="min-h-screen bg-zinc-50">
-      <div className="mx-auto max-w-6xl px-4 py-8">
-        <h1 className="text-2xl font-black tracking-tight">Catálogo de dispositivos (Next)</h1>
-        <p className="mt-1 text-sm text-zinc-600">Marcas, modelos y fallas administrables para usar en reparaciones y pricing.</p>
-        {error ? <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">{error}</div> : null}
+    <div className="store-shell">
+      <div className="page-head store-hero">
+        <div>
+          <div className="page-title">Catálogo de dispositivos</div>
+          <div className="page-subtitle">Marcas, modelos y fallas para usar en reparaciones y pricing.</div>
+        </div>
+        <Link to="/admin" className="btn-outline h-11 w-full justify-center sm:w-auto">Volver a admin</Link>
+      </div>
+      {error ? <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">{error}</div> : null}
 
-        <div className="mt-4 grid gap-4 xl:grid-cols-3">
-          <section className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+      <div className="mt-4 grid gap-4 xl:grid-cols-3">
+          <section className="card">
+            <div className="card-body p-4">
             <div className="text-sm font-bold uppercase tracking-wide text-zinc-500">Marcas</div>
             <form className="mt-3 flex gap-2" onSubmit={async (e) => {
               e.preventDefault();
@@ -70,7 +75,7 @@ export function AdminDeviceCatalogPage() {
               await loadAll();
             }}>
               <input value={brandName} onChange={(e) => setBrandName(e.target.value)} placeholder="Samsung" className="h-10 flex-1 rounded-xl border border-zinc-200 px-3 text-sm" required />
-              <Button className="h-10">Agregar</Button>
+              <button className="btn-primary h-10 justify-center px-4" type="submit">Agregar</button>
             </form>
             <div className="mt-3 space-y-2 max-h-96 overflow-auto pr-1">
               {brands.map((b) => (
@@ -80,9 +85,11 @@ export function AdminDeviceCatalogPage() {
                 </div>
               ))}
             </div>
+            </div>
           </section>
 
-          <section className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+          <section className="card">
+            <div className="card-body p-4">
             <div className="text-sm font-bold uppercase tracking-wide text-zinc-500">Modelos</div>
             <form className="mt-3 grid gap-2" onSubmit={async (e) => {
               e.preventDefault();
@@ -96,7 +103,7 @@ export function AdminDeviceCatalogPage() {
                 {selectableBrands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
               </select>
               <input value={modelName} onChange={(e) => setModelName(e.target.value)} placeholder="A32 5G" className="h-10 rounded-xl border border-zinc-200 px-3 text-sm" required />
-              <Button className="h-10" disabled={!selectedBrandId}>Agregar modelo</Button>
+              <button className="btn-primary h-10 justify-center px-4" type="submit" disabled={!selectedBrandId}>Agregar modelo</button>
             </form>
             <div className="mt-3 space-y-2 max-h-96 overflow-auto pr-1">
               {models.map((m) => (
@@ -109,9 +116,11 @@ export function AdminDeviceCatalogPage() {
                 </div>
               ))}
             </div>
+            </div>
           </section>
 
-          <section className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+          <section className="card">
+            <div className="card-body p-4">
             <div className="text-sm font-bold uppercase tracking-wide text-zinc-500">Fallas</div>
             <form className="mt-3 flex gap-2" onSubmit={async (e) => {
               e.preventDefault();
@@ -120,7 +129,7 @@ export function AdminDeviceCatalogPage() {
               await loadAll();
             }}>
               <input value={issueName} onChange={(e) => setIssueName(e.target.value)} placeholder="Cambio de módulo" className="h-10 flex-1 rounded-xl border border-zinc-200 px-3 text-sm" required />
-              <Button className="h-10">Agregar</Button>
+              <button className="btn-primary h-10 justify-center px-4" type="submit">Agregar</button>
             </form>
             <div className="mt-3 space-y-2 max-h-96 overflow-auto pr-1">
               {issues.map((i) => (
@@ -130,9 +139,10 @@ export function AdminDeviceCatalogPage() {
                 </div>
               ))}
             </div>
+            </div>
           </section>
         </div>
-      </div>
     </div>
   );
 }
+

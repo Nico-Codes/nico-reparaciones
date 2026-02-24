@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ordersApi } from './api';
@@ -63,21 +63,22 @@ export function AdminOrdersPage() {
   }, [items]);
 
   return (
-    <div>
-      <div className="flex flex-wrap items-end justify-between gap-3">
+    <div className="store-shell">
+      <section className="page-head store-hero">
         <div>
-          <h1 className="text-2xl font-black tracking-tight">Admin pedidos</h1>
-          <p className="mt-1 text-sm text-zinc-600">Listado, filtros, detalle y cambio de estado.</p>
+          <div className="page-title">Pedidos</div>
+          <p className="page-subtitle">Listado, filtros, detalle y cambio de estado.</p>
         </div>
         <Button variant="outline" asChild>
           <Link to="/admin">Volver a admin</Link>
         </Button>
-      </div>
+      </section>
 
       {error ? <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">{error}</div> : null}
 
       <div className="mt-4 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-        <section className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+        <section className="card">
+          <div className="card-body">
           <div className="mb-3 grid gap-2 md:grid-cols-[1fr_220px]">
             <input
               value={q}
@@ -117,7 +118,7 @@ export function AdminOrdersPage() {
                     <div className="min-w-0">
                       <div className="truncate text-sm font-black text-zinc-900">{order.id}</div>
                       <div className="text-xs text-zinc-500">
-                        {order.user ? `${order.user.name} · ${order.user.email}` : 'Venta rapida / sin usuario'}
+                        {order.user ? `${order.user.name} · ${order.user.email}` : 'Venta rápida / sin usuario'}
                       </div>
                       <div className="mt-1 truncate text-xs text-zinc-500">
                         {order.items.slice(0, 2).map((i) => i.name).join(' · ')}
@@ -131,15 +132,17 @@ export function AdminOrdersPage() {
                   </div>
                   <div className="mt-2 flex items-center gap-2">
                     <span className="rounded-full border border-zinc-200 bg-zinc-100 px-2 py-0.5 text-xs font-bold text-zinc-700">{order.status}</span>
-                    <span className="text-xs text-zinc-500">{order.paymentMethod || 'sin metodo'}</span>
+                    <span className="text-xs text-zinc-500">{order.paymentMethod || 'sin método'}</span>
                   </div>
                 </button>
               ))}
             </div>
           )}
+          </div>
         </section>
 
-        <section className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+        <section className="card">
+          <div className="card-body">
           {!selectedId ? (
             <div className="rounded-xl border border-dashed border-zinc-300 p-4 text-sm text-zinc-600">Selecciona un pedido para ver el detalle.</div>
           ) : loadingDetail ? (
@@ -156,7 +159,7 @@ export function AdminOrdersPage() {
 
               <div className="grid gap-2 sm:grid-cols-2">
                 <InfoCard label="Total" value={`$${detail.total.toLocaleString('es-AR')}`} />
-                <InfoCard label="Metodo" value={detail.paymentMethod || 'sin metodo'} />
+                <InfoCard label="Método" value={detail.paymentMethod || 'sin método'} />
               </div>
 
               <div>
@@ -179,7 +182,7 @@ export function AdminOrdersPage() {
                       <div className="text-zinc-600">{detail.user.email}</div>
                     </>
                   ) : (
-                    <div className="text-zinc-600">Sin usuario asociado (posible venta rapida)</div>
+                    <div className="text-zinc-600">Sin usuario asociado (posible venta rápida)</div>
                   )}
                 </div>
               </div>
@@ -202,6 +205,7 @@ export function AdminOrdersPage() {
               </div>
             </div>
           )}
+          </div>
         </section>
       </div>
     </div>

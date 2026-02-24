@@ -11,29 +11,51 @@ export function MyOrdersPage() {
 
   useEffect(() => {
     let active = true;
-    ordersApi.myOrders()
-      .then((res) => { if (active) setItems(res.items); })
-      .catch((err) => { if (active) setError(err instanceof Error ? err.message : 'Error cargando pedidos'); })
-      .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
+    ordersApi
+      .myOrders()
+      .then((res) => {
+        if (active) setItems(res.items);
+      })
+      .catch((err) => {
+        if (active) setError(err instanceof Error ? err.message : 'Error cargando pedidos');
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   return (
-    <div className="min-h-screen bg-zinc-50">
-      <div className="mx-auto max-w-5xl px-4 py-8">
-        <div className="mb-4 flex items-center justify-between gap-2">
-          <h1 className="text-2xl font-black tracking-tight">Mis pedidos (Next)</h1>
-          <Button variant="outline" asChild><Link to="/store">Ir a tienda</Link></Button>
+    <div className="store-shell">
+      <section className="page-head store-hero">
+        <div>
+          <div className="page-title">Mis pedidos</div>
+          <p className="page-subtitle">Historial y seguimiento de compras realizadas.</p>
         </div>
-        {error ? <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">{error}</div> : null}
-        {loading ? (
-          <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">Cargando pedidos...</div>
-        ) : items.length === 0 ? (
-          <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">Todavía no hay pedidos.</div>
-        ) : (
-          <div className="space-y-3">
+        <Button variant="outline" asChild>
+          <Link to="/store">Ir a tienda</Link>
+        </Button>
+      </section>
+
+      {error ? <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">{error}</div> : null}
+
+      {loading ? (
+        <div className="card">
+          <div className="card-body">Cargando pedidos...</div>
+        </div>
+      ) : items.length === 0 ? (
+        <div className="card">
+          <div className="card-body">
+            <div className="text-sm text-zinc-700">Todavía no hay pedidos.</div>
+          </div>
+        </div>
+      ) : (
+        <div className="card">
+          <div className="card-body space-y-3">
             {items.map((order) => (
-              <Link key={order.id} to={`/orders/${order.id}`} className="block rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm hover:shadow-md">
+              <Link key={order.id} to={`/orders/${order.id}`} className="block rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm transition hover:shadow-md">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <div className="font-black text-zinc-900">Pedido #{order.id.slice(0, 8)}</div>
@@ -47,8 +69,8 @@ export function MyOrdersPage() {
               </Link>
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

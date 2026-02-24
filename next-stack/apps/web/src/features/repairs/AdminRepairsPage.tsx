@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { deviceCatalogApi } from '@/features/deviceCatalog/api';
 import { repairsApi } from './api';
@@ -97,7 +97,7 @@ export function AdminRepairsPage() {
       });
       setItems(res.items);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error cargando reparaciones');
+      setError(err instanceof Error ? err.message : 'Error cargando reparaciónes');
     } finally {
       setLoading(false);
     }
@@ -118,7 +118,7 @@ export function AdminRepairsPage() {
       const res = await repairsApi.adminStats();
       setStats(res);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error cargando estadisticas');
+      setError(err instanceof Error ? err.message : 'Error cargando estadísticas');
     } finally {
       setLoadingStats(false);
     }
@@ -325,7 +325,7 @@ export function AdminRepairsPage() {
       void loadStats();
       void repairsApi.adminDetail(selectedRepairId).then((detail) => setSelectedRepairTimeline(detail.timeline ?? [])).catch(() => {});
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error guardando reparacion');
+      setError(err instanceof Error ? err.message : 'Error guardando reparación');
     } finally {
       setSavingSelectedRepair(false);
     }
@@ -394,27 +394,37 @@ export function AdminRepairsPage() {
   }
 
   return (
-    <div>
-        <h1 className="text-2xl font-black tracking-tight">Admin reparaciones</h1>
-        <p className="mt-1 text-sm text-zinc-600">Alta rapida, listado, filtros y detalle editable.</p>
+    <div className="store-shell">
+      <section className="page-head store-hero">
+        <div>
+          <div className="page-title">Reparaciones</div>
+          <p className="page-subtitle">Alta rápida, listado, filtros y detalle editable.</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <a href="/admin" className="btn-outline">
+            Volver a admin
+          </a>
+        </div>
+      </section>
 
-        {error ? <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">{error}</div> : null}
+      {error ? <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">{error}</div> : null}
 
-        <section className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <StatCard label="Total" value={loadingStats ? '...' : String(stats?.total ?? 0)} />
-          <StatCard label="Listas para retiro" value={loadingStats ? '...' : String(stats?.readyPickup ?? 0)} tone="emerald" />
-          <StatCard label="Entregadas hoy" value={loadingStats ? '...' : String(stats?.deliveredToday ?? 0)} tone="sky" />
-          <StatCard
-            label="En curso"
-            value={loadingStats ? '...' : String(Math.max(0, (stats?.total ?? 0) - ((stats?.byStatus?.DELIVERED ?? 0) + (stats?.byStatus?.CANCELLED ?? 0))))}
-            tone="amber"
-          />
-        </section>
+      <section className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard label="Total" value={loadingStats ? '...' : String(stats?.total ?? 0)} />
+        <StatCard label="Listas para retiro" value={loadingStats ? '...' : String(stats?.readyPickup ?? 0)} tone="emerald" />
+        <StatCard label="Entregadas hoy" value={loadingStats ? '...' : String(stats?.deliveredToday ?? 0)} tone="sky" />
+        <StatCard
+          label="En curso"
+          value={loadingStats ? '...' : String(Math.max(0, (stats?.total ?? 0) - ((stats?.byStatus?.DELIVERED ?? 0) + (stats?.byStatus?.CANCELLED ?? 0))))}
+          tone="amber"
+        />
+      </section>
 
-        <div className="mt-4 grid gap-4 xl:grid-cols-[420px_1fr]">
-          <div className="space-y-4">
-          <form onSubmit={createRepair} className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm space-y-3">
-            <div className="text-sm font-bold uppercase tracking-wide text-zinc-500">Nueva reparación</div>
+      <div className="mt-4 grid gap-4 xl:grid-cols-[420px_1fr]">
+        <div className="space-y-4">
+          <form onSubmit={createRepair} className="card">
+            <div className="card-body space-y-3">
+              <div className="text-sm font-bold uppercase tracking-wide text-zinc-500">Nueva reparación</div>
             <Field label="Cliente *" value={form.customerName} onChange={(v) => setForm({ ...form, customerName: v })} required />
             <Field label="Teléfono" value={form.customerPhone} onChange={(v) => setForm({ ...form, customerPhone: v })} />
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
@@ -463,12 +473,14 @@ export function AdminRepairsPage() {
               <span className="mb-1 block text-sm font-bold text-zinc-700">Notas</span>
               <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={3} className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm" />
             </label>
-            <Button className="w-full" disabled={saving}>{saving ? 'Guardando...' : 'Crear reparación'}</Button>
+              <Button className="w-full" disabled={saving}>{saving ? 'Guardando...' : 'Crear reparación'}</Button>
+            </div>
           </form>
 
-          <section className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-            <div className="text-sm font-bold uppercase tracking-wide text-zinc-500">Reglas de cálculo (MVP)</div>
-            <form className="mt-3 grid gap-2" onSubmit={createRule}>
+          <section className="card">
+            <div className="card-body">
+              <div className="text-sm font-bold uppercase tracking-wide text-zinc-500">Reglas de cálculo (MVP)</div>
+              <form className="mt-3 grid gap-2" onSubmit={createRule}>
               <Field label="Nombre regla" value={ruleForm.name} onChange={(v) => setRuleForm({ ...ruleForm, name: v })} required />
               <div className="grid grid-cols-2 gap-2">
                 <Field label="Marca" value={ruleForm.deviceBrand} onChange={(v) => setRuleForm({ ...ruleForm, deviceBrand: v })} />
@@ -480,36 +492,38 @@ export function AdminRepairsPage() {
                 <Field label="% gan." type="number" value={ruleForm.profitPercent} onChange={(v) => setRuleForm({ ...ruleForm, profitPercent: v })} />
                 <Field label="Prioridad" type="number" value={ruleForm.priority} onChange={(v) => setRuleForm({ ...ruleForm, priority: v })} />
               </div>
-              <Button className="w-full">Crear regla</Button>
-            </form>
-            <div className="mt-3 max-h-72 space-y-2 overflow-auto pr-1">
-              {loadingRules ? (
-                <div className="rounded-xl border border-zinc-200 p-2 text-sm">Cargando reglas...</div>
-              ) : rules.length === 0 ? (
-                <div className="rounded-xl border border-zinc-200 p-2 text-sm">Sin reglas todavía.</div>
-              ) : rules.map((rule) => (
-                <div key={rule.id} className="rounded-xl border border-zinc-200 p-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <div className="text-sm font-black text-zinc-900">{rule.name}</div>
-                      <div className="text-xs text-zinc-500">
-                        {[rule.deviceBrand, rule.deviceModel, rule.issueLabel].filter(Boolean).join(' · ') || 'Regla global'}
+                <Button className="w-full">Crear regla</Button>
+              </form>
+              <div className="mt-3 max-h-72 space-y-2 overflow-auto pr-1">
+                {loadingRules ? (
+                  <div className="rounded-xl border border-zinc-200 p-2 text-sm">Cargando reglas...</div>
+                ) : rules.length === 0 ? (
+                  <div className="rounded-xl border border-zinc-200 p-2 text-sm">Sin reglas todavía.</div>
+                ) : rules.map((rule) => (
+                  <div key={rule.id} className="rounded-xl border border-zinc-200 p-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="text-sm font-black text-zinc-900">{rule.name}</div>
+                        <div className="text-xs text-zinc-500">
+                          {[rule.deviceBrand, rule.deviceModel, rule.issueLabel].filter(Boolean).join(' · ') || 'Regla global'}
+                        </div>
+                        <div className="mt-1 text-xs text-zinc-600">Base ${rule.basePrice.toLocaleString('es-AR')} + {rule.profitPercent}% · Prio {rule.priority}</div>
                       </div>
-                      <div className="mt-1 text-xs text-zinc-600">Base ${rule.basePrice.toLocaleString('es-AR')} + {rule.profitPercent}% · Prio {rule.priority}</div>
+                      <button type="button" className="text-xs font-bold text-rose-700 hover:text-rose-800" onClick={() => void deleteRule(rule.id)}>
+                        Borrar
+                      </button>
                     </div>
-                    <button type="button" className="text-xs font-bold text-rose-700 hover:text-rose-800" onClick={() => void deleteRule(rule.id)}>
-                      Borrar
-                    </button>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </section>
-          </div>
+        </div>
 
-          <section className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+        <section className="card">
+          <div className="card-body">
             <div className="mb-3 flex flex-wrap gap-2">
-              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar ID / cliente / telefono / modelo / falla..." className="h-10 flex-1 min-w-[220px] rounded-xl border border-zinc-200 px-3 text-sm" />
+              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar ID / cliente / teléfono / modelo / falla..." className="h-10 flex-1 min-w-[220px] rounded-xl border border-zinc-200 px-3 text-sm" />
               <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="h-10 min-w-[200px] rounded-xl border border-zinc-200 px-3 text-sm">
                 <option value="">Todos los estados</option>
                 {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -592,7 +606,7 @@ export function AdminRepairsPage() {
             <div className="mt-4 border-t border-zinc-200 pt-4">
               {!selectedRepairId ? (
                 <div className="rounded-xl border border-dashed border-zinc-300 p-3 text-sm text-zinc-600">
-                  Selecciona una reparacion para ver y editar el detalle.
+                  Selecciona una reparación para ver y editar el detalle.
                 </div>
               ) : loadingSelectedRepair ? (
                 <div className="rounded-xl border border-zinc-200 p-3 text-sm">Cargando detalle...</div>
@@ -602,7 +616,7 @@ export function AdminRepairsPage() {
                 <form onSubmit={saveSelectedRepair} className="space-y-3">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <div className="text-xs font-bold uppercase tracking-wide text-zinc-500">Detalle de reparacion</div>
+                      <div className="text-xs font-bold uppercase tracking-wide text-zinc-500">Detalle de reparación</div>
                       <div className="mt-1 text-sm font-black break-all text-zinc-900">{selectedRepair.id}</div>
                       <div className="text-xs text-zinc-500">{new Date(selectedRepair.createdAt).toLocaleString('es-AR')}</div>
                     </div>
@@ -618,19 +632,19 @@ export function AdminRepairsPage() {
 
                   <div className="grid gap-2 sm:grid-cols-2">
                     <Field label="Cliente *" value={editForm.customerName} onChange={(v) => setEditForm((p) => ({ ...p, customerName: v }))} required />
-                    <Field label="Telefono" value={editForm.customerPhone} onChange={(v) => setEditForm((p) => ({ ...p, customerPhone: v }))} />
+                    <Field label="Teléfono" value={editForm.customerPhone} onChange={(v) => setEditForm((p) => ({ ...p, customerPhone: v }))} />
                   </div>
 
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                     <SelectField
-                      label="Marca (catalogo)"
+                      label="Marca (catálogo)"
                       value={editBrandId}
                       onChange={setEditBrandId}
                       options={brands.map((b) => ({ value: b.id, label: b.name }))}
                       placeholder="Seleccionar"
                     />
                     <SelectField
-                      label="Modelo (catalogo)"
+                      label="Modelo (catálogo)"
                       value={editModelId}
                       onChange={setEditModelId}
                       options={editModels.filter((m) => !editBrandId || m.brandId === editBrandId).map((m) => ({ value: m.id, label: m.name }))}
@@ -638,7 +652,7 @@ export function AdminRepairsPage() {
                       disabled={!editBrandId}
                     />
                     <SelectField
-                      label="Falla (catalogo)"
+                      label="Falla (catálogo)"
                       value={editIssueId}
                       onChange={setEditIssueId}
                       options={issues.map((i) => ({ value: i.id, label: i.name }))}
@@ -707,8 +721,9 @@ export function AdminRepairsPage() {
                 </form>
               )}
             </div>
-          </section>
-        </div>
+          </div>
+        </section>
+      </div>
     </div>
   );
 }
@@ -797,3 +812,4 @@ function SelectField({
     </label>
   );
 }
+

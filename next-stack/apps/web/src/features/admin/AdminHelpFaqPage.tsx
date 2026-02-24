@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
 import { helpFaqAdminApi, type HelpFaqAdminItem } from './helpFaqApi';
 
 export function AdminHelpFaqPage() {
@@ -58,23 +57,23 @@ export function AdminHelpFaqPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50">
-      <div className="mx-auto max-w-7xl px-4 py-8">
-        <div className="flex flex-wrap items-end justify-between gap-3">
+    <div className="store-shell">
+      <div className="page-head store-hero">
           <div>
-            <h1 className="text-2xl font-black tracking-tight">Ayuda editable (Next)</h1>
-            <p className="mt-1 text-sm text-zinc-600">Gestioná preguntas y respuestas públicas de la sección Ayuda.</p>
+            <div className="page-title">Ayuda editable</div>
+            <div className="page-subtitle">Gestioná preguntas y respuestas públicas de la sección Ayuda.</div>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" asChild><Link to="/help">Ver Ayuda pública</Link></Button>
-            <Button variant="outline" asChild><Link to="/admin">Volver a admin</Link></Button>
+            <Link to="/help" className="btn-outline h-11 justify-center px-4">Ver Ayuda pública</Link>
+            <Link to="/admin" className="btn-outline h-11 justify-center px-4">Volver a admin</Link>
           </div>
-        </div>
+      </div>
 
         {error ? <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">{error}</div> : null}
 
-        <div className="mt-4 grid gap-4 xl:grid-cols-[420px_1fr]">
-          <section className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+      <div className="mt-4 grid gap-4 xl:grid-cols-[420px_1fr]">
+          <section className="card">
+            <div className="card-body p-4">
             <div className="text-sm font-bold uppercase tracking-wide text-zinc-500">Nueva pregunta</div>
             <form className="mt-3 grid gap-2" onSubmit={(e) => void createItem(e)}>
               <input value={form.question} onChange={(e) => setForm((p) => ({ ...p, question: e.target.value }))} placeholder="¿Cómo sigo mi pedido?" className="h-10 rounded-xl border border-zinc-200 px-3 text-sm" required />
@@ -87,11 +86,13 @@ export function AdminHelpFaqPage() {
                 <input type="checkbox" checked={form.active} onChange={(e) => setForm((p) => ({ ...p, active: e.target.checked }))} />
                 Activa
               </label>
-              <Button className="w-full">Crear FAQ</Button>
+              <button className="btn-primary h-11 w-full justify-center" type="submit">Crear FAQ</button>
             </form>
+            </div>
           </section>
 
-          <section className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+          <section className="card">
+            <div className="card-body p-4">
             <div className="mb-3 grid gap-2 md:grid-cols-[1fr_180px_180px_auto]">
               <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar..." className="h-10 rounded-xl border border-zinc-200 px-3 text-sm" />
               <select value={activeFilter} onChange={(e) => setActiveFilter(e.target.value)} className="h-10 rounded-xl border border-zinc-200 px-3 text-sm">
@@ -103,7 +104,7 @@ export function AdminHelpFaqPage() {
                 <option value="">Todas las categorías</option>
                 {categories.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
-              <Button variant="outline" onClick={() => void load()}>Actualizar</Button>
+              <button className="btn-outline h-10 justify-center px-4" type="button" onClick={() => void load()}>Actualizar</button>
             </div>
 
             {loading ? (
@@ -157,10 +158,11 @@ export function AdminHelpFaqPage() {
                 ))}
               </div>
             )}
+            </div>
           </section>
         </div>
-      </div>
     </div>
   );
 }
+
 

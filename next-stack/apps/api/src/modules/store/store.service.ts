@@ -4,7 +4,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 type ListProductsParams = {
   q?: string;
   category?: string;
-  sort?: 'relevance' | 'price_asc' | 'price_desc' | 'newest';
+  sort?: 'relevance' | 'price_asc' | 'price_desc' | 'newest' | 'name_asc' | 'name_desc' | 'stock_desc';
   page?: number;
   pageSize?: number;
 };
@@ -208,6 +208,9 @@ export class StoreService {
     if (sort === 'price_asc') return [{ price: 'asc' as const }, { createdAt: 'desc' as const }];
     if (sort === 'price_desc') return [{ price: 'desc' as const }, { createdAt: 'desc' as const }];
     if (sort === 'newest') return [{ createdAt: 'desc' as const }];
+    if (sort === 'name_asc') return [{ name: 'asc' as const }, { createdAt: 'desc' as const }];
+    if (sort === 'name_desc') return [{ name: 'desc' as const }, { createdAt: 'desc' as const }];
+    if (sort === 'stock_desc') return [{ stock: 'desc' as const }, { featured: 'desc' as const }, { createdAt: 'desc' as const }];
     return [{ featured: 'desc' as const }, { createdAt: 'desc' as const }];
   }
 

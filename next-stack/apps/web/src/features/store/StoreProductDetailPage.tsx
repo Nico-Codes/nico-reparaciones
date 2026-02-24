@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
 import { cartStorage } from '@/features/cart/storage';
 import { storeApi } from './api';
 import type { StoreProduct } from './types';
@@ -10,11 +9,13 @@ export function StoreProductDetailPage() {
   const [item, setItem] = useState<StoreProduct | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [qty, setQty] = useState(1);
 
   useEffect(() => {
     let active = true;
     setLoading(true);
     setError('');
+
     storeApi
       .product(slug)
       .then((res) => {
@@ -35,70 +36,176 @@ export function StoreProductDetailPage() {
     };
   }, [slug]);
 
+  useEffect(() => {
+    if (!item) return;
+    const maxQty = Math.max(1, item.stock || 1);
+    setQty((prev) => Math.min(Math.max(1, prev), maxQty));
+  }, [item?.id, item?.stock]);
+
+  const hasStock = (item?.stock ?? 0) > 0;
+  const maxQty = useMemo(() => Math.max(1, item?.stock ?? 1), [item?.stock]);
+  const money = (n: number) => `$ ${n.toLocaleString('es-AR')}`;
+
+  function addToCart() {
+    if (!item || !hasStock) return;
+    cartStorage.add(item.id, qty);
+  }
+
+  if (loading) {
+    return <div className="card"><div className="card-body">Cargando producto...</div></div>;
+  }
+
+  if (error || !item) {
+    return (
+      <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-rose-900 shadow-sm">
+        {error || 'Producto no encontrado'}
+      </div>
+    );
+  }
+
   return (
-    <div>
-      <div className="mb-4">
-        <Button variant="outline" asChild>
-          <Link to="/store">← Volver a tienda</Link>
-        </Button>
+    <div className="store-shell">
+      <div className="product-detail-breadcrumb">
+        <Link to="/store" className="font-black">Tienda</Link>
+        <span className="mx-2">/</span>
+        {item.category ? (
+          <>
+            <Link to={`/store?category=${encodeURIComponent(item.category.slug)}`} className="font-black">
+              {item.category.name}
+            </Link>
+            <span className="mx-2">/</span>
+          </>
+        ) : null}
+        <span className="text-zinc-500">{item.name}</span>
       </div>
 
-      {loading ? (
-        <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">Cargando producto...</div>
-      ) : error || !item ? (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-rose-900 shadow-sm">
-          {error || 'Producto no encontrado'}
-        </div>
-      ) : (
-        <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
-          <div className="mb-4 overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.02fr)_minmax(0,0.98fr)] lg:items-start">
+        <div className="card overflow-hidden product-detail-media-card">
+          <div className="aspect-square bg-zinc-50 sm:aspect-[4/3] lg:aspect-[1/1]">
             {item.imageUrl ? (
               <img
                 src={item.imageUrl}
                 alt={item.name}
-                className="block h-auto w-full object-cover"
-                style={{ aspectRatio: '1 / 1', maxHeight: '420px' }}
+                className="h-full w-full object-contain bg-white"
                 loading="eager"
                 decoding="async"
+                width={1200}
+                height={1200}
               />
             ) : (
-              <div className="grid h-56 place-items-center text-sm font-black text-zinc-400 sm:h-72">Sin imagen</div>
+              <div className="flex h-full w-full items-center justify-center text-sm font-black text-zinc-400">
+                Sin imagen
+              </div>
             )}
           </div>
+        </div>
 
-          <div className="text-xs font-bold uppercase tracking-wide text-zinc-500">
-            {item.category?.name ?? 'Sin categoria'}
-          </div>
-          <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-900">{item.name}</h1>
-          <div className="mt-3 text-4xl font-black text-zinc-900">${item.price.toLocaleString('es-AR')}</div>
-          <div className="mt-2 text-sm text-zinc-600">
-            Stock actual:{' '}
-            <span className={`font-bold ${item.stock > 0 ? 'text-emerald-700' : 'text-rose-700'}`}>{item.stock}</span>
-          </div>
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Button onClick={() => cartStorage.add(item.id, 1)} disabled={item.stock <= 0}>
-              Agregar al carrito
-            </Button>
-            <Button variant="outline" asChild>
-              <Link to="/cart">Ver carrito</Link>
-            </Button>
-          </div>
-
-          {item.description ? (
-            <div className="mt-4 rounded-xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-700">
-              {item.description}
+        <div className="card product-detail-info-card">
+          <div className="card-body p-4 sm:p-5">
+            <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">
+              Producto
             </div>
-          ) : null}
+            <div className="page-title mt-1">{item.name}</div>
 
-          <div className="mt-4 grid gap-2 text-sm text-zinc-600 sm:grid-cols-2">
-            <div><span className="font-semibold text-zinc-800">SKU:</span> {item.sku || '—'}</div>
-            <div><span className="font-semibold text-zinc-800">Codigo:</span> {item.barcode || '—'}</div>
-            <div><span className="font-semibold text-zinc-800">Slug:</span> {item.slug}</div>
-            <div><span className="font-semibold text-zinc-800">Destacado:</span> {item.featured ? 'Si' : 'No'}</div>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <span className={hasStock ? 'badge-emerald' : 'badge-rose'}>
+                {hasStock ? `Disponible: ${item.stock}` : 'Sin stock'}
+              </span>
+              {item.featured ? <span className="badge-zinc">Destacado</span> : null}
+            </div>
+
+            <div className="product-detail-price-box mt-4">
+              <div className="text-xs font-black uppercase tracking-wide text-zinc-500">Precio</div>
+              <div className="text-3xl font-black tracking-tight text-zinc-900 sm:text-4xl">{money(item.price)}</div>
+            </div>
+
+            {!hasStock ? (
+              <div className="mt-3 rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-black text-rose-800">
+                Sin stock por ahora. Puedes consultar disponibilidad por WhatsApp.
+              </div>
+            ) : null}
+
+            {item.description ? (
+              <div className="mt-4 whitespace-pre-line text-sm leading-relaxed text-zinc-700">{item.description}</div>
+            ) : null}
+
+            <div className="product-detail-meta mt-5">
+              <div><span className="font-semibold text-zinc-800">SKU:</span> {item.sku || '-'}</div>
+              <div><span className="font-semibold text-zinc-800">Código:</span> {item.barcode || '-'}</div>
+              <div><span className="font-semibold text-zinc-800">Slug:</span> {item.slug}</div>
+              <div><span className="font-semibold text-zinc-800">Categoría:</span> {item.category?.name ?? '-'}</div>
+            </div>
+
+            <div className="mt-6 grid gap-3">
+              <div className="grid gap-3 sm:grid-cols-[auto_1fr] sm:items-end">
+                <div>
+                  <label className="text-xs font-black uppercase tracking-wide text-zinc-600" htmlFor="productQty">
+                    Cantidad
+                  </label>
+                  <div className="mt-1 inline-flex items-center rounded-2xl border border-zinc-200 bg-zinc-50 p-1 shadow-inner shadow-zinc-200/40">
+                    <button
+                      type="button"
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-base font-black text-zinc-800 hover:bg-zinc-100 disabled:opacity-40"
+                      onClick={() => setQty((v) => Math.max(1, v - 1))}
+                      disabled={!hasStock || qty <= 1}
+                      aria-label="Restar cantidad"
+                    >
+                      -
+                    </button>
+
+                    <input
+                      id="productQty"
+                      type="number"
+                      value={qty}
+                      min={1}
+                      max={maxQty}
+                      onChange={(e) => {
+                        const next = Number(e.target.value) || 1;
+                        setQty(Math.min(maxQty, Math.max(1, next)));
+                      }}
+                      className="h-10 w-16 border-0 bg-transparent text-center text-base font-black text-zinc-900 focus:ring-0"
+                      inputMode="numeric"
+                      disabled={!hasStock}
+                    />
+
+                    <button
+                      type="button"
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-base font-black text-zinc-800 hover:bg-zinc-100 disabled:opacity-40"
+                      onClick={() => setQty((v) => Math.min(maxQty, v + 1))}
+                      disabled={!hasStock || qty >= maxQty}
+                      aria-label="Sumar cantidad"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  className="btn-primary h-11 w-full justify-center rounded-2xl product-detail-buy-btn"
+                  type="button"
+                  onClick={addToCart}
+                  disabled={!hasStock}
+                  aria-label="Agregar al carrito"
+                >
+                  {hasStock ? 'Agregar al carrito' : 'Sin stock'}
+                </button>
+              </div>
+
+              <div className="grid gap-2 sm:grid-cols-2">
+                <Link to="/cart" className="btn-outline h-11 w-full justify-center rounded-2xl">Ver carrito</Link>
+                <Link to="/store" className="btn-ghost h-11 w-full justify-center rounded-2xl border border-zinc-200">Seguir comprando</Link>
+              </div>
+            </div>
+
+            <div className="mt-4 rounded-xl border border-sky-100 bg-sky-50/70 px-3 py-2 text-xs text-zinc-600">
+              ¿Necesitás reparar tu equipo? Usá{' '}
+              <Link className="font-black text-sky-700 hover:text-sky-800" to="/reparacion">
+                Consultar reparación
+              </Link>.
+            </div>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

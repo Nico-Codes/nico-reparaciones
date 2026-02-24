@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { catalogAdminApi, type AdminCategory, type AdminProduct } from './api';
@@ -110,27 +110,25 @@ export function AdminProductsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50">
-      <div className="mx-auto max-w-7xl px-4 py-8">
-        <div className="flex flex-wrap items-end justify-between gap-3">
+    <div className="store-shell">
+      <div className="page-head store-hero">
           <div>
-            <h1 className="text-2xl font-black tracking-tight">Admin Productos y Categorías (Next)</h1>
-            <p className="mt-1 text-sm text-zinc-600">Gestión básica de catálogo con edición rápida de stock, precio y estados.</p>
+            <div className="page-title">Productos y categorías</div>
+            <div className="page-subtitle">Gestión básica de catálogo con edición rápida de stock, precio y estados.</div>
           </div>
-          <Button variant="outline" asChild>
-            <Link to="/admin">Volver a admin</Link>
-          </Button>
-        </div>
+          <Link to="/admin" className="btn-outline h-11 w-full justify-center sm:w-auto">Volver a admin</Link>
+      </div>
 
-        {error ? <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">{error}</div> : null}
+      {error ? <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">{error}</div> : null}
 
-        <div className="mt-4 grid gap-4 xl:grid-cols-[380px_1fr]">
+      <div className="mt-4 grid gap-4 xl:grid-cols-[380px_1fr]">
           <div className="space-y-4">
-            <section className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+            <section className="card">
+              <div className="card-body p-4">
               <div className="text-sm font-bold uppercase tracking-wide text-zinc-500">Nueva categoría</div>
               <form className="mt-3 flex gap-2" onSubmit={(e) => void createCategory(e)}>
                 <input value={catName} onChange={(e) => setCatName(e.target.value)} placeholder="Accesorios" className="h-10 flex-1 rounded-xl border border-zinc-200 px-3 text-sm" />
-                <Button className="h-10">Agregar</Button>
+                <button className="btn-primary h-10 justify-center px-4" type="submit">Agregar</button>
               </form>
               <div className="mt-3 space-y-2 max-h-80 overflow-auto pr-1">
                 {categories.map((c) => (
@@ -148,9 +146,11 @@ export function AdminProductsPage() {
                   </div>
                 ))}
               </div>
+              </div>
             </section>
 
-            <section className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+            <section className="card">
+              <div className="card-body p-4">
               <div className="text-sm font-bold uppercase tracking-wide text-zinc-500">Nuevo producto</div>
               <form className="mt-3 grid gap-2" onSubmit={(e) => void createProduct(e)}>
                 <input
@@ -178,14 +178,16 @@ export function AdminProductsPage() {
                   <label className="inline-flex items-center gap-2"><input type="checkbox" checked={productForm.active} onChange={(e) => setProductForm((p) => ({ ...p, active: e.target.checked }))} /> Activo</label>
                   <label className="inline-flex items-center gap-2"><input type="checkbox" checked={productForm.featured} onChange={(e) => setProductForm((p) => ({ ...p, featured: e.target.checked }))} /> Destacado</label>
                 </div>
-                <Button className="w-full">Crear producto</Button>
+                <button className="btn-primary h-11 w-full justify-center" type="submit">Crear producto</button>
               </form>
+              </div>
             </section>
           </div>
 
-          <section className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+          <section className="card">
+            <div className="card-body p-4">
             <div className="mb-3 grid gap-2 md:grid-cols-[1fr_220px_180px]">
-              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar producto / sku / código..." className="h-10 rounded-xl border border-zinc-200 px-3 text-sm" />
+              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar producto / sku / Código..." className="h-10 rounded-xl border border-zinc-200 px-3 text-sm" />
               <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className="h-10 rounded-xl border border-zinc-200 px-3 text-sm">
                 <option value="">Todas las categorías</option>
                 {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -253,9 +255,9 @@ export function AdminProductsPage() {
                 ))}
               </div>
             )}
+            </div>
           </section>
         </div>
-      </div>
     </div>
   );
 }
@@ -311,4 +313,5 @@ function QuickNumber({
     </label>
   );
 }
+
 
