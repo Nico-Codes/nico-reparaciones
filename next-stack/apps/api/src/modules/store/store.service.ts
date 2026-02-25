@@ -43,6 +43,57 @@ export class StoreService {
     }
   }
 
+  async getHeroConfig() {
+    try {
+      const keys = [
+        'store_hero_image_desktop',
+        'store_hero_image_mobile',
+        'store_hero_fade_rgb_desktop',
+        'store_hero_fade_rgb_mobile',
+        'store_hero_fade_intensity',
+        'store_hero_fade_size',
+        'store_hero_fade_hold',
+        'store_hero_fade_mid_alpha',
+        'store_hero_title',
+        'store_hero_subtitle',
+      ] as const;
+
+      const settings = await this.prisma.appSetting.findMany({
+        where: { key: { in: [...keys] } },
+      });
+      const map = new Map(settings.map((s) => [s.key, s.value ?? '']));
+
+      const desktop = this.resolveHeroAssetUrl(map.get('store_hero_image_desktop') ?? '') ?? this.resolveHeroAssetUrl('brand/logo.png') ?? '/brand/logo.png';
+      const mobile = this.resolveHeroAssetUrl(map.get('store_hero_image_mobile') ?? '') ?? desktop;
+
+      return {
+        imageDesktop: desktop,
+        imageMobile: mobile,
+        fadeRgbDesktop: (map.get('store_hero_fade_rgb_desktop') || '14, 165, 233').trim(),
+        fadeRgbMobile: (map.get('store_hero_fade_rgb_mobile') || map.get('store_hero_fade_rgb_desktop') || '14, 165, 233').trim(),
+        fadeIntensity: this.parseIntSetting(map.get('store_hero_fade_intensity'), 42),
+        fadeSize: this.parseIntSetting(map.get('store_hero_fade_size'), 96),
+        fadeHold: this.parseIntSetting(map.get('store_hero_fade_hold'), 12),
+        fadeMidAlpha: this.parseAlphaSetting(map.get('store_hero_fade_mid_alpha'), '0.58'),
+        title: (map.get('store_hero_title') || '').trim(),
+        subtitle: (map.get('store_hero_subtitle') || '').trim(),
+      };
+    } catch {
+      return {
+        imageDesktop: this.resolveHeroAssetUrl('brand/logo.png') ?? '/brand/logo.png',
+        imageMobile: this.resolveHeroAssetUrl('brand/logo.png') ?? '/brand/logo.png',
+        fadeRgbDesktop: '14, 165, 233',
+        fadeRgbMobile: '14, 165, 233',
+        fadeIntensity: 42,
+        fadeSize: 96,
+        fadeHold: 12,
+        fadeMidAlpha: '0.58',
+        title: '',
+        subtitle: '',
+      };
+    }
+  }
+
   async listProducts(params: ListProductsParams) {
     const q = (params.q ?? '').trim();
     const categorySlug = (params.category ?? '').trim();
@@ -108,7 +159,7 @@ export class StoreService {
         createdAt: p.createdAt.toISOString(),
       }));
 
-      // Relevancia básica por texto para UX más natural (sin full-text todavía).
+      // Relevancia b�sica por texto para UX m�s natural (sin full-text todav�a).
       if (sort === 'relevance' && q) {
         const terms = q.toLowerCase().split(/\s+/).filter(Boolean);
         items = items
@@ -190,7 +241,10 @@ export class StoreService {
     const base = (process.env.STORE_IMAGE_BASE_URL || 'http://127.0.0.1:8000').replace(/\/+$/, '');
 
     if (imagePath && imagePath.trim() !== '') {
-      const path = imagePath.replace(/^\/+/, '');
+      const raw = imagePath.trim();
+      if (/^https?:\/\//i.test(raw)) return raw;
+      if (raw.startsWith('/')) return `${base}${raw}`;
+      const path = raw.replace(/^\/+/, '');
       return `${base}/storage/${path}`;
     }
 
@@ -202,6 +256,31 @@ export class StoreService {
     }
 
     return null;
+  }
+
+  private resolveHeroAssetUrl(rawValue?: string | null) {
+    const base = (process.env.STORE_IMAGE_BASE_URL || 'http://127.0.0.1:8000').replace(/\/+$/, '');
+    const raw = (rawValue ?? '').trim();
+    if (!raw) return null;
+    if (/^https?:\/\//i.test(raw)) return raw;
+    if (raw.startsWith('/brand/') || raw.startsWith('/brand-assets/')) return `${base}${raw}`;
+    if (raw.startsWith('/storage/')) return `${base}${raw}`;
+    if (raw.startsWith('/')) return raw;
+    if (raw.startsWith('brand/') || raw.startsWith('brand-assets/')) return `${base}/${raw.replace(/^\/+/, '')}`;
+    if (raw.startsWith('storage/')) return `${base}/${raw.replace(/^\/+/, '')}`;
+    return `/${raw.replace(/^\/+/, '')}`;
+  }
+  private parseIntSetting(value: string | undefined, fallback: number) {
+    const n = Number((value ?? '').trim());
+    return Number.isFinite(n) ? Math.round(n) : fallback;
+  }
+
+  private parseAlphaSetting(value: string | undefined, fallback: string) {
+    const raw = (value ?? '').trim();
+    if (!raw) return fallback;
+    const n = Number(raw);
+    if (!Number.isFinite(n)) return fallback;
+    return String(Math.max(0, Math.min(1, n)));
   }
 
   private orderBy(sort: NonNullable<ListProductsParams['sort']>) {
@@ -246,3 +325,4 @@ export class StoreService {
     return score + featuredWeight;
   }
 }
+

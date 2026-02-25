@@ -1,10 +1,37 @@
-ï»¿import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { deviceCatalogApi } from '@/features/deviceCatalog/api';
 import { repairsApi } from './api';
 import type { RepairItem, RepairTimelineEvent } from './types';
 
 const STATUSES = ['RECEIVED', 'DIAGNOSING', 'WAITING_APPROVAL', 'REPAIRING', 'READY_PICKUP', 'DELIVERED', 'CANCELLED'] as const;
+const STATUS_LABELS: Record<(typeof STATUSES)[number], string> = {
+  RECEIVED: 'Recibida',
+  DIAGNOSING: 'Diagnóstico',
+  WAITING_APPROVAL: 'Espera aprobación',
+  REPAIRING: 'Reparando',
+  READY_PICKUP: 'Lista',
+  DELIVERED: 'Entregada',
+  CANCELLED: 'Cancelada',
+};
+const STATUS_BADGE_CLASS: Record<(typeof STATUSES)[number], string> = {
+  RECEIVED: 'badge-sky',
+  DIAGNOSING: 'badge-indigo',
+  WAITING_APPROVAL: 'badge-amber',
+  REPAIRING: 'badge-indigo',
+  READY_PICKUP: 'badge-emerald',
+  DELIVERED: 'badge-zinc',
+  CANCELLED: 'badge-rose',
+};
+
+function repairStatusLabel(status: string) {
+  return STATUS_LABELS[status as (typeof STATUSES)[number]] ?? status;
+}
+
+function repairStatusBadgeClass(status: string) {
+  return STATUS_BADGE_CLASS[status as (typeof STATUSES)[number]] ?? 'badge-zinc';
+}
 
 export function AdminRepairsPage() {
   const hydratingEditRef = useRef(false);
@@ -85,6 +112,11 @@ export function AdminRepairsPage() {
     notes: '',
   });
 
+  const statusTabs = [
+    { value: '', label: 'Todos', count: stats?.total ?? 0 },
+    ...STATUSES.map((s) => ({ value: s, label: STATUS_LABELS[s], count: stats?.byStatus?.[s] ?? 0 })),
+  ];
+
   async function load() {
     setLoading(true);
     setError('');
@@ -96,8 +128,13 @@ export function AdminRepairsPage() {
         to: toDate || undefined,
       });
       setItems(res.items);
+      if (selectedRepairId && !res.items.some((r) => r.id === selectedRepairId)) {
+        setSelectedRepairId(null);
+        setSelectedRepair(null);
+        setSelectedRepairTimeline([]);
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error cargando reparaciÃ³nes');
+      setError(err instanceof Error ? err.message : 'Error cargando reparaciones');
     } finally {
       setLoading(false);
     }
@@ -118,7 +155,7 @@ export function AdminRepairsPage() {
       const res = await repairsApi.adminStats();
       setStats(res);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error cargando estadÃ­sticas');
+      setError(err instanceof Error ? err.message : 'Error cargando estadísticas');
     } finally {
       setLoadingStats(false);
     }
@@ -150,7 +187,7 @@ export function AdminRepairsPage() {
       setBrands(brandsRes.items.filter((b) => b.active));
       setIssues(issuesRes.items.filter((i) => i.active));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error cargando catÃ¡logo');
+      setError(err instanceof Error ? err.message : 'Error cargando catálogo');
     }
   }
 
@@ -277,7 +314,7 @@ export function AdminRepairsPage() {
       await load();
       await loadStats();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error creando reparaciÃ³n');
+      setError(err instanceof Error ? err.message : 'Error creando reparación');
     } finally {
       setSaving(false);
     }
@@ -325,7 +362,7 @@ export function AdminRepairsPage() {
       void loadStats();
       void repairsApi.adminDetail(selectedRepairId).then((detail) => setSelectedRepairTimeline(detail.timeline ?? [])).catch(() => {});
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error guardando reparaciÃ³n');
+      setError(err instanceof Error ? err.message : 'Error guardando reparación');
     } finally {
       setSavingSelectedRepair(false);
     }
@@ -398,16 +435,37 @@ export function AdminRepairsPage() {
       <section className="page-head store-hero">
         <div>
           <div className="page-title">Reparaciones</div>
-          <p className="page-subtitle">Alta rÃ¡pida, listado, filtros y detalle editable.</p>
+          <p className="page-subtitle">Listado y control rápido de reparaciones.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <a href="/admin" className="btn-outline">
+          <Link to="/admin" className="btn-outline">
             Volver a admin
-          </a>
+          </Link>
         </div>
       </section>
 
       {error ? <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">{error}</div> : null}
+
+      <div className="mt-3 flex flex-col items-stretch justify-between gap-2 sm:flex-row sm:items-center">
+        <div className="text-xs font-black uppercase text-zinc-500">Estados</div>
+        <div className="text-xs text-zinc-500">{loading ? 'Cargando...' : `${items.length} reparaciones listadas`}</div>
+      </div>
+
+      <div className="mt-2 flex items-center gap-2 overflow-x-auto pb-1">
+        {statusTabs.map((tab) => (
+          <button
+            key={tab.value || 'all'}
+            type="button"
+            onClick={() => setStatusFilter(tab.value)}
+            className={`nav-pill whitespace-nowrap ${statusFilter === tab.value ? 'nav-pill-active' : ''}`}
+          >
+            <span>{tab.label}</span>
+            <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-black ring-1 ring-zinc-200 bg-white/70 text-zinc-700">
+              {tab.count}
+            </span>
+          </button>
+        ))}
+      </div>
 
       <section className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Total" value={loadingStats ? '...' : String(stats?.total ?? 0)} />
@@ -423,20 +481,23 @@ export function AdminRepairsPage() {
       <div className="mt-4 grid gap-4 xl:grid-cols-[420px_1fr]">
         <div className="space-y-4">
           <form onSubmit={createRepair} className="card">
+            <div className="card-head flex items-center justify-between gap-2">
+              <div className="font-black">Nueva reparación</div>
+              <div className="text-xs text-zinc-500">Alta rápida</div>
+            </div>
             <div className="card-body space-y-3">
-              <div className="text-sm font-bold uppercase tracking-wide text-zinc-500">Nueva reparaciÃ³n</div>
             <Field label="Cliente *" value={form.customerName} onChange={(v) => setForm({ ...form, customerName: v })} required />
-            <Field label="TelÃ©fono" value={form.customerPhone} onChange={(v) => setForm({ ...form, customerPhone: v })} />
+            <Field label="Teléfono" value={form.customerPhone} onChange={(v) => setForm({ ...form, customerPhone: v })} />
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
               <SelectField
-                label="Marca (catÃ¡logo)"
+                label="Marca (catálogo)"
                 value={selectedBrandId}
                 onChange={setSelectedBrandId}
                 options={brands.map((b) => ({ value: b.id, label: b.name }))}
                 placeholder="Seleccionar"
               />
               <SelectField
-                label="Modelo (catÃ¡logo)"
+                label="Modelo (catálogo)"
                 value={selectedModelId}
                 onChange={setSelectedModelId}
                 options={models.filter((m) => !selectedBrandId || m.brandId === selectedBrandId).map((m) => ({ value: m.id, label: m.name }))}
@@ -444,7 +505,7 @@ export function AdminRepairsPage() {
                 disabled={!selectedBrandId}
               />
               <SelectField
-                label="Falla (catÃ¡logo)"
+                label="Falla (catálogo)"
                 value={selectedIssueId}
                 onChange={setSelectedIssueId}
                 options={issues.map((i) => ({ value: i.id, label: i.name }))}
@@ -465,21 +526,24 @@ export function AdminRepairsPage() {
             {priceSuggestion ? (
               <div className={`rounded-xl border px-3 py-2 text-sm ${priceSuggestion.matched ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : 'border-amber-200 bg-amber-50 text-amber-900'}`}>
                 {priceSuggestion.matched
-                  ? `Regla: ${priceSuggestion.ruleName || 'sin nombre'} Â· Base $${(priceSuggestion.basePrice ?? 0).toLocaleString('es-AR')} + ${(priceSuggestion.profitPercent ?? 0).toLocaleString('es-AR')}% = $${(priceSuggestion.suggestedTotal ?? 0).toLocaleString('es-AR')}`
-                  : 'No se encontrÃ³ regla coincidente. PodÃ©s cargar el presupuesto manualmente o crear una regla.'}
+                  ? `Regla: ${priceSuggestion.ruleName || 'sin nombre'} · Base $${(priceSuggestion.basePrice ?? 0).toLocaleString('es-AR')} + ${(priceSuggestion.profitPercent ?? 0).toLocaleString('es-AR')}% = $${(priceSuggestion.suggestedTotal ?? 0).toLocaleString('es-AR')}`
+                  : 'No se encontró regla coincidente. Podés cargar el presupuesto manualmente o crear una regla.'}
               </div>
             ) : null}
             <label className="block">
               <span className="mb-1 block text-sm font-bold text-zinc-700">Notas</span>
               <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={3} className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm" />
             </label>
-              <Button className="w-full" disabled={saving}>{saving ? 'Guardando...' : 'Crear reparaciÃ³n'}</Button>
+              <Button className="w-full" disabled={saving}>{saving ? 'Guardando...' : 'Crear reparación'}</Button>
             </div>
           </form>
 
           <section className="card">
+            <div className="card-head flex items-center justify-between gap-2">
+              <div className="font-black">Reglas de cálculo</div>
+              <div className="text-xs text-zinc-500">{loadingRules ? 'Cargando...' : `${rules.length} reglas`}</div>
+            </div>
             <div className="card-body">
-              <div className="text-sm font-bold uppercase tracking-wide text-zinc-500">Reglas de cÃ¡lculo (MVP)</div>
               <form className="mt-3 grid gap-2" onSubmit={createRule}>
               <Field label="Nombre regla" value={ruleForm.name} onChange={(v) => setRuleForm({ ...ruleForm, name: v })} required />
               <div className="grid grid-cols-2 gap-2">
@@ -498,16 +562,16 @@ export function AdminRepairsPage() {
                 {loadingRules ? (
                   <div className="rounded-xl border border-zinc-200 p-2 text-sm">Cargando reglas...</div>
                 ) : rules.length === 0 ? (
-                  <div className="rounded-xl border border-zinc-200 p-2 text-sm">Sin reglas todavÃ­a.</div>
+                  <div className="rounded-xl border border-zinc-200 p-2 text-sm">Sin reglas todavía.</div>
                 ) : rules.map((rule) => (
                   <div key={rule.id} className="rounded-xl border border-zinc-200 p-2">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <div className="text-sm font-black text-zinc-900">{rule.name}</div>
                         <div className="text-xs text-zinc-500">
-                          {[rule.deviceBrand, rule.deviceModel, rule.issueLabel].filter(Boolean).join(' Â· ') || 'Regla global'}
+                          {[rule.deviceBrand, rule.deviceModel, rule.issueLabel].filter(Boolean).join(' · ') || 'Regla global'}
                         </div>
-                        <div className="mt-1 text-xs text-zinc-600">Base ${rule.basePrice.toLocaleString('es-AR')} + {rule.profitPercent}% Â· Prio {rule.priority}</div>
+                        <div className="mt-1 text-xs text-zinc-600">Base ${rule.basePrice.toLocaleString('es-AR')} + {rule.profitPercent}% · Prio {rule.priority}</div>
                       </div>
                       <button type="button" className="text-xs font-bold text-rose-700 hover:text-rose-800" onClick={() => void deleteRule(rule.id)}>
                         Borrar
@@ -521,12 +585,20 @@ export function AdminRepairsPage() {
         </div>
 
         <section className="card">
+          <div className="card-head flex items-center justify-between gap-2">
+            <div className="font-black">Listado y detalle</div>
+            <div className="text-xs text-zinc-500">
+              {loading ? 'Cargando...' : `${items.length} reparaciones`} · {selectedRepairId ? 'detalle activo' : 'sin selección'}
+            </div>
+          </div>
           <div className="card-body">
-            <div className="mb-3 flex flex-wrap gap-2">
-              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar ID / cliente / telÃ©fono / modelo / falla..." className="h-10 flex-1 min-w-[220px] rounded-xl border border-zinc-200 px-3 text-sm" />
+            <div className="mb-2 text-xs font-bold uppercase tracking-wide text-zinc-500">Filtros</div>
+            <div className="mb-3 rounded-xl border border-zinc-200 bg-zinc-50 p-2">
+              <div className="flex flex-wrap gap-2">
+              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar ID / cliente / teléfono / modelo / falla..." className="h-10 flex-1 min-w-[220px] rounded-xl border border-zinc-200 px-3 text-sm" />
               <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="h-10 min-w-[200px] rounded-xl border border-zinc-200 px-3 text-sm">
                 <option value="">Todos los estados</option>
-                {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+                {STATUSES.map((s) => <option key={s} value={s}>{repairStatusLabel(s)}</option>)}
               </select>
               <input
                 type="date"
@@ -553,25 +625,15 @@ export function AdminRepairsPage() {
                   Limpiar fechas
                 </button>
               ) : null}
-            </div>
-            <div className="mb-3 flex flex-wrap gap-2">
-              <StatusChip label="Todos" count={stats?.total ?? 0} active={statusFilter === ''} onClick={() => setStatusFilter('')} />
-              {STATUSES.map((s) => (
-                <StatusChip
-                  key={s}
-                  label={s}
-                  count={stats?.byStatus?.[s] ?? 0}
-                  active={statusFilter === s}
-                  onClick={() => setStatusFilter((prev) => (prev === s ? '' : s))}
-                />
-              ))}
+              </div>
             </div>
             {loading ? (
               <div className="rounded-xl border border-zinc-200 p-3 text-sm">Cargando...</div>
             ) : items.length === 0 ? (
               <div className="rounded-xl border border-zinc-200 p-3 text-sm">No hay reparaciones.</div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2.5">
+                <div className="text-xs font-bold uppercase tracking-wide text-zinc-500">Listado</div>
                 {items.map((r) => (
                   <button
                     key={r.id}
@@ -584,19 +646,19 @@ export function AdminRepairsPage() {
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
                         <div className="font-black text-zinc-900">{r.customerName}</div>
-                        <div className="text-xs text-zinc-500">{[r.deviceBrand, r.deviceModel].filter(Boolean).join(' ')} Â· {r.issueLabel || 'Sin falla'}</div>
+                        <div className="text-xs text-zinc-500">{[r.deviceBrand, r.deviceModel].filter(Boolean).join(' ')} · {r.issueLabel || 'Sin falla'}</div>
                         <div className="mt-1 text-xs text-zinc-500">{r.id}</div>
                       </div>
                       <div className="text-right">
-                        <div className="text-sm font-bold text-zinc-900">{r.finalPrice != null ? `$${r.finalPrice.toLocaleString('es-AR')}` : r.quotedPrice != null ? `$${r.quotedPrice.toLocaleString('es-AR')}` : 'â€”'}</div>
+                        <div className="text-sm font-bold text-zinc-900">{r.finalPrice != null ? `$${r.finalPrice.toLocaleString('es-AR')}` : r.quotedPrice != null ? `$${r.quotedPrice.toLocaleString('es-AR')}` : '—'}</div>
                         <div className="text-xs text-zinc-500">{new Date(r.createdAt).toLocaleDateString('es-AR')}</div>
                       </div>
                     </div>
-                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <div className="mt-2.5 flex flex-wrap items-center gap-2">
                       <select value={r.status} onChange={(e) => void changeStatus(r.id, e.target.value)} className="h-9 min-w-[220px] rounded-xl border border-zinc-200 px-3 text-sm">
-                        {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+                        {STATUSES.map((s) => <option key={s} value={s}>{repairStatusLabel(s)}</option>)}
                       </select>
-                      <span className="rounded-full border border-sky-200 bg-sky-50 px-2 py-1 text-xs font-bold text-sky-700">{r.status}</span>
+                      <span className={repairStatusBadgeClass(r.status)}>{repairStatusLabel(r.status)}</span>
                     </div>
                   </button>
                 ))}
@@ -606,7 +668,7 @@ export function AdminRepairsPage() {
             <div className="mt-4 border-t border-zinc-200 pt-4">
               {!selectedRepairId ? (
                 <div className="rounded-xl border border-dashed border-zinc-300 p-3 text-sm text-zinc-600">
-                  Selecciona una reparaciÃ³n para ver y editar el detalle.
+                  Selecciona una reparación para ver y editar el detalle.
                 </div>
               ) : loadingSelectedRepair ? (
                 <div className="rounded-xl border border-zinc-200 p-3 text-sm">Cargando detalle...</div>
@@ -614,15 +676,16 @@ export function AdminRepairsPage() {
                 <div className="rounded-xl border border-zinc-200 p-3 text-sm">No se pudo cargar el detalle.</div>
               ) : (
                 <form onSubmit={saveSelectedRepair} className="space-y-3">
+                  <div className="text-xs font-bold uppercase tracking-wide text-zinc-500">Detalle</div>
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <div className="text-xs font-bold uppercase tracking-wide text-zinc-500">Detalle de reparaciÃ³n</div>
+                      <div className="text-xs font-bold uppercase tracking-wide text-zinc-500">Detalle de reparación</div>
                       <div className="mt-1 text-sm font-black break-all text-zinc-900">{selectedRepair.id}</div>
                       <div className="text-xs text-zinc-500">{new Date(selectedRepair.createdAt).toLocaleString('es-AR')}</div>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <span className="rounded-full border border-zinc-200 bg-zinc-50 px-2 py-1 font-bold text-zinc-700">
-                        Estado: {editForm.status}
+                        Estado: {repairStatusLabel(editForm.status)}
                       </span>
                       <span className="rounded-full border border-zinc-200 bg-zinc-50 px-2 py-1 font-bold text-zinc-700">
                         Actualizado: {new Date(selectedRepair.updatedAt).toLocaleDateString('es-AR')}
@@ -632,19 +695,19 @@ export function AdminRepairsPage() {
 
                   <div className="grid gap-2 sm:grid-cols-2">
                     <Field label="Cliente *" value={editForm.customerName} onChange={(v) => setEditForm((p) => ({ ...p, customerName: v }))} required />
-                    <Field label="TelÃ©fono" value={editForm.customerPhone} onChange={(v) => setEditForm((p) => ({ ...p, customerPhone: v }))} />
+                    <Field label="Teléfono" value={editForm.customerPhone} onChange={(v) => setEditForm((p) => ({ ...p, customerPhone: v }))} />
                   </div>
 
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                     <SelectField
-                      label="Marca (catÃ¡logo)"
+                      label="Marca (catálogo)"
                       value={editBrandId}
                       onChange={setEditBrandId}
                       options={brands.map((b) => ({ value: b.id, label: b.name }))}
                       placeholder="Seleccionar"
                     />
                     <SelectField
-                      label="Modelo (catÃ¡logo)"
+                      label="Modelo (catálogo)"
                       value={editModelId}
                       onChange={setEditModelId}
                       options={editModels.filter((m) => !editBrandId || m.brandId === editBrandId).map((m) => ({ value: m.id, label: m.name }))}
@@ -652,7 +715,7 @@ export function AdminRepairsPage() {
                       disabled={!editBrandId}
                     />
                     <SelectField
-                      label="Falla (catÃ¡logo)"
+                      label="Falla (catálogo)"
                       value={editIssueId}
                       onChange={setEditIssueId}
                       options={issues.map((i) => ({ value: i.id, label: i.name }))}
@@ -674,7 +737,7 @@ export function AdminRepairsPage() {
                         onChange={(e) => setEditForm((p) => ({ ...p, status: e.target.value }))}
                         className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm"
                       >
-                        {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+                        {STATUSES.map((s) => <option key={s} value={s}>{repairStatusLabel(s)}</option>)}
                       </select>
                     </label>
                     <Field label="Presupuesto" type="number" value={editForm.quotedPrice} onChange={(v) => setEditForm((p) => ({ ...p, quotedPrice: v }))} />
@@ -753,31 +816,6 @@ function StatCard({ label, value, tone = 'zinc' }: { label: string; value: strin
   );
 }
 
-function StatusChip({
-  label,
-  count,
-  active,
-  onClick,
-}: {
-  label: string;
-  count: number;
-  active: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold transition ${
-        active ? 'border-sky-300 bg-sky-50 text-sky-800' : 'border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300'
-      }`}
-    >
-      <span>{label}</span>
-      <span className={`rounded-full px-1.5 py-0.5 text-[10px] ${active ? 'bg-sky-100' : 'bg-zinc-100'}`}>{count}</span>
-    </button>
-  );
-}
-
 function SelectField({
   label,
   value,
@@ -812,4 +850,5 @@ function SelectField({
     </label>
   );
 }
+
 

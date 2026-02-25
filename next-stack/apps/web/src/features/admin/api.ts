@@ -1,8 +1,9 @@
+import { authApi } from '@/features/auth/api';
 import { authStorage } from '@/features/auth/storage';
 
 const API_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:3001';
 
-async function authRequest<T>(path: string, init?: RequestInit): Promise<T> {
+async function authRequestRaw<T>(path: string, init?: RequestInit): Promise<{ ok: true; data: T } | { ok: false; status: number; message: string }> {
   const token = authStorage.getAccessToken();
   const res = await fetch(`${API_URL}/api${path}`, {
     ...init,
@@ -13,8 +14,34 @@ async function authRequest<T>(path: string, init?: RequestInit): Promise<T> {
     },
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error((data?.message as string) || `Error ${res.status}`);
-  return data as T;
+  if (!res.ok) {
+    return {
+      ok: false,
+      status: res.status,
+      message: (data?.message as string) || `Error ${res.status}`,
+    };
+  }
+  return { ok: true, data: data as T };
+}
+
+async function authRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  const first = await authRequestRaw<T>(path, init);
+  if (first.ok) return first.data;
+
+  if (first.status === 401 && authStorage.getRefreshToken()) {
+    try {
+      const refreshed = await authApi.refresh();
+      authStorage.setSession(refreshed.user, refreshed.tokens);
+      const retry = await authRequestRaw<T>(path, init);
+      if (retry.ok) return retry.data;
+      throw new Error(retry.message);
+    } catch {
+      authStorage.clear();
+      throw new Error('Sesión vencida. Ingresá nuevamente.');
+    }
+  }
+
+  throw new Error(first.message);
 }
 
 export type AdminDashboardResponse = {
@@ -53,4 +80,3 @@ export const adminApi = {
     return authRequest<AdminDashboardResponse>('/admin/dashboard');
   },
 };
-

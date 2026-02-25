@@ -1,4 +1,4 @@
-import { Route, Routes, Link } from 'react-router-dom';
+import { Route, Routes, Link, Navigate, useParams } from 'react-router-dom';
 import { Wrench, ShoppingCart, ShieldCheck } from 'lucide-react';
 import { AdminDashboardPage } from '@/features/admin/AdminDashboardPage';
 import { AdminMailTemplatesPage } from '@/features/admin/AdminMailTemplatesPage';
@@ -88,6 +88,12 @@ function withShell(element: React.ReactNode) {
   return <AppShell>{element}</AppShell>;
 }
 
+function StoreCategoryAliasRedirect() {
+  const { slug = '' } = useParams();
+  const category = slug.trim();
+  return <Navigate to={category ? `/store?category=${encodeURIComponent(category)}` : '/store'} replace />;
+}
+
 export default function App() {
   return (
     <Routes>
@@ -99,6 +105,7 @@ export default function App() {
       <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
       <Route path="/auth/bootstrap-admin" element={<BootstrapAdminPage />} />
       <Route path="/store" element={withShell(<StorePage />)} />
+      <Route path="/store/category/:slug" element={withShell(<StoreCategoryAliasRedirect />)} />
       <Route path="/store/:slug" element={withShell(<StoreProductDetailPage />)} />
       <Route path="/reparacion" element={withShell(<PublicRepairLookupPage />)} />
       <Route path="/repair-lookup" element={withShell(<PublicRepairLookupPage />)} />
@@ -122,4 +129,3 @@ export default function App() {
     </Routes>
   );
 }
-

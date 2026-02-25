@@ -181,10 +181,18 @@ export class AdminService {
 
     const defaults = [
       { key: 'business_name', group: 'business', label: 'Nombre del negocio', type: 'text', value: 'NicoReparaciones' },
-      { key: 'shop_phone', group: 'business', label: 'TelÃ©fono WhatsApp', type: 'text', value: '' },
+      { key: 'shop_phone', group: 'business', label: 'Teléfono WhatsApp', type: 'text', value: '' },
       { key: 'shop_email', group: 'business', label: 'Email del local', type: 'email', value: '' },
-      { key: 'store_hero_title', group: 'branding', label: 'TÃ­tulo portada tienda', type: 'text', value: '' },
-      { key: 'store_hero_subtitle', group: 'branding', label: 'SubtÃ­tulo portada tienda', type: 'textarea', value: '' },
+      { key: 'store_hero_title', group: 'branding', label: 'Título portada tienda', type: 'text', value: '' },
+      { key: 'store_hero_subtitle', group: 'branding', label: 'SubTítulo portada tienda', type: 'textarea', value: '' },
+      { key: 'store_hero_image_desktop', group: 'branding', label: 'Imagen portada tienda (desktop)', type: 'text', value: '' },
+      { key: 'store_hero_image_mobile', group: 'branding', label: 'Imagen portada tienda (mobile)', type: 'text', value: '' },
+      { key: 'store_hero_fade_rgb_desktop', group: 'branding', label: 'Fade portada desktop (RGB)', type: 'text', value: '14, 165, 233' },
+      { key: 'store_hero_fade_rgb_mobile', group: 'branding', label: 'Fade portada mobile (RGB)', type: 'text', value: '14, 165, 233' },
+      { key: 'store_hero_fade_intensity', group: 'branding', label: 'Fade intensidad', type: 'number', value: '42' },
+      { key: 'store_hero_fade_size', group: 'branding', label: 'Fade tamaño px', type: 'number', value: '96' },
+      { key: 'store_hero_fade_hold', group: 'branding', label: 'Fade hold %', type: 'number', value: '12' },
+      { key: 'store_hero_fade_mid_alpha', group: 'branding', label: 'Fade alpha medio', type: 'text', value: '0.58' },
       { key: 'mail_from_name', group: 'email', label: 'Nombre remitente email', type: 'text', value: 'NicoReparaciones' },
       { key: 'mail_from_address', group: 'email', label: 'Email remitente', type: 'email', value: '' },
     ];
@@ -644,3 +652,4 @@ export class AdminService {
     };
   }
 }
+

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { cartStorage } from '@/features/cart/storage';
 import { storeApi } from './api';
@@ -79,14 +79,14 @@ export function StoreProductDetailPage() {
         <span className="text-zinc-500">{item.name}</span>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.02fr)_minmax(0,0.98fr)] lg:items-start">
+      <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
         <div className="card overflow-hidden product-detail-media-card">
-          <div className="aspect-square bg-zinc-50 sm:aspect-[4/3] lg:aspect-[1/1]">
+          <div className="aspect-square bg-zinc-50 sm:aspect-[4/3]">
             {item.imageUrl ? (
               <img
                 src={item.imageUrl}
                 alt={item.name}
-                className="h-full w-full object-contain bg-white"
+                className="h-full w-full object-cover"
                 loading="eager"
                 decoding="async"
                 width={1200}
@@ -101,13 +101,10 @@ export function StoreProductDetailPage() {
         </div>
 
         <div className="card product-detail-info-card">
-          <div className="card-body p-4 sm:p-5">
-            <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">
-              Producto
-            </div>
-            <div className="page-title mt-1">{item.name}</div>
+          <div className="card-body p-4 sm:p-4.5">
+            <div className="page-title">{item.name}</div>
 
-            <div className="mt-3 flex flex-wrap items-center gap-2">
+            <div className="mt-2 flex flex-wrap items-center gap-2">
               <span className={hasStock ? 'badge-emerald' : 'badge-rose'}>
                 {hasStock ? `Disponible: ${item.stock}` : 'Sin stock'}
               </span>
@@ -116,33 +113,24 @@ export function StoreProductDetailPage() {
 
             <div className="product-detail-price-box mt-4">
               <div className="text-xs font-black uppercase tracking-wide text-zinc-500">Precio</div>
-              <div className="text-3xl font-black tracking-tight text-zinc-900 sm:text-4xl">{money(item.price)}</div>
+              <div className="text-3xl font-black tracking-tight text-zinc-900">{money(item.price)}</div>
             </div>
 
             {!hasStock ? (
               <div className="mt-3 rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-black text-rose-800">
-                Sin stock por ahora. Puedes consultar disponibilidad por WhatsApp.
+                Sin stock por ahora. Podés consultar disponibilidad por WhatsApp.
               </div>
             ) : null}
 
-            {item.description ? (
-              <div className="mt-4 whitespace-pre-line text-sm leading-relaxed text-zinc-700">{item.description}</div>
-            ) : null}
+            {item.description ? <div className="mt-4 whitespace-pre-line text-sm leading-relaxed text-zinc-700">{item.description}</div> : null}
 
-            <div className="product-detail-meta mt-5">
-              <div><span className="font-semibold text-zinc-800">SKU:</span> {item.sku || '-'}</div>
-              <div><span className="font-semibold text-zinc-800">Código:</span> {item.barcode || '-'}</div>
-              <div><span className="font-semibold text-zinc-800">Slug:</span> {item.slug}</div>
-              <div><span className="font-semibold text-zinc-800">Categoría:</span> {item.category?.name ?? '-'}</div>
-            </div>
-
-            <div className="mt-6 grid gap-3">
-              <div className="grid gap-3 sm:grid-cols-[auto_1fr] sm:items-end">
+            <div className="mt-5 grid gap-3">
+              <div className="grid gap-2.5 sm:grid-cols-[auto_1fr] sm:items-end">
                 <div>
                   <label className="text-xs font-black uppercase tracking-wide text-zinc-600" htmlFor="productQty">
                     Cantidad
                   </label>
-                  <div className="mt-1 inline-flex items-center rounded-2xl border border-zinc-200 bg-zinc-50 p-1 shadow-inner shadow-zinc-200/40">
+                  <div className="mt-1 inline-flex items-center rounded-2xl border border-zinc-200 bg-zinc-50 p-1">
                     <button
                       type="button"
                       className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-base font-black text-zinc-800 hover:bg-zinc-100 disabled:opacity-40"
@@ -163,7 +151,7 @@ export function StoreProductDetailPage() {
                         const next = Number(e.target.value) || 1;
                         setQty(Math.min(maxQty, Math.max(1, next)));
                       }}
-                      className="h-10 w-16 border-0 bg-transparent text-center text-base font-black text-zinc-900 focus:ring-0"
+                      className="h-10 w-14 border-0 bg-transparent text-center text-base font-black text-zinc-900 focus:ring-0"
                       inputMode="numeric"
                       disabled={!hasStock}
                     />
@@ -181,7 +169,7 @@ export function StoreProductDetailPage() {
                 </div>
 
                 <button
-                  className="btn-primary h-11 w-full justify-center rounded-2xl product-detail-buy-btn"
+                  className="btn-primary h-11 w-full justify-center product-detail-buy-btn"
                   type="button"
                   onClick={addToCart}
                   disabled={!hasStock}
@@ -192,16 +180,13 @@ export function StoreProductDetailPage() {
               </div>
 
               <div className="grid gap-2 sm:grid-cols-2">
-                <Link to="/cart" className="btn-outline h-11 w-full justify-center rounded-2xl">Ver carrito</Link>
-                <Link to="/store" className="btn-ghost h-11 w-full justify-center rounded-2xl border border-zinc-200">Seguir comprando</Link>
+                <Link to="/cart" className="btn-outline h-11 w-full justify-center">Ver carrito</Link>
+                <Link to="/store" className="btn-ghost h-11 w-full justify-center">Seguir comprando</Link>
               </div>
             </div>
 
-            <div className="mt-4 rounded-xl border border-sky-100 bg-sky-50/70 px-3 py-2 text-xs text-zinc-600">
-              ¿Necesitás reparar tu equipo? Usá{' '}
-              <Link className="font-black text-sky-700 hover:text-sky-800" to="/reparacion">
-                Consultar reparación
-              </Link>.
+            <div className="mt-4 text-xs text-zinc-500">
+              ¿Necesitás reparar tu equipo? Usá <Link className="font-black" to="/reparacion">Consultar reparación</Link>.
             </div>
           </div>
         </div>
@@ -209,3 +194,4 @@ export function StoreProductDetailPage() {
     </div>
   );
 }
+

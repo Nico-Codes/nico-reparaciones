@@ -35,3 +35,16 @@ export type StoreProductsResponse = {
     sort: 'relevance' | 'price_asc' | 'price_desc' | 'newest' | 'name_asc' | 'name_desc' | 'stock_desc';
   };
 };
+
+export type StoreHeroConfig = {
+  imageDesktop: string;
+  imageMobile: string;
+  fadeRgbDesktop: string;
+  fadeRgbMobile: string;
+  fadeIntensity: number;
+  fadeSize: number;
+  fadeHold: number;
+  fadeMidAlpha: string;
+  title?: string;
+  subtitle?: string;
+};

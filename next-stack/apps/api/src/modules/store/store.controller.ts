@@ -11,6 +11,11 @@ export class StoreController {
     return { items };
   }
 
+  @Get('hero')
+  async hero() {
+    return this.storeService.getHeroConfig();
+  }
+
   @Get('products')
   async products(
     @Query('q') q?: string,
@@ -39,8 +44,8 @@ export class StoreController {
     return { item: product };
   }
 
-  private normalizeSort(sort?: string): 'relevance' | 'price_asc' | 'price_desc' | 'newest' {
-    if (sort === 'price_asc' || sort === 'price_desc' || sort === 'newest') return sort;
+  private normalizeSort(sort?: string): 'relevance' | 'price_asc' | 'price_desc' | 'newest' | 'name_asc' | 'name_desc' | 'stock_desc' {
+    if (sort === 'price_asc' || sort === 'price_desc' || sort === 'newest' || sort === 'name_asc' || sort === 'name_desc' || sort === 'stock_desc') return sort;
     return 'relevance';
   }
 }

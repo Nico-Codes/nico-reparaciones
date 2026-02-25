@@ -5,11 +5,11 @@ import { Button } from '@/components/ui/button';
 import { cartStorage } from '@/features/cart/storage';
 import { useCartCount } from '@/features/cart/useCart';
 import { storeApi } from './api';
-import type { StoreCategory, StoreProduct, StoreProductsResponse } from './types';
+import type { StoreCategory, StoreHeroConfig, StoreProduct, StoreProductsResponse } from './types';
 
 const SORT_OPTIONS = [
   { value: 'relevance', label: 'Relevancia' },
-  { value: 'newest', label: 'Más nuevos' },
+  { value: 'newest', label: 'Mas nuevos' },
   { value: 'price_asc', label: 'Menor precio' },
   { value: 'price_desc', label: 'Mayor precio' },
   { value: 'name_asc', label: 'Nombre A-Z' },
@@ -21,6 +21,7 @@ export function StorePage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [categories, setCategories] = useState<StoreCategory[]>([]);
   const [productsData, setProductsData] = useState<StoreProductsResponse | null>(null);
+  const [heroConfig, setHeroConfig] = useState<StoreHeroConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
   const [qInput, setQInput] = useState(searchParams.get('q') ?? '');
@@ -33,16 +34,30 @@ export function StorePage() {
 
   useEffect(() => {
     let active = true;
+    Promise.all([storeApi.hero(), storeApi.categories()])
+      .then(([heroRes, categoriesRes]) => {
+        if (!active) return;
+        setHeroConfig(heroRes);
+        setCategories(categoriesRes.items);
+      })
+      .catch((err) => {
+        if (!active) return;
+        setError((prev) => prev || (err instanceof Error ? err.message : 'Error cargando tienda'));
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
     setLoading(true);
     setError('');
 
-    Promise.all([
-      storeApi.categories(),
-      storeApi.products({ q, category, sort, page: 1, pageSize: 24 }),
-    ])
-      .then(([categoriesRes, productsRes]) => {
+    storeApi.products({ q, category, sort, page: 1, pageSize: 24 })
+      .then((productsRes) => {
         if (!active) return;
-        setCategories(categoriesRes.items);
         setProductsData(productsRes);
       })
       .catch((err) => {
@@ -83,8 +98,29 @@ export function StorePage() {
   }, [categories, category]);
 
   const products = productsData?.items ?? [];
-  const featuredProducts = useMemo(() => products.filter((p) => p.featured).slice(0, 10), [products]);
   const showHero = !category;
+  const heroFallbackBase = 'http://127.0.0.1:8000';
+  const hero = heroConfig ?? {
+    imageDesktop: `${heroFallbackBase}/brand/logo.png`,
+    imageMobile: `${heroFallbackBase}/brand/logo.png`,
+    fadeRgbDesktop: '14, 165, 233',
+    fadeRgbMobile: '14, 165, 233',
+    fadeIntensity: 42,
+    fadeSize: 96,
+    fadeHold: 12,
+    fadeMidAlpha: '0.58',
+    title: '',
+    subtitle: '',
+  };
+
+  const fadeMidAlphaComputed = (() => {
+    const baseAlpha = Number(hero.fadeMidAlpha);
+    const intensity = Number(hero.fadeIntensity);
+    if (!Number.isFinite(baseAlpha)) return '0.58';
+    if (!Number.isFinite(intensity) || intensity <= 0) return String(Math.max(0, Math.min(1, baseAlpha)));
+    const scaled = baseAlpha * (intensity / 42);
+    return String(Math.max(0, Math.min(1, scaled)));
+  })();
 
   return (
     <div data-store-shell className={`store-shell ${showHero ? 'store-shell--hero' : ''}`}>
@@ -92,11 +128,12 @@ export function StorePage() {
         <>
           <section
             className="store-front-hero store-front-hero--fullbleed store-front-hero--flush"
-            style={{ ['--hero-fade-desktop' as string]: '14, 165, 233', ['--hero-fade-mobile' as string]: '14, 165, 233' }}
+            style={{ ['--hero-fade-desktop' as string]: hero.fadeRgbDesktop, ['--hero-fade-mobile' as string]: hero.fadeRgbMobile }}
           >
             <picture className="store-front-hero__picture" aria-hidden="true">
+              <source media="(max-width: 767px)" srcSet={hero.imageMobile || hero.imageDesktop} />
               <img
-                src="/brand/logo.png"
+                src={hero.imageDesktop}
                 alt=""
                 className="store-front-hero__media"
                 loading="eager"
@@ -108,12 +145,12 @@ export function StorePage() {
             className="store-front-fade store-front-hero--fullbleed"
             style={
               {
-                ['--hero-fade-desktop' as string]: '14, 165, 233',
-                ['--hero-fade-mobile' as string]: '14, 165, 233',
-                ['--hero-fade-intensity' as string]: 42,
-                ['--hero-fade-size' as string]: '96px',
-                ['--hero-fade-hold' as string]: '12%',
-                ['--hero-fade-mid-alpha' as string]: '0.58',
+                ['--hero-fade-desktop' as string]: hero.fadeRgbDesktop,
+                ['--hero-fade-mobile' as string]: hero.fadeRgbMobile,
+                ['--hero-fade-intensity' as string]: hero.fadeIntensity,
+                ['--hero-fade-size' as string]: `${hero.fadeSize}px`,
+                ['--hero-fade-hold' as string]: `${hero.fadeHold}%`,
+                ['--hero-fade-mid-alpha' as string]: fadeMidAlphaComputed,
               } as React.CSSProperties
             }
             aria-hidden="true"
@@ -246,42 +283,8 @@ export function StorePage() {
           </div>
         ) : null}
 
-        <div className="mt-4 flex items-center justify-between gap-2 text-sm text-zinc-600">
-          <div>
-            {loading ? 'Cargando productos...' : `${productsData?.meta.total ?? 0} productos · Categoría: ${selectedCategoryLabel}`}
-          </div>
-          {(q || category || sort !== 'relevance') ? (
-            <button
-              type="button"
-              className="text-sm font-semibold text-sky-700 hover:text-sky-800"
-              onClick={() => {
-                setQInput('');
-                setSearchParams(new URLSearchParams());
-              }}
-            >
-              Limpiar filtros
-            </button>
-          ) : null}
-        </div>
-
         {error ? (
           <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900">{error}</div>
-        ) : null}
-
-        {featuredProducts.length > 0 && !q && !category && sort === 'relevance' ? (
-          <div className="mt-6 card">
-            <div className="card-head flex items-center justify-between">
-              <div className="font-black">Destacados</div>
-              <a href="#productos" className="btn-ghost btn-sm">Ver todos</a>
-            </div>
-            <div className="card-body">
-              <div className="grid grid-flow-col auto-cols-[78%] gap-3 overflow-x-auto overscroll-x-contain pb-2 pr-3 sm:auto-cols-[47%] md:auto-cols-[31%] lg:auto-cols-[19%]">
-                {featuredProducts.map((product) => (
-                  <StoreFeaturedCard key={product.id} product={product} />
-                ))}
-              </div>
-            </div>
-          </div>
         ) : null}
 
         <div className="mt-8" id="productos">
@@ -295,12 +298,26 @@ export function StorePage() {
             !loading && (
               <div className="card">
                 <div className="card-body space-y-3">
-                  <div className="font-black">No hay productos</div>
+                  <div className="font-black">{q ? 'Sin resultados' : 'No hay productos'}</div>
                   <div className="muted">
-                    {q ? `No encontramos productos para "${q}"` : 'Todavía no hay productos para mostrar.'}
+                    {q
+                      ? `No encontramos productos para "${q}"${selectedCategoryLabel !== 'Todas' ? ` en "${selectedCategoryLabel}"` : ''}.`
+                      : 'Todavia no hay productos para mostrar.'}
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <Link className="btn-outline" to="/store">Ver todas</Link>
+                    {q || category ? (
+                      <button
+                        type="button"
+                        className="btn-outline"
+                        onClick={() => {
+                          setQInput('');
+                          setSearchParams(new URLSearchParams());
+                        }}
+                      >
+                        Limpiar busqueda
+                      </button>
+                    ) : null}
+                    {category ? <Link className="btn-outline" to="/store">Ver todas</Link> : null}
                   </div>
                 </div>
               </div>
@@ -339,47 +356,6 @@ function StoreGridCard({ product }: { product: StoreProduct }) {
               {hasStock ? `Stock: ${product.stock}` : 'Sin stock'}
             </span>
 
-            <button
-              type="button"
-              className={`btn-cart ${hasStock ? '' : 'is-disabled'}`}
-              disabled={!hasStock}
-              aria-label="Agregar al carrito"
-              title={hasStock ? 'Agregar al carrito' : 'Sin stock'}
-              onClick={() => cartStorage.add(product.id, 1)}
-            >
-              <ShoppingCart className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function StoreFeaturedCard({ product }: { product: StoreProduct }) {
-  const hasStock = product.stock > 0;
-  return (
-    <div className="product-card product-card-featured">
-      <Link className="product-image" to={`/store/${product.slug}`}>
-        {product.imageUrl ? (
-          <img src={product.imageUrl} alt={product.name} loading="lazy" decoding="async" />
-        ) : (
-          <div className="product-image-placeholder">Sin imagen</div>
-        )}
-      </Link>
-
-      <div className="product-body">
-        <Link className="product-title" to={`/store/${product.slug}`}>
-          {product.name}
-        </Link>
-
-        <div className="product-row">
-          <div className="product-price">$ {product.price.toLocaleString('es-AR')}</div>
-
-          <div className="product-actions">
-            <span className={`badge-stock ${hasStock ? 'is-in' : 'is-out'}`}>
-              {hasStock ? `Stock: ${product.stock}` : 'Sin stock'}
-            </span>
             <button
               type="button"
               className={`btn-cart ${hasStock ? '' : 'is-disabled'}`}
