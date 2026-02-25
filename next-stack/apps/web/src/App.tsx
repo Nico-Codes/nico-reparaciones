@@ -6,6 +6,7 @@ import { AdminSettingsPage } from '@/features/admin/AdminSettingsPage';
 import { AdminUsersPage } from '@/features/admin/AdminUsersPage';
 import { AdminWhatsappPage } from '@/features/admin/AdminWhatsappPage';
 import { AdminHelpFaqPage } from '@/features/admin/AdminHelpFaqPage';
+import { AdminAlertsPage } from '@/features/admin/AdminAlertsPage';
 import { Button } from '@/components/ui/button';
 import { AuthStatusCard } from '@/features/auth/AuthStatusCard';
 import { BootstrapAdminPage } from '@/features/auth/BootstrapAdminPage';
@@ -22,6 +23,9 @@ import { AdminDeviceCatalogPage } from '@/features/deviceCatalog/AdminDeviceCata
 import { useCartCount } from '@/features/cart/useCart';
 import { CheckoutPage } from '@/features/orders/CheckoutPage';
 import { AdminOrdersPage } from '@/features/orders/AdminOrdersPage';
+import { AdminOrderDetailPage } from '@/features/orders/AdminOrderDetailPage';
+import { AdminOrderPrintPage } from '@/features/orders/AdminOrderPrintPage';
+import { AdminOrderTicketPage } from '@/features/orders/AdminOrderTicketPage';
 import { MyOrdersPage } from '@/features/orders/MyOrdersPage';
 import { OrderDetailPage } from '@/features/orders/OrderDetailPage';
 import { AdminRepairsPage } from '@/features/repairs/AdminRepairsPage';
@@ -32,6 +36,7 @@ import { StorePage } from '@/features/store/StorePage';
 import { StoreProductDetailPage } from '@/features/store/StoreProductDetailPage';
 import { HelpPage } from '@/features/help/HelpPage';
 import { AppShell } from '@/layouts/AppShell';
+import { GlobalVisualEnhancements } from '@/components/GlobalVisualEnhancements';
 
 function HomePage() {
   const cartCount = useCartCount();
@@ -96,36 +101,44 @@ function StoreCategoryAliasRedirect() {
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/" element={withShell(<HomePage />)} />
-      <Route path="/auth/login" element={<LoginPage />} />
-      <Route path="/auth/register" element={<RegisterPage />} />
-      <Route path="/auth/verify-email" element={<VerifyEmailPage />} />
-      <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
-      <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
-      <Route path="/auth/bootstrap-admin" element={<BootstrapAdminPage />} />
-      <Route path="/store" element={withShell(<StorePage />)} />
-      <Route path="/store/category/:slug" element={withShell(<StoreCategoryAliasRedirect />)} />
-      <Route path="/store/:slug" element={withShell(<StoreProductDetailPage />)} />
-      <Route path="/reparacion" element={withShell(<PublicRepairLookupPage />)} />
-      <Route path="/repair-lookup" element={withShell(<PublicRepairLookupPage />)} />
-      <Route path="/help" element={withShell(<HelpPage />)} />
-      <Route path="/cart" element={withShell(<CartPage />)} />
-      <Route path="/checkout" element={<RequireAuth>{withShell(<CheckoutPage />)}</RequireAuth>} />
-      <Route path="/orders" element={<RequireAuth>{withShell(<MyOrdersPage />)}</RequireAuth>} />
-      <Route path="/orders/:id" element={<RequireAuth>{withShell(<OrderDetailPage />)}</RequireAuth>} />
-      <Route path="/repairs" element={<RequireAuth>{withShell(<MyRepairsPage />)}</RequireAuth>} />
-      <Route path="/repairs/:id" element={<RequireAuth>{withShell(<RepairDetailPage />)}</RequireAuth>} />
-      <Route path="/admin" element={<RequireAdmin>{withShell(<AdminDashboardPage />)}</RequireAdmin>} />
-      <Route path="/admin/orders" element={<RequireAdmin>{withShell(<AdminOrdersPage />)}</RequireAdmin>} />
-      <Route path="/admin/products" element={<RequireAdmin>{withShell(<AdminProductsPage />)}</RequireAdmin>} />
-      <Route path="/admin/users" element={<RequireAdmin>{withShell(<AdminUsersPage />)}</RequireAdmin>} />
-      <Route path="/admin/settings" element={<RequireAdmin>{withShell(<AdminSettingsPage />)}</RequireAdmin>} />
-      <Route path="/admin/mail-templates" element={<RequireAdmin>{withShell(<AdminMailTemplatesPage />)}</RequireAdmin>} />
-      <Route path="/admin/whatsapp" element={<RequireAdmin>{withShell(<AdminWhatsappPage />)}</RequireAdmin>} />
-      <Route path="/admin/help" element={<RequireAdmin>{withShell(<AdminHelpFaqPage />)}</RequireAdmin>} />
-      <Route path="/admin/repairs" element={<RequireAdmin>{withShell(<AdminRepairsPage />)}</RequireAdmin>} />
-      <Route path="/admin/device-catalog" element={<RequireAdmin>{withShell(<AdminDeviceCatalogPage />)}</RequireAdmin>} />
-    </Routes>
+    <>
+      <GlobalVisualEnhancements />
+      <Routes>
+        <Route path="/" element={withShell(<HomePage />)} />
+        <Route path="/auth/login" element={<LoginPage />} />
+        <Route path="/auth/register" element={<RegisterPage />} />
+        <Route path="/auth/verify-email" element={withShell(<VerifyEmailPage />)} />
+        <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/auth/bootstrap-admin" element={<BootstrapAdminPage />} />
+        <Route path="/store" element={withShell(<StorePage />)} />
+        <Route path="/store/category/:slug" element={withShell(<StoreCategoryAliasRedirect />)} />
+        <Route path="/store/:slug" element={withShell(<StoreProductDetailPage />)} />
+        <Route path="/reparacion" element={withShell(<PublicRepairLookupPage />)} />
+        <Route path="/repair-lookup" element={withShell(<PublicRepairLookupPage />)} />
+        <Route path="/help" element={withShell(<HelpPage />)} />
+        <Route path="/cart" element={withShell(<CartPage />)} />
+        <Route path="/checkout" element={<RequireAuth>{withShell(<CheckoutPage />)}</RequireAuth>} />
+        <Route path="/orders" element={<RequireAuth>{withShell(<MyOrdersPage />)}</RequireAuth>} />
+        <Route path="/orders/:id" element={<RequireAuth>{withShell(<OrderDetailPage />)}</RequireAuth>} />
+        <Route path="/repairs" element={<RequireAuth>{withShell(<MyRepairsPage />)}</RequireAuth>} />
+        <Route path="/repairs/:id" element={<RequireAuth>{withShell(<RepairDetailPage />)}</RequireAuth>} />
+        <Route path="/admin" element={<RequireAdmin>{withShell(<AdminDashboardPage />)}</RequireAdmin>} />
+        <Route path="/admin/alertas" element={<RequireAdmin>{withShell(<AdminAlertsPage />)}</RequireAdmin>} />
+        <Route path="/admin/alerts" element={<RequireAdmin><Navigate to="/admin/alertas" replace /></RequireAdmin>} />
+        <Route path="/admin/orders" element={<RequireAdmin>{withShell(<AdminOrdersPage />)}</RequireAdmin>} />
+        <Route path="/admin/orders/:id" element={<RequireAdmin>{withShell(<AdminOrderDetailPage />)}</RequireAdmin>} />
+        <Route path="/admin/orders/:id/print" element={<RequireAdmin><AdminOrderPrintPage /></RequireAdmin>} />
+        <Route path="/admin/orders/:id/ticket" element={<RequireAdmin><AdminOrderTicketPage /></RequireAdmin>} />
+        <Route path="/admin/products" element={<RequireAdmin>{withShell(<AdminProductsPage />)}</RequireAdmin>} />
+        <Route path="/admin/users" element={<RequireAdmin>{withShell(<AdminUsersPage />)}</RequireAdmin>} />
+        <Route path="/admin/settings" element={<RequireAdmin>{withShell(<AdminSettingsPage />)}</RequireAdmin>} />
+        <Route path="/admin/mail-templates" element={<RequireAdmin>{withShell(<AdminMailTemplatesPage />)}</RequireAdmin>} />
+        <Route path="/admin/whatsapp" element={<RequireAdmin>{withShell(<AdminWhatsappPage />)}</RequireAdmin>} />
+        <Route path="/admin/help" element={<RequireAdmin>{withShell(<AdminHelpFaqPage />)}</RequireAdmin>} />
+        <Route path="/admin/repairs" element={<RequireAdmin>{withShell(<AdminRepairsPage />)}</RequireAdmin>} />
+        <Route path="/admin/device-catalog" element={<RequireAdmin>{withShell(<AdminDeviceCatalogPage />)}</RequireAdmin>} />
+      </Routes>
+    </>
   );
 }

@@ -1,6 +1,6 @@
 import { FormEvent, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Wrench } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { repairsApi } from './api';
 import type { PublicRepairLookupItem } from './types';
 
@@ -42,58 +42,73 @@ export function PublicRepairLookupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50">
-      <div className="mx-auto max-w-4xl px-4 py-10">
-        <div className="mb-6 flex items-center justify-between gap-3">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-bold text-sky-700">
-              <Wrench className="h-4 w-4" />
-              Estado de reparacion
-            </div>
-            <h1 className="mt-3 text-2xl font-black tracking-tight text-zinc-900 md:text-3xl">
-              Consulta publica de reparacion
+    <div className="store-shell">
+      <div className="mx-auto max-w-[640px] px-4 py-4 md:py-5">
+        <section className="store-hero mb-3 md:!px-4 md:!py-3">
+          <div className="grid gap-3 md:grid-cols-[220px_1fr] md:items-center">
+            <h1 className="text-xl font-black leading-tight tracking-tight text-zinc-900 md:text-[1.65rem]">
+              Consultar
+              <br />
+              reparacion
             </h1>
-            <p className="mt-1 text-sm text-zinc-600">
-              Ingresa el ID de la reparacion y el telefono del cliente para validar la consulta.
+            <p className="text-xs leading-relaxed text-zinc-700 md:max-w-[30ch] md:text-sm">
+              Ingresa el codigo y el telefono que dejaste en el local.
             </p>
           </div>
-          <Link to="/" className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-100">
-            Volver
-          </Link>
-        </div>
+        </section>
 
-        <form onSubmit={onSubmit} className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm md:p-5">
-          <div className="grid gap-3 md:grid-cols-[1.2fr_1fr_auto] md:items-end">
-            <div>
-              <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-500">ID reparacion</label>
-              <input
-                value={repairId}
-                onChange={(e) => setRepairId(e.target.value)}
-                placeholder="Ej: cmabcd123..."
-                className="h-11 w-full rounded-xl border border-zinc-200 px-3 text-sm outline-none ring-0 transition focus:border-sky-400"
-                required
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-500">Telefono del cliente *</label>
-              <input
-                value={customerPhone}
-                onChange={(e) => setCustomerPhone(e.target.value)}
-                placeholder="Requerido para validar"
-                className="h-11 w-full rounded-xl border border-zinc-200 px-3 text-sm outline-none ring-0 transition focus:border-sky-400"
-                required
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={loading || !repairId.trim() || !customerPhone.trim()}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sky-600 px-4 text-sm font-bold text-white shadow-sm transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <Search className="h-4 w-4" />
-              {loading ? 'Consultando...' : 'Consultar'}
-            </button>
+        <section className="card">
+          <div className="card-body !p-3 md:!p-3.5">
+            <form onSubmit={onSubmit} className="space-y-4">
+              <div className="rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-xs leading-relaxed text-zinc-800 md:text-sm">
+                <span className="font-black text-zinc-900">Tip:</span> el telefono puede ir con espacios o guiones, lo
+                normalizamos automaticamente.
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-black text-zinc-900">Codigo</label>
+                <input
+                  value={repairId}
+                  onChange={(e) => setRepairId(e.target.value)}
+                  placeholder="Ej: NR-8F2K1"
+                  className="h-10 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm"
+                  required
+                />
+                <p className="mt-1.5 text-xs text-zinc-500">Te lo damos en el comprobante / WhatsApp.</p>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-black text-zinc-900">Telefono</label>
+                <input
+                  value={customerPhone}
+                  onChange={(e) => setCustomerPhone(e.target.value)}
+                  placeholder="Ej: 341 555-0000"
+                  className="h-10 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm"
+                  required
+                />
+                <p className="mt-1.5 text-xs text-zinc-500">Debe coincidir con el que registramos en el ingreso.</p>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading || !repairId.trim() || !customerPhone.trim()}
+                className="btn-primary flex h-10 w-full items-center justify-center gap-2 rounded-xl text-sm font-black disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <Search className="h-4 w-4" />
+                {loading ? 'Buscando...' : 'Buscar'}
+              </button>
+
+              <div className="grid gap-2 sm:grid-cols-2">
+                <Link to="/store" className="btn-outline flex h-10 items-center justify-center rounded-xl text-sm font-bold">
+                  Ir a la tienda
+                </Link>
+                <Link to="/repairs" className="btn-ghost flex h-10 items-center justify-center rounded-xl text-sm font-bold">
+                  Mis reparaciones
+                </Link>
+              </div>
+            </form>
           </div>
-        </form>
+        </section>
 
         {error ? (
           <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">{error}</div>
@@ -103,8 +118,8 @@ export function PublicRepairLookupPage() {
         ) : null}
 
         {item ? (
-          <section className="mt-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-            <div className="flex flex-wrap items-center justify-between gap-3">
+          <section className="mt-4 card">
+            <div className="card-head flex flex-wrap items-center justify-between gap-3">
               <div>
                 <div className="text-xs font-bold uppercase tracking-wide text-zinc-500">Reparacion</div>
                 <div className="mt-1 text-lg font-black text-zinc-900">{item.id}</div>
@@ -113,15 +128,17 @@ export function PublicRepairLookupPage() {
                 {item.status}
               </div>
             </div>
-            <div className="mt-4 grid gap-3 md:grid-cols-2">
-              <Info label="Cliente" value={item.customerName} />
-              <Info label="Telefono" value={item.customerPhoneMasked ?? 'No informado'} />
-              <Info label="Dispositivo" value={[item.deviceBrand, item.deviceModel].filter(Boolean).join(' ') || 'No informado'} />
-              <Info label="Falla" value={item.issueLabel ?? 'No informada'} />
-              <Info label="Presupuesto" value={money(item.quotedPrice)} />
-              <Info label="Total final" value={money(item.finalPrice)} />
-              <Info label="Creada" value={new Date(item.createdAt).toLocaleString('es-AR')} />
-              <Info label="Actualizada" value={new Date(item.updatedAt).toLocaleString('es-AR')} />
+            <div className="card-body">
+              <div className="grid gap-3 md:grid-cols-2">
+                <Info label="Cliente" value={item.customerName} />
+                <Info label="Telefono" value={item.customerPhoneMasked ?? 'No informado'} />
+                <Info label="Dispositivo" value={[item.deviceBrand, item.deviceModel].filter(Boolean).join(' ') || 'No informado'} />
+                <Info label="Falla" value={item.issueLabel ?? 'No informada'} />
+                <Info label="Presupuesto" value={money(item.quotedPrice)} />
+                <Info label="Total final" value={money(item.finalPrice)} />
+                <Info label="Creada" value={new Date(item.createdAt).toLocaleString('es-AR')} />
+                <Info label="Actualizada" value={new Date(item.updatedAt).toLocaleString('es-AR')} />
+              </div>
             </div>
           </section>
         ) : null}
@@ -138,4 +155,3 @@ function Info({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
-

@@ -15,13 +15,10 @@ body {
 }
 
 .card {
-  border: 1px solid rgba(228, 228, 231, 0.9);
+  border-radius: 1rem;
+  border: 1px solid #f4f4f5;
   background: #fff;
-  border-radius: 1.1rem;
-  box-shadow:
-    0 1px 1px rgba(15, 23, 42, 0.02),
-    0 10px 28px -24px rgba(15, 23, 42, 0.16),
-    0 20px 40px -36px rgba(15, 23, 42, 0.12);
+  box-shadow: 0 8px 30px -18px #0f172a47;
   transition: box-shadow 180ms ease, border-color 180ms ease, transform 180ms ease;
 }
 
@@ -218,6 +215,18 @@ body {
 .muted {
   color: #52525b;
   font-size: 0.9rem;
+}
+
+.reveal-item {
+  opacity: 0;
+  transform: translateY(12px);
+  will-change: opacity, transform;
+  transition: opacity 340ms ease, transform 340ms ease;
+}
+
+.reveal-item.is-visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .store-shell {
