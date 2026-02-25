@@ -28,7 +28,8 @@ import { AdminOrderPrintPage } from '@/features/orders/AdminOrderPrintPage';
 import { AdminOrderTicketPage } from '@/features/orders/AdminOrderTicketPage';
 import { MyOrdersPage } from '@/features/orders/MyOrdersPage';
 import { OrderDetailPage } from '@/features/orders/OrderDetailPage';
-import { AdminRepairsPage } from '@/features/repairs/AdminRepairsPage';
+import { AdminRepairsListPage } from '@/features/repairs/AdminRepairsListPage';
+import { AdminRepairDetailPage } from '@/features/repairs/AdminRepairDetailPage';
 import { MyRepairsPage } from '@/features/repairs/MyRepairsPage';
 import { PublicRepairLookupPage } from '@/features/repairs/PublicRepairLookupPage';
 import { RepairDetailPage } from '@/features/repairs/RepairDetailPage';
@@ -136,7 +137,8 @@ export default function App() {
         <Route path="/admin/mail-templates" element={<RequireAdmin>{withShell(<AdminMailTemplatesPage />)}</RequireAdmin>} />
         <Route path="/admin/whatsapp" element={<RequireAdmin>{withShell(<AdminWhatsappPage />)}</RequireAdmin>} />
         <Route path="/admin/help" element={<RequireAdmin>{withShell(<AdminHelpFaqPage />)}</RequireAdmin>} />
-        <Route path="/admin/repairs" element={<RequireAdmin>{withShell(<AdminRepairsPage />)}</RequireAdmin>} />
+        <Route path="/admin/repairs" element={<RequireAdmin>{withShell(<AdminRepairsListPage />)}</RequireAdmin>} />
+        <Route path="/admin/repairs/:id" element={<RequireAdmin>{withShell(<AdminRepairDetailPage />)}</RequireAdmin>} />
         <Route path="/admin/device-catalog" element={<RequireAdmin>{withShell(<AdminDeviceCatalogPage />)}</RequireAdmin>} />
       </Routes>
     </>
