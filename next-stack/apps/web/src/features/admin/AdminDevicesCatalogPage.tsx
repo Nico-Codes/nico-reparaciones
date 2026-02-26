@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { deviceCatalogApi } from '@/features/deviceCatalog/api';
+import { adminApi } from './api';
 
-type BrandItem = { id: string; name: string; slug: string; active: boolean };
+type DeviceTypeItem = { id: string; name: string; slug: string; active: boolean };
+type BrandItem = { id: string; deviceTypeId?: string | null; name: string; slug: string; active: boolean };
 type ModelItem = {
   id: string;
   brandId: string;
@@ -11,7 +13,7 @@ type ModelItem = {
   active: boolean;
   brand: { id: string; name: string; slug: string };
 };
-type IssueItem = { id: string; name: string; slug: string; active: boolean };
+type IssueItem = { id: string; deviceTypeId?: string | null; name: string; slug: string; active: boolean };
 
 function slugify(value: string) {
   return value
@@ -23,7 +25,8 @@ function slugify(value: string) {
 }
 
 export function AdminDevicesCatalogPage() {
-  const [deviceType, setDeviceType] = useState('celular');
+  const [deviceTypes, setDeviceTypes] = useState<DeviceTypeItem[]>([]);
+  const [deviceType, setDeviceType] = useState('');
   const [selectedBrandId, setSelectedBrandId] = useState('');
   const [brands, setBrands] = useState<BrandItem[]>([]);
   const [models, setModels] = useState<ModelItem[]>([]);
@@ -34,8 +37,14 @@ export function AdminDevicesCatalogPage() {
   const [modelDraft, setModelDraft] = useState('');
   const [issueDraft, setIssueDraft] = useState('');
 
-  async function loadBrandsAndIssues() {
-    const [b, i] = await Promise.all([deviceCatalogApi.brands(), deviceCatalogApi.issues()]);
+  async function loadDeviceTypes() {
+    const res = await adminApi.deviceTypes();
+    setDeviceTypes(res.items.filter((t) => t.active));
+    setDeviceType((prev) => prev || res.items.find((t) => t.active)?.id || '');
+  }
+
+  async function loadBrandsAndIssues(typeId?: string) {
+    const [b, i] = await Promise.all([deviceCatalogApi.brands(typeId), deviceCatalogApi.issues(typeId)]);
     setBrands(b.items);
     setIssues(i.items);
   }
@@ -48,7 +57,8 @@ export function AdminDevicesCatalogPage() {
   async function refreshAll() {
     setError('');
     try {
-      await loadBrandsAndIssues();
+      await loadDeviceTypes();
+      await loadBrandsAndIssues(deviceType || undefined);
       await loadModels(selectedBrandId || undefined);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error cargando catalogo');
@@ -59,6 +69,12 @@ export function AdminDevicesCatalogPage() {
     void refreshAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    void loadBrandsAndIssues(deviceType || undefined).catch((e) =>
+      setError(e instanceof Error ? e.message : 'Error cargando marcas/fallas'),
+    );
+  }, [deviceType]);
 
   useEffect(() => {
     void loadModels(selectedBrandId || undefined).catch((e) =>
@@ -73,8 +89,8 @@ export function AdminDevicesCatalogPage() {
   );
 
   async function handleCreateBrand() {
-    if (!brandDraft.trim()) return;
-    await deviceCatalogApi.createBrand({ name: brandDraft.trim(), slug: slugify(brandDraft) });
+    if (!brandDraft.trim() || !deviceType) return;
+    await deviceCatalogApi.createBrand({ deviceTypeId: deviceType, name: brandDraft.trim(), slug: slugify(brandDraft), active: true });
     setBrandDraft('');
     await refreshAll();
   }
@@ -87,9 +103,45 @@ export function AdminDevicesCatalogPage() {
   }
 
   async function handleCreateIssue() {
-    if (!issueDraft.trim()) return;
-    await deviceCatalogApi.createIssue({ name: issueDraft.trim(), slug: slugify(issueDraft) });
+    if (!issueDraft.trim() || !deviceType) return;
+    await deviceCatalogApi.createIssue({ deviceTypeId: deviceType, name: issueDraft.trim(), slug: slugify(issueDraft), active: true });
     setIssueDraft('');
+    await refreshAll();
+  }
+
+  async function renameBrand(item: BrandItem) {
+    const next = window.prompt('Nuevo nombre de marca', item.name)?.trim();
+    if (!next || next === item.name) return;
+    await deviceCatalogApi.updateBrand(item.id, { name: next, slug: slugify(next) });
+    await refreshAll();
+  }
+
+  async function toggleBrand(item: BrandItem) {
+    await deviceCatalogApi.updateBrand(item.id, { active: !item.active });
+    await refreshAll();
+  }
+
+  async function renameModel(item: ModelItem) {
+    const next = window.prompt('Nuevo nombre de modelo', item.name)?.trim();
+    if (!next || next === item.name) return;
+    await deviceCatalogApi.updateModel(item.id, { name: next, slug: slugify(next) });
+    await refreshAll();
+  }
+
+  async function toggleModel(item: ModelItem) {
+    await deviceCatalogApi.updateModel(item.id, { active: !item.active });
+    await refreshAll();
+  }
+
+  async function renameIssue(item: IssueItem) {
+    const next = window.prompt('Nuevo nombre de falla', item.name)?.trim();
+    if (!next || next === item.name) return;
+    await deviceCatalogApi.updateIssue(item.id, { name: next, slug: slugify(next) });
+    await refreshAll();
+  }
+
+  async function toggleIssue(item: IssueItem) {
+    await deviceCatalogApi.updateIssue(item.id, { active: !item.active });
     await refreshAll();
   }
 
@@ -130,9 +182,10 @@ export function AdminDevicesCatalogPage() {
                 onChange={(e) => setDeviceType(e.target.value)}
                 className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm"
               >
-                <option value="celular">Celular</option>
-                <option value="tablet">Tablet</option>
-                <option value="consola">Consola</option>
+                <option value="">Elegi...</option>
+                {deviceTypes.map((t) => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
               </select>
             </div>
             <div>
@@ -191,8 +244,11 @@ export function AdminDevicesCatalogPage() {
                   >
                     <div>
                       <div className="font-bold text-zinc-900">{brand.name}</div>
-                      <button type="button" className="mt-1 text-xs font-semibold text-sky-700">
+                      <button type="button" className="mt-1 text-xs font-semibold text-sky-700" onClick={() => void renameBrand(brand)}>
                         Renombrar
+                      </button>
+                      <button type="button" className="mt-1 ml-3 text-xs font-semibold text-zinc-700" onClick={() => void toggleBrand(brand)}>
+                        {brand.active ? 'Desactivar' : 'Activar'}
                       </button>
                     </div>
                     <span className={brand.active ? 'badge-emerald self-center' : 'badge-zinc self-center'}>
@@ -243,8 +299,11 @@ export function AdminDevicesCatalogPage() {
                     <div>
                       <div className="font-bold text-zinc-900">{model.name}</div>
                       <div className="text-xs text-zinc-500">Grupo: -</div>
-                      <button type="button" className="mt-1 text-xs font-semibold text-sky-700">
+                      <button type="button" className="mt-1 text-xs font-semibold text-sky-700" onClick={() => void renameModel(model)}>
                         Renombrar
+                      </button>
+                      <button type="button" className="mt-1 ml-3 text-xs font-semibold text-zinc-700" onClick={() => void toggleModel(model)}>
+                        {model.active ? 'Desactivar' : 'Activar'}
                       </button>
                     </div>
                     <span className={model.active ? 'badge-emerald self-center' : 'badge-zinc self-center'}>
@@ -293,8 +352,11 @@ export function AdminDevicesCatalogPage() {
                     <div>
                       <div className="font-bold text-zinc-900">{issue.name}</div>
                       <div className="text-xs text-zinc-500">slug: {issue.slug}</div>
-                      <button type="button" className="mt-1 text-xs font-semibold text-sky-700">
+                      <button type="button" className="mt-1 text-xs font-semibold text-sky-700" onClick={() => void renameIssue(issue)}>
                         Renombrar
+                      </button>
+                      <button type="button" className="mt-1 ml-3 text-xs font-semibold text-zinc-700" onClick={() => void toggleIssue(issue)}>
+                        {issue.active ? 'Desactivar' : 'Activar'}
                       </button>
                     </div>
                     <span className={issue.active ? 'badge-emerald self-center' : 'badge-zinc self-center'}>

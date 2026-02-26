@@ -27,7 +27,13 @@ export function LoginPage() {
       setNeedsTwoFactor(false);
       setResult(`Login OK (${res.user.role})`);
       const fallback = res.user.role === 'ADMIN' ? '/admin' : '/store';
-      const target = from && from.startsWith('/') && !from.startsWith('/auth/') ? from : fallback;
+      const target =
+        from &&
+        from.startsWith('/') &&
+        !from.startsWith('/auth/') &&
+        !from.startsWith('/api/')
+          ? from
+          : fallback;
       navigate(target, { replace: true });
     } catch (error) {
       const message = (error as { message?: string })?.message ?? 'Error al iniciar sesion';

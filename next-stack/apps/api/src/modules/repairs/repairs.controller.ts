@@ -10,6 +10,7 @@ import { RepairsService } from './repairs.service.js';
 const createRepairSchema = z.object({
   customerName: z.string().trim().min(2).max(190),
   customerPhone: z.string().trim().max(60).optional().nullable(),
+  deviceTypeId: z.string().trim().max(191).optional().nullable(),
   deviceBrandId: z.string().trim().max(191).optional().nullable(),
   deviceModelId: z.string().trim().max(191).optional().nullable(),
   deviceIssueTypeId: z.string().trim().max(191).optional().nullable(),
@@ -31,6 +32,7 @@ const updateStatusSchema = z.object({
 const updateRepairSchema = z.object({
   customerName: z.string().trim().min(2).max(190).optional(),
   customerPhone: z.string().trim().max(60).optional().nullable(),
+  deviceTypeId: z.string().trim().max(191).optional().nullable(),
   deviceBrandId: z.string().trim().max(191).optional().nullable(),
   deviceModelId: z.string().trim().max(191).optional().nullable(),
   deviceIssueTypeId: z.string().trim().max(191).optional().nullable(),
@@ -133,4 +135,3 @@ export class RepairsController {
     return this.repairsService.adminUpdate(id, parsed.data);
   }
 }
-

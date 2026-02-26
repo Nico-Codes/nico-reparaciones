@@ -1,6 +1,7 @@
 export type RepairItem = {
   id: string;
   userId: string | null;
+  deviceTypeId?: string | null;
   deviceBrandId?: string | null;
   deviceModelId?: string | null;
   deviceIssueTypeId?: string | null;

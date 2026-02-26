@@ -2,6 +2,7 @@ import { authApi } from '@/features/auth/api';
 import { authStorage } from '@/features/auth/storage';
 
 const API_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:3001';
+let refreshInFlight: ReturnType<typeof authApi.refresh> | null = null;
 
 async function authRequestRaw<T>(path: string, init?: RequestInit): Promise<{ ok: true; data: T } | { ok: false; status: number; message: string }> {
   const token = authStorage.getAccessToken();
@@ -30,7 +31,15 @@ async function authRequest<T>(path: string, init?: RequestInit): Promise<T> {
 
   if (first.status === 401 && authStorage.getRefreshToken()) {
     try {
-      const refreshed = await authApi.refresh();
+      if (!refreshInFlight) {
+        refreshInFlight = authApi.refresh().finally(() => {
+          refreshInFlight = null;
+        });
+      }
+
+      const refreshPromise = refreshInFlight;
+      if (!refreshPromise) throw new Error('No se pudo refrescar la sesion');
+      const refreshed = await refreshPromise;
       authStorage.setSession(refreshed.user, refreshed.tokens);
       const retry = await authRequestRaw<T>(path, init);
       if (retry.ok) return retry.data;
@@ -97,6 +106,45 @@ export const adminApi = {
     return authRequest<{ ok: boolean; sentTo: string; status: 'sent' | 'dry_run'; smtpHealth: { label: string } }>('/admin/smtp/test', {
       method: 'POST',
       body: JSON.stringify({ email }),
+    });
+  },
+  deviceTypes() {
+    return authRequest<{ items: Array<{ id: string; name: string; slug: string; active: boolean }> }>('/admin/device-types');
+  },
+  createDeviceType(input: { name: string; active?: boolean }) {
+    return authRequest<{ item: { id: string; name: string; slug: string; active: boolean } }>('/admin/device-types', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  },
+  updateDeviceType(id: string, input: { name?: string; active?: boolean }) {
+    return authRequest<{ item: { id: string; name: string; slug: string; active: boolean } }>(`/admin/device-types/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      body: JSON.stringify(input),
+    });
+  },
+  modelGroups(deviceBrandId: string) {
+    return authRequest<{
+      groups: Array<{ id: string; name: string; slug: string; active: boolean }>;
+      models: Array<{ id: string; name: string; slug: string; active: boolean; deviceModelGroupId: string | null }>;
+    }>(`/admin/model-groups?deviceBrandId=${encodeURIComponent(deviceBrandId)}`);
+  },
+  createModelGroup(input: { deviceBrandId: string; name: string; active?: boolean }) {
+    return authRequest<{ item: { id: string; name: string; slug: string; active: boolean } }>('/admin/model-groups', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  },
+  updateModelGroup(id: string, input: { deviceBrandId: string; name?: string; active?: boolean }) {
+    return authRequest<{ item: { id: string; name: string; slug: string; active: boolean } }>(`/admin/model-groups/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      body: JSON.stringify(input),
+    });
+  },
+  assignModelGroup(modelId: string, input: { deviceBrandId: string; deviceModelGroupId?: string | null }) {
+    return authRequest<{ ok: boolean }>(`/admin/model-groups/models/${encodeURIComponent(modelId)}`, {
+      method: 'PATCH',
+      body: JSON.stringify(input),
     });
   },
   sendWeeklyReportNow(rangeDays?: 7 | 30 | 90) {

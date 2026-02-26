@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { adminApi } from '@/features/admin/api';
 import { deviceCatalogApi } from '@/features/deviceCatalog/api';
 import { repairsApi } from './api';
 import type { RepairItem, RepairTimelineEvent } from './types';
@@ -8,8 +9,8 @@ import type { RepairItem, RepairTimelineEvent } from './types';
 const STATUSES = ['RECEIVED', 'DIAGNOSING', 'WAITING_APPROVAL', 'REPAIRING', 'READY_PICKUP', 'DELIVERED', 'CANCELLED'] as const;
 const STATUS_LABELS: Record<(typeof STATUSES)[number], string> = {
   RECEIVED: 'Recibida',
-  DIAGNOSING: 'Diagnóstico',
-  WAITING_APPROVAL: 'Espera aprobación',
+  DIAGNOSING: 'DiagnÃ³stico',
+  WAITING_APPROVAL: 'Espera aprobaciÃ³n',
   REPAIRING: 'Reparando',
   READY_PICKUP: 'Lista',
   DELIVERED: 'Entregada',
@@ -45,16 +46,18 @@ function timeAgoLabel(dateIso: string) {
   const hours = Math.floor(mins / 60);
   if (hours < 24) return `hace ${hours} h`;
   const days = Math.floor(hours / 24);
-  if (days < 7) return `hace ${days} día${days === 1 ? '' : 's'}`;
+  if (days < 7) return `hace ${days} dÃ­a${days === 1 ? '' : 's'}`;
   const weeks = Math.floor(days / 7);
   return `hace ${weeks} semana${weeks === 1 ? '' : 's'}`;
 }
 
 export function AdminRepairsPage() {
   const hydratingEditRef = useRef(false);
-  const [brands, setBrands] = useState<Array<{ id: string; name: string; slug: string; active: boolean }>>([]);
-  const [models, setModels] = useState<Array<{ id: string; brandId: string; name: string; slug: string; active: boolean; brand: { id: string; name: string; slug: string } }>>([]);
-  const [issues, setIssues] = useState<Array<{ id: string; name: string; slug: string; active: boolean }>>([]);
+  const [deviceTypes, setDeviceTypes] = useState<Array<{ id: string; name: string; slug: string; active: boolean }>>([]);
+  const [brands, setBrands] = useState<Array<{ id: string; deviceTypeId?: string | null; name: string; slug: string; active: boolean }>>([]);
+  const [models, setModels] = useState<Array<{ id: string; brandId: string; deviceModelGroupId?: string | null; name: string; slug: string; active: boolean; brand: { id: string; name: string; slug: string } }>>([]);
+  const [issues, setIssues] = useState<Array<{ id: string; deviceTypeId?: string | null; name: string; slug: string; active: boolean }>>([]);
+  const [selectedDeviceTypeId, setSelectedDeviceTypeId] = useState('');
   const [selectedBrandId, setSelectedBrandId] = useState('');
   const [selectedModelId, setSelectedModelId] = useState('');
   const [selectedIssueId, setSelectedIssueId] = useState('');
@@ -80,6 +83,9 @@ export function AdminRepairsPage() {
     ruleName?: string;
     basePrice?: number;
     profitPercent?: number;
+    calcMode?: 'BASE_PLUS_MARGIN' | 'FIXED_TOTAL';
+    minFinalPrice?: number | null;
+    shippingFee?: number | null;
     suggestedTotal?: number;
   }>(null);
   const [rules, setRules] = useState<Array<{
@@ -98,6 +104,7 @@ export function AdminRepairsPage() {
   const [editBrandId, setEditBrandId] = useState('');
   const [editModelId, setEditModelId] = useState('');
   const [editIssueId, setEditIssueId] = useState('');
+  const [editDeviceTypeId, setEditDeviceTypeId] = useState('');
   const [editModels, setEditModels] = useState<Array<{ id: string; brandId: string; name: string; slug: string; active: boolean; brand: { id: string; name: string; slug: string } }>>([]);
   const [ruleForm, setRuleForm] = useState({
     name: '',
@@ -172,7 +179,7 @@ export function AdminRepairsPage() {
       const res = await repairsApi.adminStats();
       setStats(res);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error cargando estadísticas');
+      setError(err instanceof Error ? err.message : 'Error cargando estadÃ­sticas');
     } finally {
       setLoadingStats(false);
     }
@@ -200,11 +207,12 @@ export function AdminRepairsPage() {
 
   async function loadCatalog() {
     try {
-      const [brandsRes, issuesRes] = await Promise.all([deviceCatalogApi.brands(), deviceCatalogApi.issues()]);
+      const [typesRes, brandsRes, issuesRes] = await Promise.all([adminApi.deviceTypes(), deviceCatalogApi.brands(), deviceCatalogApi.issues()]);
+      setDeviceTypes(typesRes.items.filter((t) => t.active));
       setBrands(brandsRes.items.filter((b) => b.active));
       setIssues(issuesRes.items.filter((i) => i.active));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error cargando catálogo');
+      setError(err instanceof Error ? err.message : 'Error cargando catÃ¡logo');
     }
   }
 
@@ -222,6 +230,14 @@ export function AdminRepairsPage() {
     void loadModelsByBrand();
   }, []);
 
+  useEffect(() => {
+    setSelectedBrandId('');
+    setSelectedModelId('');
+    if (selectedIssueId && !issues.some((i) => i.id === selectedIssueId && (!selectedDeviceTypeId || i.deviceTypeId === selectedDeviceTypeId))) {
+      setSelectedIssueId('');
+    }
+  }, [selectedDeviceTypeId]);
+
   async function loadEditModelsByBrand(brandId?: string) {
     try {
       const res = await deviceCatalogApi.models(brandId || undefined);
@@ -234,6 +250,9 @@ export function AdminRepairsPage() {
   useEffect(() => {
     setSelectedModelId('');
     const selectedBrand = brands.find((b) => b.id === selectedBrandId);
+    if (selectedBrand?.deviceTypeId && selectedBrand.deviceTypeId !== selectedDeviceTypeId) {
+      setSelectedDeviceTypeId(selectedBrand.deviceTypeId);
+    }
     setForm((prev) => ({ ...prev, deviceBrand: selectedBrand?.name ?? '' }));
     void loadModelsByBrand(selectedBrandId || undefined);
   }, [selectedBrandId]);
@@ -261,6 +280,7 @@ export function AdminRepairsPage() {
         hydratingEditRef.current = true;
         setSelectedRepair(item);
         setSelectedRepairTimeline(res.timeline ?? []);
+        setEditDeviceTypeId(item.deviceTypeId || '');
         setEditBrandId(item.deviceBrandId || '');
         setEditModelId(item.deviceModelId || '');
         setEditIssueId(item.deviceIssueTypeId || '');
@@ -284,6 +304,9 @@ export function AdminRepairsPage() {
   useEffect(() => {
     if (!selectedRepair) return;
     const selectedBrand = brands.find((b) => b.id === editBrandId);
+    if (selectedBrand?.deviceTypeId && selectedBrand.deviceTypeId !== editDeviceTypeId) {
+      setEditDeviceTypeId(selectedBrand.deviceTypeId);
+    }
     setEditForm((prev) => ({ ...prev, deviceBrand: selectedBrand?.name ?? prev.deviceBrand }));
     if (hydratingEditRef.current) {
       hydratingEditRef.current = false;
@@ -292,6 +315,17 @@ export function AdminRepairsPage() {
     }
     void loadEditModelsByBrand(editBrandId || undefined);
   }, [editBrandId]);
+
+  useEffect(() => {
+    if (!selectedRepair) return;
+    if (!hydratingEditRef.current) {
+      setEditBrandId('');
+      setEditModelId('');
+    }
+    if (editIssueId && !issues.some((i) => i.id === editIssueId && (!editDeviceTypeId || i.deviceTypeId === editDeviceTypeId))) {
+      setEditIssueId('');
+    }
+  }, [editDeviceTypeId]);
 
   useEffect(() => {
     const selectedModel = editModels.find((m) => m.id === editModelId);
@@ -314,6 +348,7 @@ export function AdminRepairsPage() {
       await repairsApi.adminCreate({
         customerName: form.customerName,
         customerPhone: form.customerPhone || null,
+        deviceTypeId: selectedDeviceTypeId || null,
         deviceBrandId: selectedBrandId || null,
         deviceModelId: selectedModelId || null,
         deviceIssueTypeId: selectedIssueId || null,
@@ -324,6 +359,7 @@ export function AdminRepairsPage() {
         quotedPrice,
       });
       setForm({ customerName: '', customerPhone: '', deviceBrand: '', deviceModel: '', issueLabel: '', quotedPrice: '', notes: '' });
+      setSelectedDeviceTypeId('');
       setSelectedBrandId('');
       setSelectedModelId('');
       setSelectedIssueId('');
@@ -331,7 +367,7 @@ export function AdminRepairsPage() {
       await load();
       await loadStats();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error creando reparación');
+      setError(err instanceof Error ? err.message : 'Error creando reparaciÃ³n');
     } finally {
       setSaving(false);
     }
@@ -363,6 +399,7 @@ export function AdminRepairsPage() {
       const res = await repairsApi.adminUpdate(selectedRepairId, {
         customerName: editForm.customerName,
         customerPhone: editForm.customerPhone || null,
+        deviceTypeId: editDeviceTypeId || null,
         deviceBrandId: editBrandId || null,
         deviceModelId: editModelId || null,
         deviceIssueTypeId: editIssueId || null,
@@ -379,7 +416,7 @@ export function AdminRepairsPage() {
       void loadStats();
       void repairsApi.adminDetail(selectedRepairId).then((detail) => setSelectedRepairTimeline(detail.timeline ?? [])).catch(() => {});
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error guardando reparación');
+      setError(err instanceof Error ? err.message : 'Error guardando reparaciÃ³n');
     } finally {
       setSavingSelectedRepair(false);
     }
@@ -390,7 +427,9 @@ export function AdminRepairsPage() {
     setError('');
     try {
       const res = await repairsApi.pricingResolve({
+        deviceTypeId: selectedDeviceTypeId || (brands.find((b) => b.id === selectedBrandId)?.deviceTypeId ?? undefined),
         deviceBrandId: selectedBrandId || undefined,
+        deviceModelGroupId: models.find((m) => m.id === selectedModelId)?.deviceModelGroupId ?? undefined,
         deviceModelId: selectedModelId || undefined,
         deviceIssueTypeId: selectedIssueId || undefined,
         deviceBrand: form.deviceBrand || undefined,
@@ -404,6 +443,9 @@ export function AdminRepairsPage() {
           ruleName: res.rule?.name,
           basePrice: res.suggestion.basePrice,
           profitPercent: res.suggestion.profitPercent,
+          calcMode: res.suggestion.calcMode,
+          minFinalPrice: res.suggestion.minFinalPrice ?? null,
+          shippingFee: res.suggestion.shippingFee ?? null,
           suggestedTotal: res.suggestion.suggestedTotal,
         });
       } else {
@@ -452,7 +494,7 @@ export function AdminRepairsPage() {
       <section className="page-head store-hero">
         <div>
           <div className="page-title">Reparaciones</div>
-          <p className="page-subtitle">Listado y control rápido de reparaciones.</p>
+          <p className="page-subtitle">Listado y control rÃ¡pido de reparaciones.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Link to="/admin" className="btn-outline">
@@ -499,22 +541,30 @@ export function AdminRepairsPage() {
         <div className="space-y-4">
           <form onSubmit={createRepair} className="card">
             <div className="card-head flex items-center justify-between gap-2">
-              <div className="font-black">Nueva reparación</div>
-              <div className="text-xs text-zinc-500">Alta rápida</div>
+              <div className="font-black">Nueva reparaciÃ³n</div>
+              <div className="text-xs text-zinc-500">Alta rÃ¡pida</div>
             </div>
             <div className="card-body space-y-3">
             <Field label="Cliente *" value={form.customerName} onChange={(v) => setForm({ ...form, customerName: v })} required />
-            <Field label="Teléfono" value={form.customerPhone} onChange={(v) => setForm({ ...form, customerPhone: v })} />
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <Field label="TelÃ©fono" value={form.customerPhone} onChange={(v) => setForm({ ...form, customerPhone: v })} />
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-4">
               <SelectField
-                label="Marca (catálogo)"
-                value={selectedBrandId}
-                onChange={setSelectedBrandId}
-                options={brands.map((b) => ({ value: b.id, label: b.name }))}
+                label="Tipo disp."
+                value={selectedDeviceTypeId}
+                onChange={setSelectedDeviceTypeId}
+                options={deviceTypes.map((t) => ({ value: t.id, label: t.name }))}
                 placeholder="Seleccionar"
               />
               <SelectField
-                label="Modelo (catálogo)"
+                label="Marca (catÃ¡logo)"
+                value={selectedBrandId}
+                onChange={setSelectedBrandId}
+                options={brands.filter((b) => !selectedDeviceTypeId || b.deviceTypeId === selectedDeviceTypeId).map((b) => ({ value: b.id, label: b.name }))}
+                placeholder={selectedDeviceTypeId ? 'Seleccionar' : 'Primero tipo'}
+                disabled={!selectedDeviceTypeId}
+              />
+              <SelectField
+                label="Modelo (catÃ¡logo)"
                 value={selectedModelId}
                 onChange={setSelectedModelId}
                 options={models.filter((m) => !selectedBrandId || m.brandId === selectedBrandId).map((m) => ({ value: m.id, label: m.name }))}
@@ -522,11 +572,12 @@ export function AdminRepairsPage() {
                 disabled={!selectedBrandId}
               />
               <SelectField
-                label="Falla (catálogo)"
+                label="Falla (catÃ¡logo)"
                 value={selectedIssueId}
                 onChange={setSelectedIssueId}
-                options={issues.map((i) => ({ value: i.id, label: i.name }))}
-                placeholder="Seleccionar"
+                options={issues.filter((i) => !selectedDeviceTypeId || i.deviceTypeId === selectedDeviceTypeId).map((i) => ({ value: i.id, label: i.name }))}
+                placeholder={selectedDeviceTypeId ? 'Seleccionar' : 'Primero tipo'}
+                disabled={!selectedDeviceTypeId}
               />
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -543,21 +594,33 @@ export function AdminRepairsPage() {
             {priceSuggestion ? (
               <div className={`rounded-xl border px-3 py-2 text-sm ${priceSuggestion.matched ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : 'border-amber-200 bg-amber-50 text-amber-900'}`}>
                 {priceSuggestion.matched
-                  ? `Regla: ${priceSuggestion.ruleName || 'sin nombre'} · Base $${(priceSuggestion.basePrice ?? 0).toLocaleString('es-AR')} + ${(priceSuggestion.profitPercent ?? 0).toLocaleString('es-AR')}% = $${(priceSuggestion.suggestedTotal ?? 0).toLocaleString('es-AR')}`
-                  : 'No se encontró regla coincidente. Podés cargar el presupuesto manualmente o crear una regla.'}
+                  ? `Regla: ${priceSuggestion.ruleName || 'sin nombre'} Â· ${
+                      priceSuggestion.calcMode === 'FIXED_TOTAL'
+                        ? `Total fijo $${(priceSuggestion.basePrice ?? 0).toLocaleString('es-AR')}`
+                        : `Base $${(priceSuggestion.basePrice ?? 0).toLocaleString('es-AR')} + ${(priceSuggestion.profitPercent ?? 0).toLocaleString('es-AR')}%`
+                    }${
+                      (priceSuggestion.shippingFee ?? 0) > 0
+                        ? ` + envÃ­o $${(priceSuggestion.shippingFee ?? 0).toLocaleString('es-AR')}`
+                        : ''
+                    }${
+                      (priceSuggestion.minFinalPrice ?? 0) > 0
+                        ? ` Â· mÃ­n. $${(priceSuggestion.minFinalPrice ?? 0).toLocaleString('es-AR')}`
+                        : ''
+                    } = $${(priceSuggestion.suggestedTotal ?? 0).toLocaleString('es-AR')}`
+                  : 'No se encontrÃ³ regla coincidente. PodÃ©s cargar el presupuesto manualmente o crear una regla.'}
               </div>
             ) : null}
             <label className="block">
               <span className="mb-1 block text-sm font-bold text-zinc-700">Notas</span>
               <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={3} className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm" />
             </label>
-              <Button className="w-full" disabled={saving}>{saving ? 'Guardando...' : 'Crear reparación'}</Button>
+              <Button className="w-full" disabled={saving}>{saving ? 'Guardando...' : 'Crear reparaciÃ³n'}</Button>
             </div>
           </form>
 
           <section className="card">
             <div className="card-head flex items-center justify-between gap-2">
-              <div className="font-black">Reglas de cálculo</div>
+              <div className="font-black">Reglas de cÃ¡lculo</div>
               <div className="text-xs text-zinc-500">{loadingRules ? 'Cargando...' : `${rules.length} reglas`}</div>
             </div>
             <div className="card-body">
@@ -579,16 +642,16 @@ export function AdminRepairsPage() {
                 {loadingRules ? (
                   <div className="rounded-xl border border-zinc-200 p-2 text-sm">Cargando reglas...</div>
                 ) : rules.length === 0 ? (
-                  <div className="rounded-xl border border-zinc-200 p-2 text-sm">Sin reglas todavía.</div>
+                  <div className="rounded-xl border border-zinc-200 p-2 text-sm">Sin reglas todavÃ­a.</div>
                 ) : rules.map((rule) => (
                   <div key={rule.id} className="rounded-xl border border-zinc-200 p-2">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <div className="text-sm font-black text-zinc-900">{rule.name}</div>
                         <div className="text-xs text-zinc-500">
-                          {[rule.deviceBrand, rule.deviceModel, rule.issueLabel].filter(Boolean).join(' · ') || 'Regla global'}
+                          {[rule.deviceBrand, rule.deviceModel, rule.issueLabel].filter(Boolean).join(' Â· ') || 'Regla global'}
                         </div>
-                        <div className="mt-1 text-xs text-zinc-600">Base ${rule.basePrice.toLocaleString('es-AR')} + {rule.profitPercent}% · Prio {rule.priority}</div>
+                        <div className="mt-1 text-xs text-zinc-600">Base ${rule.basePrice.toLocaleString('es-AR')} + {rule.profitPercent}% Â· Prio {rule.priority}</div>
                       </div>
                       <button type="button" className="text-xs font-bold text-rose-700 hover:text-rose-800" onClick={() => void deleteRule(rule.id)}>
                         Borrar
@@ -605,14 +668,14 @@ export function AdminRepairsPage() {
           <div className="card-head flex items-center justify-between gap-2">
             <div className="font-black">Listado y detalle</div>
             <div className="text-xs text-zinc-500">
-              {loading ? 'Cargando...' : `${items.length} reparaciones`} · {selectedRepairId ? 'detalle activo' : 'sin selección'}
+              {loading ? 'Cargando...' : `${items.length} reparaciones`} Â· {selectedRepairId ? 'detalle activo' : 'sin selecciÃ³n'}
             </div>
           </div>
           <div className="card-body">
             <div className="mb-2 text-xs font-bold uppercase tracking-wide text-zinc-500">Filtros</div>
             <div className="mb-3 rounded-xl border border-zinc-200 bg-zinc-50 p-2">
               <div className="flex flex-wrap gap-2">
-              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar ID / cliente / teléfono / modelo / falla..." className="h-10 flex-1 min-w-[220px] rounded-xl border border-zinc-200 px-3 text-sm" />
+              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar ID / cliente / telÃ©fono / modelo / falla..." className="h-10 flex-1 min-w-[220px] rounded-xl border border-zinc-200 px-3 text-sm" />
               <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="h-10 min-w-[200px] rounded-xl border border-zinc-200 px-3 text-sm">
                 <option value="">Todos los estados</option>
                 {STATUSES.map((s) => <option key={s} value={s}>{repairStatusLabel(s)}</option>)}
@@ -668,12 +731,12 @@ export function AdminRepairsPage() {
                       <div className="min-w-0">
                         <div className="text-lg font-black tracking-tight text-zinc-900">{repairCodeLabel(r.id)}</div>
                         <div className="mt-0.5 text-xs text-zinc-600">
-                          Recibido: {new Date(r.createdAt).toLocaleDateString('es-AR')} {new Date(r.createdAt).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} · <span className="font-bold">{timeAgoLabel(r.createdAt)}</span>
+                          Recibido: {new Date(r.createdAt).toLocaleDateString('es-AR')} {new Date(r.createdAt).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} Â· <span className="font-bold">{timeAgoLabel(r.createdAt)}</span>
                         </div>
                       </div>
                       <div className="min-w-0">
                         <div className="truncate text-base font-black tracking-tight text-zinc-900">{r.customerName}</div>
-                        <div className="truncate text-xs text-zinc-600">{r.customerPhone || 'Sin teléfono'}</div>
+                        <div className="truncate text-xs text-zinc-600">{r.customerPhone || 'Sin telÃ©fono'}</div>
                       </div>
                       <div className="min-w-0">
                         <div className="truncate text-base text-zinc-900">{[r.deviceBrand, r.deviceModel].filter(Boolean).join(' ') || 'Sin equipo'}</div>
@@ -682,7 +745,7 @@ export function AdminRepairsPage() {
                         <span className={repairStatusBadgeClass(r.status)}>{repairStatusLabel(r.status)}</span>
                       </div>
                       <div className="text-base font-black tracking-tight text-zinc-900">
-                        {r.finalPrice != null ? `$ ${r.finalPrice.toLocaleString('es-AR')}` : r.quotedPrice != null ? `$ ${r.quotedPrice.toLocaleString('es-AR')}` : '—'}
+                        {r.finalPrice != null ? `$ ${r.finalPrice.toLocaleString('es-AR')}` : r.quotedPrice != null ? `$ ${r.quotedPrice.toLocaleString('es-AR')}` : 'â€”'}
                       </div>
                       <div className="flex flex-wrap items-center justify-start gap-2 lg:justify-end">
                         <button type="button" onClick={() => setSelectedRepairId(r.id)} className="btn-outline !h-10 !rounded-xl px-4 text-sm font-bold">
@@ -717,7 +780,7 @@ export function AdminRepairsPage() {
             <div className="mt-4 border-t border-zinc-200 pt-4">
               {!selectedRepairId ? (
                 <div className="rounded-xl border border-dashed border-zinc-300 p-3 text-sm text-zinc-600">
-                  Selecciona una reparación para ver y editar el detalle.
+                  Selecciona una reparaciÃ³n para ver y editar el detalle.
                 </div>
               ) : loadingSelectedRepair ? (
                 <div className="rounded-xl border border-zinc-200 p-3 text-sm">Cargando detalle...</div>
@@ -728,7 +791,7 @@ export function AdminRepairsPage() {
                   <div className="text-xs font-bold uppercase tracking-wide text-zinc-500">Detalle</div>
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <div className="text-xs font-bold uppercase tracking-wide text-zinc-500">Detalle de reparación</div>
+                      <div className="text-xs font-bold uppercase tracking-wide text-zinc-500">Detalle de reparaciÃ³n</div>
                       <div className="mt-1 text-sm font-black break-all text-zinc-900">{selectedRepair.id}</div>
                       <div className="text-xs text-zinc-500">{new Date(selectedRepair.createdAt).toLocaleString('es-AR')}</div>
                     </div>
@@ -744,19 +807,27 @@ export function AdminRepairsPage() {
 
                   <div className="grid gap-2 sm:grid-cols-2">
                     <Field label="Cliente *" value={editForm.customerName} onChange={(v) => setEditForm((p) => ({ ...p, customerName: v }))} required />
-                    <Field label="Teléfono" value={editForm.customerPhone} onChange={(v) => setEditForm((p) => ({ ...p, customerPhone: v }))} />
+                    <Field label="TelÃ©fono" value={editForm.customerPhone} onChange={(v) => setEditForm((p) => ({ ...p, customerPhone: v }))} />
                   </div>
 
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-4">
                     <SelectField
-                      label="Marca (catálogo)"
-                      value={editBrandId}
-                      onChange={setEditBrandId}
-                      options={brands.map((b) => ({ value: b.id, label: b.name }))}
+                      label="Tipo disp."
+                      value={editDeviceTypeId}
+                      onChange={setEditDeviceTypeId}
+                      options={deviceTypes.map((t) => ({ value: t.id, label: t.name }))}
                       placeholder="Seleccionar"
                     />
                     <SelectField
-                      label="Modelo (catálogo)"
+                      label="Marca (catÃ¡logo)"
+                      value={editBrandId}
+                      onChange={setEditBrandId}
+                      options={brands.filter((b) => !editDeviceTypeId || b.deviceTypeId === editDeviceTypeId).map((b) => ({ value: b.id, label: b.name }))}
+                      placeholder={editDeviceTypeId ? 'Seleccionar' : 'Primero tipo'}
+                      disabled={!editDeviceTypeId}
+                    />
+                    <SelectField
+                      label="Modelo (catÃ¡logo)"
                       value={editModelId}
                       onChange={setEditModelId}
                       options={editModels.filter((m) => !editBrandId || m.brandId === editBrandId).map((m) => ({ value: m.id, label: m.name }))}
@@ -764,11 +835,12 @@ export function AdminRepairsPage() {
                       disabled={!editBrandId}
                     />
                     <SelectField
-                      label="Falla (catálogo)"
+                      label="Falla (catÃ¡logo)"
                       value={editIssueId}
                       onChange={setEditIssueId}
-                      options={issues.map((i) => ({ value: i.id, label: i.name }))}
-                      placeholder="Seleccionar"
+                      options={issues.filter((i) => !editDeviceTypeId || i.deviceTypeId === editDeviceTypeId).map((i) => ({ value: i.id, label: i.name }))}
+                      placeholder={editDeviceTypeId ? 'Seleccionar' : 'Primero tipo'}
+                      disabled={!editDeviceTypeId}
                     />
                   </div>
 

@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 type CreateRepairInput = {
   customerName: string;
   customerPhone?: string | null;
+  deviceTypeId?: string | null;
   deviceBrandId?: string | null;
   deviceModelId?: string | null;
   deviceIssueTypeId?: string | null;
@@ -53,6 +54,7 @@ export class RepairsService {
   async create(input: CreateRepairInput) {
     const data: Prisma.RepairUncheckedCreateInput = {
       userId: input.userId ?? null,
+      deviceTypeId: this.cleanNullable(input.deviceTypeId),
       deviceBrandId: this.cleanNullable(input.deviceBrandId),
       deviceModelId: this.cleanNullable(input.deviceModelId),
       deviceIssueTypeId: this.cleanNullable(input.deviceIssueTypeId),
@@ -174,6 +176,7 @@ export class RepairsService {
 
     if (input.customerName !== undefined) data.customerName = input.customerName.trim();
     if (input.customerPhone !== undefined) data.customerPhone = this.cleanNullable(input.customerPhone);
+    if (input.deviceTypeId !== undefined) data.deviceTypeId = this.cleanNullable(input.deviceTypeId);
     if (input.deviceBrandId !== undefined) data.deviceBrandId = this.cleanNullable(input.deviceBrandId);
     if (input.deviceModelId !== undefined) data.deviceModelId = this.cleanNullable(input.deviceModelId);
     if (input.deviceIssueTypeId !== undefined) data.deviceIssueTypeId = this.cleanNullable(input.deviceIssueTypeId);
@@ -251,6 +254,7 @@ export class RepairsService {
     return {
       id: repair.id,
       userId: repair.userId,
+      deviceTypeId: (repair as any).deviceTypeId ?? null,
       deviceBrandId: repair.deviceBrandId ?? null,
       deviceModelId: repair.deviceModelId ?? null,
       deviceIssueTypeId: repair.deviceIssueTypeId ?? null,
@@ -358,6 +362,7 @@ export class RepairsService {
     const baseFields: Array<[keyof Repair, string]> = [
       ['customerName', 'customerName'],
       ['customerPhone', 'customerPhone'],
+      ['deviceTypeId', 'deviceTypeId'],
       ['deviceBrandId', 'deviceBrandId'],
       ['deviceModelId', 'deviceModelId'],
       ['deviceIssueTypeId', 'deviceIssueTypeId'],

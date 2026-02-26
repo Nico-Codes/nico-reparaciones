@@ -76,6 +76,28 @@ const sendWeeklyReportNowSchema = z.object({
 const smtpTestSchema = z.object({
   email: z.string().trim().email().max(190),
 });
+const deviceTypeCreateSchema = z.object({
+  name: z.string().trim().min(2).max(100),
+  active: z.boolean().optional(),
+});
+const deviceTypeUpdateSchema = z.object({
+  name: z.string().trim().min(2).max(100).optional(),
+  active: z.boolean().optional(),
+});
+const modelGroupCreateSchema = z.object({
+  deviceBrandId: z.string().trim().min(1).max(191),
+  name: z.string().trim().min(2).max(100),
+  active: z.boolean().optional(),
+});
+const modelGroupUpdateSchema = z.object({
+  deviceBrandId: z.string().trim().min(1).max(191),
+  name: z.string().trim().min(2).max(100).optional(),
+  active: z.boolean().optional(),
+});
+const modelGroupAssignSchema = z.object({
+  deviceBrandId: z.string().trim().min(1).max(191),
+  deviceModelGroupId: z.string().trim().max(191).optional().nullable(),
+});
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -130,6 +152,51 @@ export class AdminController {
     const parsed = smtpTestSchema.safeParse(body);
     if (!parsed.success) return { message: 'Validacion invalida', errors: parsed.error.issues };
     return this.adminService.sendSmtpTestEmail(parsed.data.email);
+  }
+
+  @Get('device-types')
+  deviceTypes() {
+    return this.adminService.deviceTypes();
+  }
+
+  @Post('device-types')
+  createDeviceType(@Body() body: unknown) {
+    const parsed = deviceTypeCreateSchema.safeParse(body);
+    if (!parsed.success) return { message: 'Validacion invalida', errors: parsed.error.issues };
+    return this.adminService.createDeviceType(parsed.data);
+  }
+
+  @Patch('device-types/:id')
+  updateDeviceType(@Param('id') id: string, @Body() body: unknown) {
+    const parsed = deviceTypeUpdateSchema.safeParse(body);
+    if (!parsed.success) return { message: 'Validacion invalida', errors: parsed.error.issues };
+    return this.adminService.updateDeviceType(id, parsed.data);
+  }
+
+  @Get('model-groups')
+  modelGroups(@Query('deviceBrandId') deviceBrandId?: string) {
+    return this.adminService.modelGroups(deviceBrandId ?? '');
+  }
+
+  @Post('model-groups')
+  createModelGroup(@Body() body: unknown) {
+    const parsed = modelGroupCreateSchema.safeParse(body);
+    if (!parsed.success) return { message: 'Validacion invalida', errors: parsed.error.issues };
+    return this.adminService.createModelGroup(parsed.data);
+  }
+
+  @Patch('model-groups/:id')
+  updateModelGroup(@Param('id') id: string, @Body() body: unknown) {
+    const parsed = modelGroupUpdateSchema.safeParse(body);
+    if (!parsed.success) return { message: 'Validacion invalida', errors: parsed.error.issues };
+    return this.adminService.updateModelGroup(id, parsed.data);
+  }
+
+  @Patch('model-groups/models/:modelId')
+  assignModelGroup(@Param('modelId') modelId: string, @Body() body: unknown) {
+    const parsed = modelGroupAssignSchema.safeParse(body);
+    if (!parsed.success) return { message: 'Validacion invalida', errors: parsed.error.issues };
+    return this.adminService.assignModelGroup(modelId, parsed.data);
   }
 
   @Patch('settings')

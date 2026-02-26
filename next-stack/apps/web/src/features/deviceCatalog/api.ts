@@ -18,27 +18,37 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const deviceCatalogApi = {
-  brands() {
-    return req<{ items: Array<{ id: string; name: string; slug: string; active: boolean }> }>('/device-catalog/brands');
+  brands(deviceTypeId?: string) {
+    return req<{ items: Array<{ id: string; deviceTypeId?: string | null; name: string; slug: string; active: boolean }> }>(
+      `/device-catalog/brands${deviceTypeId ? `?deviceTypeId=${encodeURIComponent(deviceTypeId)}` : ''}`,
+    );
   },
   models(brandId?: string) {
-    return req<{ items: Array<{ id: string; brandId: string; name: string; slug: string; active: boolean; brand: { id: string; name: string; slug: string } }> }>(
+    return req<{ items: Array<{ id: string; brandId: string; deviceModelGroupId?: string | null; name: string; slug: string; active: boolean; brand: { id: string; name: string; slug: string } }> }>(
       `/device-catalog/models${brandId ? `?brandId=${encodeURIComponent(brandId)}` : ''}`,
     );
   },
-  issues() {
-    return req<{ items: Array<{ id: string; name: string; slug: string; active: boolean }> }>('/device-catalog/issues');
+  issues(deviceTypeId?: string) {
+    return req<{ items: Array<{ id: string; deviceTypeId?: string | null; name: string; slug: string; active: boolean }> }>(
+      `/device-catalog/issues${deviceTypeId ? `?deviceTypeId=${encodeURIComponent(deviceTypeId)}` : ''}`,
+    );
   },
-  createBrand(input: { name: string; slug: string }) {
+  createBrand(input: { deviceTypeId?: string | null; name: string; slug: string; active?: boolean }) {
     return req('/device-catalog/brands', { method: 'POST', body: JSON.stringify(input) });
+  },
+  updateBrand(id: string, input: { deviceTypeId?: string | null; name?: string; slug?: string; active?: boolean }) {
+    return req(`/device-catalog/brands/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(input) });
   },
   createModel(input: { brandId: string; name: string; slug: string }) {
     return req('/device-catalog/models', { method: 'POST', body: JSON.stringify(input) });
   },
-  createIssue(input: { name: string; slug: string; active?: boolean }) {
+  updateModel(id: string, input: { brandId?: string; name?: string; slug?: string; active?: boolean }) {
+    return req(`/device-catalog/models/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(input) });
+  },
+  createIssue(input: { deviceTypeId?: string | null; name: string; slug: string; active?: boolean }) {
     return req('/device-catalog/issues', { method: 'POST', body: JSON.stringify(input) });
   },
-  updateIssue(id: string, input: { name?: string; slug?: string; active?: boolean }) {
+  updateIssue(id: string, input: { deviceTypeId?: string | null; name?: string; slug?: string; active?: boolean }) {
     return req(`/device-catalog/issues/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(input) });
   },
   deleteBrand(id: string) {

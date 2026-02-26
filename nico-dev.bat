@@ -48,6 +48,11 @@ set "NEXT_STACK_ROOT=%PROJECT_ROOT%next-stack"
 set "NEXT_API_PORT=3001"
 set "NEXT_WEB_PORT=5174"
 set "NEXT_WEB_PREVIEW_PORT=4174"
+set "NEXT_API_HEALTH_URL=http://127.0.0.1:%NEXT_API_PORT%/api/health"
+set "NEXT_WEB_URL=http://localhost:%NEXT_WEB_PORT%"
+set "NEXT_DEV_LOG_DIR=%NEXT_STACK_ROOT%\.dev-logs"
+set "NEXT_API_LOG=%NEXT_DEV_LOG_DIR%\api.log"
+set "NEXT_WEB_LOG=%NEXT_DEV_LOG_DIR%\web.log"
 set "NGROK_API_PORT=4040"
 set "MAILPIT_EXE=%PROJECT_ROOT%tools\mailpit\mailpit.exe"
 set "MAILPIT_SMTP_PORT=1025"
@@ -170,29 +175,59 @@ if not exist "%NEXT_STACK_ROOT%\package.json" (
     goto :end_fail
 )
 where npm >nul 2>&1 || (echo [ERROR] npm no encontrado. Instala Node.js LTS. & goto :end_fail)
+if not exist "%NEXT_DEV_LOG_DIR%" mkdir "%NEXT_DEV_LOG_DIR%" >nul 2>&1
+
+echo - Prisma generate (forzando client local para evitar errores prisma:// en dev)...
+call npm --prefix "%NEXT_STACK_ROOT%" run db:generate || goto :end_fail
+
+echo - Verificando puertos ocupados del next-stack...
+call :kill_port_if_listening %NEXT_API_PORT%
+call :kill_port_if_listening %NEXT_WEB_PORT%
+call :kill_port_if_listening %NEXT_WEB_PREVIEW_PORT%
+timeout /t 1 >nul
 
 netstat -ano | findstr /R /C:":%NEXT_API_PORT% .*LISTENING" >nul 2>&1
 if errorlevel 1 (
     echo - Iniciando API NestJS ^(puerto %NEXT_API_PORT%^)...
-    start "" /min cmd /c "cd /d ""%NEXT_STACK_ROOT%"" && npm run dev:api"
+    start "" /min cmd /c "cd /d ""%NEXT_STACK_ROOT%"" && npm run dev:api > ""%NEXT_API_LOG%"" 2>&1"
 ) else (
-    echo - API ya activa en puerto %NEXT_API_PORT%.
+    echo [WARN] API sigue ocupando el puerto %NEXT_API_PORT% antes de iniciar.
 )
 
 netstat -ano | findstr /R /C:":%NEXT_WEB_PORT% .*LISTENING" >nul 2>&1
 if errorlevel 1 (
     echo - Iniciando Web React/Vite ^(puerto %NEXT_WEB_PORT%^)...
-    start "" /min cmd /c "cd /d ""%NEXT_STACK_ROOT%"" && npm run dev:web"
+    start "" /min cmd /c "cd /d ""%NEXT_STACK_ROOT%"" && npm run dev:web > ""%NEXT_WEB_LOG%"" 2>&1"
 ) else (
-    echo - Web ya activa en puerto %NEXT_WEB_PORT%.
+    echo [WARN] Web sigue ocupando el puerto %NEXT_WEB_PORT% antes de iniciar.
 )
 
-timeout /t 3 >nul
+call :wait_http_ok "%NEXT_API_HEALTH_URL%" 25
+set "NEXT_API_HEALTH_OK=%ERRORLEVEL%"
+call :wait_http_ok "%NEXT_WEB_URL%" 20
+set "NEXT_WEB_HEALTH_OK=%ERRORLEVEL%"
 echo.
-echo [OK] Next-stack iniciado.
-echo - API: http://127.0.0.1:%NEXT_API_PORT%/api/health
-echo - Web: http://localhost:%NEXT_WEB_PORT%
+if "%NEXT_API_HEALTH_OK%"=="0" (
+  echo [OK] API responde health.
+) else (
+  echo [WARN] API no responde aun: %NEXT_API_HEALTH_URL%
+  echo [TIP] Revisar log: %NEXT_API_LOG%
+  echo [TIP] Si ves error prisma://, reintenta: npm --prefix "%NEXT_STACK_ROOT%" run db:generate
+  call :next_log_hint "%NEXT_API_LOG%"
+)
+if "%NEXT_WEB_HEALTH_OK%"=="0" (
+  echo [OK] Web responde.
+) else (
+  echo [WARN] Web no responde aun: %NEXT_WEB_URL%
+  echo [TIP] Revisar log: %NEXT_WEB_LOG%
+  call :next_log_hint "%NEXT_WEB_LOG%"
+)
+echo - API: %NEXT_API_HEALTH_URL%
+echo - Web: %NEXT_WEB_URL%
 echo [TIP] Si falla DB, revisa: npm --prefix "%NEXT_STACK_ROOT%" run db:check
+echo [TIP] Si login queda en 401/refresh 401, limpia localStorage:
+echo       nico_next_access_token / nico_next_refresh_token / nico_next_user
+echo [TIP] Si aparece 429, espera ~60s ^(throttler dev^) o reinicia API.
 goto :end_ok
 
 :next_stop
@@ -681,6 +716,43 @@ if defined DB_PASSWORD (
 )
 "%MYSQL_EXE%" -h "%DB_HOST%" -P "%DB_PORT%" -u "%DB_USERNAME%" -e "%~1" >nul 2>&1
 exit /b %ERRORLEVEL%
+
+:wait_http_ok
+setlocal
+set "URL=%~1"
+set "TRIES=%~2"
+if "%TRIES%"=="" set "TRIES=15"
+for /l %%I in (1,1,%TRIES%) do (
+    powershell -NoProfile -Command "try { $r=Invoke-WebRequest -UseBasicParsing '%URL%' -TimeoutSec 2; if($r.StatusCode -ge 200 -and $r.StatusCode -lt 500){ exit 0 } else { exit 1 } } catch { exit 1 }" >nul 2>&1
+    if not errorlevel 1 (
+        endlocal & exit /b 0
+    )
+    timeout /t 1 >nul
+)
+endlocal & exit /b 1
+
+:kill_port_if_listening
+setlocal
+set "PORT=%~1"
+if "%PORT%"=="" endlocal & exit /b 0
+for /f "tokens=5" %%P in ('netstat -ano ^| findstr /R /C:":%PORT% .*LISTENING" 2^>nul') do (
+    if not "%%P"=="0" (
+        echo   - Liberando puerto %PORT% ^(PID %%P^)
+        taskkill /PID %%P /F >nul 2>&1
+    )
+)
+endlocal & exit /b 0
+
+:next_log_hint
+setlocal
+set "LOGFILE=%~1"
+if not exist "%LOGFILE%" (
+  endlocal & exit /b 0
+)
+findstr /I /C:"EADDRINUSE" "%LOGFILE%" >nul 2>&1 && echo [HINT] Se detecto EADDRINUSE en %LOGFILE% ^(puerto ocupado / proceso viejo^)
+findstr /I /C:"prisma://" "%LOGFILE%" >nul 2>&1 && echo [HINT] Se detecto error de Prisma Data Proxy/Accelerate en %LOGFILE%
+findstr /I /C:"Unauthorized" "%LOGFILE%" >nul 2>&1 && echo [HINT] Hay 401 en backend. Limpia localStorage del navegador si el login ya cambio.
+endlocal & exit /b 0
 
 :end_ok
 exit /b 0

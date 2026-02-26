@@ -6,10 +6,12 @@ import { RolesGuard } from '../auth/roles.guard.js';
 import { DeviceCatalogService } from './device-catalog.service.js';
 
 const brandSchema = z.object({
+  deviceTypeId: z.string().trim().max(191).optional().nullable(),
   name: z.string().trim().min(2).max(120),
   slug: z.string().trim().min(2).max(120),
   active: z.boolean().optional(),
 });
+const brandPatchSchema = brandSchema.partial();
 
 const modelSchema = z.object({
   brandId: z.string().min(1),
@@ -17,8 +19,10 @@ const modelSchema = z.object({
   slug: z.string().trim().min(2).max(120),
   active: z.boolean().optional(),
 });
+const modelPatchSchema = modelSchema.partial();
 
 const issueSchema = z.object({
+  deviceTypeId: z.string().trim().max(191).optional().nullable(),
   name: z.string().trim().min(2).max(190),
   slug: z.string().trim().min(2).max(190),
   active: z.boolean().optional(),
@@ -32,8 +36,8 @@ export class DeviceCatalogController {
   constructor(@Inject(DeviceCatalogService) private readonly service: DeviceCatalogService) {}
 
   @Get('brands')
-  brands() {
-    return this.service.brands();
+  brands(@Query('deviceTypeId') deviceTypeId?: string) {
+    return this.service.brands(deviceTypeId);
   }
 
   @Get('models')
@@ -42,8 +46,8 @@ export class DeviceCatalogController {
   }
 
   @Get('issues')
-  issues() {
-    return this.service.issues();
+  issues(@Query('deviceTypeId') deviceTypeId?: string) {
+    return this.service.issues(deviceTypeId);
   }
 
   @Post('brands')
@@ -53,11 +57,25 @@ export class DeviceCatalogController {
     return { item: await this.service.createBrand(parsed.data) };
   }
 
+  @Patch('brands/:id')
+  async updateBrand(@Param('id') id: string, @Body() body: unknown) {
+    const parsed = brandPatchSchema.safeParse(body);
+    if (!parsed.success) return { message: 'Validación inválida', errors: parsed.error.issues };
+    return { item: await this.service.updateBrand(id, parsed.data) };
+  }
+
   @Post('models')
   async createModel(@Body() body: unknown) {
     const parsed = modelSchema.safeParse(body);
     if (!parsed.success) return { message: 'Validación inválida', errors: parsed.error.issues };
     return { item: await this.service.createModel(parsed.data) };
+  }
+
+  @Patch('models/:id')
+  async updateModel(@Param('id') id: string, @Body() body: unknown) {
+    const parsed = modelPatchSchema.safeParse(body);
+    if (!parsed.success) return { message: 'Validación inválida', errors: parsed.error.issues };
+    return { item: await this.service.updateModel(id, parsed.data) };
   }
 
   @Post('issues')

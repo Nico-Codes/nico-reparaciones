@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { AuthController } from './auth.controller.js';
@@ -8,6 +8,7 @@ import { RolesGuard } from './roles.guard.js';
 import { UsersService } from './users.service.js';
 import { MailModule } from '../mail/mail.module.js';
 
+@Global()
 @Module({
   imports: [
     MailModule,
@@ -23,6 +24,6 @@ import { MailModule } from '../mail/mail.module.js';
   ],
   controllers: [AuthController],
   providers: [AuthService, UsersService, JwtAuthGuard, RolesGuard],
-  exports: [AuthService, UsersService, JwtAuthGuard, RolesGuard],
+  exports: [JwtModule, AuthService, UsersService, JwtAuthGuard, RolesGuard],
 })
 export class AuthModule {}

@@ -23,11 +23,18 @@ export function CartPage() {
         setQuote(res);
 
         if (res.items.length) {
-          cart.setItems(
-            res.items
-              .filter((i) => i.valid)
-              .map((i) => ({ productId: i.productId, quantity: i.quantity })),
-          );
+          const normalized = res.items
+            .filter((i) => i.valid)
+            .map((i) => ({ productId: i.productId, quantity: i.quantity }));
+          const same =
+            normalized.length === cart.items.length &&
+            normalized.every((item, idx) => {
+              const current = cart.items[idx];
+              return current && current.productId === item.productId && current.quantity === item.quantity;
+            });
+          if (!same) {
+            cart.setItems(normalized);
+          }
         }
       })
       .catch((err) => {

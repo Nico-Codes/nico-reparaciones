@@ -474,6 +474,168 @@ export class AdminService {
     };
   }
 
+  async deviceTypes() {
+    let items = await this.prisma.deviceType.findMany({
+      orderBy: [{ active: 'desc' }, { name: 'asc' }],
+    });
+    if (items.length === 0) {
+      const bridgeItems = await this.readDeviceTypes();
+      for (const t of bridgeItems) {
+        const slugBase = this.slugify(t.slug || t.name) || 'tipo';
+        let slug = slugBase;
+        let idx = 2;
+        while (await this.prisma.deviceType.findUnique({ where: { slug } })) slug = `${slugBase}-${idx++}`;
+        await this.prisma.deviceType.create({
+          data: { name: t.name, slug, active: t.active },
+        });
+      }
+      items = await this.prisma.deviceType.findMany({
+        orderBy: [{ active: 'desc' }, { name: 'asc' }],
+      });
+    }
+    return {
+      items: items.map((i) => ({ id: i.id, name: i.name, slug: i.slug, active: i.active })),
+    };
+  }
+
+  async createDeviceType(input: { name: string; active?: boolean }) {
+    const name = input.name.trim();
+    const slugBase = this.slugify(name) || 'tipo';
+    let slug = slugBase;
+    let idx = 2;
+    while (await this.prisma.deviceType.findUnique({ where: { slug } })) {
+      slug = `${slugBase}-${idx++}`;
+    }
+    const item = await this.prisma.deviceType.create({
+      data: { name, slug, active: input.active ?? true },
+    });
+    return { item: { id: item.id, name: item.name, slug: item.slug, active: item.active } };
+  }
+
+  async updateDeviceType(id: string, input: { name?: string; active?: boolean }) {
+    const item = await this.prisma.deviceType.update({
+      where: { id },
+      data: {
+        ...(input.name != null ? { name: input.name.trim() } : {}),
+        ...(input.active != null ? { active: input.active } : {}),
+      },
+    });
+    return { item: { id: item.id, name: item.name, slug: item.slug, active: item.active } };
+  }
+
+  async modelGroups(deviceBrandIdRaw: string) {
+    const deviceBrandId = (deviceBrandIdRaw ?? '').trim();
+    if (!deviceBrandId) return { groups: [], models: [] };
+
+    const brand = await this.prisma.deviceBrand.findUnique({ where: { id: deviceBrandId } });
+    if (!brand) throw new BadRequestException('Marca no encontrada');
+
+    let groups = await this.prisma.deviceModelGroup.findMany({
+      where: { deviceBrandId },
+      orderBy: [{ active: 'desc' }, { name: 'asc' }],
+    });
+    if (groups.length === 0) {
+      const bridgeGroups = await this.readModelGroups(deviceBrandId);
+      for (const g of bridgeGroups) {
+        const slugBase = this.slugify(g.slug || g.name) || 'grupo';
+        let slug = slugBase;
+        let idx = 2;
+        while (await this.prisma.deviceModelGroup.findFirst({ where: { deviceBrandId, slug }, select: { id: true } })) slug = `${slugBase}-${idx++}`;
+        await this.prisma.deviceModelGroup.create({
+          data: { deviceBrandId, name: g.name, slug, active: g.active },
+        });
+      }
+      groups = await this.prisma.deviceModelGroup.findMany({
+        where: { deviceBrandId },
+        orderBy: [{ active: 'desc' }, { name: 'asc' }],
+      });
+
+      const bridgeAssignments = await this.readModelGroupAssignments(deviceBrandId);
+      const byLegacyName = new Map(bridgeGroups.map((g, idx) => [g.id, groups[idx]?.id]).filter((x): x is [string, string] => !!x[1]));
+      for (const [modelId, legacyGroupId] of Object.entries(bridgeAssignments)) {
+        const dbGroupId = byLegacyName.get(legacyGroupId);
+        if (!dbGroupId) continue;
+        try {
+          await this.prisma.deviceModel.update({ where: { id: modelId }, data: { deviceModelGroupId: dbGroupId } });
+        } catch {
+          // ignore invalid legacy assignment
+        }
+      }
+    }
+
+    const models = await this.prisma.deviceModel.findMany({
+      where: { brandId: deviceBrandId },
+      orderBy: { name: 'asc' },
+      select: { id: true, name: true, slug: true, active: true, deviceModelGroupId: true },
+    });
+
+    return {
+      groups: groups.map((g) => ({ id: g.id, name: g.name, slug: g.slug, active: g.active })),
+      models: models.map((m) => ({
+        id: m.id,
+        name: m.name,
+        slug: m.slug,
+        active: m.active,
+        deviceModelGroupId: m.deviceModelGroupId ?? null,
+      })),
+    };
+  }
+
+  async createModelGroup(input: { deviceBrandId: string; name: string; active?: boolean }) {
+    const brand = await this.prisma.deviceBrand.findUnique({ where: { id: input.deviceBrandId } });
+    if (!brand) throw new BadRequestException('Marca no encontrada');
+
+    const name = input.name.trim();
+    const slugBase = this.slugify(name) || 'grupo';
+    let slug = slugBase;
+    let idx = 2;
+    while (
+      await this.prisma.deviceModelGroup.findFirst({
+        where: { deviceBrandId: input.deviceBrandId, slug },
+        select: { id: true },
+      })
+    ) slug = `${slugBase}-${idx++}`;
+    const item = await this.prisma.deviceModelGroup.create({
+      data: {
+        deviceBrandId: input.deviceBrandId,
+        name,
+        slug,
+        active: input.active ?? true,
+      },
+    });
+    return { item: { id: item.id, name: item.name, slug: item.slug, active: item.active } };
+  }
+
+  async updateModelGroup(id: string, input: { deviceBrandId: string; name?: string; active?: boolean }) {
+    const existing = await this.prisma.deviceModelGroup.findUnique({ where: { id } });
+    if (!existing || existing.deviceBrandId !== input.deviceBrandId) throw new BadRequestException('Grupo no encontrado');
+    const item = await this.prisma.deviceModelGroup.update({
+      where: { id },
+      data: {
+        ...(input.name != null ? { name: input.name.trim() } : {}),
+        ...(input.active != null ? { active: input.active } : {}),
+      },
+    });
+    return { item: { id: item.id, name: item.name, slug: item.slug, active: item.active } };
+  }
+
+  async assignModelGroup(modelId: string, input: { deviceBrandId: string; deviceModelGroupId?: string | null }) {
+    const model = await this.prisma.deviceModel.findUnique({ where: { id: modelId }, select: { id: true, brandId: true } });
+    if (!model) throw new BadRequestException('Modelo no encontrado');
+    if (model.brandId !== input.deviceBrandId) throw new BadRequestException('Modelo no pertenece a la marca seleccionada');
+
+    const groupId = (input.deviceModelGroupId ?? '').trim() || null;
+    if (groupId) {
+      const group = await this.prisma.deviceModelGroup.findUnique({ where: { id: groupId } });
+      if (!group || group.deviceBrandId !== input.deviceBrandId) throw new BadRequestException('Grupo invalido para esta marca');
+    }
+    await this.prisma.deviceModel.update({
+      where: { id: modelId },
+      data: { deviceModelGroupId: groupId },
+    });
+    return { ok: true };
+  }
+
   async mailTemplates() {
     const templates = [
       {
@@ -914,6 +1076,102 @@ export class AdminService {
         seen.add(k);
         return true;
       });
+  }
+
+  private async readDeviceTypes() {
+    const raw = await this.getAppSettingValue('device_types_catalog', '[]');
+    try {
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [] as Array<{ id: string; name: string; slug: string; active: boolean }>;
+      return parsed
+        .filter((x) => x && typeof x === 'object')
+        .map((x: any) => ({
+          id: String(x.id ?? this.randomId()),
+          name: String(x.name ?? '').trim(),
+          slug: String(x.slug ?? ''),
+          active: Boolean(x.active),
+        }))
+        .filter((x) => x.name);
+    } catch {
+      return [] as Array<{ id: string; name: string; slug: string; active: boolean }>;
+    }
+  }
+
+  private modelGroupsKey(brandId: string) {
+    return `device_model_groups.${brandId}.groups`;
+  }
+
+  private modelGroupAssignmentsKey(brandId: string) {
+    return `device_model_groups.${brandId}.assignments`;
+  }
+
+  private async readModelGroups(brandId: string) {
+    const raw = await this.getAppSettingValue(this.modelGroupsKey(brandId), '[]');
+    try {
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [] as Array<{ id: string; name: string; slug: string; active: boolean }>;
+      return parsed
+        .filter((x) => x && typeof x === 'object')
+        .map((x: any) => ({
+          id: String(x.id ?? this.randomId()),
+          name: String(x.name ?? '').trim(),
+          slug: String(x.slug ?? ''),
+          active: Boolean(x.active),
+        }))
+        .filter((x) => x.name);
+    } catch {
+      return [] as Array<{ id: string; name: string; slug: string; active: boolean }>;
+    }
+  }
+
+  private async writeModelGroups(brandId: string, items: Array<{ id: string; name: string; slug: string; active: boolean }>) {
+    await this.upsertSingleSetting(this.modelGroupsKey(brandId), JSON.stringify(items), 'device_catalog', 'Model groups', 'json');
+  }
+
+  private async readModelGroupAssignments(brandId: string) {
+    const raw = await this.getAppSettingValue(this.modelGroupAssignmentsKey(brandId), '{}');
+    try {
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {} as Record<string, string>;
+      return Object.fromEntries(
+        Object.entries(parsed).filter(([, v]) => typeof v === 'string' && (v as string).trim().length > 0),
+      ) as Record<string, string>;
+    } catch {
+      return {} as Record<string, string>;
+    }
+  }
+
+  private async writeModelGroupAssignments(brandId: string, assignments: Record<string, string>) {
+    await this.upsertSingleSetting(
+      this.modelGroupAssignmentsKey(brandId),
+      JSON.stringify(assignments),
+      'device_catalog',
+      'Model group assignments',
+      'json',
+    );
+  }
+
+  private async writeDeviceTypes(items: Array<{ id: string; name: string; slug: string; active: boolean }>) {
+    await this.upsertSingleSetting(
+      'device_types_catalog',
+      JSON.stringify(items),
+      'device_catalog',
+      'Device types catalog',
+      'json',
+    );
+  }
+
+  private slugify(value: string) {
+    return value
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
+
+  private randomId() {
+    return `dt_${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36).slice(-4)}`;
   }
 
   private async resolveWeeklyReportRecipients() {

@@ -80,12 +80,25 @@ function AdminProductEditAliasRedirect() {
   return <Navigate to={id ? `/admin/productos/${encodeURIComponent(id)}/editar` : '/admin/productos'} replace />;
 }
 
+function ApiAuthAliasRedirect() {
+  const { '*': rest = '' } = useParams();
+  const path = `/${rest}`.replace(/\/+/g, '/');
+  if (path === '/login') return <Navigate to="/auth/login" replace />;
+  if (path === '/register') return <Navigate to="/auth/register" replace />;
+  if (path === '/forgot-password') return <Navigate to="/auth/forgot-password" replace />;
+  if (path === '/reset-password') return <Navigate to="/auth/reset-password" replace />;
+  if (path === '/verify-email') return <Navigate to="/auth/verify-email" replace />;
+  return <Navigate to="/auth/login" replace />;
+}
+
 export default function App() {
   return (
     <>
       <GlobalVisualEnhancements />
       <Routes>
         <Route path="/" element={<RootEntryRedirect />} />
+        <Route path="/api/auth/*" element={<ApiAuthAliasRedirect />} />
+        <Route path="/api/*" element={<RootEntryRedirect />} />
         <Route path="/auth/login" element={<LoginPage />} />
         <Route path="/auth/register" element={<RegisterPage />} />
         <Route path="/auth/verify-email" element={withShell(<VerifyEmailPage />)} />

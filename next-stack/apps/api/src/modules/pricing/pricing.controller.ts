@@ -9,7 +9,9 @@ const repairRuleSchema = z.object({
   name: z.string().trim().min(2).max(190),
   active: z.boolean().optional(),
   priority: z.number().int().min(-9999).max(9999).optional(),
+  deviceTypeId: z.string().trim().max(191).optional().nullable(),
   deviceBrandId: z.string().trim().max(191).optional().nullable(),
+  deviceModelGroupId: z.string().trim().max(191).optional().nullable(),
   deviceModelId: z.string().trim().max(191).optional().nullable(),
   deviceIssueTypeId: z.string().trim().max(191).optional().nullable(),
   deviceBrand: z.string().trim().max(120).optional().nullable(),
@@ -17,6 +19,9 @@ const repairRuleSchema = z.object({
   issueLabel: z.string().trim().max(190).optional().nullable(),
   basePrice: z.number().nonnegative(),
   profitPercent: z.number().min(0).max(1000).optional(),
+  calcMode: z.enum(['BASE_PLUS_MARGIN', 'FIXED_TOTAL']).optional(),
+  minFinalPrice: z.number().nonnegative().optional().nullable(),
+  shippingFee: z.number().min(0).optional().nullable(),
   notes: z.string().trim().max(2000).optional().nullable(),
 });
 
@@ -59,12 +64,14 @@ export class PricingController {
   @Get('repairs/resolve')
   resolveRepairPrice(
     @Query('deviceBrandId') deviceBrandId?: string,
+    @Query('deviceTypeId') deviceTypeId?: string,
+    @Query('deviceModelGroupId') deviceModelGroupId?: string,
     @Query('deviceModelId') deviceModelId?: string,
     @Query('deviceIssueTypeId') deviceIssueTypeId?: string,
     @Query('deviceBrand') deviceBrand?: string,
     @Query('deviceModel') deviceModel?: string,
     @Query('issueLabel') issueLabel?: string,
   ) {
-    return this.pricingService.resolveRepairPrice({ deviceBrandId, deviceModelId, deviceIssueTypeId, deviceBrand, deviceModel, issueLabel });
+    return this.pricingService.resolveRepairPrice({ deviceTypeId, deviceBrandId, deviceModelGroupId, deviceModelId, deviceIssueTypeId, deviceBrand, deviceModel, issueLabel });
   }
 }

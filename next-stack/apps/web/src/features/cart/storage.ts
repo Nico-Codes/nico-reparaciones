@@ -20,7 +20,10 @@ function read(): CartLocalItem[] {
 }
 
 function write(items: CartLocalItem[]) {
-  localStorage.setItem(CART_KEY, JSON.stringify(items));
+  const next = JSON.stringify(items);
+  const prev = localStorage.getItem(CART_KEY);
+  if (prev === next) return;
+  localStorage.setItem(CART_KEY, next);
   window.dispatchEvent(new CustomEvent('nico-next-cart-changed'));
 }
 

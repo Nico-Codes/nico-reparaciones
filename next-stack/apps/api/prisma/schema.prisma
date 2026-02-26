@@ -150,6 +150,7 @@ model OrderItem {
 model Repair {
   id            String       @id @default(cuid())
   userId        String?
+  deviceTypeId  String?
   deviceBrandId String?
   deviceModelId String?
   deviceIssueTypeId String?
@@ -165,8 +166,10 @@ model Repair {
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
   user          User?        @relation(fields: [userId], references: [id])
+  deviceType    DeviceType?  @relation(fields: [deviceTypeId], references: [id])
   events        RepairEventLog[]
 
+  @@index([deviceTypeId])
   @@index([deviceBrandId])
   @@index([deviceModelId])
   @@index([deviceIssueTypeId])
@@ -190,7 +193,9 @@ model RepairPricingRule {
   name          String
   active        Boolean  @default(true)
   priority      Int      @default(0)
+  deviceTypeId  String?
   deviceBrandId String?
+  deviceModelGroupId String?
   deviceModelId String?
   deviceIssueTypeId String?
   deviceBrand   String?
@@ -198,51 +203,99 @@ model RepairPricingRule {
   issueLabel    String?
   basePrice     Decimal  @db.Decimal(12, 2)
   profitPercent Decimal  @db.Decimal(7, 2) @default(0)
+  calcMode      String   @default("BASE_PLUS_MARGIN")
+  minFinalPrice Decimal? @db.Decimal(12, 2)
+  shippingFee   Decimal? @db.Decimal(12, 2)
   notes         String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  deviceType    DeviceType? @relation(fields: [deviceTypeId], references: [id])
+  modelGroup    DeviceModelGroup? @relation(fields: [deviceModelGroupId], references: [id])
 
   @@index([active, priority])
+  @@index([deviceTypeId])
   @@index([deviceBrandId])
+  @@index([deviceModelGroupId])
   @@index([deviceModelId])
   @@index([deviceIssueTypeId])
 }
 
 model DeviceBrand {
   id        String        @id @default(cuid())
+  deviceTypeId String?
   name      String
   slug      String        @unique
   active    Boolean       @default(true)
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
+  deviceType DeviceType?  @relation(fields: [deviceTypeId], references: [id])
   models    DeviceModel[]
+  modelGroups DeviceModelGroup[]
 
   @@index([active])
+  @@index([deviceTypeId])
 }
 
 model DeviceModel {
   id         String      @id @default(cuid())
   brandId    String
+  deviceModelGroupId String?
   name       String
   slug       String
   active     Boolean     @default(true)
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
   brand      DeviceBrand @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  modelGroup DeviceModelGroup? @relation(fields: [deviceModelGroupId], references: [id], onDelete: SetNull)
 
   @@unique([brandId, slug])
   @@index([brandId, active])
+  @@index([deviceModelGroupId])
 }
 
 model DeviceIssueType {
   id        String   @id @default(cuid())
+  deviceTypeId String?
   name      String
   slug      String   @unique
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  deviceType DeviceType? @relation(fields: [deviceTypeId], references: [id])
 
   @@index([active])
+  @@index([deviceTypeId])
+}
+
+model DeviceType {
+  id        String            @id @default(cuid())
+  name      String
+  slug      String            @unique
+  active    Boolean           @default(true)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  brands    DeviceBrand[]
+  issues    DeviceIssueType[]
+  repairPricingRules RepairPricingRule[]
+  repairs   Repair[]
+
+  @@index([active])
+}
+
+model DeviceModelGroup {
+  id           String        @id @default(cuid())
+  deviceBrandId String
+  name         String
+  slug         String
+  active       Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  brand        DeviceBrand   @relation(fields: [deviceBrandId], references: [id], onDelete: Cascade)
+  models       DeviceModel[]
+  repairPricingRules RepairPricingRule[]
+
+  @@unique([deviceBrandId, slug])
+  @@index([deviceBrandId, active])
 }
 
 model AppSetting {

@@ -1,0 +1,5 @@
+ALTER TABLE "RepairPricingRule"
+ADD COLUMN "calcMode" TEXT NOT NULL DEFAULT 'BASE_PLUS_MARGIN',
+ADD COLUMN "minFinalPrice" DECIMAL(12,2),
+ADD COLUMN "shippingFee" DECIMAL(12,2);
+
