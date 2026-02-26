@@ -178,7 +178,13 @@ where npm >nul 2>&1 || (echo [ERROR] npm no encontrado. Instala Node.js LTS. & g
 if not exist "%NEXT_DEV_LOG_DIR%" mkdir "%NEXT_DEV_LOG_DIR%" >nul 2>&1
 
 echo - Prisma generate (forzando client local para evitar errores prisma:// en dev)...
-call npm --prefix "%NEXT_STACK_ROOT%" run db:generate || goto :end_fail
+call npm --prefix "%NEXT_STACK_ROOT%" run db:generate
+if errorlevel 1 (
+    echo [WARN] Prisma generate fallo. En Windows suele pasar por lock ^(EPERM^) si hay procesos Node/Nest usando Prisma.
+    echo [WARN] Se continua con el arranque dev. Si la API falla, ejecuta:
+    echo        nico-dev.bat next-stop
+    echo        nico-dev.bat next-start
+)
 
 echo - Verificando puertos ocupados del next-stack...
 call :kill_port_if_listening %NEXT_API_PORT%
