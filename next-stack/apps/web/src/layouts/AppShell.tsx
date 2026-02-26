@@ -4,6 +4,8 @@ import { Menu, ShoppingCart, Wrench, LogOut, User, MailWarning, Package, WrenchI
 import { useCartCount } from '@/features/cart/useCart';
 import { authStorage } from '@/features/auth/storage';
 import type { AuthUser } from '@/features/auth/types';
+import { storeApi } from '@/features/store/api';
+import type { StoreBrandingAssets } from '@/features/store/types';
 
 type AppShellProps = {
   children: ReactNode;
@@ -27,12 +29,15 @@ function NavPill({ to, label, active }: { to: string; label: string; active?: bo
 function AccountMenu({
   user,
   onLogout,
+  iconSettingsUrl,
+  iconLogoutUrl,
 }: {
   user: AuthUser;
   onLogout: () => void;
+  iconSettingsUrl?: string | null;
+  iconLogoutUrl?: string | null;
 }) {
   const [open, setOpen] = useState(false);
-  const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
@@ -92,12 +97,12 @@ function AccountMenu({
               <>
                 <div className="my-2 h-px bg-zinc-200" />
                 <Link className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-zinc-800 hover:bg-zinc-100" to="/admin">
-                  <Settings className="h-4 w-4 text-zinc-500" />
+                  {iconSettingsUrl ? <img src={iconSettingsUrl} alt="" className="h-4 w-4 object-contain" /> : <Settings className="h-4 w-4 text-zinc-500" />}
                   Panel admin
                 </Link>
                 <Link className="rounded-xl px-3 py-2 text-sm font-semibold text-zinc-800 hover:bg-zinc-100" to="/admin/repairs">Reparaciones</Link>
                 <Link className="rounded-xl px-3 py-2 text-sm font-semibold text-zinc-800 hover:bg-zinc-100" to="/admin/orders">Pedidos</Link>
-                <Link className="rounded-xl px-3 py-2 text-sm font-semibold text-zinc-800 hover:bg-zinc-100" to="/admin/settings">Configuración</Link>
+                <Link className="rounded-xl px-3 py-2 text-sm font-semibold text-zinc-800 hover:bg-zinc-100" to="/admin/configuraciones">Configuración</Link>
               </>
             ) : null}
             <div className="my-2 h-px bg-zinc-200" />
@@ -106,10 +111,9 @@ function AccountMenu({
               className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold text-rose-700 hover:bg-rose-50"
               onClick={() => {
                 onLogout();
-                navigate('/');
               }}
             >
-              <LogOut className="h-4 w-4" />
+              {iconLogoutUrl ? <img src={iconLogoutUrl} alt="" className="h-4 w-4 object-contain" /> : <LogOut className="h-4 w-4" />}
               Cerrar sesión
             </button>
           </div>
@@ -121,9 +125,11 @@ function AccountMenu({
 
 export function AppShell({ children }: AppShellProps) {
   const location = useLocation();
+  const navigate = useNavigate();
   const cartCount = useCartCount();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [authUser, setAuthUser] = useState<AuthUser | null>(() => authStorage.getUser());
+  const [branding, setBranding] = useState<StoreBrandingAssets | null>(null);
 
   useEffect(() => {
     const sync = () => setAuthUser(authStorage.getUser());
@@ -136,11 +142,30 @@ export function AppShell({ children }: AppShellProps) {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+    void storeApi
+      .branding()
+      .then((data) => {
+        if (!cancelled) setBranding(data);
+      })
+      .catch(() => {
+        if (!cancelled) setBranding(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     setMobileOpen(false);
     setAuthUser(authStorage.getUser());
   }, [location.pathname]);
 
   const isAdmin = authUser?.role === 'ADMIN';
+  const brandLogoUrl = branding?.logoPrincipal || null;
+  const iconCartUrl = branding?.icons.carrito || null;
+  const iconLogoutUrl = branding?.icons.logout || null;
+  const iconSettingsUrl = branding?.icons.settings || null;
 
   const desktopLinks = useMemo(
     () => [
@@ -154,6 +179,8 @@ export function AppShell({ children }: AppShellProps) {
   const logout = () => {
     authStorage.clear();
     setAuthUser(null);
+    setMobileOpen(false);
+    navigate('/store', { replace: true });
   };
 
   return (
@@ -171,8 +198,8 @@ export function AppShell({ children }: AppShellProps) {
             </button>
 
             <Link to={isAdmin ? '/admin' : '/store'} className="group flex min-w-0 items-center gap-2.5">
-              <div className="grid h-9 w-9 place-items-center rounded-xl border border-sky-200 bg-white text-sky-600 shadow-sm transition group-hover:border-sky-300 group-hover:bg-sky-50/60">
-                <Wrench className="h-4.5 w-4.5" />
+              <div className="grid h-9 w-9 place-items-center overflow-hidden rounded-xl border border-sky-200 bg-white text-sky-600 shadow-sm transition group-hover:border-sky-300 group-hover:bg-sky-50/60">
+                {brandLogoUrl ? <img src={brandLogoUrl} alt="" className="h-7 w-7 object-contain" /> : <Wrench className="h-4.5 w-4.5" />}
               </div>
               <div className="min-w-0">
                 <div className="truncate text-[1.08rem] font-black leading-none tracking-tight text-zinc-900">
@@ -206,7 +233,7 @@ export function AppShell({ children }: AppShellProps) {
               className="relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-transparent text-zinc-700 transition hover:border-zinc-200 hover:bg-zinc-50"
               aria-label="Carrito"
             >
-              <ShoppingCart className="h-6 w-6" />
+              {iconCartUrl ? <img src={iconCartUrl} alt="" className="h-6 w-6 object-contain" /> : <ShoppingCart className="h-6 w-6" />}
               {cartCount > 0 ? (
                 <span className="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-sky-600 px-1 text-[11px] font-bold text-white">
                   {cartCount > 99 ? '99+' : cartCount}
@@ -215,7 +242,7 @@ export function AppShell({ children }: AppShellProps) {
             </Link>
 
             {authUser ? (
-              <AccountMenu user={authUser} onLogout={logout} />
+              <AccountMenu user={authUser} onLogout={logout} iconSettingsUrl={iconSettingsUrl} iconLogoutUrl={iconLogoutUrl} />
             ) : (
               <div className="hidden items-center gap-1 sm:flex">
                 <Link className="rounded-xl border border-transparent px-3 py-2 text-sm font-semibold text-zinc-700 transition hover:border-zinc-200 hover:bg-zinc-50" to="/auth/login">Ingresar</Link>
@@ -253,7 +280,7 @@ export function AppShell({ children }: AppShellProps) {
                           <NavLink to="/admin/repairs" className="rounded-lg px-2 py-2 text-sm font-semibold hover:bg-white">Reparaciones</NavLink>
                           <NavLink to="/admin/orders" className="rounded-lg px-2 py-2 text-sm font-semibold hover:bg-white">Pedidos</NavLink>
                           <NavLink to="/admin/products" className="rounded-lg px-2 py-2 text-sm font-semibold hover:bg-white">Productos</NavLink>
-                          <NavLink to="/admin/settings" className="rounded-lg px-2 py-2 text-sm font-semibold hover:bg-white">Configuración</NavLink>
+                          <NavLink to="/admin/configuraciones" className="rounded-lg px-2 py-2 text-sm font-semibold hover:bg-white">Configuración</NavLink>
                         </div>
                       </div>
                     </>
@@ -263,7 +290,7 @@ export function AppShell({ children }: AppShellProps) {
                     onClick={logout}
                     className="mt-1 inline-flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold text-rose-700 hover:bg-rose-50"
                   >
-                    <LogOut className="h-4 w-4" />
+                    {iconLogoutUrl ? <img src={iconLogoutUrl} alt="" className="h-4 w-4 object-contain" /> : <LogOut className="h-4 w-4" />}
                     Cerrar sesión
                   </button>
                 </>
@@ -285,7 +312,7 @@ export function AppShell({ children }: AppShellProps) {
           <div>
             <div className="flex items-center gap-2">
               <div className="grid h-9 w-9 place-items-center rounded-xl border border-zinc-200 bg-white text-sky-600 shadow-sm">
-                <Wrench className="h-5 w-5" />
+                {brandLogoUrl ? <img src={brandLogoUrl} alt="" className="h-6 w-6 object-contain" /> : <Wrench className="h-5 w-5" />}
               </div>
               <div className="font-black tracking-tight">Nico<span className="text-sky-600">Reparaciones</span></div>
             </div>

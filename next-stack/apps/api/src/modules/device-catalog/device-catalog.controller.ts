@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Inject, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Inject, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { z } from 'zod';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { Roles } from '../auth/roles.decorator.js';
@@ -23,6 +23,7 @@ const issueSchema = z.object({
   slug: z.string().trim().min(2).max(190),
   active: z.boolean().optional(),
 });
+const issuePatchSchema = issueSchema.partial();
 
 @Controller('device-catalog')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -64,6 +65,13 @@ export class DeviceCatalogController {
     const parsed = issueSchema.safeParse(body);
     if (!parsed.success) return { message: 'Validación inválida', errors: parsed.error.issues };
     return { item: await this.service.createIssue(parsed.data) };
+  }
+
+  @Patch('issues/:id')
+  async updateIssue(@Param('id') id: string, @Body() body: unknown) {
+    const parsed = issuePatchSchema.safeParse(body);
+    if (!parsed.success) return { message: 'Validación inválida', errors: parsed.error.issues };
+    return { item: await this.service.updateIssue(id, parsed.data) };
   }
 
   @Delete('brands/:id')

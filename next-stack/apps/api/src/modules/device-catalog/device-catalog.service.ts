@@ -69,6 +69,17 @@ export class DeviceCatalogService {
     });
   }
 
+  async updateIssue(id: string, input: { name?: string; slug?: string; active?: boolean }) {
+    return this.prisma.deviceIssueType.update({
+      where: { id },
+      data: {
+        ...(input.name != null ? { name: input.name.trim() } : {}),
+        ...(input.slug != null ? { slug: input.slug.trim() } : {}),
+        ...(input.active != null ? { active: input.active } : {}),
+      },
+    });
+  }
+
   async deleteBrand(id: string) {
     await this.prisma.deviceBrand.delete({ where: { id } });
     return { ok: true };

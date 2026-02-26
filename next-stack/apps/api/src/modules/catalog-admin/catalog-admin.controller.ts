@@ -57,6 +57,11 @@ export class CatalogAdminController {
     return this.service.products({ q, categoryId, active });
   }
 
+  @Get('products/:id')
+  product(@Param('id') id: string) {
+    return this.service.product(id);
+  }
+
   @Post('products')
   createProduct(@Body() body: unknown) {
     const parsed = productCreateSchema.safeParse(body);

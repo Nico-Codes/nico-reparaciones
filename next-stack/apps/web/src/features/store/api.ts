@@ -1,4 +1,4 @@
-import type { StoreCategory, StoreHeroConfig, StoreProduct, StoreProductsResponse } from './types';
+import type { StoreBrandingAssets, StoreCategory, StoreHeroConfig, StoreProduct, StoreProductsResponse } from './types';
 
 const API_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:3001';
 
@@ -14,6 +14,9 @@ async function request<T>(path: string): Promise<T> {
 export const storeApi = {
   hero() {
     return request<StoreHeroConfig>('/store/hero');
+  },
+  branding() {
+    return request<StoreBrandingAssets>('/store/branding');
   },
   categories() {
     return request<{ items: StoreCategory[] }>('/store/categories');

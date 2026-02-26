@@ -16,6 +16,11 @@ export class StoreController {
     return this.storeService.getHeroConfig();
   }
 
+  @Get('branding')
+  async branding() {
+    return this.storeService.getBrandingAssets();
+  }
+
   @Get('products')
   async products(
     @Query('q') q?: string,

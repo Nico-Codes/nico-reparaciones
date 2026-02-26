@@ -8,109 +8,86 @@ type VariableInfo = {
   description: string;
 };
 
-type RepairTemplateDef = {
+type OrderTemplateDef = {
   title: string;
   key: string;
 };
 
-const WHATSAPP_VARIABLES: VariableInfo[] = [
+const ORDER_VARIABLES: VariableInfo[] = [
   { key: '{customer_name}', description: 'Nombre del cliente' },
-  { key: '{code}', description: 'Codigo de reparacion' },
-  { key: '{status}', description: 'Clave del estado (ej: ready_pickup)' },
-  { key: '{status_label}', description: 'Nombre lindo del estado (ej: Listo para retirar)' },
-  { key: '{lookup_url}', description: 'Link a la pagina /reparacion' },
-  { key: '{phone}', description: 'Telefono del cliente' },
-  { key: '{device_brand}', description: 'Marca del equipo' },
-  { key: '{device_model}', description: 'Modelo del equipo' },
-  { key: '{device}', description: 'Marca + Modelo' },
-  { key: '{final_price}', description: 'Precio final (si existe)' },
-  { key: '{warranty_days}', description: 'Garantia en dias' },
-  { key: '{approval_url}', description: 'Link firmado para que el cliente apruebe/rechace presupuesto' },
+  { key: '{order_id}', description: 'ID del pedido' },
+  { key: '{status}', description: 'Clave del estado (ej: preparando)' },
+  { key: '{status_label}', description: 'Nombre lindo del estado (ej: Preparando)' },
+  { key: '{total}', description: 'Total del pedido formateado' },
+  { key: '{total_raw}', description: 'Total numerico sin formato' },
+  { key: '{items_count}', description: 'Cantidad de items' },
+  { key: '{items_summary}', description: 'Listado simple de items (lineas)' },
+  { key: '{pickup_name}', description: 'Nombre de retiro' },
+  { key: '{pickup_phone}', description: 'Telefono de retiro' },
+  { key: '{phone}', description: 'Telefono (alias de pickup_phone)' },
+  { key: '{notes}', description: 'Notas del cliente' },
+  { key: '{my_orders_url}', description: 'Link a /mis-pedidos' },
+  { key: '{store_url}', description: 'Link a /tienda' },
   { key: '{shop_address}', description: 'Direccion del local (Admin > Configuracion)' },
   { key: '{shop_hours}', description: 'Horarios (Admin > Configuracion)' },
+  { key: '{shop_phone}', description: 'Telefono del local' },
+  { key: '{shop_name}', description: 'Nombre del negocio' },
 ];
 
-const TEMPLATE_ORDER: RepairTemplateDef[] = [
-  { key: 'received', title: 'Recibido' },
-  { key: 'diagnosing', title: 'Diagnosticando' },
-  { key: 'waiting_approval', title: 'Esperando aprobacion' },
-  { key: 'repairing', title: 'En reparacion' },
-  { key: 'ready_pickup', title: 'Listo para retirar' },
-  { key: 'delivered', title: 'Entregado' },
-  { key: 'cancelled', title: 'Cancelado' },
+const ORDER_TEMPLATES: OrderTemplateDef[] = [
+  { title: 'Pendiente', key: 'pendiente' },
+  { title: 'Confirmado', key: 'confirmado' },
+  { title: 'Preparando', key: 'preparando' },
+  { title: 'Listo para retirar', key: 'listo_retirar' },
+  { title: 'Entregado', key: 'entregado' },
+  { title: 'Cancelado', key: 'cancelado' },
 ];
 
-function defaultTemplateBody(templateKey: string) {
-  if (templateKey === 'waiting_approval') {
-    return [
-      'Hola {customer_name} 👋',
-      'Tu reparación ({code}) está en estado: *{status_label}*.',
-      'Necesitamos tu aprobación para continuar.',
-      'Aprobá o rechazá acá: {approval_url}',
-      '',
-      'Podés consultar el estado en: {lookup_url}',
-      'Código: {code}',
-      'Equipo: {device}',
-      'NicoReparaciones',
-    ].join('\n');
-  }
-
-  if (templateKey === 'ready_pickup') {
-    return [
-      'Hola {customer_name} 👋',
-      'Tu reparación ({code}) está en estado: *{status_label}*.',
-      '¡Ya está lista para retirar! ✅',
-      '',
-      '📍 Dirección: {shop_address}',
-      '🕒 Horarios: {shop_hours}',
-      '',
-      'Podés consultar el estado en: {lookup_url}',
-      'Código: {code}',
-      'Equipo: {device}',
-      'NicoReparaciones',
-    ].join('\n');
-  }
-
-  if (templateKey === 'delivered') {
-    return [
-      'Hola {customer_name} 👋',
-      'Tu reparación ({code}) está en estado: *{status_label}*.',
-      '¡Gracias por tu visita! 🙌',
-      '',
-      'Podés consultar el estado en: {lookup_url}',
-      'Código: {code}',
-      'Equipo: {device}',
-      'NicoReparaciones',
-    ].join('\n');
-  }
-
-  return [
+function baseOrderBody(statusKey: string) {
+  const common = [
     'Hola {customer_name} 👋',
-    'Tu reparación ({code}) está en estado: *{status_label}*.',
+    'Tu pedido *#{order_id}* está en estado: *{status_label}*.',
+    'Total: {total}',
+    'Ítems: {items_count}',
     '',
-    'Podés consultar el estado en: {lookup_url}',
-    'Código: {code}',
-    'Equipo: {device}',
-    'NicoReparaciones',
-  ].join('\n');
+    '{items_summary}',
+    '',
+    'Ver tus pedidos: {my_orders_url}',
+    'Tienda: {store_url}',
+  ];
+
+  if (statusKey === 'listo_retirar') {
+    common.push('', '📍 Dirección: {shop_address}', '🕒 Horarios: {shop_hours}', '📞 Teléfono: {shop_phone}');
+  }
+
+  if (statusKey === 'entregado') {
+    common.push('', '¡Gracias por tu compra! 🙌');
+  }
+
+  if (statusKey === 'cancelado') {
+    common.push('', 'Si querés, lo revisamos por WhatsApp.');
+  }
+
+  return common.join('\n');
 }
 
-export function AdminWhatsappPage() {
-  const [settings, setSettings] = useState<AdminSettingItem[]>([]);
-  const [templates, setTemplates] = useState<Record<string, string>>(
-    Object.fromEntries(TEMPLATE_ORDER.map((t) => [t.key, defaultTemplateBody(t.key)])),
+export function AdminWhatsappOrdersPage() {
+  const initialTemplates = useMemo(
+    () =>
+      Object.fromEntries(
+        ORDER_TEMPLATES.map((t) => [t.key, baseOrderBody(t.key)]),
+      ) as Record<string, string>,
+    [],
   );
+
+  const [templates, setTemplates] = useState<Record<string, string>>(initialTemplates);
+  const [settings, setSettings] = useState<AdminSettingItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [logsLoading, setLogsLoading] = useState(false);
   const [logs, setLogs] = useState<WhatsappLogItem[]>([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-
-  const initialTemplates = useMemo(
-    () => Object.fromEntries(TEMPLATE_ORDER.map((t) => [t.key, defaultTemplateBody(t.key)])) as Record<string, string>,
-    [],
-  );
 
   useEffect(() => {
     void load();
@@ -125,12 +102,15 @@ export function AdminWhatsappPage() {
       const map = new Map(res.items.map((s) => [s.key, s.value]));
       setTemplates(
         Object.fromEntries(
-          TEMPLATE_ORDER.map((t) => [t.key, map.get(repairTemplateKey(t.key)) ?? defaultTemplateBody(t.key)]),
+          ORDER_TEMPLATES.map((t) => [
+            t.key,
+            map.get(orderTemplateKey(t.key)) ?? baseOrderBody(t.key),
+          ]),
         ) as Record<string, string>,
       );
       await loadLogs();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error cargando WhatsApp');
+      setError(e instanceof Error ? e.message : 'Error cargando plantillas');
     } finally {
       setLoading(false);
     }
@@ -139,7 +119,7 @@ export function AdminWhatsappPage() {
   async function loadLogs() {
     setLogsLoading(true);
     try {
-      const res = await whatsappApi.logs({ channel: 'repairs' });
+      const res = await whatsappApi.logs({ channel: 'orders' });
       setLogs(res.items.slice(0, 12));
     } catch {
       setLogs([]);
@@ -148,20 +128,20 @@ export function AdminWhatsappPage() {
     }
   }
 
-  async function saveTemplates() {
+  async function save() {
     setSaving(true);
     setError('');
     setSuccess('');
     try {
       const byKey = new Map(settings.map((s) => [s.key, s]));
-      const payload = TEMPLATE_ORDER.map((t) => {
-        const key = repairTemplateKey(t.key);
+      const payload = ORDER_TEMPLATES.map((t) => {
+        const key = orderTemplateKey(t.key);
         const existing = byKey.get(key);
         return {
           key,
           value: templates[t.key] ?? '',
-          group: existing?.group ?? 'whatsapp_repair_templates',
-          label: existing?.label ?? `Plantilla WhatsApp reparaciones: ${t.title}`,
+          group: existing?.group ?? 'whatsapp_order_templates',
+          label: existing?.label ?? `Plantilla WhatsApp pedidos: ${t.title}`,
           type: existing?.type ?? 'textarea',
         };
       });
@@ -180,8 +160,10 @@ export function AdminWhatsappPage() {
       <section className="store-hero">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-black tracking-tight text-zinc-900">Plantillas WhatsApp</h1>
-            <p className="mt-1 text-sm text-zinc-600">Edita mensajes por estado. Si dejas vacio, se usa el texto predeterminado.</p>
+            <h1 className="text-2xl font-black tracking-tight text-zinc-900">Plantillas WhatsApp - Pedidos</h1>
+            <p className="mt-1 text-sm text-zinc-600">
+              Edita mensajes por estado. Si dejas vacio, se usa el texto predeterminado.
+            </p>
           </div>
           <Link to="/admin/configuraciones" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">
             Volver a configuracion
@@ -200,7 +182,7 @@ export function AdminWhatsappPage() {
           </div>
 
           <div className="grid gap-3 px-4 py-4 md:grid-cols-2 md:px-5 xl:grid-cols-3">
-            {WHATSAPP_VARIABLES.map((v) => (
+            {ORDER_VARIABLES.map((v) => (
               <div key={v.key} className="rounded-2xl border border-zinc-200 bg-white px-3 py-3">
                 <div className="font-mono text-sm font-bold text-zinc-900">{v.key}</div>
                 <div className="mt-1 text-sm text-zinc-600">{v.description}</div>
@@ -211,31 +193,25 @@ export function AdminWhatsappPage() {
       </section>
 
       <section className="grid gap-4 xl:grid-cols-2">
-        {loading ? (
-          <div className="card xl:col-span-2">
-            <div className="card-body p-4 text-sm text-zinc-600">Cargando plantillas...</div>
-          </div>
-        ) : (
-          TEMPLATE_ORDER.map((t) => (
-            <section key={t.key} className="card overflow-hidden">
-              <div className="card-body !p-0">
-                <div className="border-b border-zinc-100 px-4 py-4">
-                  <h3 className="text-xl font-black tracking-tight text-zinc-900">{t.title}</h3>
-                  <p className="mt-1 text-sm text-zinc-500">{t.key}</p>
-                </div>
-                <div className="px-4 py-4">
-                  <textarea
-                    rows={t.key === 'waiting_approval' || t.key === 'ready_pickup' ? 8 : 6}
-                    value={templates[t.key] ?? ''}
-                    onChange={(e) => setTemplates((prev) => ({ ...prev, [t.key]: e.target.value }))}
-                    disabled={loading || saving}
-                    className="w-full rounded-2xl border border-zinc-200 px-3 py-3 text-sm"
-                  />
-                </div>
+        {ORDER_TEMPLATES.map((t) => (
+          <section key={t.key} className="card overflow-hidden">
+            <div className="card-body !p-0">
+              <div className="border-b border-zinc-100 px-4 py-4">
+                <h3 className="text-xl font-black tracking-tight text-zinc-900">{t.title}</h3>
+                <p className="mt-1 text-sm text-zinc-500">{t.key}</p>
               </div>
-            </section>
-          ))
-        )}
+              <div className="px-4 py-4">
+                <textarea
+                  rows={8}
+                  value={templates[t.key] ?? ''}
+                  onChange={(e) => setTemplates((prev) => ({ ...prev, [t.key]: e.target.value }))}
+                  disabled={loading || saving}
+                  className="w-full rounded-2xl border border-zinc-200 px-3 py-3 text-sm"
+                />
+              </div>
+            </div>
+          </section>
+        ))}
       </section>
 
       <div className="flex flex-wrap items-center justify-end gap-3">
@@ -249,9 +225,9 @@ export function AdminWhatsappPage() {
         </button>
         <button
           type="button"
-          onClick={() => void saveTemplates()}
-          disabled={saving || loading}
-          className="btn-primary !h-11 !rounded-xl px-5 text-sm font-bold"
+          onClick={() => void save()}
+          disabled={loading || saving}
+          className="btn-primary !h-11 !rounded-xl px-5 text-sm font-bold disabled:opacity-60"
         >
           {saving ? 'Guardando...' : 'Guardar plantillas'}
         </button>
@@ -261,7 +237,7 @@ export function AdminWhatsappPage() {
         <div className="card-body !p-0">
           <div className="flex items-center justify-between gap-3 border-b border-zinc-100 px-4 py-4 md:px-5">
             <div>
-              <h2 className="text-xl font-black tracking-tight text-zinc-900">Logs recientes (reparaciones)</h2>
+              <h2 className="text-xl font-black tracking-tight text-zinc-900">Logs recientes (pedidos)</h2>
               <p className="mt-1 text-sm text-zinc-600">Mensajes generados automaticamente al cambiar estados.</p>
             </div>
             <button type="button" onClick={() => void loadLogs()} className="btn-outline !h-10 !rounded-xl px-4 text-sm font-bold">
@@ -280,7 +256,7 @@ export function AdminWhatsappPage() {
                     <div className="min-w-0">
                       <div className="text-sm font-black text-zinc-900">{log.templateKey || 'manual'}</div>
                       <div className="text-xs text-zinc-500">
-                        {log.targetType || 'repair'} · {log.targetId || '-'} · {new Date(log.createdAt).toLocaleString('es-AR')}
+                        {log.targetType || 'order'} · {log.targetId || '-'} · {new Date(log.createdAt).toLocaleString('es-AR')}
                       </div>
                     </div>
                     <span className="rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-xs font-bold text-zinc-700">{log.status}</span>
@@ -300,6 +276,6 @@ export function AdminWhatsappPage() {
   );
 }
 
-function repairTemplateKey(statusKey: string) {
-  return `whatsapp_repairs_template.${statusKey}.body`;
+function orderTemplateKey(statusKey: string) {
+  return `whatsapp_orders_template.${statusKey}.body`;
 }

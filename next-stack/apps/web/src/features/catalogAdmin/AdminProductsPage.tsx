@@ -1,16 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
 import { catalogAdminApi, type AdminCategory, type AdminProduct } from './api';
-
-function slugify(value: string) {
-  return value
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
 
 export function AdminProductsPage() {
   const [categories, setCategories] = useState<AdminCategory[]>([]);
@@ -20,19 +10,7 @@ export function AdminProductsPage() {
   const [q, setQ] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [activeFilter, setActiveFilter] = useState('');
-  const [catName, setCatName] = useState('');
-  const [productForm, setProductForm] = useState({
-    name: '',
-    slug: '',
-    price: '',
-    costPrice: '',
-    stock: '0',
-    sku: '',
-    barcode: '',
-    categoryId: '',
-    active: true,
-    featured: false,
-  });
+  const [openActionsId, setOpenActionsId] = useState<string | null>(null);
 
   async function loadCategories() {
     const res = await catalogAdminApi.categories();
@@ -41,6 +19,7 @@ export function AdminProductsPage() {
 
   async function loadProducts() {
     setLoading(true);
+    setError('');
     try {
       const res = await catalogAdminApi.products({ q, categoryId: categoryId || undefined, active: activeFilter || undefined });
       setProducts(res.items);
@@ -52,44 +31,15 @@ export function AdminProductsPage() {
   }
 
   useEffect(() => {
-    void loadCategories().catch((e) => setError(e instanceof Error ? e.message : 'Error cargando categorías'));
+    void loadCategories().catch((e) => setError(e instanceof Error ? e.message : 'Error cargando categorias'));
   }, []);
 
   useEffect(() => {
     void loadProducts();
   }, [q, categoryId, activeFilter]);
 
-  const totals = useMemo(() => ({
-    count: products.length,
-    stock: products.reduce((acc, p) => acc + p.stock, 0),
-  }), [products]);
-
-  async function createCategory(e: React.FormEvent) {
-    e.preventDefault();
-    const name = catName.trim();
-    if (!name) return;
-    await catalogAdminApi.createCategory({ name, slug: slugify(name), active: true });
-    setCatName('');
-    await loadCategories();
-  }
-
-  async function createProduct(e: React.FormEvent) {
-    e.preventDefault();
-    await catalogAdminApi.createProduct({
-      name: productForm.name,
-      slug: productForm.slug || slugify(productForm.name),
-      price: Number(productForm.price || 0),
-      costPrice: productForm.costPrice ? Number(productForm.costPrice) : null,
-      stock: Number(productForm.stock || 0),
-      sku: productForm.sku || null,
-      barcode: productForm.barcode || null,
-      categoryId: productForm.categoryId || null,
-      active: productForm.active,
-      featured: productForm.featured,
-    });
-    setProductForm({ name: '', slug: '', price: '', costPrice: '', stock: '0', sku: '', barcode: '', categoryId: '', active: true, featured: false });
-    await loadProducts();
-  }
+  const rows = useMemo(() => products.slice(0, 80), [products]);
+  const tableCols = '32px 2.5fr 0.85fr 0.9fr 1.05fr 0.65fr 0.95fr 0.95fr 1.05fr 1.9fr 1.1fr';
 
   async function patchProduct(id: string, patch: Record<string, unknown>) {
     try {
@@ -100,217 +50,207 @@ export function AdminProductsPage() {
     }
   }
 
-  async function patchCategory(id: string, patch: Record<string, unknown>) {
-    try {
-      const res = await catalogAdminApi.updateCategory(id, patch);
-      setCategories((prev) => prev.map((c) => (c.id === id ? res.item : c)));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error actualizando categoría');
-    }
-  }
-
   return (
-    <div className="store-shell">
-      <div className="page-head store-hero">
+    <div className="store-shell space-y-5">
+      <section className="store-hero">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <div className="page-title">Productos y categorías</div>
-            <div className="page-subtitle">Gestión básica de catálogo con edición rápida de stock, precio y estados.</div>
+            <h1 className="text-2xl font-black tracking-tight text-zinc-900">Productos</h1>
+            <p className="mt-1 text-sm text-zinc-600">Administra catalogo con identificacion por SKU y codigo de barras.</p>
           </div>
-          <Link to="/admin" className="btn-outline h-11 w-full justify-center sm:w-auto">Volver a admin</Link>
-      </div>
-
-      {error ? <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">{error}</div> : null}
-
-      <div className="mt-4 grid gap-4 xl:grid-cols-[380px_1fr]">
-          <div className="space-y-4">
-            <section className="card">
-              <div className="card-body p-4">
-              <div className="text-sm font-bold uppercase tracking-wide text-zinc-500">Nueva categoría</div>
-              <form className="mt-3 flex gap-2" onSubmit={(e) => void createCategory(e)}>
-                <input value={catName} onChange={(e) => setCatName(e.target.value)} placeholder="Accesorios" className="h-10 flex-1 rounded-xl border border-zinc-200 px-3 text-sm" />
-                <button className="btn-primary h-10 justify-center px-4" type="submit">Agregar</button>
-              </form>
-              <div className="mt-3 space-y-2 max-h-80 overflow-auto pr-1">
-                {categories.map((c) => (
-                  <div key={c.id} className="rounded-xl border border-zinc-200 p-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <div>
-                        <div className="text-sm font-semibold text-zinc-900">{c.name}</div>
-                        <div className="text-xs text-zinc-500">{c.productsCount} productos</div>
-                      </div>
-                      <label className="inline-flex items-center gap-2 text-xs font-semibold text-zinc-700">
-                        <input type="checkbox" checked={c.active} onChange={(e) => void patchCategory(c.id, { active: e.target.checked })} />
-                        Activa
-                      </label>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              </div>
-            </section>
-
-            <section className="card">
-              <div className="card-body p-4">
-              <div className="text-sm font-bold uppercase tracking-wide text-zinc-500">Nuevo producto</div>
-              <form className="mt-3 grid gap-2" onSubmit={(e) => void createProduct(e)}>
-                <input
-                  value={productForm.name}
-                  onChange={(e) => setProductForm((p) => ({ ...p, name: e.target.value, slug: p.slug || slugify(e.target.value) }))}
-                  placeholder="Nombre producto"
-                  className="h-10 rounded-xl border border-zinc-200 px-3 text-sm"
-                  required
-                />
-                <input value={productForm.slug} onChange={(e) => setProductForm((p) => ({ ...p, slug: e.target.value }))} placeholder="slug-producto" className="h-10 rounded-xl border border-zinc-200 px-3 text-sm" />
-                <div className="grid grid-cols-2 gap-2">
-                  <input value={productForm.price} onChange={(e) => setProductForm((p) => ({ ...p, price: e.target.value }))} type="number" min="0" placeholder="Precio venta" className="h-10 rounded-xl border border-zinc-200 px-3 text-sm" required />
-                  <input value={productForm.costPrice} onChange={(e) => setProductForm((p) => ({ ...p, costPrice: e.target.value }))} type="number" min="0" placeholder="Costo (opc.)" className="h-10 rounded-xl border border-zinc-200 px-3 text-sm" />
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <input value={productForm.stock} onChange={(e) => setProductForm((p) => ({ ...p, stock: e.target.value }))} type="number" min="0" placeholder="Stock" className="h-10 rounded-xl border border-zinc-200 px-3 text-sm" />
-                  <input value={productForm.sku} onChange={(e) => setProductForm((p) => ({ ...p, sku: e.target.value }))} placeholder="SKU" className="h-10 rounded-xl border border-zinc-200 px-3 text-sm" />
-                  <input value={productForm.barcode} onChange={(e) => setProductForm((p) => ({ ...p, barcode: e.target.value }))} placeholder="Código" className="h-10 rounded-xl border border-zinc-200 px-3 text-sm" />
-                </div>
-                <select value={productForm.categoryId} onChange={(e) => setProductForm((p) => ({ ...p, categoryId: e.target.value }))} className="h-10 rounded-xl border border-zinc-200 px-3 text-sm">
-                  <option value="">Sin categoría</option>
-                  {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
-                <div className="flex flex-wrap gap-4 text-sm">
-                  <label className="inline-flex items-center gap-2"><input type="checkbox" checked={productForm.active} onChange={(e) => setProductForm((p) => ({ ...p, active: e.target.checked }))} /> Activo</label>
-                  <label className="inline-flex items-center gap-2"><input type="checkbox" checked={productForm.featured} onChange={(e) => setProductForm((p) => ({ ...p, featured: e.target.checked }))} /> Destacado</label>
-                </div>
-                <button className="btn-primary h-11 w-full justify-center" type="submit">Crear producto</button>
-              </form>
-              </div>
-            </section>
+          <div className="flex flex-wrap items-center gap-2">
+            <button type="button" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">Categorias</button>
+            <button type="button" className="btn-primary !h-10 !rounded-xl px-5 text-sm font-bold">+ Nuevo producto</button>
           </div>
+        </div>
+      </section>
 
-          <section className="card">
-            <div className="card-body p-4">
-            <div className="mb-3 grid gap-2 md:grid-cols-[1fr_220px_180px]">
-              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar producto / sku / Código..." className="h-10 rounded-xl border border-zinc-200 px-3 text-sm" />
-              <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className="h-10 rounded-xl border border-zinc-200 px-3 text-sm">
-                <option value="">Todas las categorías</option>
-                {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-              <select value={activeFilter} onChange={(e) => setActiveFilter(e.target.value)} className="h-10 rounded-xl border border-zinc-200 px-3 text-sm">
-                <option value="">Activos e inactivos</option>
-                <option value="1">Solo activos</option>
-                <option value="0">Solo inactivos</option>
-              </select>
-            </div>
+      {error ? <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">{error}</div> : null}
 
-            <div className="mb-3 grid gap-2 sm:grid-cols-2">
-              <InfoCard label="Productos listados" value={String(totals.count)} />
-              <InfoCard label="Stock total listado" value={String(totals.stock)} />
+      <section className="card">
+        <div className="card-body">
+          <div className="grid gap-3 xl:grid-cols-[1.3fr_1.05fr_0.9fr_0.95fr_0.9fr_auto]">
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Buscar por nombre, slug, SKU"
+              className="h-11 rounded-2xl border border-zinc-200 px-3 text-sm"
+            />
+            <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className="h-11 rounded-2xl border border-zinc-200 px-3 text-sm font-bold">
+              <option value="">Categoria: Todas</option>
+              {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+            <select value={activeFilter} onChange={(e) => setActiveFilter(e.target.value)} className="h-11 rounded-2xl border border-zinc-200 px-3 text-sm font-bold">
+              <option value="">Estado: Todos</option>
+              <option value="1">Estado: Activos</option>
+              <option value="0">Estado: Inactivos</option>
+            </select>
+            <select className="h-11 rounded-2xl border border-zinc-200 px-3 text-sm font-bold">
+              <option>Destacado: Todos</option>
+            </select>
+            <select className="h-11 rounded-2xl border border-zinc-200 px-3 text-sm font-bold">
+              <option>Stock: Todos</option>
+            </select>
+            <button type="button" onClick={() => void loadProducts()} className="btn-outline !h-11 !rounded-xl px-5 text-sm font-bold">
+              Filtrar
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-[0_8px_30px_-18px_#0f172a47]">
+        <div>
+          <div>
+            <div className="grid gap-0 bg-zinc-50 px-2 py-2 text-[11px] font-black uppercase tracking-wide text-zinc-500" style={{ gridTemplateColumns: tableCols }}>
+              <div><input type="checkbox" aria-label="Seleccionar todo" /></div>
+              <div>PRODUCTO</div>
+              <div>SKU</div>
+              <div>BARCODE</div>
+              <div>CATEGORIA</div>
+              <div>PROV.</div>
+              <div className="text-right">COSTO</div>
+              <div className="text-right">VENTA</div>
+              <div>MARGEN</div>
+              <div>STOCK</div>
+              <div>ACCIONES</div>
             </div>
 
             {loading ? (
-              <div className="rounded-xl border border-zinc-200 p-3 text-sm">Cargando productos...</div>
-            ) : products.length === 0 ? (
-              <div className="rounded-xl border border-zinc-200 p-3 text-sm">No hay productos.</div>
+              <div className="p-4 text-sm text-zinc-600">Cargando productos...</div>
+            ) : rows.length === 0 ? (
+              <div className="p-4 text-sm text-zinc-600">No hay productos.</div>
             ) : (
-              <div className="space-y-2">
-                {products.map((p) => (
-                  <div key={p.id} className="rounded-xl border border-zinc-200 p-3">
-                    <div className="grid gap-3 md:grid-cols-[1.3fr_auto]">
+              rows.map((p, idx) => {
+                const cost = Number(p.costPrice ?? 0);
+                const sale = Number(p.price ?? 0);
+                const marginPct = cost > 0 ? Math.round(((sale - cost) / cost) * 100) : 0;
+                const marginVal = Math.max(0, sale - cost);
+                return (
+                  <div
+                    key={p.id}
+                    className={`grid items-center gap-0 px-2 py-2 ${idx ? 'border-t border-zinc-100' : ''}`} style={{ gridTemplateColumns: tableCols }}
+                  >
+                    <div><input type="checkbox" aria-label={`Seleccionar ${p.name}`} /></div>
+
+                    <div className="flex min-w-0 items-center gap-2">
+                      <div className="h-8 w-8 rounded-lg border border-zinc-200 bg-zinc-50" />
                       <div className="min-w-0">
-                        <div className="truncate text-sm font-black text-zinc-900">{p.name}</div>
-                        <div className="mt-1 text-xs text-zinc-500">
-                          {p.category?.name || 'Sin categoría'} · SKU {p.sku || '—'} · Código {p.barcode || '—'}
-                        </div>
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          <Badge active={p.active}>{p.active ? 'Activo' : 'Inactivo'}</Badge>
-                          <Badge active={p.featured} color="amber">{p.featured ? 'Destacado' : 'Normal'}</Badge>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2 md:w-[280px]">
-                        <QuickNumber
-                          label="Precio"
-                          value={p.price}
-                          onSave={(v) => void patchProduct(p.id, { price: v })}
-                          money
-                        />
-                        <QuickNumber
-                          label="Stock"
-                          value={p.stock}
-                          onSave={(v) => void patchProduct(p.id, { stock: Math.max(0, Math.trunc(v)) })}
-                        />
+                        <div className="truncate text-sm font-black tracking-tight text-zinc-900">{p.name}</div>
+                        <div className="text-xs text-zinc-500">ID: {p.id.slice(0, 4)}</div>
                       </div>
                     </div>
-                    <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
-                      <label className="inline-flex items-center gap-2">
-                        <input type="checkbox" checked={p.active} onChange={(e) => void patchProduct(p.id, { active: e.target.checked })} />
-                        Activo
-                      </label>
-                      <label className="inline-flex items-center gap-2">
-                        <input type="checkbox" checked={p.featured} onChange={(e) => void patchProduct(p.id, { featured: e.target.checked })} />
-                        Destacado
-                      </label>
-                      <select value={p.categoryId ?? ''} onChange={(e) => void patchProduct(p.id, { categoryId: e.target.value || null })} className="h-9 rounded-xl border border-zinc-200 px-3 text-sm">
-                        <option value="">Sin categoría</option>
-                        {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                      </select>
+
+                    <div className="truncate text-xs font-black leading-tight text-zinc-800">{p.sku || '-'}</div>
+                    <div className="truncate text-xs leading-tight text-zinc-800">{p.barcode || '-'}</div>
+                    <div className="truncate text-xs text-zinc-900">{p.category?.name || 'â€”'}</div>
+                    <div className="truncate text-xs text-zinc-900">-</div>
+
+                    <div className="text-right">
+                      <div className="text-xs font-black leading-tight text-zinc-900">$ {cost.toLocaleString('es-AR')}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xs font-black leading-tight text-zinc-900">$ {sale.toLocaleString('es-AR')}</div>
+                    </div>
+
+                    <div>
+                      <div className="inline-flex min-h-[34px] w-full flex-col items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-1.5 py-1 text-center">
+                        <div className="text-[11px] font-black tracking-tight text-emerald-800">M: {marginPct >= 0 ? '+' : ''}{marginPct}%</div>
+                        <div className="text-[10px] font-black text-emerald-700">$ {marginVal.toLocaleString('es-AR')}</div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      <div className="inline-flex min-h-[34px] min-w-[42px] flex-col items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-1.5 py-1 text-center">
+                        <div className="text-[11px] font-black tracking-tight text-emerald-800">Stock</div>
+                        <div className="text-xs font-black text-emerald-700">{p.stock}</div>
+                      </div>
+                      <QuickStockCell value={p.stock} onSave={(v) => void patchProduct(p.id, { stock: Math.max(0, Math.trunc(v)) })} />
+                    </div>
+
+                    <div className="relative flex items-center justify-end">
+                      <button
+                        type="button"
+                        onClick={() => setOpenActionsId((prev) => (prev === p.id ? null : p.id))}
+                        className="btn-outline !h-8 !rounded-xl px-2.5 text-xs font-bold"
+                        aria-expanded={openActionsId === p.id}
+                      >
+                        Acciones
+                      </button>
+                      {openActionsId === p.id ? (
+                        <div className="absolute right-0 top-10 z-20 min-w-[180px] rounded-2xl border border-zinc-200 bg-white p-2 shadow-[0_18px_45px_-24px_rgba(15,23,42,0.28)]">
+                          <div className="space-y-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                void patchProduct(p.id, { active: !p.active });
+                                setOpenActionsId(null);
+                              }}
+                              className="flex h-9 w-full items-center justify-between rounded-xl px-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
+                            >
+                              <span>Estado</span>
+                              <Pill tone={p.active ? 'emerald' : 'zinc'}>{p.active ? 'Activo' : 'Inactivo'}</Pill>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                void patchProduct(p.id, { featured: !p.featured });
+                                setOpenActionsId(null);
+                              }}
+                              className="flex h-9 w-full items-center justify-between rounded-xl px-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
+                            >
+                              <span>Destacado</span>
+                              <Pill tone={p.featured ? 'amber' : 'zinc'}>{p.featured ? 'SÃ­' : 'No'}</Pill>
+                            </button>
+                            <button type="button" className="flex h-9 w-full items-center rounded-xl px-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50">
+                              Etiqueta
+                            </button>
+                            <Link
+                              to={`/admin/productos/${encodeURIComponent(p.id)}/editar`}
+                              onClick={() => setOpenActionsId(null)}
+                              className="flex h-9 w-full items-center rounded-xl px-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
+                            >
+                              Editar
+                            </Link>
+                          </div>
+                        </div>
+                      ) : null}
                     </div>
                   </div>
-                ))}
-              </div>
+                );
+              })
             )}
-            </div>
-          </section>
+          </div>
         </div>
+      </section>
     </div>
   );
 }
 
-function InfoCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
-      <div className="text-xs font-bold uppercase tracking-wide text-zinc-500">{label}</div>
-      <div className="mt-1 text-sm font-black text-zinc-900">{value}</div>
-    </div>
-  );
+function Pill({ children, tone = 'zinc' }: { children: React.ReactNode; tone?: 'zinc' | 'emerald' | 'amber' }) {
+  const tones = {
+    zinc: 'border-zinc-200 bg-zinc-50 text-zinc-800',
+    emerald: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+    amber: 'border-amber-200 bg-amber-50 text-amber-800',
+  } as const;
+  return <span className={`inline-flex h-8 items-center rounded-full border px-3 text-sm font-bold ${tones[tone]}`}>{children}</span>;
 }
 
-function Badge({ children, active, color = 'sky' }: { children: React.ReactNode; active: boolean; color?: 'sky' | 'amber' }) {
-  const on = color === 'amber' ? 'border-amber-200 bg-amber-50 text-amber-800' : 'border-sky-200 bg-sky-50 text-sky-800';
-  const off = 'border-zinc-200 bg-zinc-100 text-zinc-600';
-  return <span className={`rounded-full border px-2 py-0.5 text-xs font-bold ${active ? on : off}`}>{children}</span>;
-}
-
-function QuickNumber({
-  label,
-  value,
-  onSave,
-  money = false,
-}: {
-  label: string;
-  value: number;
-  onSave: (value: number) => void;
-  money?: boolean;
-}) {
+function QuickStockCell({ value, onSave }: { value: number; onSave: (value: number) => void }) {
   const [local, setLocal] = useState(String(value));
   useEffect(() => setLocal(String(value)), [value]);
   return (
-    <label className="block">
-      <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-500">{label}</span>
-      <div className="flex gap-1">
-        <input
-          type="number"
-          min="0"
-          step={money ? '0.01' : '1'}
-          value={local}
-          onChange={(e) => setLocal(e.target.value)}
-          className="h-9 w-full rounded-xl border border-zinc-200 px-2 text-sm"
-        />
-        <button
-          type="button"
-          onClick={() => onSave(Number(local || 0))}
-          className="h-9 rounded-xl border border-zinc-200 bg-white px-2 text-xs font-bold text-zinc-700 hover:bg-zinc-50"
-        >
-          OK
-        </button>
-      </div>
-    </label>
+    <div className="flex items-center gap-1">
+      <input
+        type="number"
+        min="0"
+        value={local}
+        onChange={(e) => setLocal(e.target.value)}
+        className="h-8 w-[68px] rounded-xl border border-zinc-200 px-2 text-center text-sm font-bold"
+      />
+      <button type="button" onClick={() => onSave(Number(local || 0))} className="btn-outline !h-8 !rounded-xl px-2 text-xs font-bold">
+        OK
+      </button>
+    </div>
   );
 }
 

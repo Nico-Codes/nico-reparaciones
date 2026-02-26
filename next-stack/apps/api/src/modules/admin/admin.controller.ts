@@ -1,6 +1,8 @@
-import { Body, Controller, Get, Inject, Patch, Param, Query, UseGuards } from '@nestjs/common';
+﻿import { BadRequestException, Body, Controller, Get, Inject, Patch, Param, Post, Query, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { CurrentUser } from '../auth/current-user.decorator.js';
 import type { AuthenticatedUser } from '../auth/auth.types.js';
+import { AuthService } from '../auth/auth.service.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { Roles } from '../auth/roles.decorator.js';
 import { RolesGuard } from '../auth/roles.guard.js';
@@ -65,12 +67,24 @@ const helpFaqCreateSchema = z.object({
 });
 
 const helpFaqPatchSchema = helpFaqCreateSchema.partial();
+const twoFactorCodeSchema = z.object({
+  code: z.string().trim().min(6).max(12),
+});
+const sendWeeklyReportNowSchema = z.object({
+  rangeDays: z.union([z.literal(7), z.literal(30), z.literal(90)]).optional(),
+});
+const smtpTestSchema = z.object({
+  email: z.string().trim().email().max(190),
+});
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('ADMIN')
 export class AdminController {
-  constructor(@Inject(AdminService) private readonly adminService: AdminService) {}
+  constructor(
+    @Inject(AdminService) private readonly adminService: AdminService,
+    @Inject(AuthService) private readonly authService: AuthService,
+  ) {}
 
   @Get('ping')
   ping(@CurrentUser() user: AuthenticatedUser | null) {
@@ -96,7 +110,7 @@ export class AdminController {
   updateUserRole(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser | null, @Body() body: unknown) {
     const parsed = updateUserRoleSchema.safeParse(body);
     if (!parsed.success) {
-      return { message: 'Validación inválida', errors: parsed.error.issues };
+      return { message: 'ValidaciÃ³n invÃ¡lida', errors: parsed.error.issues };
     }
     return this.adminService.updateUserRole(id, parsed.data.role, user?.id ?? null);
   }
@@ -106,13 +120,37 @@ export class AdminController {
     return this.adminService.settings();
   }
 
+  @Get('smtp/status')
+  smtpStatus(@CurrentUser() user: AuthenticatedUser | null) {
+    return this.adminService.smtpStatus(user?.email ?? null);
+  }
+
+  @Post('smtp/test')
+  smtpTest(@Body() body: unknown) {
+    const parsed = smtpTestSchema.safeParse(body);
+    if (!parsed.success) return { message: 'Validacion invalida', errors: parsed.error.issues };
+    return this.adminService.sendSmtpTestEmail(parsed.data.email);
+  }
+
   @Patch('settings')
   upsertSettings(@Body() body: unknown) {
     const parsed = upsertSettingsSchema.safeParse(body);
     if (!parsed.success) {
-      return { message: 'Validación inválida', errors: parsed.error.issues };
+      return { message: 'ValidaciÃ³n invÃ¡lida', errors: parsed.error.issues };
     }
     return this.adminService.upsertSettings(parsed.data.items);
+  }
+
+  @Post('reports/weekly/send')
+  sendWeeklyReportNow(@Body() body: unknown) {
+    const parsed = sendWeeklyReportNowSchema.safeParse(body ?? {});
+    if (!parsed.success) return { message: 'Validacion invalida', errors: parsed.error.issues };
+    return this.adminService.sendWeeklyDashboardReportNow(parsed.data.rangeDays ?? null);
+  }
+
+  @Post('reports/operational-alerts/send')
+  sendOperationalAlertsNow() {
+    return this.adminService.sendOperationalAlertsNow();
   }
 
   @Get('mail-templates')
@@ -124,7 +162,7 @@ export class AdminController {
   upsertMailTemplates(@Body() body: unknown) {
     const parsed = upsertMailTemplatesSchema.safeParse(body);
     if (!parsed.success) {
-      return { message: 'Validación inválida', errors: parsed.error.issues };
+      return { message: 'ValidaciÃ³n invÃ¡lida', errors: parsed.error.issues };
     }
     return this.adminService.upsertMailTemplates(parsed.data.items);
   }
@@ -138,7 +176,7 @@ export class AdminController {
   upsertWhatsappTemplates(@Body() body: unknown) {
     const parsed = upsertWhatsappTemplatesSchema.safeParse(body);
     if (!parsed.success) {
-      return { message: 'Validación inválida', errors: parsed.error.issues };
+      return { message: 'ValidaciÃ³n invÃ¡lida', errors: parsed.error.issues };
     }
     return this.adminService.upsertWhatsappTemplates(parsed.data.items);
   }
@@ -152,7 +190,7 @@ export class AdminController {
   createWhatsappLog(@Body() body: unknown) {
     const parsed = createWhatsappLogSchema.safeParse(body);
     if (!parsed.success) {
-      return { message: 'Validación inválida', errors: parsed.error.issues };
+      return { message: 'ValidaciÃ³n invÃ¡lida', errors: parsed.error.issues };
     }
     return this.adminService.createWhatsappLog(parsed.data);
   }
@@ -165,14 +203,58 @@ export class AdminController {
   @Patch('help-faq')
   helpFaqCreate(@Body() body: unknown) {
     const parsed = helpFaqCreateSchema.safeParse(body);
-    if (!parsed.success) return { message: 'Validación inválida', errors: parsed.error.issues };
+    if (!parsed.success) return { message: 'ValidaciÃ³n invÃ¡lida', errors: parsed.error.issues };
     return this.adminService.helpFaqCreate(parsed.data);
   }
 
   @Patch('help-faq/:id')
   helpFaqUpdate(@Param('id') id: string, @Body() body: unknown) {
     const parsed = helpFaqPatchSchema.safeParse(body);
-    if (!parsed.success) return { message: 'Validación inválida', errors: parsed.error.issues };
+    if (!parsed.success) return { message: 'ValidaciÃ³n invÃ¡lida', errors: parsed.error.issues };
     return this.adminService.helpFaqUpdate(id, parsed.data);
   }
+
+  @Get('security/2fa')
+  twoFactorStatus(@CurrentUser() user: AuthenticatedUser | null) {
+    if (!user) throw new BadRequestException('Usuario no autenticado');
+    return this.authService.getAdminTwoFactorStatus(user.id);
+  }
+
+  @Post('security/2fa/generate')
+  twoFactorGenerate(@CurrentUser() user: AuthenticatedUser | null) {
+    if (!user) throw new BadRequestException('Usuario no autenticado');
+    return this.authService.generateAdminTwoFactorSecret(user.id);
+  }
+
+  @Post('security/2fa/enable')
+  twoFactorEnable(@CurrentUser() user: AuthenticatedUser | null, @Body() body: unknown) {
+    if (!user) throw new BadRequestException('Usuario no autenticado');
+    const parsed = twoFactorCodeSchema.safeParse(body);
+    if (!parsed.success) return { message: 'Validacion invalida', errors: parsed.error.issues };
+    return this.authService.enableAdminTwoFactor(user.id, parsed.data.code);
+  }
+
+  @Post('security/2fa/disable')
+  twoFactorDisable(@CurrentUser() user: AuthenticatedUser | null, @Body() body: unknown) {
+    if (!user) throw new BadRequestException('Usuario no autenticado');
+    const parsed = z.object({ code: z.string().trim().min(6).max(12).optional() }).safeParse(body ?? {});
+    if (!parsed.success) return { message: 'Validacion invalida', errors: parsed.error.issues };
+    return this.authService.disableAdminTwoFactor(user.id, parsed.data.code ?? null);
+  }
+
+  @Post('brand-assets/upload/:slot')
+  @UseInterceptors(FileInterceptor('file'))
+  uploadBrandAsset(
+    @Param('slot') slot: string,
+    @UploadedFile() file?: { originalname: string; mimetype: string; size: number; buffer?: Buffer },
+  ) {
+    if (!file) throw new BadRequestException('Archivo requerido');
+    return this.adminService.uploadBrandAsset(slot, file);
+  }
+
+  @Patch('brand-assets/reset/:slot')
+  resetBrandAsset(@Param('slot') slot: string) {
+    return this.adminService.resetBrandAsset(slot);
+  }
 }
+

@@ -1,8 +1,11 @@
 import 'reflect-metadata';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
 import { randomUUID } from 'node:crypto';
+import { existsSync } from 'node:fs';
+import path from 'node:path';
 import { HttpExceptionFilter } from './common/http-exception.filter.js';
 import { appLog, isTruthy } from './common/logging.js';
 import { AppModule } from './modules/app.module.js';
@@ -35,6 +38,16 @@ function shouldLogHttpRequests() {
   return isTruthy(explicit);
 }
 
+function resolveWebPublicDir() {
+  const cwd = process.cwd();
+  const candidates = [
+    path.resolve(cwd, 'apps/web/public'),
+    path.resolve(cwd, '../web/public'),
+    path.resolve(cwd, '../../apps/web/public'),
+  ];
+  return candidates.find((p) => existsSync(p)) ?? null;
+}
+
 function assertProductionSafeEnv() {
   if (!isProductionLike()) return;
 
@@ -62,7 +75,7 @@ function assertProductionSafeEnv() {
 
 async function bootstrap() {
   assertProductionSafeEnv();
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const httpLoggingEnabled = shouldLogHttpRequests();
   const appVersion = env('APP_VERSION') || process.env.npm_package_version || '0.0.0';
   const gitSha = env('GIT_SHA');
@@ -124,6 +137,12 @@ async function bootstrap() {
   const expressApp = app.getHttpAdapter().getInstance?.();
   if (expressApp?.disable) {
     expressApp.disable('x-powered-by');
+  }
+  const webPublicDir = resolveWebPublicDir();
+  if (webPublicDir) {
+    app.useStaticAssets(path.join(webPublicDir, 'brand'), { prefix: '/brand' });
+    app.useStaticAssets(path.join(webPublicDir, 'brand-assets'), { prefix: '/brand-assets' });
+    app.useStaticAssets(path.join(webPublicDir, 'icons'), { prefix: '/icons' });
   }
   if (expressApp?.set && isTruthy(env('TRUST_PROXY'))) {
     expressApp.set('trust proxy', 1);

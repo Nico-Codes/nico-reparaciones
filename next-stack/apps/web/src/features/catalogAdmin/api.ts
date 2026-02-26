@@ -60,6 +60,9 @@ export const catalogAdminApi = {
     if (params?.active) qs.set('active', params.active);
     return authRequest<{ items: AdminProduct[] }>('/catalog-admin/products' + (qs.size ? `?${qs.toString()}` : ''));
   },
+  product(id: string) {
+    return authRequest<{ item: AdminProduct }>(`/catalog-admin/products/${encodeURIComponent(id)}`);
+  },
   createProduct(input: unknown) {
     return authRequest<{ item: AdminProduct }>('/catalog-admin/products', { method: 'POST', body: JSON.stringify(input) });
   },
@@ -67,4 +70,3 @@ export const catalogAdminApi = {
     return authRequest<{ item: AdminProduct }>(`/catalog-admin/products/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(input) });
   },
 };
-

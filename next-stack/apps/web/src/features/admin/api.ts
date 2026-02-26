@@ -79,4 +79,36 @@ export const adminApi = {
   dashboard() {
     return authRequest<AdminDashboardResponse>('/admin/dashboard');
   },
+  smtpStatus() {
+    return authRequest<{
+      smtpDefaultTo: string;
+      smtpHealth: {
+        status: 'ok' | 'warning' | 'local';
+        label: string;
+        summary: string;
+        mailer: string;
+        from_address: string | null;
+        from_name: string | null;
+        issues: string[];
+      };
+    }>('/admin/smtp/status');
+  },
+  smtpTest(email: string) {
+    return authRequest<{ ok: boolean; sentTo: string; status: 'sent' | 'dry_run'; smtpHealth: { label: string } }>('/admin/smtp/test', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  },
+  sendWeeklyReportNow(rangeDays?: 7 | 30 | 90) {
+    return authRequest<{ ok: boolean; status: string; recipients: string[]; rangeDays: number }>('/admin/reports/weekly/send', {
+      method: 'POST',
+      body: JSON.stringify(rangeDays ? { rangeDays } : {}),
+    });
+  },
+  sendOperationalAlertsNow() {
+    return authRequest<{ ok: boolean; status: string; recipients: string[]; summary: { orders: number; repairs: number } }>(
+      '/admin/reports/operational-alerts/send',
+      { method: 'POST', body: '{}' },
+    );
+  },
 };

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { repairsApi } from './api';
 import type { RepairItem, RepairTimelineEvent } from './types';
@@ -6,8 +6,8 @@ import type { RepairItem, RepairTimelineEvent } from './types';
 const STATUS_LABELS: Record<string, string> = {
   RECEIVED: 'Recibido',
   DIAGNOSING: 'Diagnosticando',
-  WAITING_APPROVAL: 'Esperando aprobación',
-  REPAIRING: 'En reparación',
+  WAITING_APPROVAL: 'Esperando aprobaciÃ³n',
+  REPAIRING: 'En reparaciÃ³n',
   READY_PICKUP: 'Listo para retirar',
   DELIVERED: 'Entregado',
   CANCELLED: 'Cancelado',
@@ -85,7 +85,7 @@ export function AdminRepairDetailPage() {
         setPaidAmount(res.item.finalPrice != null ? String(res.item.finalPrice) : '');
       } catch (e) {
         if (!mounted) return;
-        setError(e instanceof Error ? e.message : 'Error cargando reparación');
+        setError(e instanceof Error ? e.message : 'Error cargando reparaciÃ³n');
       } finally {
         if (mounted) setLoading(false);
       }
@@ -130,8 +130,8 @@ export function AdminRepairDetailPage() {
     }
   }
 
-  if (loading) return <div className="store-shell"><div className="card"><div className="card-body">Cargando reparación...</div></div></div>;
-  if (error || !item) return <div className="store-shell"><div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">{error || 'No se encontró la reparación'}</div></div>;
+  if (loading) return <div className="store-shell"><div className="card"><div className="card-body">Cargando reparaciÃ³n...</div></div></div>;
+  if (error || !item) return <div className="store-shell"><div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">{error || 'No se encontrÃ³ la reparaciÃ³n'}</div></div>;
 
   return (
     <div className="store-shell space-y-4">
@@ -142,18 +142,18 @@ export function AdminRepairDetailPage() {
               <h1 className="text-2xl font-black tracking-tight text-zinc-900">{repairCodeLabel(item.id)}</h1>
               <span className={statusBadgeClass(status)}>{statusLabel(status)}</span>
               <span className="inline-flex h-8 items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 text-sm font-bold text-emerald-700">
-                Garantía vigente (24/05/2026)
+                GarantÃ­a vigente (24/05/2026)
               </span>
             </div>
             <p className="mt-2 text-sm text-zinc-700">
-              <span className="font-black">{customerName}</span> · {customerPhone || 'Sin teléfono'} · {[deviceBrand, deviceModel].filter(Boolean).join(' ') || 'Sin equipo'}
+              <span className="font-black">{customerName}</span> Â· {customerPhone || 'Sin telÃ©fono'} Â· {[deviceBrand, deviceModel].filter(Boolean).join(' ') || 'Sin equipo'}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button type="button" onClick={() => navigate('/admin/repairs')} className="btn-ghost !h-10 !rounded-xl px-4 text-sm font-bold">Volver</button>
-            <button type="button" className="btn-outline !h-10 !rounded-xl px-4 text-sm font-bold">Registrar garantía</button>
-            <button type="button" className="btn-outline !h-10 !rounded-xl px-4 text-sm font-bold">Imprimir</button>
-            <button type="button" className="btn-outline !h-10 !rounded-xl px-4 text-sm font-bold">Ticket</button>
+            <Link to={`/admin/garantias/crear?repairId=${encodeURIComponent(item.id)}`} className="btn-outline !h-10 !rounded-xl px-4 text-sm font-bold">Registrar garantía</Link>
+            <a href={`/admin/repairs/${encodeURIComponent(item.id)}/print`} target="_blank" rel="noreferrer" className="btn-outline !h-10 !rounded-xl px-4 text-sm font-bold">Imprimir</a>
+            <a href={`/admin/repairs/${encodeURIComponent(item.id)}/ticket`} target="_blank" rel="noreferrer" className="btn-outline !h-10 !rounded-xl px-4 text-sm font-bold">Ticket</a>
             <button type="button" className="btn-primary !h-10 !rounded-xl px-4 text-sm font-bold">WhatsApp</button>
           </div>
         </div>
@@ -165,13 +165,13 @@ export function AdminRepairDetailPage() {
         <div className="space-y-4">
           <section className="card">
             <div className="card-head flex items-center justify-between gap-2">
-              <div className="text-xl font-black tracking-tight text-zinc-900">Acciones rápidas</div>
+              <div className="text-xl font-black tracking-tight text-zinc-900">Acciones rÃ¡pidas</div>
               <span className="badge-zinc">{repairCodeLabel(item.id)}</span>
             </div>
             <div className="card-body space-y-2">
               <div className="grid grid-cols-2 gap-2">
-                <button type="button" className="btn-outline !h-10 !rounded-xl justify-center">Imprimir</button>
-                <button type="button" className="btn-outline !h-10 !rounded-xl justify-center">Ticket</button>
+                <a href={`/admin/repairs/${encodeURIComponent(item.id)}/print`} target="_blank" rel="noreferrer" className="btn-outline !h-10 !rounded-xl justify-center">Imprimir</a>
+                <a href={`/admin/repairs/${encodeURIComponent(item.id)}/ticket`} target="_blank" rel="noreferrer" className="btn-outline !h-10 !rounded-xl justify-center">Ticket</a>
               </div>
               <button type="button" className="btn-outline !h-10 !w-full !rounded-xl justify-center">Abrir WhatsApp</button>
               <div className="border-t border-zinc-100 pt-2">
@@ -186,17 +186,17 @@ export function AdminRepairDetailPage() {
           <section className="card">
             <div className="card-head flex items-center justify-between gap-2">
               <div className="text-xl font-black tracking-tight text-zinc-900">Resumen</div>
-              <span className="badge-zinc">Código: {repairCodeLabel(item.id)}</span>
+              <span className="badge-zinc">CÃ³digo: {repairCodeLabel(item.id)}</span>
             </div>
             <div className="card-body space-y-2 text-sm">
               <Row label="Recibido" value={`${new Date(item.createdAt).toLocaleDateString('es-AR')} ${new Date(item.createdAt).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}`} />
-              <Row label="Entregado" value={status === 'DELIVERED' ? new Date(item.updatedAt).toLocaleDateString('es-AR') + ' ' + new Date(item.updatedAt).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) : '—'} />
+              <Row label="Entregado" value={status === 'DELIVERED' ? new Date(item.updatedAt).toLocaleDateString('es-AR') + ' ' + new Date(item.updatedAt).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) : 'â€”'} />
               <Row label="Precio final" value={`$ ${summary.final.toLocaleString('es-AR')}`} strong />
               <Row label="Pagado" value={`$ ${summary.paid.toLocaleString('es-AR')}`} strong />
               <Row label="Debe" value={`$ ${summary.due.toLocaleString('es-AR')}`} strong valueClass={summary.due > 0 ? 'text-rose-700' : 'text-emerald-700'} />
               <Row label="Reembolso total" value="No" strong />
               <div className="border-t border-zinc-100 pt-2" />
-              <Row label="Usuario asociado" value="—" strong />
+              <Row label="Usuario asociado" value="â€”" strong />
             </div>
           </section>
 
@@ -215,7 +215,7 @@ export function AdminRepairDetailPage() {
               <button type="button" onClick={() => void saveChanges()} disabled={saving} className="inline-flex h-11 w-full items-center justify-center rounded-2xl border border-zinc-300 bg-zinc-300 px-4 text-sm font-bold text-white disabled:opacity-80">
                 {saving ? 'Guardando...' : 'Guardar estado'}
               </button>
-              <p className="text-sm text-zinc-500">Si marcás “Entregado”, la garantía (si tiene días) se calcula desde la fecha de entrega.</p>
+              <p className="text-sm text-zinc-500">Si marcÃ¡s â€œEntregadoâ€, la garantÃ­a (si tiene dÃ­as) se calcula desde la fecha de entrega.</p>
             </div>
           </section>
 
@@ -242,7 +242,7 @@ export function AdminRepairDetailPage() {
 
         <section className="card">
           <div className="card-head flex items-center justify-between gap-2">
-            <div className="text-xl font-black tracking-tight text-zinc-900">Editar reparación</div>
+            <div className="text-xl font-black tracking-tight text-zinc-900">Editar reparaciÃ³n</div>
             <span className="badge-zinc">Se guarda en el momento</span>
           </div>
           <div className="card-body space-y-4">
@@ -258,21 +258,21 @@ export function AdminRepairDetailPage() {
                 <button type="button" className="btn-outline !h-10 !rounded-xl px-4 text-sm font-bold">+ Agregar falla</button>
               </div>
               <label className="block">
-                <span className="mb-1 block text-sm font-bold text-zinc-700">Diagnóstico</span>
+                <span className="mb-1 block text-sm font-bold text-zinc-700">DiagnÃ³stico</span>
                 <textarea value={diagnosis} onChange={(e) => setDiagnosis(e.target.value)} rows={4} className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm" />
               </label>
             </div>
 
             <label className="block">
               <span className="mb-1 block text-sm font-bold text-zinc-700">Detalle (opcional)</span>
-              <textarea value={detail} onChange={(e) => setDetail(e.target.value)} rows={3} placeholder="Ej: no carga, se apaga, se calentó, etc." className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm" />
+              <textarea value={detail} onChange={(e) => setDetail(e.target.value)} rows={3} placeholder="Ej: no carga, se apaga, se calentÃ³, etc." className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm" />
             </label>
 
             <div className="border-t border-zinc-200 pt-4" />
 
             <div className="grid gap-3 md:grid-cols-2">
               <label className="block"><span className="mb-1 block text-sm font-bold text-zinc-700">Nombre cliente</span><input value={customerName} onChange={(e) => setCustomerName(e.target.value)} className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm" /></label>
-              <label className="block"><span className="mb-1 block text-sm font-bold text-zinc-700">Teléfono cliente</span><input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm" /></label>
+              <label className="block"><span className="mb-1 block text-sm font-bold text-zinc-700">TelÃ©fono cliente</span><input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm" /></label>
             </div>
 
             <label className="block">
@@ -284,14 +284,14 @@ export function AdminRepairDetailPage() {
             </label>
 
             <div className="grid gap-3 md:grid-cols-2">
-              <label className="block"><span className="mb-1 block text-sm font-bold text-zinc-700">Repuesto elegido</span><input value={sparePart} onChange={(e) => setSparePart(e.target.value)} placeholder="Ej: módulo samsung a30" className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm" /></label>
+              <label className="block"><span className="mb-1 block text-sm font-bold text-zinc-700">Repuesto elegido</span><input value={sparePart} onChange={(e) => setSparePart(e.target.value)} placeholder="Ej: mÃ³dulo samsung a30" className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm" /></label>
               <label className="block"><span className="mb-1 block text-sm font-bold text-zinc-700">Referencia de compra</span><input value={purchaseRef} onChange={(e) => setPurchaseRef(e.target.value)} placeholder="URL o referencia" className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm" /></label>
             </div>
 
             <div className="flex items-center justify-between gap-3">
               <div>
                 <div className="text-sm font-bold text-zinc-700">Equipo</div>
-                <div className="text-sm text-zinc-600">Celular — {[deviceBrand, deviceModel].filter(Boolean).join(' ') || 'Sin equipo'}</div>
+                <div className="text-sm text-zinc-600">Celular â€” {[deviceBrand, deviceModel].filter(Boolean).join(' ') || 'Sin equipo'}</div>
               </div>
               <button type="button" className="btn-ghost !h-9 !rounded-xl px-3 text-sm font-bold">Ver equipo</button>
             </div>
@@ -313,8 +313,8 @@ export function AdminRepairDetailPage() {
 
             <div className="grid gap-3 md:grid-cols-3">
               <label className="block"><span className="mb-1 block text-sm font-bold text-zinc-700">Pagado</span><input value={paidAmount} onChange={(e) => setPaidAmount(e.target.value)} className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm" /></label>
-              <label className="block"><span className="mb-1 block text-sm font-bold text-zinc-700">Método</span><select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm"><option>Transferencia</option><option>Efectivo</option><option>Débito</option></select></label>
-              <label className="block"><span className="mb-1 block text-sm font-bold text-zinc-700">Garantía (días)</span><input value={warrantyDays} onChange={(e) => setWarrantyDays(e.target.value)} className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm" /></label>
+              <label className="block"><span className="mb-1 block text-sm font-bold text-zinc-700">MÃ©todo</span><select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm"><option>Transferencia</option><option>Efectivo</option><option>DÃ©bito</option></select></label>
+              <label className="block"><span className="mb-1 block text-sm font-bold text-zinc-700">GarantÃ­a (dÃ­as)</span><input value={warrantyDays} onChange={(e) => setWarrantyDays(e.target.value)} className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm" /></label>
             </div>
 
             <div className="grid gap-3 md:grid-cols-2">
@@ -345,4 +345,7 @@ function Row({ label, value, strong = false, valueClass = '' }: { label: string;
     </div>
   );
 }
+
+
+
 

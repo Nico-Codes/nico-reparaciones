@@ -94,6 +94,64 @@ export class StoreService {
     }
   }
 
+  async getBrandingAssets() {
+    try {
+      const keys = [
+        'brand_asset.logo_principal.path',
+        'brand_asset.icon_settings.path',
+        'brand_asset.icon_carrito.path',
+        'brand_asset.icon_logout.path',
+        'brand_asset.icon_consultar_reparacion.path',
+        'brand_asset.icon_mis_pedidos.path',
+        'brand_asset.icon_mis_reparaciones.path',
+        'brand_asset.icon_dashboard.path',
+        'brand_asset.icon_tienda.path',
+      ] as const;
+
+      const rows = await this.prisma.appSetting.findMany({ where: { key: { in: [...keys] } } });
+      const map = new Map(rows.map((r) => [r.key, r.value ?? '']));
+      const raw = {
+        logoPrincipal: map.get('brand_asset.logo_principal.path') || 'brand/logo.png',
+        iconSettings: map.get('brand_asset.icon_settings.path') || 'icons/settings.svg',
+        iconCarrito: map.get('brand_asset.icon_carrito.path') || 'icons/carrito.svg',
+        iconLogout: map.get('brand_asset.icon_logout.path') || 'icons/logout.svg',
+        iconConsultarReparacion: map.get('brand_asset.icon_consultar_reparacion.path') || 'icons/consultar-reparacion.svg',
+        iconMisPedidos: map.get('brand_asset.icon_mis_pedidos.path') || 'icons/mis-pedidos.svg',
+        iconMisReparaciones: map.get('brand_asset.icon_mis_reparaciones.path') || 'icons/mis-reparaciones.svg',
+        iconDashboard: map.get('brand_asset.icon_dashboard.path') || 'icons/dashboard.svg',
+        iconTienda: map.get('brand_asset.icon_tienda.path') || 'icons/tienda.svg',
+      };
+
+      return {
+        logoPrincipal: this.resolveHeroAssetUrl(raw.logoPrincipal) ?? '/brand/logo.png',
+        icons: {
+          settings: this.resolveHeroAssetUrl(raw.iconSettings),
+          carrito: this.resolveHeroAssetUrl(raw.iconCarrito),
+          logout: this.resolveHeroAssetUrl(raw.iconLogout),
+          consultarReparacion: this.resolveHeroAssetUrl(raw.iconConsultarReparacion),
+          misPedidos: this.resolveHeroAssetUrl(raw.iconMisPedidos),
+          misReparaciones: this.resolveHeroAssetUrl(raw.iconMisReparaciones),
+          dashboard: this.resolveHeroAssetUrl(raw.iconDashboard),
+          tienda: this.resolveHeroAssetUrl(raw.iconTienda),
+        },
+      };
+    } catch {
+      return {
+        logoPrincipal: this.resolveHeroAssetUrl('brand/logo.png') ?? '/brand/logo.png',
+        icons: {
+          settings: this.resolveHeroAssetUrl('icons/settings.svg'),
+          carrito: this.resolveHeroAssetUrl('icons/carrito.svg'),
+          logout: this.resolveHeroAssetUrl('icons/logout.svg'),
+          consultarReparacion: this.resolveHeroAssetUrl('icons/consultar-reparacion.svg'),
+          misPedidos: this.resolveHeroAssetUrl('icons/mis-pedidos.svg'),
+          misReparaciones: this.resolveHeroAssetUrl('icons/mis-reparaciones.svg'),
+          dashboard: this.resolveHeroAssetUrl('icons/dashboard.svg'),
+          tienda: this.resolveHeroAssetUrl('icons/tienda.svg'),
+        },
+      };
+    }
+  }
+
   async listProducts(params: ListProductsParams) {
     const q = (params.q ?? '').trim();
     const categorySlug = (params.category ?? '').trim();

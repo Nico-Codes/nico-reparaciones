@@ -90,6 +90,15 @@ export class CatalogAdminService {
     };
   }
 
+  async product(id: string) {
+    const item = await this.prisma.product.findUnique({
+      where: { id },
+      include: { category: { select: { id: true, name: true, slug: true } } },
+    });
+    if (!item) throw new NotFoundException('Producto no encontrado');
+    return { item: this.serializeProduct(item) };
+  }
+
   async createProduct(input: {
     name: string;
     slug: string;

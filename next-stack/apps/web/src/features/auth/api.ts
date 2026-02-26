@@ -37,7 +37,7 @@ export const authApi = {
       body: JSON.stringify(input),
     });
   },
-  login(input: { email: string; password: string }) {
+  login(input: { email: string; password: string; twoFactorCode?: string }) {
     return request<AuthResponse>('/auth/login', {
       method: 'POST',
       body: JSON.stringify(input),

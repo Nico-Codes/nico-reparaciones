@@ -164,6 +164,7 @@ export class RepairsService {
       finalPrice: repair.finalPrice != null ? Number(repair.finalPrice) : null,
       notesUpdated: notes !== undefined,
     });
+    await this.createRepairWhatsappLog(repair);
     return { item: this.serializeRepair(repair) };
   }
 
@@ -379,5 +380,107 @@ export class RepairsService {
     if (beforeFinal !== afterFinal) changed.push('finalPrice');
 
     return changed;
+  }
+
+  private async createRepairWhatsappLog(repair: Repair) {
+    try {
+      const statusKey = this.repairStatusTemplateKey(repair.status);
+      const webBase = this.getWebBaseUrl();
+      const settingsKeys = [
+        `whatsapp_repairs_template.${statusKey}.body`,
+        'shop_address',
+        'shop_hours',
+      ];
+      const rows = await this.prisma.appSetting.findMany({ where: { key: { in: settingsKeys } } });
+      const map = new Map(rows.map((r) => [r.key, r.value ?? '']));
+      const template = (map.get(`whatsapp_repairs_template.${statusKey}.body`) || '').trim() || this.defaultRepairWhatsappTemplate(statusKey);
+      const vars: Record<string, string> = {
+        customer_name: (repair.customerName || 'Cliente').trim(),
+        code: repair.id,
+        status: statusKey,
+        status_label: this.repairStatusLabel(repair.status),
+        lookup_url: `${webBase}/reparacion`,
+        phone: (repair.customerPhone || '').trim(),
+        device_brand: (repair.deviceBrand || '').trim(),
+        device_model: (repair.deviceModel || '').trim(),
+        device: [repair.deviceBrand, repair.deviceModel].filter(Boolean).join(' ').trim(),
+        final_price: repair.finalPrice != null ? `$${Number(repair.finalPrice).toLocaleString('es-AR')}` : '',
+        warranty_days: '',
+        approval_url: '',
+        shop_address: (map.get('shop_address') || '').trim(),
+        shop_hours: (map.get('shop_hours') || '').trim(),
+      };
+      const message = this.applyTemplateVars(template, vars);
+      await this.prisma.whatsAppLog.create({
+        data: {
+          channel: 'repairs',
+          templateKey: `repairs.${statusKey}`,
+          targetType: 'repair',
+          targetId: repair.id,
+          phone: repair.customerPhone ?? null,
+          recipient: repair.customerName ?? null,
+          status: 'PENDING',
+          message,
+          metaJson: JSON.stringify({
+            source: 'admin_status_change',
+            repairId: repair.id,
+            status: repair.status,
+          }),
+        },
+      });
+    } catch {
+      // no bloquear flujo de negocio
+    }
+  }
+
+  private repairStatusTemplateKey(status: Repair['status']) {
+    if (status === 'RECEIVED') return 'received';
+    if (status === 'DIAGNOSING') return 'diagnosing';
+    if (status === 'WAITING_APPROVAL') return 'waiting_approval';
+    if (status === 'REPAIRING') return 'repairing';
+    if (status === 'READY_PICKUP') return 'ready_pickup';
+    if (status === 'DELIVERED') return 'delivered';
+    if (status === 'CANCELLED') return 'cancelled';
+    return 'received';
+  }
+
+  private repairStatusLabel(status: Repair['status']) {
+    const map: Record<string, string> = {
+      RECEIVED: 'Recibido',
+      DIAGNOSING: 'Diagnosticando',
+      WAITING_APPROVAL: 'Esperando aprobacion',
+      REPAIRING: 'En reparacion',
+      READY_PICKUP: 'Listo para retirar',
+      DELIVERED: 'Entregado',
+      CANCELLED: 'Cancelado',
+    };
+    return map[status] ?? status;
+  }
+
+  private defaultRepairWhatsappTemplate(statusKey: string) {
+    const base = [
+      'Hola {customer_name}',
+      'Tu reparación ({code}) está en estado: *{status_label}*.',
+      '',
+      'Podés consultar el estado en: {lookup_url}',
+      'Código: {code}',
+      'Equipo: {device}',
+      'NicoReparaciones',
+    ];
+    if (statusKey === 'waiting_approval') {
+      base.splice(2, 0, 'Necesitamos tu aprobación para continuar.', 'Aprobá o rechazá acá: {approval_url}', '');
+    }
+    if (statusKey === 'ready_pickup') {
+      base.splice(2, 0, '¡Ya está lista para retirar!', '', 'Dirección: {shop_address}', 'Horarios: {shop_hours}', '');
+    }
+    return base.join('\n');
+  }
+
+  private applyTemplateVars(template: string, vars: Record<string, string>) {
+    return template.replace(/\{([a-zA-Z0-9_]+)\}/g, (_m, key) => vars[key] ?? '');
+  }
+
+  private getWebBaseUrl() {
+    return (((process.env.WEB_URL ?? '').trim() || 'http://localhost:5174')).replace(/\/+$/, '');
   }
 }

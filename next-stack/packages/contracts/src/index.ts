@@ -11,6 +11,7 @@ export type HealthResponse = z.infer<typeof healthResponseSchema>;
 export const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
+  twoFactorCode: z.string().trim().min(6).max(12).optional(),
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;

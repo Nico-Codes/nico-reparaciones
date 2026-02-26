@@ -57,6 +57,70 @@ export class MailService {
     return { ok: true, simulated: false, subject };
   }
 
+  async sendText(input: { to: string | string[]; subject: string; text: string }) {
+    const businessName = await this.getSetting('business_name', 'NicoReparaciones');
+    const fromName = await this.getSetting('mail_from_name', businessName);
+    const fromAddress = await this.getSetting('mail_from_address', '');
+    const recipients = Array.isArray(input.to) ? input.to : [input.to];
+    const normalizedTo = recipients.map((r) => r.trim()).filter(Boolean);
+
+    if (!normalizedTo.length) {
+      return { ok: false, skipped: true, reason: 'no_recipients' as const };
+    }
+
+    const transporter = await this.getTransporter();
+    if (!transporter || !fromAddress) {
+      this.logger.log(
+        `[MAIL:FALLBACK] raw to=${normalizedTo.join(',')} subject="${input.subject}" body="${input.text.slice(0, 500)}"`,
+      );
+      return { ok: true, simulated: true, subject: input.subject };
+    }
+
+    await transporter.sendMail({
+      from: `${fromName} <${fromAddress}>`,
+      to: normalizedTo.join(', '),
+      subject: input.subject,
+      text: input.text,
+    });
+
+    return { ok: true, simulated: false, subject: input.subject };
+  }
+
+  async smtpHealth() {
+    const host = (process.env.SMTP_HOST ?? '').trim();
+    const port = Number(process.env.SMTP_PORT || 0);
+    const user = (process.env.SMTP_USER ?? '').trim();
+    const fromAddress = (await this.getSetting('mail_from_address', '')).trim();
+    const fromName = (await this.getSetting('mail_from_name', 'NicoReparaciones')).trim();
+    const issues: string[] = [];
+
+    if (!host) issues.push('Falta SMTP_HOST');
+    if (!port) issues.push('Falta SMTP_PORT');
+    if (!fromAddress) issues.push('Falta mail_from_address en configuracion');
+
+    const mailer = host && port ? 'smtp' : 'log';
+    const status = issues.length === 0 ? 'ok' : host || port ? 'warning' : 'local';
+    const label = status === 'ok' ? 'Listo' : status === 'local' ? 'Local / fallback' : 'Incompleto';
+    const summary =
+      status === 'ok'
+        ? `Configuracion SMTP lista${user ? ` (${user})` : ''}.`
+        : status === 'local'
+          ? 'SMTP no configurado. Se usara fallback local por logs.'
+          : 'Configuracion SMTP incompleta para envio real.';
+
+    return {
+      status,
+      label,
+      summary,
+      mailer,
+      host: host || null,
+      port: port || null,
+      from_name: fromName || null,
+      from_address: fromAddress || null,
+      issues,
+    };
+  }
+
   private async loadTemplate(templateKey: TemplateKey) {
     const defaults: Record<TemplateKey, { subject: string; body: string; enabled: boolean }> = {
       verify_email: {

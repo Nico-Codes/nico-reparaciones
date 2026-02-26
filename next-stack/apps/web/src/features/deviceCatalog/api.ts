@@ -35,8 +35,11 @@ export const deviceCatalogApi = {
   createModel(input: { brandId: string; name: string; slug: string }) {
     return req('/device-catalog/models', { method: 'POST', body: JSON.stringify(input) });
   },
-  createIssue(input: { name: string; slug: string }) {
+  createIssue(input: { name: string; slug: string; active?: boolean }) {
     return req('/device-catalog/issues', { method: 'POST', body: JSON.stringify(input) });
+  },
+  updateIssue(id: string, input: { name?: string; slug?: string; active?: boolean }) {
+    return req(`/device-catalog/issues/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(input) });
   },
   deleteBrand(id: string) {
     return req(`/device-catalog/brands/${encodeURIComponent(id)}`, { method: 'DELETE' });

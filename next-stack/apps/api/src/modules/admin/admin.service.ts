@@ -1,12 +1,38 @@
-import { Inject, Injectable } from '@nestjs/common';
+﻿import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { Prisma, type AppSetting, type HelpFaqItem, type UserRole, type WhatsAppLog } from '@prisma/client';
+import { mkdir, unlink, writeFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import path from 'node:path';
+import { MailService } from '../mail/mail.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 @Injectable()
 export class AdminService {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(MailService) private readonly mailService: MailService,
+  ) {}
   private readonly openRepairStatuses = ['RECEIVED', 'DIAGNOSING', 'WAITING_APPROVAL', 'REPAIRING', 'READY_PICKUP'] as const;
   private readonly pendingOrderStatuses = ['PENDIENTE', 'CONFIRMADO', 'PREPARANDO'] as const;
+  private readonly brandAssetSlots = {
+    favicon_ico: { settingKey: 'brand_asset.favicon_ico.path', defaultPath: 'favicon.ico', fileBase: 'favicon-ico', maxKb: 1024, allowedExts: ['ico'] },
+    favicon_16: { settingKey: 'brand_asset.favicon_16.path', defaultPath: 'favicon-16x16.png', fileBase: 'favicon-16x16', maxKb: 1024, allowedExts: ['png', 'ico', 'webp'] },
+    favicon_32: { settingKey: 'brand_asset.favicon_32.path', defaultPath: 'favicon-32x32.png', fileBase: 'favicon-32x32', maxKb: 1024, allowedExts: ['png', 'ico', 'webp'] },
+    android_192: { settingKey: 'brand_asset.android_192.path', defaultPath: 'android-chrome-192x192.png', fileBase: 'android-192', maxKb: 2048, allowedExts: ['png', 'jpg', 'jpeg', 'webp'] },
+    android_512: { settingKey: 'brand_asset.android_512.path', defaultPath: 'android-chrome-512x512.png', fileBase: 'android-512', maxKb: 4096, allowedExts: ['png', 'jpg', 'jpeg', 'webp'] },
+    apple_touch: { settingKey: 'brand_asset.apple_touch.path', defaultPath: 'apple-touch-icon.png', fileBase: 'apple-touch', maxKb: 2048, allowedExts: ['png', 'jpg', 'jpeg', 'webp'] },
+    store_hero_desktop: { settingKey: 'store_hero_image_desktop', defaultPath: '', fileBase: 'store-hero-desktop', maxKb: 6144, allowedExts: ['png', 'jpg', 'jpeg', 'webp'] },
+    store_hero_mobile: { settingKey: 'store_hero_image_mobile', defaultPath: '', fileBase: 'store-hero-mobile', maxKb: 4096, allowedExts: ['png', 'jpg', 'jpeg', 'webp'] },
+    icon_settings: { settingKey: 'brand_asset.icon_settings.path', defaultPath: 'icons/settings.svg', fileBase: 'icon-settings', maxKb: 2048, allowedExts: ['svg', 'png', 'jpg', 'jpeg', 'webp'] },
+    icon_carrito: { settingKey: 'brand_asset.icon_carrito.path', defaultPath: 'icons/carrito.svg', fileBase: 'icon-carrito', maxKb: 2048, allowedExts: ['svg', 'png', 'jpg', 'jpeg', 'webp'] },
+    icon_logout: { settingKey: 'brand_asset.icon_logout.path', defaultPath: 'icons/logout.svg', fileBase: 'icon-logout', maxKb: 2048, allowedExts: ['svg', 'png', 'jpg', 'jpeg', 'webp'] },
+    icon_consultar_reparacion: { settingKey: 'brand_asset.icon_consultar_reparacion.path', defaultPath: 'icons/consultar-reparacion.svg', fileBase: 'icon-consultar-reparacion', maxKb: 2048, allowedExts: ['svg', 'png', 'jpg', 'jpeg', 'webp'] },
+    icon_mis_pedidos: { settingKey: 'brand_asset.icon_mis_pedidos.path', defaultPath: 'icons/mis-pedidos.svg', fileBase: 'icon-mis-pedidos', maxKb: 2048, allowedExts: ['svg', 'png', 'jpg', 'jpeg', 'webp'] },
+    icon_mis_reparaciones: { settingKey: 'brand_asset.icon_mis_reparaciones.path', defaultPath: 'icons/mis-reparaciones.svg', fileBase: 'icon-mis-reparaciones', maxKb: 2048, allowedExts: ['svg', 'png', 'jpg', 'jpeg', 'webp'] },
+    icon_dashboard: { settingKey: 'brand_asset.icon_dashboard.path', defaultPath: 'icons/dashboard.svg', fileBase: 'icon-dashboard', maxKb: 2048, allowedExts: ['svg', 'png', 'jpg', 'jpeg', 'webp'] },
+    icon_tienda: { settingKey: 'brand_asset.icon_tienda.path', defaultPath: 'icons/tienda.svg', fileBase: 'icon-tienda', maxKb: 2048, allowedExts: ['svg', 'png', 'jpg', 'jpeg', 'webp'] },
+    logo_principal: { settingKey: 'brand_asset.logo_principal.path', defaultPath: 'brand/logo.png', fileBase: 'logo-principal', maxKb: 4096, allowedExts: ['png', 'jpg', 'jpeg', 'webp', 'svg'] },
+  } as const;
 
   async dashboard() {
     const now = new Date();
@@ -62,7 +88,7 @@ export class AdminService {
     if (outOfStockProducts > 0) alerts.push({ id: 'stock-out', severity: 'high', title: 'Productos sin stock', value: outOfStockProducts });
     if (lowStockProducts > 0) alerts.push({ id: 'stock-low', severity: 'medium', title: 'Productos con stock bajo', value: lowStockProducts });
     if (repairsReadyPickup > 0) alerts.push({ id: 'repairs-ready', severity: 'low', title: 'Reparaciones listas para entregar', value: repairsReadyPickup });
-    if (ordersPending > 0) alerts.push({ id: 'orders-pending', severity: 'medium', title: 'Pedidos pendientes/preparación', value: ordersPending });
+    if (ordersPending > 0) alerts.push({ id: 'orders-pending', severity: 'medium', title: 'Pedidos pendientes/preparaciÃ³n', value: ordersPending });
 
     return {
       metrics: {
@@ -149,11 +175,11 @@ export class AdminService {
   async updateUserRole(targetUserId: string, roleRaw: string, actorUserId?: string | null) {
     const role = this.parseUserRole(roleRaw);
     if (!role) {
-      return { message: 'Rol inválido' };
+      return { message: 'Rol invÃ¡lido' };
     }
 
     if (actorUserId && actorUserId === targetUserId && role !== 'ADMIN') {
-      return { message: 'No podés quitarte el rol admin a vos mismo' };
+      return { message: 'No podÃ©s quitarte el rol admin a vos mismo' };
     }
 
     const user = await this.prisma.user.update({
@@ -181,16 +207,16 @@ export class AdminService {
 
     const defaults = [
       { key: 'business_name', group: 'business', label: 'Nombre del negocio', type: 'text', value: 'NicoReparaciones' },
-      { key: 'shop_phone', group: 'business', label: 'Tel�fono WhatsApp', type: 'text', value: '' },
+      { key: 'shop_phone', group: 'business', label: 'Teléfono WhatsApp', type: 'text', value: '' },
       { key: 'shop_email', group: 'business', label: 'Email del local', type: 'email', value: '' },
-      { key: 'store_hero_title', group: 'branding', label: 'T�tulo portada tienda', type: 'text', value: '' },
-      { key: 'store_hero_subtitle', group: 'branding', label: 'SubT�tulo portada tienda', type: 'textarea', value: '' },
+      { key: 'store_hero_title', group: 'branding', label: 'Título portada tienda', type: 'text', value: '' },
+      { key: 'store_hero_subtitle', group: 'branding', label: 'SubTítulo portada tienda', type: 'textarea', value: '' },
       { key: 'store_hero_image_desktop', group: 'branding', label: 'Imagen portada tienda (desktop)', type: 'text', value: '' },
       { key: 'store_hero_image_mobile', group: 'branding', label: 'Imagen portada tienda (mobile)', type: 'text', value: '' },
       { key: 'store_hero_fade_rgb_desktop', group: 'branding', label: 'Fade portada desktop (RGB)', type: 'text', value: '14, 165, 233' },
       { key: 'store_hero_fade_rgb_mobile', group: 'branding', label: 'Fade portada mobile (RGB)', type: 'text', value: '14, 165, 233' },
       { key: 'store_hero_fade_intensity', group: 'branding', label: 'Fade intensidad', type: 'number', value: '42' },
-      { key: 'store_hero_fade_size', group: 'branding', label: 'Fade tama�o px', type: 'number', value: '96' },
+      { key: 'store_hero_fade_size', group: 'branding', label: 'Fade tamaño px', type: 'number', value: '96' },
       { key: 'store_hero_fade_hold', group: 'branding', label: 'Fade hold %', type: 'number', value: '12' },
       { key: 'store_hero_fade_mid_alpha', group: 'branding', label: 'Fade alpha medio', type: 'text', value: '0.58' },
       { key: 'mail_from_name', group: 'email', label: 'Nombre remitente email', type: 'text', value: 'NicoReparaciones' },
@@ -284,28 +310,192 @@ export class AdminService {
     return { items: results };
   }
 
+  async sendWeeklyDashboardReportNow(rangeDaysRaw?: number | null) {
+    const configuredRange = Number(await this.getAppSettingValue('ops_weekly_report_range_days', '30'));
+    const rangeDays = [7, 30, 90].includes(Number(rangeDaysRaw)) ? Number(rangeDaysRaw) : ([7, 30, 90].includes(configuredRange) ? configuredRange : 30);
+    const recipients = await this.resolveWeeklyReportRecipients();
+    if (recipients.length === 0) {
+      throw new BadRequestException('No hay destinatarios configurados para el reporte semanal');
+    }
+
+    const dashboard = await this.dashboard();
+    const now = new Date();
+    const businessName = await this.getAppSettingValue('business_name', 'NicoReparaciones');
+
+    const text = [
+      `Reporte semanal dashboard ${businessName}`,
+      `Fecha: ${now.toISOString()}`,
+      `Rango: ultimos ${rangeDays} dias`,
+      '',
+      'KPIs',
+      `Productos totales: ${dashboard.metrics.products.total}`,
+      `Productos activos: ${dashboard.metrics.products.active}`,
+      `Stock bajo: ${dashboard.metrics.products.lowStock}`,
+      `Sin stock: ${dashboard.metrics.products.outOfStock}`,
+      `Reparaciones abiertas: ${dashboard.metrics.repairs.open}`,
+      `Reparaciones listas para retiro: ${dashboard.metrics.repairs.readyPickup}`,
+      `Pedidos en flujo pendiente: ${dashboard.metrics.orders.pendingFlow}`,
+      `Facturacion mes: ${dashboard.metrics.orders.revenueMonth}`,
+      '',
+      'Alertas activas',
+      ...(dashboard.alerts.length ? dashboard.alerts.map((a) => `- ${a.title}: ${a.value} (${a.severity})`) : ['- Sin alertas activas']),
+    ].join('\n');
+
+    const sendRes = await this.mailService.sendText({
+      to: recipients,
+      subject: `Reporte semanal dashboard ${businessName}`,
+      text,
+    });
+
+    return {
+      ok: true,
+      status: 'simulated' in sendRes && sendRes.simulated ? 'dry_run' : 'sent',
+      recipients,
+      rangeDays,
+    };
+  }
+
+  async sendOperationalAlertsNow() {
+    const now = new Date();
+    const recipients = await this.resolveOperationalAlertRecipients();
+    if (recipients.length === 0) {
+      await this.persistOperationalAlertsRun('failed', '', { orders: 0, repairs: 0 }, 'No recipients configured');
+      throw new BadRequestException('No hay destinatarios configurados para alertas operativas');
+    }
+
+    const orderStaleHours = Math.max(1, Math.min(720, Number(await this.getAppSettingValue('ops_alert_order_stale_hours', '24')) || 24));
+    const repairStaleDays = Math.max(1, Math.min(180, Number(await this.getAppSettingValue('ops_alert_repair_stale_days', '3')) || 3));
+    const dedupeMinutes = Math.max(5, Math.min(10080, Number(await this.getAppSettingValue('ops_operational_alerts_dedupe_minutes', '360')) || 360));
+
+    const staleOrdersCutoff = new Date(now.getTime() - orderStaleHours * 60 * 60 * 1000);
+    const staleRepairsCutoff = new Date(now.getTime() - repairStaleDays * 24 * 60 * 60 * 1000);
+    const [orders, repairs] = await Promise.all([
+      this.prisma.order.findMany({
+        where: { status: { in: [...this.pendingOrderStatuses] }, updatedAt: { lte: staleOrdersCutoff } },
+        orderBy: { updatedAt: 'asc' },
+        take: 100,
+        include: { user: { select: { name: true } } },
+      }),
+      this.prisma.repair.findMany({
+        where: { status: { in: [...this.openRepairStatuses] }, updatedAt: { lte: staleRepairsCutoff } },
+        orderBy: { updatedAt: 'asc' },
+        take: 100,
+      }),
+    ]);
+    const summary = { orders: orders.length, repairs: repairs.length };
+
+    const lastStatus = await this.getAppSettingValue('ops_operational_alerts_last_status', '');
+    const lastRunAtRaw = await this.getAppSettingValue('ops_operational_alerts_last_run_at', '');
+    const lastSummaryRaw = await this.getAppSettingValue('ops_operational_alerts_last_summary', '{}');
+    let lastSummary: { orders?: number; repairs?: number } = {};
+    try {
+      lastSummary = JSON.parse(lastSummaryRaw || '{}') ?? {};
+    } catch {
+      lastSummary = {};
+    }
+    const lastRunAt = lastRunAtRaw ? new Date(lastRunAtRaw) : null;
+    const dedupeCutoff = new Date(now.getTime() - dedupeMinutes * 60_000);
+    const deduped =
+      !!lastRunAt &&
+      !Number.isNaN(lastRunAt.getTime()) &&
+      lastRunAt >= dedupeCutoff &&
+      lastStatus === 'sent' &&
+      Number(lastSummary.orders ?? 0) === summary.orders &&
+      Number(lastSummary.repairs ?? 0) === summary.repairs;
+
+    if (deduped) {
+      await this.persistOperationalAlertsRun('deduped', recipients.join(', '), summary, '');
+      return { ok: true, status: 'deduped', recipients, summary };
+    }
+
+    if (summary.orders === 0 && summary.repairs === 0) {
+      await this.persistOperationalAlertsRun('no_alerts', recipients.join(', '), summary, '');
+      return { ok: true, status: 'no_alerts', recipients, summary };
+    }
+
+    const text = [
+      'Alertas operativas NicoReparaciones',
+      `Fecha: ${now.toISOString()}`,
+      `Pedidos alertados: ${summary.orders}`,
+      `Reparaciones alertadas: ${summary.repairs}`,
+      '',
+      'Pedidos',
+      ...(orders.length ? orders.map((o) => `- ${o.id} | ${o.status} | ${o.user?.name ?? 'Sin usuario'} | ${o.updatedAt.toISOString()}`) : ['- Sin pedidos alertados']),
+      '',
+      'Reparaciones',
+      ...(repairs.length ? repairs.map((r) => `- ${r.id} | ${r.status} | ${r.customerName} | ${r.updatedAt.toISOString()}`) : ['- Sin reparaciones alertadas']),
+    ].join('\n');
+
+    try {
+      const sendRes = await this.mailService.sendText({
+        to: recipients,
+        subject: `Alertas operativas: ${summary.orders} pedidos / ${summary.repairs} reparaciones`,
+        text,
+      });
+      const status = 'simulated' in sendRes && sendRes.simulated ? 'dry_run' : 'sent';
+      await this.persistOperationalAlertsRun(status, recipients.join(', '), summary, '');
+      return { ok: true, status, recipients, summary };
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Error enviando alertas';
+      await this.persistOperationalAlertsRun('failed', recipients.join(', '), summary, msg);
+      throw e;
+    }
+  }
+
+  async smtpStatus(defaultToEmail?: string | null) {
+    const smtpHealth = await this.mailService.smtpHealth();
+    return {
+      smtpDefaultTo: (defaultToEmail ?? '').trim(),
+      smtpHealth,
+    };
+  }
+
+  async sendSmtpTestEmail(to: string) {
+    const dest = to.trim();
+    if (!dest) throw new BadRequestException('Email destino requerido');
+    const businessName = await this.getAppSettingValue('business_name', 'NicoReparaciones');
+    const smtpHealth = await this.mailService.smtpHealth();
+    const sendRes = await this.mailService.sendText({
+      to: dest,
+      subject: `Prueba SMTP - ${businessName}`,
+      text: [
+        `Prueba SMTP de ${businessName}`,
+        '',
+        'Si recibiste este correo, la configuracion de mail del sistema responde correctamente.',
+        `Fecha: ${new Date().toISOString()}`,
+        `Estado actual SMTP: ${smtpHealth.label}`,
+      ].join('\n'),
+    });
+    return {
+      ok: true,
+      sentTo: dest,
+      status: 'simulated' in sendRes && sendRes.simulated ? 'dry_run' : 'sent',
+      smtpHealth,
+    };
+  }
+
   async mailTemplates() {
     const templates = [
       {
         templateKey: 'verify_email',
-        label: 'Verificación de correo',
-        description: 'Se envía al crear cuenta para verificar email.',
+        label: 'VerificaciÃ³n de correo',
+        description: 'Se envÃ­a al crear cuenta para verificar email.',
         subjectDefault: 'Verifica tu correo en {{business_name}}',
         bodyDefault:
           'Hola {{user_name}},\n\nUsa este enlace para verificar tu correo:\n{{verify_url}}\n\nSi no creaste esta cuenta, ignora este mensaje.',
       },
       {
         templateKey: 'reset_password',
-        label: 'Recuperación de contraseña',
-        description: 'Se envía cuando el usuario solicita restablecer contraseña.',
-        subjectDefault: 'Recuperar contraseña en {{business_name}}',
+        label: 'RecuperaciÃ³n de contraseÃ±a',
+        description: 'Se envÃ­a cuando el usuario solicita restablecer contraseÃ±a.',
+        subjectDefault: 'Recuperar contraseÃ±a en {{business_name}}',
         bodyDefault:
-          'Hola {{user_name}},\n\nRecibimos una solicitud para restablecer tu contraseña.\nUsa este enlace:\n{{reset_url}}\n\nSi no fuiste vos, ignora este mensaje.',
+          'Hola {{user_name}},\n\nRecibimos una solicitud para restablecer tu contraseÃ±a.\nUsa este enlace:\n{{reset_url}}\n\nSi no fuiste vos, ignora este mensaje.',
       },
       {
         templateKey: 'order_created',
         label: 'Compra confirmada',
-        description: 'Se envía al finalizar una compra.',
+        description: 'Se envÃ­a al finalizar una compra.',
         subjectDefault: 'Recibimos tu pedido {{order_id}}',
         bodyDefault:
           'Hola {{user_name}},\n\nTu pedido {{order_id}} fue recibido correctamente.\nTotal: {{order_total}}\n\nGracias por tu compra.',
@@ -393,17 +583,17 @@ export class AdminService {
     const templates = [
       {
         templateKey: 'repair_status_update',
-        label: 'Actualización de reparación',
+        label: 'ActualizaciÃ³n de reparaciÃ³n',
         description: 'Mensaje para avisar cambios de estado en reparaciones.',
         bodyDefault:
-          'Hola {{customer_name}}, tu reparación {{repair_id}} ahora está en estado: {{repair_status}}. {{extra_message}}',
+          'Hola {{customer_name}}, tu reparaciÃ³n {{repair_id}} ahora estÃ¡ en estado: {{repair_status}}. {{extra_message}}',
       },
       {
         templateKey: 'order_status_update',
-        label: 'Actualización de pedido',
+        label: 'ActualizaciÃ³n de pedido',
         description: 'Mensaje para avisar cambios de estado en pedidos.',
         bodyDefault:
-          'Hola {{customer_name}}, tu pedido {{order_id}} ahora está: {{order_status}}. Total: {{order_total}}',
+          'Hola {{customer_name}}, tu pedido {{order_id}} ahora estÃ¡: {{order_status}}. Total: {{order_total}}',
       },
     ];
 
@@ -610,6 +800,62 @@ export class AdminService {
     return { item: this.serializeHelpFaq(row) };
   }
 
+  async uploadBrandAsset(
+    slot: string,
+    file: { originalname: string; mimetype: string; size: number; buffer?: Buffer | Uint8Array },
+  ) {
+    const spec = this.brandAssetSlots[slot as keyof typeof this.brandAssetSlots];
+    if (!spec) throw new BadRequestException('Slot de asset no soportado');
+    const ext = this.detectFileExt(file.originalname);
+    const allowedExts = spec.allowedExts as readonly string[];
+    if (!ext || !allowedExts.includes(ext)) {
+      throw new BadRequestException(`Formato no permitido. Permitidos: ${allowedExts.join(', ')}`);
+    }
+    if (!file.buffer || !Buffer.isBuffer(file.buffer)) throw new BadRequestException('Archivo invalido');
+    if (file.size > spec.maxKb * 1024) throw new BadRequestException(`Archivo supera el maximo (${spec.maxKb} KB)`);
+
+    const publicRoot = this.resolveWebPublicDir();
+    const relPath = `brand-assets/identity/${spec.fileBase}.${ext}`;
+    const absPath = path.join(publicRoot, ...relPath.split('/'));
+    await mkdir(path.dirname(absPath), { recursive: true });
+    await writeFile(absPath, file.buffer);
+    await this.upsertSingleSetting(spec.settingKey, relPath, 'branding_assets', spec.settingKey, 'text');
+
+    return {
+      ok: true,
+      slot,
+      settingKey: spec.settingKey,
+      path: relPath,
+      url: this.toAbsoluteAssetUrl(relPath),
+      file: { originalName: file.originalname, mimeType: file.mimetype, size: file.size },
+    };
+  }
+
+  async resetBrandAsset(slot: string) {
+    const spec = this.brandAssetSlots[slot as keyof typeof this.brandAssetSlots];
+    if (!spec) throw new BadRequestException('Slot de asset no soportado');
+
+    const publicRoot = this.resolveWebPublicDir();
+    const identityDir = path.join(publicRoot, 'brand-assets', 'identity');
+    for (const ext of spec.allowedExts as readonly string[]) {
+      try {
+        await unlink(path.join(identityDir, `${spec.fileBase}.${ext}`));
+      } catch {
+        // ignore
+      }
+    }
+
+    await this.upsertSingleSetting(spec.settingKey, spec.defaultPath || '', 'branding_assets', spec.settingKey, 'text');
+    return {
+      ok: true,
+      slot,
+      settingKey: spec.settingKey,
+      path: spec.defaultPath || '',
+      url: spec.defaultPath ? this.toAbsoluteAssetUrl(spec.defaultPath) : null,
+      resetToDefault: true,
+    };
+  }
+
   private whatsappTemplatePlaceholders(templateKey: string) {
     if (templateKey === 'repair_status_update') {
       return ['{{customer_name}}', '{{repair_id}}', '{{repair_status}}', '{{extra_message}}'];
@@ -618,6 +864,90 @@ export class AdminService {
       return ['{{customer_name}}', '{{order_id}}', '{{order_status}}', '{{order_total}}'];
     }
     return ['{{customer_name}}'];
+  }
+
+  private async upsertSingleSetting(key: string, value: string, group: string, label: string, type: string) {
+    await this.prisma.appSetting.upsert({
+      where: { key },
+      create: { key, value, group, label, type },
+      update: { value, group, label, type },
+    });
+  }
+
+  private detectFileExt(filename: string) {
+    const ext = path.extname(filename || '').replace('.', '').trim().toLowerCase();
+    return ext || null;
+  }
+
+  private resolveWebPublicDir() {
+    const cwd = process.cwd();
+    const candidates = [
+      path.resolve(cwd, 'apps/web/public'),
+      path.resolve(cwd, '../web/public'),
+      path.resolve(cwd, '../../apps/web/public'),
+    ];
+    const found = candidates.find((p) => existsSync(p));
+    if (!found) throw new Error('No se pudo resolver apps/web/public');
+    return found;
+  }
+
+  private toAbsoluteAssetUrl(rawPath: string) {
+    const normalized = `/${rawPath.replace(/^\/+/, '')}`;
+    const base = ((process.env.API_URL ?? '').trim() || 'http://127.0.0.1:3001').replace(/\/+$/, '');
+    return `${base}${normalized}`;
+  }
+
+  private async getAppSettingValue(key: string, fallback = '') {
+    const row = await this.prisma.appSetting.findUnique({ where: { key } });
+    return row?.value ?? fallback;
+  }
+
+  private parseEmailList(raw: string) {
+    const seen = new Set<string>();
+    return raw
+      .split(',')
+      .map((v) => v.trim())
+      .filter((v) => v.includes('@'))
+      .filter((v) => {
+        const k = v.toLowerCase();
+        if (seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      });
+  }
+
+  private async resolveWeeklyReportRecipients() {
+    return this.parseEmailList(await this.getAppSettingValue('ops_weekly_report_emails', ''));
+  }
+
+  private async resolveOperationalAlertRecipients() {
+    const direct = this.parseEmailList(await this.getAppSettingValue('ops_operational_alerts_emails', ''));
+    if (direct.length) return direct;
+
+    const weekly = await this.resolveWeeklyReportRecipients();
+    if (weekly.length) return weekly;
+
+    const admins = await this.prisma.user.findMany({
+      where: { role: 'ADMIN' },
+      select: { email: true },
+      take: 50,
+    });
+    return this.parseEmailList(admins.map((a) => a.email).join(','));
+  }
+
+  private async persistOperationalAlertsRun(
+    status: string,
+    recipients: string,
+    summary: { orders: number; repairs: number },
+    error: string,
+  ) {
+    await this.upsertSettings([
+      { key: 'ops_operational_alerts_last_status', value: status, group: 'ops_reports', label: 'Operational alerts last status', type: 'text' },
+      { key: 'ops_operational_alerts_last_run_at', value: new Date().toISOString(), group: 'ops_reports', label: 'Operational alerts last run at', type: 'text' },
+      { key: 'ops_operational_alerts_last_recipients', value: recipients, group: 'ops_reports', label: 'Operational alerts last recipients', type: 'text' },
+      { key: 'ops_operational_alerts_last_summary', value: JSON.stringify(summary), group: 'ops_reports', label: 'Operational alerts last summary', type: 'json' },
+      { key: 'ops_operational_alerts_last_error', value: error, group: 'ops_reports', label: 'Operational alerts last error', type: 'text' },
+    ]);
   }
 
   private parseJson(value?: string | null) {
@@ -652,4 +982,5 @@ export class AdminService {
     };
   }
 }
+
 

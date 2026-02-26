@@ -5,6 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import type { AppSetting } from '@prisma/client';
 import type {
   BootstrapAdminInput,
   ForgotPasswordInput,
@@ -15,7 +16,7 @@ import type {
   VerifyEmailInput,
 } from '@nico/contracts';
 import * as bcrypt from 'bcryptjs';
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { UsersService } from './users.service.js';
 import { MailService } from '../mail/mail.service.js';
@@ -82,6 +83,20 @@ export class AuthService {
     const ok = await bcrypt.compare(input.password, user.passwordHash);
     if (!ok) {
       throw new UnauthorizedException('Credenciales invalidas');
+    }
+
+    if (user.role === 'ADMIN') {
+      const twoFa = await this.getAdminTwoFactorStatus(user.id);
+      if (twoFa.enabled) {
+        const code = (input as LoginInput & { twoFactorCode?: string }).twoFactorCode?.trim() ?? '';
+        if (!code) {
+          throw new UnauthorizedException('Codigo 2FA requerido');
+        }
+        const valid = await this.verifyAdminTwoFactorCode(user.id, code);
+        if (!valid) {
+          throw new UnauthorizedException('Codigo 2FA invalido');
+        }
+      }
     }
 
     const tokens = await this.issueTokens(user.id, user.email, user.role);
@@ -310,6 +325,78 @@ export class AuthService {
     };
   }
 
+  async getAdminTwoFactorStatus(userId: string) {
+    const user = await this.usersService.findById(userId);
+    if (!user) throw new UnauthorizedException('Usuario no encontrado');
+    const rows = await this.prisma.appSetting.findMany({
+      where: { key: { in: this.twoFactorKeys(userId) } },
+    });
+    const map = new Map(rows.map((r) => [r.key, r.value ?? '']));
+    const enabled = (map.get(this.twoFactorSettingKey(userId, 'enabled')) ?? '0') === '1';
+    const secret = (map.get(this.twoFactorSettingKey(userId, 'secret')) ?? '').trim();
+    const pendingSecret = (map.get(this.twoFactorSettingKey(userId, 'pending_secret')) ?? '').trim();
+    return {
+      enabled,
+      hasSecret: Boolean(secret),
+      hasPendingSecret: Boolean(pendingSecret),
+      accountEmail: user.email,
+      otpauthUrl: pendingSecret ? this.buildOtpAuthUrl(user.email, pendingSecret) : null,
+      pendingSecretMasked: pendingSecret ? this.maskSecret(pendingSecret) : null,
+    };
+  }
+
+  async generateAdminTwoFactorSecret(userId: string) {
+    const user = await this.usersService.findById(userId);
+    if (!user) throw new UnauthorizedException('Usuario no encontrado');
+    const secret = this.generateTotpSecret();
+    await this.upsertAppSetting(this.twoFactorSettingKey(userId, 'pending_secret'), secret, 'security_2fa', 'Admin 2FA pending secret', 'text');
+    await this.upsertAppSetting(this.twoFactorSettingKey(userId, 'enabled'), '0', 'security_2fa', 'Admin 2FA enabled', 'boolean');
+    return {
+      ok: true,
+      secret,
+      secretMasked: this.maskSecret(secret),
+      otpauthUrl: this.buildOtpAuthUrl(user.email, secret),
+      accountEmail: user.email,
+    };
+  }
+
+  async enableAdminTwoFactor(userId: string, code: string) {
+    const user = await this.usersService.findById(userId);
+    if (!user) throw new UnauthorizedException('Usuario no encontrado');
+    const pending = await this.getAppSetting(this.twoFactorSettingKey(userId, 'pending_secret'));
+    const secret = (pending ?? '').trim();
+    if (!secret) throw new BadRequestException('Primero genera un secreto 2FA');
+    if (!this.verifyTotpCode(secret, code)) throw new BadRequestException('Codigo 2FA invalido');
+
+    await this.upsertAppSetting(this.twoFactorSettingKey(userId, 'secret'), secret, 'security_2fa', 'Admin 2FA secret', 'text');
+    await this.upsertAppSetting(this.twoFactorSettingKey(userId, 'enabled'), '1', 'security_2fa', 'Admin 2FA enabled', 'boolean');
+    await this.upsertAppSetting(this.twoFactorSettingKey(userId, 'enabled_at'), new Date().toISOString(), 'security_2fa', 'Admin 2FA enabled at', 'text');
+    await this.upsertAppSetting(this.twoFactorSettingKey(userId, 'pending_secret'), '', 'security_2fa', 'Admin 2FA pending secret', 'text');
+    return { ok: true, enabled: true };
+  }
+
+  async disableAdminTwoFactor(userId: string, code?: string | null) {
+    const secret = ((await this.getAppSetting(this.twoFactorSettingKey(userId, 'secret'))) ?? '').trim();
+    const enabled = (((await this.getAppSetting(this.twoFactorSettingKey(userId, 'enabled'))) ?? '0') === '1');
+    if (enabled && secret) {
+      const normalized = (code ?? '').trim();
+      if (!normalized) throw new BadRequestException('Codigo 2FA requerido para desactivar');
+      if (!this.verifyTotpCode(secret, normalized)) throw new BadRequestException('Codigo 2FA invalido');
+    }
+    await this.upsertAppSetting(this.twoFactorSettingKey(userId, 'enabled'), '0', 'security_2fa', 'Admin 2FA enabled', 'boolean');
+    await this.upsertAppSetting(this.twoFactorSettingKey(userId, 'secret'), '', 'security_2fa', 'Admin 2FA secret', 'text');
+    await this.upsertAppSetting(this.twoFactorSettingKey(userId, 'pending_secret'), '', 'security_2fa', 'Admin 2FA pending secret', 'text');
+    return { ok: true, enabled: false };
+  }
+
+  async verifyAdminTwoFactorCode(userId: string, code: string) {
+    const enabled = (((await this.getAppSetting(this.twoFactorSettingKey(userId, 'enabled'))) ?? '0') === '1');
+    if (!enabled) return true;
+    const secret = ((await this.getAppSetting(this.twoFactorSettingKey(userId, 'secret'))) ?? '').trim();
+    if (!secret) return false;
+    return this.verifyTotpCode(secret, code);
+  }
+
   private async issueTokens(userId: string, email: string, role: 'USER' | 'ADMIN') {
     const payload: JwtPayload = { sub: userId, email, role };
     const accessToken = await this.jwtService.signAsync(payload);
@@ -416,5 +503,110 @@ export class AuthService {
       rawToken,
       previewToken: this.isPreviewEnabled() ? rawToken : null,
     };
+  }
+
+  private twoFactorKeys(userId: string) {
+    return [
+      this.twoFactorSettingKey(userId, 'enabled'),
+      this.twoFactorSettingKey(userId, 'secret'),
+      this.twoFactorSettingKey(userId, 'pending_secret'),
+      this.twoFactorSettingKey(userId, 'enabled_at'),
+    ];
+  }
+
+  private twoFactorSettingKey(userId: string, suffix: 'enabled' | 'secret' | 'pending_secret' | 'enabled_at') {
+    return `admin_2fa.${userId}.${suffix}`;
+  }
+
+  private async getAppSetting(key: string) {
+    const row = await this.prisma.appSetting.findUnique({ where: { key } });
+    return row?.value ?? null;
+  }
+
+  private async upsertAppSetting(key: string, value: string, group: string, label: string, type: string) {
+    await this.prisma.appSetting.upsert({
+      where: { key },
+      create: { key, value, group, label, type },
+      update: { value, group, label, type },
+    });
+  }
+
+  private generateTotpSecret() {
+    return this.base32Encode(randomBytes(20));
+  }
+
+  private verifyTotpCode(secretBase32: string, codeRaw: string) {
+    const code = codeRaw.replace(/\s+/g, '');
+    if (!/^\d{6}$/.test(code)) return false;
+    const now = Math.floor(Date.now() / 1000);
+    for (const drift of [-30, 0, 30]) {
+      const expected = this.generateTotpCode(secretBase32, now + drift);
+      if (timingSafeEqual(Buffer.from(code), Buffer.from(expected))) return true;
+    }
+    return false;
+  }
+
+  private generateTotpCode(secretBase32: string, unixTimeSeconds: number) {
+    const key = this.base32Decode(secretBase32);
+    const step = 30;
+    const counter = Math.floor(unixTimeSeconds / step);
+    const buf = Buffer.alloc(8);
+    buf.writeUInt32BE(Math.floor(counter / 0x100000000), 0);
+    buf.writeUInt32BE(counter >>> 0, 4);
+    const hmac = createHmac('sha1', key).update(buf).digest();
+    const offset = hmac[hmac.length - 1] & 0x0f;
+    const binCode =
+      ((hmac[offset] & 0x7f) << 24) |
+      ((hmac[offset + 1] & 0xff) << 16) |
+      ((hmac[offset + 2] & 0xff) << 8) |
+      (hmac[offset + 3] & 0xff);
+    return String(binCode % 1_000_000).padStart(6, '0');
+  }
+
+  private buildOtpAuthUrl(email: string, secretBase32: string) {
+    const issuer = encodeURIComponent('NicoReparaciones');
+    const label = encodeURIComponent(`NicoReparaciones:${email}`);
+    return `otpauth://totp/${label}?secret=${secretBase32}&issuer=${issuer}&algorithm=SHA1&digits=6&period=30`;
+  }
+
+  private maskSecret(secret: string) {
+    if (secret.length <= 8) return secret;
+    return `${secret.slice(0, 4)}••••${secret.slice(-4)}`;
+  }
+
+  private base32Encode(buf: Buffer) {
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+    let bits = 0;
+    let value = 0;
+    let output = '';
+    for (const byte of buf) {
+      value = (value << 8) | byte;
+      bits += 8;
+      while (bits >= 5) {
+        output += alphabet[(value >>> (bits - 5)) & 31];
+        bits -= 5;
+      }
+    }
+    if (bits > 0) output += alphabet[(value << (5 - bits)) & 31];
+    return output;
+  }
+
+  private base32Decode(input: string) {
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+    const clean = input.toUpperCase().replace(/=+$/g, '').replace(/[^A-Z2-7]/g, '');
+    let bits = 0;
+    let value = 0;
+    const out: number[] = [];
+    for (const ch of clean) {
+      const idx = alphabet.indexOf(ch);
+      if (idx < 0) continue;
+      value = (value << 5) | idx;
+      bits += 5;
+      if (bits >= 8) {
+        out.push((value >>> (bits - 8)) & 0xff);
+        bits -= 8;
+      }
+    }
+    return Buffer.from(out);
   }
 }

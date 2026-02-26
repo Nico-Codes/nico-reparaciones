@@ -206,6 +206,7 @@ export class OrdersService {
         items: { orderBy: { createdAt: 'asc' } },
       },
     });
+    await this.createOrderWhatsappLog(order);
     return { item: this.serializeOrder(order) };
   }
 
@@ -241,5 +242,104 @@ export class OrdersService {
         lineTotal: Number(i.lineTotal),
       })),
     };
+  }
+
+  private async createOrderWhatsappLog(order: OrderWithUserAndItems) {
+    try {
+      const statusKey = this.orderStatusTemplateKey(order.status);
+      const webBase = this.getWebBaseUrl();
+      const settingsKeys = [
+        `whatsapp_orders_template.${statusKey}.body`,
+        'business_name',
+        'shop_phone',
+        'shop_address',
+        'shop_hours',
+      ];
+      const rows = await this.prisma.appSetting.findMany({ where: { key: { in: settingsKeys } } });
+      const map = new Map(rows.map((r) => [r.key, r.value ?? '']));
+      const template = (map.get(`whatsapp_orders_template.${statusKey}.body`) || '').trim() || this.defaultOrderWhatsappTemplate(statusKey);
+      const vars: Record<string, string> = {
+        customer_name: (order.user?.name ?? 'Cliente').trim(),
+        order_id: order.id,
+        status: statusKey,
+        status_label: this.orderStatusLabel(order.status),
+        total: `$${Number(order.total).toLocaleString('es-AR')}`,
+        total_raw: String(Number(order.total)),
+        items_count: String(order.items.length),
+        items_summary: order.items.map((i) => `- ${i.nameSnapshot} x${i.quantity}`).join('\n'),
+        pickup_name: order.user?.name ?? '',
+        pickup_phone: '',
+        phone: '',
+        notes: '',
+        my_orders_url: `${webBase}/orders`,
+        store_url: `${webBase}/store`,
+        shop_address: (map.get('shop_address') || '').trim(),
+        shop_hours: (map.get('shop_hours') || '').trim(),
+        shop_phone: (map.get('shop_phone') || '').trim(),
+        shop_name: (map.get('business_name') || 'NicoReparaciones').trim(),
+      };
+      const message = this.applyTemplateVars(template, vars);
+      await this.prisma.whatsAppLog.create({
+        data: {
+          channel: 'orders',
+          templateKey: `orders.${statusKey}`,
+          targetType: 'order',
+          targetId: order.id,
+          phone: null,
+          recipient: order.user?.name ?? null,
+          status: 'PENDING',
+          message,
+          metaJson: JSON.stringify({
+            source: 'admin_status_change',
+            orderId: order.id,
+            status: order.status,
+          }),
+        },
+      });
+    } catch {
+      // no bloquear cambio de estado por log/plantilla
+    }
+  }
+
+  private orderStatusTemplateKey(status: OrderStatus) {
+    if (status === 'PENDIENTE') return 'pendiente';
+    if (status === 'CONFIRMADO') return 'confirmado';
+    if (status === 'PREPARANDO') return 'preparando';
+    if (status === 'LISTO_RETIRO') return 'listo_retirar';
+    if (status === 'ENTREGADO') return 'entregado';
+    if (status === 'CANCELADO') return 'cancelado';
+    return 'pendiente';
+  }
+
+  private orderStatusLabel(status: OrderStatus) {
+    if (status === 'LISTO_RETIRO') return 'Listo para retirar';
+    const lower = status.toLowerCase();
+    return lower.charAt(0).toUpperCase() + lower.slice(1);
+  }
+
+  private defaultOrderWhatsappTemplate(statusKey: string) {
+    const base = [
+      'Hola {customer_name}',
+      'Tu pedido *#{order_id}* está en estado: *{status_label}*.',
+      'Total: {total}',
+      'Ítems: {items_count}',
+      '',
+      '{items_summary}',
+      '',
+      'Ver tus pedidos: {my_orders_url}',
+      'Tienda: {store_url}',
+    ];
+    if (statusKey === 'listo_retirar') base.push('', 'Dirección: {shop_address}', 'Horarios: {shop_hours}', 'Teléfono: {shop_phone}');
+    if (statusKey === 'entregado') base.push('', 'Gracias por tu compra.');
+    if (statusKey === 'cancelado') base.push('', 'Si querés, lo revisamos por WhatsApp.');
+    return base.join('\n');
+  }
+
+  private applyTemplateVars(template: string, vars: Record<string, string>) {
+    return template.replace(/\{([a-zA-Z0-9_]+)\}/g, (_m, key) => vars[key] ?? '');
+  }
+
+  private getWebBaseUrl() {
+    return (((process.env.WEB_URL ?? '').trim() || 'http://localhost:5174')).replace(/\/+$/, '');
   }
 }

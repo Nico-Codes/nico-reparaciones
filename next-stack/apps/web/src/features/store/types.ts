@@ -48,3 +48,17 @@ export type StoreHeroConfig = {
   title?: string;
   subtitle?: string;
 };
+
+export type StoreBrandingAssets = {
+  logoPrincipal: string;
+  icons: {
+    settings: string | null;
+    carrito: string | null;
+    logout: string | null;
+    consultarReparacion: string | null;
+    misPedidos: string | null;
+    misReparaciones: string | null;
+    dashboard: string | null;
+    tienda: string | null;
+  };
+};

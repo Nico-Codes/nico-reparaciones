@@ -1,14 +1,28 @@
-import { Route, Routes, Link, Navigate, useParams } from 'react-router-dom';
-import { Wrench, ShoppingCart, ShieldCheck } from 'lucide-react';
+import { Route, Routes, Navigate, useParams } from 'react-router-dom';
 import { AdminDashboardPage } from '@/features/admin/AdminDashboardPage';
 import { AdminMailTemplatesPage } from '@/features/admin/AdminMailTemplatesPage';
 import { AdminSettingsPage } from '@/features/admin/AdminSettingsPage';
+import { AdminSettingsHubPage } from '@/features/admin/AdminSettingsHubPage';
+import { AdminSmtpSettingsPage } from '@/features/admin/AdminSmtpSettingsPage';
+import { AdminAutoReportsPage } from '@/features/admin/AdminAutoReportsPage';
+import { AdminBusinessSettingsPage } from '@/features/admin/AdminBusinessSettingsPage';
+import { AdminVisualIdentityPage } from '@/features/admin/AdminVisualIdentityPage';
+import { AdminStoreHeroSettingsPage } from '@/features/admin/AdminStoreHeroSettingsPage';
+import { Admin2faSecurityPage } from '@/features/admin/Admin2faSecurityPage';
+import { AdminCalculationsHubPage } from '@/features/admin/AdminCalculationsHubPage';
+import { AdminProductPricingRulesPage } from '@/features/admin/AdminProductPricingRulesPage';
+import { AdminRepairPricingRulesPage } from '@/features/admin/AdminRepairPricingRulesPage';
+import { AdminRepairPricingRuleCreatePage } from '@/features/admin/AdminRepairPricingRuleCreatePage';
+import { AdminModelGroupsPage } from '@/features/admin/AdminModelGroupsPage';
+import { AdminRepairTypesPage } from '@/features/admin/AdminRepairTypesPage';
+import { AdminDevicesCatalogPage } from '@/features/admin/AdminDevicesCatalogPage';
+import { AdminDeviceTypesPage } from '@/features/admin/AdminDeviceTypesPage';
 import { AdminUsersPage } from '@/features/admin/AdminUsersPage';
 import { AdminWhatsappPage } from '@/features/admin/AdminWhatsappPage';
+import { AdminWhatsappOrdersPage } from '@/features/admin/AdminWhatsappOrdersPage';
 import { AdminHelpFaqPage } from '@/features/admin/AdminHelpFaqPage';
 import { AdminAlertsPage } from '@/features/admin/AdminAlertsPage';
-import { Button } from '@/components/ui/button';
-import { AuthStatusCard } from '@/features/auth/AuthStatusCard';
+import { AdminAccountingPage } from '@/features/accounting/AdminAccountingPage';
 import { BootstrapAdminPage } from '@/features/auth/BootstrapAdminPage';
 import { ForgotPasswordPage } from '@/features/auth/ForgotPasswordPage';
 import { LoginPage } from '@/features/auth/LoginPage';
@@ -17,10 +31,11 @@ import { RequireAdmin } from '@/features/auth/RequireAdmin';
 import { RequireAuth } from '@/features/auth/RequireAuth';
 import { ResetPasswordPage } from '@/features/auth/ResetPasswordPage';
 import { VerifyEmailPage } from '@/features/auth/VerifyEmailPage';
+import { authStorage } from '@/features/auth/storage';
 import { CartPage } from '@/features/cart/CartPage';
 import { AdminProductsPage } from '@/features/catalogAdmin/AdminProductsPage';
+import { AdminProductEditPage } from '@/features/catalogAdmin/AdminProductEditPage';
 import { AdminDeviceCatalogPage } from '@/features/deviceCatalog/AdminDeviceCatalogPage';
-import { useCartCount } from '@/features/cart/useCart';
 import { CheckoutPage } from '@/features/orders/CheckoutPage';
 import { AdminOrdersPage } from '@/features/orders/AdminOrdersPage';
 import { AdminOrderDetailPage } from '@/features/orders/AdminOrderDetailPage';
@@ -30,68 +45,28 @@ import { MyOrdersPage } from '@/features/orders/MyOrdersPage';
 import { OrderDetailPage } from '@/features/orders/OrderDetailPage';
 import { AdminRepairsListPage } from '@/features/repairs/AdminRepairsListPage';
 import { AdminRepairDetailPage } from '@/features/repairs/AdminRepairDetailPage';
+import { AdminRepairPrintPage } from '@/features/repairs/AdminRepairPrintPage';
+import { AdminRepairTicketPage } from '@/features/repairs/AdminRepairTicketPage';
 import { MyRepairsPage } from '@/features/repairs/MyRepairsPage';
 import { PublicRepairLookupPage } from '@/features/repairs/PublicRepairLookupPage';
 import { RepairDetailPage } from '@/features/repairs/RepairDetailPage';
+import { AdminWarrantyCreatePage } from '@/features/warranties/AdminWarrantyCreatePage';
+import { AdminWarrantiesPage } from '@/features/warranties/AdminWarrantiesPage';
+import { AdminProvidersPage } from '@/features/providers/AdminProvidersPage';
 import { StorePage } from '@/features/store/StorePage';
 import { StoreProductDetailPage } from '@/features/store/StoreProductDetailPage';
 import { HelpPage } from '@/features/help/HelpPage';
 import { AppShell } from '@/layouts/AppShell';
 import { GlobalVisualEnhancements } from '@/components/GlobalVisualEnhancements';
 
-function HomePage() {
-  const cartCount = useCartCount();
-  return (
-    <div className="text-zinc-900">
-      <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-gradient-to-br from-sky-700 via-sky-600 to-cyan-500 p-8 text-white shadow-xl">
-        <div className="max-w-3xl">
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1 text-xs font-bold">
-            <ShieldCheck className="h-4 w-4" />
-            Migracion total en progreso
-          </div>
-          <h1 className="mt-4 text-3xl font-black tracking-tight md:text-5xl">
-            Nuevo stack: React + NestJS + Prisma + PostgreSQL
-          </h1>
-          <p className="mt-3 text-sm text-sky-50 md:text-base">
-            Base nueva en React/Nest con modulos del negocio ya migrados y QA automatizado.
-          </p>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Button asChild><Link to="/store">Ver Tienda</Link></Button>
-            <Button variant="secondary" asChild><Link to="/admin">Ver Admin</Link></Button>
-            <Button variant="outline" asChild><Link to="/repairs">Mis reparaciones</Link></Button>
-            <Button variant="outline" asChild><Link to="/auth/login">Probar Auth</Link></Button>
-            <Button variant="outline" asChild><Link to="/cart">Ver carrito{cartCount ? ` (${cartCount})` : ''}</Link></Button>
-          </div>
-        </div>
-      </section>
-
-      <section className="mt-8 grid gap-4 md:grid-cols-3">
-        <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-          <div className="mb-2 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-sky-50 text-sky-700"><ShoppingCart className="h-5 w-5" /></div>
-          <h2 className="text-lg font-black">Tienda</h2>
-          <p className="mt-1 text-sm text-zinc-600">Catalogo, filtros, carrito y checkout sobre API REST.</p>
-        </div>
-        <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-          <div className="mb-2 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700"><Wrench className="h-5 w-5" /></div>
-          <h2 className="text-lg font-black">Reparaciones</h2>
-          <p className="mt-1 text-sm text-zinc-600">Flujo de cliente y admin con pricing y trazabilidad de cambios.</p>
-        </div>
-        <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-          <div className="mb-2 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-violet-700"><ShieldCheck className="h-5 w-5" /></div>
-          <h2 className="text-lg font-black">Admin</h2>
-          <p className="mt-1 text-sm text-zinc-600">Panel con pedidos, productos, usuarios, ayuda, mails y WhatsApp.</p>
-        </div>
-      </section>
-
-      <section className="mt-8">
-        <AuthStatusCard />
-      </section>
-    </div>
-  );
-}
-
 function withShell(element: React.ReactNode) {
   return <AppShell>{element}</AppShell>;
+}
+
+function RootEntryRedirect() {
+  const user = authStorage.getUser();
+  if (user?.role === 'ADMIN') return <Navigate to="/admin" replace />;
+  return <Navigate to="/store" replace />;
 }
 
 function StoreCategoryAliasRedirect() {
@@ -100,12 +75,17 @@ function StoreCategoryAliasRedirect() {
   return <Navigate to={category ? `/store?category=${encodeURIComponent(category)}` : '/store'} replace />;
 }
 
+function AdminProductEditAliasRedirect() {
+  const { id = '' } = useParams();
+  return <Navigate to={id ? `/admin/productos/${encodeURIComponent(id)}/editar` : '/admin/productos'} replace />;
+}
+
 export default function App() {
   return (
     <>
       <GlobalVisualEnhancements />
       <Routes>
-        <Route path="/" element={withShell(<HomePage />)} />
+        <Route path="/" element={<RootEntryRedirect />} />
         <Route path="/auth/login" element={<LoginPage />} />
         <Route path="/auth/register" element={<RegisterPage />} />
         <Route path="/auth/verify-email" element={withShell(<VerifyEmailPage />)} />
@@ -131,14 +111,43 @@ export default function App() {
         <Route path="/admin/orders/:id" element={<RequireAdmin>{withShell(<AdminOrderDetailPage />)}</RequireAdmin>} />
         <Route path="/admin/orders/:id/print" element={<RequireAdmin><AdminOrderPrintPage /></RequireAdmin>} />
         <Route path="/admin/orders/:id/ticket" element={<RequireAdmin><AdminOrderTicketPage /></RequireAdmin>} />
-        <Route path="/admin/products" element={<RequireAdmin>{withShell(<AdminProductsPage />)}</RequireAdmin>} />
+        <Route path="/admin/products" element={<RequireAdmin><Navigate to="/admin/productos" replace /></RequireAdmin>} />
+        <Route path="/admin/products/:id/edit" element={<RequireAdmin><AdminProductEditAliasRedirect /></RequireAdmin>} />
+        <Route path="/admin/productos" element={<RequireAdmin>{withShell(<AdminProductsPage />)}</RequireAdmin>} />
+        <Route path="/admin/productos/:id/editar" element={<RequireAdmin>{withShell(<AdminProductEditPage />)}</RequireAdmin>} />
         <Route path="/admin/users" element={<RequireAdmin>{withShell(<AdminUsersPage />)}</RequireAdmin>} />
+        <Route path="/admin/configuraciones" element={<RequireAdmin>{withShell(<AdminSettingsHubPage />)}</RequireAdmin>} />
+        <Route path="/admin/configuracion/mail" element={<RequireAdmin>{withShell(<AdminSmtpSettingsPage />)}</RequireAdmin>} />
+        <Route path="/admin/configuracion/reportes" element={<RequireAdmin>{withShell(<AdminAutoReportsPage />)}</RequireAdmin>} />
+        <Route path="/admin/configuracion/negocio" element={<RequireAdmin>{withShell(<AdminBusinessSettingsPage />)}</RequireAdmin>} />
+        <Route path="/admin/configuracion/identidadvisual" element={<RequireAdmin>{withShell(<AdminVisualIdentityPage />)}</RequireAdmin>} />
+        <Route path="/admin/configuracion/portadatienda" element={<RequireAdmin>{withShell(<AdminStoreHeroSettingsPage />)}</RequireAdmin>} />
+        <Route path="/admin/seguridad/2fa" element={<RequireAdmin>{withShell(<Admin2faSecurityPage />)}</RequireAdmin>} />
+        <Route path="/admin/calculos" element={<RequireAdmin>{withShell(<AdminCalculationsHubPage />)}</RequireAdmin>} />
+        <Route path="/admin/calculos/productos" element={<RequireAdmin>{withShell(<AdminProductPricingRulesPage />)}</RequireAdmin>} />
+        <Route path="/admin/precios" element={<RequireAdmin>{withShell(<AdminRepairPricingRulesPage />)}</RequireAdmin>} />
+        <Route path="/admin/precios/crear" element={<RequireAdmin>{withShell(<AdminRepairPricingRuleCreatePage />)}</RequireAdmin>} />
+        <Route path="/admin/gruposmodelos" element={<RequireAdmin>{withShell(<AdminModelGroupsPage />)}</RequireAdmin>} />
+        <Route path="/admin/tiposreparacion" element={<RequireAdmin>{withShell(<AdminRepairTypesPage />)}</RequireAdmin>} />
+        <Route path="/admin/catalogodispositivos" element={<RequireAdmin>{withShell(<AdminDevicesCatalogPage />)}</RequireAdmin>} />
+        <Route path="/admin/tiposdispositivo" element={<RequireAdmin>{withShell(<AdminDeviceTypesPage />)}</RequireAdmin>} />
+        <Route path="/admin/device-types" element={<Navigate to="/admin/tiposdispositivo" replace />} />
         <Route path="/admin/settings" element={<RequireAdmin>{withShell(<AdminSettingsPage />)}</RequireAdmin>} />
         <Route path="/admin/mail-templates" element={<RequireAdmin>{withShell(<AdminMailTemplatesPage />)}</RequireAdmin>} />
         <Route path="/admin/whatsapp" element={<RequireAdmin>{withShell(<AdminWhatsappPage />)}</RequireAdmin>} />
+        <Route path="/admin/whatsapppedidos" element={<RequireAdmin>{withShell(<AdminWhatsappOrdersPage />)}</RequireAdmin>} />
         <Route path="/admin/help" element={<RequireAdmin>{withShell(<AdminHelpFaqPage />)}</RequireAdmin>} />
         <Route path="/admin/repairs" element={<RequireAdmin>{withShell(<AdminRepairsListPage />)}</RequireAdmin>} />
         <Route path="/admin/repairs/:id" element={<RequireAdmin>{withShell(<AdminRepairDetailPage />)}</RequireAdmin>} />
+        <Route path="/admin/repairs/:id/print" element={<RequireAdmin><AdminRepairPrintPage /></RequireAdmin>} />
+        <Route path="/admin/repairs/:id/ticket" element={<RequireAdmin><AdminRepairTicketPage /></RequireAdmin>} />
+        <Route path="/admin/garantias" element={<RequireAdmin>{withShell(<AdminWarrantiesPage />)}</RequireAdmin>} />
+        <Route path="/admin/warranties" element={<RequireAdmin><Navigate to="/admin/garantias" replace /></RequireAdmin>} />
+        <Route path="/admin/garantias/crear" element={<RequireAdmin>{withShell(<AdminWarrantyCreatePage />)}</RequireAdmin>} />
+        <Route path="/admin/proveedores" element={<RequireAdmin>{withShell(<AdminProvidersPage />)}</RequireAdmin>} />
+        <Route path="/admin/suppliers" element={<RequireAdmin><Navigate to="/admin/proveedores" replace /></RequireAdmin>} />
+        <Route path="/admin/contabilidad" element={<RequireAdmin>{withShell(<AdminAccountingPage />)}</RequireAdmin>} />
+        <Route path="/admin/accounting" element={<RequireAdmin><Navigate to="/admin/contabilidad" replace /></RequireAdmin>} />
         <Route path="/admin/device-catalog" element={<RequireAdmin>{withShell(<AdminDeviceCatalogPage />)}</RequireAdmin>} />
       </Routes>
     </>
