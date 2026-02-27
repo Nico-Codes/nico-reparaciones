@@ -37,11 +37,13 @@ const upsertMailTemplatesSchema = z.object({
 });
 
 const upsertWhatsappTemplatesSchema = z.object({
+  channel: z.enum(['repairs', 'orders']).optional(),
   items: z.array(
     z.object({
       templateKey: z.string().trim().min(1).max(120),
       body: z.string().max(20000),
       enabled: z.boolean().optional(),
+      channel: z.enum(['repairs', 'orders']).optional(),
     }),
   ).min(1).max(50),
 });
@@ -346,8 +348,8 @@ export class AdminController {
   }
 
   @Get('whatsapp-templates')
-  whatsappTemplates() {
-    return this.adminService.whatsappTemplates();
+  whatsappTemplates(@Query('channel') channel?: string) {
+    return this.adminService.whatsappTemplates({ channel });
   }
 
   @Patch('whatsapp-templates')
@@ -356,7 +358,7 @@ export class AdminController {
     if (!parsed.success) {
       return { message: 'Validacion invalida', errors: parsed.error.issues };
     }
-    return this.adminService.upsertWhatsappTemplates(parsed.data.items);
+    return this.adminService.upsertWhatsappTemplates(parsed.data);
   }
 
   @Get('whatsapp-logs')

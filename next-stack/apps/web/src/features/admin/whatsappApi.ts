@@ -18,6 +18,7 @@ async function authRequest<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export type WhatsappTemplateItem = {
+  channel?: 'repairs' | 'orders';
   templateKey: string;
   label: string;
   description: string;
@@ -41,13 +42,20 @@ export type WhatsappLogItem = {
 };
 
 export const whatsappApi = {
-  templates() {
-    return authRequest<{ items: WhatsappTemplateItem[] }>('/admin/whatsapp-templates');
+  templates(params?: { channel?: 'repairs' | 'orders' }) {
+    const qs = new URLSearchParams();
+    if (params?.channel) qs.set('channel', params.channel);
+    return authRequest<{ channel?: 'repairs' | 'orders'; items: WhatsappTemplateItem[] }>(
+      `/admin/whatsapp-templates${qs.size ? `?${qs.toString()}` : ''}`,
+    );
   },
-  saveTemplates(items: Array<Pick<WhatsappTemplateItem, 'templateKey' | 'body' | 'enabled'>>) {
+  saveTemplates(input: {
+    channel?: 'repairs' | 'orders';
+    items: Array<Pick<WhatsappTemplateItem, 'templateKey' | 'body' | 'enabled'> & { channel?: 'repairs' | 'orders' }>;
+  }) {
     return authRequest<{ ok: boolean; savedTemplates: string[] }>('/admin/whatsapp-templates', {
       method: 'PATCH',
-      body: JSON.stringify({ items }),
+      body: JSON.stringify(input),
     });
   },
   logs(params?: { channel?: string; status?: string; q?: string }) {
@@ -74,4 +82,3 @@ export const whatsappApi = {
     });
   },
 };
-

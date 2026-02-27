@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { adminSettingsApi, type AdminSettingItem } from './settingsApi';
 import { whatsappApi, type WhatsappLogItem } from './whatsappApi';
 
 type VariableInfo = {
@@ -96,7 +95,6 @@ function defaultTemplateBody(templateKey: string) {
 }
 
 export function AdminWhatsappPage() {
-  const [settings, setSettings] = useState<AdminSettingItem[]>([]);
   const [templates, setTemplates] = useState<Record<string, string>>(
     Object.fromEntries(TEMPLATE_ORDER.map((t) => [t.key, defaultTemplateBody(t.key)])),
   );
@@ -120,12 +118,11 @@ export function AdminWhatsappPage() {
     setLoading(true);
     setError('');
     try {
-      const res = await adminSettingsApi.list();
-      setSettings(res.items);
-      const map = new Map(res.items.map((s) => [s.key, s.value]));
+      const res = await whatsappApi.templates({ channel: 'repairs' });
+      const byTemplateKey = new Map(res.items.map((item) => [item.templateKey, item.body]));
       setTemplates(
         Object.fromEntries(
-          TEMPLATE_ORDER.map((t) => [t.key, map.get(repairTemplateKey(t.key)) ?? defaultTemplateBody(t.key)]),
+          TEMPLATE_ORDER.map((t) => [t.key, byTemplateKey.get(t.key) ?? defaultTemplateBody(t.key)]),
         ) as Record<string, string>,
       );
       await loadLogs();
@@ -153,19 +150,14 @@ export function AdminWhatsappPage() {
     setError('');
     setSuccess('');
     try {
-      const byKey = new Map(settings.map((s) => [s.key, s]));
-      const payload = TEMPLATE_ORDER.map((t) => {
-        const key = repairTemplateKey(t.key);
-        const existing = byKey.get(key);
-        return {
-          key,
-          value: templates[t.key] ?? '',
-          group: existing?.group ?? 'whatsapp_repair_templates',
-          label: existing?.label ?? `Plantilla WhatsApp reparaciones: ${t.title}`,
-          type: existing?.type ?? 'textarea',
-        };
+      await whatsappApi.saveTemplates({
+        channel: 'repairs',
+        items: TEMPLATE_ORDER.map((t) => ({
+          templateKey: t.key,
+          body: templates[t.key] ?? '',
+          enabled: true,
+        })),
       });
-      await adminSettingsApi.save(payload);
       setSuccess('Plantillas guardadas');
       await load();
     } catch (e) {
@@ -298,8 +290,4 @@ export function AdminWhatsappPage() {
       </section>
     </div>
   );
-}
-
-function repairTemplateKey(statusKey: string) {
-  return `whatsapp_repairs_template.${statusKey}.body`;
 }

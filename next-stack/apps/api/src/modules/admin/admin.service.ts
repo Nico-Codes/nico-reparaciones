@@ -141,6 +141,10 @@ export class AdminService {
   private readonly pendingOrderStatuses = ['PENDIENTE', 'CONFIRMADO', 'PREPARANDO'] as const;
   private readonly suppliersRegistrySettingKey = 'suppliers_registry';
   private readonly warrantyIncidentsSettingKey = 'warranty_incidents_registry';
+  private readonly suppliersLegacyMigrationDoneKey = 'migration.legacy.suppliers_registry.done';
+  private readonly warrantiesLegacyMigrationDoneKey = 'migration.legacy.warranty_incidents_registry.done';
+  private readonly deviceTypesLegacyMigrationDoneKey = 'migration.legacy.device_types_catalog.done';
+  private readonly modelGroupsLegacyMigrationPrefix = 'migration.legacy.device_model_groups';
   private readonly brandAssetSlots = {
     favicon_ico: { settingKey: 'brand_asset.favicon_ico.path', defaultPath: 'favicon.ico', fileBase: 'favicon-ico', maxKb: 1024, allowedExts: ['ico'] },
     favicon_16: { settingKey: 'brand_asset.favicon_16.path', defaultPath: 'favicon-16x16.png', fileBase: 'favicon-16x16', maxKb: 1024, allowedExts: ['png', 'ico', 'webp'] },
@@ -606,15 +610,19 @@ export class AdminService {
       orderBy: [{ active: 'desc' }, { name: 'asc' }],
     });
     if (items.length === 0) {
-      const bridgeItems = await this.readDeviceTypes();
-      for (const t of bridgeItems) {
-        const slugBase = this.slugify(t.slug || t.name) || 'tipo';
-        let slug = slugBase;
-        let idx = 2;
-        while (await this.prisma.deviceType.findUnique({ where: { slug } })) slug = `${slugBase}-${idx++}`;
-        await this.prisma.deviceType.create({
-          data: { name: t.name, slug, active: t.active },
-        });
+      const migrationDone = await this.isLegacyMigrationDone(this.deviceTypesLegacyMigrationDoneKey);
+      if (!migrationDone) {
+        const bridgeItems = await this.readDeviceTypes();
+        for (const t of bridgeItems) {
+          const slugBase = this.slugify(t.slug || t.name) || 'tipo';
+          let slug = slugBase;
+          let idx = 2;
+          while (await this.prisma.deviceType.findUnique({ where: { slug } })) slug = `${slugBase}-${idx++}`;
+          await this.prisma.deviceType.create({
+            data: { name: t.name, slug, active: t.active },
+          });
+        }
+        await this.markLegacyMigrationDone(this.deviceTypesLegacyMigrationDoneKey);
       }
       items = await this.prisma.deviceType.findMany({
         orderBy: [{ active: 'desc' }, { name: 'asc' }],
@@ -662,32 +670,45 @@ export class AdminService {
       orderBy: [{ active: 'desc' }, { name: 'asc' }],
     });
     if (groups.length === 0) {
-      const bridgeGroups = await this.readModelGroups(deviceBrandId);
-      for (const g of bridgeGroups) {
-        const slugBase = this.slugify(g.slug || g.name) || 'grupo';
-        let slug = slugBase;
-        let idx = 2;
-        while (await this.prisma.deviceModelGroup.findFirst({ where: { deviceBrandId, slug }, select: { id: true } })) slug = `${slugBase}-${idx++}`;
-        await this.prisma.deviceModelGroup.create({
-          data: { deviceBrandId, name: g.name, slug, active: g.active },
-        });
+      const migrationDone = await this.isLegacyMigrationDone(this.modelGroupsLegacyMigrationDoneKey(deviceBrandId));
+      if (!migrationDone) {
+        const bridgeGroups = await this.readModelGroups(deviceBrandId);
+        const legacyGroupToDbGroup = new Map<string, string>();
+        for (const g of bridgeGroups) {
+          const slugBase = this.slugify(g.slug || g.name) || 'grupo';
+          let slug = slugBase;
+          let idx = 2;
+          while (
+            await this.prisma.deviceModelGroup.findFirst({
+              where: { deviceBrandId, slug },
+              select: { id: true },
+            })
+          ) slug = `${slugBase}-${idx++}`;
+          const created = await this.prisma.deviceModelGroup.create({
+            data: { deviceBrandId, name: g.name, slug, active: g.active },
+          });
+          legacyGroupToDbGroup.set(g.id, created.id);
+        }
+
+        const bridgeAssignments = await this.readModelGroupAssignments(deviceBrandId);
+        for (const [modelId, legacyGroupId] of Object.entries(bridgeAssignments)) {
+          const dbGroupId = legacyGroupToDbGroup.get(legacyGroupId);
+          if (!dbGroupId) continue;
+          try {
+            await this.prisma.deviceModel.update({
+              where: { id: modelId },
+              data: { deviceModelGroupId: dbGroupId },
+            });
+          } catch {
+            // ignore invalid legacy assignment
+          }
+        }
+        await this.markLegacyMigrationDone(this.modelGroupsLegacyMigrationDoneKey(deviceBrandId));
       }
       groups = await this.prisma.deviceModelGroup.findMany({
         where: { deviceBrandId },
         orderBy: [{ active: 'desc' }, { name: 'asc' }],
       });
-
-      const bridgeAssignments = await this.readModelGroupAssignments(deviceBrandId);
-      const byLegacyName = new Map(bridgeGroups.map((g, idx) => [g.id, groups[idx]?.id]).filter((x): x is [string, string] => !!x[1]));
-      for (const [modelId, legacyGroupId] of Object.entries(bridgeAssignments)) {
-        const dbGroupId = byLegacyName.get(legacyGroupId);
-        if (!dbGroupId) continue;
-        try {
-          await this.prisma.deviceModel.update({ where: { id: modelId }, data: { deviceModelGroupId: dbGroupId } });
-        } catch {
-          // ignore invalid legacy assignment
-        }
-      }
     }
 
     const models = await this.prisma.deviceModel.findMany({
@@ -1518,7 +1539,12 @@ export class AdminService {
     return common;
   }
 
-  async whatsappTemplates() {
+  async whatsappTemplates(params?: { channel?: string }) {
+    const channel = (params?.channel ?? '').trim().toLowerCase();
+    if (channel === 'repairs' || channel === 'orders') {
+      return this.whatsappTemplatesByChannel(channel);
+    }
+
     const templates = [
       {
         templateKey: 'repair_status_update',
@@ -1558,35 +1584,85 @@ export class AdminService {
     };
   }
 
-  async upsertWhatsappTemplates(input: Array<{ templateKey: string; body: string; enabled?: boolean }>) {
-    const allowed = new Set(['repair_status_update', 'order_status_update']);
-    const items = input.filter((i) => allowed.has(i.templateKey));
-    for (const t of items) {
-      const base = `whatsapp_template.${t.templateKey}`;
-      await this.prisma.appSetting.upsert({
-        where: { key: `${base}.body` },
-        create: {
-          key: `${base}.body`,
-          value: t.body,
-          group: 'whatsapp_templates',
-          label: `${t.templateKey}.body`,
-          type: 'textarea',
-        },
-        update: { value: t.body, group: 'whatsapp_templates', type: 'textarea' },
-      });
-      await this.prisma.appSetting.upsert({
-        where: { key: `${base}.enabled` },
-        create: {
-          key: `${base}.enabled`,
-          value: t.enabled === false ? '0' : '1',
-          group: 'whatsapp_templates',
-          label: `${t.templateKey}.enabled`,
-          type: 'boolean',
-        },
-        update: { value: t.enabled === false ? '0' : '1', group: 'whatsapp_templates', type: 'boolean' },
-      });
+  async upsertWhatsappTemplates(input: {
+    channel?: 'repairs' | 'orders';
+    items: Array<{
+      templateKey: string;
+      body: string;
+      enabled?: boolean;
+      channel?: 'repairs' | 'orders';
+    }>;
+  }) {
+    const fallbackChannel = input.channel;
+    const repairTemplateKeys = new Set<string>(this.whatsappTemplateDefs('repairs').map((t) => t.templateKey));
+    const orderTemplateKeys = new Set<string>(this.whatsappTemplateDefs('orders').map((t) => t.templateKey));
+    const savedTemplates: string[] = [];
+
+    for (const t of input.items) {
+      const channel = t.channel ?? fallbackChannel;
+      if (channel === 'repairs' && repairTemplateKeys.has(t.templateKey)) {
+        const base = `whatsapp_repairs_template.${t.templateKey}`;
+        await this.upsertSingleSetting(
+          `${base}.body`,
+          t.body,
+          'whatsapp_repair_templates',
+          `Plantilla WhatsApp reparaciones: ${t.templateKey}`,
+          'textarea',
+        );
+        await this.upsertSingleSetting(
+          `${base}.enabled`,
+          t.enabled === false ? '0' : '1',
+          'whatsapp_repair_templates',
+          `Plantilla WhatsApp reparaciones habilitada: ${t.templateKey}`,
+          'boolean',
+        );
+        savedTemplates.push(`repairs.${t.templateKey}`);
+        continue;
+      }
+      if (channel === 'orders' && orderTemplateKeys.has(t.templateKey)) {
+        const base = `whatsapp_orders_template.${t.templateKey}`;
+        await this.upsertSingleSetting(
+          `${base}.body`,
+          t.body,
+          'whatsapp_order_templates',
+          `Plantilla WhatsApp pedidos: ${t.templateKey}`,
+          'textarea',
+        );
+        await this.upsertSingleSetting(
+          `${base}.enabled`,
+          t.enabled === false ? '0' : '1',
+          'whatsapp_order_templates',
+          `Plantilla WhatsApp pedidos habilitada: ${t.templateKey}`,
+          'boolean',
+        );
+        savedTemplates.push(`orders.${t.templateKey}`);
+        continue;
+      }
     }
-    return { ok: true, savedTemplates: items.map((i) => i.templateKey) };
+
+    // Backward compatibility for generic endpoint payloads.
+    const allowed = new Set(['repair_status_update', 'order_status_update']);
+    const legacyItems = input.items.filter((i) => !i.channel && !fallbackChannel && allowed.has(i.templateKey));
+    for (const t of legacyItems) {
+      const base = `whatsapp_template.${t.templateKey}`;
+      await this.upsertSingleSetting(
+        `${base}.body`,
+        t.body,
+        'whatsapp_templates',
+        `${t.templateKey}.body`,
+        'textarea',
+      );
+      await this.upsertSingleSetting(
+        `${base}.enabled`,
+        t.enabled === false ? '0' : '1',
+        'whatsapp_templates',
+        `${t.templateKey}.enabled`,
+        'boolean',
+      );
+      savedTemplates.push(t.templateKey);
+    }
+
+    return { ok: true, savedTemplates };
   }
 
   async whatsappLogs(params?: { channel?: string; status?: string; q?: string }) {
@@ -1795,6 +1871,174 @@ export class AdminService {
     };
   }
 
+  private async whatsappTemplatesByChannel(channel: 'repairs' | 'orders') {
+    const defs = this.whatsappTemplateDefs(channel);
+    const prefix = channel === 'repairs' ? 'whatsapp_repairs_template' : 'whatsapp_orders_template';
+    const keys = defs.flatMap((t) => [`${prefix}.${t.templateKey}.body`, `${prefix}.${t.templateKey}.enabled`]);
+    const rows = await this.prisma.appSetting.findMany({
+      where: { key: { in: keys } },
+      orderBy: { key: 'asc' },
+    });
+    const map = new Map(rows.map((r) => [r.key, r.value ?? '']));
+
+    return {
+      channel,
+      items: defs.map((t) => {
+        const bodyKey = `${prefix}.${t.templateKey}.body`;
+        const enabledKey = `${prefix}.${t.templateKey}.enabled`;
+        const body = (map.get(bodyKey) || '').trim() || this.defaultWhatsappTemplateBody(channel, t.templateKey);
+        const enabled = (map.get(enabledKey) || '1') !== '0';
+        return {
+          templateKey: t.templateKey,
+          label: t.label,
+          description: t.description,
+          body,
+          enabled,
+          placeholders: this.whatsappTemplatePlaceholdersByChannel(channel, t.templateKey),
+        };
+      }),
+    };
+  }
+
+  private whatsappTemplateDefs(channel: 'repairs' | 'orders') {
+    if (channel === 'repairs') {
+      return [
+        { templateKey: 'received', label: 'Recibido', description: 'Mensaje para reparacion recibida.' },
+        { templateKey: 'diagnosing', label: 'Diagnosticando', description: 'Mensaje para reparacion en diagnostico.' },
+        { templateKey: 'waiting_approval', label: 'Esperando aprobacion', description: 'Mensaje para solicitar aprobacion.' },
+        { templateKey: 'repairing', label: 'En reparacion', description: 'Mensaje para reparacion en curso.' },
+        { templateKey: 'ready_pickup', label: 'Listo para retirar', description: 'Mensaje para reparacion lista para retiro.' },
+        { templateKey: 'delivered', label: 'Entregado', description: 'Mensaje para reparacion entregada.' },
+        { templateKey: 'cancelled', label: 'Cancelado', description: 'Mensaje para reparacion cancelada.' },
+      ] as const;
+    }
+    return [
+      { templateKey: 'pendiente', label: 'Pendiente', description: 'Mensaje para pedido pendiente.' },
+      { templateKey: 'confirmado', label: 'Confirmado', description: 'Mensaje para pedido confirmado.' },
+      { templateKey: 'preparando', label: 'Preparando', description: 'Mensaje para pedido en preparacion.' },
+      { templateKey: 'listo_retirar', label: 'Listo para retirar', description: 'Mensaje para pedido listo para retiro.' },
+      { templateKey: 'entregado', label: 'Entregado', description: 'Mensaje para pedido entregado.' },
+      { templateKey: 'cancelado', label: 'Cancelado', description: 'Mensaje para pedido cancelado.' },
+    ] as const;
+  }
+
+  private defaultWhatsappTemplateBody(channel: 'repairs' | 'orders', templateKey: string) {
+    if (channel === 'repairs') {
+      if (templateKey === 'waiting_approval') {
+        return [
+          'Hola {customer_name}',
+          'Tu reparacion ({code}) esta en estado: *{status_label}*.',
+          'Necesitamos tu aprobacion para continuar.',
+          'Aproba o rechaza aca: {approval_url}',
+          '',
+          'Podes consultar el estado en: {lookup_url}',
+          'Codigo: {code}',
+          'Equipo: {device}',
+          'NicoReparaciones',
+        ].join('\n');
+      }
+      if (templateKey === 'ready_pickup') {
+        return [
+          'Hola {customer_name}',
+          'Tu reparacion ({code}) esta en estado: *{status_label}*.',
+          'Ya esta lista para retirar.',
+          '',
+          'Direccion: {shop_address}',
+          'Horarios: {shop_hours}',
+          '',
+          'Podes consultar el estado en: {lookup_url}',
+          'Codigo: {code}',
+          'Equipo: {device}',
+          'NicoReparaciones',
+        ].join('\n');
+      }
+      if (templateKey === 'delivered') {
+        return [
+          'Hola {customer_name}',
+          'Tu reparacion ({code}) esta en estado: *{status_label}*.',
+          'Gracias por tu visita.',
+          '',
+          'Podes consultar el estado en: {lookup_url}',
+          'Codigo: {code}',
+          'Equipo: {device}',
+          'NicoReparaciones',
+        ].join('\n');
+      }
+      return [
+        'Hola {customer_name}',
+        'Tu reparacion ({code}) esta en estado: *{status_label}*.',
+        '',
+        'Podes consultar el estado en: {lookup_url}',
+        'Codigo: {code}',
+        'Equipo: {device}',
+        'NicoReparaciones',
+      ].join('\n');
+    }
+
+    const base = [
+      'Hola {customer_name}',
+      'Tu pedido *#{order_id}* esta en estado: *{status_label}*.',
+      'Total: {total}',
+      'Items: {items_count}',
+      '',
+      '{items_summary}',
+      '',
+      'Ver tus pedidos: {my_orders_url}',
+      'Tienda: {store_url}',
+    ];
+    if (templateKey === 'listo_retirar') {
+      base.push('', 'Direccion: {shop_address}', 'Horarios: {shop_hours}', 'Telefono: {shop_phone}');
+    }
+    if (templateKey === 'entregado') {
+      base.push('', 'Gracias por tu compra.');
+    }
+    if (templateKey === 'cancelado') {
+      base.push('', 'Si queres, lo revisamos por WhatsApp.');
+    }
+    return base.join('\n');
+  }
+
+  private whatsappTemplatePlaceholdersByChannel(channel: 'repairs' | 'orders', _templateKey: string) {
+    if (channel === 'repairs') {
+      return [
+        '{customer_name}',
+        '{code}',
+        '{status}',
+        '{status_label}',
+        '{lookup_url}',
+        '{phone}',
+        '{device_brand}',
+        '{device_model}',
+        '{device}',
+        '{final_price}',
+        '{warranty_days}',
+        '{approval_url}',
+        '{shop_address}',
+        '{shop_hours}',
+      ];
+    }
+    return [
+      '{customer_name}',
+      '{order_id}',
+      '{status}',
+      '{status_label}',
+      '{total}',
+      '{total_raw}',
+      '{items_count}',
+      '{items_summary}',
+      '{pickup_name}',
+      '{pickup_phone}',
+      '{phone}',
+      '{notes}',
+      '{my_orders_url}',
+      '{store_url}',
+      '{shop_address}',
+      '{shop_hours}',
+      '{shop_phone}',
+      '{shop_name}',
+    ];
+  }
+
   private whatsappTemplatePlaceholders(templateKey: string) {
     if (templateKey === 'repair_status_update') {
       return ['{{customer_name}}', '{{repair_id}}', '{{repair_status}}', '{{extra_message}}'];
@@ -1841,54 +2085,67 @@ export class AdminService {
     return row?.value ?? fallback;
   }
 
+  private async isLegacyMigrationDone(key: string) {
+    const value = await this.getAppSettingValue(key, '0');
+    return value === '1';
+  }
+
+  private async markLegacyMigrationDone(key: string) {
+    await this.upsertSingleSetting(key, '1', 'migration', 'Legacy registry migration done', 'boolean');
+  }
+
   private async readSuppliersRegistry() {
     let rows = await this.prisma.supplier.findMany({
       orderBy: [{ searchPriority: 'asc' }, { name: 'asc' }],
     });
 
     if (rows.length === 0) {
-      const legacy = await this.readLegacySuppliersRegistry();
-      if (legacy.length > 0) {
-        for (const row of legacy) {
-          await this.prisma.supplier.upsert({
-            where: { id: row.id },
-            create: {
-              id: row.id,
-              name: row.name,
-              phone: row.phone,
-              notes: row.notes,
-              active: row.active,
-              searchPriority: row.searchPriority,
-              searchEnabled: row.searchEnabled,
-              searchMode: row.searchMode,
-              searchEndpoint: row.searchEndpoint,
-              searchConfigJson: row.searchConfigJson,
-              lastProbeStatus: row.lastProbeStatus,
-              lastProbeQuery: row.lastProbeQuery,
-              lastProbeCount: row.lastProbeCount,
-              lastProbeError: row.lastProbeError,
-              lastProbeAt: row.lastProbeAt ? new Date(row.lastProbeAt) : null,
-              createdAt: new Date(row.createdAt),
-              updatedAt: new Date(row.updatedAt),
-            },
-            update: {
-              name: row.name,
-              phone: row.phone,
-              notes: row.notes,
-              active: row.active,
-              searchPriority: row.searchPriority,
-              searchEnabled: row.searchEnabled,
-              searchMode: row.searchMode,
-              searchEndpoint: row.searchEndpoint,
-              searchConfigJson: row.searchConfigJson,
-              lastProbeStatus: row.lastProbeStatus,
-              lastProbeQuery: row.lastProbeQuery,
-              lastProbeCount: row.lastProbeCount,
-              lastProbeError: row.lastProbeError,
-              lastProbeAt: row.lastProbeAt ? new Date(row.lastProbeAt) : null,
-            },
-          });
+      const migrationDone = await this.isLegacyMigrationDone(this.suppliersLegacyMigrationDoneKey);
+      if (!migrationDone) {
+        const legacy = await this.readLegacySuppliersRegistry();
+        if (legacy.length > 0) {
+          for (const row of legacy) {
+            await this.prisma.supplier.upsert({
+              where: { id: row.id },
+              create: {
+                id: row.id,
+                name: row.name,
+                phone: row.phone,
+                notes: row.notes,
+                active: row.active,
+                searchPriority: row.searchPriority,
+                searchEnabled: row.searchEnabled,
+                searchMode: row.searchMode,
+                searchEndpoint: row.searchEndpoint,
+                searchConfigJson: row.searchConfigJson,
+                lastProbeStatus: row.lastProbeStatus,
+                lastProbeQuery: row.lastProbeQuery,
+                lastProbeCount: row.lastProbeCount,
+                lastProbeError: row.lastProbeError,
+                lastProbeAt: row.lastProbeAt ? new Date(row.lastProbeAt) : null,
+                createdAt: new Date(row.createdAt),
+                updatedAt: new Date(row.updatedAt),
+              },
+              update: {
+                name: row.name,
+                phone: row.phone,
+                notes: row.notes,
+                active: row.active,
+                searchPriority: row.searchPriority,
+                searchEnabled: row.searchEnabled,
+                searchMode: row.searchMode,
+                searchEndpoint: row.searchEndpoint,
+                searchConfigJson: row.searchConfigJson,
+                lastProbeStatus: row.lastProbeStatus,
+                lastProbeQuery: row.lastProbeQuery,
+                lastProbeCount: row.lastProbeCount,
+                lastProbeError: row.lastProbeError,
+                lastProbeAt: row.lastProbeAt ? new Date(row.lastProbeAt) : null,
+              },
+            });
+          }
         }
+        await this.markLegacyMigrationDone(this.suppliersLegacyMigrationDoneKey);
       }
       rows = await this.prisma.supplier.findMany({
         orderBy: [{ searchPriority: 'asc' }, { name: 'asc' }],
@@ -1976,59 +2233,65 @@ export class AdminService {
     });
 
     if (rows.length === 0) {
-      const legacy = await this.readLegacyWarrantyIncidentsRegistry();
-      if (legacy.length > 0) {
-        const suppliers = await this.prisma.supplier.findMany({ select: { id: true } });
-        const supplierSet = new Set(suppliers.map((s) => s.id));
-        for (const row of legacy) {
-          await this.prisma.warrantyIncident.upsert({
-            where: { id: row.id },
-            create: {
-              id: row.id,
-              sourceType: row.sourceType,
-              status: row.status,
-              title: row.title,
-              reason: row.reason,
-              repairId: row.repairId,
-              productId: row.productId,
-              orderId: row.orderId,
-              supplierId: row.supplierId && supplierSet.has(row.supplierId) ? row.supplierId : null,
-              quantity: row.quantity,
-              unitCost: row.unitCost,
-              costOrigin: row.costOrigin,
-              extraCost: row.extraCost,
-              recoveredAmount: row.recoveredAmount,
-              lossAmount: row.lossAmount,
-              happenedAt: new Date(row.happenedAt),
-              resolvedAt: row.resolvedAt ? new Date(row.resolvedAt) : null,
-              notes: row.notes,
-              createdBy: row.createdBy,
-              createdAt: new Date(row.createdAt),
-              updatedAt: new Date(row.updatedAt),
-            },
-            update: {
-              sourceType: row.sourceType,
-              status: row.status,
-              title: row.title,
-              reason: row.reason,
-              repairId: row.repairId,
-              productId: row.productId,
-              orderId: row.orderId,
-              supplierId: row.supplierId && supplierSet.has(row.supplierId) ? row.supplierId : null,
-              quantity: row.quantity,
-              unitCost: row.unitCost,
-              costOrigin: row.costOrigin,
-              extraCost: row.extraCost,
-              recoveredAmount: row.recoveredAmount,
-              lossAmount: row.lossAmount,
-              happenedAt: new Date(row.happenedAt),
-              resolvedAt: row.resolvedAt ? new Date(row.resolvedAt) : null,
-              notes: row.notes,
-              createdBy: row.createdBy,
-              updatedAt: new Date(row.updatedAt),
-            },
-          });
+      const migrationDone = await this.isLegacyMigrationDone(this.warrantiesLegacyMigrationDoneKey);
+      if (!migrationDone) {
+        const legacy = await this.readLegacyWarrantyIncidentsRegistry();
+        if (legacy.length > 0) {
+          // Ensure supplier mapping exists before importing incidents.
+          await this.readSuppliersRegistry();
+          const suppliers = await this.prisma.supplier.findMany({ select: { id: true } });
+          const supplierSet = new Set(suppliers.map((s) => s.id));
+          for (const row of legacy) {
+            await this.prisma.warrantyIncident.upsert({
+              where: { id: row.id },
+              create: {
+                id: row.id,
+                sourceType: row.sourceType,
+                status: row.status,
+                title: row.title,
+                reason: row.reason,
+                repairId: row.repairId,
+                productId: row.productId,
+                orderId: row.orderId,
+                supplierId: row.supplierId && supplierSet.has(row.supplierId) ? row.supplierId : null,
+                quantity: row.quantity,
+                unitCost: row.unitCost,
+                costOrigin: row.costOrigin,
+                extraCost: row.extraCost,
+                recoveredAmount: row.recoveredAmount,
+                lossAmount: row.lossAmount,
+                happenedAt: new Date(row.happenedAt),
+                resolvedAt: row.resolvedAt ? new Date(row.resolvedAt) : null,
+                notes: row.notes,
+                createdBy: row.createdBy,
+                createdAt: new Date(row.createdAt),
+                updatedAt: new Date(row.updatedAt),
+              },
+              update: {
+                sourceType: row.sourceType,
+                status: row.status,
+                title: row.title,
+                reason: row.reason,
+                repairId: row.repairId,
+                productId: row.productId,
+                orderId: row.orderId,
+                supplierId: row.supplierId && supplierSet.has(row.supplierId) ? row.supplierId : null,
+                quantity: row.quantity,
+                unitCost: row.unitCost,
+                costOrigin: row.costOrigin,
+                extraCost: row.extraCost,
+                recoveredAmount: row.recoveredAmount,
+                lossAmount: row.lossAmount,
+                happenedAt: new Date(row.happenedAt),
+                resolvedAt: row.resolvedAt ? new Date(row.resolvedAt) : null,
+                notes: row.notes,
+                createdBy: row.createdBy,
+                updatedAt: new Date(row.updatedAt),
+              },
+            });
+          }
         }
+        await this.markLegacyMigrationDone(this.warrantiesLegacyMigrationDoneKey);
       }
       rows = await this.prisma.warrantyIncident.findMany({
         orderBy: [{ happenedAt: 'desc' }, { createdAt: 'desc' }],
@@ -2435,6 +2698,10 @@ export class AdminService {
 
   private modelGroupAssignmentsKey(brandId: string) {
     return `device_model_groups.${brandId}.assignments`;
+  }
+
+  private modelGroupsLegacyMigrationDoneKey(brandId: string) {
+    return `${this.modelGroupsLegacyMigrationPrefix}.${brandId}.done`;
   }
 
   private async readModelGroups(brandId: string) {

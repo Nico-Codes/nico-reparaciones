@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { adminSettingsApi, type AdminSettingItem } from './settingsApi';
 import { whatsappApi, type WhatsappLogItem } from './whatsappApi';
 
 type VariableInfo = {
@@ -81,7 +80,6 @@ export function AdminWhatsappOrdersPage() {
   );
 
   const [templates, setTemplates] = useState<Record<string, string>>(initialTemplates);
-  const [settings, setSettings] = useState<AdminSettingItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [logsLoading, setLogsLoading] = useState(false);
@@ -97,14 +95,13 @@ export function AdminWhatsappOrdersPage() {
     setLoading(true);
     setError('');
     try {
-      const res = await adminSettingsApi.list();
-      setSettings(res.items);
-      const map = new Map(res.items.map((s) => [s.key, s.value]));
+      const res = await whatsappApi.templates({ channel: 'orders' });
+      const byTemplateKey = new Map(res.items.map((item) => [item.templateKey, item.body]));
       setTemplates(
         Object.fromEntries(
           ORDER_TEMPLATES.map((t) => [
             t.key,
-            map.get(orderTemplateKey(t.key)) ?? baseOrderBody(t.key),
+            byTemplateKey.get(t.key) ?? baseOrderBody(t.key),
           ]),
         ) as Record<string, string>,
       );
@@ -133,19 +130,14 @@ export function AdminWhatsappOrdersPage() {
     setError('');
     setSuccess('');
     try {
-      const byKey = new Map(settings.map((s) => [s.key, s]));
-      const payload = ORDER_TEMPLATES.map((t) => {
-        const key = orderTemplateKey(t.key);
-        const existing = byKey.get(key);
-        return {
-          key,
-          value: templates[t.key] ?? '',
-          group: existing?.group ?? 'whatsapp_order_templates',
-          label: existing?.label ?? `Plantilla WhatsApp pedidos: ${t.title}`,
-          type: existing?.type ?? 'textarea',
-        };
+      await whatsappApi.saveTemplates({
+        channel: 'orders',
+        items: ORDER_TEMPLATES.map((t) => ({
+          templateKey: t.key,
+          body: templates[t.key] ?? '',
+          enabled: true,
+        })),
       });
-      await adminSettingsApi.save(payload);
       setSuccess('Plantillas guardadas');
       await load();
     } catch (e) {
@@ -274,8 +266,4 @@ export function AdminWhatsappOrdersPage() {
       </section>
     </div>
   );
-}
-
-function orderTemplateKey(statusKey: string) {
-  return `whatsapp_orders_template.${statusKey}.body`;
 }
