@@ -20,7 +20,9 @@
     "db:seed": "dotenv -e ../../.env -- tsx prisma/seed.ts",
     "db:seed:demo": "dotenv -e ../../.env -- tsx prisma/seed.ts",
     "db:migrate:legacy-settings": "dotenv -e ../../.env -- tsx prisma/migrate-legacy-settings.ts",
-    "db:migrate:legacy-settings:cleanup": "dotenv -e ../../.env -- tsx prisma/migrate-legacy-settings.ts --cleanup"
+    "db:migrate:legacy-settings:cleanup": "dotenv -e ../../.env -- tsx prisma/migrate-legacy-settings.ts --cleanup",
+    "db:migrate:visual-assets": "dotenv -e ../../.env -- tsx prisma/migrate-legacy-visual-assets.ts",
+    "db:migrate:visual-assets:dry-run": "dotenv -e ../../.env -- tsx prisma/migrate-legacy-visual-assets.ts --dry-run"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.6",

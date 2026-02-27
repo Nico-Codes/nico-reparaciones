@@ -58,6 +58,7 @@ import { StoreProductDetailPage } from '@/features/store/StoreProductDetailPage'
 import { HelpPage } from '@/features/help/HelpPage';
 import { AppShell } from '@/layouts/AppShell';
 import { GlobalVisualEnhancements } from '@/components/GlobalVisualEnhancements';
+import { BrandingHeadSync } from '@/components/BrandingHeadSync';
 
 function withShell(element: React.ReactNode) {
   return <AppShell>{element}</AppShell>;
@@ -95,6 +96,7 @@ export default function App() {
   return (
     <>
       <GlobalVisualEnhancements />
+      <BrandingHeadSync />
       <Routes>
         <Route path="/" element={<RootEntryRedirect />} />
         <Route path="/api/auth/*" element={<ApiAuthAliasRedirect />} />

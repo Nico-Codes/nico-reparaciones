@@ -49,6 +49,7 @@ export type StoreHeroConfig = {
 };
 
 export type StoreBrandingAssets = {
+  siteTitle: string;
   logoPrincipal: string;
   icons: {
     settings: string | null;
@@ -59,5 +60,14 @@ export type StoreBrandingAssets = {
     misReparaciones: string | null;
     dashboard: string | null;
     tienda: string | null;
+  };
+  favicons: {
+    faviconIco: string | null;
+    favicon16: string | null;
+    favicon32: string | null;
+    android192: string | null;
+    android512: string | null;
+    appleTouch: string | null;
+    manifest: string | null;
   };
 };

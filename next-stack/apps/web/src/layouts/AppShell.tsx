@@ -163,6 +163,7 @@ export function AppShell({ children }: AppShellProps) {
 
   const isAdmin = authUser?.role === 'ADMIN';
   const brandLogoUrl = branding?.logoPrincipal || null;
+  const brandTitle = (branding?.siteTitle ?? 'NicoReparaciones').trim() || 'NicoReparaciones';
   const iconCartUrl = branding?.icons.carrito || null;
   const iconLogoutUrl = branding?.icons.logout || null;
   const iconSettingsUrl = branding?.icons.settings || null;
@@ -201,10 +202,8 @@ export function AppShell({ children }: AppShellProps) {
               <div className="grid h-9 w-9 place-items-center overflow-hidden rounded-xl border border-sky-200 bg-white text-sky-600 shadow-sm transition group-hover:border-sky-300 group-hover:bg-sky-50/60">
                 {brandLogoUrl ? <img src={brandLogoUrl} alt="" className="h-7 w-7 object-contain" /> : <Wrench className="h-4.5 w-4.5" />}
               </div>
-              <div className="min-w-0">
-                <div className="truncate text-[1.08rem] font-black leading-none tracking-tight text-zinc-900">
-                  Nico<span className="text-sky-600">Reparaciones</span>
-                </div>
+                <div className="min-w-0">
+                <div className="truncate text-[1.08rem] font-black leading-none tracking-tight text-zinc-900">{brandTitle}</div>
                 <div className="hidden truncate pt-0.5 text-[11px] leading-none text-zinc-500 sm:block">
                   Servicio Técnico Profesional y Tienda de Electrónica
                 </div>
@@ -314,7 +313,7 @@ export function AppShell({ children }: AppShellProps) {
               <div className="grid h-9 w-9 place-items-center rounded-xl border border-zinc-200 bg-white text-sky-600 shadow-sm">
                 {brandLogoUrl ? <img src={brandLogoUrl} alt="" className="h-6 w-6 object-contain" /> : <Wrench className="h-5 w-5" />}
               </div>
-              <div className="font-black tracking-tight">Nico<span className="text-sky-600">Reparaciones</span></div>
+              <div className="font-black tracking-tight">{brandTitle}</div>
             </div>
             <p className="mt-2 text-sm text-zinc-500">Tienda simple + consulta de reparaciones.</p>
           </div>
@@ -352,12 +351,11 @@ export function AppShell({ children }: AppShellProps) {
         </div>
 
         <div className="mx-auto flex w-full max-w-[1240px] flex-col gap-2 px-4 pb-6 text-xs text-zinc-500 sm:flex-row sm:items-center sm:justify-between">
-          <div>© {new Date().getFullYear()} NicoReparaciones</div>
+          <div>© {new Date().getFullYear()} {brandTitle}</div>
           <div className="text-zinc-400">Hecho con React + NestJS</div>
         </div>
       </footer>
     </div>
   );
 }
-
 

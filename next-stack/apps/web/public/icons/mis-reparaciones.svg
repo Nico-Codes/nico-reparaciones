@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Mis reparaciones">
+  <defs>
+    <linearGradient id="tool" x1="18" y1="14" x2="46" y2="52" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F3F4F6"/>
+      <stop offset="1" stop-color="#9CA3AF"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity=".18"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#shadow)">
+    <path d="M41 16a12 12 0 0 0-14.3 14.3L14.2 42.8a5 5 0 0 0 0 7.1l.9.9a5 5 0 0 0 7.1 0l12.5-12.5A12 12 0 0 0 49 24l-8 8-9-9 9-7z"
+          fill="url(#tool)"/>
+    <path d="M41 16a12 12 0 0 0-14.3 14.3L14.2 42.8a5 5 0 0 0 0 7.1l.9.9a5 5 0 0 0 7.1 0l12.5-12.5A12 12 0 0 0 49 24l-8 8-9-9 9-7z"
+          fill="none" stroke="#111827" stroke-width="2.8" stroke-linejoin="round" opacity=".9"/>
+  </g>
+</svg>

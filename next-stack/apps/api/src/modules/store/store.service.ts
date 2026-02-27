@@ -97,6 +97,8 @@ export class StoreService {
   async getBrandingAssets() {
     try {
       const keys = [
+        'business_name',
+        'shop_name',
         'brand_asset.logo_principal.path',
         'brand_asset.icon_settings.path',
         'brand_asset.icon_carrito.path',
@@ -106,11 +108,18 @@ export class StoreService {
         'brand_asset.icon_mis_reparaciones.path',
         'brand_asset.icon_dashboard.path',
         'brand_asset.icon_tienda.path',
+        'brand_asset.favicon_ico.path',
+        'brand_asset.favicon_16.path',
+        'brand_asset.favicon_32.path',
+        'brand_asset.android_192.path',
+        'brand_asset.android_512.path',
+        'brand_asset.apple_touch.path',
       ] as const;
 
       const rows = await this.prisma.appSetting.findMany({ where: { key: { in: [...keys] } } });
       const map = new Map(rows.map((r) => [r.key, r.value ?? '']));
       const raw = {
+        siteTitle: map.get('business_name') || map.get('shop_name') || 'NicoReparaciones',
         logoPrincipal: map.get('brand_asset.logo_principal.path') || 'brand/logo.png',
         iconSettings: map.get('brand_asset.icon_settings.path') || 'icons/settings.svg',
         iconCarrito: map.get('brand_asset.icon_carrito.path') || 'icons/carrito.svg',
@@ -120,9 +129,17 @@ export class StoreService {
         iconMisReparaciones: map.get('brand_asset.icon_mis_reparaciones.path') || 'icons/mis-reparaciones.svg',
         iconDashboard: map.get('brand_asset.icon_dashboard.path') || 'icons/dashboard.svg',
         iconTienda: map.get('brand_asset.icon_tienda.path') || 'icons/tienda.svg',
+        faviconIco: map.get('brand_asset.favicon_ico.path') || 'favicon.ico',
+        favicon16: map.get('brand_asset.favicon_16.path') || 'favicon-16x16.png',
+        favicon32: map.get('brand_asset.favicon_32.path') || 'favicon-32x32.png',
+        android192: map.get('brand_asset.android_192.path') || 'android-chrome-192x192.png',
+        android512: map.get('brand_asset.android_512.path') || 'android-chrome-512x512.png',
+        appleTouch: map.get('brand_asset.apple_touch.path') || 'apple-touch-icon.png',
+        manifest: 'site.webmanifest',
       };
 
       return {
+        siteTitle: raw.siteTitle.trim() || 'NicoReparaciones',
         logoPrincipal: this.resolveHeroAssetUrl(raw.logoPrincipal) ?? '/brand/logo.png',
         icons: {
           settings: this.resolveHeroAssetUrl(raw.iconSettings),
@@ -134,9 +151,19 @@ export class StoreService {
           dashboard: this.resolveHeroAssetUrl(raw.iconDashboard),
           tienda: this.resolveHeroAssetUrl(raw.iconTienda),
         },
+        favicons: {
+          faviconIco: this.resolveHeroAssetUrl(raw.faviconIco),
+          favicon16: this.resolveHeroAssetUrl(raw.favicon16),
+          favicon32: this.resolveHeroAssetUrl(raw.favicon32),
+          android192: this.resolveHeroAssetUrl(raw.android192),
+          android512: this.resolveHeroAssetUrl(raw.android512),
+          appleTouch: this.resolveHeroAssetUrl(raw.appleTouch),
+          manifest: this.resolveHeroAssetUrl(raw.manifest),
+        },
       };
     } catch {
       return {
+        siteTitle: 'NicoReparaciones',
         logoPrincipal: this.resolveHeroAssetUrl('brand/logo.png') ?? '/brand/logo.png',
         icons: {
           settings: this.resolveHeroAssetUrl('icons/settings.svg'),
@@ -147,6 +174,15 @@ export class StoreService {
           misReparaciones: this.resolveHeroAssetUrl('icons/mis-reparaciones.svg'),
           dashboard: this.resolveHeroAssetUrl('icons/dashboard.svg'),
           tienda: this.resolveHeroAssetUrl('icons/tienda.svg'),
+        },
+        favicons: {
+          faviconIco: this.resolveHeroAssetUrl('favicon.ico') ?? '/favicon.ico',
+          favicon16: this.resolveHeroAssetUrl('favicon-16x16.png') ?? '/favicon-16x16.png',
+          favicon32: this.resolveHeroAssetUrl('favicon-32x32.png') ?? '/favicon-32x32.png',
+          android192: this.resolveHeroAssetUrl('android-chrome-192x192.png') ?? '/android-chrome-192x192.png',
+          android512: this.resolveHeroAssetUrl('android-chrome-512x512.png') ?? '/android-chrome-512x512.png',
+          appleTouch: this.resolveHeroAssetUrl('apple-touch-icon.png') ?? '/apple-touch-icon.png',
+          manifest: this.resolveHeroAssetUrl('site.webmanifest') ?? '/site.webmanifest',
         },
       };
     }

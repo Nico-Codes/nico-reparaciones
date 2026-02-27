@@ -34,7 +34,9 @@
     "db:seed": "npm run db:seed --workspace @nico/api",
     "db:seed:demo": "npm run db:seed:demo --workspace @nico/api",
     "db:migrate:legacy-settings": "npm run db:migrate:legacy-settings --workspace @nico/api",
-    "db:migrate:legacy-settings:cleanup": "npm run db:migrate:legacy-settings:cleanup --workspace @nico/api"
+    "db:migrate:legacy-settings:cleanup": "npm run db:migrate:legacy-settings:cleanup --workspace @nico/api",
+    "db:migrate:visual-assets": "npm run db:migrate:visual-assets --workspace @nico/api",
+    "db:migrate:visual-assets:dry-run": "npm run db:migrate:visual-assets:dry-run --workspace @nico/api"
   },
   "devDependencies": {
     "playwright": "^1.58.2"
