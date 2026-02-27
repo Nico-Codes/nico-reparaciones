@@ -217,7 +217,7 @@ export class StoreService {
         createdAt: p.createdAt.toISOString(),
       }));
 
-      // Relevancia b�sica por texto para UX m�s natural (sin full-text todav�a).
+      // Relevancia basica por texto para UX mas natural (sin full-text todavia).
       if (sort === 'relevance' && q) {
         const terms = q.toLowerCase().split(/\s+/).filter(Boolean);
         items = items

@@ -98,6 +98,40 @@ const modelGroupAssignSchema = z.object({
   deviceBrandId: z.string().trim().min(1).max(191),
   deviceModelGroupId: z.string().trim().max(191).optional().nullable(),
 });
+const providerCreateSchema = z.object({
+  name: z.string().trim().min(2).max(120),
+  phone: z.string().trim().max(60).optional().nullable(),
+  notes: z.string().trim().max(1500).optional().nullable(),
+  searchPriority: z.number().int().min(1).max(99999).optional(),
+  searchEnabled: z.boolean().optional(),
+  searchMode: z.enum(['json', 'html']).optional(),
+  searchEndpoint: z.string().trim().max(500).optional().nullable(),
+  searchConfigJson: z.string().max(8000).optional().nullable(),
+  active: z.boolean().optional(),
+});
+const providerUpdateSchema = providerCreateSchema.partial();
+const providerReorderSchema = z.object({
+  orderedIds: z.array(z.string().trim().min(1).max(191)).min(1).max(500),
+});
+const providerProbeSchema = z.object({
+  q: z.string().trim().min(2).max(120).optional(),
+});
+const createWarrantyIncidentSchema = z.object({
+  sourceType: z.enum(['repair', 'product']),
+  title: z.string().trim().min(3).max(120),
+  reason: z.string().trim().max(255).optional().nullable(),
+  repairId: z.string().trim().max(191).optional().nullable(),
+  productId: z.string().trim().max(191).optional().nullable(),
+  orderId: z.string().trim().max(191).optional().nullable(),
+  supplierId: z.string().trim().max(191).optional().nullable(),
+  quantity: z.number().int().min(1).max(999),
+  unitCost: z.number().min(0).optional().nullable(),
+  costOrigin: z.enum(['manual', 'repair', 'product']).optional(),
+  extraCost: z.number().min(0).optional(),
+  recoveredAmount: z.number().min(0).optional(),
+  happenedAt: z.string().trim().optional().nullable(),
+  notes: z.string().trim().max(2000).optional().nullable(),
+});
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -132,7 +166,7 @@ export class AdminController {
   updateUserRole(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser | null, @Body() body: unknown) {
     const parsed = updateUserRoleSchema.safeParse(body);
     if (!parsed.success) {
-      return { message: 'ValidaciÃ³n invÃ¡lida', errors: parsed.error.issues };
+      return { message: 'Validacion invalida', errors: parsed.error.issues };
     }
     return this.adminService.updateUserRole(id, parsed.data.role, user?.id ?? null);
   }
@@ -178,6 +212,83 @@ export class AdminController {
     return this.adminService.modelGroups(deviceBrandId ?? '');
   }
 
+  @Get('providers')
+  providers(@Query('q') q?: string, @Query('active') active?: string) {
+    return this.adminService.providers({ q, active });
+  }
+
+  @Post('providers')
+  createProvider(@Body() body: unknown) {
+    const parsed = providerCreateSchema.safeParse(body);
+    if (!parsed.success) return { message: 'Validacion invalida', errors: parsed.error.issues };
+    return this.adminService.createProvider(parsed.data);
+  }
+
+  @Patch('providers/:id')
+  updateProvider(@Param('id') id: string, @Body() body: unknown) {
+    const parsed = providerUpdateSchema.safeParse(body);
+    if (!parsed.success) return { message: 'Validacion invalida', errors: parsed.error.issues };
+    return this.adminService.updateProvider(id, parsed.data);
+  }
+
+  @Post('providers/import-defaults')
+  importDefaultProviders() {
+    return this.adminService.importDefaultProviders();
+  }
+
+  @Post('providers/reorder')
+  reorderProviders(@Body() body: unknown) {
+    const parsed = providerReorderSchema.safeParse(body);
+    if (!parsed.success) return { message: 'Validacion invalida', errors: parsed.error.issues };
+    return this.adminService.reorderProviders(parsed.data.orderedIds);
+  }
+
+  @Post('providers/:id/toggle')
+  toggleProvider(@Param('id') id: string) {
+    return this.adminService.toggleProvider(id);
+  }
+
+  @Post('providers/:id/probe')
+  probeProvider(@Param('id') id: string, @Body() body: unknown) {
+    const parsed = providerProbeSchema.safeParse(body ?? {});
+    if (!parsed.success) return { message: 'Validacion invalida', errors: parsed.error.issues };
+    return this.adminService.probeProvider(id, parsed.data.q ?? '');
+  }
+
+  @Get('warranties')
+  warranties(
+    @Query('q') q?: string,
+    @Query('sourceType') sourceType?: string,
+    @Query('status') status?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    return this.adminService.warranties({ q, sourceType, status, from, to });
+  }
+
+  @Post('warranties')
+  createWarranty(@CurrentUser() user: AuthenticatedUser | null, @Body() body: unknown) {
+    const parsed = createWarrantyIncidentSchema.safeParse(body);
+    if (!parsed.success) return { message: 'Validacion invalida', errors: parsed.error.issues };
+    return this.adminService.createWarranty(parsed.data, user?.id ?? null);
+  }
+
+  @Patch('warranties/:id/close')
+  closeWarranty(@Param('id') id: string) {
+    return this.adminService.closeWarranty(id);
+  }
+
+  @Get('accounting')
+  accounting(
+    @Query('q') q?: string,
+    @Query('direction') direction?: string,
+    @Query('category') category?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    return this.adminService.accounting({ q, direction, category, from, to });
+  }
+
   @Post('model-groups')
   createModelGroup(@Body() body: unknown) {
     const parsed = modelGroupCreateSchema.safeParse(body);
@@ -203,7 +314,7 @@ export class AdminController {
   upsertSettings(@Body() body: unknown) {
     const parsed = upsertSettingsSchema.safeParse(body);
     if (!parsed.success) {
-      return { message: 'ValidaciÃ³n invÃ¡lida', errors: parsed.error.issues };
+      return { message: 'Validacion invalida', errors: parsed.error.issues };
     }
     return this.adminService.upsertSettings(parsed.data.items);
   }
@@ -229,7 +340,7 @@ export class AdminController {
   upsertMailTemplates(@Body() body: unknown) {
     const parsed = upsertMailTemplatesSchema.safeParse(body);
     if (!parsed.success) {
-      return { message: 'ValidaciÃ³n invÃ¡lida', errors: parsed.error.issues };
+      return { message: 'Validacion invalida', errors: parsed.error.issues };
     }
     return this.adminService.upsertMailTemplates(parsed.data.items);
   }
@@ -243,7 +354,7 @@ export class AdminController {
   upsertWhatsappTemplates(@Body() body: unknown) {
     const parsed = upsertWhatsappTemplatesSchema.safeParse(body);
     if (!parsed.success) {
-      return { message: 'ValidaciÃ³n invÃ¡lida', errors: parsed.error.issues };
+      return { message: 'Validacion invalida', errors: parsed.error.issues };
     }
     return this.adminService.upsertWhatsappTemplates(parsed.data.items);
   }
@@ -257,7 +368,7 @@ export class AdminController {
   createWhatsappLog(@Body() body: unknown) {
     const parsed = createWhatsappLogSchema.safeParse(body);
     if (!parsed.success) {
-      return { message: 'ValidaciÃ³n invÃ¡lida', errors: parsed.error.issues };
+      return { message: 'Validacion invalida', errors: parsed.error.issues };
     }
     return this.adminService.createWhatsappLog(parsed.data);
   }
@@ -270,14 +381,14 @@ export class AdminController {
   @Patch('help-faq')
   helpFaqCreate(@Body() body: unknown) {
     const parsed = helpFaqCreateSchema.safeParse(body);
-    if (!parsed.success) return { message: 'ValidaciÃ³n invÃ¡lida', errors: parsed.error.issues };
+    if (!parsed.success) return { message: 'Validacion invalida', errors: parsed.error.issues };
     return this.adminService.helpFaqCreate(parsed.data);
   }
 
   @Patch('help-faq/:id')
   helpFaqUpdate(@Param('id') id: string, @Body() body: unknown) {
     const parsed = helpFaqPatchSchema.safeParse(body);
-    if (!parsed.success) return { message: 'ValidaciÃ³n invÃ¡lida', errors: parsed.error.issues };
+    if (!parsed.success) return { message: 'Validacion invalida', errors: parsed.error.issues };
     return this.adminService.helpFaqUpdate(id, parsed.data);
   }
 

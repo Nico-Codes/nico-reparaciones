@@ -6,6 +6,131 @@ import path from 'node:path';
 import { MailService } from '../mail/mail.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
+type SupplierRegistryRow = {
+  id: string;
+  name: string;
+  phone: string | null;
+  notes: string | null;
+  active: boolean;
+  searchPriority: number;
+  searchEnabled: boolean;
+  searchMode: 'json' | 'html';
+  searchEndpoint: string | null;
+  searchConfigJson: string | null;
+  lastProbeStatus: 'ok' | 'none';
+  lastProbeQuery: string | null;
+  lastProbeCount: number;
+  lastProbeError: string | null;
+  lastProbeAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type WarrantyIncidentRegistryRow = {
+  id: string;
+  sourceType: 'repair' | 'product';
+  status: 'open' | 'closed';
+  title: string;
+  reason: string | null;
+  repairId: string | null;
+  productId: string | null;
+  orderId: string | null;
+  supplierId: string | null;
+  quantity: number;
+  unitCost: number;
+  costOrigin: 'manual' | 'repair' | 'product';
+  extraCost: number;
+  recoveredAmount: number;
+  lossAmount: number;
+  happenedAt: string;
+  resolvedAt: string | null;
+  notes: string | null;
+  createdBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type AccountingEntryRow = {
+  id: string;
+  happenedAt: string;
+  direction: 'inflow' | 'outflow';
+  category: string;
+  description: string;
+  source: string;
+  amount: number;
+};
+
+const DEFAULT_SUPPLIER_CATALOG: Array<
+  Pick<
+    SupplierRegistryRow,
+    'name' | 'searchPriority' | 'searchMode' | 'searchEnabled' | 'searchEndpoint' | 'searchConfigJson'
+  >
+> = [
+  {
+    name: 'PuntoCell',
+    searchPriority: 10,
+    searchMode: 'html',
+    searchEnabled: true,
+    searchEndpoint: 'https://www.puntocell.com.ar/shop?search={query}',
+    searchConfigJson:
+      '{"item_regex":"<div class=\\"oe_product[\\\\s\\\\S]*?<\\\\/form>\\\\s*<\\\\/div>","name_regex":"o_wsale_products_item_title[\\\\s\\\\S]*?<a[^>]*>(.*?)<\\\\/a>","price_regex":"(?:\\\\$|ARS)[^0-9]{0,120}([0-9\\\\.,]+)","url_regex":"href=\\"([^\\"]*\\\\/shop\\\\/\\\\d+\\\\-[^\\"]+)\\"","context_window":12000}',
+  },
+  {
+    name: 'Evophone',
+    searchPriority: 20,
+    searchMode: 'html',
+    searchEnabled: true,
+    searchEndpoint: 'https://www.evophone.com.ar/?s={query}&post_type=product',
+    searchConfigJson:
+      '{"candidate_paths":["/producto/"],"exclude_paths":["/categoria-producto/","add-to-cart="],"context_window":12000}',
+  },
+  {
+    name: 'CeluPhone',
+    searchPriority: 30,
+    searchMode: 'html',
+    searchEnabled: true,
+    searchEndpoint: 'https://celuphone.com.ar/?s={query}&post_type=product',
+    searchConfigJson:
+      '{"candidate_paths":["/producto/"],"exclude_paths":["/categoria-producto/","add-to-cart="],"context_window":12000}',
+  },
+  {
+    name: 'Okey Rosario',
+    searchPriority: 40,
+    searchMode: 'html',
+    searchEnabled: true,
+    searchEndpoint: 'https://okeyrosario.com.ar/?s={query}&post_type=product',
+    searchConfigJson:
+      '{"candidate_paths":["/producto/"],"exclude_paths":["/categoria-producto/","add-to-cart="],"context_window":12000}',
+  },
+  {
+    name: 'Electrostore',
+    searchPriority: 50,
+    searchMode: 'html',
+    searchEnabled: true,
+    searchEndpoint: 'https://electrostore.com.ar/?s={query}&post_type=product',
+    searchConfigJson:
+      '{"candidate_paths":["/producto/"],"exclude_paths":["/categoria-producto/","add-to-cart="],"context_window":12000}',
+  },
+  {
+    name: 'El Reparador de PC',
+    searchPriority: 60,
+    searchMode: 'html',
+    searchEnabled: true,
+    searchEndpoint: 'https://www.elreparadordepc.com/search_producto?term={query}',
+    searchConfigJson:
+      '{"candidate_paths":["/producto/"],"exclude_paths":["/categoria","/carrito","/deseos"],"candidate_url_regex":"\\\\/producto\\\\/\\\\d+","context_window":12000}',
+  },
+  {
+    name: 'Tienda Movil Rosario',
+    searchPriority: 70,
+    searchMode: 'html',
+    searchEnabled: true,
+    searchEndpoint: 'https://tiendamovilrosario.com.ar/?s={query}&post_type=product',
+    searchConfigJson:
+      '{"candidate_paths":["/product/"],"exclude_paths":["/product-category/","add-to-cart="],"context_window":12000}',
+  },
+];
+
 @Injectable()
 export class AdminService {
   constructor(
@@ -14,6 +139,8 @@ export class AdminService {
   ) {}
   private readonly openRepairStatuses = ['RECEIVED', 'DIAGNOSING', 'WAITING_APPROVAL', 'REPAIRING', 'READY_PICKUP'] as const;
   private readonly pendingOrderStatuses = ['PENDIENTE', 'CONFIRMADO', 'PREPARANDO'] as const;
+  private readonly suppliersRegistrySettingKey = 'suppliers_registry';
+  private readonly warrantyIncidentsSettingKey = 'warranty_incidents_registry';
   private readonly brandAssetSlots = {
     favicon_ico: { settingKey: 'brand_asset.favicon_ico.path', defaultPath: 'favicon.ico', fileBase: 'favicon-ico', maxKb: 1024, allowedExts: ['ico'] },
     favicon_16: { settingKey: 'brand_asset.favicon_16.path', defaultPath: 'favicon-16x16.png', fileBase: 'favicon-16x16', maxKb: 1024, allowedExts: ['png', 'ico', 'webp'] },
@@ -88,7 +215,7 @@ export class AdminService {
     if (outOfStockProducts > 0) alerts.push({ id: 'stock-out', severity: 'high', title: 'Productos sin stock', value: outOfStockProducts });
     if (lowStockProducts > 0) alerts.push({ id: 'stock-low', severity: 'medium', title: 'Productos con stock bajo', value: lowStockProducts });
     if (repairsReadyPickup > 0) alerts.push({ id: 'repairs-ready', severity: 'low', title: 'Reparaciones listas para entregar', value: repairsReadyPickup });
-    if (ordersPending > 0) alerts.push({ id: 'orders-pending', severity: 'medium', title: 'Pedidos pendientes/preparaciÃ³n', value: ordersPending });
+    if (ordersPending > 0) alerts.push({ id: 'orders-pending', severity: 'medium', title: 'Pedidos pendientes/preparacion', value: ordersPending });
 
     return {
       metrics: {
@@ -175,11 +302,11 @@ export class AdminService {
   async updateUserRole(targetUserId: string, roleRaw: string, actorUserId?: string | null) {
     const role = this.parseUserRole(roleRaw);
     if (!role) {
-      return { message: 'Rol invÃ¡lido' };
+      return { message: 'Rol invalido' };
     }
 
     if (actorUserId && actorUserId === targetUserId && role !== 'ADMIN') {
-      return { message: 'No podÃ©s quitarte el rol admin a vos mismo' };
+      return { message: 'No podes quitarte el rol admin a vos mismo' };
     }
 
     const user = await this.prisma.user.update({
@@ -636,28 +763,685 @@ export class AdminService {
     return { ok: true };
   }
 
+  async providers(params?: { q?: string; active?: string }) {
+    const q = (params?.q ?? '').trim().toLowerCase();
+    const activeRaw = (params?.active ?? '').trim().toLowerCase();
+    const suppliers = await this.readSuppliersRegistry();
+    const incidents = await this.readWarrantyIncidentsRegistry();
+    const statsByProvider = this.buildProviderStats(incidents);
+
+    const filtered = suppliers
+      .filter((row) => {
+        if (activeRaw === '1' || activeRaw === 'true') return row.active;
+        if (activeRaw === '0' || activeRaw === 'false') return !row.active;
+        return true;
+      })
+      .filter((row) => {
+        if (!q) return true;
+        return (
+          row.name.toLowerCase().includes(q) ||
+          (row.phone ?? '').toLowerCase().includes(q) ||
+          (row.notes ?? '').toLowerCase().includes(q)
+        );
+      })
+      .sort((a, b) => {
+        if (a.active !== b.active) return a.active ? -1 : 1;
+        if (a.searchPriority !== b.searchPriority) return a.searchPriority - b.searchPriority;
+        return a.name.localeCompare(b.name, 'es');
+      });
+
+    const items = filtered.map((row) => this.serializeProvider(row, statsByProvider.get(row.id)));
+    const summary = {
+      total: items.length,
+      active: items.filter((i) => i.active).length,
+      incidents: items.reduce((acc, i) => acc + i.incidents, 0),
+      openIncidents: items.reduce((acc, i) => acc + i.warrantiesExpired, 0),
+      closedIncidents: items.reduce((acc, i) => acc + i.warrantiesOk, 0),
+      accumulatedLoss: items.reduce((acc, i) => acc + i.loss, 0),
+    };
+    return { items, summary };
+  }
+
+  async createProvider(input: {
+    name: string;
+    phone?: string | null;
+    notes?: string | null;
+    searchPriority?: number;
+    searchEnabled?: boolean;
+    searchMode?: 'json' | 'html';
+    searchEndpoint?: string | null;
+    searchConfigJson?: string | null;
+    active?: boolean;
+  }) {
+    const items = await this.readSuppliersRegistry();
+    const name = input.name.trim();
+    if (!name) throw new BadRequestException('Nombre requerido');
+    if (items.some((i) => i.name.trim().toLowerCase() === name.toLowerCase())) {
+      throw new BadRequestException('Ya existe un proveedor con ese nombre');
+    }
+    const now = new Date().toISOString();
+    const next: SupplierRegistryRow = {
+      id: this.randomEntityId('sup'),
+      name,
+      phone: this.cleanNullable(input.phone),
+      notes: this.cleanNullable(input.notes),
+      active: input.active ?? true,
+      searchPriority: this.clampInt(input.searchPriority ?? 100, 1, 99999),
+      searchEnabled: input.searchEnabled ?? false,
+      searchMode: input.searchMode === 'json' ? 'json' : 'html',
+      searchEndpoint: this.cleanNullable(input.searchEndpoint),
+      searchConfigJson: this.normalizeJsonString(input.searchConfigJson),
+      lastProbeStatus: 'none',
+      lastProbeQuery: null,
+      lastProbeCount: 0,
+      lastProbeError: null,
+      lastProbeAt: null,
+      createdAt: now,
+      updatedAt: now,
+    };
+    items.push(next);
+    await this.writeSuppliersRegistry(items);
+    return { item: this.serializeProvider(next, this.emptyProviderStats()) };
+  }
+
+  async updateProvider(
+    id: string,
+    input: Partial<{
+      name: string;
+      phone: string | null;
+      notes: string | null;
+      searchPriority: number;
+      searchEnabled: boolean;
+      searchMode: 'json' | 'html';
+      searchEndpoint: string | null;
+      searchConfigJson: string | null;
+      active: boolean;
+    }>,
+  ) {
+    const items = await this.readSuppliersRegistry();
+    const index = items.findIndex((i) => i.id === id);
+    if (index < 0) throw new BadRequestException('Proveedor no encontrado');
+
+    const current = items[index];
+    const nextName = input.name != null ? input.name.trim() : current.name;
+    if (!nextName) throw new BadRequestException('Nombre requerido');
+    const duplicated = items.some((i) => i.id !== id && i.name.trim().toLowerCase() === nextName.toLowerCase());
+    if (duplicated) throw new BadRequestException('Ya existe un proveedor con ese nombre');
+
+    const updated: SupplierRegistryRow = {
+      ...current,
+      name: nextName,
+      phone: input.phone !== undefined ? this.cleanNullable(input.phone) : current.phone,
+      notes: input.notes !== undefined ? this.cleanNullable(input.notes) : current.notes,
+      active: input.active ?? current.active,
+      searchPriority:
+        input.searchPriority !== undefined
+          ? this.clampInt(input.searchPriority, 1, 99999)
+          : current.searchPriority,
+      searchEnabled: input.searchEnabled ?? current.searchEnabled,
+      searchMode: input.searchMode ? input.searchMode : current.searchMode,
+      searchEndpoint:
+        input.searchEndpoint !== undefined ? this.cleanNullable(input.searchEndpoint) : current.searchEndpoint,
+      searchConfigJson:
+        input.searchConfigJson !== undefined
+          ? this.normalizeJsonString(input.searchConfigJson)
+          : current.searchConfigJson,
+      updatedAt: new Date().toISOString(),
+    };
+    items[index] = updated;
+    await this.writeSuppliersRegistry(items);
+
+    const incidents = await this.readWarrantyIncidentsRegistry();
+    const stats = this.buildProviderStats(incidents).get(updated.id);
+    return { item: this.serializeProvider(updated, stats) };
+  }
+
+  async toggleProvider(id: string) {
+    const items = await this.readSuppliersRegistry();
+    const index = items.findIndex((i) => i.id === id);
+    if (index < 0) throw new BadRequestException('Proveedor no encontrado');
+    items[index] = {
+      ...items[index],
+      active: !items[index].active,
+      updatedAt: new Date().toISOString(),
+    };
+    await this.writeSuppliersRegistry(items);
+    const incidents = await this.readWarrantyIncidentsRegistry();
+    const stats = this.buildProviderStats(incidents).get(items[index].id);
+    return { item: this.serializeProvider(items[index], stats) };
+  }
+
+  async importDefaultProviders() {
+    const items = await this.readSuppliersRegistry();
+    const now = new Date().toISOString();
+    let created = 0;
+    let updated = 0;
+
+    for (const seed of DEFAULT_SUPPLIER_CATALOG) {
+      const idx = items.findIndex((i) => i.name.trim().toLowerCase() === seed.name.toLowerCase());
+      if (idx >= 0) {
+        items[idx] = {
+          ...items[idx],
+          searchPriority: seed.searchPriority,
+          searchEnabled: seed.searchEnabled,
+          searchMode: seed.searchMode,
+          searchEndpoint: seed.searchEndpoint,
+          searchConfigJson: seed.searchConfigJson,
+          updatedAt: now,
+        };
+        updated += 1;
+      } else {
+        items.push({
+          id: this.randomEntityId('sup'),
+          name: seed.name,
+          phone: null,
+          notes: null,
+          active: true,
+          searchPriority: seed.searchPriority,
+          searchEnabled: seed.searchEnabled,
+          searchMode: seed.searchMode,
+          searchEndpoint: seed.searchEndpoint,
+          searchConfigJson: seed.searchConfigJson,
+          lastProbeStatus: 'none',
+          lastProbeQuery: null,
+          lastProbeCount: 0,
+          lastProbeError: null,
+          lastProbeAt: null,
+          createdAt: now,
+          updatedAt: now,
+        });
+        created += 1;
+      }
+    }
+    await this.writeSuppliersRegistry(items);
+    const incidents = await this.readWarrantyIncidentsRegistry();
+    const stats = this.buildProviderStats(incidents);
+    return {
+      created,
+      updated,
+      items: items
+        .sort((a, b) => a.searchPriority - b.searchPriority)
+        .map((row) => this.serializeProvider(row, stats.get(row.id))),
+    };
+  }
+
+  async reorderProviders(orderedIds: string[]) {
+    const items = await this.readSuppliersRegistry();
+    const map = new Map(items.map((i) => [i.id, i]));
+    const seen = new Set<string>();
+    const ordered = orderedIds.filter((id) => map.has(id) && !seen.has(id) && (seen.add(id), true));
+    if (ordered.length === 0) throw new BadRequestException('Lista de orden vacia');
+
+    let priority = 10;
+    for (const id of ordered) {
+      const row = map.get(id);
+      if (!row) continue;
+      row.searchPriority = priority;
+      row.updatedAt = new Date().toISOString();
+      priority += 10;
+    }
+    const leftovers = items
+      .filter((i) => !seen.has(i.id))
+      .sort((a, b) => a.searchPriority - b.searchPriority || a.name.localeCompare(b.name, 'es'));
+    for (const row of leftovers) {
+      row.searchPriority = priority;
+      row.updatedAt = new Date().toISOString();
+      priority += 10;
+    }
+
+    await this.writeSuppliersRegistry(items);
+    const incidents = await this.readWarrantyIncidentsRegistry();
+    const stats = this.buildProviderStats(incidents);
+    return {
+      ok: true,
+      items: items
+        .sort((a, b) => a.searchPriority - b.searchPriority)
+        .map((row) => this.serializeProvider(row, stats.get(row.id))),
+    };
+  }
+
+  async probeProvider(id: string, queryRaw?: string) {
+    const items = await this.readSuppliersRegistry();
+    const index = items.findIndex((i) => i.id === id);
+    if (index < 0) throw new BadRequestException('Proveedor no encontrado');
+    const row = items[index];
+    const q = (queryRaw ?? '').trim() || 'modulo a30';
+    const now = new Date().toISOString();
+
+    if (!row.searchEndpoint) {
+      items[index] = {
+        ...row,
+        lastProbeStatus: 'none',
+        lastProbeQuery: q,
+        lastProbeCount: 0,
+        lastProbeError: 'Sin endpoint configurado',
+        lastProbeAt: now,
+        updatedAt: now,
+      };
+      await this.writeSuppliersRegistry(items);
+      const incidents = await this.readWarrantyIncidentsRegistry();
+      const stats = this.buildProviderStats(incidents);
+      return { item: this.serializeProvider(items[index], stats.get(items[index].id)), probe: { query: q, count: 0 } };
+    }
+
+    const url = row.searchEndpoint.includes('{query}')
+      ? row.searchEndpoint.replaceAll('{query}', encodeURIComponent(q))
+      : `${row.searchEndpoint}${row.searchEndpoint.includes('?') ? '&' : '?'}q=${encodeURIComponent(q)}`;
+    const ctrl = new AbortController();
+    const timeout = setTimeout(() => ctrl.abort(), 10_000);
+
+    try {
+      const res = await fetch(url, {
+        method: 'GET',
+        signal: ctrl.signal,
+        headers: { Accept: 'application/json,text/html,*/*' },
+      });
+      const count = await this.estimateProbeResultCount(res, row.searchMode, row.searchConfigJson);
+      const status: SupplierRegistryRow['lastProbeStatus'] = count > 0 ? 'ok' : 'none';
+      items[index] = {
+        ...row,
+        lastProbeStatus: status,
+        lastProbeQuery: q,
+        lastProbeCount: count,
+        lastProbeError: res.ok ? null : `HTTP ${res.status}`,
+        lastProbeAt: now,
+        updatedAt: now,
+      };
+      await this.writeSuppliersRegistry(items);
+      const incidents = await this.readWarrantyIncidentsRegistry();
+      const stats = this.buildProviderStats(incidents);
+      return {
+        item: this.serializeProvider(items[index], stats.get(items[index].id)),
+        probe: { query: q, count, url, httpStatus: res.status },
+      };
+    } catch (e) {
+      items[index] = {
+        ...row,
+        lastProbeStatus: 'none',
+        lastProbeQuery: q,
+        lastProbeCount: 0,
+        lastProbeError: e instanceof Error ? e.message : 'Error de conexion',
+        lastProbeAt: now,
+        updatedAt: now,
+      };
+      await this.writeSuppliersRegistry(items);
+      const incidents = await this.readWarrantyIncidentsRegistry();
+      const stats = this.buildProviderStats(incidents);
+      return {
+        item: this.serializeProvider(items[index], stats.get(items[index].id)),
+        probe: { query: q, count: 0, url },
+      };
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  async warranties(params?: { q?: string; sourceType?: string; status?: string; from?: string; to?: string }) {
+    const q = (params?.q ?? '').trim().toLowerCase();
+    const sourceType = (params?.sourceType ?? '').trim().toLowerCase();
+    const status = (params?.status ?? '').trim().toLowerCase();
+    const from = this.parseDateOnly(params?.from ?? '');
+    const to = this.parseDateOnly(params?.to ?? '');
+    if (to) to.setUTCHours(23, 59, 59, 999);
+
+    const incidents = await this.readWarrantyIncidentsRegistry();
+    const suppliers = await this.readSuppliersRegistry();
+    const supplierById = new Map(suppliers.map((s) => [s.id, s]));
+    const repairIds = incidents.map((i) => i.repairId).filter((v): v is string => !!v);
+    const repairs = repairIds.length
+      ? await this.prisma.repair.findMany({
+          where: { id: { in: repairIds } },
+          select: { id: true, customerName: true },
+        })
+      : [];
+    const repairById = new Map(repairs.map((r) => [r.id, r]));
+
+    const filtered = incidents
+      .filter((row) => {
+        if (sourceType && row.sourceType !== sourceType) return false;
+        if (status && row.status !== status) return false;
+        const at = new Date(row.happenedAt);
+        if (Number.isNaN(at.getTime())) return false;
+        if (from && at < from) return false;
+        if (to && at > to) return false;
+        if (!q) return true;
+        const providerName = row.supplierId ? supplierById.get(row.supplierId)?.name ?? '' : '';
+        return (
+          row.title.toLowerCase().includes(q) ||
+          (row.reason ?? '').toLowerCase().includes(q) ||
+          (row.notes ?? '').toLowerCase().includes(q) ||
+          providerName.toLowerCase().includes(q)
+        );
+      })
+      .sort((a, b) => new Date(b.happenedAt).getTime() - new Date(a.happenedAt).getTime());
+
+    const sourceLabelMap = { repair: 'Reparación', product: 'Producto' } as const;
+    const costOriginLabelMap = {
+      manual: 'Manual',
+      repair: 'Reparación',
+      product: 'Producto',
+    } as const;
+
+    const items = filtered.map((row) => {
+      const at = new Date(row.happenedAt);
+      const supplierName = row.supplierId ? supplierById.get(row.supplierId)?.name ?? '-' : '-';
+      const repair = row.repairId ? repairById.get(row.repairId) : null;
+      const date = this.formatDate(at);
+      const time = this.formatTime(at);
+      return {
+        id: row.id,
+        sourceType: row.sourceType,
+        source: sourceLabelMap[row.sourceType] ?? row.sourceType,
+        status: row.status,
+        statusLabel: row.status === 'closed' ? 'Cerrado' : 'Abierto',
+        title: row.title,
+        reason: row.reason ?? '',
+        repairId: row.repairId,
+        repairCode: row.repairId ? `R-${row.repairId.slice(0, 13)}` : null,
+        customerName: repair?.customerName ?? '',
+        productId: row.productId,
+        providerId: row.supplierId,
+        provider: supplierName,
+        costSource: costOriginLabelMap[row.costOrigin] ?? row.costOrigin,
+        quantity: row.quantity,
+        unitCost: row.unitCost,
+        cost: row.quantity * row.unitCost + row.extraCost,
+        recovered: row.recoveredAmount,
+        loss: row.lossAmount,
+        notes: row.notes ?? '',
+        happenedAt: row.happenedAt,
+        date,
+        time,
+      };
+    });
+
+    const summary = {
+      totalCount: items.length,
+      openCount: items.filter((i) => i.status === 'open').length,
+      closedCount: items.filter((i) => i.status === 'closed').length,
+      totalLoss: items.reduce((acc, i) => acc + i.loss, 0),
+    };
+
+    const groupedBySupplier = new Map<string, { supplierId: string; name: string; incidentsCount: number; totalLoss: number }>();
+    for (const row of items) {
+      if (!row.providerId) continue;
+      const current = groupedBySupplier.get(row.providerId) ?? {
+        supplierId: row.providerId,
+        name: row.provider,
+        incidentsCount: 0,
+        totalLoss: 0,
+      };
+      current.incidentsCount += 1;
+      current.totalLoss += row.loss;
+      groupedBySupplier.set(row.providerId, current);
+    }
+    const supplierStats = [...groupedBySupplier.values()].sort((a, b) => b.totalLoss - a.totalLoss).slice(0, 8);
+
+    return { items, summary, supplierStats };
+  }
+
+  async createWarranty(
+    input: {
+      sourceType: 'repair' | 'product';
+      title: string;
+      reason?: string | null;
+      repairId?: string | null;
+      productId?: string | null;
+      orderId?: string | null;
+      supplierId?: string | null;
+      quantity: number;
+      unitCost?: number | null;
+      costOrigin?: 'manual' | 'repair' | 'product';
+      extraCost?: number;
+      recoveredAmount?: number;
+      happenedAt?: string | null;
+      notes?: string | null;
+    },
+    actorUserId: string | null,
+  ) {
+    const sourceType = input.sourceType;
+    const repairId = this.cleanNullable(input.repairId);
+    const productId = this.cleanNullable(input.productId);
+    if (sourceType === 'repair' && !repairId) throw new BadRequestException('Selecciona la reparación asociada');
+    if (sourceType === 'product' && !productId) throw new BadRequestException('Selecciona el producto asociado');
+
+    const [repair, product] = await Promise.all([
+      repairId
+        ? this.prisma.repair.findUnique({
+            where: { id: repairId },
+            select: { id: true, finalPrice: true, quotedPrice: true, customerName: true },
+          })
+        : Promise.resolve(null),
+      productId
+        ? this.prisma.product.findUnique({
+            where: { id: productId },
+            select: { id: true, costPrice: true, name: true },
+          })
+        : Promise.resolve(null),
+    ]);
+    if (repairId && !repair) throw new BadRequestException('Reparación no encontrada');
+    if (productId && !product) throw new BadRequestException('Producto no encontrado');
+
+    let unitCost = Number(input.unitCost ?? 0);
+    let costOrigin: WarrantyIncidentRegistryRow['costOrigin'] = input.costOrigin ?? 'manual';
+
+    if (unitCost <= 0 && sourceType === 'repair' && repair) {
+      unitCost = Number(repair.finalPrice ?? repair.quotedPrice ?? 0);
+      if (unitCost > 0) costOrigin = 'repair';
+    }
+    if (unitCost <= 0 && sourceType === 'product' && product) {
+      unitCost = Number(product.costPrice ?? 0);
+      if (unitCost > 0) costOrigin = 'product';
+    }
+    if (unitCost <= 0) throw new BadRequestException('No se pudo resolver costo unitario. Cárgalo manualmente.');
+
+    if (costOrigin === 'repair' && sourceType !== 'repair') costOrigin = 'manual';
+    if (costOrigin === 'product' && sourceType !== 'product') costOrigin = 'manual';
+
+    const quantity = this.clampInt(input.quantity, 1, 999);
+    const extraCost = Math.max(0, Number(input.extraCost ?? 0));
+    const recoveredAmount = Math.max(0, Number(input.recoveredAmount ?? 0));
+    const lossAmount = Math.max(0, quantity * unitCost + extraCost - recoveredAmount);
+
+    const happenedAt = this.parseDateTime(input.happenedAt) ?? new Date();
+    const suppliers = await this.readSuppliersRegistry();
+    const supplierSet = new Set(suppliers.map((s) => s.id));
+    const supplierId = this.cleanNullable(input.supplierId);
+    const normalizedSupplierId = supplierId && supplierSet.has(supplierId) ? supplierId : null;
+
+    const incidents = await this.readWarrantyIncidentsRegistry();
+    const now = new Date().toISOString();
+    const incident: WarrantyIncidentRegistryRow = {
+      id: this.randomEntityId('wic'),
+      sourceType,
+      status: 'open',
+      title: input.title.trim(),
+      reason: this.cleanNullable(input.reason),
+      repairId,
+      productId,
+      orderId: this.cleanNullable(input.orderId),
+      supplierId: normalizedSupplierId,
+      quantity,
+      unitCost,
+      costOrigin,
+      extraCost,
+      recoveredAmount,
+      lossAmount,
+      happenedAt: happenedAt.toISOString(),
+      resolvedAt: null,
+      notes: this.cleanNullable(input.notes),
+      createdBy: actorUserId,
+      createdAt: now,
+      updatedAt: now,
+    };
+    incidents.push(incident);
+    await this.writeWarrantyIncidentsRegistry(incidents);
+
+    const result = await this.warranties();
+    const row = result.items.find((i) => i.id === incident.id);
+    return { item: row ?? null };
+  }
+
+  async closeWarranty(id: string) {
+    const incidents = await this.readWarrantyIncidentsRegistry();
+    const index = incidents.findIndex((i) => i.id === id);
+    if (index < 0) throw new BadRequestException('Incidente no encontrado');
+    const now = new Date().toISOString();
+    incidents[index] = {
+      ...incidents[index],
+      status: 'closed',
+      resolvedAt: now,
+      updatedAt: now,
+    };
+    await this.writeWarrantyIncidentsRegistry(incidents);
+    const result = await this.warranties();
+    const row = result.items.find((i) => i.id === id);
+    return { item: row ?? null };
+  }
+
+  async accounting(params?: { q?: string; direction?: string; category?: string; from?: string; to?: string }) {
+    const q = (params?.q ?? '').trim().toLowerCase();
+    const direction = (params?.direction ?? '').trim().toLowerCase();
+    const category = (params?.category ?? '').trim();
+    const fromDate = this.parseDateOnly(params?.from ?? '') ?? new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const toDate = this.parseDateOnly(params?.to ?? '') ?? new Date();
+    if (toDate && params?.to) toDate.setUTCHours(23, 59, 59, 999);
+
+    const [orders, incidents] = await Promise.all([
+      this.prisma.order.findMany({
+        where: { status: 'ENTREGADO' },
+        orderBy: { createdAt: 'desc' },
+        take: 400,
+      }),
+      this.readWarrantyIncidentsRegistry(),
+    ]);
+
+    const entries: AccountingEntryRow[] = [];
+    for (const o of orders) {
+      entries.push({
+        id: `ord-${o.id}`,
+        happenedAt: o.createdAt.toISOString(),
+        direction: 'inflow',
+        category: 'order_sale',
+        description: `Venta web pedido #${o.id.slice(0, 8)}`,
+        source: `Order ${o.id}`,
+        amount: Number(o.total),
+      });
+    }
+    for (const inc of incidents) {
+      if (inc.lossAmount > 0) {
+        entries.push({
+          id: `wloss-${inc.id}`,
+          happenedAt: inc.happenedAt,
+          direction: 'outflow',
+          category: 'warranty_loss',
+          description: `Garantía: ${inc.title}`,
+          source: `WarrantyIncident ${inc.id}`,
+          amount: inc.lossAmount,
+        });
+      }
+      if (inc.recoveredAmount > 0) {
+        entries.push({
+          id: `wrec-${inc.id}`,
+          happenedAt: inc.happenedAt,
+          direction: 'inflow',
+          category: 'warranty_recovery',
+          description: `Recupero garantía: ${inc.title}`,
+          source: `WarrantyIncident ${inc.id}`,
+          amount: inc.recoveredAmount,
+        });
+      }
+    }
+
+    const filtered = entries
+      .filter((entry) => {
+        const at = new Date(entry.happenedAt);
+        if (Number.isNaN(at.getTime())) return false;
+        if (at < fromDate || at > toDate) return false;
+        if (direction === 'inflow' || direction === 'outflow') {
+          if (entry.direction !== direction) return false;
+        }
+        if (category && entry.category !== category) return false;
+        if (!q) return true;
+        return (
+          entry.description.toLowerCase().includes(q) ||
+          entry.source.toLowerCase().includes(q) ||
+          entry.category.toLowerCase().includes(q)
+        );
+      })
+      .sort((a, b) => new Date(b.happenedAt).getTime() - new Date(a.happenedAt).getTime());
+
+    const incomes = filtered.filter((r) => r.direction === 'inflow').reduce((acc, r) => acc + r.amount, 0);
+    const expenses = filtered.filter((r) => r.direction === 'outflow').reduce((acc, r) => acc + r.amount, 0);
+    const byCategory = new Map<string, { incomes: number; expenses: number; count: number }>();
+    for (const row of filtered) {
+      const current = byCategory.get(row.category) ?? { incomes: 0, expenses: 0, count: 0 };
+      current.count += 1;
+      if (row.direction === 'inflow') current.incomes += row.amount;
+      else current.expenses += row.amount;
+      byCategory.set(row.category, current);
+    }
+
+    return {
+      summary: {
+        entriesCount: filtered.length,
+        inflowTotal: incomes,
+        outflowTotal: expenses,
+        netTotal: incomes - expenses,
+      },
+      categories: [...new Set(filtered.map((r) => r.category))].sort((a, b) => a.localeCompare(b, 'es')),
+      categorySummary: [...byCategory.entries()]
+        .map(([key, value]) => ({
+          category: key,
+          entriesCount: value.count,
+          inflowTotal: value.incomes,
+          outflowTotal: value.expenses,
+          netTotal: value.incomes - value.expenses,
+        }))
+        .sort((a, b) => a.category.localeCompare(b.category, 'es')),
+      items: filtered.map((row) => ({
+        id: row.id,
+        happenedAt: row.happenedAt,
+        date: this.formatDateTime(new Date(row.happenedAt)),
+        direction: row.direction === 'inflow' ? 'Ingreso' : 'Egreso',
+        directionKey: row.direction,
+        category: row.category,
+        description: row.description,
+        source: row.source,
+        amount: row.amount,
+      })),
+      filters: {
+        q: params?.q ?? '',
+        direction: direction === 'inflow' || direction === 'outflow' ? direction : '',
+        category,
+        from: this.formatDateInput(fromDate),
+        to: this.formatDateInput(toDate),
+      },
+    };
+  }
+
   async mailTemplates() {
     const templates = [
       {
         templateKey: 'verify_email',
-        label: 'VerificaciÃ³n de correo',
-        description: 'Se envÃ­a al crear cuenta para verificar email.',
+        label: 'Verificacion de correo',
+        description: 'Se envia al crear cuenta para verificar email.',
         subjectDefault: 'Verifica tu correo en {{business_name}}',
         bodyDefault:
           'Hola {{user_name}},\n\nUsa este enlace para verificar tu correo:\n{{verify_url}}\n\nSi no creaste esta cuenta, ignora este mensaje.',
       },
       {
         templateKey: 'reset_password',
-        label: 'RecuperaciÃ³n de contraseÃ±a',
-        description: 'Se envÃ­a cuando el usuario solicita restablecer contraseÃ±a.',
-        subjectDefault: 'Recuperar contraseÃ±a en {{business_name}}',
+        label: 'Recuperacion de contrasena',
+        description: 'Se envia cuando el usuario solicita restablecer contrasena.',
+        subjectDefault: 'Recuperar contrasena en {{business_name}}',
         bodyDefault:
-          'Hola {{user_name}},\n\nRecibimos una solicitud para restablecer tu contraseÃ±a.\nUsa este enlace:\n{{reset_url}}\n\nSi no fuiste vos, ignora este mensaje.',
+          'Hola {{user_name}},\n\nRecibimos una solicitud para restablecer tu contrasena.\nUsa este enlace:\n{{reset_url}}\n\nSi no fuiste vos, ignora este mensaje.',
       },
       {
         templateKey: 'order_created',
         label: 'Compra confirmada',
-        description: 'Se envÃ­a al finalizar una compra.',
+        description: 'Se envia al finalizar una compra.',
         subjectDefault: 'Recibimos tu pedido {{order_id}}',
         bodyDefault:
           'Hola {{user_name}},\n\nTu pedido {{order_id}} fue recibido correctamente.\nTotal: {{order_total}}\n\nGracias por tu compra.',
@@ -745,17 +1529,17 @@ export class AdminService {
     const templates = [
       {
         templateKey: 'repair_status_update',
-        label: 'ActualizaciÃ³n de reparaciÃ³n',
+        label: 'Actualizacion de reparacion',
         description: 'Mensaje para avisar cambios de estado en reparaciones.',
         bodyDefault:
-          'Hola {{customer_name}}, tu reparaciÃ³n {{repair_id}} ahora estÃ¡ en estado: {{repair_status}}. {{extra_message}}',
+          'Hola {{customer_name}}, tu reparacion {{repair_id}} ahora esta en estado: {{repair_status}}. {{extra_message}}',
       },
       {
         templateKey: 'order_status_update',
-        label: 'ActualizaciÃ³n de pedido',
+        label: 'Actualizacion de pedido',
         description: 'Mensaje para avisar cambios de estado en pedidos.',
         bodyDefault:
-          'Hola {{customer_name}}, tu pedido {{order_id}} ahora estÃ¡: {{order_status}}. Total: {{order_total}}',
+          'Hola {{customer_name}}, tu pedido {{order_id}} ahora esta: {{order_status}}. Total: {{order_total}}',
       },
     ];
 
@@ -1062,6 +1846,297 @@ export class AdminService {
   private async getAppSettingValue(key: string, fallback = '') {
     const row = await this.prisma.appSetting.findUnique({ where: { key } });
     return row?.value ?? fallback;
+  }
+
+  private async readSuppliersRegistry() {
+    const rows = await this.readJsonArraySetting(this.suppliersRegistrySettingKey);
+    return rows
+      .filter((row): row is Record<string, unknown> => !!row && typeof row === 'object' && !Array.isArray(row))
+      .map((row) => {
+        const searchMode = String(row.searchMode ?? '').toLowerCase() === 'json' ? 'json' : 'html';
+        return {
+          id: String(row.id ?? this.randomEntityId('sup')),
+          name: String(row.name ?? '').trim(),
+          phone: this.cleanNullable(String(row.phone ?? '')),
+          notes: this.cleanNullable(String(row.notes ?? '')),
+          active: Boolean(row.active ?? true),
+          searchPriority: this.clampInt(Number(row.searchPriority ?? 100), 1, 99999),
+          searchEnabled: Boolean(row.searchEnabled ?? false),
+          searchMode,
+          searchEndpoint: this.cleanNullable(String(row.searchEndpoint ?? '')),
+          searchConfigJson: this.normalizeJsonString(String(row.searchConfigJson ?? '')),
+          lastProbeStatus: String(row.lastProbeStatus ?? '') === 'ok' ? 'ok' : 'none',
+          lastProbeQuery: this.cleanNullable(String(row.lastProbeQuery ?? '')),
+          lastProbeCount: this.clampInt(Number(row.lastProbeCount ?? 0), 0, 999999),
+          lastProbeError: this.cleanNullable(String(row.lastProbeError ?? '')),
+          lastProbeAt: this.cleanNullable(String(row.lastProbeAt ?? '')),
+          createdAt: this.cleanNullable(String(row.createdAt ?? '')) ?? new Date().toISOString(),
+          updatedAt: this.cleanNullable(String(row.updatedAt ?? '')) ?? new Date().toISOString(),
+        } satisfies SupplierRegistryRow;
+      })
+      .filter((row) => row.name.length > 0);
+  }
+
+  private async writeSuppliersRegistry(items: SupplierRegistryRow[]) {
+    await this.upsertSingleSetting(
+      this.suppliersRegistrySettingKey,
+      JSON.stringify(items),
+      'suppliers',
+      'Suppliers registry',
+      'json',
+    );
+  }
+
+  private async readWarrantyIncidentsRegistry() {
+    const rows = await this.readJsonArraySetting(this.warrantyIncidentsSettingKey);
+    return rows
+      .filter((row): row is Record<string, unknown> => !!row && typeof row === 'object' && !Array.isArray(row))
+      .map((row) => {
+        const sourceType = String(row.sourceType ?? '').toLowerCase() === 'product' ? 'product' : 'repair';
+        const status = String(row.status ?? '').toLowerCase() === 'closed' ? 'closed' : 'open';
+        const costOriginRaw = String(row.costOrigin ?? '').toLowerCase();
+        const costOrigin: WarrantyIncidentRegistryRow['costOrigin'] =
+          costOriginRaw === 'repair' || costOriginRaw === 'product' ? costOriginRaw : 'manual';
+        const quantity = this.clampInt(Number(row.quantity ?? 1), 1, 999);
+        const unitCost = Math.max(0, Number(row.unitCost ?? 0));
+        const extraCost = Math.max(0, Number(row.extraCost ?? 0));
+        const recoveredAmount = Math.max(0, Number(row.recoveredAmount ?? 0));
+        const lossAmount = Math.max(0, Number(row.lossAmount ?? quantity * unitCost + extraCost - recoveredAmount));
+        const happenedAtRaw = this.cleanNullable(String(row.happenedAt ?? '')) ?? new Date().toISOString();
+        const happenedAt = this.parseDateTime(happenedAtRaw)?.toISOString() ?? new Date().toISOString();
+
+        return {
+          id: String(row.id ?? this.randomEntityId('wic')),
+          sourceType,
+          status,
+          title: String(row.title ?? '').trim(),
+          reason: this.cleanNullable(String(row.reason ?? '')),
+          repairId: this.cleanNullable(String(row.repairId ?? '')),
+          productId: this.cleanNullable(String(row.productId ?? '')),
+          orderId: this.cleanNullable(String(row.orderId ?? '')),
+          supplierId: this.cleanNullable(String(row.supplierId ?? '')),
+          quantity,
+          unitCost,
+          costOrigin,
+          extraCost,
+          recoveredAmount,
+          lossAmount,
+          happenedAt,
+          resolvedAt: this.cleanNullable(String(row.resolvedAt ?? '')),
+          notes: this.cleanNullable(String(row.notes ?? '')),
+          createdBy: this.cleanNullable(String(row.createdBy ?? '')),
+          createdAt: this.cleanNullable(String(row.createdAt ?? '')) ?? new Date().toISOString(),
+          updatedAt: this.cleanNullable(String(row.updatedAt ?? '')) ?? new Date().toISOString(),
+        } satisfies WarrantyIncidentRegistryRow;
+      })
+      .filter((row) => row.title.length > 0);
+  }
+
+  private async writeWarrantyIncidentsRegistry(items: WarrantyIncidentRegistryRow[]) {
+    await this.upsertSingleSetting(
+      this.warrantyIncidentsSettingKey,
+      JSON.stringify(items),
+      'warranties',
+      'Warranty incidents registry',
+      'json',
+    );
+  }
+
+  private buildProviderStats(incidents: WarrantyIncidentRegistryRow[]) {
+    const map = new Map<
+      string,
+      {
+        incidents: number;
+        openIncidents: number;
+        closedIncidents: number;
+        loss: number;
+      }
+    >();
+    for (const row of incidents) {
+      if (!row.supplierId) continue;
+      const current = map.get(row.supplierId) ?? { incidents: 0, openIncidents: 0, closedIncidents: 0, loss: 0 };
+      current.incidents += 1;
+      if (row.status === 'closed') current.closedIncidents += 1;
+      else current.openIncidents += 1;
+      current.loss += row.lossAmount;
+      map.set(row.supplierId, current);
+    }
+    return map;
+  }
+
+  private emptyProviderStats() {
+    return {
+      incidents: 0,
+      openIncidents: 0,
+      closedIncidents: 0,
+      loss: 0,
+    };
+  }
+
+  private serializeProvider(
+    row: SupplierRegistryRow,
+    statsInput?: { incidents: number; openIncidents: number; closedIncidents: number; loss: number },
+  ) {
+    const stats = statsInput ?? this.emptyProviderStats();
+    const baseScore = 80;
+    const openPenalty = Math.min(12, stats.openIncidents * 3);
+    const lossPenalty = Math.min(18, Math.round(stats.loss / 100000));
+    const score = Math.max(0, Math.min(100, baseScore - openPenalty - lossPenalty));
+    const confidenceLabel = score >= 90 ? 'Excelente' : score >= 75 ? 'Confiable' : score >= 60 ? 'En seguimiento' : 'Riesgo alto';
+
+    return {
+      id: row.id,
+      name: row.name,
+      priority: row.searchPriority,
+      phone: row.phone ?? '',
+      products: 0,
+      incidents: stats.incidents,
+      warrantiesOk: stats.closedIncidents,
+      warrantiesExpired: stats.openIncidents,
+      loss: stats.loss,
+      score,
+      confidenceLabel,
+      active: row.active,
+      searchEnabled: row.searchEnabled,
+      statusProbe: row.lastProbeStatus,
+      lastProbeAt: row.lastProbeAt ? this.formatDateTimeShort(new Date(row.lastProbeAt)) : '-',
+      lastQuery: row.lastProbeQuery ?? '-',
+      lastResults: row.lastProbeCount,
+      mode: row.searchMode === 'json' ? 'JSON API' : 'HTML simple',
+      endpoint: row.searchEndpoint ?? '',
+      configJson: row.searchConfigJson ?? '',
+      notes: row.notes ?? '',
+    };
+  }
+
+  private normalizeJsonString(value?: string | null) {
+    const raw = this.cleanNullable(value);
+    if (!raw) return null;
+    try {
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+      return JSON.stringify(parsed);
+    } catch {
+      return raw;
+    }
+  }
+
+  private async estimateProbeResultCount(
+    response: { text: () => Promise<string> },
+    searchMode: SupplierRegistryRow['searchMode'],
+    configJson?: string | null,
+  ) {
+    if (searchMode === 'json') {
+      const text = await response.text();
+      try {
+        const payload: unknown = JSON.parse(text);
+        return this.extractCountFromJsonPayload(payload, configJson);
+      } catch {
+        return this.estimateHtmlResultCount(text);
+      }
+    }
+    const html = await response.text();
+    return this.estimateHtmlResultCount(html);
+  }
+
+  private extractCountFromJsonPayload(payload: unknown, configJson?: string | null) {
+    if (Array.isArray(payload)) return payload.length;
+    if (!payload || typeof payload !== 'object') return 0;
+
+    const obj = payload as Record<string, unknown>;
+    const cfg = this.parseJson(configJson) as { items_path?: string } | null;
+    if (cfg?.items_path) {
+      const parts = cfg.items_path.split('.').map((p) => p.trim()).filter(Boolean);
+      let cursor: unknown = obj;
+      for (const part of parts) {
+        if (!cursor || typeof cursor !== 'object' || Array.isArray(cursor)) {
+          cursor = null;
+          break;
+        }
+        cursor = (cursor as Record<string, unknown>)[part];
+      }
+      if (Array.isArray(cursor)) return cursor.length;
+    }
+    if (Array.isArray(obj.items)) return obj.items.length;
+    return Object.keys(obj).length;
+  }
+
+  private estimateHtmlResultCount(html: string) {
+    if (!html) return 0;
+    const productLikeMatches = html.match(/(producto|product|price|precio|add-to-cart)/gi);
+    if (productLikeMatches && productLikeMatches.length > 0) {
+      return Math.min(99, Math.max(1, Math.round(productLikeMatches.length / 3)));
+    }
+    const linkMatches = html.match(/<a\s/gi);
+    return Math.min(99, linkMatches?.length ?? 0);
+  }
+
+  private parseDateOnly(value: string) {
+    const raw = value.trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return null;
+    const date = new Date(`${raw}T00:00:00.000Z`);
+    if (Number.isNaN(date.getTime())) return null;
+    return date;
+  }
+
+  private parseDateTime(value?: string | null) {
+    const raw = (value ?? '').trim();
+    if (!raw) return null;
+    const date = new Date(raw);
+    if (Number.isNaN(date.getTime())) return null;
+    return date;
+  }
+
+  private formatDate(date: Date) {
+    if (Number.isNaN(date.getTime())) return '-';
+    return [
+      String(date.getDate()).padStart(2, '0'),
+      String(date.getMonth() + 1).padStart(2, '0'),
+      String(date.getFullYear()),
+    ].join('/');
+  }
+
+  private formatTime(date: Date) {
+    if (Number.isNaN(date.getTime())) return '--:--';
+    return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+  }
+
+  private formatDateTime(date: Date) {
+    return `${this.formatDate(date)} ${this.formatTime(date)}`;
+  }
+
+  private formatDateTimeShort(date: Date) {
+    if (Number.isNaN(date.getTime())) return '-';
+    return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')} ${this.formatTime(date)}`;
+  }
+
+  private formatDateInput(date: Date) {
+    if (Number.isNaN(date.getTime())) return '';
+    return [
+      String(date.getFullYear()),
+      String(date.getMonth() + 1).padStart(2, '0'),
+      String(date.getDate()).padStart(2, '0'),
+    ].join('-');
+  }
+
+  private clampInt(value: number, min: number, max: number) {
+    if (!Number.isFinite(value)) return min;
+    return Math.max(min, Math.min(max, Math.round(value)));
+  }
+
+  private randomEntityId(prefix: string) {
+    return `${prefix}_${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36).slice(-4)}`;
+  }
+
+  private async readJsonArraySetting(key: string) {
+    const raw = await this.getAppSettingValue(key, '[]');
+    try {
+      const parsed: unknown = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      return parsed;
+    } catch {
+      return [];
+    }
   }
 
   private parseEmailList(raw: string) {

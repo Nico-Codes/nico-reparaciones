@@ -9,8 +9,8 @@ import type { RepairItem, RepairTimelineEvent } from './types';
 const STATUSES = ['RECEIVED', 'DIAGNOSING', 'WAITING_APPROVAL', 'REPAIRING', 'READY_PICKUP', 'DELIVERED', 'CANCELLED'] as const;
 const STATUS_LABELS: Record<(typeof STATUSES)[number], string> = {
   RECEIVED: 'Recibida',
-  DIAGNOSING: 'DiagnÃ³stico',
-  WAITING_APPROVAL: 'Espera aprobaciÃ³n',
+  DIAGNOSING: 'Diagnostico',
+  WAITING_APPROVAL: 'Espera aprobacion',
   REPAIRING: 'Reparando',
   READY_PICKUP: 'Lista',
   DELIVERED: 'Entregada',
@@ -46,7 +46,7 @@ function timeAgoLabel(dateIso: string) {
   const hours = Math.floor(mins / 60);
   if (hours < 24) return `hace ${hours} h`;
   const days = Math.floor(hours / 24);
-  if (days < 7) return `hace ${days} dÃ­a${days === 1 ? '' : 's'}`;
+  if (days < 7) return `hace ${days} dia${days === 1 ? '' : 's'}`;
   const weeks = Math.floor(days / 7);
   return `hace ${weeks} semana${weeks === 1 ? '' : 's'}`;
 }
@@ -179,7 +179,7 @@ export function AdminRepairsPage() {
       const res = await repairsApi.adminStats();
       setStats(res);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error cargando estadÃ­sticas');
+      setError(err instanceof Error ? err.message : 'Error cargando estadisticas');
     } finally {
       setLoadingStats(false);
     }
@@ -212,7 +212,7 @@ export function AdminRepairsPage() {
       setBrands(brandsRes.items.filter((b) => b.active));
       setIssues(issuesRes.items.filter((i) => i.active));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error cargando catÃ¡logo');
+      setError(err instanceof Error ? err.message : 'Error cargando catalogo');
     }
   }
 
@@ -367,7 +367,7 @@ export function AdminRepairsPage() {
       await load();
       await loadStats();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error creando reparaciÃ³n');
+      setError(err instanceof Error ? err.message : 'Error creando reparacion');
     } finally {
       setSaving(false);
     }
@@ -416,7 +416,7 @@ export function AdminRepairsPage() {
       void loadStats();
       void repairsApi.adminDetail(selectedRepairId).then((detail) => setSelectedRepairTimeline(detail.timeline ?? [])).catch(() => {});
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error guardando reparaciÃ³n');
+      setError(err instanceof Error ? err.message : 'Error guardando reparacion');
     } finally {
       setSavingSelectedRepair(false);
     }
@@ -494,7 +494,7 @@ export function AdminRepairsPage() {
       <section className="page-head store-hero">
         <div>
           <div className="page-title">Reparaciones</div>
-          <p className="page-subtitle">Listado y control rÃ¡pido de reparaciones.</p>
+          <p className="page-subtitle">Listado y control rapido de reparaciones.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Link to="/admin" className="btn-outline">
@@ -541,12 +541,12 @@ export function AdminRepairsPage() {
         <div className="space-y-4">
           <form onSubmit={createRepair} className="card">
             <div className="card-head flex items-center justify-between gap-2">
-              <div className="font-black">Nueva reparaciÃ³n</div>
-              <div className="text-xs text-zinc-500">Alta rÃ¡pida</div>
+              <div className="font-black">Nueva reparacion</div>
+              <div className="text-xs text-zinc-500">Alta rapida</div>
             </div>
             <div className="card-body space-y-3">
             <Field label="Cliente *" value={form.customerName} onChange={(v) => setForm({ ...form, customerName: v })} required />
-            <Field label="TelÃ©fono" value={form.customerPhone} onChange={(v) => setForm({ ...form, customerPhone: v })} />
+            <Field label="Telefono" value={form.customerPhone} onChange={(v) => setForm({ ...form, customerPhone: v })} />
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-4">
               <SelectField
                 label="Tipo disp."
@@ -556,7 +556,7 @@ export function AdminRepairsPage() {
                 placeholder="Seleccionar"
               />
               <SelectField
-                label="Marca (catÃ¡logo)"
+                label="Marca (catalogo)"
                 value={selectedBrandId}
                 onChange={setSelectedBrandId}
                 options={brands.filter((b) => !selectedDeviceTypeId || b.deviceTypeId === selectedDeviceTypeId).map((b) => ({ value: b.id, label: b.name }))}
@@ -564,7 +564,7 @@ export function AdminRepairsPage() {
                 disabled={!selectedDeviceTypeId}
               />
               <SelectField
-                label="Modelo (catÃ¡logo)"
+                label="Modelo (catalogo)"
                 value={selectedModelId}
                 onChange={setSelectedModelId}
                 options={models.filter((m) => !selectedBrandId || m.brandId === selectedBrandId).map((m) => ({ value: m.id, label: m.name }))}
@@ -572,7 +572,7 @@ export function AdminRepairsPage() {
                 disabled={!selectedBrandId}
               />
               <SelectField
-                label="Falla (catÃ¡logo)"
+                label="Falla (catalogo)"
                 value={selectedIssueId}
                 onChange={setSelectedIssueId}
                 options={issues.filter((i) => !selectedDeviceTypeId || i.deviceTypeId === selectedDeviceTypeId).map((i) => ({ value: i.id, label: i.name }))}
@@ -594,33 +594,33 @@ export function AdminRepairsPage() {
             {priceSuggestion ? (
               <div className={`rounded-xl border px-3 py-2 text-sm ${priceSuggestion.matched ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : 'border-amber-200 bg-amber-50 text-amber-900'}`}>
                 {priceSuggestion.matched
-                  ? `Regla: ${priceSuggestion.ruleName || 'sin nombre'} Â· ${
+                  ? `Regla: ${priceSuggestion.ruleName || 'sin nombre'}  -  ${
                       priceSuggestion.calcMode === 'FIXED_TOTAL'
                         ? `Total fijo $${(priceSuggestion.basePrice ?? 0).toLocaleString('es-AR')}`
                         : `Base $${(priceSuggestion.basePrice ?? 0).toLocaleString('es-AR')} + ${(priceSuggestion.profitPercent ?? 0).toLocaleString('es-AR')}%`
                     }${
                       (priceSuggestion.shippingFee ?? 0) > 0
-                        ? ` + envÃ­o $${(priceSuggestion.shippingFee ?? 0).toLocaleString('es-AR')}`
+                        ? ` + envio $${(priceSuggestion.shippingFee ?? 0).toLocaleString('es-AR')}`
                         : ''
                     }${
                       (priceSuggestion.minFinalPrice ?? 0) > 0
-                        ? ` Â· mÃ­n. $${(priceSuggestion.minFinalPrice ?? 0).toLocaleString('es-AR')}`
+                        ? `  -  min. $${(priceSuggestion.minFinalPrice ?? 0).toLocaleString('es-AR')}`
                         : ''
                     } = $${(priceSuggestion.suggestedTotal ?? 0).toLocaleString('es-AR')}`
-                  : 'No se encontrÃ³ regla coincidente. PodÃ©s cargar el presupuesto manualmente o crear una regla.'}
+                  : 'No se encontro regla coincidente. Podes cargar el presupuesto manualmente o crear una regla.'}
               </div>
             ) : null}
             <label className="block">
               <span className="mb-1 block text-sm font-bold text-zinc-700">Notas</span>
               <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={3} className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm" />
             </label>
-              <Button className="w-full" disabled={saving}>{saving ? 'Guardando...' : 'Crear reparaciÃ³n'}</Button>
+              <Button className="w-full" disabled={saving}>{saving ? 'Guardando...' : 'Crear reparacion'}</Button>
             </div>
           </form>
 
           <section className="card">
             <div className="card-head flex items-center justify-between gap-2">
-              <div className="font-black">Reglas de cÃ¡lculo</div>
+              <div className="font-black">Reglas de calculo</div>
               <div className="text-xs text-zinc-500">{loadingRules ? 'Cargando...' : `${rules.length} reglas`}</div>
             </div>
             <div className="card-body">
@@ -642,16 +642,16 @@ export function AdminRepairsPage() {
                 {loadingRules ? (
                   <div className="rounded-xl border border-zinc-200 p-2 text-sm">Cargando reglas...</div>
                 ) : rules.length === 0 ? (
-                  <div className="rounded-xl border border-zinc-200 p-2 text-sm">Sin reglas todavÃ­a.</div>
+                  <div className="rounded-xl border border-zinc-200 p-2 text-sm">Sin reglas todavia.</div>
                 ) : rules.map((rule) => (
                   <div key={rule.id} className="rounded-xl border border-zinc-200 p-2">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <div className="text-sm font-black text-zinc-900">{rule.name}</div>
                         <div className="text-xs text-zinc-500">
-                          {[rule.deviceBrand, rule.deviceModel, rule.issueLabel].filter(Boolean).join(' Â· ') || 'Regla global'}
+                          {[rule.deviceBrand, rule.deviceModel, rule.issueLabel].filter(Boolean).join('  -  ') || 'Regla global'}
                         </div>
-                        <div className="mt-1 text-xs text-zinc-600">Base ${rule.basePrice.toLocaleString('es-AR')} + {rule.profitPercent}% Â· Prio {rule.priority}</div>
+                        <div className="mt-1 text-xs text-zinc-600">Base ${rule.basePrice.toLocaleString('es-AR')} + {rule.profitPercent}%  -  Prio {rule.priority}</div>
                       </div>
                       <button type="button" className="text-xs font-bold text-rose-700 hover:text-rose-800" onClick={() => void deleteRule(rule.id)}>
                         Borrar
@@ -668,14 +668,14 @@ export function AdminRepairsPage() {
           <div className="card-head flex items-center justify-between gap-2">
             <div className="font-black">Listado y detalle</div>
             <div className="text-xs text-zinc-500">
-              {loading ? 'Cargando...' : `${items.length} reparaciones`} Â· {selectedRepairId ? 'detalle activo' : 'sin selecciÃ³n'}
+              {loading ? 'Cargando...' : `${items.length} reparaciones`}  -  {selectedRepairId ? 'detalle activo' : 'sin seleccion'}
             </div>
           </div>
           <div className="card-body">
             <div className="mb-2 text-xs font-bold uppercase tracking-wide text-zinc-500">Filtros</div>
             <div className="mb-3 rounded-xl border border-zinc-200 bg-zinc-50 p-2">
               <div className="flex flex-wrap gap-2">
-              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar ID / cliente / telÃ©fono / modelo / falla..." className="h-10 flex-1 min-w-[220px] rounded-xl border border-zinc-200 px-3 text-sm" />
+              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar ID / cliente / telefono / modelo / falla..." className="h-10 flex-1 min-w-[220px] rounded-xl border border-zinc-200 px-3 text-sm" />
               <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="h-10 min-w-[200px] rounded-xl border border-zinc-200 px-3 text-sm">
                 <option value="">Todos los estados</option>
                 {STATUSES.map((s) => <option key={s} value={s}>{repairStatusLabel(s)}</option>)}
@@ -731,12 +731,12 @@ export function AdminRepairsPage() {
                       <div className="min-w-0">
                         <div className="text-lg font-black tracking-tight text-zinc-900">{repairCodeLabel(r.id)}</div>
                         <div className="mt-0.5 text-xs text-zinc-600">
-                          Recibido: {new Date(r.createdAt).toLocaleDateString('es-AR')} {new Date(r.createdAt).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} Â· <span className="font-bold">{timeAgoLabel(r.createdAt)}</span>
+                          Recibido: {new Date(r.createdAt).toLocaleDateString('es-AR')} {new Date(r.createdAt).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}  -  <span className="font-bold">{timeAgoLabel(r.createdAt)}</span>
                         </div>
                       </div>
                       <div className="min-w-0">
                         <div className="truncate text-base font-black tracking-tight text-zinc-900">{r.customerName}</div>
-                        <div className="truncate text-xs text-zinc-600">{r.customerPhone || 'Sin telÃ©fono'}</div>
+                        <div className="truncate text-xs text-zinc-600">{r.customerPhone || 'Sin telefono'}</div>
                       </div>
                       <div className="min-w-0">
                         <div className="truncate text-base text-zinc-900">{[r.deviceBrand, r.deviceModel].filter(Boolean).join(' ') || 'Sin equipo'}</div>
@@ -745,7 +745,7 @@ export function AdminRepairsPage() {
                         <span className={repairStatusBadgeClass(r.status)}>{repairStatusLabel(r.status)}</span>
                       </div>
                       <div className="text-base font-black tracking-tight text-zinc-900">
-                        {r.finalPrice != null ? `$ ${r.finalPrice.toLocaleString('es-AR')}` : r.quotedPrice != null ? `$ ${r.quotedPrice.toLocaleString('es-AR')}` : 'â€”'}
+                        {r.finalPrice != null ? `$ ${r.finalPrice.toLocaleString('es-AR')}` : r.quotedPrice != null ? `$ ${r.quotedPrice.toLocaleString('es-AR')}` : '-'}
                       </div>
                       <div className="flex flex-wrap items-center justify-start gap-2 lg:justify-end">
                         <button type="button" onClick={() => setSelectedRepairId(r.id)} className="btn-outline !h-10 !rounded-xl px-4 text-sm font-bold">
@@ -780,7 +780,7 @@ export function AdminRepairsPage() {
             <div className="mt-4 border-t border-zinc-200 pt-4">
               {!selectedRepairId ? (
                 <div className="rounded-xl border border-dashed border-zinc-300 p-3 text-sm text-zinc-600">
-                  Selecciona una reparaciÃ³n para ver y editar el detalle.
+                  Selecciona una reparacion para ver y editar el detalle.
                 </div>
               ) : loadingSelectedRepair ? (
                 <div className="rounded-xl border border-zinc-200 p-3 text-sm">Cargando detalle...</div>
@@ -791,7 +791,7 @@ export function AdminRepairsPage() {
                   <div className="text-xs font-bold uppercase tracking-wide text-zinc-500">Detalle</div>
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <div className="text-xs font-bold uppercase tracking-wide text-zinc-500">Detalle de reparaciÃ³n</div>
+                      <div className="text-xs font-bold uppercase tracking-wide text-zinc-500">Detalle de reparacion</div>
                       <div className="mt-1 text-sm font-black break-all text-zinc-900">{selectedRepair.id}</div>
                       <div className="text-xs text-zinc-500">{new Date(selectedRepair.createdAt).toLocaleString('es-AR')}</div>
                     </div>
@@ -807,7 +807,7 @@ export function AdminRepairsPage() {
 
                   <div className="grid gap-2 sm:grid-cols-2">
                     <Field label="Cliente *" value={editForm.customerName} onChange={(v) => setEditForm((p) => ({ ...p, customerName: v }))} required />
-                    <Field label="TelÃ©fono" value={editForm.customerPhone} onChange={(v) => setEditForm((p) => ({ ...p, customerPhone: v }))} />
+                    <Field label="Telefono" value={editForm.customerPhone} onChange={(v) => setEditForm((p) => ({ ...p, customerPhone: v }))} />
                   </div>
 
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-4">
@@ -819,7 +819,7 @@ export function AdminRepairsPage() {
                       placeholder="Seleccionar"
                     />
                     <SelectField
-                      label="Marca (catÃ¡logo)"
+                      label="Marca (catalogo)"
                       value={editBrandId}
                       onChange={setEditBrandId}
                       options={brands.filter((b) => !editDeviceTypeId || b.deviceTypeId === editDeviceTypeId).map((b) => ({ value: b.id, label: b.name }))}
@@ -827,7 +827,7 @@ export function AdminRepairsPage() {
                       disabled={!editDeviceTypeId}
                     />
                     <SelectField
-                      label="Modelo (catÃ¡logo)"
+                      label="Modelo (catalogo)"
                       value={editModelId}
                       onChange={setEditModelId}
                       options={editModels.filter((m) => !editBrandId || m.brandId === editBrandId).map((m) => ({ value: m.id, label: m.name }))}
@@ -835,7 +835,7 @@ export function AdminRepairsPage() {
                       disabled={!editBrandId}
                     />
                     <SelectField
-                      label="Falla (catÃ¡logo)"
+                      label="Falla (catalogo)"
                       value={editIssueId}
                       onChange={setEditIssueId}
                       options={issues.filter((i) => !editDeviceTypeId || i.deviceTypeId === editDeviceTypeId).map((i) => ({ value: i.id, label: i.name }))}

@@ -84,6 +84,68 @@ export type AdminDashboardResponse = {
   generatedAt: string;
 };
 
+export type AdminProviderItem = {
+  id: string;
+  name: string;
+  priority: number;
+  phone: string;
+  products: number;
+  incidents: number;
+  warrantiesOk: number;
+  warrantiesExpired: number;
+  loss: number;
+  score: number;
+  confidenceLabel: string;
+  active: boolean;
+  searchEnabled: boolean;
+  statusProbe: 'ok' | 'none';
+  lastProbeAt: string;
+  lastQuery: string;
+  lastResults: number;
+  mode: string;
+  endpoint: string;
+  configJson: string;
+  notes: string;
+};
+
+export type AdminWarrantyItem = {
+  id: string;
+  sourceType: 'repair' | 'product';
+  source: string;
+  status: 'open' | 'closed';
+  statusLabel: string;
+  title: string;
+  reason: string;
+  repairId: string | null;
+  repairCode: string | null;
+  customerName: string;
+  productId: string | null;
+  providerId: string | null;
+  provider: string;
+  costSource: string;
+  quantity: number;
+  unitCost: number;
+  cost: number;
+  recovered: number;
+  loss: number;
+  notes: string;
+  happenedAt: string;
+  date: string;
+  time: string;
+};
+
+export type AdminAccountingItem = {
+  id: string;
+  happenedAt: string;
+  date: string;
+  direction: 'Ingreso' | 'Egreso';
+  directionKey: 'inflow' | 'outflow';
+  category: string;
+  description: string;
+  source: string;
+  amount: number;
+};
+
 export const adminApi = {
   dashboard() {
     return authRequest<AdminDashboardResponse>('/admin/dashboard');
@@ -158,5 +220,131 @@ export const adminApi = {
       '/admin/reports/operational-alerts/send',
       { method: 'POST', body: '{}' },
     );
+  },
+  providers(params?: { q?: string; active?: '1' | '0' | '' }) {
+    const qs = new URLSearchParams();
+    if (params?.q) qs.set('q', params.q);
+    if (params?.active) qs.set('active', params.active);
+    return authRequest<{
+      items: AdminProviderItem[];
+      summary: { total: number; active: number; incidents: number; openIncidents: number; closedIncidents: number; accumulatedLoss: number };
+    }>(`/admin/providers${qs.size ? `?${qs.toString()}` : ''}`);
+  },
+  createProvider(input: {
+    name: string;
+    phone?: string | null;
+    notes?: string | null;
+    searchPriority?: number;
+    searchEnabled?: boolean;
+    searchMode?: 'json' | 'html';
+    searchEndpoint?: string | null;
+    searchConfigJson?: string | null;
+    active?: boolean;
+  }) {
+    return authRequest<{ item: AdminProviderItem }>('/admin/providers', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  },
+  updateProvider(
+    id: string,
+    input: Partial<{
+      name: string;
+      phone: string | null;
+      notes: string | null;
+      searchPriority: number;
+      searchEnabled: boolean;
+      searchMode: 'json' | 'html';
+      searchEndpoint: string | null;
+      searchConfigJson: string | null;
+      active: boolean;
+    }>,
+  ) {
+    return authRequest<{ item: AdminProviderItem }>(`/admin/providers/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      body: JSON.stringify(input),
+    });
+  },
+  toggleProvider(id: string) {
+    return authRequest<{ item: AdminProviderItem }>(`/admin/providers/${encodeURIComponent(id)}/toggle`, {
+      method: 'POST',
+      body: '{}',
+    });
+  },
+  importDefaultProviders() {
+    return authRequest<{ created: number; updated: number; items: AdminProviderItem[] }>('/admin/providers/import-defaults', {
+      method: 'POST',
+      body: '{}',
+    });
+  },
+  reorderProviders(orderedIds: string[]) {
+    return authRequest<{ ok: boolean; items: AdminProviderItem[] }>('/admin/providers/reorder', {
+      method: 'POST',
+      body: JSON.stringify({ orderedIds }),
+    });
+  },
+  probeProvider(id: string, q?: string) {
+    return authRequest<{ item: AdminProviderItem; probe: { query: string; count: number; url?: string; httpStatus?: number } }>(
+      `/admin/providers/${encodeURIComponent(id)}/probe`,
+      {
+        method: 'POST',
+        body: JSON.stringify(q ? { q } : {}),
+      },
+    );
+  },
+  warranties(params?: { q?: string; sourceType?: 'repair' | 'product' | ''; status?: 'open' | 'closed' | ''; from?: string; to?: string }) {
+    const qs = new URLSearchParams();
+    if (params?.q) qs.set('q', params.q);
+    if (params?.sourceType) qs.set('sourceType', params.sourceType);
+    if (params?.status) qs.set('status', params.status);
+    if (params?.from) qs.set('from', params.from);
+    if (params?.to) qs.set('to', params.to);
+    return authRequest<{
+      items: AdminWarrantyItem[];
+      summary: { totalCount: number; openCount: number; closedCount: number; totalLoss: number };
+      supplierStats: Array<{ supplierId: string; name: string; incidentsCount: number; totalLoss: number }>;
+    }>(`/admin/warranties${qs.size ? `?${qs.toString()}` : ''}`);
+  },
+  createWarranty(input: {
+    sourceType: 'repair' | 'product';
+    title: string;
+    reason?: string | null;
+    repairId?: string | null;
+    productId?: string | null;
+    orderId?: string | null;
+    supplierId?: string | null;
+    quantity: number;
+    unitCost?: number | null;
+    costOrigin?: 'manual' | 'repair' | 'product';
+    extraCost?: number;
+    recoveredAmount?: number;
+    happenedAt?: string | null;
+    notes?: string | null;
+  }) {
+    return authRequest<{ item: AdminWarrantyItem | null }>('/admin/warranties', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  },
+  closeWarranty(id: string) {
+    return authRequest<{ item: AdminWarrantyItem | null }>(`/admin/warranties/${encodeURIComponent(id)}/close`, {
+      method: 'PATCH',
+      body: '{}',
+    });
+  },
+  accounting(params?: { q?: string; direction?: 'inflow' | 'outflow' | ''; category?: string; from?: string; to?: string }) {
+    const qs = new URLSearchParams();
+    if (params?.q) qs.set('q', params.q);
+    if (params?.direction) qs.set('direction', params.direction);
+    if (params?.category) qs.set('category', params.category);
+    if (params?.from) qs.set('from', params.from);
+    if (params?.to) qs.set('to', params.to);
+    return authRequest<{
+      summary: { entriesCount: number; inflowTotal: number; outflowTotal: number; netTotal: number };
+      categories: string[];
+      categorySummary: Array<{ category: string; entriesCount: number; inflowTotal: number; outflowTotal: number; netTotal: number }>;
+      items: AdminAccountingItem[];
+      filters: { q: string; direction: '' | 'inflow' | 'outflow'; category: string; from: string; to: string };
+    }>(`/admin/accounting${qs.size ? `?${qs.toString()}` : ''}`);
   },
 };

@@ -165,7 +165,7 @@ call npm --prefix "%NEXT_STACK_ROOT%" run env:check || goto :end_fail
 echo.
 echo [OK] Next setup completado.
 echo     Siguiente paso: nico-dev.bat next-start
-goto :end_ok
+exit /b 0
 
 :next_start
 echo.
@@ -229,14 +229,14 @@ echo [TIP] Si falla DB, revisa: npm --prefix "%NEXT_STACK_ROOT%" run db:check
 echo [TIP] Si login queda en 401/refresh 401, limpia localStorage:
 echo       nico_next_access_token / nico_next_refresh_token / nico_next_user
 echo [TIP] Si aparece 429, espera ~60s ^(throttler dev^) o reinicia API.
-goto :end_ok
+exit /b 0
 
 :next_stop
 echo.
 echo [NEXT-STOP] Deteniendo next-stack (puertos %NEXT_API_PORT%, %NEXT_WEB_PORT%, %NEXT_WEB_PREVIEW_PORT%)...
 powershell -NoProfile -Command "$ports=@(%NEXT_API_PORT%,%NEXT_WEB_PORT%,%NEXT_WEB_PREVIEW_PORT%); $pids=Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object { $ports -contains $_.LocalPort } | Select-Object -ExpandProperty OwningProcess -Unique; foreach($pid in $pids){ Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue }" >nul 2>&1
 echo - Next-stack detenido (si estaba activo).
-goto :end_ok
+exit /b 0
 
 :next_qa
 echo.
@@ -249,7 +249,7 @@ where npm >nul 2>&1 || (echo [ERROR] npm no encontrado. Instala Node.js LTS. & g
 call npm --prefix "%NEXT_STACK_ROOT%" run qa:full || goto :end_fail
 echo.
 echo [OK] QA full completado.
-goto :end_ok
+exit /b 0
 
 :next_preprod
 echo.
@@ -263,7 +263,7 @@ call npm --prefix "%NEXT_STACK_ROOT%" run deploy:check || goto :end_fail
 call npm --prefix "%NEXT_STACK_ROOT%" run qa:preprod || goto :end_fail
 echo.
 echo [OK] Next preprod completado.
-goto :end_ok
+exit /b 0
 
 :setup
 echo.

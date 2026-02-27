@@ -142,7 +142,7 @@ export function AdminProductsPage() {
 
                     <div className="truncate text-xs font-black leading-tight text-zinc-800">{p.sku || '-'}</div>
                     <div className="truncate text-xs leading-tight text-zinc-800">{p.barcode || '-'}</div>
-                    <div className="truncate text-xs text-zinc-900">{p.category?.name || 'â€”'}</div>
+                    <div className="truncate text-xs text-zinc-900">{p.category?.name || '-'}</div>
                     <div className="truncate text-xs text-zinc-900">-</div>
 
                     <div className="text-right">
@@ -199,7 +199,7 @@ export function AdminProductsPage() {
                               className="flex h-9 w-full items-center justify-between rounded-xl px-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
                             >
                               <span>Destacado</span>
-                              <Pill tone={p.featured ? 'amber' : 'zinc'}>{p.featured ? 'SÃ­' : 'No'}</Pill>
+                              <Pill tone={p.featured ? 'amber' : 'zinc'}>{p.featured ? 'Si' : 'No'}</Pill>
                             </button>
                             <button type="button" className="flex h-9 w-full items-center rounded-xl px-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50">
                               Etiqueta
