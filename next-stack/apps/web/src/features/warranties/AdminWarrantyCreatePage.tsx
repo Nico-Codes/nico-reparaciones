@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { repairsApi } from '@/features/repairs/api';
 import type { RepairItem } from '@/features/repairs/types';
 import { adminApi, type AdminProviderItem } from '@/features/admin/api';
+import { catalogAdminApi, type AdminProduct } from '@/features/catalogAdmin/api';
 
 function repairCode(id: string) {
   return `R-${id.slice(0, 13)}`;
@@ -16,6 +17,8 @@ export function AdminWarrantyCreatePage() {
   const [loadingRepair, setLoadingRepair] = useState(false);
   const [providers, setProviders] = useState<AdminProviderItem[]>([]);
   const [loadingProviders, setLoadingProviders] = useState(false);
+  const [products, setProducts] = useState<AdminProduct[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -23,6 +26,7 @@ export function AdminWarrantyCreatePage() {
   const [title, setTitle] = useState('Cambio de módulo en garantía');
   const [reason, setReason] = useState('');
   const [providerId, setProviderId] = useState('');
+  const [productId, setProductId] = useState('');
   const [orderRef, setOrderRef] = useState('');
   const [incidentAt, setIncidentAt] = useState('');
   const [qty, setQty] = useState('1');
@@ -85,6 +89,29 @@ export function AdminWarrantyCreatePage() {
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    let mounted = true;
+    async function loadProducts() {
+      setLoadingProducts(true);
+      try {
+        const res = await catalogAdminApi.products({ active: '1' });
+        if (!mounted) return;
+        setProducts(res.items);
+      } catch {
+        if (!mounted) return;
+        setProducts([]);
+      } finally {
+        if (mounted) setLoadingProducts(false);
+      }
+    }
+    void loadProducts();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const selectedProduct = useMemo(() => products.find((p) => p.id === productId) ?? null, [products, productId]);
+
   const estimatedLoss = useMemo(() => {
     const q = Number(qty || 0);
     const cost = Number(unitCost || 0);
@@ -108,12 +135,12 @@ export function AdminWarrantyCreatePage() {
         title: title.trim(),
         reason: reason.trim() || null,
         repairId: source === 'REPAIR' ? repairId || null : null,
-        productId: source === 'PRODUCT' ? null : null,
+        productId: source === 'PRODUCT' ? productId || null : null,
         orderId: orderRef.trim() || null,
         supplierId: providerId || null,
         quantity: Math.max(1, Number(qty || 1)),
         unitCost: Math.max(0, Number(unitCost || 0)),
-        costOrigin: source === 'REPAIR' ? 'repair' : 'manual',
+        costOrigin: source === 'REPAIR' ? 'repair' : 'product',
         extraCost: Math.max(0, Number(extraCost || 0)),
         recoveredAmount: Math.max(0, Number(recoveredAmount || 0)),
         happenedAt: incidentAt || null,
@@ -156,7 +183,7 @@ export function AdminWarrantyCreatePage() {
               <span className="mb-1 block text-sm font-bold text-zinc-700">Origen *</span>
               <select value={source} onChange={(e) => setSource(e.target.value as 'REPAIR' | 'PRODUCT')} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm">
                 <option value="REPAIR">Reparación</option>
-                <option value="PRODUCT" disabled>Producto (pendiente)</option>
+                <option value="PRODUCT">Producto</option>
               </select>
             </label>
             <label className="block">
@@ -173,15 +200,34 @@ export function AdminWarrantyCreatePage() {
           <div className="grid gap-4 md:grid-cols-2">
             <label className="block">
               <span className="mb-1 block text-sm font-bold text-zinc-700">Reparación asociada</span>
-              <select className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" value={repairId || ''}>
+              <select className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" value={repairId || ''} disabled={source !== 'REPAIR'}>
                 <option value={repairId || ''}>{loadingRepair ? 'Cargando...' : repairOptionLabel}</option>
               </select>
             </label>
             <label className="block">
               <span className="mb-1 block text-sm font-bold text-zinc-700">Producto asociado</span>
-              <select className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" defaultValue="">
+              <select
+                className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm"
+                value={productId}
+                disabled={source !== 'PRODUCT'}
+                onChange={(e) => {
+                  const nextProductId = e.target.value;
+                  setProductId(nextProductId);
+                  const selected = products.find((p) => p.id === nextProductId) ?? null;
+                  if (selected?.costPrice != null) setUnitCost(String(selected.costPrice));
+                  if (selected && !title.trim()) setTitle(`Garantía de producto: ${selected.name}`);
+                }}
+              >
                 <option value="">Sin asociar</option>
+                {products.map((product) => (
+                  <option key={product.id} value={product.id}>
+                    {product.name}{product.sku ? ` (${product.sku})` : ''}
+                  </option>
+                ))}
               </select>
+              <p className="mt-1 text-xs text-zinc-500">
+                {loadingProducts ? 'Cargando productos...' : 'Selecciona un producto cuando el origen sea Producto.'}
+              </p>
             </label>
           </div>
 
@@ -230,7 +276,7 @@ export function AdminWarrantyCreatePage() {
               <p className="mt-1 text-xs text-zinc-500">Se autocompleta desde la reparación/producto cuando existe contexto.</p>
               <div className="mt-2">
                 <span className="inline-flex h-7 items-center rounded-full border border-sky-300 bg-sky-50 px-3 text-xs font-bold text-sky-700">
-                  Origen costo: {source === 'REPAIR' ? 'Reparación' : 'Manual'}
+                  Origen costo: {source === 'REPAIR' ? 'Reparación' : selectedProduct ? 'Producto' : 'Manual'}
                 </span>
               </div>
             </div>

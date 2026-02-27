@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Inject, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+﻿import { Body, Controller, Delete, Get, Inject, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { z } from 'zod';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { Roles } from '../auth/roles.decorator.js';
@@ -10,16 +10,28 @@ const repairRuleSchema = z.object({
   active: z.boolean().optional(),
   priority: z.number().int().min(-9999).max(9999).optional(),
   deviceTypeId: z.string().trim().max(191).optional().nullable(),
+  device_type_id: z.string().trim().max(191).optional().nullable(),
   deviceBrandId: z.string().trim().max(191).optional().nullable(),
+  device_brand_id: z.string().trim().max(191).optional().nullable(),
   deviceModelGroupId: z.string().trim().max(191).optional().nullable(),
+  device_model_group_id: z.string().trim().max(191).optional().nullable(),
   deviceModelId: z.string().trim().max(191).optional().nullable(),
+  device_model_id: z.string().trim().max(191).optional().nullable(),
   deviceIssueTypeId: z.string().trim().max(191).optional().nullable(),
+  device_issue_type_id: z.string().trim().max(191).optional().nullable(),
+  repair_type_id: z.string().trim().max(191).optional().nullable(),
   deviceBrand: z.string().trim().max(120).optional().nullable(),
   deviceModel: z.string().trim().max(120).optional().nullable(),
   issueLabel: z.string().trim().max(190).optional().nullable(),
-  basePrice: z.number().nonnegative(),
+  basePrice: z.number().nonnegative().optional(),
   profitPercent: z.number().min(0).max(1000).optional(),
   calcMode: z.enum(['BASE_PLUS_MARGIN', 'FIXED_TOTAL']).optional(),
+  mode: z.enum(['margin', 'fixed']).optional(),
+  multiplier: z.number().min(0).optional().nullable(),
+  min_profit: z.number().min(0).optional().nullable(),
+  fixed_total: z.number().min(0).optional().nullable(),
+  shipping_default: z.number().min(0).optional().nullable(),
+  minProfit: z.number().min(0).optional().nullable(),
   minFinalPrice: z.number().nonnegative().optional().nullable(),
   shippingFee: z.number().min(0).optional().nullable(),
   notes: z.string().trim().max(2000).optional().nullable(),
@@ -64,14 +76,29 @@ export class PricingController {
   @Get('repairs/resolve')
   resolveRepairPrice(
     @Query('deviceBrandId') deviceBrandId?: string,
+    @Query('device_brand_id') deviceBrandIdLegacy?: string,
     @Query('deviceTypeId') deviceTypeId?: string,
+    @Query('device_type_id') deviceTypeIdLegacy?: string,
     @Query('deviceModelGroupId') deviceModelGroupId?: string,
+    @Query('device_model_group_id') deviceModelGroupIdLegacy?: string,
     @Query('deviceModelId') deviceModelId?: string,
+    @Query('device_model_id') deviceModelIdLegacy?: string,
     @Query('deviceIssueTypeId') deviceIssueTypeId?: string,
+    @Query('device_issue_type_id') deviceIssueTypeIdLegacy?: string,
+    @Query('repair_type_id') repairTypeIdLegacy?: string,
     @Query('deviceBrand') deviceBrand?: string,
     @Query('deviceModel') deviceModel?: string,
     @Query('issueLabel') issueLabel?: string,
   ) {
-    return this.pricingService.resolveRepairPrice({ deviceTypeId, deviceBrandId, deviceModelGroupId, deviceModelId, deviceIssueTypeId, deviceBrand, deviceModel, issueLabel });
+    return this.pricingService.resolveRepairPrice({
+      deviceTypeId: deviceTypeId ?? deviceTypeIdLegacy,
+      deviceBrandId: deviceBrandId ?? deviceBrandIdLegacy,
+      deviceModelGroupId: deviceModelGroupId ?? deviceModelGroupIdLegacy,
+      deviceModelId: deviceModelId ?? deviceModelIdLegacy,
+      deviceIssueTypeId: deviceIssueTypeId ?? deviceIssueTypeIdLegacy ?? repairTypeIdLegacy,
+      deviceBrand,
+      deviceModel,
+      issueLabel,
+    });
   }
 }

@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { deviceCatalogApi } from '@/features/deviceCatalog/api';
 import { adminApi } from './api';
 
 type DeviceTypeOpt = { id: string; name: string; slug: string; active: boolean };
-type BrandOpt = { id: string; name: string; slug: string; active: boolean };
+type BrandOpt = { id: string; deviceTypeId?: string | null; name: string; slug: string; active: boolean };
 type GroupRow = { id: string; name: string; slug: string; active: boolean };
 type ModelRow = { id: string; name: string; slug: string; active: boolean; deviceModelGroupId: string | null };
 
@@ -18,6 +18,7 @@ export function AdminModelGroupsPage() {
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupActive, setNewGroupActive] = useState(true);
   const [loadingFilters, setLoadingFilters] = useState(true);
+  const [loadingBrands, setLoadingBrands] = useState(false);
   const [loadingBrandData, setLoadingBrandData] = useState(false);
   const [creatingGroup, setCreatingGroup] = useState(false);
   const [savingGroupId, setSavingGroupId] = useState<string | null>(null);
@@ -31,10 +32,9 @@ export function AdminModelGroupsPage() {
       setLoadingFilters(true);
       setError('');
       try {
-        const [typesRes, brandsRes] = await Promise.all([adminApi.deviceTypes(), deviceCatalogApi.brands()]);
+        const typesRes = await adminApi.deviceTypes();
         if (!mounted) return;
         setDeviceTypes(typesRes.items.filter((i) => i.active));
-        setBrands(brandsRes.items.filter((i) => i.active));
       } catch (e) {
         if (!mounted) return;
         setError(e instanceof Error ? e.message : 'Error cargando catalogo');
@@ -47,6 +47,35 @@ export function AdminModelGroupsPage() {
       mounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    async function loadBrands() {
+      setLoadingBrands(true);
+      setError('');
+      try {
+        const brandsRes = await deviceCatalogApi.brands(deviceType || undefined);
+        if (!mounted) return;
+        const activeBrands = brandsRes.items.filter((i) => i.active);
+        setBrands(activeBrands);
+        setBrand((prev) => {
+          if (!prev) return prev;
+          return activeBrands.some((b) => b.id === prev) ? prev : '';
+        });
+      } catch (e) {
+        if (!mounted) return;
+        setError(e instanceof Error ? e.message : 'Error cargando marcas');
+        setBrands([]);
+        setBrand('');
+      } finally {
+        if (mounted) setLoadingBrands(false);
+      }
+    }
+    void loadBrands();
+    return () => {
+      mounted = false;
+    };
+  }, [deviceType]);
 
   async function loadBrandData(brandId: string) {
     if (!brandId) {
@@ -70,8 +99,6 @@ export function AdminModelGroupsPage() {
   useEffect(() => {
     void loadBrandData(brand);
   }, [brand]);
-
-  const filteredBrands = useMemo(() => brands, [brands]);
 
   async function createGroup() {
     if (!brand || !newGroupName.trim()) return;
@@ -169,24 +196,24 @@ export function AdminModelGroupsPage() {
               <select
                 value={brand}
                 onChange={(e) => setBrand(e.target.value)}
-                disabled={loadingFilters}
+                disabled={loadingFilters || loadingBrands}
                 className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm"
               >
                 <option value="">Elegi...</option>
-                {filteredBrands.map((b) => (
+                {brands.map((b) => (
                   <option key={b.id} value={b.id}>{b.name}</option>
                 ))}
               </select>
             </div>
-            <button type="button" onClick={() => void loadBrandData(brand)} className="btn-outline !h-11 !rounded-2xl px-5 text-sm font-bold">
+            <button
+              type="button"
+              onClick={() => void loadBrandData(brand)}
+              disabled={loadingBrands}
+              className="btn-outline !h-11 !rounded-2xl px-5 text-sm font-bold disabled:opacity-60"
+            >
               Filtrar
             </button>
           </div>
-          {!!deviceType && (
-            <p className="mt-3 text-xs text-zinc-500">
-              Nota: con el schema actual, el filtro por tipo es visual; las marcas se listan globalmente hasta migrar relaciones de `device_type`.
-            </p>
-          )}
         </div>
       </section>
 
@@ -201,7 +228,7 @@ export function AdminModelGroupsPage() {
           <div className="card">
             <div className="card-head">
               <div className="font-black">Crear grupo</div>
-              <span className="badge-zinc">{loadingBrandData ? '—' : groups.length}</span>
+              <span className="badge-zinc">{loadingBrandData ? '--' : groups.length}</span>
             </div>
             <div className="card-body space-y-3">
               <div>
@@ -275,7 +302,7 @@ export function AdminModelGroupsPage() {
                 <div className="font-black">Asignar modelos a grupos</div>
                 <div className="text-xs text-zinc-500">Al cambiar el select, se guarda solo.</div>
               </div>
-              <span className="badge-zinc">{loadingBrandData ? '—' : models.length}</span>
+              <span className="badge-zinc">{loadingBrandData ? '--' : models.length}</span>
             </div>
             <div className="card-body">
               <div className="space-y-2">

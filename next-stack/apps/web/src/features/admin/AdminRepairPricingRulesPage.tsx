@@ -13,6 +13,7 @@ type RepairRuleRow = {
   repairType: string;
   basePrice: string;
   percent: string;
+  minProfit: string;
   calcMode: 'BASE_PLUS_MARGIN' | 'FIXED_TOTAL';
   minFinalPrice: string;
   shippingFee: string;
@@ -35,6 +36,7 @@ function fromApi(row: any): RepairRuleRow {
     repairType: row.issueLabel ?? '',
     basePrice: String(row.basePrice ?? 0),
     percent: String(row.profitPercent ?? 0),
+    minProfit: row.minProfit != null ? String(row.minProfit) : '',
     calcMode: row.calcMode === 'FIXED_TOTAL' ? 'FIXED_TOTAL' : 'BASE_PLUS_MARGIN',
     minFinalPrice: row.minFinalPrice != null ? String(row.minFinalPrice) : '',
     shippingFee: row.shippingFee != null ? String(row.shippingFee) : '',
@@ -170,6 +172,7 @@ export function AdminRepairPricingRulesPage() {
         issueLabel: row.repairType.trim() || null,
         basePrice: Number(row.basePrice || 0),
         profitPercent: Number(row.percent || 0),
+        minProfit: row.minProfit ? Number(row.minProfit) : null,
         calcMode: row.calcMode,
         minFinalPrice: row.minFinalPrice ? Number(row.minFinalPrice) : null,
         shippingFee: row.shippingFee ? Number(row.shippingFee) : null,
@@ -206,7 +209,7 @@ export function AdminRepairPricingRulesPage() {
           <div>
             <h1 className="text-2xl font-black tracking-tight text-zinc-900">Reglas de precios (auto)</h1>
             <p className="mt-1 text-sm text-zinc-600">
-              Configura base y margen por marca/modelo/tipo de reparacion. (Campos legacy no soportados aun por schema nuevo quedan fuera)
+              Configura cálculo automático por tipo, marca, grupo/modelo y falla con edición en línea.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -228,7 +231,7 @@ export function AdminRepairPricingRulesPage() {
         <div className="card-body p-0">
           <div className="overflow-x-auto">
             <div className="min-w-[1200px]">
-              <div className="grid grid-cols-[0.55fr_1fr_1.8fr_0.85fr_0.85fr_0.85fr_0.85fr_0.7fr_0.7fr_0.7fr_0.7fr_1.15fr] gap-3 border-b border-zinc-100 bg-zinc-50 px-4 py-3 text-sm font-black uppercase tracking-wide text-zinc-500">
+              <div className="grid grid-cols-[0.55fr_1fr_1.8fr_0.85fr_0.85fr_0.85fr_0.85fr_0.7fr_0.7fr_0.8fr_0.7fr_0.7fr_0.7fr_1.15fr] gap-3 border-b border-zinc-100 bg-zinc-50 px-4 py-3 text-sm font-black uppercase tracking-wide text-zinc-500">
                 <div>Activo</div>
                 <div>Nombre</div>
                 <div>Scope</div>
@@ -238,6 +241,7 @@ export function AdminRepairPricingRulesPage() {
                 <div>Modo</div>
                 <div>Base</div>
                 <div>%</div>
+                <div>Min gan.</div>
                 <div>Min</div>
                 <div>Envio</div>
                 <div>Prioridad</div>
@@ -248,7 +252,7 @@ export function AdminRepairPricingRulesPage() {
               {!loading && rows.length === 0 ? <div className="p-4 text-sm text-zinc-600">Sin reglas cargadas.</div> : null}
 
               {rows.map((row) => (
-                <div key={row.id} className="grid grid-cols-[0.55fr_1fr_1.8fr_0.85fr_0.85fr_0.85fr_0.85fr_0.7fr_0.7fr_0.7fr_0.7fr_1.15fr] gap-3 border-b border-zinc-100 px-4 py-3 text-sm">
+                <div key={row.id} className="grid grid-cols-[0.55fr_1fr_1.8fr_0.85fr_0.85fr_0.85fr_0.85fr_0.7fr_0.7fr_0.8fr_0.7fr_0.7fr_0.7fr_1.15fr] gap-3 border-b border-zinc-100 px-4 py-3 text-sm">
                   <div className="flex items-center">
                     <input type="checkbox" checked={row.active} onChange={(e) => patchRow(row.id, { active: e.target.checked })} className="h-4 w-4" />
                   </div>
@@ -277,6 +281,7 @@ export function AdminRepairPricingRulesPage() {
                   </select>
                   <InlineText value={row.basePrice} onChange={(v) => patchRow(row.id, { basePrice: v })} />
                   <InlineText value={row.percent} onChange={(v) => patchRow(row.id, { percent: v })} />
+                  <InlineText value={row.minProfit} onChange={(v) => patchRow(row.id, { minProfit: v })} />
                   <InlineText value={row.minFinalPrice} onChange={(v) => patchRow(row.id, { minFinalPrice: v })} />
                   <InlineText value={row.shippingFee} onChange={(v) => patchRow(row.id, { shippingFee: v })} />
                   <InlineText value={row.priority} onChange={(v) => patchRow(row.id, { priority: v })} />

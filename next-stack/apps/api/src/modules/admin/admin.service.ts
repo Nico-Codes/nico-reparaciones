@@ -1249,51 +1249,44 @@ export class AdminService {
     const supplierId = this.cleanNullable(input.supplierId);
     const normalizedSupplierId = supplierId && supplierSet.has(supplierId) ? supplierId : null;
 
-    const incidents = await this.readWarrantyIncidentsRegistry();
-    const now = new Date().toISOString();
-    const incident: WarrantyIncidentRegistryRow = {
-      id: this.randomEntityId('wic'),
-      sourceType,
-      status: 'open',
-      title: input.title.trim(),
-      reason: this.cleanNullable(input.reason),
-      repairId,
-      productId,
-      orderId: this.cleanNullable(input.orderId),
-      supplierId: normalizedSupplierId,
-      quantity,
-      unitCost,
-      costOrigin,
-      extraCost,
-      recoveredAmount,
-      lossAmount,
-      happenedAt: happenedAt.toISOString(),
-      resolvedAt: null,
-      notes: this.cleanNullable(input.notes),
-      createdBy: actorUserId,
-      createdAt: now,
-      updatedAt: now,
-    };
-    incidents.push(incident);
-    await this.writeWarrantyIncidentsRegistry(incidents);
+    const created = await this.prisma.warrantyIncident.create({
+      data: {
+        sourceType,
+        status: 'open',
+        title: input.title.trim(),
+        reason: this.cleanNullable(input.reason),
+        repairId,
+        productId,
+        orderId: this.cleanNullable(input.orderId),
+        supplierId: normalizedSupplierId,
+        quantity,
+        unitCost,
+        costOrigin,
+        extraCost,
+        recoveredAmount,
+        lossAmount,
+        happenedAt,
+        resolvedAt: null,
+        notes: this.cleanNullable(input.notes),
+        createdBy: actorUserId,
+      },
+    });
 
-    const result = await this.warranties();
-    const row = result.items.find((i) => i.id === incident.id);
+    const result = await this.warranties({ q: created.id });
+    const row = result.items.find((i) => i.id === created.id);
     return { item: row ?? null };
   }
 
   async closeWarranty(id: string) {
-    const incidents = await this.readWarrantyIncidentsRegistry();
-    const index = incidents.findIndex((i) => i.id === id);
-    if (index < 0) throw new BadRequestException('Incidente no encontrado');
-    const now = new Date().toISOString();
-    incidents[index] = {
-      ...incidents[index],
-      status: 'closed',
-      resolvedAt: now,
-      updatedAt: now,
-    };
-    await this.writeWarrantyIncidentsRegistry(incidents);
+    const existing = await this.prisma.warrantyIncident.findUnique({ where: { id }, select: { id: true } });
+    if (!existing) throw new BadRequestException('Incidente no encontrado');
+    await this.prisma.warrantyIncident.update({
+      where: { id },
+      data: {
+        status: 'closed',
+        resolvedAt: new Date(),
+      },
+    });
     const result = await this.warranties();
     const row = result.items.find((i) => i.id === id);
     return { item: row ?? null };
@@ -1849,6 +1842,290 @@ export class AdminService {
   }
 
   private async readSuppliersRegistry() {
+    let rows = await this.prisma.supplier.findMany({
+      orderBy: [{ searchPriority: 'asc' }, { name: 'asc' }],
+    });
+
+    if (rows.length === 0) {
+      const legacy = await this.readLegacySuppliersRegistry();
+      if (legacy.length > 0) {
+        for (const row of legacy) {
+          await this.prisma.supplier.upsert({
+            where: { id: row.id },
+            create: {
+              id: row.id,
+              name: row.name,
+              phone: row.phone,
+              notes: row.notes,
+              active: row.active,
+              searchPriority: row.searchPriority,
+              searchEnabled: row.searchEnabled,
+              searchMode: row.searchMode,
+              searchEndpoint: row.searchEndpoint,
+              searchConfigJson: row.searchConfigJson,
+              lastProbeStatus: row.lastProbeStatus,
+              lastProbeQuery: row.lastProbeQuery,
+              lastProbeCount: row.lastProbeCount,
+              lastProbeError: row.lastProbeError,
+              lastProbeAt: row.lastProbeAt ? new Date(row.lastProbeAt) : null,
+              createdAt: new Date(row.createdAt),
+              updatedAt: new Date(row.updatedAt),
+            },
+            update: {
+              name: row.name,
+              phone: row.phone,
+              notes: row.notes,
+              active: row.active,
+              searchPriority: row.searchPriority,
+              searchEnabled: row.searchEnabled,
+              searchMode: row.searchMode,
+              searchEndpoint: row.searchEndpoint,
+              searchConfigJson: row.searchConfigJson,
+              lastProbeStatus: row.lastProbeStatus,
+              lastProbeQuery: row.lastProbeQuery,
+              lastProbeCount: row.lastProbeCount,
+              lastProbeError: row.lastProbeError,
+              lastProbeAt: row.lastProbeAt ? new Date(row.lastProbeAt) : null,
+            },
+          });
+        }
+      }
+      rows = await this.prisma.supplier.findMany({
+        orderBy: [{ searchPriority: 'asc' }, { name: 'asc' }],
+      });
+    }
+
+    return rows.map((row) => ({
+      id: row.id,
+      name: row.name.trim(),
+      phone: row.phone,
+      notes: row.notes,
+      active: row.active,
+      searchPriority: this.clampInt(row.searchPriority, 1, 99999),
+      searchEnabled: row.searchEnabled,
+      searchMode: row.searchMode === 'json' ? 'json' : 'html',
+      searchEndpoint: row.searchEndpoint,
+      searchConfigJson: this.normalizeJsonString(row.searchConfigJson),
+      lastProbeStatus: row.lastProbeStatus === 'ok' ? 'ok' : 'none',
+      lastProbeQuery: row.lastProbeQuery,
+      lastProbeCount: this.clampInt(row.lastProbeCount, 0, 999999),
+      lastProbeError: row.lastProbeError,
+      lastProbeAt: row.lastProbeAt?.toISOString() ?? null,
+      createdAt: row.createdAt.toISOString(),
+      updatedAt: row.updatedAt.toISOString(),
+    } satisfies SupplierRegistryRow));
+  }
+
+  private async writeSuppliersRegistry(items: SupplierRegistryRow[]) {
+    const supplierIds = items.map((i) => i.id);
+    await this.prisma.$transaction(async (tx) => {
+      for (const row of items) {
+        await tx.supplier.upsert({
+          where: { id: row.id },
+          create: {
+            id: row.id,
+            name: row.name,
+            phone: row.phone,
+            notes: row.notes,
+            active: row.active,
+            searchPriority: row.searchPriority,
+            searchEnabled: row.searchEnabled,
+            searchMode: row.searchMode,
+            searchEndpoint: row.searchEndpoint,
+            searchConfigJson: row.searchConfigJson,
+            lastProbeStatus: row.lastProbeStatus,
+            lastProbeQuery: row.lastProbeQuery,
+            lastProbeCount: row.lastProbeCount,
+            lastProbeError: row.lastProbeError,
+            lastProbeAt: row.lastProbeAt ? new Date(row.lastProbeAt) : null,
+            createdAt: new Date(row.createdAt),
+            updatedAt: new Date(row.updatedAt),
+          },
+          update: {
+            name: row.name,
+            phone: row.phone,
+            notes: row.notes,
+            active: row.active,
+            searchPriority: row.searchPriority,
+            searchEnabled: row.searchEnabled,
+            searchMode: row.searchMode,
+            searchEndpoint: row.searchEndpoint,
+            searchConfigJson: row.searchConfigJson,
+            lastProbeStatus: row.lastProbeStatus,
+            lastProbeQuery: row.lastProbeQuery,
+            lastProbeCount: row.lastProbeCount,
+            lastProbeError: row.lastProbeError,
+            lastProbeAt: row.lastProbeAt ? new Date(row.lastProbeAt) : null,
+            updatedAt: new Date(row.updatedAt),
+          },
+        });
+      }
+      if (supplierIds.length > 0) {
+        await tx.supplier.deleteMany({
+          where: { id: { notIn: supplierIds } },
+        });
+      } else {
+        await tx.supplier.deleteMany({});
+      }
+    });
+  }
+
+  private async readWarrantyIncidentsRegistry() {
+    let rows = await this.prisma.warrantyIncident.findMany({
+      orderBy: [{ happenedAt: 'desc' }, { createdAt: 'desc' }],
+    });
+
+    if (rows.length === 0) {
+      const legacy = await this.readLegacyWarrantyIncidentsRegistry();
+      if (legacy.length > 0) {
+        const suppliers = await this.prisma.supplier.findMany({ select: { id: true } });
+        const supplierSet = new Set(suppliers.map((s) => s.id));
+        for (const row of legacy) {
+          await this.prisma.warrantyIncident.upsert({
+            where: { id: row.id },
+            create: {
+              id: row.id,
+              sourceType: row.sourceType,
+              status: row.status,
+              title: row.title,
+              reason: row.reason,
+              repairId: row.repairId,
+              productId: row.productId,
+              orderId: row.orderId,
+              supplierId: row.supplierId && supplierSet.has(row.supplierId) ? row.supplierId : null,
+              quantity: row.quantity,
+              unitCost: row.unitCost,
+              costOrigin: row.costOrigin,
+              extraCost: row.extraCost,
+              recoveredAmount: row.recoveredAmount,
+              lossAmount: row.lossAmount,
+              happenedAt: new Date(row.happenedAt),
+              resolvedAt: row.resolvedAt ? new Date(row.resolvedAt) : null,
+              notes: row.notes,
+              createdBy: row.createdBy,
+              createdAt: new Date(row.createdAt),
+              updatedAt: new Date(row.updatedAt),
+            },
+            update: {
+              sourceType: row.sourceType,
+              status: row.status,
+              title: row.title,
+              reason: row.reason,
+              repairId: row.repairId,
+              productId: row.productId,
+              orderId: row.orderId,
+              supplierId: row.supplierId && supplierSet.has(row.supplierId) ? row.supplierId : null,
+              quantity: row.quantity,
+              unitCost: row.unitCost,
+              costOrigin: row.costOrigin,
+              extraCost: row.extraCost,
+              recoveredAmount: row.recoveredAmount,
+              lossAmount: row.lossAmount,
+              happenedAt: new Date(row.happenedAt),
+              resolvedAt: row.resolvedAt ? new Date(row.resolvedAt) : null,
+              notes: row.notes,
+              createdBy: row.createdBy,
+              updatedAt: new Date(row.updatedAt),
+            },
+          });
+        }
+      }
+      rows = await this.prisma.warrantyIncident.findMany({
+        orderBy: [{ happenedAt: 'desc' }, { createdAt: 'desc' }],
+      });
+    }
+
+    return rows.map((row) => ({
+      id: row.id,
+      sourceType: row.sourceType === 'product' ? 'product' : 'repair',
+      status: row.status === 'closed' ? 'closed' : 'open',
+      title: row.title.trim(),
+      reason: this.cleanNullable(row.reason ?? null),
+      repairId: this.cleanNullable(row.repairId ?? null),
+      productId: this.cleanNullable(row.productId ?? null),
+      orderId: this.cleanNullable(row.orderId ?? null),
+      supplierId: this.cleanNullable(row.supplierId ?? null),
+      quantity: this.clampInt(row.quantity, 1, 999),
+      unitCost: Number(row.unitCost),
+      costOrigin: row.costOrigin === 'repair' || row.costOrigin === 'product' ? row.costOrigin : 'manual',
+      extraCost: Number(row.extraCost),
+      recoveredAmount: Number(row.recoveredAmount),
+      lossAmount: Number(row.lossAmount),
+      happenedAt: row.happenedAt.toISOString(),
+      resolvedAt: row.resolvedAt?.toISOString() ?? null,
+      notes: this.cleanNullable(row.notes ?? null),
+      createdBy: this.cleanNullable(row.createdBy ?? null),
+      createdAt: row.createdAt.toISOString(),
+      updatedAt: row.updatedAt.toISOString(),
+    } satisfies WarrantyIncidentRegistryRow));
+  }
+
+  private async writeWarrantyIncidentsRegistry(items: WarrantyIncidentRegistryRow[]) {
+    const incidentIds = items.map((i) => i.id);
+    const suppliers = await this.prisma.supplier.findMany({ select: { id: true } });
+    const supplierSet = new Set(suppliers.map((s) => s.id));
+
+    await this.prisma.$transaction(async (tx) => {
+      for (const row of items) {
+        await tx.warrantyIncident.upsert({
+          where: { id: row.id },
+          create: {
+            id: row.id,
+            sourceType: row.sourceType,
+            status: row.status,
+            title: row.title,
+            reason: row.reason,
+            repairId: row.repairId,
+            productId: row.productId,
+            orderId: row.orderId,
+            supplierId: row.supplierId && supplierSet.has(row.supplierId) ? row.supplierId : null,
+            quantity: row.quantity,
+            unitCost: row.unitCost,
+            costOrigin: row.costOrigin,
+            extraCost: row.extraCost,
+            recoveredAmount: row.recoveredAmount,
+            lossAmount: row.lossAmount,
+            happenedAt: new Date(row.happenedAt),
+            resolvedAt: row.resolvedAt ? new Date(row.resolvedAt) : null,
+            notes: row.notes,
+            createdBy: row.createdBy,
+            createdAt: new Date(row.createdAt),
+            updatedAt: new Date(row.updatedAt),
+          },
+          update: {
+            sourceType: row.sourceType,
+            status: row.status,
+            title: row.title,
+            reason: row.reason,
+            repairId: row.repairId,
+            productId: row.productId,
+            orderId: row.orderId,
+            supplierId: row.supplierId && supplierSet.has(row.supplierId) ? row.supplierId : null,
+            quantity: row.quantity,
+            unitCost: row.unitCost,
+            costOrigin: row.costOrigin,
+            extraCost: row.extraCost,
+            recoveredAmount: row.recoveredAmount,
+            lossAmount: row.lossAmount,
+            happenedAt: new Date(row.happenedAt),
+            resolvedAt: row.resolvedAt ? new Date(row.resolvedAt) : null,
+            notes: row.notes,
+            createdBy: row.createdBy,
+            updatedAt: new Date(row.updatedAt),
+          },
+        });
+      }
+      if (incidentIds.length > 0) {
+        await tx.warrantyIncident.deleteMany({
+          where: { id: { notIn: incidentIds } },
+        });
+      } else {
+        await tx.warrantyIncident.deleteMany({});
+      }
+    });
+  }
+
+  private async readLegacySuppliersRegistry() {
     const rows = await this.readJsonArraySetting(this.suppliersRegistrySettingKey);
     return rows
       .filter((row): row is Record<string, unknown> => !!row && typeof row === 'object' && !Array.isArray(row))
@@ -1877,17 +2154,7 @@ export class AdminService {
       .filter((row) => row.name.length > 0);
   }
 
-  private async writeSuppliersRegistry(items: SupplierRegistryRow[]) {
-    await this.upsertSingleSetting(
-      this.suppliersRegistrySettingKey,
-      JSON.stringify(items),
-      'suppliers',
-      'Suppliers registry',
-      'json',
-    );
-  }
-
-  private async readWarrantyIncidentsRegistry() {
+  private async readLegacyWarrantyIncidentsRegistry() {
     const rows = await this.readJsonArraySetting(this.warrantyIncidentsSettingKey);
     return rows
       .filter((row): row is Record<string, unknown> => !!row && typeof row === 'object' && !Array.isArray(row))
@@ -1930,16 +2197,6 @@ export class AdminService {
         } satisfies WarrantyIncidentRegistryRow;
       })
       .filter((row) => row.title.length > 0);
-  }
-
-  private async writeWarrantyIncidentsRegistry(items: WarrantyIncidentRegistryRow[]) {
-    await this.upsertSingleSetting(
-      this.warrantyIncidentsSettingKey,
-      JSON.stringify(items),
-      'warranties',
-      'Warranty incidents registry',
-      'json',
-    );
   }
 
   private buildProviderStats(incidents: WarrantyIncidentRegistryRow[]) {

@@ -25,6 +25,7 @@ export function AdminRepairPricingRuleCreatePage() {
   const [basePrice, setBasePrice] = useState('0');
   const [profitPercent, setProfitPercent] = useState('25');
   const [calcMode, setCalcMode] = useState<'BASE_PLUS_MARGIN' | 'FIXED_TOTAL'>('BASE_PLUS_MARGIN');
+  const [minProfit, setMinProfit] = useState('');
   const [minFinalPrice, setMinFinalPrice] = useState('');
   const [shippingFee, setShippingFee] = useState('');
   const [priority, setPriority] = useState('0');
@@ -98,6 +99,7 @@ export function AdminRepairPricingRuleCreatePage() {
         basePrice: Number(basePrice || 0),
         profitPercent: Number(profitPercent || 0),
         calcMode,
+        minProfit: minProfit ? Number(minProfit) : null,
         minFinalPrice: minFinalPrice ? Number(minFinalPrice) : null,
         shippingFee: shippingFee ? Number(shippingFee) : null,
         notes: notes.trim() || null,
@@ -117,7 +119,7 @@ export function AdminRepairPricingRuleCreatePage() {
           <div>
             <h1 className="text-2xl font-black tracking-tight text-zinc-900">Crear regla</h1>
             <p className="mt-1 text-sm text-zinc-600">
-              Alta de regla de pricing real del backend nuevo (base + margen). Campos legacy avanzados se completaran con migracion de schema.
+              Configura cálculo automático por tipo, marca, grupo/modelo y falla con soporte completo de modo margen/fijo.
             </p>
           </div>
           <Link to="/admin/precios" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">
@@ -183,7 +185,7 @@ export function AdminRepairPricingRuleCreatePage() {
             <Field label="Base (costo/base) *">
               <input value={basePrice} onChange={(e) => setBasePrice(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" />
             </Field>
-            <Field label="% ganancia *">
+            <Field label="Margen (%) *">
               <input value={profitPercent} onChange={(e) => setProfitPercent(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" disabled={calcMode === 'FIXED_TOTAL'} />
             </Field>
             <Field label="Prioridad">
@@ -191,17 +193,20 @@ export function AdminRepairPricingRuleCreatePage() {
             </Field>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
-            <Field label="Modo calculo">
+          <div className="grid gap-4 md:grid-cols-4">
+            <Field label="Modo de cálculo">
               <select value={calcMode} onChange={(e) => setCalcMode(e.target.value as 'BASE_PLUS_MARGIN' | 'FIXED_TOTAL')} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm">
                 <option value="BASE_PLUS_MARGIN">Base + % margen</option>
                 <option value="FIXED_TOTAL">Total fijo</option>
               </select>
             </Field>
-            <Field label="Minimo final (opcional)">
+            <Field label="Mínimo de ganancia (opcional)">
+              <input value={minProfit} onChange={(e) => setMinProfit(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" placeholder="0" disabled={calcMode === 'FIXED_TOTAL'} />
+            </Field>
+            <Field label="Mínimo final (opcional)">
               <input value={minFinalPrice} onChange={(e) => setMinFinalPrice(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" placeholder="0" />
             </Field>
-            <Field label="Envio (opcional)">
+            <Field label="Envío (opcional)">
               <input value={shippingFee} onChange={(e) => setShippingFee(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" placeholder="0" />
             </Field>
           </div>

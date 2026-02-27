@@ -84,6 +84,7 @@ export function AdminRepairsPage() {
     basePrice?: number;
     profitPercent?: number;
     calcMode?: 'BASE_PLUS_MARGIN' | 'FIXED_TOTAL';
+    minProfit?: number | null;
     minFinalPrice?: number | null;
     shippingFee?: number | null;
     suggestedTotal?: number;
@@ -98,6 +99,7 @@ export function AdminRepairsPage() {
     issueLabel: string | null;
     basePrice: number;
     profitPercent: number;
+    minProfit?: number | null;
     notes: string | null;
   }>>([]);
   const [loadingRules, setLoadingRules] = useState(true);
@@ -114,6 +116,7 @@ export function AdminRepairsPage() {
     issueLabel: '',
     basePrice: '',
     profitPercent: '0',
+    minProfit: '',
   });
   const [form, setForm] = useState({
     customerName: '',
@@ -444,6 +447,7 @@ export function AdminRepairsPage() {
           basePrice: res.suggestion.basePrice,
           profitPercent: res.suggestion.profitPercent,
           calcMode: res.suggestion.calcMode,
+          minProfit: res.suggestion.minProfit ?? null,
           minFinalPrice: res.suggestion.minFinalPrice ?? null,
           shippingFee: res.suggestion.shippingFee ?? null,
           suggestedTotal: res.suggestion.suggestedTotal,
@@ -472,8 +476,9 @@ export function AdminRepairsPage() {
         issueLabel: ruleForm.issueLabel || null,
         basePrice: Number(ruleForm.basePrice || 0),
         profitPercent: Number(ruleForm.profitPercent || 0),
+        minProfit: ruleForm.minProfit ? Number(ruleForm.minProfit) : null,
       });
-      setRuleForm({ name: '', priority: '0', deviceBrand: '', deviceModel: '', issueLabel: '', basePrice: '', profitPercent: '0' });
+      setRuleForm({ name: '', priority: '0', deviceBrand: '', deviceModel: '', issueLabel: '', basePrice: '', profitPercent: '0', minProfit: '' });
       await loadRules();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error creando regla');
@@ -599,6 +604,10 @@ export function AdminRepairsPage() {
                         ? `Total fijo $${(priceSuggestion.basePrice ?? 0).toLocaleString('es-AR')}`
                         : `Base $${(priceSuggestion.basePrice ?? 0).toLocaleString('es-AR')} + ${(priceSuggestion.profitPercent ?? 0).toLocaleString('es-AR')}%`
                     }${
+                      (priceSuggestion.minProfit ?? 0) > 0
+                        ? `  -  min. gan. $${(priceSuggestion.minProfit ?? 0).toLocaleString('es-AR')}`
+                        : ''
+                    }${
                       (priceSuggestion.shippingFee ?? 0) > 0
                         ? ` + envio $${(priceSuggestion.shippingFee ?? 0).toLocaleString('es-AR')}`
                         : ''
@@ -631,9 +640,10 @@ export function AdminRepairsPage() {
                 <Field label="Modelo" value={ruleForm.deviceModel} onChange={(v) => setRuleForm({ ...ruleForm, deviceModel: v })} />
               </div>
               <Field label="Falla" value={ruleForm.issueLabel} onChange={(v) => setRuleForm({ ...ruleForm, issueLabel: v })} />
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-4 gap-2">
                 <Field label="Base" type="number" value={ruleForm.basePrice} onChange={(v) => setRuleForm({ ...ruleForm, basePrice: v })} required />
                 <Field label="% gan." type="number" value={ruleForm.profitPercent} onChange={(v) => setRuleForm({ ...ruleForm, profitPercent: v })} />
+                <Field label="Min gan." type="number" value={ruleForm.minProfit} onChange={(v) => setRuleForm({ ...ruleForm, minProfit: v })} />
                 <Field label="Prioridad" type="number" value={ruleForm.priority} onChange={(v) => setRuleForm({ ...ruleForm, priority: v })} />
               </div>
                 <Button className="w-full">Crear regla</Button>
@@ -651,7 +661,7 @@ export function AdminRepairsPage() {
                         <div className="text-xs text-zinc-500">
                           {[rule.deviceBrand, rule.deviceModel, rule.issueLabel].filter(Boolean).join('  -  ') || 'Regla global'}
                         </div>
-                        <div className="mt-1 text-xs text-zinc-600">Base ${rule.basePrice.toLocaleString('es-AR')} + {rule.profitPercent}%  -  Prio {rule.priority}</div>
+                        <div className="mt-1 text-xs text-zinc-600">Base ${rule.basePrice.toLocaleString('es-AR')} + {rule.profitPercent}%{(rule.minProfit ?? 0) > 0 ? ` (min gan. $${(rule.minProfit ?? 0).toLocaleString('es-AR')})` : ''}  -  Prio {rule.priority}</div>
                       </div>
                       <button type="button" className="text-xs font-bold text-rose-700 hover:text-rose-800" onClick={() => void deleteRule(rule.id)}>
                         Borrar
@@ -971,5 +981,3 @@ function SelectField({
     </label>
   );
 }
-
-

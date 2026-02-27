@@ -1,57 +1,44 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { catalogAdminApi, type AdminCategory, type AdminProduct } from '@/features/catalogAdmin/api';
-import { adminSettingsApi, type AdminSettingItem } from './settingsApi';
+import { productPricingApi, type ProductPricingRuleItem } from '@/features/catalogAdmin/productPricingApi';
 
-type ProductRule = {
+type ProductRuleRow = {
   id: string;
   name: string;
   categoryId: string | null;
   productId: string | null;
   marginPercent: string;
-  minCost: string;
-  maxCost: string;
+  costMin: string;
+  costMax: string;
   priority: string;
   active: boolean;
 };
 
-function newRuleId() {
-  return `pr_${Math.random().toString(36).slice(2, 9)}${Date.now().toString(36).slice(-4)}`;
-}
-
-function parseRules(raw: string): ProductRule[] {
-  try {
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .filter((x) => x && typeof x === 'object')
-      .map((x: any) => ({
-        id: String(x.id ?? newRuleId()),
-        name: String(x.name ?? '').trim(),
-        categoryId: x.categoryId ? String(x.categoryId) : null,
-        productId: x.productId ? String(x.productId) : null,
-        marginPercent: String(x.marginPercent ?? '0'),
-        minCost: String(x.minCost ?? ''),
-        maxCost: String(x.maxCost ?? ''),
-        priority: String(x.priority ?? '0'),
-        active: Boolean(x.active),
-      }))
-      .filter((r) => r.name);
-  } catch {
-    return [];
-  }
-}
-
-function getSetting(map: Map<string, AdminSettingItem>, key: string, fallback = '') {
-  return map.get(key)?.value ?? fallback;
+function fromApiRule(item: ProductPricingRuleItem): ProductRuleRow {
+  return {
+    id: item.id,
+    name: item.name,
+    categoryId: item.categoryId,
+    productId: item.productId,
+    marginPercent: String(item.marginPercent ?? 0),
+    costMin: item.costMin == null ? '' : String(item.costMin),
+    costMax: item.costMax == null ? '' : String(item.costMax),
+    priority: String(item.priority ?? 0),
+    active: item.active,
+  };
 }
 
 export function AdminProductPricingRulesPage() {
   const [categories, setCategories] = useState<AdminCategory[]>([]);
   const [products, setProducts] = useState<AdminProduct[]>([]);
+  const [rules, setRules] = useState<ProductRuleRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingPrefs, setSavingPrefs] = useState(false);
-  const [savingRules, setSavingRules] = useState(false);
+  const [creatingRule, setCreatingRule] = useState(false);
+  const [savingRuleId, setSavingRuleId] = useState<string | null>(null);
+  const [deletingRuleId, setDeletingRuleId] = useState<string | null>(null);
+  const [simLoading, setSimLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -60,36 +47,38 @@ export function AdminProductPricingRulesPage() {
   const [simCategoryId, setSimCategoryId] = useState('');
   const [simProductId, setSimProductId] = useState('');
   const [simCost, setSimCost] = useState('5000');
+  const [simResult, setSimResult] = useState<{
+    recommendedPrice: number;
+    marginPercent: number;
+    ruleName: string | null;
+  } | null>(null);
 
   const [form, setForm] = useState({
     name: '',
     categoryId: '',
     productId: '',
     marginPercent: '50',
-    minCost: '',
-    maxCost: '5000',
+    costMin: '',
+    costMax: '5000',
     priority: '0',
     active: true,
   });
-
-  const [rules, setRules] = useState<ProductRule[]>([]);
 
   async function loadAll() {
     setLoading(true);
     setError('');
     try {
-      const [cats, prods, settings] = await Promise.all([
+      const [cats, prods, settings, rulesRes] = await Promise.all([
         catalogAdminApi.categories(),
         catalogAdminApi.products(),
-        adminSettingsApi.list(),
+        productPricingApi.settings(),
+        productPricingApi.rules(),
       ]);
       setCategories(cats.items);
       setProducts(prods.items);
-
-      const map = new Map<string, AdminSettingItem>(settings.items.map((i) => [i.key, i]));
-      setDefaultMargin(getSetting(map, 'product_pricing.default_margin', '35'));
-      setBlockNegative(getSetting(map, 'product_pricing.block_negative_margin', '1') !== '0');
-      setRules(parseRules(getSetting(map, 'product_pricing.rules', '[]')));
+      setDefaultMargin(String(settings.defaultMarginPercent));
+      setBlockNegative(settings.preventNegativeMargin);
+      setRules(rulesRes.items.map(fromApiRule));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error cargando reglas de productos');
     } finally {
@@ -110,40 +99,47 @@ export function AdminProductPricingRulesPage() {
     [products, simCategoryId],
   );
 
-  const simulated = useMemo(() => {
-    const cost = Number(simCost || 0);
-    if (!cost) return null;
-
-    const sorted = [...rules]
-      .filter((r) => r.active)
-      .sort((a, b) => Number(b.priority || 0) - Number(a.priority || 0));
-    const matched = sorted.find((r) => {
-      if (r.productId && simProductId && r.productId !== simProductId) return false;
-      if (r.productId && !simProductId) return false;
-      if (r.categoryId && simCategoryId && r.categoryId !== simCategoryId) return false;
-      if (r.categoryId && !simCategoryId) return false;
-      const min = r.minCost ? Number(r.minCost) : null;
-      const max = r.maxCost ? Number(r.maxCost) : null;
-      if (min != null && !Number.isNaN(min) && cost < min) return false;
-      if (max != null && !Number.isNaN(max) && max > 0 && cost > max) return false;
-      return true;
-    });
-
-    const margin = Number(matched?.marginPercent ?? defaultMargin ?? 0);
-    const sale = Math.round(cost * (1 + margin / 100));
-    const negativeBlocked = blockNegative && sale < cost;
-    return { margin, sale, matchedName: matched?.name ?? null, negativeBlocked };
-  }, [rules, simCost, simCategoryId, simProductId, defaultMargin, blockNegative]);
+  useEffect(() => {
+    const costNumber = Number(simCost || 0);
+    if (!simCategoryId || !Number.isFinite(costNumber) || costNumber < 0) {
+      setSimResult(null);
+      return;
+    }
+    const timeout = setTimeout(() => {
+      void (async () => {
+        setSimLoading(true);
+        try {
+          const res = await productPricingApi.resolveRecommendedPrice({
+            categoryId: simCategoryId,
+            productId: simProductId || null,
+            costPrice: costNumber,
+          });
+          setSimResult({
+            recommendedPrice: res.recommendedPrice,
+            marginPercent: res.marginPercent,
+            ruleName: res.rule?.name ?? null,
+          });
+        } catch {
+          setSimResult(null);
+        } finally {
+          setSimLoading(false);
+        }
+      })();
+    }, 280);
+    return () => clearTimeout(timeout);
+  }, [simCategoryId, simProductId, simCost]);
 
   async function savePreferences() {
     setSavingPrefs(true);
     setError('');
     setSuccess('');
     try {
-      await adminSettingsApi.save([
-        { key: 'product_pricing.default_margin', value: defaultMargin, group: 'product_pricing', label: 'Default product margin', type: 'number' },
-        { key: 'product_pricing.block_negative_margin', value: blockNegative ? '1' : '0', group: 'product_pricing', label: 'Block negative margin', type: 'boolean' },
-      ]);
+      const settings = await productPricingApi.updateSettings({
+        defaultMarginPercent: Number(defaultMargin || 0),
+        preventNegativeMargin: blockNegative,
+      });
+      setDefaultMargin(String(settings.defaultMarginPercent));
+      setBlockNegative(settings.preventNegativeMargin);
       setSuccess('Preferencias guardadas.');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudieron guardar las preferencias');
@@ -152,66 +148,82 @@ export function AdminProductPricingRulesPage() {
     }
   }
 
-  async function saveRules(nextRules = rules) {
-    setSavingRules(true);
+  async function createRule() {
+    if (!form.name.trim()) return;
+    setCreatingRule(true);
     setError('');
     setSuccess('');
     try {
-      await adminSettingsApi.save([
-        {
-          key: 'product_pricing.rules',
-          value: JSON.stringify(nextRules),
-          group: 'product_pricing',
-          label: 'Product pricing rules',
-          type: 'json',
-        },
-      ]);
-      setSuccess('Reglas guardadas.');
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudieron guardar las reglas');
-    } finally {
-      setSavingRules(false);
-    }
-  }
-
-  function createRule() {
-    if (!form.name.trim()) return;
-    const nextRules: ProductRule[] = [
-      ...rules,
-      {
-        id: newRuleId(),
+      const res = await productPricingApi.createRule({
         name: form.name.trim(),
         categoryId: form.categoryId || null,
         productId: form.productId || null,
-        marginPercent: form.marginPercent || '0',
-        minCost: form.minCost,
-        maxCost: form.maxCost,
-        priority: form.priority || '0',
+        marginPercent: Number(form.marginPercent || 0),
+        costMin: form.costMin ? Number(form.costMin) : null,
+        costMax: form.costMax ? Number(form.costMax) : null,
+        priority: Number(form.priority || 0),
         active: form.active,
-      },
-    ];
-    setRules(nextRules);
-    setForm({
-      name: '',
-      categoryId: '',
-      productId: '',
-      marginPercent: '50',
-      minCost: '',
-      maxCost: '5000',
-      priority: '0',
-      active: true,
-    });
-    void saveRules(nextRules);
+      });
+      setRules((prev) => [fromApiRule(res.item), ...prev]);
+      setForm({
+        name: '',
+        categoryId: '',
+        productId: '',
+        marginPercent: '50',
+        costMin: '',
+        costMax: '5000',
+        priority: '0',
+        active: true,
+      });
+      setSuccess('Regla creada.');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo crear la regla');
+    } finally {
+      setCreatingRule(false);
+    }
   }
 
-  function updateRule(id: string, patch: Partial<ProductRule>) {
-    setRules((prev) => prev.map((rule) => (rule.id === id ? { ...rule, ...patch } : rule)));
+  function patchRule(id: string, patch: Partial<ProductRuleRow>) {
+    setRules((prev) => prev.map((row) => (row.id === id ? { ...row, ...patch } : row)));
   }
 
-  function removeRule(id: string) {
-    const next = rules.filter((rule) => rule.id !== id);
-    setRules(next);
-    void saveRules(next);
+  async function saveRule(row: ProductRuleRow) {
+    setSavingRuleId(row.id);
+    setError('');
+    setSuccess('');
+    try {
+      const res = await productPricingApi.updateRule(row.id, {
+        name: row.name.trim(),
+        categoryId: row.categoryId || null,
+        productId: row.productId || null,
+        marginPercent: Number(row.marginPercent || 0),
+        costMin: row.costMin ? Number(row.costMin) : null,
+        costMax: row.costMax ? Number(row.costMax) : null,
+        priority: Number(row.priority || 0),
+        active: row.active,
+      });
+      setRules((prev) => prev.map((x) => (x.id === row.id ? fromApiRule(res.item) : x)));
+      setSuccess('Regla guardada.');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo guardar la regla');
+    } finally {
+      setSavingRuleId(null);
+    }
+  }
+
+  async function removeRule(id: string) {
+    setDeletingRuleId(id);
+    setError('');
+    setSuccess('');
+    try {
+      await productPricingApi.deleteRule(id);
+      setRules((prev) => prev.filter((r) => r.id !== id));
+      setSuccess('Regla eliminada.');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo eliminar la regla');
+    } finally {
+      setDeletingRuleId(null);
+    }
   }
 
   const categoryName = (id: string | null) => categories.find((c) => c.id === id)?.name ?? 'Todas';
@@ -284,9 +296,13 @@ export function AdminProductPricingRulesPage() {
               <input value={simCost} onChange={(e) => setSimCost(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" />
             </div>
             <div className="rounded-2xl border border-zinc-200 bg-white px-3 py-3 text-sm text-zinc-700">
-              {!simulated
-                ? 'Completa costo para ver el resultado.'
-                : `${simulated.matchedName ? `Regla: ${simulated.matchedName} · ` : ''}Margen: +${simulated.margin}% · Precio recomendado: $ ${simulated.sale.toLocaleString('es-AR')}${simulated.negativeBlocked ? ' (bloqueado por margen negativo)' : ''}`}
+              {!simCategoryId
+                ? 'Selecciona categoria para simular.'
+                : simLoading
+                  ? 'Simulando...'
+                  : simResult
+                    ? `${simResult.ruleName ? `Regla: ${simResult.ruleName} - ` : ''}Margen: +${simResult.marginPercent}% - Precio recomendado: $ ${simResult.recommendedPrice.toLocaleString('es-AR')}`
+                    : 'No se pudo calcular en este momento.'}
             </div>
           </div>
         </section>
@@ -317,8 +333,8 @@ export function AdminProductPricingRulesPage() {
             <InputField label="Margen % *" value={form.marginPercent} onChange={(v) => setForm((s) => ({ ...s, marginPercent: v }))} />
           </div>
           <div className="grid gap-3 md:grid-cols-3">
-            <InputField label="Costo minimo" value={form.minCost} onChange={(v) => setForm((s) => ({ ...s, minCost: v }))} placeholder="Ej: 0" />
-            <InputField label="Costo maximo" value={form.maxCost} onChange={(v) => setForm((s) => ({ ...s, maxCost: v }))} placeholder="Ej: 5000" />
+            <InputField label="Costo minimo" value={form.costMin} onChange={(v) => setForm((s) => ({ ...s, costMin: v }))} placeholder="Ej: 0" />
+            <InputField label="Costo maximo" value={form.costMax} onChange={(v) => setForm((s) => ({ ...s, costMax: v }))} placeholder="Ej: 5000" />
             <InputField label="Prioridad" value={form.priority} onChange={(v) => setForm((s) => ({ ...s, priority: v }))} />
           </div>
           <label className="flex items-center gap-2 text-sm font-bold text-zinc-900">
@@ -326,8 +342,8 @@ export function AdminProductPricingRulesPage() {
             Regla activa
           </label>
           <div className="flex justify-end">
-            <button type="button" onClick={createRule} disabled={loading || savingRules || !form.name.trim()} className="btn-primary !h-11 !rounded-xl px-5 text-sm font-bold disabled:opacity-60">
-              Crear regla
+            <button type="button" onClick={() => void createRule()} disabled={loading || creatingRule || !form.name.trim()} className="btn-primary !h-11 !rounded-xl px-5 text-sm font-bold disabled:opacity-60">
+              {creatingRule ? 'Creando...' : 'Crear regla'}
             </button>
           </div>
         </div>
@@ -345,39 +361,41 @@ export function AdminProductPricingRulesPage() {
             {rules.map((rule) => (
               <div key={rule.id} className="rounded-2xl border border-zinc-200 bg-white p-3">
                 <div className="grid gap-3 md:grid-cols-[1.6fr_0.9fr_0.9fr_0.7fr_0.8fr_0.8fr_0.8fr]">
-                  <EditableInput label="Nombre" value={rule.name} onChange={(v) => updateRule(rule.id, { name: v })} />
+                  <EditableInput label="Nombre" value={rule.name} onChange={(v) => patchRule(rule.id, { name: v })} />
                   <EditableSelect
                     label="Categoria"
                     value={rule.categoryId ?? ''}
-                    onChange={(v) => updateRule(rule.id, { categoryId: v || null, productId: null })}
+                    onChange={(v) => patchRule(rule.id, { categoryId: v || null, productId: null })}
                     options={[{ value: '', label: 'Todas' }, ...categories.map((c) => ({ value: c.id, label: c.name }))]}
                   />
                   <EditableSelect
                     label="Producto"
                     value={rule.productId ?? ''}
-                    onChange={(v) => updateRule(rule.id, { productId: v || null })}
+                    onChange={(v) => patchRule(rule.id, { productId: v || null })}
                     options={[
                       { value: '', label: 'Todos' },
                       ...products.filter((p) => !rule.categoryId || p.categoryId === rule.categoryId).map((p) => ({ value: p.id, label: p.name })),
                     ]}
                   />
-                  <EditableInput label="%" value={rule.marginPercent} onChange={(v) => updateRule(rule.id, { marginPercent: v })} />
-                  <EditableInput label="Min" value={rule.minCost} onChange={(v) => updateRule(rule.id, { minCost: v })} />
-                  <EditableInput label="Max" value={rule.maxCost} onChange={(v) => updateRule(rule.id, { maxCost: v })} />
-                  <EditableInput label="Prioridad" value={rule.priority} onChange={(v) => updateRule(rule.id, { priority: v })} />
+                  <EditableInput label="%" value={rule.marginPercent} onChange={(v) => patchRule(rule.id, { marginPercent: v })} />
+                  <EditableInput label="Min" value={rule.costMin} onChange={(v) => patchRule(rule.id, { costMin: v })} />
+                  <EditableInput label="Max" value={rule.costMax} onChange={(v) => patchRule(rule.id, { costMax: v })} />
+                  <EditableInput label="Prioridad" value={rule.priority} onChange={(v) => patchRule(rule.id, { priority: v })} />
                 </div>
                 <div className="mt-2 text-xs text-zinc-500">
                   Aplica a: {categoryName(rule.categoryId)} / {productName(rule.productId)}
                 </div>
                 <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
                   <label className="flex items-center gap-2 text-sm font-bold text-zinc-900">
-                    <input type="checkbox" checked={rule.active} onChange={(e) => updateRule(rule.id, { active: e.target.checked })} className="h-4 w-4" />
+                    <input type="checkbox" checked={rule.active} onChange={(e) => patchRule(rule.id, { active: e.target.checked })} className="h-4 w-4" />
                     Activa
                   </label>
                   <div className="flex items-center gap-2">
-                    <button type="button" onClick={() => void saveRules()} disabled={savingRules} className="btn-outline !h-8 !rounded-xl px-3 text-sm font-bold disabled:opacity-60">Guardar</button>
-                    <button type="button" className="inline-flex h-8 items-center rounded-xl border border-rose-200 bg-white px-3 text-sm font-bold text-rose-600" onClick={() => removeRule(rule.id)}>
-                      Eliminar
+                    <button type="button" onClick={() => void saveRule(rule)} disabled={savingRuleId === rule.id || deletingRuleId === rule.id} className="btn-outline !h-8 !rounded-xl px-3 text-sm font-bold disabled:opacity-60">
+                      {savingRuleId === rule.id ? 'Guardando...' : 'Guardar'}
+                    </button>
+                    <button type="button" className="inline-flex h-8 items-center rounded-xl border border-rose-200 bg-white px-3 text-sm font-bold text-rose-600 disabled:opacity-60" onClick={() => void removeRule(rule.id)} disabled={savingRuleId === rule.id || deletingRuleId === rule.id}>
+                      {deletingRuleId === rule.id ? 'Eliminando...' : 'Eliminar'}
                     </button>
                   </div>
                 </div>

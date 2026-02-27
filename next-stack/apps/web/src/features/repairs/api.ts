@@ -91,8 +91,8 @@ export const repairsApi = {
     if (input.issueLabel) qs.set('issueLabel', input.issueLabel);
     return authRequest<{
       matched: boolean;
-      rule?: { id: string; name: string; basePrice: number; profitPercent: number; priority: number; calcMode?: 'BASE_PLUS_MARGIN' | 'FIXED_TOTAL'; minFinalPrice?: number | null; shippingFee?: number | null; deviceTypeId?: string | null; deviceBrandId?: string | null; deviceModelGroupId?: string | null; deviceModelId?: string | null; deviceIssueTypeId?: string | null };
-      suggestion?: { basePrice: number; profitPercent: number; calcMode?: 'BASE_PLUS_MARGIN' | 'FIXED_TOTAL'; minFinalPrice?: number | null; shippingFee?: number | null; suggestedTotal: number };
+      rule?: { id: string; name: string; basePrice: number; profitPercent: number; priority: number; calcMode?: 'BASE_PLUS_MARGIN' | 'FIXED_TOTAL'; minProfit?: number | null; minFinalPrice?: number | null; shippingFee?: number | null; deviceTypeId?: string | null; deviceBrandId?: string | null; deviceModelGroupId?: string | null; deviceModelId?: string | null; deviceIssueTypeId?: string | null };
+      suggestion?: { basePrice: number; profitPercent: number; calcMode?: 'BASE_PLUS_MARGIN' | 'FIXED_TOTAL'; minProfit?: number | null; minFinalPrice?: number | null; shippingFee?: number | null; suggestedTotal: number };
       input: { deviceTypeId?: string | null; deviceBrandId?: string | null; deviceModelGroupId?: string | null; deviceModelId?: string | null; deviceIssueTypeId?: string | null; deviceBrand: string; deviceModel: string; issueLabel: string };
     }>(`/pricing/repairs/resolve${qs.size ? `?${qs.toString()}` : ''}`);
   },
@@ -113,6 +113,7 @@ export const repairsApi = {
       basePrice: number;
       profitPercent: number;
       calcMode?: 'BASE_PLUS_MARGIN' | 'FIXED_TOTAL';
+      minProfit?: number | null;
       minFinalPrice?: number | null;
       shippingFee?: number | null;
       notes: string | null;
@@ -133,8 +134,14 @@ export const repairsApi = {
     basePrice: number;
     profitPercent?: number;
     calcMode?: 'BASE_PLUS_MARGIN' | 'FIXED_TOTAL';
+    minProfit?: number | null;
     minFinalPrice?: number | null;
     shippingFee?: number | null;
+    mode?: 'margin' | 'fixed';
+    multiplier?: number | null;
+    min_profit?: number | null;
+    fixed_total?: number | null;
+    shipping_default?: number | null;
     notes?: string | null;
   }) {
     return authRequest<{ item: unknown }>('/pricing/repairs/rules', {
@@ -159,8 +166,14 @@ export const repairsApi = {
       basePrice: number;
       profitPercent?: number;
       calcMode?: 'BASE_PLUS_MARGIN' | 'FIXED_TOTAL';
+      minProfit?: number | null;
       minFinalPrice?: number | null;
       shippingFee?: number | null;
+      mode?: 'margin' | 'fixed';
+      multiplier?: number | null;
+      min_profit?: number | null;
+      fixed_total?: number | null;
+      shipping_default?: number | null;
       notes?: string | null;
     }>,
   ) {

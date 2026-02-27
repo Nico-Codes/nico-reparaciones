@@ -1,6 +1,7 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { catalogAdminApi, type AdminCategory, type AdminProduct } from './api';
+import { productPricingApi } from './productPricingApi';
 
 function peso(n: number) {
   return `$ ${Math.round(n || 0).toLocaleString('es-AR')}`;
@@ -28,6 +29,13 @@ export function AdminProductEditPage() {
   const [description, setDescription] = useState('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
+  const [recommendedPrice, setRecommendedPrice] = useState<number | null>(null);
+  const [recommendedMarginPercent, setRecommendedMarginPercent] = useState<number | null>(null);
+  const [recommendedRuleName, setRecommendedRuleName] = useState<string | null>(null);
+  const [pricingHint, setPricingHint] = useState('Define categoria + costo para calcular automaticamente.');
+  const [loadingRecommendation, setLoadingRecommendation] = useState(false);
+  const [preventNegativeMargin, setPreventNegativeMargin] = useState(true);
+
   useEffect(() => {
     let mounted = true;
     async function load() {
@@ -35,7 +43,11 @@ export function AdminProductEditPage() {
       setLoading(true);
       setError('');
       try {
-        const [cats, prod] = await Promise.all([catalogAdminApi.categories(), catalogAdminApi.product(id)]);
+        const [cats, prod, settings] = await Promise.all([
+          catalogAdminApi.categories(),
+          catalogAdminApi.product(id),
+          productPricingApi.settings().catch(() => null),
+        ]);
         if (!mounted) return;
         setCategories(cats.items);
         setProduct(prod.item);
@@ -48,6 +60,7 @@ export function AdminProductEditPage() {
         setPrice(String(prod.item.price ?? 0));
         setStock(String(prod.item.stock ?? 0));
         setDescription(prod.item.description ?? '');
+        setPreventNegativeMargin(settings?.preventNegativeMargin ?? true);
       } catch (e) {
         if (!mounted) return;
         setError(e instanceof Error ? e.message : 'Error cargando producto');
@@ -59,17 +72,56 @@ export function AdminProductEditPage() {
     return () => { mounted = false; };
   }, [id]);
 
-  const recommendedPrice = useMemo(() => {
-    const c = Number(costPrice || 0);
-    return Math.round(c * 1.35);
-  }, [costPrice]);
+  useEffect(() => {
+    const category = categoryId.trim();
+    const cost = Number(costPrice || 0);
+
+    if (!category || !Number.isFinite(cost) || cost < 0) {
+      setRecommendedPrice(null);
+      setRecommendedMarginPercent(null);
+      setRecommendedRuleName(null);
+      setPricingHint('Define categoria + costo para calcular automaticamente.');
+      return;
+    }
+
+    const timeout = setTimeout(() => {
+      void (async () => {
+        setLoadingRecommendation(true);
+        try {
+          const res = await productPricingApi.resolveRecommendedPrice({
+            categoryId: category,
+            costPrice: cost,
+            productId: id || null,
+          });
+          setRecommendedPrice(res.recommendedPrice);
+          setRecommendedMarginPercent(res.marginPercent);
+          setRecommendedRuleName(res.rule?.name ?? null);
+          setPricingHint(
+            res.rule?.name
+              ? `Regla: ${res.rule.name} (${res.marginPercent}% margen).`
+              : `Sin regla especifica. Margen base: ${res.marginPercent}%.`,
+          );
+        } catch {
+          setRecommendedPrice(null);
+          setRecommendedMarginPercent(null);
+          setRecommendedRuleName(null);
+          setPricingHint('No se pudo calcular precio recomendado.');
+        } finally {
+          setLoadingRecommendation(false);
+        }
+      })();
+    }, 280);
+
+    return () => clearTimeout(timeout);
+  }, [id, categoryId, costPrice]);
 
   const marginStats = useMemo(() => {
     const c = Number(costPrice || 0);
     const p = Number(price || 0);
-    const utility = Math.max(0, p - c);
+    const utility = p - c;
     const margin = c > 0 ? ((utility / c) * 100) : 0;
-    return { utility, margin };
+    const tone: 'emerald' | 'amber' | 'rose' = utility > 0 ? 'emerald' : utility === 0 ? 'amber' : 'rose';
+    return { utility, margin, tone };
   }, [costPrice, price]);
 
   async function save() {
@@ -77,6 +129,13 @@ export function AdminProductEditPage() {
     setSaving(true);
     setError('');
     try {
+      const nextCost = Number(costPrice || 0);
+      const nextPrice = Number(price || 0);
+      if (preventNegativeMargin && Number.isFinite(nextCost) && Number.isFinite(nextPrice) && nextPrice < nextCost) {
+        setError('El precio de venta no puede ser menor al costo (guard de margen activo).');
+        return;
+      }
+
       const res = await catalogAdminApi.updateProduct(id, {
         name: name.trim(),
         slug: (slug.trim() || name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')),
@@ -190,12 +249,15 @@ export function AdminProductEditPage() {
                 <input type="number" min="0" value={price} onChange={(e) => setPrice(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" />
               </label>
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                <button type="button" onClick={() => setPrice(String(recommendedPrice))} className="btn-outline !h-8 !rounded-xl px-3 text-xs font-bold">Usar recomendado</button>
-                <span className="badge-zinc">Recomendado: {peso(recommendedPrice)}</span>
+                <button type="button" onClick={() => setPrice(String(recommendedPrice ?? 0))} disabled={recommendedPrice == null || loadingRecommendation} className="btn-outline !h-8 !rounded-xl px-3 text-xs font-bold disabled:opacity-60">Usar recomendado</button>
+                <span className="badge-zinc">{loadingRecommendation ? 'Calculando...' : `Recomendado: ${peso(recommendedPrice ?? 0)}`}</span>
               </div>
-              <p className="mt-2 text-xs text-zinc-500">Regla: Margen general +35% (35% margen).</p>
-              <div className="mt-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-700">
-                Margen +{marginStats.margin.toFixed(1)}%. Utilidad: {peso(marginStats.utility)}.
+              <p className="mt-2 text-xs text-zinc-500">{pricingHint}</p>
+              {recommendedRuleName ? (
+                <p className="mt-1 text-xs text-zinc-500">Regla aplicada: {recommendedRuleName} ({recommendedMarginPercent ?? 0}% margen)</p>
+              ) : null}
+              <div className={`mt-2 rounded-xl border px-3 py-2 text-sm font-bold ${marginStats.tone === 'emerald' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : marginStats.tone === 'amber' ? 'border-amber-200 bg-amber-50 text-amber-700' : 'border-rose-200 bg-rose-50 text-rose-700'}`}>
+                Margen {marginStats.margin >= 0 ? '+' : ''}{marginStats.margin.toFixed(1)}%. Utilidad: {peso(marginStats.utility)}.
               </div>
             </div>
           </div>
