@@ -205,8 +205,7 @@ export class StoreService {
         slug: p.slug,
         description: p.description,
         imagePath: p.imagePath,
-        imageLegacy: p.imageLegacy,
-        imageUrl: this.resolveProductImageUrl(p.imagePath, p.imageLegacy),
+        imageUrl: this.resolveProductImageUrl(p.imagePath),
         price: Number(p.price),
         stock: p.stock,
         featured: p.featured,
@@ -279,8 +278,7 @@ export class StoreService {
         slug: p.slug,
         description: p.description,
         imagePath: p.imagePath,
-        imageLegacy: p.imageLegacy,
-        imageUrl: this.resolveProductImageUrl(p.imagePath, p.imageLegacy),
+        imageUrl: this.resolveProductImageUrl(p.imagePath),
         price: Number(p.price),
         stock: p.stock,
         featured: p.featured,
@@ -295,37 +293,36 @@ export class StoreService {
     }
   }
 
-  private resolveProductImageUrl(imagePath?: string | null, imageLegacy?: string | null) {
-    const base = (process.env.STORE_IMAGE_BASE_URL || 'http://127.0.0.1:8000').replace(/\/+$/, '');
+  private resolveProductImageUrl(imagePath?: string | null) {
+    const base = (process.env.STORE_IMAGE_BASE_URL ?? '').trim().replace(/\/+$/, '');
 
     if (imagePath && imagePath.trim() !== '') {
       const raw = imagePath.trim();
       if (/^https?:\/\//i.test(raw)) return raw;
-      if (raw.startsWith('/')) return `${base}${raw}`;
+      if (raw.startsWith('/')) return base ? `${base}${raw}` : raw;
       const path = raw.replace(/^\/+/, '');
-      return `${base}/storage/${path}`;
-    }
-
-    if (imageLegacy && imageLegacy.trim() !== '') {
-      if (/^https?:\/\//i.test(imageLegacy)) return imageLegacy;
-      const raw = imageLegacy.replace(/^\/+/, '');
-      const path = raw.includes('/') ? raw : `products/${raw}`;
-      return `${base}/storage/${path}`;
+      return base ? `${base}/storage/${path}` : `/storage/${path}`;
     }
 
     return null;
   }
 
   private resolveHeroAssetUrl(rawValue?: string | null) {
-    const base = (process.env.STORE_IMAGE_BASE_URL || 'http://127.0.0.1:8000').replace(/\/+$/, '');
+    const base = (process.env.STORE_IMAGE_BASE_URL ?? '').trim().replace(/\/+$/, '');
     const raw = (rawValue ?? '').trim();
     if (!raw) return null;
     if (/^https?:\/\//i.test(raw)) return raw;
-    if (raw.startsWith('/brand/') || raw.startsWith('/brand-assets/')) return `${base}${raw}`;
-    if (raw.startsWith('/storage/')) return `${base}${raw}`;
+    if (raw.startsWith('/brand/') || raw.startsWith('/brand-assets/')) return base ? `${base}${raw}` : raw;
+    if (raw.startsWith('/storage/')) return base ? `${base}${raw}` : raw;
     if (raw.startsWith('/')) return raw;
-    if (raw.startsWith('brand/') || raw.startsWith('brand-assets/')) return `${base}/${raw.replace(/^\/+/, '')}`;
-    if (raw.startsWith('storage/')) return `${base}/${raw.replace(/^\/+/, '')}`;
+    if (raw.startsWith('brand/') || raw.startsWith('brand-assets/')) {
+      const normalized = `/${raw.replace(/^\/+/, '')}`;
+      return base ? `${base}${normalized}` : normalized;
+    }
+    if (raw.startsWith('storage/')) {
+      const normalized = `/${raw.replace(/^\/+/, '')}`;
+      return base ? `${base}${normalized}` : normalized;
+    }
     return `/${raw.replace(/^\/+/, '')}`;
   }
   private parseIntSetting(value: string | undefined, fallback: number) {

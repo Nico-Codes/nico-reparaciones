@@ -18,7 +18,9 @@
     "db:push:skip-generate": "dotenv -e ../../.env -- prisma db push --skip-generate",
     "db:studio": "dotenv -e ../../.env -- prisma studio",
     "db:seed": "dotenv -e ../../.env -- tsx prisma/seed.ts",
-    "db:seed:demo": "dotenv -e ../../.env -- tsx prisma/seed.ts"
+    "db:seed:demo": "dotenv -e ../../.env -- tsx prisma/seed.ts",
+    "db:migrate:legacy-settings": "dotenv -e ../../.env -- tsx prisma/migrate-legacy-settings.ts",
+    "db:migrate:legacy-settings:cleanup": "dotenv -e ../../.env -- tsx prisma/migrate-legacy-settings.ts --cleanup"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.6",

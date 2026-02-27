@@ -287,7 +287,6 @@ export class CatalogAdminService {
   }
 
   async productPricingRules() {
-    await this.ensureProductPricingRulesMigratedFromLegacySetting();
     const items = await this.prisma.productPricingRule.findMany({
       include: {
         category: { select: { id: true, name: true } },
@@ -308,7 +307,6 @@ export class CatalogAdminService {
     priority?: number;
     active?: boolean;
   }) {
-    await this.ensureProductPricingRulesMigratedFromLegacySetting();
     this.assertValidCostRange(input.costMin, input.costMax);
     const created = await this.prisma.productPricingRule.create({
       data: {
@@ -375,7 +373,6 @@ export class CatalogAdminService {
   }
 
   async resolveRecommendedProductPrice(input: ResolveProductPricingInput) {
-    await this.ensureProductPricingRulesMigratedFromLegacySetting();
     const categoryId = this.nullable(input.categoryId);
     if (!categoryId) throw new BadRequestException('Categoria requerida');
     const costPrice = Math.max(0, Math.trunc(Number(input.costPrice ?? 0)));
@@ -455,73 +452,6 @@ export class CatalogAdminService {
     }
   }
 
-  private async ensureProductPricingRulesMigratedFromLegacySetting() {
-    const count = await this.prisma.productPricingRule.count();
-    if (count > 0) return;
-
-    const raw = await this.getSettingValue('product_pricing.rules');
-    if (!raw) return;
-
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(raw);
-    } catch {
-      return;
-    }
-    if (!Array.isArray(parsed) || parsed.length === 0) return;
-
-    const rows = parsed
-      .filter((r): r is Record<string, unknown> => !!r && typeof r === 'object' && !Array.isArray(r))
-      .map((r) => ({
-        name: String(r.name ?? '').trim(),
-        categoryId: this.nullable(String(r.categoryId ?? '')),
-        productId: this.nullable(String(r.productId ?? '')),
-        costMin: this.parseNullableInt(r.minCost),
-        costMax: this.parseNullableInt(r.maxCost),
-        marginPercent: this.clampNumber(Number(r.marginPercent ?? 0), 0, 500, 0),
-        priority: Math.trunc(Number(r.priority ?? 0)),
-        active: Boolean(r.active ?? true),
-      }))
-      .filter((r) => r.name.length > 0);
-    if (rows.length === 0) return;
-
-    const categoryIds = Array.from(new Set(rows.map((r) => r.categoryId).filter((v): v is string => !!v)));
-    const productIds = Array.from(new Set(rows.map((r) => r.productId).filter((v): v is string => !!v)));
-
-    const [categories, products] = await Promise.all([
-      categoryIds.length > 0
-        ? this.prisma.category.findMany({
-            where: { id: { in: categoryIds } },
-            select: { id: true },
-          })
-        : Promise.resolve([]),
-      productIds.length > 0
-        ? this.prisma.product.findMany({
-            where: { id: { in: productIds } },
-            select: { id: true },
-          })
-        : Promise.resolve([]),
-    ]);
-    const categorySet = new Set(categories.map((x) => x.id));
-    const productSet = new Set(products.map((x) => x.id));
-
-    await this.prisma.productPricingRule.createMany({
-      data: rows
-        .filter((r) => (r.categoryId == null || categorySet.has(r.categoryId)) && (r.productId == null || productSet.has(r.productId)))
-        .filter((r) => r.costMin == null || r.costMax == null || r.costMax >= r.costMin)
-        .map((r) => ({
-          name: r.name,
-          categoryId: r.categoryId,
-          productId: r.productId,
-          costMin: r.costMin,
-          costMax: r.costMax,
-          marginPercent: new Prisma.Decimal(r.marginPercent),
-          priority: r.priority,
-          active: r.active,
-        })),
-    });
-  }
-
   private assertValidCostRange(costMin?: number | null, costMax?: number | null) {
     if (costMin == null || costMax == null) return;
     if (costMax < costMin) {
@@ -551,15 +481,6 @@ export class CatalogAdminService {
       create: { key, value, group, label, type },
       update: { value, group, label, type },
     });
-  }
-
-  private parseNullableInt(value: unknown) {
-    if (value == null) return null;
-    const raw = String(value).trim();
-    if (!raw) return null;
-    const n = Number(raw);
-    if (!Number.isFinite(n)) return null;
-    return Math.max(0, Math.trunc(n));
   }
 
   private clampNumber(value: number, min: number, max: number, fallback: number) {

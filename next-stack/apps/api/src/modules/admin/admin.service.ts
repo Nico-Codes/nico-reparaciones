@@ -139,12 +139,6 @@ export class AdminService {
   ) {}
   private readonly openRepairStatuses = ['RECEIVED', 'DIAGNOSING', 'WAITING_APPROVAL', 'REPAIRING', 'READY_PICKUP'] as const;
   private readonly pendingOrderStatuses = ['PENDIENTE', 'CONFIRMADO', 'PREPARANDO'] as const;
-  private readonly suppliersRegistrySettingKey = 'suppliers_registry';
-  private readonly warrantyIncidentsSettingKey = 'warranty_incidents_registry';
-  private readonly suppliersLegacyMigrationDoneKey = 'migration.legacy.suppliers_registry.done';
-  private readonly warrantiesLegacyMigrationDoneKey = 'migration.legacy.warranty_incidents_registry.done';
-  private readonly deviceTypesLegacyMigrationDoneKey = 'migration.legacy.device_types_catalog.done';
-  private readonly modelGroupsLegacyMigrationPrefix = 'migration.legacy.device_model_groups';
   private readonly brandAssetSlots = {
     favicon_ico: { settingKey: 'brand_asset.favicon_ico.path', defaultPath: 'favicon.ico', fileBase: 'favicon-ico', maxKb: 1024, allowedExts: ['ico'] },
     favicon_16: { settingKey: 'brand_asset.favicon_16.path', defaultPath: 'favicon-16x16.png', fileBase: 'favicon-16x16', maxKb: 1024, allowedExts: ['png', 'ico', 'webp'] },
@@ -606,28 +600,9 @@ export class AdminService {
   }
 
   async deviceTypes() {
-    let items = await this.prisma.deviceType.findMany({
+    const items = await this.prisma.deviceType.findMany({
       orderBy: [{ active: 'desc' }, { name: 'asc' }],
     });
-    if (items.length === 0) {
-      const migrationDone = await this.isLegacyMigrationDone(this.deviceTypesLegacyMigrationDoneKey);
-      if (!migrationDone) {
-        const bridgeItems = await this.readDeviceTypes();
-        for (const t of bridgeItems) {
-          const slugBase = this.slugify(t.slug || t.name) || 'tipo';
-          let slug = slugBase;
-          let idx = 2;
-          while (await this.prisma.deviceType.findUnique({ where: { slug } })) slug = `${slugBase}-${idx++}`;
-          await this.prisma.deviceType.create({
-            data: { name: t.name, slug, active: t.active },
-          });
-        }
-        await this.markLegacyMigrationDone(this.deviceTypesLegacyMigrationDoneKey);
-      }
-      items = await this.prisma.deviceType.findMany({
-        orderBy: [{ active: 'desc' }, { name: 'asc' }],
-      });
-    }
     return {
       items: items.map((i) => ({ id: i.id, name: i.name, slug: i.slug, active: i.active })),
     };
@@ -665,51 +640,10 @@ export class AdminService {
     const brand = await this.prisma.deviceBrand.findUnique({ where: { id: deviceBrandId } });
     if (!brand) throw new BadRequestException('Marca no encontrada');
 
-    let groups = await this.prisma.deviceModelGroup.findMany({
+    const groups = await this.prisma.deviceModelGroup.findMany({
       where: { deviceBrandId },
       orderBy: [{ active: 'desc' }, { name: 'asc' }],
     });
-    if (groups.length === 0) {
-      const migrationDone = await this.isLegacyMigrationDone(this.modelGroupsLegacyMigrationDoneKey(deviceBrandId));
-      if (!migrationDone) {
-        const bridgeGroups = await this.readModelGroups(deviceBrandId);
-        const legacyGroupToDbGroup = new Map<string, string>();
-        for (const g of bridgeGroups) {
-          const slugBase = this.slugify(g.slug || g.name) || 'grupo';
-          let slug = slugBase;
-          let idx = 2;
-          while (
-            await this.prisma.deviceModelGroup.findFirst({
-              where: { deviceBrandId, slug },
-              select: { id: true },
-            })
-          ) slug = `${slugBase}-${idx++}`;
-          const created = await this.prisma.deviceModelGroup.create({
-            data: { deviceBrandId, name: g.name, slug, active: g.active },
-          });
-          legacyGroupToDbGroup.set(g.id, created.id);
-        }
-
-        const bridgeAssignments = await this.readModelGroupAssignments(deviceBrandId);
-        for (const [modelId, legacyGroupId] of Object.entries(bridgeAssignments)) {
-          const dbGroupId = legacyGroupToDbGroup.get(legacyGroupId);
-          if (!dbGroupId) continue;
-          try {
-            await this.prisma.deviceModel.update({
-              where: { id: modelId },
-              data: { deviceModelGroupId: dbGroupId },
-            });
-          } catch {
-            // ignore invalid legacy assignment
-          }
-        }
-        await this.markLegacyMigrationDone(this.modelGroupsLegacyMigrationDoneKey(deviceBrandId));
-      }
-      groups = await this.prisma.deviceModelGroup.findMany({
-        where: { deviceBrandId },
-        orderBy: [{ active: 'desc' }, { name: 'asc' }],
-      });
-    }
 
     const models = await this.prisma.deviceModel.findMany({
       where: { brandId: deviceBrandId },
@@ -2085,72 +2019,10 @@ export class AdminService {
     return row?.value ?? fallback;
   }
 
-  private async isLegacyMigrationDone(key: string) {
-    const value = await this.getAppSettingValue(key, '0');
-    return value === '1';
-  }
-
-  private async markLegacyMigrationDone(key: string) {
-    await this.upsertSingleSetting(key, '1', 'migration', 'Legacy registry migration done', 'boolean');
-  }
-
   private async readSuppliersRegistry() {
-    let rows = await this.prisma.supplier.findMany({
+    const rows = await this.prisma.supplier.findMany({
       orderBy: [{ searchPriority: 'asc' }, { name: 'asc' }],
     });
-
-    if (rows.length === 0) {
-      const migrationDone = await this.isLegacyMigrationDone(this.suppliersLegacyMigrationDoneKey);
-      if (!migrationDone) {
-        const legacy = await this.readLegacySuppliersRegistry();
-        if (legacy.length > 0) {
-          for (const row of legacy) {
-            await this.prisma.supplier.upsert({
-              where: { id: row.id },
-              create: {
-                id: row.id,
-                name: row.name,
-                phone: row.phone,
-                notes: row.notes,
-                active: row.active,
-                searchPriority: row.searchPriority,
-                searchEnabled: row.searchEnabled,
-                searchMode: row.searchMode,
-                searchEndpoint: row.searchEndpoint,
-                searchConfigJson: row.searchConfigJson,
-                lastProbeStatus: row.lastProbeStatus,
-                lastProbeQuery: row.lastProbeQuery,
-                lastProbeCount: row.lastProbeCount,
-                lastProbeError: row.lastProbeError,
-                lastProbeAt: row.lastProbeAt ? new Date(row.lastProbeAt) : null,
-                createdAt: new Date(row.createdAt),
-                updatedAt: new Date(row.updatedAt),
-              },
-              update: {
-                name: row.name,
-                phone: row.phone,
-                notes: row.notes,
-                active: row.active,
-                searchPriority: row.searchPriority,
-                searchEnabled: row.searchEnabled,
-                searchMode: row.searchMode,
-                searchEndpoint: row.searchEndpoint,
-                searchConfigJson: row.searchConfigJson,
-                lastProbeStatus: row.lastProbeStatus,
-                lastProbeQuery: row.lastProbeQuery,
-                lastProbeCount: row.lastProbeCount,
-                lastProbeError: row.lastProbeError,
-                lastProbeAt: row.lastProbeAt ? new Date(row.lastProbeAt) : null,
-              },
-            });
-          }
-        }
-        await this.markLegacyMigrationDone(this.suppliersLegacyMigrationDoneKey);
-      }
-      rows = await this.prisma.supplier.findMany({
-        orderBy: [{ searchPriority: 'asc' }, { name: 'asc' }],
-      });
-    }
 
     return rows.map((row) => ({
       id: row.id,
@@ -2228,75 +2100,9 @@ export class AdminService {
   }
 
   private async readWarrantyIncidentsRegistry() {
-    let rows = await this.prisma.warrantyIncident.findMany({
+    const rows = await this.prisma.warrantyIncident.findMany({
       orderBy: [{ happenedAt: 'desc' }, { createdAt: 'desc' }],
     });
-
-    if (rows.length === 0) {
-      const migrationDone = await this.isLegacyMigrationDone(this.warrantiesLegacyMigrationDoneKey);
-      if (!migrationDone) {
-        const legacy = await this.readLegacyWarrantyIncidentsRegistry();
-        if (legacy.length > 0) {
-          // Ensure supplier mapping exists before importing incidents.
-          await this.readSuppliersRegistry();
-          const suppliers = await this.prisma.supplier.findMany({ select: { id: true } });
-          const supplierSet = new Set(suppliers.map((s) => s.id));
-          for (const row of legacy) {
-            await this.prisma.warrantyIncident.upsert({
-              where: { id: row.id },
-              create: {
-                id: row.id,
-                sourceType: row.sourceType,
-                status: row.status,
-                title: row.title,
-                reason: row.reason,
-                repairId: row.repairId,
-                productId: row.productId,
-                orderId: row.orderId,
-                supplierId: row.supplierId && supplierSet.has(row.supplierId) ? row.supplierId : null,
-                quantity: row.quantity,
-                unitCost: row.unitCost,
-                costOrigin: row.costOrigin,
-                extraCost: row.extraCost,
-                recoveredAmount: row.recoveredAmount,
-                lossAmount: row.lossAmount,
-                happenedAt: new Date(row.happenedAt),
-                resolvedAt: row.resolvedAt ? new Date(row.resolvedAt) : null,
-                notes: row.notes,
-                createdBy: row.createdBy,
-                createdAt: new Date(row.createdAt),
-                updatedAt: new Date(row.updatedAt),
-              },
-              update: {
-                sourceType: row.sourceType,
-                status: row.status,
-                title: row.title,
-                reason: row.reason,
-                repairId: row.repairId,
-                productId: row.productId,
-                orderId: row.orderId,
-                supplierId: row.supplierId && supplierSet.has(row.supplierId) ? row.supplierId : null,
-                quantity: row.quantity,
-                unitCost: row.unitCost,
-                costOrigin: row.costOrigin,
-                extraCost: row.extraCost,
-                recoveredAmount: row.recoveredAmount,
-                lossAmount: row.lossAmount,
-                happenedAt: new Date(row.happenedAt),
-                resolvedAt: row.resolvedAt ? new Date(row.resolvedAt) : null,
-                notes: row.notes,
-                createdBy: row.createdBy,
-                updatedAt: new Date(row.updatedAt),
-              },
-            });
-          }
-        }
-        await this.markLegacyMigrationDone(this.warrantiesLegacyMigrationDoneKey);
-      }
-      rows = await this.prisma.warrantyIncident.findMany({
-        orderBy: [{ happenedAt: 'desc' }, { createdAt: 'desc' }],
-      });
-    }
 
     return rows.map((row) => ({
       id: row.id,
@@ -2386,80 +2192,6 @@ export class AdminService {
         await tx.warrantyIncident.deleteMany({});
       }
     });
-  }
-
-  private async readLegacySuppliersRegistry() {
-    const rows = await this.readJsonArraySetting(this.suppliersRegistrySettingKey);
-    return rows
-      .filter((row): row is Record<string, unknown> => !!row && typeof row === 'object' && !Array.isArray(row))
-      .map((row) => {
-        const searchMode = String(row.searchMode ?? '').toLowerCase() === 'json' ? 'json' : 'html';
-        return {
-          id: String(row.id ?? this.randomEntityId('sup')),
-          name: String(row.name ?? '').trim(),
-          phone: this.cleanNullable(String(row.phone ?? '')),
-          notes: this.cleanNullable(String(row.notes ?? '')),
-          active: Boolean(row.active ?? true),
-          searchPriority: this.clampInt(Number(row.searchPriority ?? 100), 1, 99999),
-          searchEnabled: Boolean(row.searchEnabled ?? false),
-          searchMode,
-          searchEndpoint: this.cleanNullable(String(row.searchEndpoint ?? '')),
-          searchConfigJson: this.normalizeJsonString(String(row.searchConfigJson ?? '')),
-          lastProbeStatus: String(row.lastProbeStatus ?? '') === 'ok' ? 'ok' : 'none',
-          lastProbeQuery: this.cleanNullable(String(row.lastProbeQuery ?? '')),
-          lastProbeCount: this.clampInt(Number(row.lastProbeCount ?? 0), 0, 999999),
-          lastProbeError: this.cleanNullable(String(row.lastProbeError ?? '')),
-          lastProbeAt: this.cleanNullable(String(row.lastProbeAt ?? '')),
-          createdAt: this.cleanNullable(String(row.createdAt ?? '')) ?? new Date().toISOString(),
-          updatedAt: this.cleanNullable(String(row.updatedAt ?? '')) ?? new Date().toISOString(),
-        } satisfies SupplierRegistryRow;
-      })
-      .filter((row) => row.name.length > 0);
-  }
-
-  private async readLegacyWarrantyIncidentsRegistry() {
-    const rows = await this.readJsonArraySetting(this.warrantyIncidentsSettingKey);
-    return rows
-      .filter((row): row is Record<string, unknown> => !!row && typeof row === 'object' && !Array.isArray(row))
-      .map((row) => {
-        const sourceType = String(row.sourceType ?? '').toLowerCase() === 'product' ? 'product' : 'repair';
-        const status = String(row.status ?? '').toLowerCase() === 'closed' ? 'closed' : 'open';
-        const costOriginRaw = String(row.costOrigin ?? '').toLowerCase();
-        const costOrigin: WarrantyIncidentRegistryRow['costOrigin'] =
-          costOriginRaw === 'repair' || costOriginRaw === 'product' ? costOriginRaw : 'manual';
-        const quantity = this.clampInt(Number(row.quantity ?? 1), 1, 999);
-        const unitCost = Math.max(0, Number(row.unitCost ?? 0));
-        const extraCost = Math.max(0, Number(row.extraCost ?? 0));
-        const recoveredAmount = Math.max(0, Number(row.recoveredAmount ?? 0));
-        const lossAmount = Math.max(0, Number(row.lossAmount ?? quantity * unitCost + extraCost - recoveredAmount));
-        const happenedAtRaw = this.cleanNullable(String(row.happenedAt ?? '')) ?? new Date().toISOString();
-        const happenedAt = this.parseDateTime(happenedAtRaw)?.toISOString() ?? new Date().toISOString();
-
-        return {
-          id: String(row.id ?? this.randomEntityId('wic')),
-          sourceType,
-          status,
-          title: String(row.title ?? '').trim(),
-          reason: this.cleanNullable(String(row.reason ?? '')),
-          repairId: this.cleanNullable(String(row.repairId ?? '')),
-          productId: this.cleanNullable(String(row.productId ?? '')),
-          orderId: this.cleanNullable(String(row.orderId ?? '')),
-          supplierId: this.cleanNullable(String(row.supplierId ?? '')),
-          quantity,
-          unitCost,
-          costOrigin,
-          extraCost,
-          recoveredAmount,
-          lossAmount,
-          happenedAt,
-          resolvedAt: this.cleanNullable(String(row.resolvedAt ?? '')),
-          notes: this.cleanNullable(String(row.notes ?? '')),
-          createdBy: this.cleanNullable(String(row.createdBy ?? '')),
-          createdAt: this.cleanNullable(String(row.createdAt ?? '')) ?? new Date().toISOString(),
-          updatedAt: this.cleanNullable(String(row.updatedAt ?? '')) ?? new Date().toISOString(),
-        } satisfies WarrantyIncidentRegistryRow;
-      })
-      .filter((row) => row.title.length > 0);
   }
 
   private buildProviderStats(incidents: WarrantyIncidentRegistryRow[]) {
@@ -2648,17 +2380,6 @@ export class AdminService {
     return `${prefix}_${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36).slice(-4)}`;
   }
 
-  private async readJsonArraySetting(key: string) {
-    const raw = await this.getAppSettingValue(key, '[]');
-    try {
-      const parsed: unknown = JSON.parse(raw);
-      if (!Array.isArray(parsed)) return [];
-      return parsed;
-    } catch {
-      return [];
-    }
-  }
-
   private parseEmailList(raw: string) {
     const seen = new Set<string>();
     return raw
@@ -2673,93 +2394,6 @@ export class AdminService {
       });
   }
 
-  private async readDeviceTypes() {
-    const raw = await this.getAppSettingValue('device_types_catalog', '[]');
-    try {
-      const parsed = JSON.parse(raw);
-      if (!Array.isArray(parsed)) return [] as Array<{ id: string; name: string; slug: string; active: boolean }>;
-      return parsed
-        .filter((x) => x && typeof x === 'object')
-        .map((x: any) => ({
-          id: String(x.id ?? this.randomId()),
-          name: String(x.name ?? '').trim(),
-          slug: String(x.slug ?? ''),
-          active: Boolean(x.active),
-        }))
-        .filter((x) => x.name);
-    } catch {
-      return [] as Array<{ id: string; name: string; slug: string; active: boolean }>;
-    }
-  }
-
-  private modelGroupsKey(brandId: string) {
-    return `device_model_groups.${brandId}.groups`;
-  }
-
-  private modelGroupAssignmentsKey(brandId: string) {
-    return `device_model_groups.${brandId}.assignments`;
-  }
-
-  private modelGroupsLegacyMigrationDoneKey(brandId: string) {
-    return `${this.modelGroupsLegacyMigrationPrefix}.${brandId}.done`;
-  }
-
-  private async readModelGroups(brandId: string) {
-    const raw = await this.getAppSettingValue(this.modelGroupsKey(brandId), '[]');
-    try {
-      const parsed = JSON.parse(raw);
-      if (!Array.isArray(parsed)) return [] as Array<{ id: string; name: string; slug: string; active: boolean }>;
-      return parsed
-        .filter((x) => x && typeof x === 'object')
-        .map((x: any) => ({
-          id: String(x.id ?? this.randomId()),
-          name: String(x.name ?? '').trim(),
-          slug: String(x.slug ?? ''),
-          active: Boolean(x.active),
-        }))
-        .filter((x) => x.name);
-    } catch {
-      return [] as Array<{ id: string; name: string; slug: string; active: boolean }>;
-    }
-  }
-
-  private async writeModelGroups(brandId: string, items: Array<{ id: string; name: string; slug: string; active: boolean }>) {
-    await this.upsertSingleSetting(this.modelGroupsKey(brandId), JSON.stringify(items), 'device_catalog', 'Model groups', 'json');
-  }
-
-  private async readModelGroupAssignments(brandId: string) {
-    const raw = await this.getAppSettingValue(this.modelGroupAssignmentsKey(brandId), '{}');
-    try {
-      const parsed = JSON.parse(raw);
-      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {} as Record<string, string>;
-      return Object.fromEntries(
-        Object.entries(parsed).filter(([, v]) => typeof v === 'string' && (v as string).trim().length > 0),
-      ) as Record<string, string>;
-    } catch {
-      return {} as Record<string, string>;
-    }
-  }
-
-  private async writeModelGroupAssignments(brandId: string, assignments: Record<string, string>) {
-    await this.upsertSingleSetting(
-      this.modelGroupAssignmentsKey(brandId),
-      JSON.stringify(assignments),
-      'device_catalog',
-      'Model group assignments',
-      'json',
-    );
-  }
-
-  private async writeDeviceTypes(items: Array<{ id: string; name: string; slug: string; active: boolean }>) {
-    await this.upsertSingleSetting(
-      'device_types_catalog',
-      JSON.stringify(items),
-      'device_catalog',
-      'Device types catalog',
-      'json',
-    );
-  }
-
   private slugify(value: string) {
     return value
       .toLowerCase()
@@ -2767,10 +2401,6 @@ export class AdminService {
       .replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '');
-  }
-
-  private randomId() {
-    return `dt_${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36).slice(-4)}`;
   }
 
   private async resolveWeeklyReportRecipients() {

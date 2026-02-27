@@ -96,7 +96,7 @@ export function AdminRepairPrintPage() {
             <div className="border-b border-zinc-100 px-5 py-4">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <div className="text-4xl font-black tracking-tight text-zinc-900">Laravel</div>
+                  <div className="text-4xl font-black tracking-tight text-zinc-900">NicoReparaciones</div>
                   <div className="mt-1 text-sm text-zinc-600">Orden de reparación</div>
                 </div>
                 <div className="text-right">
@@ -168,4 +168,3 @@ export function AdminRepairPrintPage() {
     </div>
   );
 }
-

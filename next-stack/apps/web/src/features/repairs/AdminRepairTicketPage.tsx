@@ -80,7 +80,7 @@ export function AdminRepairTicketPage() {
           </div>
         ) : (
           <div className="space-y-3">
-            <div className="text-center text-3xl font-black tracking-tight text-zinc-900">Laravel</div>
+            <div className="text-center text-3xl font-black tracking-tight text-zinc-900">NicoReparaciones</div>
 
             <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-[0_8px_30px_-18px_#0f172a47] print:shadow-none">
               <div className="space-y-2 text-sm">
@@ -164,4 +164,3 @@ function TicketMoney(props: { label: string; value: number; strong?: boolean }) 
     </div>
   );
 }
-

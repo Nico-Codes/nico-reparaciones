@@ -12,7 +12,6 @@ export type StoreProduct = {
   description: string | null;
   imageUrl?: string | null;
   imagePath?: string | null;
-  imageLegacy?: string | null;
   price: number;
   stock: number;
   featured: boolean;

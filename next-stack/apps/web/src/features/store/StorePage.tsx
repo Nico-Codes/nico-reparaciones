@@ -99,10 +99,9 @@ export function StorePage() {
 
   const products = productsData?.items ?? [];
   const showHero = !category;
-  const heroFallbackBase = 'http://127.0.0.1:8000';
   const hero = heroConfig ?? {
-    imageDesktop: `${heroFallbackBase}/brand/logo.png`,
-    imageMobile: `${heroFallbackBase}/brand/logo.png`,
+    imageDesktop: '/brand/logo.png',
+    imageMobile: '/brand/logo.png',
     fadeRgbDesktop: '14, 165, 233',
     fadeRgbMobile: '14, 165, 233',
     fadeIntensity: 42,
@@ -372,4 +371,3 @@ function StoreGridCard({ product }: { product: StoreProduct }) {
     </div>
   );
 }
-
