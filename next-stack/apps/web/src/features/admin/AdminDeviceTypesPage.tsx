@@ -92,14 +92,14 @@ export function AdminDeviceTypesPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-black tracking-tight text-zinc-900">Tipos de dispositivo</h1>
-            <p className="mt-1 text-sm text-zinc-600">Categorias base del catalogo (Celular, Notebook, Consola, etc.).</p>
+            <p className="mt-1 text-sm text-zinc-600">Categorías base del catálogo (Celular, Notebook, Consola, etc.).</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Link to="/admin/precios" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">
               Precios
             </Link>
             <Link to="/admin/catalogodispositivos" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">
-              Catalogo
+              Catálogo
             </Link>
           </div>
         </div>
@@ -146,14 +146,14 @@ export function AdminDeviceTypesPage() {
         <section className="card">
           <div className="card-head flex items-center justify-between gap-2">
             <div className="text-xl font-black tracking-tight text-zinc-900">Listado</div>
-            <span className="badge-zinc">{loading ? '—' : rows.length}</span>
+            <span className="badge-zinc">{loading ? '-' : rows.length}</span>
           </div>
           <div className="card-body space-y-0">
             <div className="grid grid-cols-[1.5fr_0.7fr_0.9fr_0.6fr] gap-3 border-b border-zinc-100 px-3 py-2 text-xs font-black uppercase tracking-wide text-zinc-500">
               <div>Tipo</div>
               <div>Activo</div>
               <div>Slug</div>
-              <div className="text-right">Accion</div>
+              <div className="text-right">Acción</div>
             </div>
             {loading ? (
               <div className="p-4 text-sm text-zinc-600">Cargando...</div>

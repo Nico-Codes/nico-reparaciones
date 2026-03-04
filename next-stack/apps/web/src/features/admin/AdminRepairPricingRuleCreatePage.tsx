@@ -42,7 +42,7 @@ export function AdminRepairPricingRuleCreatePage() {
       setIssues(i.items.filter((x) => x.active));
       setModels(m.items.filter((x) => x.active));
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error cargando catalogo');
+      setError(e instanceof Error ? e.message : 'Error cargando catálogo');
     } finally {
       setLoadingCatalog(false);
     }
@@ -85,7 +85,7 @@ export function AdminRepairPricingRuleCreatePage() {
     setError('');
     try {
       await repairsApi.pricingRulesCreate({
-        name: name.trim() || `Regla ${issueText || 'reparacion'}`,
+        name: name.trim() || `Regla ${issueText || 'reparación'}`,
         active,
         priority: Number(priority || 0),
         deviceTypeId: deviceTypeId || (brands.find((b) => b.id === brandId)?.deviceTypeId ?? null),
@@ -133,11 +133,11 @@ export function AdminRepairPricingRuleCreatePage() {
       <section className="card mx-auto w-full max-w-[820px]">
         <div className="card-body space-y-4 md:space-y-5">
           <Field label="Nombre de la regla *">
-            <input value={name} onChange={(e) => setName(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" placeholder="Ej: Modulo Samsung A linea media" />
+            <input value={name} onChange={(e) => setName(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" placeholder="Ej: Módulo Samsung A línea media" />
           </Field>
 
           <div className="grid gap-4 md:grid-cols-3">
-            <Field label="Tipo de dispositivo (catalogo, opcional)">
+            <Field label="Tipo de dispositivo (catálogo, opcional)">
               <select
                 value={deviceTypeId}
                 onChange={(e) => {
@@ -152,7 +152,7 @@ export function AdminRepairPricingRuleCreatePage() {
                 {deviceTypes.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
               </select>
             </Field>
-            <Field label="Marca (catalogo, opcional)">
+            <Field label="Marca (catálogo, opcional)">
               <select
                 value={brandId}
                 onChange={(e) => {
@@ -166,7 +166,7 @@ export function AdminRepairPricingRuleCreatePage() {
                 {filteredBrands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
               </select>
             </Field>
-            <Field label="Modelo (catalogo, opcional)">
+            <Field label="Modelo (catálogo, opcional)">
               <select value={modelId} onChange={(e) => setModelId(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" disabled={loadingCatalog}>
                 <option value="">-</option>
                 {filteredModels.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
@@ -174,7 +174,7 @@ export function AdminRepairPricingRuleCreatePage() {
             </Field>
           </div>
 
-          <Field label="Tipo de reparacion / falla (catalogo, opcional)">
+          <Field label="Tipo de reparación / falla (catálogo, opcional)">
             <select value={issueId} onChange={(e) => setIssueId(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" disabled={loadingCatalog}>
               <option value="">-</option>
               {filteredIssues.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}
@@ -218,8 +218,8 @@ export function AdminRepairPricingRuleCreatePage() {
             <Field label="Modelo (texto fallback)">
               <input value={modelText} onChange={(e) => setModelText(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" placeholder="A32" />
             </Field>
-            <Field label="Reparacion (texto fallback)">
-              <input value={issueText} onChange={(e) => setIssueText(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" placeholder="Modulo" />
+            <Field label="Reparación (texto fallback)">
+              <input value={issueText} onChange={(e) => setIssueText(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" placeholder="Módulo" />
             </Field>
           </div>
 

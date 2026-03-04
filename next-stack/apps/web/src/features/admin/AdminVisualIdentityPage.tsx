@@ -36,25 +36,25 @@ const FAVICON_ASSETS: AssetCard[] = [
   { title: 'Favicon .ico', filename: 'favicon.ico', slot: 'favicon_ico', settingKey: 'brand_asset.favicon_ico.path', defaultPath: 'favicon.ico', formats: 'ICO', maxKb: 1024, preview: { kind: 'brand', size: 'sm' }, showReset: true },
   { title: 'Favicon 16×16', filename: 'favicon-16x16.png', slot: 'favicon_16', settingKey: 'brand_asset.favicon_16.path', defaultPath: 'favicon-16x16.png', formats: 'PNG, ICO, WEBP', maxKb: 1024, preview: { kind: 'brand', size: 'sm' }, showReset: true },
   { title: 'Favicon 32×32', filename: 'favicon-32x32.png', slot: 'favicon_32', settingKey: 'brand_asset.favicon_32.path', defaultPath: 'favicon-32x32.png', formats: 'PNG, ICO, WEBP', maxKb: 1024, preview: { kind: 'brand', size: 'sm' }, showReset: true },
-  { title: 'Icono Android 192', filename: 'android-chrome-192x192.png', slot: 'android_192', settingKey: 'brand_asset.android_192.path', defaultPath: 'android-chrome-192x192.png', formats: 'PNG, JPG, JPEG, WEBP', maxKb: 2048, preview: { kind: 'brand', size: 'md' }, showReset: true },
-  { title: 'Icono Android 512', filename: 'android-chrome-512x512.png', slot: 'android_512', settingKey: 'brand_asset.android_512.path', defaultPath: 'android-chrome-512x512.png', formats: 'PNG, JPG, JPEG, WEBP', maxKb: 4096, preview: { kind: 'brand', size: 'md' }, showReset: true },
-  { title: 'Icono Apple Touch', filename: 'apple-touch-icon.png', slot: 'apple_touch', settingKey: 'brand_asset.apple_touch.path', defaultPath: 'apple-touch-icon.png', formats: 'PNG, JPG, JPEG, WEBP', maxKb: 2048, preview: { kind: 'brand', size: 'md' }, showReset: true },
+  { title: 'Ícono Android 192', filename: 'android-chrome-192x192.png', slot: 'android_192', settingKey: 'brand_asset.android_192.path', defaultPath: 'android-chrome-192x192.png', formats: 'PNG, JPG, JPEG, WEBP', maxKb: 2048, preview: { kind: 'brand', size: 'md' }, showReset: true },
+  { title: 'Ícono Android 512', filename: 'android-chrome-512x512.png', slot: 'android_512', settingKey: 'brand_asset.android_512.path', defaultPath: 'android-chrome-512x512.png', formats: 'PNG, JPG, JPEG, WEBP', maxKb: 4096, preview: { kind: 'brand', size: 'md' }, showReset: true },
+  { title: 'Ícono Apple Touch', filename: 'apple-touch-icon.png', slot: 'apple_touch', settingKey: 'brand_asset.apple_touch.path', defaultPath: 'apple-touch-icon.png', formats: 'PNG, JPG, JPEG, WEBP', maxKb: 2048, preview: { kind: 'brand', size: 'md' }, showReset: true },
 ];
 
 const STORE_HERO_ASSETS: AssetCard[] = [
   { title: 'Fondo portada tienda (desktop)', filename: 'brand-assets/store_home_hero_desktop.png', slot: 'store_hero_desktop', settingKey: 'store_hero_image_desktop', defaultPath: '', formats: 'PNG, JPG, JPEG, WEBP', maxKb: 6144, preview: { kind: 'hero' }, showReset: true },
-  { title: 'Fondo portada tienda (movil)', filename: 'brand-assets/store_home_hero_mobile.png', slot: 'store_hero_mobile', settingKey: 'store_hero_image_mobile', defaultPath: '', formats: 'PNG, JPG, JPEG, WEBP', maxKb: 4096, preview: { kind: 'hero', mobile: true }, showReset: true },
+  { title: 'Fondo portada tienda (móvil)', filename: 'brand-assets/store_home_hero_mobile.png', slot: 'store_hero_mobile', settingKey: 'store_hero_image_mobile', defaultPath: '', formats: 'PNG, JPG, JPEG, WEBP', maxKb: 4096, preview: { kind: 'hero', mobile: true }, showReset: true },
 ];
 
 const NAV_ICON_ASSETS: AssetCard[] = [
-  { title: 'Icono ajustes', filename: 'icons/settings.svg', slot: 'icon_settings', settingKey: 'brand_asset.icon_settings.path', defaultPath: 'icons/settings.svg', formats: 'SVG, PNG, JPG, JPEG, WEBP', maxKb: 2048, preview: { kind: 'icon', node: <Settings className="h-7 w-7" />, tint: 'text-slate-500' }, showReset: true },
-  { title: 'Icono carrito', filename: 'icons/carrito.svg', slot: 'icon_carrito', settingKey: 'brand_asset.icon_carrito.path', defaultPath: 'icons/carrito.svg', formats: 'SVG, PNG, JPG, JPEG, WEBP', maxKb: 2048, preview: { kind: 'icon', node: <ShoppingCart className="h-7 w-7" />, tint: 'text-amber-500' }, showReset: true },
-  { title: 'Icono cerrar sesion', filename: 'icons/logout.svg', slot: 'icon_logout', settingKey: 'brand_asset.icon_logout.path', defaultPath: 'icons/logout.svg', formats: 'SVG, PNG, JPG, JPEG, WEBP', maxKb: 2048, preview: { kind: 'icon', node: <LogOut className="h-7 w-7" />, tint: 'text-rose-500' }, showReset: true },
-  { title: 'Icono consultar reparacion', filename: 'icons/consultar-reparacion.svg', slot: 'icon_consultar_reparacion', settingKey: 'brand_asset.icon_consultar_reparacion.path', defaultPath: 'icons/consultar-reparacion.svg', formats: 'SVG, PNG, JPG, JPEG, WEBP', maxKb: 2048, preview: { kind: 'icon', node: <Smartphone className="h-7 w-7" />, tint: 'text-sky-600' }, showReset: true },
-  { title: 'Icono mis pedidos', filename: 'icons/mis-pedidos.svg', slot: 'icon_mis_pedidos', settingKey: 'brand_asset.icon_mis_pedidos.path', defaultPath: 'icons/mis-pedidos.svg', formats: 'SVG, PNG, JPG, JPEG, WEBP', maxKb: 2048, preview: { kind: 'icon', node: <Boxes className="h-7 w-7" />, tint: 'text-blue-500' }, showReset: true },
-  { title: 'Icono mis reparaciones', filename: 'icons/mis-reparaciones.svg', slot: 'icon_mis_reparaciones', settingKey: 'brand_asset.icon_mis_reparaciones.path', defaultPath: 'icons/mis-reparaciones.svg', formats: 'SVG, PNG, JPG, JPEG, WEBP', maxKb: 2048, preview: { kind: 'icon', node: <Wrench className="h-7 w-7" />, tint: 'text-zinc-700' }, showReset: true },
-  { title: 'Icono panel de admin', filename: 'icons/dashboard.svg', slot: 'icon_dashboard', settingKey: 'brand_asset.icon_dashboard.path', defaultPath: 'icons/dashboard.svg', formats: 'SVG, PNG, JPG, JPEG, WEBP', maxKb: 2048, preview: { kind: 'icon', node: <LayoutDashboard className="h-7 w-7" />, tint: 'text-slate-500' }, showReset: true },
-  { title: 'Icono tienda', filename: 'icons/tienda.svg', slot: 'icon_tienda', settingKey: 'brand_asset.icon_tienda.path', defaultPath: 'icons/tienda.svg', formats: 'SVG, PNG, JPG, JPEG, WEBP', maxKb: 2048, preview: { kind: 'icon', node: <Store className="h-7 w-7" />, tint: 'text-sky-600' }, showReset: true },
+  { title: 'Ícono ajustes', filename: 'icons/settings.svg', slot: 'icon_settings', settingKey: 'brand_asset.icon_settings.path', defaultPath: 'icons/settings.svg', formats: 'SVG, PNG, JPG, JPEG, WEBP', maxKb: 2048, preview: { kind: 'icon', node: <Settings className="h-7 w-7" />, tint: 'text-slate-500' }, showReset: true },
+  { title: 'Ícono carrito', filename: 'icons/carrito.svg', slot: 'icon_carrito', settingKey: 'brand_asset.icon_carrito.path', defaultPath: 'icons/carrito.svg', formats: 'SVG, PNG, JPG, JPEG, WEBP', maxKb: 2048, preview: { kind: 'icon', node: <ShoppingCart className="h-7 w-7" />, tint: 'text-amber-500' }, showReset: true },
+  { title: 'Ícono cerrar sesión', filename: 'icons/logout.svg', slot: 'icon_logout', settingKey: 'brand_asset.icon_logout.path', defaultPath: 'icons/logout.svg', formats: 'SVG, PNG, JPG, JPEG, WEBP', maxKb: 2048, preview: { kind: 'icon', node: <LogOut className="h-7 w-7" />, tint: 'text-rose-500' }, showReset: true },
+  { title: 'Ícono consultar reparación', filename: 'icons/consultar-reparacion.svg', slot: 'icon_consultar_reparacion', settingKey: 'brand_asset.icon_consultar_reparacion.path', defaultPath: 'icons/consultar-reparacion.svg', formats: 'SVG, PNG, JPG, JPEG, WEBP', maxKb: 2048, preview: { kind: 'icon', node: <Smartphone className="h-7 w-7" />, tint: 'text-sky-600' }, showReset: true },
+  { title: 'Ícono mis pedidos', filename: 'icons/mis-pedidos.svg', slot: 'icon_mis_pedidos', settingKey: 'brand_asset.icon_mis_pedidos.path', defaultPath: 'icons/mis-pedidos.svg', formats: 'SVG, PNG, JPG, JPEG, WEBP', maxKb: 2048, preview: { kind: 'icon', node: <Boxes className="h-7 w-7" />, tint: 'text-blue-500' }, showReset: true },
+  { title: 'Ícono mis reparaciones', filename: 'icons/mis-reparaciones.svg', slot: 'icon_mis_reparaciones', settingKey: 'brand_asset.icon_mis_reparaciones.path', defaultPath: 'icons/mis-reparaciones.svg', formats: 'SVG, PNG, JPG, JPEG, WEBP', maxKb: 2048, preview: { kind: 'icon', node: <Wrench className="h-7 w-7" />, tint: 'text-zinc-700' }, showReset: true },
+  { title: 'Ícono panel de admin', filename: 'icons/dashboard.svg', slot: 'icon_dashboard', settingKey: 'brand_asset.icon_dashboard.path', defaultPath: 'icons/dashboard.svg', formats: 'SVG, PNG, JPG, JPEG, WEBP', maxKb: 2048, preview: { kind: 'icon', node: <LayoutDashboard className="h-7 w-7" />, tint: 'text-slate-500' }, showReset: true },
+  { title: 'Ícono tienda', filename: 'icons/tienda.svg', slot: 'icon_tienda', settingKey: 'brand_asset.icon_tienda.path', defaultPath: 'icons/tienda.svg', formats: 'SVG, PNG, JPG, JPEG, WEBP', maxKb: 2048, preview: { kind: 'icon', node: <Store className="h-7 w-7" />, tint: 'text-sky-600' }, showReset: true },
 ];
 
 const LOGO_ASSETS: AssetCard[] = [
@@ -130,10 +130,10 @@ export function AdminVisualIdentityPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-black tracking-tight text-zinc-900">Identidad visual</h1>
-            <p className="mt-1 text-sm text-zinc-600">Sube y administra logos, iconos y favicons del sitio.</p>
+            <p className="mt-1 text-sm text-zinc-600">Sube y administra logos, íconos y favicons del sitio.</p>
           </div>
           <Link to="/admin/configuraciones" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">
-            Volver a configuracion
+            Volver a configuración
           </Link>
         </div>
       </section>
@@ -155,12 +155,12 @@ export function AdminVisualIdentityPage() {
 
           <div className="space-y-6 px-4 py-4 md:px-5 md:py-5">
             <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700">
-              Nota: las imagenes de productos se gestionan desde <span className="font-black">Admin &gt; Productos</span>.
+              Nota: las imágenes de productos se gestionan desde <span className="font-black">Admin &gt; Productos</span>.
             </div>
 
-            <AssetSection title="Favicons e iconos de app" items={FAVICON_ASSETS} columns="three" renderCard={(item) => renderCard(item)} />
+            <AssetSection title="Favicons e íconos de app" items={FAVICON_ASSETS} columns="three" renderCard={(item) => renderCard(item)} />
             <AssetSection title="Portada de tienda" items={STORE_HERO_ASSETS} columns="two" renderCard={(item) => renderCard(item)} />
-            <AssetSection title="Iconos de navegacion" items={NAV_ICON_ASSETS} columns="three" renderCard={(item) => renderCard(item)} />
+            <AssetSection title="Íconos de navegación" items={NAV_ICON_ASSETS} columns="three" renderCard={(item) => renderCard(item)} />
             <AssetSection title="Logos" items={LOGO_ASSETS} columns="one" renderCard={(item) => renderCard(item)} />
           </div>
         </div>
@@ -328,8 +328,8 @@ function Preview({ spec }: { spec: PreviewSpec }) {
         </div>
         <div className="absolute inset-y-0 right-3 flex items-center text-right text-[9px] font-black uppercase tracking-wide text-white/90">
           <div>
-            <div>Electronica</div>
-            <div>Reparacion</div>
+            <div>Electrónica</div>
+            <div>Reparación</div>
             <div>Accesorios</div>
           </div>
         </div>
@@ -389,4 +389,3 @@ function acceptFromFormats(formats: string) {
     .filter(Boolean)
     .join(',');
 }
-

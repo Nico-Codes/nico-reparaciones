@@ -9,12 +9,24 @@ function repairCode(id: string) {
   return `R-${id.slice(0, 13)}`;
 }
 
+function toDateTimeLocal(date: Date) {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  const hh = String(date.getHours()).padStart(2, '0');
+  const mi = String(date.getMinutes()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+}
+
 export function AdminWarrantyCreatePage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const repairId = searchParams.get('repairId') ?? '';
+  const repairIdParam = searchParams.get('repairId') ?? '';
   const [repair, setRepair] = useState<RepairItem | null>(null);
+  const [repairs, setRepairs] = useState<RepairItem[]>([]);
+  const [selectedRepairId, setSelectedRepairId] = useState(repairIdParam);
   const [loadingRepair, setLoadingRepair] = useState(false);
+  const [loadingRepairs, setLoadingRepairs] = useState(false);
   const [providers, setProviders] = useState<AdminProviderItem[]>([]);
   const [loadingProviders, setLoadingProviders] = useState(false);
   const [products, setProducts] = useState<AdminProduct[]>([]);
@@ -36,36 +48,54 @@ export function AdminWarrantyCreatePage() {
   const [notes, setNotes] = useState('');
 
   useEffect(() => {
+    if (incidentAt) return;
+    setIncidentAt(toDateTimeLocal(new Date()));
+  }, [incidentAt]);
+
+  useEffect(() => {
     let mounted = true;
-    async function loadRepair() {
-      if (!repairId) return;
+    async function loadRepairFromParam() {
+      if (!repairIdParam) return;
       setLoadingRepair(true);
       try {
-        const res = await repairsApi.adminDetail(repairId);
+        const res = await repairsApi.adminDetail(repairIdParam);
         if (!mounted) return;
         setRepair(res.item);
-        setTitle((prev) => prev || 'Incidente de garantía');
-        if (!incidentAt) {
-          const now = new Date();
-          const yyyy = now.getFullYear();
-          const mm = String(now.getMonth() + 1).padStart(2, '0');
-          const dd = String(now.getDate()).padStart(2, '0');
-          const hh = String(now.getHours()).padStart(2, '0');
-          const mi = String(now.getMinutes()).padStart(2, '0');
-          setIncidentAt(`${yyyy}-${mm}-${dd}T${hh}:${mi}`);
-        }
-        if (!unitCost && res.item.finalPrice != null) {
-          setUnitCost(String(res.item.finalPrice));
-        }
+        setSelectedRepairId(res.item.id);
       } finally {
         if (mounted) setLoadingRepair(false);
       }
     }
-    void loadRepair();
+    void loadRepairFromParam();
     return () => {
       mounted = false;
     };
-  }, [repairId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [repairIdParam]);
+
+  useEffect(() => {
+    let mounted = true;
+    async function loadRepairs() {
+      setLoadingRepairs(true);
+      try {
+        const res = await repairsApi.adminList();
+        if (!mounted) return;
+        const sorted = [...res.items].sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        );
+        setRepairs(sorted);
+        setSelectedRepairId((prev) => prev || repairIdParam || sorted[0]?.id || '');
+      } catch {
+        if (!mounted) return;
+        setRepairs([]);
+      } finally {
+        if (mounted) setLoadingRepairs(false);
+      }
+    }
+    void loadRepairs();
+    return () => {
+      mounted = false;
+    };
+  }, [repairIdParam]);
 
   useEffect(() => {
     let mounted = true;
@@ -110,6 +140,12 @@ export function AdminWarrantyCreatePage() {
     };
   }, []);
 
+  const selectedRepair = useMemo(() => {
+    if (!selectedRepairId) return null;
+    if (repair?.id === selectedRepairId) return repair;
+    return repairs.find((r) => r.id === selectedRepairId) ?? null;
+  }, [repair, repairs, selectedRepairId]);
+
   const selectedProduct = useMemo(() => products.find((p) => p.id === productId) ?? null, [products, productId]);
 
   const estimatedLoss = useMemo(() => {
@@ -120,27 +156,50 @@ export function AdminWarrantyCreatePage() {
     return Math.max(0, q * cost + extra - recovered);
   }, [qty, unitCost, extraCost, recoveredAmount]);
 
-  const repairOptionLabel = repair
-    ? `${repairCode(repair.id)} - ${repair.customerName}`
-    : repairId
-      ? `${repairCode(repairId)}`
-      : 'Sin asociar';
+  const repairOptionLabel = selectedRepair
+    ? `${repairCode(selectedRepair.id)} - ${selectedRepair.customerName}`
+    : 'Sin asociar';
+
+  const backTo = repairIdParam ? `/admin/repairs/${encodeURIComponent(repairIdParam)}` : '/admin/garantias';
 
   async function saveIncident() {
     setError('');
+    const titleValue = title.trim();
+    if (!titleValue) {
+      setError('El titulo es obligatorio');
+      return;
+    }
+    if (source === 'REPAIR' && !selectedRepairId) {
+      setError('Selecciona la reparacion asociada');
+      return;
+    }
+    if (source === 'PRODUCT' && !productId) {
+      setError('Selecciona el producto asociado');
+      return;
+    }
+
+    const resolvedCostOrigin =
+      source === 'REPAIR'
+        ? selectedRepair?.finalPrice != null || selectedRepair?.quotedPrice != null
+          ? 'repair'
+          : 'manual'
+        : selectedProduct?.costPrice != null
+          ? 'product'
+          : 'manual';
+
     setSaving(true);
     try {
       await adminApi.createWarranty({
         sourceType: source === 'PRODUCT' ? 'product' : 'repair',
-        title: title.trim(),
+        title: titleValue,
         reason: reason.trim() || null,
-        repairId: source === 'REPAIR' ? repairId || null : null,
+        repairId: source === 'REPAIR' ? selectedRepairId || null : null,
         productId: source === 'PRODUCT' ? productId || null : null,
         orderId: orderRef.trim() || null,
         supplierId: providerId || null,
         quantity: Math.max(1, Number(qty || 1)),
         unitCost: Math.max(0, Number(unitCost || 0)),
-        costOrigin: source === 'REPAIR' ? 'repair' : 'product',
+        costOrigin: resolvedCostOrigin,
         extraCost: Math.max(0, Number(extraCost || 0)),
         recoveredAmount: Math.max(0, Number(recoveredAmount || 0)),
         happenedAt: incidentAt || null,
@@ -162,7 +221,7 @@ export function AdminWarrantyCreatePage() {
             <h1 className="text-2xl font-black tracking-tight text-zinc-900">Nuevo incidente de garantía</h1>
             <p className="mt-1 text-sm text-zinc-600">Registra pérdida real por garantía para mantener trazabilidad.</p>
           </div>
-          <Link to={repairId ? `/admin/repairs/${encodeURIComponent(repairId)}` : '/admin/repairs'} className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">
+          <Link to={backTo} className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">
             Volver
           </Link>
         </div>
@@ -200,9 +259,40 @@ export function AdminWarrantyCreatePage() {
           <div className="grid gap-4 md:grid-cols-2">
             <label className="block">
               <span className="mb-1 block text-sm font-bold text-zinc-700">Reparación asociada</span>
-              <select className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" value={repairId || ''} disabled={source !== 'REPAIR'}>
-                <option value={repairId || ''}>{loadingRepair ? 'Cargando...' : repairOptionLabel}</option>
+              <select
+                className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm"
+                value={selectedRepairId}
+                disabled={source !== 'REPAIR'}
+                onChange={(e) => {
+                  const nextRepairId = e.target.value;
+                  setSelectedRepairId(nextRepairId);
+                  const nextRepair =
+                    nextRepairId === repair?.id
+                      ? repair
+                      : repairs.find((r) => r.id === nextRepairId) ?? null;
+                  if (!nextRepair) return;
+                  const resolvedCost = nextRepair.finalPrice ?? nextRepair.quotedPrice;
+                  if (resolvedCost != null) setUnitCost(String(resolvedCost));
+                  if (!title.trim()) setTitle(`Garantía reparación ${repairCode(nextRepair.id)}`);
+                }}
+              >
+                <option value="">Sin asociar</option>
+                {repair && !repairs.some((r) => r.id === repair.id) ? (
+                  <option value={repair.id}>{`${repairCode(repair.id)} - ${repair.customerName}`}</option>
+                ) : null}
+                {repairs.map((repairRow) => (
+                  <option key={repairRow.id} value={repairRow.id}>
+                    {`${repairCode(repairRow.id)} - ${repairRow.customerName}`}
+                  </option>
+                ))}
               </select>
+              <p className="mt-1 text-xs text-zinc-500">
+                {loadingRepairs || loadingRepair
+                  ? 'Cargando reparaciones...'
+                  : source === 'REPAIR'
+                    ? `Seleccionada: ${repairOptionLabel}`
+                    : 'Solo requerido cuando el origen es Reparación.'}
+              </p>
             </label>
             <label className="block">
               <span className="mb-1 block text-sm font-bold text-zinc-700">Producto asociado</span>
@@ -215,6 +305,7 @@ export function AdminWarrantyCreatePage() {
                   setProductId(nextProductId);
                   const selected = products.find((p) => p.id === nextProductId) ?? null;
                   if (selected?.costPrice != null) setUnitCost(String(selected.costPrice));
+                  if (selected?.supplierId) setProviderId(selected.supplierId);
                   if (selected && !title.trim()) setTitle(`Garantía de producto: ${selected.name}`);
                 }}
               >
@@ -307,7 +398,7 @@ export function AdminWarrantyCreatePage() {
             <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={4} placeholder="Detalle del caso, proveedor, decisión tomada, etc." className="w-full rounded-2xl border border-zinc-200 px-3 py-2 text-sm" />
           </label>
           <div className="flex flex-wrap items-center justify-end gap-2">
-            <Link to={repairId ? `/admin/repairs/${encodeURIComponent(repairId)}` : '/admin/repairs'} className="btn-outline !h-11 !rounded-2xl px-6 text-sm font-bold">
+            <Link to={backTo} className="btn-outline !h-11 !rounded-2xl px-6 text-sm font-bold">
               Cancelar
             </Link>
             <button type="button" onClick={() => void saveIncident()} disabled={saving} className="btn-primary !h-11 !rounded-2xl px-6 text-sm font-bold disabled:opacity-60">

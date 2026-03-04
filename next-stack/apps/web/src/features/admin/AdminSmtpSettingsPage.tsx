@@ -63,10 +63,10 @@ export function AdminSmtpSettingsPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-black tracking-tight text-zinc-900">Correo SMTP</h1>
-            <p className="mt-1 text-sm text-zinc-600">Valida configuracion de correo y envia una prueba.</p>
+            <p className="mt-1 text-sm text-zinc-600">Valida configuración de correo y envía una prueba.</p>
           </div>
           <Link to="/admin/configuraciones" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">
-            Volver a configuracion
+            Volver a configuración
           </Link>
         </div>
       </section>
@@ -81,12 +81,12 @@ export function AdminSmtpSettingsPage() {
               <div className="min-w-0">
                 <div className="text-xl font-black tracking-tight text-zinc-900">Estado SMTP</div>
                 <p className="mt-1 text-sm text-zinc-600">
-                  {loading ? 'Cargando estado SMTP...' : smtp?.summary ?? 'Configuracion incompleta para envio real.'}
+                  {loading ? 'Cargando estado SMTP...' : smtp?.summary ?? 'Configuración incompleta para envío real.'}
                 </p>
                 <p className="mt-2 text-sm text-zinc-700">
-                  Mailer: <span className="font-black text-zinc-900">{loading ? '—' : smtp?.mailer ?? '-'}</span>
+                  Mailer: <span className="font-black text-zinc-900">{loading ? '-' : smtp?.mailer ?? '-'}</span>
                   {' '}| From:{' '}
-                  <span className="font-black text-zinc-900">{loading ? '—' : smtp?.from_address ?? '-'}</span>
+                  <span className="font-black text-zinc-900">{loading ? '-' : smtp?.from_address ?? '-'}</span>
                 </p>
                 {!loading && smtp?.issues?.length ? (
                   <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-zinc-600">

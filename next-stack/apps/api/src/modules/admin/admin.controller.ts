@@ -380,8 +380,15 @@ export class AdminController {
     return this.adminService.helpFaqList({ q, active, category });
   }
 
+  @Post('help-faq')
+  helpFaqCreatePost(@Body() body: unknown) {
+    const parsed = helpFaqCreateSchema.safeParse(body);
+    if (!parsed.success) return { message: 'Validacion invalida', errors: parsed.error.issues };
+    return this.adminService.helpFaqCreate(parsed.data);
+  }
+
   @Patch('help-faq')
-  helpFaqCreate(@Body() body: unknown) {
+  helpFaqCreateLegacy(@Body() body: unknown) {
     const parsed = helpFaqCreateSchema.safeParse(body);
     if (!parsed.success) return { message: 'Validacion invalida', errors: parsed.error.issues };
     return this.adminService.helpFaqCreate(parsed.data);

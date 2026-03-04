@@ -33,6 +33,7 @@ export function AdminMailTemplatesPage() {
     try {
       await mailTemplatesApi.save(items.map((i) => ({ templateKey: i.templateKey, subject: i.subject, body: i.body, enabled: i.enabled })));
       setSuccess('Plantillas guardadas');
+      await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error guardando plantillas');
     } finally {
@@ -48,7 +49,7 @@ export function AdminMailTemplatesPage() {
             <div className="page-subtitle">Editá asunto y cuerpo de emails del sistema sin tocar código.</div>
           </div>
           <div className="flex gap-2">
-            <Link to="/admin/settings" className="btn-outline h-11 justify-center px-4">Volver a Config</Link>
+            <Link to="/admin/configuraciones" className="btn-outline h-11 justify-center px-4">Volver a configuración</Link>
             <button className="btn-primary h-11 justify-center px-4" type="button" onClick={() => void save()} disabled={loading || saving}>
               {saving ? 'Guardando...' : 'Guardar plantillas'}
             </button>
@@ -121,5 +122,4 @@ export function AdminMailTemplatesPage() {
     </div>
   );
 }
-
 

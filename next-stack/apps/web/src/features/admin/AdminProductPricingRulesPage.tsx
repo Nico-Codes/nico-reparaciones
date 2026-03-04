@@ -236,11 +236,11 @@ export function AdminProductPricingRulesPage() {
           <div>
             <h1 className="text-2xl font-black tracking-tight text-zinc-900">Reglas de productos (costo -&gt; venta)</h1>
             <p className="mt-1 text-sm text-zinc-600">
-              Define margen por categoria o producto. El sistema aplica la mejor coincidencia.
+              Define margen por categoría o producto. El sistema aplica la mejor coincidencia.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Link to="/admin/calculos" className="btn-outline !h-10 !rounded-xl px-4 text-sm font-bold">Reglas de calculo</Link>
+            <Link to="/admin/calculos" className="btn-outline !h-10 !rounded-xl px-4 text-sm font-bold">Reglas de cálculo</Link>
             <Link to="/admin/productos" className="btn-outline !h-10 !rounded-xl px-4 text-sm font-bold">Productos</Link>
           </div>
         </div>
@@ -252,13 +252,13 @@ export function AdminProductPricingRulesPage() {
       <section className="grid gap-4 lg:grid-cols-2">
         <section className="card">
           <div className="card-head">
-            <div className="text-xl font-black tracking-tight text-zinc-900">Preferencias de calculo</div>
+            <div className="text-xl font-black tracking-tight text-zinc-900">Preferencias de cálculo</div>
           </div>
           <div className="card-body space-y-3">
             <div>
               <label className="mb-2 block text-sm font-bold text-zinc-900">Margen por defecto (%)</label>
               <input value={defaultMargin} onChange={(e) => setDefaultMargin(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" />
-              <p className="mt-2 text-sm text-zinc-500">Se usa cuando no hay una regla puntual para el producto o categoria.</p>
+              <p className="mt-2 text-sm text-zinc-500">Se usa cuando no hay una regla puntual para el producto o categoría.</p>
             </div>
             <label className="flex items-center gap-2 text-sm font-bold text-zinc-900">
               <input type="checkbox" checked={blockNegative} onChange={(e) => setBlockNegative(e.target.checked)} className="h-4 w-4" />
@@ -274,13 +274,13 @@ export function AdminProductPricingRulesPage() {
 
         <section className="card">
           <div className="card-head">
-            <div className="text-xl font-black tracking-tight text-zinc-900">Simulador rapido</div>
+            <div className="text-xl font-black tracking-tight text-zinc-900">Simulador rápido</div>
           </div>
           <div className="card-body space-y-3">
             <div>
-              <label className="mb-2 block text-sm font-bold text-zinc-900">Categoria</label>
+              <label className="mb-2 block text-sm font-bold text-zinc-900">Categoría</label>
               <select value={simCategoryId} onChange={(e) => { setSimCategoryId(e.target.value); setSimProductId(''); }} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm">
-                <option value="">Seleccionar categoria...</option>
+                <option value="">Seleccionar categoría...</option>
                 {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
@@ -297,7 +297,7 @@ export function AdminProductPricingRulesPage() {
             </div>
             <div className="rounded-2xl border border-zinc-200 bg-white px-3 py-3 text-sm text-zinc-700">
               {!simCategoryId
-                ? 'Selecciona categoria para simular.'
+                ? 'Selecciona categoría para simular.'
                 : simLoading
                   ? 'Simulando...'
                   : simResult
@@ -315,11 +315,11 @@ export function AdminProductPricingRulesPage() {
         <div className="card-body space-y-4">
           <div>
             <label className="mb-2 block text-sm font-bold text-zinc-900">Nombre *</label>
-            <input value={form.name} onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))} placeholder="Ej: Cables economicos (< 5000) +50%" className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" />
+            <input value={form.name} onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))} placeholder="Ej: Cables económicos (< 5000) +50%" className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" />
           </div>
           <div className="grid gap-3 md:grid-cols-3">
             <SelectField
-              label="Categoria (opcional)"
+              label="Categoría (opcional)"
               value={form.categoryId}
               onChange={(v) => setForm((s) => ({ ...s, categoryId: v, productId: '' }))}
               options={[{ value: '', label: 'Todas' }, ...categories.map((c) => ({ value: c.id, label: c.name }))]}
@@ -333,8 +333,8 @@ export function AdminProductPricingRulesPage() {
             <InputField label="Margen % *" value={form.marginPercent} onChange={(v) => setForm((s) => ({ ...s, marginPercent: v }))} />
           </div>
           <div className="grid gap-3 md:grid-cols-3">
-            <InputField label="Costo minimo" value={form.costMin} onChange={(v) => setForm((s) => ({ ...s, costMin: v }))} placeholder="Ej: 0" />
-            <InputField label="Costo maximo" value={form.costMax} onChange={(v) => setForm((s) => ({ ...s, costMax: v }))} placeholder="Ej: 5000" />
+            <InputField label="Costo mínimo" value={form.costMin} onChange={(v) => setForm((s) => ({ ...s, costMin: v }))} placeholder="Ej: 0" />
+            <InputField label="Costo máximo" value={form.costMax} onChange={(v) => setForm((s) => ({ ...s, costMax: v }))} placeholder="Ej: 5000" />
             <InputField label="Prioridad" value={form.priority} onChange={(v) => setForm((s) => ({ ...s, priority: v }))} />
           </div>
           <label className="flex items-center gap-2 text-sm font-bold text-zinc-900">
@@ -363,7 +363,7 @@ export function AdminProductPricingRulesPage() {
                 <div className="grid gap-3 md:grid-cols-[1.6fr_0.9fr_0.9fr_0.7fr_0.8fr_0.8fr_0.8fr]">
                   <EditableInput label="Nombre" value={rule.name} onChange={(v) => patchRule(rule.id, { name: v })} />
                   <EditableSelect
-                    label="Categoria"
+                    label="Categoría"
                     value={rule.categoryId ?? ''}
                     onChange={(v) => patchRule(rule.id, { categoryId: v || null, productId: null })}
                     options={[{ value: '', label: 'Todas' }, ...categories.map((c) => ({ value: c.id, label: c.name }))]}

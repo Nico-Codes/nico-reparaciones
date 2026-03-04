@@ -21,6 +21,8 @@
     "db:seed:demo": "dotenv -e ../../.env -- tsx prisma/seed.ts",
     "db:migrate:legacy-settings": "dotenv -e ../../.env -- tsx prisma/migrate-legacy-settings.ts",
     "db:migrate:legacy-settings:cleanup": "dotenv -e ../../.env -- tsx prisma/migrate-legacy-settings.ts --cleanup",
+    "db:fix-mojibake": "dotenv -e ../../.env -- tsx prisma/fix-mojibake.ts --apply",
+    "db:fix-mojibake:dry-run": "dotenv -e ../../.env -- tsx prisma/fix-mojibake.ts",
     "db:migrate:product-images": "dotenv -e ../../.env -- tsx prisma/migrate-legacy-product-images.ts",
     "db:migrate:product-images:dry-run": "dotenv -e ../../.env -- tsx prisma/migrate-legacy-product-images.ts --dry-run",
     "db:migrate:product-images:cleanup-legacy": "dotenv -e ../../.env -- tsx prisma/migrate-legacy-product-images.ts --cleanup-legacy",

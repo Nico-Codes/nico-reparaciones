@@ -1,13 +1,4 @@
-import { authStorage } from '@/features/auth/storage';
-
-const API_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:3001';
-
-function authHeaders() {
-  const token = authStorage.getAccessToken();
-  const headers: Record<string, string> = {};
-  if (token) headers.Authorization = `Bearer ${token}`;
-  return headers as HeadersInit;
-}
+import { adminApiOrigin, adminAuthFetch } from './api';
 
 export type BrandAssetUploadResult = {
   ok: boolean;
@@ -21,9 +12,8 @@ export const brandAssetsApi = {
   async upload(slot: string, file: File) {
     const form = new FormData();
     form.append('file', file);
-    const res = await fetch(`${API_URL}/api/admin/brand-assets/upload/${encodeURIComponent(slot)}`, {
+    const res = await adminAuthFetch(`/admin/brand-assets/upload/${encodeURIComponent(slot)}`, {
       method: 'POST',
-      headers: { ...authHeaders() },
       body: form,
     });
     const data = await res.json().catch(() => ({}));
@@ -32,9 +22,9 @@ export const brandAssetsApi = {
   },
 
   async reset(slot: string) {
-    const res = await fetch(`${API_URL}/api/admin/brand-assets/reset/${encodeURIComponent(slot)}`, {
+    const res = await adminAuthFetch(`/admin/brand-assets/reset/${encodeURIComponent(slot)}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      headers: { 'Content-Type': 'application/json' },
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error((data?.message as string) || `Error ${res.status}`);
@@ -45,6 +35,6 @@ export const brandAssetsApi = {
     const raw = (pathValue ?? '').trim();
     if (!raw) return null;
     if (/^https?:\/\//i.test(raw)) return raw;
-    return `${API_URL.replace(/\/+$/, '')}/${raw.replace(/^\/+/, '')}`;
+    return `${adminApiOrigin.replace(/\/+$/, '')}/${raw.replace(/^\/+/, '')}`;
   },
 };

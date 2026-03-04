@@ -1,4 +1,4 @@
-const API_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:3001';
+import { publicJsonRequest } from '@/features/auth/http';
 
 export type HelpFaqPublicItem = {
   id: string;
@@ -8,9 +8,5 @@ export type HelpFaqPublicItem = {
 };
 
 export async function fetchHelpFaq() {
-  const res = await fetch(`${API_URL}/api/help`);
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error((data?.message as string) || `Error ${res.status}`);
-  return data as { items: HelpFaqPublicItem[] };
+  return publicJsonRequest<{ items: HelpFaqPublicItem[] }>('/help', { method: 'GET' });
 }
-

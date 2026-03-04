@@ -71,13 +71,13 @@ export function AdminBusinessSettingsPage() {
     setSuccess('');
     try {
       await adminSettingsApi.save([
-        { key: 'shop_phone', value: form.shopWhatsapp, group: 'business', label: 'Telefono WhatsApp', type: 'text' },
-        { key: 'shop_address', value: form.shopAddress, group: 'business', label: 'Direccion del local', type: 'textarea' },
+        { key: 'shop_phone', value: form.shopWhatsapp, group: 'business', label: 'Teléfono WhatsApp', type: 'text' },
+        { key: 'shop_address', value: form.shopAddress, group: 'business', label: 'Dirección del local', type: 'textarea' },
         { key: 'shop_hours', value: form.shopHours, group: 'business', label: 'Horarios del local', type: 'textarea' },
         { key: 'ticket_paper_default', value: form.ticketPaper, group: 'business', label: 'Papel ticket por defecto', type: 'text' },
         { key: 'ops_alert_order_stale_hours', value: form.orderDelayHours, group: 'ops_reports', label: 'Pedido demorado (horas)', type: 'number' },
-        { key: 'ops_alert_repair_stale_days', value: form.repairDelayDays, group: 'ops_reports', label: 'Reparacion demorada (dias)', type: 'number' },
-        { key: 'store_hero_title', value: form.storeHeroTitle, group: 'branding', label: 'Titulo portada tienda', type: 'text' },
+        { key: 'ops_alert_repair_stale_days', value: form.repairDelayDays, group: 'ops_reports', label: 'Reparación demorada (días)', type: 'number' },
+        { key: 'store_hero_title', value: form.storeHeroTitle, group: 'branding', label: 'Título portada tienda', type: 'text' },
         { key: 'store_hero_subtitle', value: form.storeHeroText, group: 'branding', label: 'Texto portada tienda', type: 'textarea' },
       ]);
       setInitialForm(form);
@@ -101,10 +101,10 @@ export function AdminBusinessSettingsPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-black tracking-tight text-zinc-900">Datos del negocio</h1>
-            <p className="mt-1 text-sm text-zinc-600">Informacion base usada en mensajes y comprobantes.</p>
+            <p className="mt-1 text-sm text-zinc-600">Información base usada en mensajes y comprobantes.</p>
           </div>
           <Link to="/admin/configuraciones" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">
-            Volver a configuracion
+            Volver a configuración
           </Link>
         </div>
       </section>
@@ -114,7 +114,7 @@ export function AdminBusinessSettingsPage() {
 
       <section className="card">
         <div className="card-body space-y-4 p-4 md:p-5">
-          <Field label='WhatsApp del local (opcional)' hint='Se usa para el boton "Escribir por WhatsApp".'>
+          <Field label='WhatsApp del local (opcional)' hint='Se usa para el botón "Escribir por WhatsApp".'>
             <input
               value={form.shopWhatsapp}
               onChange={(e) => setForm((prev) => ({ ...prev, shopWhatsapp: e.target.value }))}
@@ -124,12 +124,12 @@ export function AdminBusinessSettingsPage() {
             />
           </Field>
 
-          <Field label="Direccion del local (opcional)" hint="Placeholder: {shop_address}">
+          <Field label="Dirección del local (opcional)" hint="Placeholder: {shop_address}">
             <textarea
               value={form.shopAddress}
               onChange={(e) => setForm((prev) => ({ ...prev, shopAddress: e.target.value }))}
               rows={3}
-              placeholder="Ej: Av. San Martin 123"
+              placeholder="Ej: Av. San Martín 123"
               disabled={loading}
               className="w-full rounded-2xl border border-zinc-200 px-3 py-3 text-sm"
             />
@@ -146,7 +146,7 @@ export function AdminBusinessSettingsPage() {
             />
           </Field>
 
-          <Field label="Papel ticket por defecto" hint='Se usa en "Confirmar e imprimir" y en reimpresion de ventas rapidas.'>
+          <Field label="Papel ticket por defecto" hint='Se usa en "Confirmar e imprimir" y en reimpresión de ventas rápidas.'>
             <select
               value={form.ticketPaper}
               onChange={(e) => setForm((prev) => ({ ...prev, ticketPaper: e.target.value }))}
@@ -161,7 +161,7 @@ export function AdminBusinessSettingsPage() {
 
           <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
             <div className="text-xl font-black tracking-tight text-zinc-900">Alertas operativas (dashboard)</div>
-            <p className="mt-1 text-sm text-zinc-600">Define cuando un pedido o reparacion se considera demorado.</p>
+            <p className="mt-1 text-sm text-zinc-600">Define cuándo un pedido o reparación se considera demorado.</p>
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               <div>
                 <label className="mb-2 block text-sm font-bold text-zinc-900">Pedido demorado (horas)</label>
@@ -176,7 +176,7 @@ export function AdminBusinessSettingsPage() {
                 <p className="mt-2 text-sm text-zinc-500">Estados: pendiente, confirmado, preparando.</p>
               </div>
               <div>
-                <label className="mb-2 block text-sm font-bold text-zinc-900">Reparacion demorada (dias)</label>
+                <label className="mb-2 block text-sm font-bold text-zinc-900">Reparación demorada (días)</label>
                 <input
                   type="number"
                   min={0}
@@ -185,16 +185,16 @@ export function AdminBusinessSettingsPage() {
                   disabled={loading}
                   className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm"
                 />
-                <p className="mt-2 text-sm text-zinc-500">Estados: recibido, diagnosticando, esperando aprobacion, reparando.</p>
+                <p className="mt-2 text-sm text-zinc-500">Estados: recibido, diagnosticando, esperando aprobación, reparando.</p>
               </div>
             </div>
           </div>
 
           <div className="rounded-2xl border border-zinc-200 bg-white px-3 py-3 text-sm text-zinc-700">
-            Portada de tienda: la imagen se cambia desde <span className="font-black">Configuracion &gt; Identidad visual &gt; Fondo portada tienda</span>.
+            Portada de tienda: la imagen se cambia desde <span className="font-black">Configuración &gt; Identidad visual &gt; Fondo portada tienda</span>.
           </div>
 
-          <Field label="Titulo portada tienda (opcional)">
+          <Field label="Título portada tienda (opcional)">
             <input
               value={form.storeHeroTitle}
               onChange={(e) => setForm((prev) => ({ ...prev, storeHeroTitle: e.target.value }))}
@@ -209,7 +209,7 @@ export function AdminBusinessSettingsPage() {
               value={form.storeHeroText}
               onChange={(e) => setForm((prev) => ({ ...prev, storeHeroText: e.target.value }))}
               rows={3}
-              placeholder="Ej: Ingresaron nuevos modulos, cables y accesorios."
+              placeholder="Ej: Ingresaron nuevos módulos, cables y accesorios."
               disabled={loading}
               className="w-full rounded-2xl border border-zinc-200 px-3 py-3 text-sm"
             />

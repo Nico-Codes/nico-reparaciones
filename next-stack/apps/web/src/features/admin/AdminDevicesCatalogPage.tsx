@@ -61,7 +61,7 @@ export function AdminDevicesCatalogPage() {
       await loadBrandsAndIssues(deviceType || undefined);
       await loadModels(selectedBrandId || undefined);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error cargando catalogo');
+      setError(e instanceof Error ? e.message : 'Error cargando catálogo');
     }
   }
 
@@ -150,7 +150,7 @@ export function AdminDevicesCatalogPage() {
       <section className="store-hero">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-black tracking-tight text-zinc-900">Catalogo de dispositivos</h1>
+            <h1 className="text-2xl font-black tracking-tight text-zinc-900">Catálogo de dispositivos</h1>
             <p className="mt-1 text-sm text-zinc-600">
               Gestiona marcas, modelos y fallas por tipo. En lugar de borrar, desactiva.
             </p>
@@ -170,7 +170,7 @@ export function AdminDevicesCatalogPage() {
 
       <section className="card">
         <div className="card-head">
-          <div className="text-xl font-black tracking-tight text-zinc-900">Filtro de catalogo</div>
+          <div className="text-xl font-black tracking-tight text-zinc-900">Filtro de catálogo</div>
           <p className="mt-1 text-sm text-zinc-500">Selecciona tipo y marca para administrar cada bloque.</p>
         </div>
         <div className="card-body space-y-3">
@@ -182,7 +182,7 @@ export function AdminDevicesCatalogPage() {
                 onChange={(e) => setDeviceType(e.target.value)}
                 className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm"
               >
-                <option value="">Elegi...</option>
+                <option value="">Elegí...</option>
                 {deviceTypes.map((t) => (
                   <option key={t.id} value={t.id}>{t.name}</option>
                 ))}
@@ -207,7 +207,7 @@ export function AdminDevicesCatalogPage() {
           <div className="grid gap-2 text-xs text-zinc-500 lg:grid-cols-3">
             <p>Esto filtra marcas y fallas.</p>
             <p>Esto filtra modelos.</p>
-            <p className="lg:text-right">Tip: en "Nueva reparacion" solo se muestran items activos.</p>
+            <p className="lg:text-right">Tip: en "Nueva reparación" solo se muestran ítems activos.</p>
           </div>
         </div>
       </section>

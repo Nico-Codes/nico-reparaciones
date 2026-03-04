@@ -12,15 +12,15 @@ type ConfigCard = {
 const DAILY_CARDS: ConfigCard[] = [
   {
     title: 'Correo SMTP',
-    description: 'Estado de mail y prueba de envio al instante.',
+    description: 'Estado de mail y prueba de envío al instante.',
     tag: 'Listo',
     to: '/admin/configuracion/mail',
     icon: '⚙',
     tone: 'sky',
   },
   {
-    title: 'Reportes automaticos',
-    description: 'Destinatarios, dia/hora y envio manual de KPIs.',
+    title: 'Reportes automáticos',
+    description: 'Destinatarios, día/hora y envío manual de KPIs.',
     tag: 'Activo',
     to: '/admin/configuracion/reportes',
     icon: '📊',
@@ -28,16 +28,16 @@ const DAILY_CARDS: ConfigCard[] = [
   },
   {
     title: 'Datos del negocio',
-    description: 'Telefono, direccion y horarios usados por toda la web.',
-    tag: 'Basico',
+    description: 'Teléfono, dirección y horarios usados por toda la web.',
+    tag: 'Básico',
     to: '/admin/configuracion/negocio',
     icon: '⚙',
     tone: 'sky',
   },
   {
-    title: 'Reglas de calculo',
-    description: 'Productos y reparaciones con calculo automatico editable.',
-    tag: 'Modulo',
+    title: 'Reglas de cálculo',
+    description: 'Productos y reparaciones con cálculo automático editable.',
+    tag: 'Módulo',
     to: '/admin/calculos',
     icon: '⚙',
     tone: 'sky',
@@ -47,7 +47,7 @@ const DAILY_CARDS: ConfigCard[] = [
 const ADVANCED_CARDS: ConfigCard[] = [
   {
     title: 'Plantillas de correo',
-    description: 'Textos de verificacion, recuperacion y confirmacion.',
+    description: 'Textos de verificación, recuperación y confirmación.',
     tag: 'Por defecto',
     to: '/admin/mail-templates',
     icon: '⚙',
@@ -55,42 +55,42 @@ const ADVANCED_CARDS: ConfigCard[] = [
   {
     title: 'Centro de ayuda',
     description: 'Problemas y respuestas editables para usuarios y admin.',
-    tag: 'Modulo',
+    tag: 'Módulo',
     to: '/admin/help',
     icon: '⚙',
   },
   {
     title: 'Identidad visual',
-    description: 'Logos, iconos y recursos visuales editables.',
-    tag: 'Modulo',
+    description: 'Logos, íconos y recursos visuales editables.',
+    tag: 'Módulo',
     to: '/admin/configuracion/identidadvisual',
     icon: '🏛',
   },
   {
-    title: 'Portada tienda',
-    description: 'Cambia la imagen de fondo principal sin tocar codigo.',
-    tag: 'Modulo',
+    title: 'Portada de tienda',
+    description: 'Cambia la imagen de fondo principal sin tocar código.',
+    tag: 'Módulo',
     to: '/admin/configuracion/portadatienda',
     icon: '🏛',
   },
   {
     title: 'Seguridad 2FA',
-    description: 'Gestion de segundo factor para acceso admin.',
-    tag: 'Modulo',
+    description: 'Gestión de segundo factor para acceso admin.',
+    tag: 'Módulo',
     to: '/admin/seguridad/2fa',
     icon: '⚙',
   },
   {
     title: 'Plantillas WhatsApp',
     description: 'Mensajes de seguimiento para reparaciones.',
-    tag: 'Modulo',
+    tag: 'Módulo',
     to: '/admin/whatsapp',
     icon: '📦',
   },
   {
     title: 'WhatsApp pedidos',
-    description: 'Mensajes por estado para comunicacion de pedidos.',
-    tag: 'Modulo',
+    description: 'Mensajes por estado para comunicación de pedidos.',
+    tag: 'Módulo',
     to: '/admin/whatsapppedidos',
     icon: '📦',
   },
@@ -102,7 +102,7 @@ export function AdminSettingsHubPage() {
       <section className="store-hero">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-black tracking-tight text-zinc-900">Configuracion</h1>
+            <h1 className="text-2xl font-black tracking-tight text-zinc-900">Configuración</h1>
             <p className="mt-1 text-sm text-zinc-600">Centro de control para ajustes del sistema.</p>
           </div>
           <Link to="/admin" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">Volver al panel</Link>
@@ -110,7 +110,7 @@ export function AdminSettingsHubPage() {
       </section>
 
       <ConfigSection title="USO DIARIO" cards={DAILY_CARDS} tone="sky" />
-      <ConfigSection title="CONFIGURACION AVANZADA" cards={ADVANCED_CARDS} tone="zinc" />
+      <ConfigSection title="CONFIGURACIÓN AVANZADA" cards={ADVANCED_CARDS} tone="zinc" />
     </div>
   );
 }
@@ -147,7 +147,7 @@ function ConfigModuleCard({ card, sectionTone }: { card: ConfigCard; sectionTone
         <span className="inline-flex h-7 items-center rounded-full border border-zinc-200 bg-zinc-50 px-3 text-sm font-bold text-zinc-700">
           {card.tag}
         </span>
-        <div className="block text-sm font-black text-sky-700">Abrir modulo</div>
+        <div className="block text-sm font-black text-sky-700">Abrir módulo</div>
       </div>
     </>
   );

@@ -745,7 +745,10 @@ export class AdminService {
         return a.name.localeCompare(b.name, 'es');
       });
 
-    const items = filtered.map((row) => this.serializeProvider(row, statsByProvider.get(row.id)));
+    const productCounts = await this.countProductsBySupplierIds(filtered.map((row) => row.id));
+    const items = filtered.map((row) =>
+      this.serializeProvider(row, statsByProvider.get(row.id), productCounts.get(row.id) ?? 0),
+    );
     const summary = {
       total: items.length,
       active: items.filter((i) => i.active).length,
@@ -796,7 +799,7 @@ export class AdminService {
     };
     items.push(next);
     await this.writeSuppliersRegistry(items);
-    return { item: this.serializeProvider(next, this.emptyProviderStats()) };
+    return { item: this.serializeProvider(next, this.emptyProviderStats(), 0) };
   }
 
   async updateProvider(
@@ -848,7 +851,8 @@ export class AdminService {
 
     const incidents = await this.readWarrantyIncidentsRegistry();
     const stats = this.buildProviderStats(incidents).get(updated.id);
-    return { item: this.serializeProvider(updated, stats) };
+    const productCount = await this.countProductsForSupplier(updated.id);
+    return { item: this.serializeProvider(updated, stats, productCount) };
   }
 
   async toggleProvider(id: string) {
@@ -863,7 +867,8 @@ export class AdminService {
     await this.writeSuppliersRegistry(items);
     const incidents = await this.readWarrantyIncidentsRegistry();
     const stats = this.buildProviderStats(incidents).get(items[index].id);
-    return { item: this.serializeProvider(items[index], stats) };
+    const productCount = await this.countProductsForSupplier(items[index].id);
+    return { item: this.serializeProvider(items[index], stats, productCount) };
   }
 
   async importDefaultProviders() {
@@ -911,12 +916,13 @@ export class AdminService {
     await this.writeSuppliersRegistry(items);
     const incidents = await this.readWarrantyIncidentsRegistry();
     const stats = this.buildProviderStats(incidents);
+    const productCounts = await this.countProductsBySupplierIds(items.map((row) => row.id));
     return {
       created,
       updated,
       items: items
         .sort((a, b) => a.searchPriority - b.searchPriority)
-        .map((row) => this.serializeProvider(row, stats.get(row.id))),
+        .map((row) => this.serializeProvider(row, stats.get(row.id), productCounts.get(row.id) ?? 0)),
     };
   }
 
@@ -947,11 +953,12 @@ export class AdminService {
     await this.writeSuppliersRegistry(items);
     const incidents = await this.readWarrantyIncidentsRegistry();
     const stats = this.buildProviderStats(incidents);
+    const productCounts = await this.countProductsBySupplierIds(items.map((row) => row.id));
     return {
       ok: true,
       items: items
         .sort((a, b) => a.searchPriority - b.searchPriority)
-        .map((row) => this.serializeProvider(row, stats.get(row.id))),
+        .map((row) => this.serializeProvider(row, stats.get(row.id), productCounts.get(row.id) ?? 0)),
     };
   }
 
@@ -976,7 +983,11 @@ export class AdminService {
       await this.writeSuppliersRegistry(items);
       const incidents = await this.readWarrantyIncidentsRegistry();
       const stats = this.buildProviderStats(incidents);
-      return { item: this.serializeProvider(items[index], stats.get(items[index].id)), probe: { query: q, count: 0 } };
+      const productCount = await this.countProductsForSupplier(items[index].id);
+      return {
+        item: this.serializeProvider(items[index], stats.get(items[index].id), productCount),
+        probe: { query: q, count: 0 },
+      };
     }
 
     const url = row.searchEndpoint.includes('{query}')
@@ -1005,8 +1016,9 @@ export class AdminService {
       await this.writeSuppliersRegistry(items);
       const incidents = await this.readWarrantyIncidentsRegistry();
       const stats = this.buildProviderStats(incidents);
+      const productCount = await this.countProductsForSupplier(items[index].id);
       return {
-        item: this.serializeProvider(items[index], stats.get(items[index].id)),
+        item: this.serializeProvider(items[index], stats.get(items[index].id), productCount),
         probe: { query: q, count, url, httpStatus: res.status },
       };
     } catch (e) {
@@ -1022,8 +1034,9 @@ export class AdminService {
       await this.writeSuppliersRegistry(items);
       const incidents = await this.readWarrantyIncidentsRegistry();
       const stats = this.buildProviderStats(incidents);
+      const productCount = await this.countProductsForSupplier(items[index].id);
       return {
-        item: this.serializeProvider(items[index], stats.get(items[index].id)),
+        item: this.serializeProvider(items[index], stats.get(items[index].id), productCount),
         probe: { query: q, count: 0, url },
       };
     } finally {
@@ -1043,13 +1056,21 @@ export class AdminService {
     const suppliers = await this.readSuppliersRegistry();
     const supplierById = new Map(suppliers.map((s) => [s.id, s]));
     const repairIds = incidents.map((i) => i.repairId).filter((v): v is string => !!v);
+    const productIds = incidents.map((i) => i.productId).filter((v): v is string => !!v);
     const repairs = repairIds.length
       ? await this.prisma.repair.findMany({
           where: { id: { in: repairIds } },
           select: { id: true, customerName: true },
         })
       : [];
+    const products = productIds.length
+      ? await this.prisma.product.findMany({
+          where: { id: { in: productIds } },
+          select: { id: true, name: true },
+        })
+      : [];
     const repairById = new Map(repairs.map((r) => [r.id, r]));
+    const productById = new Map(products.map((p) => [p.id, p]));
 
     const filtered = incidents
       .filter((row) => {
@@ -1061,10 +1082,17 @@ export class AdminService {
         if (to && at > to) return false;
         if (!q) return true;
         const providerName = row.supplierId ? supplierById.get(row.supplierId)?.name ?? '' : '';
+        const repair = row.repairId ? repairById.get(row.repairId) : null;
+        const product = row.productId ? productById.get(row.productId) : null;
+        const repairLookupCode = row.repairId ? `r-${row.repairId.slice(0, 13)}` : '';
         return (
           row.title.toLowerCase().includes(q) ||
           (row.reason ?? '').toLowerCase().includes(q) ||
           (row.notes ?? '').toLowerCase().includes(q) ||
+          (row.repairId ?? '').toLowerCase().includes(q) ||
+          repairLookupCode.includes(q) ||
+          (repair?.customerName ?? '').toLowerCase().includes(q) ||
+          (product?.name ?? '').toLowerCase().includes(q) ||
           providerName.toLowerCase().includes(q)
         );
       })
@@ -1081,6 +1109,7 @@ export class AdminService {
       const at = new Date(row.happenedAt);
       const supplierName = row.supplierId ? supplierById.get(row.supplierId)?.name ?? '-' : '-';
       const repair = row.repairId ? repairById.get(row.repairId) : null;
+      const product = row.productId ? productById.get(row.productId) : null;
       const date = this.formatDate(at);
       const time = this.formatTime(at);
       return {
@@ -1095,6 +1124,7 @@ export class AdminService {
         repairCode: row.repairId ? `R-${row.repairId.slice(0, 13)}` : null,
         customerName: repair?.customerName ?? '',
         productId: row.productId,
+        productName: product?.name ?? '',
         providerId: row.supplierId,
         provider: supplierName,
         costSource: costOriginLabelMap[row.costOrigin] ?? row.costOrigin,
@@ -1372,24 +1402,24 @@ export class AdminService {
     const templates = [
       {
         templateKey: 'verify_email',
-        label: 'Verificacion de correo',
-        description: 'Se envia al crear cuenta para verificar email.',
+        label: 'Verificación de correo',
+        description: 'Se envía al crear cuenta para verificar email.',
         subjectDefault: 'Verifica tu correo en {{business_name}}',
         bodyDefault:
           'Hola {{user_name}},\n\nUsa este enlace para verificar tu correo:\n{{verify_url}}\n\nSi no creaste esta cuenta, ignora este mensaje.',
       },
       {
         templateKey: 'reset_password',
-        label: 'Recuperacion de contrasena',
-        description: 'Se envia cuando el usuario solicita restablecer contrasena.',
-        subjectDefault: 'Recuperar contrasena en {{business_name}}',
+        label: 'Recuperación de contraseña',
+        description: 'Se envía cuando el usuario solicita restablecer contraseña.',
+        subjectDefault: 'Recuperar contraseña en {{business_name}}',
         bodyDefault:
-          'Hola {{user_name}},\n\nRecibimos una solicitud para restablecer tu contrasena.\nUsa este enlace:\n{{reset_url}}\n\nSi no fuiste vos, ignora este mensaje.',
+          'Hola {{user_name}},\n\nRecibimos una solicitud para restablecer tu contraseña.\nUsa este enlace:\n{{reset_url}}\n\nSi no fuiste vos, ignora este mensaje.',
       },
       {
         templateKey: 'order_created',
         label: 'Compra confirmada',
-        description: 'Se envia al finalizar una compra.',
+        description: 'Se envía al finalizar una compra.',
         subjectDefault: 'Recibimos tu pedido {{order_id}}',
         bodyDefault:
           'Hola {{user_name}},\n\nTu pedido {{order_id}} fue recibido correctamente.\nTotal: {{order_total}}\n\nGracias por tu compra.',
@@ -2216,6 +2246,29 @@ export class AdminService {
     return map;
   }
 
+  private async countProductsBySupplierIds(supplierIds: string[]) {
+    const uniqueSupplierIds = [...new Set(supplierIds.filter(Boolean))];
+    if (!uniqueSupplierIds.length) return new Map<string, number>();
+
+    const rows = await this.prisma.product.groupBy({
+      by: ['supplierId'],
+      where: { supplierId: { in: uniqueSupplierIds } },
+      _count: { _all: true },
+    });
+
+    const map = new Map<string, number>();
+    for (const row of rows) {
+      if (!row.supplierId) continue;
+      map.set(row.supplierId, row._count._all);
+    }
+    return map;
+  }
+
+  private async countProductsForSupplier(supplierId: string) {
+    const map = await this.countProductsBySupplierIds([supplierId]);
+    return map.get(supplierId) ?? 0;
+  }
+
   private emptyProviderStats() {
     return {
       incidents: 0,
@@ -2228,6 +2281,7 @@ export class AdminService {
   private serializeProvider(
     row: SupplierRegistryRow,
     statsInput?: { incidents: number; openIncidents: number; closedIncidents: number; loss: number },
+    productCount = 0,
   ) {
     const stats = statsInput ?? this.emptyProviderStats();
     const baseScore = 80;
@@ -2241,7 +2295,7 @@ export class AdminService {
       name: row.name,
       priority: row.searchPriority,
       phone: row.phone ?? '',
-      products: 0,
+      products: productCount,
       incidents: stats.incidents,
       warrantiesOk: stats.closedIncidents,
       warrantiesExpired: stats.openIncidents,

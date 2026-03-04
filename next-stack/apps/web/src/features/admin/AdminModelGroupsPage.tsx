@@ -37,7 +37,7 @@ export function AdminModelGroupsPage() {
         setDeviceTypes(typesRes.items.filter((i) => i.active));
       } catch (e) {
         if (!mounted) return;
-        setError(e instanceof Error ? e.message : 'Error cargando catalogo');
+        setError(e instanceof Error ? e.message : 'Error cargando catálogo');
       } finally {
         if (mounted) setLoadingFilters(false);
       }
@@ -171,8 +171,8 @@ export function AdminModelGroupsPage() {
       <section className="card">
         <div className="card-head flex items-center justify-between gap-2">
           <div>
-            <div className="text-xl font-black tracking-tight text-zinc-900">Filtro de catalogo</div>
-            <p className="mt-1 text-sm text-zinc-500">Elegi tipo y marca para crear o editar grupos.</p>
+            <div className="text-xl font-black tracking-tight text-zinc-900">Filtro de catálogo</div>
+            <p className="mt-1 text-sm text-zinc-500">Elegí tipo y marca para crear o editar grupos.</p>
           </div>
         </div>
         <div className="card-body">
@@ -185,7 +185,7 @@ export function AdminModelGroupsPage() {
                 disabled={loadingFilters}
                 className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm"
               >
-                <option value="">Elegi...</option>
+                <option value="">Elegí...</option>
                 {deviceTypes.map((t) => (
                   <option key={t.id} value={t.id}>{t.name}</option>
                 ))}
@@ -199,7 +199,7 @@ export function AdminModelGroupsPage() {
                 disabled={loadingFilters || loadingBrands}
                 className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm"
               >
-                <option value="">Elegi...</option>
+                <option value="">Elegí...</option>
                 {brands.map((b) => (
                   <option key={b.id} value={b.id}>{b.name}</option>
                 ))}
@@ -220,7 +220,7 @@ export function AdminModelGroupsPage() {
       {!brand ? (
         <section className="card">
           <div className="card-body py-8 text-sm text-zinc-600">
-            Elegi un tipo y una marca para administrar grupos y asignar modelos.
+            Elegí un tipo y una marca para administrar grupos y asignar modelos.
           </div>
         </section>
       ) : (

@@ -65,16 +65,16 @@ async function main() {
     browser = await chromium.launch({ headless: true });
     const page = await browser.newPage();
 
-    // Home
+    // Root -> Store
     await page.goto(`${WEB_URL}/`, { waitUntil: 'domcontentloaded' });
-    await page.waitForSelector('text=NicoReparaciones');
-    await page.waitForSelector('text=Nuevo stack');
+    await page.waitForURL((url) => url.pathname === '/store', { timeout: 10000 });
+    await page.waitForSelector('[data-store-shell]');
+    await page.waitForSelector('input[placeholder*="iPhone"]');
 
     // Store
     await page.goto(`${WEB_URL}/store`, { waitUntil: 'domcontentloaded' });
-    await page.waitForSelector('text=Catálogo público migrado');
-    await page.waitForSelector('input[placeholder*="Buscar productos"]');
-    await page.waitForSelector('text=Todas');
+    await page.waitForSelector('[data-store-shell]');
+    await page.waitForSelector('input[placeholder*="iPhone"]');
 
     // Help
     await page.goto(`${WEB_URL}/help`, { waitUntil: 'domcontentloaded' });
@@ -83,14 +83,14 @@ async function main() {
 
     // Public repair lookup
     await page.goto(`${WEB_URL}/reparacion`, { waitUntil: 'domcontentloaded' });
-    await page.waitForSelector('text=Consulta publica de reparacion');
-    await page.waitForSelector('input[placeholder*="cmabcd123"]');
+    await page.waitForSelector('label:has-text("Codigo")');
+    await page.waitForSelector('input[placeholder*="NR-"]');
 
     // Protected routes (unauthenticated)
     await page.goto(`${WEB_URL}/admin`, { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(300);
     assert(page.url().includes('/auth/login'), 'Ruta /admin debe redirigir a /auth/login sin sesion');
-    await page.waitForSelector('text=Iniciar sesión');
+    await page.waitForSelector('button:has-text("Ingresar")');
 
     await page.goto(`${WEB_URL}/orders`, { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(300);
@@ -104,14 +104,38 @@ async function main() {
     });
 
     await page.goto(`${WEB_URL}/admin`, { waitUntil: 'domcontentloaded' });
-    await page.waitForSelector('text=Dashboard');
+    await page.waitForSelector('text=Panel Admin');
 
     await page.goto(`${WEB_URL}/admin/repairs`, { waitUntil: 'domcontentloaded' });
-    await page.waitForSelector('text=Admin Reparaciones');
-    await page.waitForSelector('input[placeholder*="Buscar ID"]');
+    await page.waitForSelector('text=CODIGO');
+    await page.waitForSelector('text=CLIENTE');
 
-    await page.goto(`${WEB_URL}/admin/settings`, { waitUntil: 'domcontentloaded' });
+    await page.goto(`${WEB_URL}/admin/configuraciones`, { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('text=Configuración');
+
+    await page.goto(`${WEB_URL}/admin/configuracion/mail`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('text=Correo SMTP');
+
+    await page.goto(`${WEB_URL}/admin/configuracion/reportes`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('text=Reportes automáticos');
+
+    await page.goto(`${WEB_URL}/admin/configuracion/negocio`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('text=Datos del negocio');
+
+    await page.goto(`${WEB_URL}/admin/configuracion/identidadvisual`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('text=Identidad visual');
+
+    await page.goto(`${WEB_URL}/admin/configuracion/portadatienda`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('text=Portada de tienda');
+
+    await page.goto(`${WEB_URL}/admin/seguridad/2fa`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('text=Seguridad 2FA');
+
+    await page.goto(`${WEB_URL}/admin/whatsapp`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('text=Plantillas WhatsApp');
+
+    await page.goto(`${WEB_URL}/admin/whatsapppedidos`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('text=Plantillas WhatsApp - Pedidos');
 
     console.log('\n[E2E] Frontend smoke OK');
   } finally {
@@ -124,4 +148,3 @@ main().catch((err) => {
   console.error('\n[E2E] Frontend smoke failed:', err);
   process.exit(1);
 });
-

@@ -33,7 +33,7 @@ export function Admin2faSecurityPage() {
     try {
       const res = await adminSecurityApi.twoFactorGenerate();
       setGeneratedSecret(res.secret);
-      setResult('Secreto 2FA generado. Configuralo en tu app TOTP y valida con un codigo.');
+      setResult('Secreto 2FA generado. Configúralo en tu app TOTP y valida con un código.');
       await load();
     } catch (e) {
       setResult(e instanceof Error ? e.message : 'Error generando 2FA');
@@ -100,11 +100,11 @@ export function Admin2faSecurityPage() {
           <div>
             <h1 className="text-2xl font-black tracking-tight text-zinc-900">Seguridad 2FA (Admin)</h1>
             <p className="mt-1 text-sm text-zinc-600">
-              Activa verificacion TOTP para reforzar el acceso al panel admin.
+              Activa verificación TOTP para reforzar el acceso al panel admin.
             </p>
           </div>
           <Link to="/admin/configuraciones" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">
-            Volver a configuracion
+            Volver a configuración
           </Link>
         </div>
       </section>
@@ -126,8 +126,8 @@ export function Admin2faSecurityPage() {
           <div className="space-y-4 px-4 py-4 md:px-5 md:py-5">
             <div className={`rounded-2xl px-4 py-4 text-sm ${enabled ? 'border border-emerald-300 bg-emerald-50 text-emerald-900' : 'border border-amber-300 bg-amber-50 text-amber-900'}`}>
               {enabled
-                ? 'Tu panel admin tiene 2FA activo. Se pedira codigo TOTP al iniciar sesion.'
-                : 'Tu panel admin aun no tiene doble factor. Activalo para bloquear accesos aunque filtren tu contrasena.'}
+                ? 'Tu panel admin tiene 2FA activo. Se pedirá código TOTP al iniciar sesión.'
+                : 'Tu panel admin aún no tiene doble factor. Actívalo para bloquear accesos aunque filtren tu contraseña.'}
             </div>
 
             {!enabled ? (
@@ -185,7 +185,7 @@ export function Admin2faSecurityPage() {
                       <input
                         value={code}
                         onChange={(e) => setCode(e.target.value)}
-                        placeholder="Codigo de 6 digitos"
+                        placeholder="Código de 6 dígitos"
                         className="h-11 rounded-2xl border border-zinc-200 px-3 text-sm"
                       />
                       <button type="button" onClick={() => void enable2fa()} disabled={submitting || code.trim().length < 6} className="btn-primary !h-11 !rounded-2xl px-4 text-sm font-bold">
@@ -198,12 +198,12 @@ export function Admin2faSecurityPage() {
             ) : (
               <div className="space-y-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
                 <div className="text-sm font-black text-zinc-900">Desactivar 2FA</div>
-                <p className="text-sm text-zinc-600">Ingresa un codigo TOTP actual para confirmar la desactivacion.</p>
+                <p className="text-sm text-zinc-600">Ingresa un código TOTP actual para confirmar la desactivación.</p>
                 <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
                   <input
                     value={code}
                     onChange={(e) => setCode(e.target.value)}
-                    placeholder="Codigo de 6 digitos"
+                    placeholder="Código de 6 dígitos"
                     className="h-11 rounded-2xl border border-zinc-200 px-3 text-sm"
                   />
                   <button type="button" onClick={() => void disable2fa()} disabled={submitting || code.trim().length < 6} className="btn-outline !h-11 !rounded-2xl px-4 text-sm font-bold">

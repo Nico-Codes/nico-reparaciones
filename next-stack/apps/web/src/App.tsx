@@ -1,7 +1,6 @@
 import { Route, Routes, Navigate, useParams } from 'react-router-dom';
 import { AdminDashboardPage } from '@/features/admin/AdminDashboardPage';
 import { AdminMailTemplatesPage } from '@/features/admin/AdminMailTemplatesPage';
-import { AdminSettingsPage } from '@/features/admin/AdminSettingsPage';
 import { AdminSettingsHubPage } from '@/features/admin/AdminSettingsHubPage';
 import { AdminSmtpSettingsPage } from '@/features/admin/AdminSmtpSettingsPage';
 import { AdminAutoReportsPage } from '@/features/admin/AdminAutoReportsPage';
@@ -154,7 +153,7 @@ export default function App() {
         <Route path="/admin/catalogodispositivos" element={<RequireAdmin>{withShell(<AdminDevicesCatalogPage />)}</RequireAdmin>} />
         <Route path="/admin/tiposdispositivo" element={<RequireAdmin>{withShell(<AdminDeviceTypesPage />)}</RequireAdmin>} />
         <Route path="/admin/device-types" element={<Navigate to="/admin/tiposdispositivo" replace />} />
-        <Route path="/admin/settings" element={<RequireAdmin>{withShell(<AdminSettingsPage />)}</RequireAdmin>} />
+        <Route path="/admin/settings" element={<RequireAdmin><Navigate to="/admin/configuraciones" replace /></RequireAdmin>} />
         <Route path="/admin/mail-templates" element={<RequireAdmin>{withShell(<AdminMailTemplatesPage />)}</RequireAdmin>} />
         <Route path="/admin/whatsapp" element={<RequireAdmin>{withShell(<AdminWhatsappPage />)}</RequireAdmin>} />
         <Route path="/admin/whatsapppedidos" element={<RequireAdmin>{withShell(<AdminWhatsappOrdersPage />)}</RequireAdmin>} />

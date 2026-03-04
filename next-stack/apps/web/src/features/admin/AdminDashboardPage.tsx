@@ -17,7 +17,7 @@ const REPAIR_STATUS_LABELS: Record<string, string> = {
   RECEIVED: 'Recibido',
   DIAGNOSING: 'Diagnosticando',
   WAITING_APPROVAL: 'Esperando aprobación',
-  IN_REPAIR: 'En reparacion',
+  IN_REPAIR: 'En reparación',
   READY_PICKUP: 'Listo para retirar',
   DELIVERED: 'Entregado',
   CANCELLED: 'Cancelado',
@@ -264,7 +264,7 @@ export function AdminDashboardPage() {
             <KpiCard
               title="PRESUPUESTOS ESPERANDO APROBACIÓN"
               value={String(summary.pendingApprovals)}
-              lines={[`Mas de 48h: ${summary.pendingApprovals}`, '']}
+              lines={[`Más de 48h: ${summary.pendingApprovals}`, '']}
             />
           </>
         )}
@@ -292,7 +292,7 @@ export function AdminDashboardPage() {
       <section>
         <div className="mb-2 flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-black tracking-tight text-zinc-900">Graficos</h2>
+            <h2 className="text-2xl font-black tracking-tight text-zinc-900">Gráficos</h2>
             <p className="text-sm text-zinc-500">Opcional.</p>
           </div>
           <span className="text-sm font-bold text-zinc-900">Ver</span>
@@ -334,7 +334,7 @@ export function AdminDashboardPage() {
             <div className="space-y-2">
               {data.recent.orders.slice(0, 3).map((o) => (
                 <div key={o.id} className="rounded-xl border border-zinc-100 bg-zinc-50 p-3 text-sm text-zinc-700">
-                  {o.itemsPreview[0]?.name ?? 'Pedido sin items'}  -  ${o.total.toLocaleString('es-AR')}
+                  {o.itemsPreview[0]?.name ?? 'Pedido sin ítems'}  -  ${o.total.toLocaleString('es-AR')}
                 </div>
               ))}
             </div>

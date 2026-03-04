@@ -1,56 +1,15 @@
-import { authApi } from '@/features/auth/api';
-import { authStorage } from '@/features/auth/storage';
+import { apiOrigin, authFetch, authJsonRequest } from '@/features/auth/http';
 
-const API_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:3001';
-let refreshInFlight: ReturnType<typeof authApi.refresh> | null = null;
-
-async function authRequestRaw<T>(path: string, init?: RequestInit): Promise<{ ok: true; data: T } | { ok: false; status: number; message: string }> {
-  const token = authStorage.getAccessToken();
-  const res = await fetch(`${API_URL}/api${path}`, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(init?.headers ?? {}),
-    },
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    return {
-      ok: false,
-      status: res.status,
-      message: (data?.message as string) || `Error ${res.status}`,
-    };
-  }
-  return { ok: true, data: data as T };
-}
+export const adminApiOrigin = apiOrigin;
 
 async function authRequest<T>(path: string, init?: RequestInit): Promise<T> {
-  const first = await authRequestRaw<T>(path, init);
-  if (first.ok) return first.data;
+  return authJsonRequest<T>(path, init);
+}
 
-  if (first.status === 401 && authStorage.getRefreshToken()) {
-    try {
-      if (!refreshInFlight) {
-        refreshInFlight = authApi.refresh().finally(() => {
-          refreshInFlight = null;
-        });
-      }
+export const adminAuthRequest = authRequest;
 
-      const refreshPromise = refreshInFlight;
-      if (!refreshPromise) throw new Error('No se pudo refrescar la sesion');
-      const refreshed = await refreshPromise;
-      authStorage.setSession(refreshed.user, refreshed.tokens);
-      const retry = await authRequestRaw<T>(path, init);
-      if (retry.ok) return retry.data;
-      throw new Error(retry.message);
-    } catch {
-      authStorage.clear();
-      throw new Error('Sesión vencida. Ingresá nuevamente.');
-    }
-  }
-
-  throw new Error(first.message);
+export async function adminAuthFetch(path: string, init?: RequestInit): Promise<Response> {
+  return authFetch(path, init);
 }
 
 export type AdminDashboardResponse = {
@@ -120,6 +79,7 @@ export type AdminWarrantyItem = {
   repairCode: string | null;
   customerName: string;
   productId: string | null;
+  productName: string;
   providerId: string | null;
   provider: string;
   costSource: string;

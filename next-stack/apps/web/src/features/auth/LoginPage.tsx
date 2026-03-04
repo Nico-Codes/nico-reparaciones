@@ -36,7 +36,7 @@ export function LoginPage() {
           : fallback;
       navigate(target, { replace: true });
     } catch (error) {
-      const message = (error as { message?: string })?.message ?? 'Error al iniciar sesion';
+      const message = (error as { message?: string })?.message ?? 'Error al iniciar sesión';
       if (message.toLowerCase().includes('2fa')) setNeedsTwoFactor(true);
       setResult(message);
     } finally {
@@ -48,16 +48,16 @@ export function LoginPage() {
     <AuthLayout title="Ingresar" subtitle="Accede para ver tus pedidos y reparaciones.">
       <div className="mb-5">
         <div className="text-xs font-black uppercase tracking-wide text-sky-700">Cuenta</div>
-        <h2 className="text-lg font-black tracking-tight text-zinc-900">Inicia sesion</h2>
-        <p className="mt-1 text-sm text-zinc-600">Usa tu email y contrasena.</p>
+        <h2 className="text-lg font-black tracking-tight text-zinc-900">Inicia sesión</h2>
+        <p className="mt-1 text-sm text-zinc-600">Usa tu email y contraseña.</p>
       </div>
 
       <form className="space-y-4" onSubmit={onSubmit}>
         <Field label="Email" type="email" value={email} onChange={setEmail} placeholder="tu@email.com" />
-        <Field label="Contrasena" type="password" value={password} onChange={setPassword} placeholder="********" />
+        <Field label="Contraseña" type="password" value={password} onChange={setPassword} placeholder="********" />
         {needsTwoFactor ? (
           <Field
-            label="Codigo 2FA"
+            label="Código 2FA"
             type="text"
             value={twoFactorCode}
             onChange={setTwoFactorCode}
@@ -73,7 +73,7 @@ export function LoginPage() {
 
         <div className="text-right text-sm">
           <Link className="font-semibold text-sky-700 hover:text-sky-800" to="/auth/forgot-password">
-            Olvide mi contrasena
+            Olvidé mi contraseña
           </Link>
         </div>
 
@@ -83,7 +83,7 @@ export function LoginPage() {
       </form>
 
       <div className="mt-5 text-center text-sm text-zinc-600">
-        No tienes cuenta?{' '}
+        ¿No tienes cuenta?{' '}
         <Link className="font-semibold text-sky-700 hover:text-sky-800" to="/auth/register">
           Crear cuenta
         </Link>

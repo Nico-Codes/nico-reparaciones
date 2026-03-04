@@ -1,21 +1,4 @@
-import { authStorage } from '@/features/auth/storage';
-
-const API_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:3001';
-
-async function authRequest<T>(path: string, init?: RequestInit): Promise<T> {
-  const token = authStorage.getAccessToken();
-  const res = await fetch(`${API_URL}/api${path}`, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(init?.headers ?? {}),
-    },
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error((data?.message as string) || `Error ${res.status}`);
-  return data as T;
-}
+import { authJsonRequest } from '@/features/auth/http';
 
 export type ProductPricingRuleItem = {
   id: string;
@@ -40,16 +23,16 @@ export type ProductPricingSettings = {
 
 export const productPricingApi = {
   settings() {
-    return authRequest<ProductPricingSettings>('/catalog-admin/product-pricing/settings');
+    return authJsonRequest<ProductPricingSettings>('/catalog-admin/product-pricing/settings');
   },
   updateSettings(input: ProductPricingSettings) {
-    return authRequest<ProductPricingSettings>('/catalog-admin/product-pricing/settings', {
+    return authJsonRequest<ProductPricingSettings>('/catalog-admin/product-pricing/settings', {
       method: 'PATCH',
       body: JSON.stringify(input),
     });
   },
   rules() {
-    return authRequest<{ items: ProductPricingRuleItem[] }>('/catalog-admin/product-pricing/rules');
+    return authJsonRequest<{ items: ProductPricingRuleItem[] }>('/catalog-admin/product-pricing/rules');
   },
   createRule(input: {
     name: string;
@@ -61,7 +44,7 @@ export const productPricingApi = {
     priority?: number;
     active?: boolean;
   }) {
-    return authRequest<{ item: ProductPricingRuleItem }>('/catalog-admin/product-pricing/rules', {
+    return authJsonRequest<{ item: ProductPricingRuleItem }>('/catalog-admin/product-pricing/rules', {
       method: 'POST',
       body: JSON.stringify(input),
     });
@@ -79,13 +62,13 @@ export const productPricingApi = {
       active?: boolean;
     }>,
   ) {
-    return authRequest<{ item: ProductPricingRuleItem }>(`/catalog-admin/product-pricing/rules/${encodeURIComponent(id)}`, {
+    return authJsonRequest<{ item: ProductPricingRuleItem }>(`/catalog-admin/product-pricing/rules/${encodeURIComponent(id)}`, {
       method: 'PATCH',
       body: JSON.stringify(input),
     });
   },
   deleteRule(id: string) {
-    return authRequest<{ ok: boolean }>(`/catalog-admin/product-pricing/rules/${encodeURIComponent(id)}`, {
+    return authJsonRequest<{ ok: boolean }>(`/catalog-admin/product-pricing/rules/${encodeURIComponent(id)}`, {
       method: 'DELETE',
     });
   },
@@ -94,7 +77,7 @@ export const productPricingApi = {
     qs.set('categoryId', params.categoryId);
     qs.set('costPrice', String(Math.max(0, Math.trunc(params.costPrice))));
     if (params.productId) qs.set('productId', params.productId);
-    return authRequest<{
+    return authJsonRequest<{
       ok: boolean;
       recommendedPrice: number;
       marginPercent: number;

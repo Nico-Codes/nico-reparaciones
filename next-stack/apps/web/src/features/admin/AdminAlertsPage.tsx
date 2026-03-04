@@ -5,7 +5,7 @@ import { adminApi, type AdminDashboardResponse } from './api';
 type AlertViewState = Record<string, boolean>;
 
 function alertTargetTo(alertId: string) {
-  if (alertId.includes('stock')) return '/admin/products';
+  if (alertId.includes('stock')) return '/admin/productos';
   if (alertId.includes('repair')) return '/admin/repairs';
   if (alertId.includes('order') || alertId.includes('flow')) return '/admin/orders';
   return '/admin';
@@ -75,7 +75,7 @@ export function AdminAlertsPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">
             <h1 className="text-2xl font-black tracking-tight text-zinc-900">Centro de alertas</h1>
-            <p className="mt-1 text-sm text-zinc-600">Seguimiento rapido de pendientes operativos.</p>
+            <p className="mt-1 text-sm text-zinc-600">Seguimiento rápido de pendientes operativos.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Link to="/admin" className="btn-outline !h-10 !rounded-xl px-4 text-sm font-bold">Volver al panel</Link>
@@ -84,7 +84,7 @@ export function AdminAlertsPage() {
               onClick={() => setSeen((prev) => Object.fromEntries(alerts.map((a) => [a.id, true])) as AlertViewState)}
               className="btn-ghost !h-10 !rounded-xl px-4 text-sm font-bold"
             >
-              Marcar todas vistas
+              Marcar todas como vistas
             </button>
           </div>
         </div>

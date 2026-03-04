@@ -67,7 +67,7 @@ export function VerifyEmailPage() {
               <h2 className="text-lg font-black tracking-tight text-zinc-900">Confirma tu email</h2>
               <p className="mt-1 text-sm leading-relaxed text-zinc-700">
                 {tokenFromQuery
-                  ? 'Recibimos un enlace de verificación. Confirmá el correo con un toque.'
+                  ? 'Recibimos un enlace de verificación. Confirma el correo con un toque.'
                   : (
                     <>
                       Te enviamos un enlace de verificación a{' '}
@@ -94,7 +94,7 @@ export function VerifyEmailPage() {
                   disabled={loading}
                   className="btn-primary flex h-11 w-full items-center justify-center rounded-2xl text-sm font-black disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {loading ? 'Enviando...' : 'Reenviar correo de verificacion'}
+                  {loading ? 'Enviando...' : 'Reenviar correo de verificación'}
                 </button>
               )}
 
@@ -107,7 +107,7 @@ export function VerifyEmailPage() {
                 onClick={handleLogout}
                 className="btn-ghost flex h-11 w-full items-center justify-center rounded-2xl text-sm font-bold text-zinc-900"
               >
-                Cerrar sesion
+                Cerrar sesión
               </button>
             </div>
 

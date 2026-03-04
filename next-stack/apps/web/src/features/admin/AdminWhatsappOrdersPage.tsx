@@ -18,18 +18,18 @@ const ORDER_VARIABLES: VariableInfo[] = [
   { key: '{status}', description: 'Clave del estado (ej: preparando)' },
   { key: '{status_label}', description: 'Nombre lindo del estado (ej: Preparando)' },
   { key: '{total}', description: 'Total del pedido formateado' },
-  { key: '{total_raw}', description: 'Total numerico sin formato' },
-  { key: '{items_count}', description: 'Cantidad de items' },
-  { key: '{items_summary}', description: 'Listado simple de items (lineas)' },
+  { key: '{total_raw}', description: 'Total numérico sin formato' },
+  { key: '{items_count}', description: 'Cantidad de ítems' },
+  { key: '{items_summary}', description: 'Listado simple de ítems (líneas)' },
   { key: '{pickup_name}', description: 'Nombre de retiro' },
-  { key: '{pickup_phone}', description: 'Telefono de retiro' },
-  { key: '{phone}', description: 'Telefono (alias de pickup_phone)' },
+  { key: '{pickup_phone}', description: 'Teléfono de retiro' },
+  { key: '{phone}', description: 'Teléfono (alias de pickup_phone)' },
   { key: '{notes}', description: 'Notas del cliente' },
   { key: '{my_orders_url}', description: 'Link a /mis-pedidos' },
   { key: '{store_url}', description: 'Link a /tienda' },
-  { key: '{shop_address}', description: 'Direccion del local (Admin > Configuracion)' },
+  { key: '{shop_address}', description: 'Dirección del local (Admin > Configuración)' },
   { key: '{shop_hours}', description: 'Horarios (Admin > Configuracion)' },
-  { key: '{shop_phone}', description: 'Telefono del local' },
+  { key: '{shop_phone}', description: 'Teléfono del local' },
   { key: '{shop_name}', description: 'Nombre del negocio' },
 ];
 
@@ -154,11 +154,11 @@ export function AdminWhatsappOrdersPage() {
           <div>
             <h1 className="text-2xl font-black tracking-tight text-zinc-900">Plantillas WhatsApp - Pedidos</h1>
             <p className="mt-1 text-sm text-zinc-600">
-              Edita mensajes por estado. Si dejas vacio, se usa el texto predeterminado.
+              Edita mensajes por estado. Si dejas vacío, se usa el texto predeterminado.
             </p>
           </div>
           <Link to="/admin/configuraciones" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">
-            Volver a configuracion
+            Volver a configuración
           </Link>
         </div>
       </section>
@@ -230,7 +230,7 @@ export function AdminWhatsappOrdersPage() {
           <div className="flex items-center justify-between gap-3 border-b border-zinc-100 px-4 py-4 md:px-5">
             <div>
               <h2 className="text-xl font-black tracking-tight text-zinc-900">Logs recientes (pedidos)</h2>
-              <p className="mt-1 text-sm text-zinc-600">Mensajes generados automaticamente al cambiar estados.</p>
+              <p className="mt-1 text-sm text-zinc-600">Mensajes generados automáticamente al cambiar estados.</p>
             </div>
             <button type="button" onClick={() => void loadLogs()} className="btn-outline !h-10 !rounded-xl px-4 text-sm font-bold">
               Actualizar

@@ -229,9 +229,8 @@ export function AdminAccountingPage() {
               <div className="text-sm font-bold text-zinc-900">{r.category}</div>
               <div>
                 <div className="text-sm font-black text-zinc-900">{r.description}</div>
-                <div className="text-sm text-zinc-500">{r.source}</div>
               </div>
-              <div className="text-sm text-zinc-500">{r.category}</div>
+              <div className="text-sm text-zinc-500">{r.source}</div>
               <div
                 className={`text-right text-xl font-black ${
                   r.direction === 'Ingreso' ? 'text-emerald-700' : 'text-rose-700'

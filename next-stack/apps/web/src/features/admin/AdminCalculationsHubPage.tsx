@@ -6,9 +6,9 @@ export function AdminCalculationsHubPage() {
       <section className="store-hero">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-black tracking-tight text-zinc-900">Reglas de calculo</h1>
+            <h1 className="text-2xl font-black tracking-tight text-zinc-900">Reglas de cálculo</h1>
             <p className="mt-1 text-sm text-zinc-600">
-              Gestion centralizada del calculo automatico para productos y reparaciones.
+              Gestión centralizada del cálculo automático para productos y reparaciones.
             </p>
           </div>
           <Link to="/admin" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">
@@ -25,7 +25,7 @@ export function AdminCalculationsHubPage() {
           <div className="card-body p-4 md:p-5">
             <div className="text-xl font-black tracking-tight text-zinc-900">Productos</div>
             <p className="mt-2 text-sm leading-6 text-zinc-600">
-              Reglas por categoria, producto, rango de costo y porcentaje de margen.
+              Reglas por categoría, producto, rango de costo y porcentaje de margen.
             </p>
             <div className="mt-4 text-sm font-black text-sky-700">Abrir reglas de productos</div>
           </div>
@@ -38,7 +38,7 @@ export function AdminCalculationsHubPage() {
           <div className="card-body p-4 md:p-5">
             <div className="text-xl font-black tracking-tight text-zinc-900">Reparaciones</div>
             <p className="mt-2 text-sm leading-6 text-zinc-600">
-              Reglas por tipo, marca, modelo y prioridad para calculo automatico.
+              Reglas por tipo, marca, modelo y prioridad para cálculo automático.
             </p>
             <div className="mt-4 text-sm font-black text-sky-700">Abrir reglas de reparaciones</div>
           </div>
@@ -47,4 +47,3 @@ export function AdminCalculationsHubPage() {
     </div>
   );
 }
-

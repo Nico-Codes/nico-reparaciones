@@ -231,9 +231,15 @@ export function AdminWarrantiesPage() {
                 </div>
                 <div className="min-w-0">
                   <div className="truncate text-sm font-black text-zinc-900">{i.title}</div>
-                  <div className="truncate text-sm text-zinc-600">
-                    Reparación: {i.repairCode ?? '-'}{i.customerName ? ` - ${i.customerName}` : ''}
-                  </div>
+                  {i.sourceType === 'repair' ? (
+                    <div className="truncate text-sm text-zinc-600">
+                      Reparación: {i.repairCode ?? '-'}{i.customerName ? ` - ${i.customerName}` : ''}
+                    </div>
+                  ) : (
+                    <div className="truncate text-sm text-zinc-600">
+                      Producto: {i.productName || '-'}
+                    </div>
+                  )}
                   <div className="truncate text-sm text-zinc-600">{i.reason || '-'}</div>
                 </div>
                 <div className="text-sm font-bold text-zinc-900">{i.provider}</div>

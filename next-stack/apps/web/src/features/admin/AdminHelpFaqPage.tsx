@@ -1,22 +1,31 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { helpFaqAdminApi, type HelpFaqAdminItem } from './helpFaqApi';
+import { helpFaqAdminApi, type HelpFaqAdminItem, type HelpFaqUpdateInput } from './helpFaqApi';
 
 export function AdminHelpFaqPage() {
   const [items, setItems] = useState<HelpFaqAdminItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
   const [q, setQ] = useState('');
   const [activeFilter, setActiveFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [form, setForm] = useState({ question: '', answer: '', category: 'general', sortOrder: '0', active: true });
 
+  function sortItems(rows: HelpFaqAdminItem[]) {
+    return [...rows].sort((a, b) => {
+      if (a.active !== b.active) return a.active ? -1 : 1;
+      if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+      return a.createdAt.localeCompare(b.createdAt);
+    });
+  }
+
   async function load() {
     setLoading(true);
     setError('');
     try {
       const res = await helpFaqAdminApi.list({ q: q || undefined, active: activeFilter || undefined, category: categoryFilter || undefined });
-      setItems(res.items);
+      setItems(sortItems(res.items));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error cargando FAQ');
     } finally {
@@ -32,25 +41,30 @@ export function AdminHelpFaqPage() {
 
   async function createItem(e: React.FormEvent) {
     e.preventDefault();
+    setCreating(true);
+    setError('');
     try {
       const res = await helpFaqAdminApi.create({
-        question: form.question,
-        answer: form.answer,
+        question: form.question.trim(),
+        answer: form.answer.trim(),
         category: form.category || 'general',
         sortOrder: Number(form.sortOrder || 0),
         active: form.active,
       });
-      setItems((prev) => [res.item, ...prev]);
+      setItems((prev) => sortItems([res.item, ...prev]));
       setForm({ question: '', answer: '', category: 'general', sortOrder: '0', active: true });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error creando FAQ');
+    } finally {
+      setCreating(false);
     }
   }
 
-  async function patchItem(id: string, patch: Record<string, unknown>) {
+  async function patchItem(id: string, patch: HelpFaqUpdateInput) {
+    setError('');
     try {
-      const res = await helpFaqAdminApi.update(id, patch as any);
-      setItems((prev) => prev.map((x) => (x.id === id ? res.item : x)));
+      const res = await helpFaqAdminApi.update(id, patch);
+      setItems((prev) => sortItems(prev.map((x) => (x.id === id ? res.item : x))));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error actualizando FAQ');
     }
@@ -59,21 +73,21 @@ export function AdminHelpFaqPage() {
   return (
     <div className="store-shell">
       <div className="page-head store-hero">
-          <div>
-            <div className="page-title">Ayuda editable</div>
-            <div className="page-subtitle">Gestioná preguntas y respuestas públicas de la sección Ayuda.</div>
-          </div>
-          <div className="flex gap-2">
-            <Link to="/help" className="btn-outline h-11 justify-center px-4">Ver Ayuda pública</Link>
-            <Link to="/admin" className="btn-outline h-11 justify-center px-4">Volver a admin</Link>
-          </div>
+        <div>
+          <div className="page-title">Ayuda editable</div>
+          <div className="page-subtitle">Gestioná preguntas y respuestas públicas de la sección Ayuda.</div>
+        </div>
+        <div className="flex gap-2">
+          <Link to="/help" className="btn-outline h-11 justify-center px-4">Ver Ayuda pública</Link>
+          <Link to="/admin/configuraciones" className="btn-outline h-11 justify-center px-4">Volver a configuración</Link>
+        </div>
       </div>
 
-        {error ? <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">{error}</div> : null}
+      {error ? <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">{error}</div> : null}
 
       <div className="mt-4 grid gap-4 xl:grid-cols-[420px_1fr]">
-          <section className="card">
-            <div className="card-body p-4">
+        <section className="card">
+          <div className="card-body p-4">
             <div className="text-sm font-bold uppercase tracking-wide text-zinc-500">Nueva pregunta</div>
             <form className="mt-3 grid gap-2" onSubmit={(e) => void createItem(e)}>
               <input value={form.question} onChange={(e) => setForm((p) => ({ ...p, question: e.target.value }))} placeholder="¿Cómo sigo mi pedido?" className="h-10 rounded-xl border border-zinc-200 px-3 text-sm" required />
@@ -86,13 +100,15 @@ export function AdminHelpFaqPage() {
                 <input type="checkbox" checked={form.active} onChange={(e) => setForm((p) => ({ ...p, active: e.target.checked }))} />
                 Activa
               </label>
-              <button className="btn-primary h-11 w-full justify-center" type="submit">Crear FAQ</button>
+              <button className="btn-primary h-11 w-full justify-center" type="submit" disabled={creating}>
+                {creating ? 'Creando...' : 'Crear FAQ'}
+              </button>
             </form>
-            </div>
-          </section>
+          </div>
+        </section>
 
-          <section className="card">
-            <div className="card-body p-4">
+        <section className="card">
+          <div className="card-body p-4">
             <div className="mb-3 grid gap-2 md:grid-cols-[1fr_180px_180px_auto]">
               <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar..." className="h-10 rounded-xl border border-zinc-200 px-3 text-sm" />
               <select value={activeFilter} onChange={(e) => setActiveFilter(e.target.value)} className="h-10 rounded-xl border border-zinc-200 px-3 text-sm">
@@ -116,8 +132,13 @@ export function AdminHelpFaqPage() {
                 {items.map((item) => (
                   <div key={item.id} className="rounded-xl border border-zinc-200 p-3">
                     <div className="flex flex-wrap items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <div className="text-sm font-black text-zinc-900">{item.question}</div>
+                      <div className="min-w-0 flex-1">
+                        <input
+                          value={item.question}
+                          onChange={(e) => setItems((prev) => prev.map((x) => (x.id === item.id ? { ...x, question: e.target.value } : x)))}
+                          onBlur={(e) => void patchItem(item.id, { question: e.target.value })}
+                          className="h-9 w-full rounded-xl border border-zinc-200 px-3 text-sm font-black text-zinc-900"
+                        />
                         <div className="text-xs text-zinc-500">{item.category} · orden {item.sortOrder}</div>
                       </div>
                       <label className="inline-flex items-center gap-2 text-xs font-semibold text-zinc-700">
@@ -158,11 +179,9 @@ export function AdminHelpFaqPage() {
                 ))}
               </div>
             )}
-            </div>
-          </section>
-        </div>
+          </div>
+        </section>
+      </div>
     </div>
   );
 }
-
-

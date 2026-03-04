@@ -173,6 +173,22 @@ async function main() {
   assert(Array.isArray(adminSettings.data?.items), 'admin/settings payload invalido', adminSettings.data);
   logStep('admin/settings', { count: adminSettings.data.items.length });
 
+  const storeHero = await req('/store/hero');
+  assert(storeHero.res.ok, 'store/hero fallo', { status: storeHero.res.status, body: storeHero.data });
+  assert(typeof storeHero.data?.imageDesktop === 'string', 'store/hero payload invalido', storeHero.data);
+  logStep('store/hero', {
+    desktop: storeHero.data.imageDesktop,
+    mobile: storeHero.data.imageMobile,
+  });
+
+  const storeBranding = await req('/store/branding');
+  assert(storeBranding.res.ok, 'store/branding fallo', { status: storeBranding.res.status, body: storeBranding.data });
+  assert(typeof storeBranding.data?.siteTitle === 'string', 'store/branding payload invalido', storeBranding.data);
+  logStep('store/branding', {
+    siteTitle: storeBranding.data.siteTitle,
+    logo: storeBranding.data.logoPrincipal,
+  });
+
   const help = await req('/help');
   assert(help.res.ok, 'help publico fallo', { status: help.res.status, body: help.data });
   assert(Array.isArray(help.data?.items), 'help payload invalido', help.data);
@@ -236,6 +252,70 @@ async function main() {
   assert(whatsappTemplates.res.ok, 'admin/whatsapp-templates fallo', { status: whatsappTemplates.res.status, body: whatsappTemplates.data });
   assert(Array.isArray(whatsappTemplates.data?.items), 'whatsapp templates payload invalido', whatsappTemplates.data);
   logStep('admin/whatsapp-templates', { count: whatsappTemplates.data.items.length });
+
+  const whatsappTemplatesOrders = await req('/admin/whatsapp-templates?channel=orders', {
+    headers: { Authorization: `Bearer ${refreshTokens.accessToken}` },
+  });
+  assert(whatsappTemplatesOrders.res.ok, 'admin/whatsapp-templates orders fallo', {
+    status: whatsappTemplatesOrders.res.status,
+    body: whatsappTemplatesOrders.data,
+  });
+  assert(Array.isArray(whatsappTemplatesOrders.data?.items), 'whatsapp templates orders payload invalido', whatsappTemplatesOrders.data);
+  logStep('admin/whatsapp-templates?channel=orders', { count: whatsappTemplatesOrders.data.items.length });
+
+  const whatsappLogsOrders = await req('/admin/whatsapp-logs?channel=orders', {
+    headers: { Authorization: `Bearer ${refreshTokens.accessToken}` },
+  });
+  assert(whatsappLogsOrders.res.ok, 'admin/whatsapp-logs orders fallo', { status: whatsappLogsOrders.res.status, body: whatsappLogsOrders.data });
+  assert(Array.isArray(whatsappLogsOrders.data?.items), 'whatsapp logs orders payload invalido', whatsappLogsOrders.data);
+  logStep('admin/whatsapp-logs?channel=orders', { count: whatsappLogsOrders.data.items.length });
+
+  const helpFaqAdmin = await req('/admin/help-faq', {
+    headers: { Authorization: `Bearer ${refreshTokens.accessToken}` },
+  });
+  assert(helpFaqAdmin.res.ok, 'admin/help-faq fallo', { status: helpFaqAdmin.res.status, body: helpFaqAdmin.data });
+  assert(Array.isArray(helpFaqAdmin.data?.items), 'admin/help-faq payload invalido', helpFaqAdmin.data);
+  logStep('admin/help-faq', { count: helpFaqAdmin.data.items.length });
+
+  const twoFactorStatus = await req('/admin/security/2fa', {
+    headers: { Authorization: `Bearer ${refreshTokens.accessToken}` },
+  });
+  assert(twoFactorStatus.res.ok, 'admin/security/2fa GET fallo', { status: twoFactorStatus.res.status, body: twoFactorStatus.data });
+  assert(typeof twoFactorStatus.data?.enabled === 'boolean', 'admin/security/2fa GET payload invalido', twoFactorStatus.data);
+  logStep('admin/security/2fa GET', { enabled: twoFactorStatus.data.enabled });
+
+  const twoFactorGenerate = await req('/admin/security/2fa/generate', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${refreshTokens.accessToken}` },
+    body: '{}',
+  });
+  assert(twoFactorGenerate.res.ok, 'admin/security/2fa/generate fallo', {
+    status: twoFactorGenerate.res.status,
+    body: twoFactorGenerate.data,
+  });
+  assert(typeof twoFactorGenerate.data?.secretMasked === 'string', 'admin/security/2fa/generate payload invalido', twoFactorGenerate.data);
+  logStep('admin/security/2fa/generate', { secretMasked: twoFactorGenerate.data.secretMasked });
+
+  const providers = await req('/admin/providers', {
+    headers: { Authorization: `Bearer ${refreshTokens.accessToken}` },
+  });
+  assert(providers.res.ok, 'admin/providers fallo', { status: providers.res.status, body: providers.data });
+  assert(Array.isArray(providers.data?.items), 'admin/providers payload invalido', providers.data);
+  logStep('admin/providers', { count: providers.data.items.length });
+
+  const warranties = await req('/admin/warranties', {
+    headers: { Authorization: `Bearer ${refreshTokens.accessToken}` },
+  });
+  assert(warranties.res.ok, 'admin/warranties fallo', { status: warranties.res.status, body: warranties.data });
+  assert(Array.isArray(warranties.data?.items), 'admin/warranties payload invalido', warranties.data);
+  logStep('admin/warranties', { count: warranties.data.items.length });
+
+  const accounting = await req('/admin/accounting', {
+    headers: { Authorization: `Bearer ${refreshTokens.accessToken}` },
+  });
+  assert(accounting.res.ok, 'admin/accounting fallo', { status: accounting.res.status, body: accounting.data });
+  assert(Array.isArray(accounting.data?.items), 'admin/accounting payload invalido', accounting.data);
+  logStep('admin/accounting', { count: accounting.data.items.length });
 
   const elapsedMs = Date.now() - startedAt;
   logStep('DONE', { elapsedMs });

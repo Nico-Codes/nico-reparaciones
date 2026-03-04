@@ -1,32 +1,8 @@
-import { authStorage } from '@/features/auth/storage';
-
-const API_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:3001';
-
-function authHeaders() {
-  const token = authStorage.getAccessToken();
-  const headers: Record<string, string> = {};
-  if (token) headers.Authorization = `Bearer ${token}`;
-  return headers as HeadersInit;
-}
-
-async function authRequest<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_URL}/api${path}`, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...authHeaders(),
-      ...(init?.headers ?? {}),
-    },
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error((data?.message as string) || `Error ${res.status}`);
-  return data as T;
-}
+import { authFetch, authJsonRequest } from '@/features/auth/http';
 
 async function authMultipartRequest<T>(path: string, form: FormData): Promise<T> {
-  const res = await fetch(`${API_URL}/api${path}`, {
+  const res = await authFetch(path, {
     method: 'POST',
-    headers: { ...authHeaders() },
     body: form,
   });
   const data = await res.json().catch(() => ({}));
@@ -67,29 +43,29 @@ export type AdminProduct = {
 
 export const catalogAdminApi = {
   categories() {
-    return authRequest<{ items: AdminCategory[] }>('/catalog-admin/categories');
+    return authJsonRequest<{ items: AdminCategory[] }>('/catalog-admin/categories');
   },
   createCategory(input: { name: string; slug: string; active?: boolean }) {
-    return authRequest<{ item: AdminCategory }>('/catalog-admin/categories', { method: 'POST', body: JSON.stringify(input) });
+    return authJsonRequest<{ item: AdminCategory }>('/catalog-admin/categories', { method: 'POST', body: JSON.stringify(input) });
   },
   updateCategory(id: string, input: Partial<{ name: string; slug: string; active: boolean }>) {
-    return authRequest<{ item: AdminCategory }>(`/catalog-admin/categories/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(input) });
+    return authJsonRequest<{ item: AdminCategory }>(`/catalog-admin/categories/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(input) });
   },
   products(params?: { q?: string; categoryId?: string; active?: string }) {
     const qs = new URLSearchParams();
     if (params?.q) qs.set('q', params.q);
     if (params?.categoryId) qs.set('categoryId', params.categoryId);
     if (params?.active) qs.set('active', params.active);
-    return authRequest<{ items: AdminProduct[] }>('/catalog-admin/products' + (qs.size ? `?${qs.toString()}` : ''));
+    return authJsonRequest<{ items: AdminProduct[] }>('/catalog-admin/products' + (qs.size ? `?${qs.toString()}` : ''));
   },
   product(id: string) {
-    return authRequest<{ item: AdminProduct }>(`/catalog-admin/products/${encodeURIComponent(id)}`);
+    return authJsonRequest<{ item: AdminProduct }>(`/catalog-admin/products/${encodeURIComponent(id)}`);
   },
   createProduct(input: unknown) {
-    return authRequest<{ item: AdminProduct }>('/catalog-admin/products', { method: 'POST', body: JSON.stringify(input) });
+    return authJsonRequest<{ item: AdminProduct }>('/catalog-admin/products', { method: 'POST', body: JSON.stringify(input) });
   },
   updateProduct(id: string, input: unknown) {
-    return authRequest<{ item: AdminProduct }>(`/catalog-admin/products/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(input) });
+    return authJsonRequest<{ item: AdminProduct }>(`/catalog-admin/products/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(input) });
   },
   uploadProductImage(id: string, file: File) {
     const form = new FormData();
@@ -100,7 +76,7 @@ export const catalogAdminApi = {
     );
   },
   removeProductImage(id: string) {
-    return authRequest<{ item: AdminProduct }>(`/catalog-admin/products/${encodeURIComponent(id)}/image`, {
+    return authJsonRequest<{ item: AdminProduct }>(`/catalog-admin/products/${encodeURIComponent(id)}/image`, {
       method: 'DELETE',
       body: JSON.stringify({}),
     });

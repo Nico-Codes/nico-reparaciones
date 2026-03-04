@@ -23,7 +23,7 @@ const HERO_ASSETS: HeroAsset[] = [
     maxKb: 6144,
   },
   {
-    title: 'Imagen movil',
+    title: 'Imagen móvil',
     slot: 'store_hero_mobile',
     settingKey: 'store_hero_image_mobile',
     recommended: '1280 x 720 px',
@@ -72,7 +72,7 @@ export function AdminStoreHeroSettingsPage() {
       const rgb = (map.get('store_hero_fade_rgb_desktop') ?? '16, 82, 190').trim();
       setGradientColor(rgbToHex(rgb) ?? '#1052BE');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error cargando configuracion');
+      setError(e instanceof Error ? e.message : 'Error cargando configuración');
     } finally {
       setLoading(false);
     }
@@ -85,10 +85,10 @@ export function AdminStoreHeroSettingsPage() {
     try {
       const rgb = hexToRgbString(gradientColor) ?? '16, 82, 190';
       const toSave = [
-        patchSetting(settingsByKey.get('store_hero_title'), 'store_hero_title', title, 'branding', 'Titulo portada tienda', 'text'),
-        patchSetting(settingsByKey.get('store_hero_subtitle'), 'store_hero_subtitle', text, 'branding', 'Subtitulo portada tienda', 'textarea'),
+        patchSetting(settingsByKey.get('store_hero_title'), 'store_hero_title', title, 'branding', 'Título portada tienda', 'text'),
+        patchSetting(settingsByKey.get('store_hero_subtitle'), 'store_hero_subtitle', text, 'branding', 'Subtítulo portada tienda', 'textarea'),
         patchSetting(settingsByKey.get('store_hero_fade_intensity'), 'store_hero_fade_intensity', gradientIntensity, 'branding', 'Fade intensidad', 'number'),
-        patchSetting(settingsByKey.get('store_hero_fade_size'), 'store_hero_fade_size', gradientExtent, 'branding', 'Fade tamano px', 'number'),
+        patchSetting(settingsByKey.get('store_hero_fade_size'), 'store_hero_fade_size', gradientExtent, 'branding', 'Fade tamaño px', 'number'),
         patchSetting(settingsByKey.get('store_hero_fade_rgb_desktop'), 'store_hero_fade_rgb_desktop', rgb, 'branding', 'Fade portada desktop (RGB)', 'text'),
         patchSetting(settingsByKey.get('store_hero_fade_rgb_mobile'), 'store_hero_fade_rgb_mobile', rgb, 'branding', 'Fade portada mobile (RGB)', 'text'),
         patchSetting(
@@ -155,7 +155,7 @@ export function AdminStoreHeroSettingsPage() {
             </p>
           </div>
           <Link to="/admin/configuraciones" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">
-            Volver a configuracion
+            Volver a configuración
           </Link>
         </div>
       </section>
@@ -187,7 +187,7 @@ export function AdminStoreHeroSettingsPage() {
           </div>
 
           <div className="space-y-4 px-4 py-4 md:px-5 md:py-5">
-            <Field label="Titulo (opcional)">
+            <Field label="Título (opcional)">
               <input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -201,7 +201,7 @@ export function AdminStoreHeroSettingsPage() {
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 rows={4}
-                placeholder="Ej: Ingresaron nuevos modulos y accesorios."
+                placeholder="Ej: Ingresaron nuevos módulos y accesorios."
                 className="w-full rounded-2xl border border-zinc-200 px-3 py-3 text-sm"
               />
             </Field>
@@ -217,7 +217,7 @@ export function AdminStoreHeroSettingsPage() {
                   className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm"
                 />
               </Field>
-              <Field label="Extension del degradado (px)">
+              <Field label="Extensión del degradado (px)">
                 <input
                   type="number"
                   min={0}
@@ -230,7 +230,7 @@ export function AdminStoreHeroSettingsPage() {
 
             <Field
               label="Color manual del degradado (hex)"
-              hint="Opcional. Si lo completas, se usa este color para el degradado en todos los dispositivos. Si lo dejas vacio, el color se calcula automaticamente desde la imagen."
+              hint="Opcional. Si lo completas, se usa este color para el degradado en todos los dispositivos. Si lo dejas vacío, el color se calcula automáticamente desde la imagen."
             >
               <div className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white p-2">
                 <input
@@ -401,13 +401,13 @@ function HeroPreview({ mobile = false }: { mobile?: boolean }) {
 
       <div className={`absolute left-1/2 top-4 -translate-x-1/2 text-center text-white ${mobile ? 'scale-90' : ''}`}>
         <div className="text-xs font-bold uppercase tracking-[0.18em] text-white/80">Tu tienda de</div>
-        <div className="mt-1 text-3xl font-black leading-none tracking-tight">ELECTRONICA</div>
+        <div className="mt-1 text-3xl font-black leading-none tracking-tight">ELECTRÓNICA</div>
         <div className="mx-auto mt-2 inline-flex rounded-md bg-yellow-300 px-3 py-0.5 text-sm font-black text-zinc-900">
           AL MEJOR PRECIO
         </div>
         <div className="mx-auto mt-3 inline-flex items-center rounded-xl bg-sky-900/70 px-4 py-2 text-sm font-bold text-white shadow-sm ring-1 ring-white/20">
           Reparaciones con
-          <span className="ml-1 text-yellow-200">Garantia Asegurada</span>
+          <span className="ml-1 text-yellow-200">Garantía Asegurada</span>
         </div>
       </div>
 

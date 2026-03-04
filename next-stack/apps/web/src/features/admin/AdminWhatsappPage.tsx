@@ -14,26 +14,26 @@ type RepairTemplateDef = {
 
 const WHATSAPP_VARIABLES: VariableInfo[] = [
   { key: '{customer_name}', description: 'Nombre del cliente' },
-  { key: '{code}', description: 'Codigo de reparacion' },
+  { key: '{code}', description: 'Código de reparación' },
   { key: '{status}', description: 'Clave del estado (ej: ready_pickup)' },
   { key: '{status_label}', description: 'Nombre lindo del estado (ej: Listo para retirar)' },
-  { key: '{lookup_url}', description: 'Link a la pagina /reparacion' },
-  { key: '{phone}', description: 'Telefono del cliente' },
+  { key: '{lookup_url}', description: 'Link a la página /reparacion' },
+  { key: '{phone}', description: 'Teléfono del cliente' },
   { key: '{device_brand}', description: 'Marca del equipo' },
   { key: '{device_model}', description: 'Modelo del equipo' },
   { key: '{device}', description: 'Marca + Modelo' },
   { key: '{final_price}', description: 'Precio final (si existe)' },
-  { key: '{warranty_days}', description: 'Garantia en dias' },
+  { key: '{warranty_days}', description: 'Garantía en días' },
   { key: '{approval_url}', description: 'Link firmado para que el cliente apruebe/rechace presupuesto' },
-  { key: '{shop_address}', description: 'Direccion del local (Admin > Configuracion)' },
+  { key: '{shop_address}', description: 'Dirección del local (Admin > Configuración)' },
   { key: '{shop_hours}', description: 'Horarios (Admin > Configuracion)' },
 ];
 
 const TEMPLATE_ORDER: RepairTemplateDef[] = [
   { key: 'received', title: 'Recibido' },
   { key: 'diagnosing', title: 'Diagnosticando' },
-  { key: 'waiting_approval', title: 'Esperando aprobacion' },
-  { key: 'repairing', title: 'En reparacion' },
+  { key: 'waiting_approval', title: 'Esperando aprobación' },
+  { key: 'repairing', title: 'En reparación' },
   { key: 'ready_pickup', title: 'Listo para retirar' },
   { key: 'delivered', title: 'Entregado' },
   { key: 'cancelled', title: 'Cancelado' },
@@ -173,10 +173,10 @@ export function AdminWhatsappPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-black tracking-tight text-zinc-900">Plantillas WhatsApp</h1>
-            <p className="mt-1 text-sm text-zinc-600">Edita mensajes por estado. Si dejas vacio, se usa el texto predeterminado.</p>
+            <p className="mt-1 text-sm text-zinc-600">Edita mensajes por estado. Si dejas vacío, se usa el texto predeterminado.</p>
           </div>
           <Link to="/admin/configuraciones" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">
-            Volver a configuracion
+            Volver a configuración
           </Link>
         </div>
       </section>
@@ -254,7 +254,7 @@ export function AdminWhatsappPage() {
           <div className="flex items-center justify-between gap-3 border-b border-zinc-100 px-4 py-4 md:px-5">
             <div>
               <h2 className="text-xl font-black tracking-tight text-zinc-900">Logs recientes (reparaciones)</h2>
-              <p className="mt-1 text-sm text-zinc-600">Mensajes generados automaticamente al cambiar estados.</p>
+              <p className="mt-1 text-sm text-zinc-600">Mensajes generados automáticamente al cambiar estados.</p>
             </div>
             <button type="button" onClick={() => void loadLogs()} className="btn-outline !h-10 !rounded-xl px-4 text-sm font-bold">
               Actualizar

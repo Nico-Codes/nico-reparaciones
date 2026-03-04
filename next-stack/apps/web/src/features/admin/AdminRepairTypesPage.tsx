@@ -46,7 +46,7 @@ export function AdminRepairTypesPage() {
         })),
       );
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error cargando tipos de reparacion');
+      setError(e instanceof Error ? e.message : 'Error cargando tipos de reparación');
     } finally {
       setLoading(false);
     }
@@ -118,8 +118,8 @@ export function AdminRepairTypesPage() {
       <section className="store-hero">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-black tracking-tight text-zinc-900">Tipos de reparacion</h1>
-            <p className="mt-1 text-sm text-zinc-600">Estos son los tipos usados en el calculo automatico.</p>
+            <h1 className="text-2xl font-black tracking-tight text-zinc-900">Tipos de reparación</h1>
+            <p className="mt-1 text-sm text-zinc-600">Estos son los tipos usados en el cálculo automático.</p>
           </div>
           <Link to="/admin/precios" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">
             Precios
@@ -141,7 +141,7 @@ export function AdminRepairTypesPage() {
               <input
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
-                placeholder="Ej: Modulo"
+                placeholder="Ej: Módulo"
                 className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm"
               />
             </div>
@@ -168,12 +168,12 @@ export function AdminRepairTypesPage() {
         <section className="card">
           <div className="card-head flex items-center justify-between gap-2">
             <div className="text-xl font-black tracking-tight text-zinc-900">Listado</div>
-            <span className="badge-zinc">{loading ? '—' : count}</span>
+            <span className="badge-zinc">{loading ? '-' : count}</span>
           </div>
           <div className="card-body space-y-3">
             {loading ? <div className="h-24 animate-pulse rounded-2xl border border-zinc-200 bg-zinc-50" /> : null}
             {!loading && sortedRows.length === 0 ? (
-              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-600">Sin tipos de reparacion cargados.</div>
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-600">Sin tipos de reparación cargados.</div>
             ) : null}
             {sortedRows.map((row) => (
               <div key={row.id} className="rounded-2xl border border-zinc-200 bg-white p-3">

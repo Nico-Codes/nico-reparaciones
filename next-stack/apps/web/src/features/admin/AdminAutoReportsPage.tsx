@@ -15,10 +15,10 @@ type ReportForm = {
 const DAY_OPTIONS = [
   { value: 'monday', label: 'Lunes' },
   { value: 'tuesday', label: 'Martes' },
-  { value: 'wednesday', label: 'Miercoles' },
+  { value: 'wednesday', label: 'Miércoles' },
   { value: 'thursday', label: 'Jueves' },
   { value: 'friday', label: 'Viernes' },
-  { value: 'saturday', label: 'Sabado' },
+  { value: 'saturday', label: 'Sábado' },
   { value: 'sunday', label: 'Domingo' },
 ] as const;
 
@@ -139,9 +139,9 @@ export function AdminAutoReportsPage() {
       const normalized = { ...form, antiSpamWindow: normalizedDedupe };
       setForm(normalized);
       setInitialForm(normalized);
-      setSuccess('Configuracion guardada.');
+      setSuccess('Configuración guardada.');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo guardar la configuracion');
+      setError(e instanceof Error ? e.message : 'No se pudo guardar la configuración');
     } finally {
       setSaving(false);
     }
@@ -213,11 +213,11 @@ export function AdminAutoReportsPage() {
       <section className="store-hero">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-black tracking-tight text-zinc-900">Reportes automaticos</h1>
-            <p className="mt-1 text-sm text-zinc-600">Configura envio semanal de KPIs del dashboard.</p>
+            <h1 className="text-2xl font-black tracking-tight text-zinc-900">Reportes automáticos</h1>
+            <p className="mt-1 text-sm text-zinc-600">Configura envío semanal de KPIs del dashboard.</p>
           </div>
           <Link to="/admin/configuraciones" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">
-            Volver a configuracion
+            Volver a configuración
           </Link>
         </div>
       </section>
@@ -227,7 +227,7 @@ export function AdminAutoReportsPage() {
           <div>
             <div className="text-xl font-black tracking-tight text-zinc-900">Reportes semanales</div>
             <p className="mt-1 text-sm text-zinc-500">
-              Define destinatarios y frecuencia para el envio automatico de resumenes.
+              Define destinatarios y frecuencia para el envío automático de resúmenes.
             </p>
           </div>
           <span className="inline-flex h-7 items-center rounded-full border border-sky-200 bg-sky-50 px-3 text-sm font-black text-sky-700">
@@ -247,12 +247,12 @@ export function AdminAutoReportsPage() {
               disabled={loading}
               className="w-full rounded-2xl border border-zinc-200 px-3 py-3 text-sm disabled:bg-zinc-50"
             />
-            <p className="mt-2 text-sm text-zinc-500">Si queda vacio, no se enviara ningun reporte automatico.</p>
+            <p className="mt-2 text-sm text-zinc-500">Si queda vacío, no se enviará ningún reporte automático.</p>
           </div>
 
           <div className="grid gap-3 lg:grid-cols-3">
             <div>
-              <label className="mb-2 block text-sm font-bold text-zinc-900">Dia de envio</label>
+              <label className="mb-2 block text-sm font-bold text-zinc-900">Día de envío</label>
               <select
                 value={form.sendDay}
                 onChange={(e) => setForm((p) => ({ ...p, sendDay: e.target.value }))}
@@ -267,7 +267,7 @@ export function AdminAutoReportsPage() {
               </select>
             </div>
             <div>
-              <label className="mb-2 block text-sm font-bold text-zinc-900">Hora de envio</label>
+              <label className="mb-2 block text-sm font-bold text-zinc-900">Hora de envío</label>
               <input
                 type="time"
                 value={form.sendHour}
@@ -284,15 +284,15 @@ export function AdminAutoReportsPage() {
                 disabled={loading}
                 className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm disabled:bg-zinc-50"
               >
-                <option value="7">Ultimos 7 dias</option>
-                <option value="30">Ultimos 30 dias</option>
-                <option value="90">Ultimos 90 dias</option>
+                <option value="7">Últimos 7 días</option>
+                <option value="30">Últimos 30 días</option>
+                <option value="90">Últimos 90 días</option>
               </select>
             </div>
           </div>
 
           <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3 md:p-4">
-            <div className="text-xl font-black tracking-tight text-zinc-900">Alertas operativas automaticas</div>
+            <div className="text-xl font-black tracking-tight text-zinc-900">Alertas operativas automáticas</div>
             <p className="mt-1 text-sm text-zinc-600">Correo diario con pedidos/reparaciones demoradas (anti-spam incluido).</p>
 
             <div className="mt-4 grid gap-3 lg:grid-cols-2">
@@ -306,7 +306,7 @@ export function AdminAutoReportsPage() {
                   disabled={loading}
                   className="w-full rounded-2xl border border-zinc-200 px-3 py-3 text-sm disabled:bg-zinc-50"
                 />
-                <p className="mt-2 text-sm text-zinc-500">Si queda vacio, usa emails de reporte semanal y luego admins.</p>
+                <p className="mt-2 text-sm text-zinc-500">Si queda vacío, usa emails de reporte semanal y luego admins.</p>
               </div>
               <div>
                 <label className="mb-2 block text-sm font-bold text-zinc-900">Ventana anti-spam (minutos)</label>
@@ -319,14 +319,14 @@ export function AdminAutoReportsPage() {
                   disabled={loading}
                   className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm disabled:bg-zinc-50"
                 />
-                <p className="mt-2 text-sm text-zinc-500">No reenvia la misma alerta durante esta ventana (ej: 360 = 6 horas).</p>
+                <p className="mt-2 text-sm text-zinc-500">No reenvía la misma alerta durante esta ventana (ej: 360 = 6 horas).</p>
               </div>
             </div>
           </div>
 
           <div className="flex flex-wrap items-center justify-end gap-3">
             <Link to="/admin/configuraciones" className="btn-outline !h-11 !rounded-xl px-5 text-sm font-bold">
-              Volver a configuracion
+              Volver a configuración
             </Link>
             <button
               type="button"
@@ -339,7 +339,7 @@ export function AdminAutoReportsPage() {
           </div>
 
           <div className="rounded-2xl border border-zinc-200 bg-white px-3 py-3 text-sm text-zinc-600">
-            El scheduler del servidor toma esta configuracion y ejecuta <code>ops:dashboard-report-email</code> cada semana.
+            El scheduler del servidor toma esta configuración y ejecuta <code>ops:dashboard-report-email</code> cada semana.
           </div>
 
           <div className="flex justify-end">
@@ -354,8 +354,8 @@ export function AdminAutoReportsPage() {
           </div>
 
           <div className="rounded-2xl border border-zinc-200 bg-white px-3 py-3 text-sm text-zinc-600">
-            Alertas operativas automaticas: se ejecuta <code>ops:operational-alerts-email</code> diariamente. Si no configuras destinatarios
-            especificos, se envian a admins o a los emails del reporte semanal.
+            Alertas operativas automáticas: se ejecuta <code>ops:operational-alerts-email</code> diariamente. Si no configuras destinatarios
+            específicos, se envían a admins o a los emails del reporte semanal.
           </div>
 
           <div className="flex justify-end">
@@ -374,8 +374,8 @@ export function AdminAutoReportsPage() {
       <section className="card">
         <div className="card-head flex items-center justify-between gap-3">
           <div>
-            <div className="text-xl font-black tracking-tight text-zinc-900">Ultima ejecucion de alertas operativas</div>
-            <p className="mt-1 text-sm text-zinc-500">Historial rapido para verificar funcionamiento sin revisar logs.</p>
+            <div className="text-xl font-black tracking-tight text-zinc-900">Última ejecución de alertas operativas</div>
+            <p className="mt-1 text-sm text-zinc-500">Historial rápido para verificar funcionamiento sin revisar logs.</p>
           </div>
           <div className="flex items-center gap-2">
             <span className={statusMeta.className}>{statusMeta.label}</span>
@@ -391,17 +391,17 @@ export function AdminAutoReportsPage() {
         </div>
         <div className="card-body grid gap-3 text-sm md:grid-cols-2">
           <div className="space-y-1 text-zinc-700">
-            <div><span className="font-bold">Fecha:</span> {lastRunAt || '—'}</div>
+            <div><span className="font-bold">Fecha:</span> {lastRunAt || '-'}</div>
             <div><span className="font-bold">Pedidos alertados:</span> {Number(lastSummary.orders ?? 0) || 0}</div>
           </div>
           <div className="space-y-1 text-zinc-700">
-            <div><span className="font-bold">Destinatarios:</span> {lastRecipients || '—'}</div>
+            <div><span className="font-bold">Destinatarios:</span> {lastRecipients || '-'}</div>
             <div><span className="font-bold">Reparaciones alertadas:</span> {Number(lastSummary.repairs ?? 0) || 0}</div>
           </div>
         </div>
         {lastError ? (
           <div className="mx-5 mb-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
-            Ultimo error: {lastError}
+            Último error: {lastError}
           </div>
         ) : null}
       </section>

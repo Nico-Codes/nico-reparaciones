@@ -214,7 +214,7 @@ export function AdminRepairPricingRulesPage() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Link to="/admin/tiposdispositivo" className="btn-outline !h-10 !rounded-xl px-4 text-sm font-bold">Dispositivos</Link>
-            <Link to="/admin/catalogodispositivos" className="btn-outline !h-10 !rounded-xl px-4 text-sm font-bold">Catalogo</Link>
+            <Link to="/admin/catalogodispositivos" className="btn-outline !h-10 !rounded-xl px-4 text-sm font-bold">Catálogo</Link>
             <Link to="/admin/gruposmodelos" className="btn-outline !h-10 !rounded-xl px-4 text-sm font-bold">Grupos</Link>
             <Link to="/admin/tiposreparacion" className="btn-outline !h-10 !rounded-xl px-4 text-sm font-bold">Tipos</Link>
             <Link to="/admin/precios/crear" className="btn-primary !h-10 !rounded-xl px-4 text-sm font-bold">
@@ -237,7 +237,7 @@ export function AdminRepairPricingRulesPage() {
                 <div>Scope</div>
                 <div>Marca</div>
                 <div>Modelo</div>
-                <div>Reparacion</div>
+                <div>Reparación</div>
                 <div>Modo</div>
                 <div>Base</div>
                 <div>%</div>
