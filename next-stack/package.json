@@ -35,6 +35,9 @@
     "db:seed:demo": "npm run db:seed:demo --workspace @nico/api",
     "db:migrate:legacy-settings": "npm run db:migrate:legacy-settings --workspace @nico/api",
     "db:migrate:legacy-settings:cleanup": "npm run db:migrate:legacy-settings:cleanup --workspace @nico/api",
+    "db:migrate:product-images": "npm run db:migrate:product-images --workspace @nico/api",
+    "db:migrate:product-images:dry-run": "npm run db:migrate:product-images:dry-run --workspace @nico/api",
+    "db:migrate:product-images:cleanup-legacy": "npm run db:migrate:product-images:cleanup-legacy --workspace @nico/api",
     "db:migrate:visual-assets": "npm run db:migrate:visual-assets --workspace @nico/api",
     "db:migrate:visual-assets:dry-run": "npm run db:migrate:visual-assets:dry-run --workspace @nico/api"
   },

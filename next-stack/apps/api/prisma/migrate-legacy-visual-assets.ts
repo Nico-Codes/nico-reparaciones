@@ -25,6 +25,7 @@ type MigrationSummary = {
   filesSkipped: number;
   settingsUpserted: number;
   settingsSkipped: number;
+  dryRun: boolean;
 };
 
 const __filename = fileURLToPath(import.meta.url);
@@ -119,12 +120,15 @@ class LegacyVisualAssetsMigrator {
     filesSkipped: 0,
     settingsUpserted: 0,
     settingsSkipped: 0,
+    dryRun: false,
   };
 
   constructor(
     private readonly prisma: PrismaClient,
     private readonly options: CliOptions,
-  ) {}
+  ) {
+    this.summary.dryRun = options.dryRun;
+  }
 
   async run() {
     const sourcePublic = this.resolveSourcePublicDir();
@@ -164,7 +168,10 @@ class LegacyVisualAssetsMigrator {
         await cp(sourceDir, targetDir, { recursive: true, force: true, errorOnExist: false });
       }
       this.summary.filesCopied += 1;
-      console.log('[visual:migrate] copied dir', { from: sourceDir, to: targetDir });
+      console.log(`[visual:migrate] ${this.options.dryRun ? 'would copy' : 'copied'} dir`, {
+        from: sourceDir,
+        to: targetDir,
+      });
     }
 
     for (const fileName of ROOT_FILES) {
@@ -179,7 +186,10 @@ class LegacyVisualAssetsMigrator {
         await copyFile(sourceFile, targetFile);
       }
       this.summary.filesCopied += 1;
-      console.log('[visual:migrate] copied file', { from: sourceFile, to: targetFile });
+      console.log(`[visual:migrate] ${this.options.dryRun ? 'would copy' : 'copied'} file`, {
+        from: sourceFile,
+        to: targetFile,
+      });
     }
   }
 

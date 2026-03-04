@@ -140,9 +140,7 @@ async function bootstrap() {
   }
   const webPublicDir = resolveWebPublicDir();
   if (webPublicDir) {
-    app.useStaticAssets(path.join(webPublicDir, 'brand'), { prefix: '/brand' });
-    app.useStaticAssets(path.join(webPublicDir, 'brand-assets'), { prefix: '/brand-assets' });
-    app.useStaticAssets(path.join(webPublicDir, 'icons'), { prefix: '/icons' });
+    app.useStaticAssets(webPublicDir, { index: false });
   }
   if (expressApp?.set && isTruthy(env('TRUST_PROXY'))) {
     expressApp.set('trust proxy', 1);

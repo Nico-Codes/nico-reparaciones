@@ -60,7 +60,7 @@ export function AdminProductsPage() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button type="button" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">Categorias</button>
-            <button type="button" className="btn-primary !h-10 !rounded-xl px-5 text-sm font-bold">+ Nuevo producto</button>
+            <Link to="/admin/productos/crear" className="btn-primary !h-10 !rounded-xl px-5 text-sm font-bold">+ Nuevo producto</Link>
           </div>
         </div>
       </section>
@@ -133,7 +133,9 @@ export function AdminProductsPage() {
                     <div><input type="checkbox" aria-label={`Seleccionar ${p.name}`} /></div>
 
                     <div className="flex min-w-0 items-center gap-2">
-                      <div className="h-8 w-8 rounded-lg border border-zinc-200 bg-zinc-50" />
+                      <div className="h-8 w-8 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50">
+                        {p.imageUrl ? <img src={p.imageUrl} alt={p.name} className="h-full w-full object-cover" loading="lazy" /> : null}
+                      </div>
                       <div className="min-w-0">
                         <div className="truncate text-sm font-black tracking-tight text-zinc-900">{p.name}</div>
                         <div className="text-xs text-zinc-500">ID: {p.id.slice(0, 4)}</div>
@@ -143,7 +145,7 @@ export function AdminProductsPage() {
                     <div className="truncate text-xs font-black leading-tight text-zinc-800">{p.sku || '-'}</div>
                     <div className="truncate text-xs leading-tight text-zinc-800">{p.barcode || '-'}</div>
                     <div className="truncate text-xs text-zinc-900">{p.category?.name || '-'}</div>
-                    <div className="truncate text-xs text-zinc-900">-</div>
+                    <div className="truncate text-xs text-zinc-900">{p.supplier?.name || '-'}</div>
 
                     <div className="text-right">
                       <div className="text-xs font-black leading-tight text-zinc-900">$ {cost.toLocaleString('es-AR')}</div>
@@ -253,5 +255,3 @@ function QuickStockCell({ value, onSave }: { value: number; onSave: (value: numb
     </div>
   );
 }
-
-

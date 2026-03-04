@@ -1,5 +1,8 @@
 import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, type ProductPricingRule } from '@prisma/client';
+import { existsSync } from 'node:fs';
+import { mkdir, unlink, writeFile } from 'node:fs/promises';
+import path from 'node:path';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 type ProductListParams = {
@@ -8,8 +11,11 @@ type ProductListParams = {
   active?: string;
 };
 
-type ProductWithCategory = Prisma.ProductGetPayload<{
-  include: { category: { select: { id: true; name: true; slug: true } } };
+type ProductWithRelations = Prisma.ProductGetPayload<{
+  include: {
+    category: { select: { id: true; name: true; slug: true } };
+    supplier: { select: { id: true; name: true } };
+  };
 }>;
 
 type ProductPricingRuleWithRelations = Prisma.ProductPricingRuleGetPayload<{
@@ -27,6 +33,9 @@ type ResolveProductPricingInput = {
 
 @Injectable()
 export class CatalogAdminService {
+  private readonly productImageAllowedExts = ['jpg', 'jpeg', 'png', 'webp'] as const;
+  private readonly productImageMaxKb = 4096;
+
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   async categories() {
@@ -94,7 +103,10 @@ export class CatalogAdminService {
     };
     const items = await this.prisma.product.findMany({
       where,
-      include: { category: { select: { id: true, name: true, slug: true } } },
+      include: {
+        category: { select: { id: true, name: true, slug: true } },
+        supplier: { select: { id: true, name: true } },
+      },
       orderBy: [{ active: 'desc' }, { updatedAt: 'desc' }],
       take: 200,
     });
@@ -106,7 +118,10 @@ export class CatalogAdminService {
   async product(id: string) {
     const item = await this.prisma.product.findUnique({
       where: { id },
-      include: { category: { select: { id: true, name: true, slug: true } } },
+      include: {
+        category: { select: { id: true, name: true, slug: true } },
+        supplier: { select: { id: true, name: true } },
+      },
     });
     if (!item) throw new NotFoundException('Producto no encontrado');
     return { item: this.serializeProduct(item) };
@@ -116,6 +131,7 @@ export class CatalogAdminService {
     name: string;
     slug: string;
     description?: string | null;
+    purchaseReference?: string | null;
     price?: number | null;
     costPrice?: number | null;
     stock?: number;
@@ -123,9 +139,11 @@ export class CatalogAdminService {
     featured?: boolean;
     sku?: string | null;
     barcode?: string | null;
+    supplierId?: string | null;
     categoryId?: string | null;
   }) {
     const categoryId = this.nullable(input.categoryId);
+    const supplierId = await this.validateSupplierId(input.supplierId);
     const costPrice = input.costPrice == null ? null : Math.max(0, Number(input.costPrice));
     let salePrice = input.price == null ? null : Math.max(0, Number(input.price));
 
@@ -150,6 +168,7 @@ export class CatalogAdminService {
       name: input.name.trim(),
       slug: input.slug.trim(),
       description: this.nullable(input.description),
+      purchaseReference: this.nullable(input.purchaseReference),
       price: new Prisma.Decimal(salePrice),
       costPrice: costPrice == null ? null : new Prisma.Decimal(costPrice),
       stock: Math.max(0, Math.trunc(input.stock ?? 0)),
@@ -158,10 +177,14 @@ export class CatalogAdminService {
       sku: this.nullable(input.sku),
       barcode: this.nullable(input.barcode),
       categoryId,
+      supplierId,
     };
     const item = await this.prisma.product.create({
       data,
-      include: { category: { select: { id: true, name: true, slug: true } } },
+      include: {
+        category: { select: { id: true, name: true, slug: true } },
+        supplier: { select: { id: true, name: true } },
+      },
     });
     return { item: this.serializeProduct(item) };
   }
@@ -172,6 +195,7 @@ export class CatalogAdminService {
       name?: string;
       slug?: string;
       description?: string | null;
+      purchaseReference?: string | null;
       price?: number | null;
       costPrice?: number | null;
       stock?: number;
@@ -179,16 +203,18 @@ export class CatalogAdminService {
       featured?: boolean;
       sku?: string | null;
       barcode?: string | null;
+      supplierId?: string | null;
       categoryId?: string | null;
     },
   ) {
     const existing = await this.prisma.product.findUnique({
       where: { id },
-      select: { id: true, price: true, costPrice: true, categoryId: true },
+      select: { id: true, price: true, costPrice: true, categoryId: true, supplierId: true },
     });
     if (!existing) throw new NotFoundException('Producto no encontrado');
 
     const nextCategoryId = input.categoryId !== undefined ? this.nullable(input.categoryId) : existing.categoryId;
+    const nextSupplierId = input.supplierId !== undefined ? await this.validateSupplierId(input.supplierId) : existing.supplierId;
     const nextCostPrice =
       input.costPrice !== undefined
         ? input.costPrice == null
@@ -233,12 +259,90 @@ export class CatalogAdminService {
     if (input.featured !== undefined) data.featured = input.featured;
     if (input.sku !== undefined) data.sku = this.nullable(input.sku);
     if (input.barcode !== undefined) data.barcode = this.nullable(input.barcode);
+    if (input.purchaseReference !== undefined) data.purchaseReference = this.nullable(input.purchaseReference);
+    if (input.supplierId !== undefined) data.supplierId = nextSupplierId;
     if (input.categoryId !== undefined) data.categoryId = nextCategoryId;
 
     const item = await this.prisma.product.update({
       where: { id },
       data,
-      include: { category: { select: { id: true, name: true, slug: true } } },
+      include: {
+        category: { select: { id: true, name: true, slug: true } },
+        supplier: { select: { id: true, name: true } },
+      },
+    });
+    return { item: this.serializeProduct(item) };
+  }
+
+  async uploadProductImage(
+    id: string,
+    file: { originalname: string; mimetype: string; size: number; buffer?: Buffer | Uint8Array },
+  ) {
+    const ext = this.detectFileExt(file.originalname);
+    if (!ext || !this.productImageAllowedExts.includes(ext as (typeof this.productImageAllowedExts)[number])) {
+      throw new BadRequestException(`Formato no permitido. Permitidos: ${this.productImageAllowedExts.join(', ')}`);
+    }
+    if (!file.buffer || !Buffer.isBuffer(file.buffer)) throw new BadRequestException('Archivo invalido');
+    if (file.size > this.productImageMaxKb * 1024) {
+      throw new BadRequestException(`Archivo supera el maximo (${this.productImageMaxKb} KB)`);
+    }
+
+    const current = await this.prisma.product.findUnique({
+      where: { id },
+      select: { id: true, imagePath: true },
+    });
+    if (!current) throw new NotFoundException('Producto no encontrado');
+
+    const publicRoot = this.resolveWebPublicDir();
+    const relPath = `products/${id}-${Date.now().toString(36)}.${ext}`;
+    const absPath = path.join(publicRoot, 'storage', ...relPath.split('/'));
+    await mkdir(path.dirname(absPath), { recursive: true });
+    await writeFile(absPath, file.buffer);
+
+    if (current.imagePath) {
+      await this.deleteLocalProductImage(publicRoot, current.imagePath);
+    }
+
+    const item = await this.prisma.product.update({
+      where: { id },
+      data: { imagePath: relPath },
+      include: {
+        category: { select: { id: true, name: true, slug: true } },
+        supplier: { select: { id: true, name: true } },
+      },
+    });
+
+    return {
+      item: this.serializeProduct(item),
+      upload: {
+        path: relPath,
+        url: this.resolveProductImageUrl(relPath),
+      },
+    };
+  }
+
+  async removeProductImage(id: string) {
+    const current = await this.prisma.product.findUnique({
+      where: { id },
+      include: {
+        category: { select: { id: true, name: true, slug: true } },
+        supplier: { select: { id: true, name: true } },
+      },
+    });
+    if (!current) throw new NotFoundException('Producto no encontrado');
+
+    const publicRoot = this.resolveWebPublicDir();
+    if (current.imagePath) {
+      await this.deleteLocalProductImage(publicRoot, current.imagePath);
+    }
+
+    const item = await this.prisma.product.update({
+      where: { id },
+      data: { imagePath: null },
+      include: {
+        category: { select: { id: true, name: true, slug: true } },
+        supplier: { select: { id: true, name: true } },
+      },
     });
     return { item: this.serializeProduct(item) };
   }
@@ -488,17 +592,83 @@ export class CatalogAdminService {
     return Math.max(min, Math.min(max, value));
   }
 
+  private async validateSupplierId(supplierIdRaw?: string | null) {
+    const supplierId = this.nullable(supplierIdRaw);
+    if (!supplierId) return null;
+    const supplier = await this.prisma.supplier.findUnique({
+      where: { id: supplierId },
+      select: { id: true },
+    });
+    if (!supplier) {
+      throw new BadRequestException('Proveedor invalido');
+    }
+    return supplier.id;
+  }
+
   private nullable(v?: string | null) {
     const x = (v ?? '').trim();
     return x || null;
   }
 
-  private serializeProduct(p: ProductWithCategory) {
+  private detectFileExt(filename: string) {
+    const ext = path.extname(filename || '').replace('.', '').trim().toLowerCase();
+    return ext || null;
+  }
+
+  private resolveWebPublicDir() {
+    const cwd = process.cwd();
+    const candidates = [
+      path.resolve(cwd, 'apps/web/public'),
+      path.resolve(cwd, '../web/public'),
+      path.resolve(cwd, '../../apps/web/public'),
+    ];
+    const found = candidates.find((p) => existsSync(p));
+    if (!found) throw new Error('No se pudo resolver apps/web/public');
+    return found;
+  }
+
+  private normalizeLocalProductPath(rawPath?: string | null) {
+    const raw = (rawPath ?? '').trim();
+    if (!raw || /^https?:\/\//i.test(raw)) return null;
+
+    let normalized = raw;
+    if (normalized.startsWith('/')) normalized = normalized.replace(/^\/+/, '');
+    if (normalized.startsWith('storage/')) normalized = normalized.slice('storage/'.length);
+    if (normalized.startsWith('products/')) normalized = normalized.slice('products/'.length);
+
+    if (!normalized || normalized.includes('..')) return null;
+    return `products/${normalized}`;
+  }
+
+  private async deleteLocalProductImage(publicRoot: string, rawPath?: string | null) {
+    const localPath = this.normalizeLocalProductPath(rawPath);
+    if (!localPath) return;
+    const absPath = path.join(publicRoot, 'storage', ...localPath.split('/'));
+    try {
+      await unlink(absPath);
+    } catch {
+      // ignore
+    }
+  }
+
+  private resolveProductImageUrl(rawPath?: string | null) {
+    const raw = (rawPath ?? '').trim();
+    if (!raw) return null;
+    if (/^https?:\/\//i.test(raw)) return raw;
+    if (raw.startsWith('/')) return raw;
+    if (raw.startsWith('storage/')) return `/${raw}`;
+    return `/storage/${raw.replace(/^\/+/, '')}`;
+  }
+
+  private serializeProduct(p: ProductWithRelations) {
     return {
       id: p.id,
       name: p.name,
       slug: p.slug,
       description: p.description ?? null,
+      purchaseReference: p.purchaseReference ?? null,
+      imagePath: p.imagePath ?? null,
+      imageUrl: this.resolveProductImageUrl(p.imagePath ?? p.imageLegacy ?? null),
       price: Number(p.price),
       costPrice: p.costPrice != null ? Number(p.costPrice) : null,
       stock: p.stock,
@@ -508,6 +678,8 @@ export class CatalogAdminService {
       barcode: p.barcode ?? null,
       categoryId: p.categoryId ?? null,
       category: p.category ?? null,
+      supplierId: p.supplierId ?? null,
+      supplier: p.supplier ? { id: p.supplier.id, name: p.supplier.name } : null,
       createdAt: p.createdAt?.toISOString?.() ?? null,
       updatedAt: p.updatedAt?.toISOString?.() ?? null,
     };

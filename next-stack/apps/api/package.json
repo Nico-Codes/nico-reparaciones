@@ -21,6 +21,9 @@
     "db:seed:demo": "dotenv -e ../../.env -- tsx prisma/seed.ts",
     "db:migrate:legacy-settings": "dotenv -e ../../.env -- tsx prisma/migrate-legacy-settings.ts",
     "db:migrate:legacy-settings:cleanup": "dotenv -e ../../.env -- tsx prisma/migrate-legacy-settings.ts --cleanup",
+    "db:migrate:product-images": "dotenv -e ../../.env -- tsx prisma/migrate-legacy-product-images.ts",
+    "db:migrate:product-images:dry-run": "dotenv -e ../../.env -- tsx prisma/migrate-legacy-product-images.ts --dry-run",
+    "db:migrate:product-images:cleanup-legacy": "dotenv -e ../../.env -- tsx prisma/migrate-legacy-product-images.ts --cleanup-legacy",
     "db:migrate:visual-assets": "dotenv -e ../../.env -- tsx prisma/migrate-legacy-visual-assets.ts",
     "db:migrate:visual-assets:dry-run": "dotenv -e ../../.env -- tsx prisma/migrate-legacy-visual-assets.ts --dry-run"
   },

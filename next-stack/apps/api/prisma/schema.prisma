@@ -109,17 +109,22 @@ model Product {
   imagePath   String?     @map("image_path")
   price       Decimal     @db.Decimal(12, 2)
   costPrice   Decimal?    @db.Decimal(12, 2)
+  purchaseReference String? @map("purchase_reference")
   stock       Int         @default(0)
   active      Boolean     @default(true)
   featured    Boolean     @default(false)
   sku         String?     @unique
   barcode     String?     @unique
   categoryId  String?
+  supplierId  String?     @map("supplier_id")
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   category    Category?   @relation(fields: [categoryId], references: [id])
+  supplier    Supplier?   @relation(fields: [supplierId], references: [id], onDelete: SetNull)
   orderItems  OrderItem[]
   productPricingRules ProductPricingRule[]
+
+  @@index([supplierId])
 }
 
 model ProductPricingRule {
@@ -338,6 +343,7 @@ model Supplier {
   lastProbeAt      DateTime?
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
+  products         Product[]
   incidents        WarrantyIncident[]
 
   @@index([active, searchPriority])

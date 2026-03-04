@@ -1,19 +1,27 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { adminApi } from '@/features/admin/api';
-import { catalogAdminApi, type AdminCategory, type AdminProduct } from './api';
+import { catalogAdminApi, type AdminCategory } from './api';
 import { productPricingApi } from './productPricingApi';
 
 function peso(n: number) {
   return `$ ${Math.round(n || 0).toLocaleString('es-AR')}`;
 }
 
-export function AdminProductEditPage() {
-  const { id = '' } = useParams();
+function slugify(raw: string) {
+  return raw
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+}
+
+export function AdminProductCreatePage() {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [product, setProduct] = useState<AdminProduct | null>(null);
   const [categories, setCategories] = useState<AdminCategory[]>([]);
   const [suppliers, setSuppliers] = useState<Array<{ id: string; name: string }>>([]);
 
@@ -28,6 +36,9 @@ export function AdminProductEditPage() {
   const [price, setPrice] = useState('0');
   const [stock, setStock] = useState('0');
   const [description, setDescription] = useState('');
+  const [featured, setFeatured] = useState(false);
+  const [active, setActive] = useState(true);
+
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewObjectUrl, setPreviewObjectUrl] = useState<string | null>(null);
@@ -55,45 +66,30 @@ export function AdminProductEditPage() {
   useEffect(() => {
     let mounted = true;
     async function load() {
-      if (!id) return;
       setLoading(true);
       setError('');
       try {
-        const [cats, prod, settings, providersRes] = await Promise.all([
+        const [cats, settings, providersRes] = await Promise.all([
           catalogAdminApi.categories(),
-          catalogAdminApi.product(id),
           productPricingApi.settings().catch(() => null),
           adminApi.providers({ active: '1' }).catch(() => ({ items: [] })),
         ]);
         if (!mounted) return;
         setCategories(cats.items);
         setSuppliers(providersRes.items.map((p) => ({ id: p.id, name: p.name })));
-        setProduct(prod.item);
-        setName(prod.item.name ?? '');
-        setSlug(prod.item.slug ?? '');
-        setSku(prod.item.sku ?? '');
-        setBarcode(prod.item.barcode ?? '');
-        setCategoryId(prod.item.categoryId ?? '');
-        setSupplierId(prod.item.supplierId ?? '');
-        setPurchaseRef(prod.item.purchaseReference ?? '');
-        setCostPrice(String(prod.item.costPrice ?? 0));
-        setPrice(String(prod.item.price ?? 0));
-        setStock(String(prod.item.stock ?? 0));
-        setDescription(prod.item.description ?? '');
-        clearPreviewObjectUrl();
-        setImageFile(null);
-        setImagePreview(prod.item.imageUrl ?? null);
         setPreventNegativeMargin(settings?.preventNegativeMargin ?? true);
       } catch (e) {
         if (!mounted) return;
-        setError(e instanceof Error ? e.message : 'Error cargando producto');
+        setError(e instanceof Error ? e.message : 'Error cargando formulario');
       } finally {
         if (mounted) setLoading(false);
       }
     }
     void load();
-    return () => { mounted = false; };
-  }, [id]);
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     const category = categoryId.trim();
@@ -114,7 +110,7 @@ export function AdminProductEditPage() {
           const res = await productPricingApi.resolveRecommendedPrice({
             categoryId: category,
             costPrice: cost,
-            productId: id || null,
+            productId: null,
           });
           setRecommendedPrice(res.recommendedPrice);
           setRecommendedMarginPercent(res.marginPercent);
@@ -136,7 +132,7 @@ export function AdminProductEditPage() {
     }, 280);
 
     return () => clearTimeout(timeout);
-  }, [id, categoryId, costPrice]);
+  }, [categoryId, costPrice]);
 
   const marginStats = useMemo(() => {
     const c = Number(costPrice || 0);
@@ -148,10 +144,16 @@ export function AdminProductEditPage() {
   }, [costPrice, price]);
 
   async function save() {
-    if (!id) return;
     setSaving(true);
     setError('');
     try {
+      const trimmedName = name.trim();
+      const nextSlug = slugify(slug.trim() || trimmedName);
+      if (!trimmedName || nextSlug.length < 2) {
+        setError('Nombre y slug validos son requeridos.');
+        return;
+      }
+
       const nextCost = Number(costPrice || 0);
       const nextPrice = Number(price || 0);
       if (preventNegativeMargin && Number.isFinite(nextCost) && Number.isFinite(nextPrice) && nextPrice < nextCost) {
@@ -159,9 +161,9 @@ export function AdminProductEditPage() {
         return;
       }
 
-      const res = await catalogAdminApi.updateProduct(id, {
-        name: name.trim(),
-        slug: (slug.trim() || name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')),
+      const createRes = await catalogAdminApi.createProduct({
+        name: trimmedName,
+        slug: nextSlug,
         sku: sku.trim() || null,
         barcode: barcode.trim() || null,
         categoryId: categoryId || null,
@@ -171,66 +173,33 @@ export function AdminProductEditPage() {
         price: Number(price || 0),
         stock: Math.max(0, Math.trunc(Number(stock || 0))),
         description: description.trim() || null,
+        featured,
+        active,
       });
 
-      let nextItem = res.item;
       if (imageFile) {
-        const imageRes = await catalogAdminApi.uploadProductImage(id, imageFile);
-        nextItem = imageRes.item;
-        clearPreviewObjectUrl();
-        setImageFile(null);
+        await catalogAdminApi.uploadProductImage(createRes.item.id, imageFile);
       }
 
-      setProduct(nextItem);
-      setName(nextItem.name ?? '');
-      setSlug(nextItem.slug ?? '');
-      setSku(nextItem.sku ?? '');
-      setBarcode(nextItem.barcode ?? '');
-      setCategoryId(nextItem.categoryId ?? '');
-      setSupplierId(nextItem.supplierId ?? '');
-      setPurchaseRef(nextItem.purchaseReference ?? '');
-      setImagePreview(nextItem.imageUrl ?? null);
+      navigate('/admin/productos', { replace: true });
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error guardando producto');
+      setError(e instanceof Error ? e.message : 'Error creando producto');
     } finally {
       setSaving(false);
     }
   }
 
-  async function removeImage() {
-    if (!id) return;
-    setSaving(true);
-    setError('');
-    try {
-      const res = await catalogAdminApi.removeProductImage(id);
-      clearPreviewObjectUrl();
-      setImageFile(null);
-      setProduct(res.item);
-      setImagePreview(res.item.imageUrl ?? null);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error quitando imagen');
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  if (loading) return <div className="store-shell"><div className="card"><div className="card-body">Cargando producto...</div></div></div>;
-
-  if (!product) {
-    return <div className="store-shell"><div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">{error || 'Producto no encontrado'}</div></div>;
-  }
+  if (loading) return <div className="store-shell"><div className="card"><div className="card-body">Cargando formulario...</div></div></div>;
 
   return (
     <div className="store-shell space-y-5">
       <section className="store-hero">
         <div className="grid gap-4 md:grid-cols-[1.1fr_auto] md:items-start">
           <div className="grid gap-3 md:grid-cols-[160px_1fr] md:items-start">
-            <h1 className="text-2xl font-black tracking-tight text-zinc-900 md:text-[2.05rem] leading-tight">Editar<br/>producto</h1>
-            <p className="pt-1 text-sm text-zinc-600 md:max-w-md">Actualiza identificacion, precio, stock, categoria e imagen.</p>
+            <h1 className="text-2xl font-black tracking-tight text-zinc-900 md:text-[2.05rem] leading-tight">Nuevo<br/>producto</h1>
+            <p className="pt-1 text-sm text-zinc-600 md:max-w-md">Alta completa en catalogo con precio, stock, categoria e imagen.</p>
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2">
-            <button type="button" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">Garantia</button>
-            <button type="button" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">Etiqueta</button>
             <Link to="/admin/productos" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">Volver</Link>
           </div>
         </div>
@@ -241,7 +210,7 @@ export function AdminProductEditPage() {
       <section className="card">
         <div className="card-head flex items-center justify-between gap-2">
           <div className="text-xl font-black tracking-tight text-zinc-900">Datos del producto</div>
-          <span className="badge-zinc">ID #{product.id.slice(0, 2)}</span>
+          <span className="badge-zinc">Alta</span>
         </div>
         <div className="card-body space-y-4">
           <label className="block">
@@ -258,7 +227,7 @@ export function AdminProductEditPage() {
               <p className="mt-1 text-xs text-zinc-500">Si lo dejas vacio, se genera desde el nombre.</p>
             </div>
             <label className="block">
-              <span className="mb-1 block text-sm font-bold text-zinc-700">SKU interno *</span>
+              <span className="mb-1 block text-sm font-bold text-zinc-700">SKU *</span>
               <input value={sku} onChange={(e) => setSku(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" />
             </label>
           </div>
@@ -270,7 +239,7 @@ export function AdminProductEditPage() {
 
           <div className="grid gap-4 md:grid-cols-2">
             <label className="block">
-              <span className="mb-1 block text-sm font-bold text-zinc-700">Categoria *</span>
+              <span className="mb-1 block text-sm font-bold text-zinc-700">Categoria</span>
               <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm">
                 <option value="">Sin categoria</option>
                 {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -297,7 +266,7 @@ export function AdminProductEditPage() {
             </label>
             <div>
               <label className="block">
-                <span className="mb-1 block text-sm font-bold text-zinc-700">Precio de venta (recomendado)</span>
+                <span className="mb-1 block text-sm font-bold text-zinc-700">Precio de venta *</span>
                 <input type="number" min="0" value={price} onChange={(e) => setPrice(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" />
               </label>
               <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -314,10 +283,22 @@ export function AdminProductEditPage() {
             </div>
           </div>
 
-          <label className="block max-w-md">
-            <span className="mb-1 block text-sm font-bold text-zinc-700">Stock *</span>
-            <input type="number" min="0" value={stock} onChange={(e) => setStock(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" />
-          </label>
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="block max-w-md">
+              <span className="mb-1 block text-sm font-bold text-zinc-700">Stock *</span>
+              <input type="number" min="0" value={stock} onChange={(e) => setStock(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" />
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="flex items-center gap-2 rounded-2xl border border-zinc-200 px-3 py-2 text-sm font-bold text-zinc-700">
+                <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />
+                Activo
+              </label>
+              <label className="flex items-center gap-2 rounded-2xl border border-zinc-200 px-3 py-2 text-sm font-bold text-zinc-700">
+                <input type="checkbox" checked={featured} onChange={(e) => setFeatured(e.target.checked)} />
+                Destacado
+              </label>
+            </div>
+          </div>
 
           <label className="block">
             <span className="mb-1 block text-sm font-bold text-zinc-700">Descripcion (opcional)</span>
@@ -346,15 +327,19 @@ export function AdminProductEditPage() {
               <div className="mt-2 flex flex-wrap gap-2">
                 <button
                   type="button"
-                  onClick={() => void removeImage()}
-                  disabled={saving || (!imagePreview && !product.imagePath)}
+                  onClick={() => {
+                    clearPreviewObjectUrl();
+                    setImageFile(null);
+                    setImagePreview(null);
+                  }}
+                  disabled={saving || !imagePreview}
                   className="btn-outline !h-10 !rounded-xl px-4 text-sm font-bold disabled:opacity-60"
                 >
                   Quitar imagen
                 </button>
                 {imageFile ? <span className="badge-zinc">{imageFile.name}</span> : null}
               </div>
-              <p className="mt-2 text-xs text-zinc-500">JPG/PNG/WEBP. Maximo 4 MB. Al guardar, si hay imagen seleccionada se reemplaza la actual.</p>
+              <p className="mt-2 text-xs text-zinc-500">JPG/PNG/WEBP. Maximo 4 MB. Se sube automaticamente al guardar el producto.</p>
             </div>
             <div>
               <div className="mb-1 text-sm font-bold text-zinc-700">Vista previa</div>
@@ -366,10 +351,9 @@ export function AdminProductEditPage() {
         </div>
       </section>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-2">
-        <button type="button" className="text-2xl font-medium tracking-tight text-zinc-900">Eliminar producto</button>
+      <div className="flex flex-wrap items-center justify-end gap-3 pb-2">
         <button type="button" onClick={() => void save()} disabled={saving} className="btn-primary !h-11 !rounded-2xl px-6 text-sm font-bold">
-          {saving ? 'Guardando...' : 'Guardar cambios'}
+          {saving ? 'Guardando...' : 'Crear producto'}
         </button>
       </div>
     </div>

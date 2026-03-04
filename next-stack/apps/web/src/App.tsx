@@ -35,6 +35,7 @@ import { authStorage } from '@/features/auth/storage';
 import { CartPage } from '@/features/cart/CartPage';
 import { AdminProductsPage } from '@/features/catalogAdmin/AdminProductsPage';
 import { AdminProductEditPage } from '@/features/catalogAdmin/AdminProductEditPage';
+import { AdminProductCreatePage } from '@/features/catalogAdmin/AdminProductCreatePage';
 import { AdminDeviceCatalogPage } from '@/features/deviceCatalog/AdminDeviceCatalogPage';
 import { CheckoutPage } from '@/features/orders/CheckoutPage';
 import { AdminOrdersPage } from '@/features/orders/AdminOrdersPage';
@@ -79,6 +80,10 @@ function StoreCategoryAliasRedirect() {
 function AdminProductEditAliasRedirect() {
   const { id = '' } = useParams();
   return <Navigate to={id ? `/admin/productos/${encodeURIComponent(id)}/editar` : '/admin/productos'} replace />;
+}
+
+function AdminProductCreateAliasRedirect() {
+  return <Navigate to="/admin/productos/crear" replace />;
 }
 
 function ApiAuthAliasRedirect() {
@@ -127,8 +132,10 @@ export default function App() {
         <Route path="/admin/orders/:id/print" element={<RequireAdmin><AdminOrderPrintPage /></RequireAdmin>} />
         <Route path="/admin/orders/:id/ticket" element={<RequireAdmin><AdminOrderTicketPage /></RequireAdmin>} />
         <Route path="/admin/products" element={<RequireAdmin><Navigate to="/admin/productos" replace /></RequireAdmin>} />
+        <Route path="/admin/products/create" element={<RequireAdmin><AdminProductCreateAliasRedirect /></RequireAdmin>} />
         <Route path="/admin/products/:id/edit" element={<RequireAdmin><AdminProductEditAliasRedirect /></RequireAdmin>} />
         <Route path="/admin/productos" element={<RequireAdmin>{withShell(<AdminProductsPage />)}</RequireAdmin>} />
+        <Route path="/admin/productos/crear" element={<RequireAdmin>{withShell(<AdminProductCreatePage />)}</RequireAdmin>} />
         <Route path="/admin/productos/:id/editar" element={<RequireAdmin>{withShell(<AdminProductEditPage />)}</RequireAdmin>} />
         <Route path="/admin/users" element={<RequireAdmin>{withShell(<AdminUsersPage />)}</RequireAdmin>} />
         <Route path="/admin/configuraciones" element={<RequireAdmin>{withShell(<AdminSettingsHubPage />)}</RequireAdmin>} />

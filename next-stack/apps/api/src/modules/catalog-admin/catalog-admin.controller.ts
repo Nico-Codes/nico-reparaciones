@@ -1,4 +1,5 @@
-import { Body, Controller, Delete, Get, Inject, Patch, Post, Query, Param, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Inject, Patch, Post, Query, Param, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { z } from 'zod';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { Roles } from '../auth/roles.decorator.js';
@@ -23,6 +24,8 @@ const productCreateSchema = z.object({
   featured: z.boolean().optional(),
   sku: z.string().trim().max(120).optional().nullable(),
   barcode: z.string().trim().max(190).optional().nullable(),
+  purchaseReference: z.string().trim().max(190).optional().nullable(),
+  supplierId: z.string().trim().max(191).optional().nullable(),
   categoryId: z.string().trim().max(191).optional().nullable(),
 });
 const productPatchSchema = productCreateSchema.partial();
@@ -91,6 +94,21 @@ export class CatalogAdminController {
     const parsed = productPatchSchema.safeParse(body);
     if (!parsed.success) return { message: 'Validacion invalida', errors: parsed.error.issues };
     return this.service.updateProduct(id, parsed.data);
+  }
+
+  @Post('products/:id/image')
+  @UseInterceptors(FileInterceptor('file'))
+  uploadProductImage(
+    @Param('id') id: string,
+    @UploadedFile() file?: { originalname: string; mimetype: string; size: number; buffer?: Buffer },
+  ) {
+    if (!file) throw new BadRequestException('Archivo requerido');
+    return this.service.uploadProductImage(id, file);
+  }
+
+  @Delete('products/:id/image')
+  removeProductImage(@Param('id') id: string) {
+    return this.service.removeProductImage(id);
   }
 
   @Get('product-pricing/settings')

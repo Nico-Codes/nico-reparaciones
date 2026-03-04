@@ -241,7 +241,7 @@ export class StoreService {
         slug: p.slug,
         description: p.description,
         imagePath: p.imagePath,
-        imageUrl: this.resolveProductImageUrl(p.imagePath),
+        imageUrl: this.resolveProductImageUrl(p.imagePath, p.imageLegacy),
         price: Number(p.price),
         stock: p.stock,
         featured: p.featured,
@@ -314,7 +314,7 @@ export class StoreService {
         slug: p.slug,
         description: p.description,
         imagePath: p.imagePath,
-        imageUrl: this.resolveProductImageUrl(p.imagePath),
+        imageUrl: this.resolveProductImageUrl(p.imagePath, p.imageLegacy),
         price: Number(p.price),
         stock: p.stock,
         featured: p.featured,
@@ -329,11 +329,17 @@ export class StoreService {
     }
   }
 
-  private resolveProductImageUrl(imagePath?: string | null) {
+  private resolveProductImageUrl(imagePath?: string | null, imageLegacy?: string | null) {
     const base = (process.env.STORE_IMAGE_BASE_URL ?? '').trim().replace(/\/+$/, '');
 
-    if (imagePath && imagePath.trim() !== '') {
-      const raw = imagePath.trim();
+    const fromPath = imagePath && imagePath.trim() !== '' ? imagePath.trim() : null;
+    let raw = fromPath;
+    if (!raw && imageLegacy && imageLegacy.trim() !== '') {
+      const legacy = imageLegacy.trim();
+      raw = legacy.includes('/') ? legacy : `products/${legacy}`;
+    }
+
+    if (raw) {
       if (/^https?:\/\//i.test(raw)) return raw;
       if (raw.startsWith('/')) return base ? `${base}${raw}` : raw;
       const path = raw.replace(/^\/+/, '');
