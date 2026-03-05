@@ -101,7 +101,7 @@ export function AdminRepairPrintPage() {
                 </div>
                 <div className="text-right">
                   <div className="inline-flex h-8 items-center rounded-full border border-zinc-200 bg-white px-3 text-sm font-bold text-zinc-900">
-                    Codigo: {repairCodeLabel(item.id)}
+                    Código: {repairCodeLabel(item.id)}
                   </div>
                   <div className="mt-2 text-sm text-zinc-600">Fecha: {createdAtLabel}</div>
                 </div>
@@ -148,7 +148,7 @@ export function AdminRepairPrintPage() {
                   <div className="text-sm"><span className="font-bold">Precio final:</span> $ {finalAmount.toLocaleString('es-AR')}</div>
                   <div className="text-sm"><span className="font-bold">Pagado:</span> $ {paidAmount.toLocaleString('es-AR')}</div>
                   <div className="text-sm"><span className="font-bold">Debe:</span> $ 0</div>
-                  <div className="text-sm"><span className="font-bold">Metodo:</span> transfer</div>
+                  <div className="text-sm"><span className="font-bold">Método:</span> transfer</div>
                 </div>
               </div>
             </div>

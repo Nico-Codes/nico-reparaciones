@@ -45,8 +45,9 @@ Este directorio (`next-stack/`) contiene la base del nuevo stack, creada en para
 4. `npm install`
 5. `npm run db:generate`
 6. `npm run db:migrate`
-7. `npm run dev:api`
-8. `npm run dev:web`
+7. `npm run db:migrate:dev -- --name <nombre>` (solo si necesitas crear una migracion nueva en un entorno compatible)
+8. `npm run dev:api`
+9. `npm run dev:web`
 
 ## Próximo objetivo concreto recomendado
 

@@ -35,7 +35,7 @@ export function AdminProductEditPage() {
   const [recommendedPrice, setRecommendedPrice] = useState<number | null>(null);
   const [recommendedMarginPercent, setRecommendedMarginPercent] = useState<number | null>(null);
   const [recommendedRuleName, setRecommendedRuleName] = useState<string | null>(null);
-  const [pricingHint, setPricingHint] = useState('Define categoria + costo para calcular automaticamente.');
+  const [pricingHint, setPricingHint] = useState('Define categoría + costo para calcular automáticamente.');
   const [loadingRecommendation, setLoadingRecommendation] = useState(false);
   const [preventNegativeMargin, setPreventNegativeMargin] = useState(true);
 
@@ -103,7 +103,7 @@ export function AdminProductEditPage() {
       setRecommendedPrice(null);
       setRecommendedMarginPercent(null);
       setRecommendedRuleName(null);
-      setPricingHint('Define categoria + costo para calcular automaticamente.');
+      setPricingHint('Define categoría + costo para calcular automáticamente.');
       return;
     }
 
@@ -226,10 +226,10 @@ export function AdminProductEditPage() {
         <div className="grid gap-4 md:grid-cols-[1.1fr_auto] md:items-start">
           <div className="grid gap-3 md:grid-cols-[160px_1fr] md:items-start">
             <h1 className="text-2xl font-black tracking-tight text-zinc-900 md:text-[2.05rem] leading-tight">Editar<br/>producto</h1>
-            <p className="pt-1 text-sm text-zinc-600 md:max-w-md">Actualiza identificacion, precio, stock, categoria e imagen.</p>
+            <p className="pt-1 text-sm text-zinc-600 md:max-w-md">Actualiza identificación, precio, stock, categoría e imagen.</p>
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2">
-            <button type="button" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">Garantia</button>
+            <button type="button" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">Garantía</button>
             <button type="button" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">Etiqueta</button>
             <Link to="/admin/productos" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">Volver</Link>
           </div>
@@ -264,15 +264,15 @@ export function AdminProductEditPage() {
           </div>
 
           <label className="block">
-            <span className="mb-1 block text-sm font-bold text-zinc-700">Codigo de barras (opcional)</span>
+            <span className="mb-1 block text-sm font-bold text-zinc-700">Código de barras (opcional)</span>
             <input value={barcode} onChange={(e) => setBarcode(e.target.value)} placeholder="Ej: 7791234567890" className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" />
           </label>
 
           <div className="grid gap-4 md:grid-cols-2">
             <label className="block">
-              <span className="mb-1 block text-sm font-bold text-zinc-700">Categoria *</span>
+              <span className="mb-1 block text-sm font-bold text-zinc-700">Categoría *</span>
               <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm">
-                <option value="">Sin categoria</option>
+                <option value="">Sin categoría</option>
                 {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </label>
@@ -354,7 +354,7 @@ export function AdminProductEditPage() {
                 </button>
                 {imageFile ? <span className="badge-zinc">{imageFile.name}</span> : null}
               </div>
-              <p className="mt-2 text-xs text-zinc-500">JPG/PNG/WEBP. Maximo 4 MB. Al guardar, si hay imagen seleccionada se reemplaza la actual.</p>
+              <p className="mt-2 text-xs text-zinc-500">JPG/PNG/WEBP. Máximo 4 MB. Al guardar, si hay imagen seleccionada se reemplaza la actual.</p>
             </div>
             <div>
               <div className="mb-1 text-sm font-bold text-zinc-700">Vista previa</div>

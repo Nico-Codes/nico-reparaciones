@@ -284,7 +284,7 @@ export class CatalogAdminService {
     }
     if (!file.buffer || !Buffer.isBuffer(file.buffer)) throw new BadRequestException('Archivo invalido');
     if (file.size > this.productImageMaxKb * 1024) {
-      throw new BadRequestException(`Archivo supera el maximo (${this.productImageMaxKb} KB)`);
+      throw new BadRequestException(`Archivo supera el máximo (${this.productImageMaxKb} KB)`);
     }
 
     const current = await this.prisma.product.findUnique({
@@ -559,7 +559,7 @@ export class CatalogAdminService {
   private assertValidCostRange(costMin?: number | null, costMax?: number | null) {
     if (costMin == null || costMax == null) return;
     if (costMax < costMin) {
-      throw new BadRequestException('Costo maximo debe ser mayor o igual al minimo.');
+      throw new BadRequestException('Costo máximo debe ser mayor o igual al mínimo.');
     }
   }
 

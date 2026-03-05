@@ -1,13 +1,13 @@
-﻿# Deploy Guide (VPS Ubuntu + Nginx + PM2 + PostgreSQL)
+# Deploy Guide (VPS Ubuntu + Nginx + PM2 + PostgreSQL)
 
-GuÃ­a prÃ¡ctica para desplegar `next-stack` cuando decidas salir de local.
+Guía práctica para desplegar `next-stack` cuando decidas salir de local.
 
 ## 1. Arquitectura recomendada
 
 - `Nginx` como reverse proxy (HTTPS)
 - `Node.js` para:
   - API NestJS (`@nico/api`)
-  - frontend web servido como archivos estÃ¡ticos (recomendado)
+  - frontend web servido como archivos estáticos (recomendado)
 - `PM2` para proceso API
 - `PostgreSQL` (local en VPS o administrado externo)
 
@@ -15,11 +15,11 @@ GuÃ­a prÃ¡ctica para desplegar `next-stack` cuando decidas salir de local.
 
 - Ubuntu 22.04 LTS o 24.04 LTS
 - 2 vCPU
-- 2 GB RAM (mÃ­nimo usable)
+- 2 GB RAM (mínimo usable)
 - 20+ GB SSD
-- Latencia razonable con tu zona de operaciÃ³n
+- Latencia razonable con tu zona de operación
 
-## 3. InstalaciÃ³n base del servidor
+## 3. Instalación base del servidor
 
 ```bash
 sudo apt update && sudo apt upgrade -y
@@ -44,11 +44,11 @@ pm2 -v
 
 ## 4. PostgreSQL
 
-### OpciÃ³n A (recomendada): PostgreSQL administrado
-- Usar proveedor externo (mejor backups/operaciÃ³n)
+### Opción A (recomendada): PostgreSQL administrado
+- Usar proveedor externo (mejor backups/operación)
 - Configurar `DATABASE_URL` con TLS si aplica
 
-### OpciÃ³n B: PostgreSQL en el VPS
+### Opción B: PostgreSQL en el VPS
 
 ```bash
 sudo apt install -y postgresql postgresql-contrib
@@ -75,7 +75,7 @@ cd next-stack
 npm install
 ```
 
-## 6. Variables de entorno (producciÃ³n)
+## 6. Variables de entorno (producción)
 
 Crear archivo:
 
@@ -84,7 +84,7 @@ cp .env.production.example .env.production
 nano .env.production
 ```
 
-Completar como mÃ­nimo:
+Completar como mínimo:
 - `DATABASE_URL`
 - `JWT_ACCESS_SECRET`
 - `JWT_REFRESH_SECRET`
@@ -101,7 +101,7 @@ Validar:
 npm run deploy:check
 ```
 
-## 7. Build y migraciones (producciÃ³n)
+## 7. Build y migraciones (producción)
 
 ```bash
 npm run build
@@ -109,8 +109,8 @@ npm run db:migrate:deploy
 ```
 
 Seed:
-- En producciÃ³n real, evitar seed demo completo.
-- Si necesitÃ¡s seed inicial controlado, crear uno especÃ­fico (`seed:prod:init`) mÃ¡s adelante.
+- En producción real, evitar seed demo completo.
+- Si necesitás seed inicial controlado, crear uno específico (`seed:prod:init`) más adelante.
 
 ## 8. Ejecutar API con PM2
 
@@ -134,7 +134,7 @@ Tambien podes usar el comando directo (sin ecosystem):
 pm2 start npm --name nico-api -- run start:prod:api
 ```
 
-## 9. Frontend web (recomendado: servir estÃ¡tico con Nginx)
+## 9. Frontend web (recomendado: servir estático con Nginx)
 
 Construir frontend:
 
@@ -142,7 +142,7 @@ Construir frontend:
 npm run build --workspace @nico/web
 ```
 
-Publicar carpeta estÃ¡tica:
+Publicar carpeta estática:
 
 ```bash
 sudo mkdir -p /var/www/nico-web
@@ -197,7 +197,7 @@ sudo apt install -y certbot python3-certbot-nginx
 sudo certbot --nginx -d tu-dominio.com -d www.tu-dominio.com
 ```
 
-## 12. Firewall bÃ¡sico
+## 12. Firewall básico
 
 ```bash
 sudo ufw allow OpenSSH
@@ -206,7 +206,7 @@ sudo ufw enable
 sudo ufw status
 ```
 
-## 13. QA post-deploy (mÃ­nimo)
+## 13. QA post-deploy (mínimo)
 
 - `GET https://api.tu-dominio.com/api/health`
 - Login
@@ -214,12 +214,12 @@ sudo ufw status
 - Admin dashboard
 - Correos (verify/reset/order)
 
-## 14. OperaciÃ³n / mantenimiento
+## 14. Operación / mantenimiento
 
 - Backup DB diario
-- RotaciÃ³n de logs PM2 / sistema
+- Rotación de logs PM2 / sistema
 - Monitoreo de uso RAM/CPU
-- ActualizaciÃ³n controlada:
+- Actualización controlada:
   - `git pull`
   - `npm install`
   - `npm run build`
@@ -229,9 +229,9 @@ sudo ufw status
 
 ## 15. Notas para tu proyecto actual (importante)
 
-- En local estÃ¡s usando PostgreSQL 12 con fallback `db:push`.
-- Para producciÃ³n conviene PostgreSQL moderno (14/15/16+) para usar migraciones Prisma (`db:migrate:deploy`) sin problemas.
-- No dejar `ALLOW_ADMIN_BOOTSTRAP=1` ni `MAIL_PREVIEW_TOKENS=1` en producciÃ³n.
+- En local estás usando PostgreSQL 12 con fallback `db:push`.
+- Para producción conviene PostgreSQL moderno (14/15/16+) para usar migraciones Prisma (`db:migrate:deploy`) sin problemas.
+- No dejar `ALLOW_ADMIN_BOOTSTRAP=1` ni `MAIL_PREVIEW_TOKENS=1` en producción.
 
 
 

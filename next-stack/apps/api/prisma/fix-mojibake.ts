@@ -29,7 +29,8 @@ const apiRoot = path.resolve(__dirname, '..');
 const monorepoRoot = path.resolve(apiRoot, '..', '..');
 const envCandidates = [path.join(apiRoot, '.env'), path.join(monorepoRoot, '.env')];
 
-const suspiciousPattern = /Ã|Â|â|�|Ð|Ñ/u;
+// Typical UTF-8/Latin1 mojibake markers.
+const suspiciousPattern = /\u00C3[\u0080-\u00BF]|\u00C2[\u0080-\u00BF]|\u00E2[\u0080-\u00BF]{1,2}|\uFFFD/u;
 const invalidControlChars = /[\u0000-\u0008\u000B\u000C\u000E-\u001F]/u;
 
 function loadEnvFiles() {
@@ -51,13 +52,13 @@ function parseOptions(argv: string[]): CliOptions {
 
 function suspiciousScore(value: string): number {
   const suspicious =
-    (value.match(/Ã/g) ?? []).length * 3 +
-    (value.match(/Â/g) ?? []).length * 3 +
-    (value.match(/â/g) ?? []).length * 2 +
-    (value.match(/�/g) ?? []).length * 5 +
-    (value.match(/Ð/g) ?? []).length * 2 +
-    (value.match(/Ñ/g) ?? []).length * 2;
-  const spanishGood = (value.match(/[áéíóúÁÉÍÓÚñÑ¿¡]/g) ?? []).length;
+    (value.match(/\u00C3/g) ?? []).length * 3 +
+    (value.match(/\u00C2/g) ?? []).length * 3 +
+    (value.match(/\u00E2/g) ?? []).length * 2 +
+    (value.match(/\uFFFD/g) ?? []).length * 5;
+  const spanishGood = (
+    value.match(/[\u00E1\u00E9\u00ED\u00F3\u00FA\u00C1\u00C9\u00CD\u00D3\u00DA\u00F1\u00D1\u00BF\u00A1]/g) ?? []
+  ).length;
   return suspicious - spanishGood;
 }
 

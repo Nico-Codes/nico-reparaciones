@@ -96,17 +96,17 @@ export class MailService {
 
     if (!host) issues.push('Falta SMTP_HOST');
     if (!port) issues.push('Falta SMTP_PORT');
-    if (!fromAddress) issues.push('Falta mail_from_address en configuracion');
+    if (!fromAddress) issues.push('Falta mail_from_address en configuración');
 
     const mailer = host && port ? 'smtp' : 'log';
     const status = issues.length === 0 ? 'ok' : host || port ? 'warning' : 'local';
     const label = status === 'ok' ? 'Listo' : status === 'local' ? 'Local / fallback' : 'Incompleto';
     const summary =
       status === 'ok'
-        ? `Configuracion SMTP lista${user ? ` (${user})` : ''}.`
+        ? `Configuración SMTP lista${user ? ` (${user})` : ''}.`
         : status === 'local'
-          ? 'SMTP no configurado. Se usara fallback local por logs.'
-          : 'Configuracion SMTP incompleta para envio real.';
+          ? 'SMTP no configurado. Se usará fallback local por logs.'
+          : 'Configuración SMTP incompleta para envío real.';
 
     return {
       status,

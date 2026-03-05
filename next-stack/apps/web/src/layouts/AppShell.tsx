@@ -64,7 +64,7 @@ function AccountMenu({
                 ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
                 : 'border-amber-300 bg-amber-50 text-amber-800'
             }`}>
-              {user.emailVerified ? 'Email verificado' : 'Email pendiente de verificacion'}
+              {user.emailVerified ? 'Email verificado' : 'Email pendiente de verificación'}
             </div>
           </div>
 
@@ -358,4 +358,3 @@ export function AppShell({ children }: AppShellProps) {
     </div>
   );
 }
-

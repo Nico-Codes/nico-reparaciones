@@ -87,7 +87,7 @@ export function AdminRepairTicketPage() {
                 <TicketRow label="Reparación" value={repairCodeLabel(item.id)} strong />
                 <TicketRow label="Recibido" value={createdAt} strong />
                 <TicketRow label="Estado" value={statusLabel(item.status)} strong />
-                <TicketRow label="Garantía" value="100 dias" strong />
+                <TicketRow label="Garantía" value="100 días" strong />
               </div>
 
               <div className="my-3 border-t border-dashed border-zinc-300" />
@@ -121,12 +121,12 @@ export function AdminRepairTicketPage() {
                 <TicketMoney label="Pagado" value={paidAmount} />
                 <TicketMoney label="Debe" value={Math.max(0, finalAmount - paidAmount)} strong />
                 <div className="border-t border-dashed border-zinc-200 pt-2" />
-                <TicketRow label="Metodo" value="Transferencia" strong />
+                <TicketRow label="Método" value="Transferencia" strong />
               </div>
 
               <div className="mt-4 border-t border-dashed border-zinc-300 pt-3 text-center text-xs font-bold text-zinc-600">
                 <div>Con este comprobante retiras tu equipo.</div>
-                <div>Conserva el codigo: {repairCodeLabel(item.id)}</div>
+                <div>Conserva el código: {repairCodeLabel(item.id)}</div>
               </div>
 
               <div className="mt-4 flex items-center justify-center gap-2 print:hidden">

@@ -165,7 +165,7 @@ export function StorePage() {
             <Link to="/cart" className="btn-primary h-11 w-full justify-center sm:w-auto">
               Ver carrito {cartCount > 0 ? <span className="badge-zinc ml-1">{cartCount}</span> : null}
             </Link>
-            <Link to="/reparacion" className="btn-outline h-11 w-full justify-center sm:w-auto">Consultar reparacion</Link>
+            <Link to="/reparacion" className="btn-outline h-11 w-full justify-center sm:w-auto">Consultar reparación</Link>
           </div>
         </div>
       )}
@@ -301,7 +301,7 @@ export function StorePage() {
                   <div className="muted">
                     {q
                       ? `No encontramos productos para "${q}"${selectedCategoryLabel !== 'Todas' ? ` en "${selectedCategoryLabel}"` : ''}.`
-                      : 'Todavia no hay productos para mostrar.'}
+                      : 'Todavía no hay productos para mostrar.'}
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {q || category ? (

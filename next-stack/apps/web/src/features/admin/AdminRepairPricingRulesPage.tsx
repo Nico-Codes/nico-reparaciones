@@ -243,7 +243,7 @@ export function AdminRepairPricingRulesPage() {
                 <div>%</div>
                 <div>Min gan.</div>
                 <div>Min</div>
-                <div>Envio</div>
+                <div>Envío</div>
                 <div>Prioridad</div>
                 <div>Acciones</div>
               </div>

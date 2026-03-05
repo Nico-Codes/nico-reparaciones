@@ -68,7 +68,7 @@ export async function authFetch(path: string, init?: RequestInit): Promise<Respo
     return requestWithAuth(path, init);
   } catch {
     authStorage.clear();
-    throw new Error('Sesion vencida. Ingresa nuevamente.');
+    throw new Error('Sesión vencida. Ingresá nuevamente.');
   }
 }
 

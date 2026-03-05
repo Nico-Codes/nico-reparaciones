@@ -29,13 +29,13 @@ export function PublicRepairLookupPage() {
         customerPhone: customerPhone.trim(),
       });
       if (!res.found || !res.item) {
-        setMessage(res.message ?? 'No se encontro la reparacion');
+        setMessage(res.message ?? 'No se encontró la reparación');
         return;
       }
       setItem(res.item);
       if (res.message) setMessage(res.message);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo consultar la reparacion');
+      setError(err instanceof Error ? err.message : 'No se pudo consultar la reparación');
     } finally {
       setLoading(false);
     }
@@ -49,10 +49,10 @@ export function PublicRepairLookupPage() {
             <h1 className="text-xl font-black leading-tight tracking-tight text-zinc-900 md:text-[1.65rem]">
               Consultar
               <br />
-              reparacion
+              reparación
             </h1>
             <p className="text-xs leading-relaxed text-zinc-700 md:max-w-[30ch] md:text-sm">
-              Ingresa el codigo y el telefono que dejaste en el local.
+              Ingresá el código y el teléfono que dejaste en el local.
             </p>
           </div>
         </section>
@@ -61,12 +61,12 @@ export function PublicRepairLookupPage() {
           <div className="card-body !p-3 md:!p-3.5">
             <form onSubmit={onSubmit} className="space-y-4">
               <div className="rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-xs leading-relaxed text-zinc-800 md:text-sm">
-                <span className="font-black text-zinc-900">Tip:</span> el telefono puede ir con espacios o guiones, lo
-                normalizamos automaticamente.
+                <span className="font-black text-zinc-900">Tip:</span> el teléfono puede ir con espacios o guiones, lo
+                normalizamos automáticamente.
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-black text-zinc-900">Codigo</label>
+                <label className="mb-1 block text-sm font-black text-zinc-900">Código</label>
                 <input
                   value={repairId}
                   onChange={(e) => setRepairId(e.target.value)}
@@ -78,7 +78,7 @@ export function PublicRepairLookupPage() {
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-black text-zinc-900">Telefono</label>
+                <label className="mb-1 block text-sm font-black text-zinc-900">Teléfono</label>
                 <input
                   value={customerPhone}
                   onChange={(e) => setCustomerPhone(e.target.value)}
@@ -131,7 +131,7 @@ export function PublicRepairLookupPage() {
             <div className="card-body">
               <div className="grid gap-3 md:grid-cols-2">
                 <Info label="Cliente" value={item.customerName} />
-                <Info label="Telefono" value={item.customerPhoneMasked ?? 'No informado'} />
+                <Info label="Teléfono" value={item.customerPhoneMasked ?? 'No informado'} />
                 <Info label="Dispositivo" value={[item.deviceBrand, item.deviceModel].filter(Boolean).join(' ') || 'No informado'} />
                 <Info label="Falla" value={item.issueLabel ?? 'No informada'} />
                 <Info label="Presupuesto" value={money(item.quotedPrice)} />

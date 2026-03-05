@@ -31,7 +31,7 @@ export function AdminProductsPage() {
   }
 
   useEffect(() => {
-    void loadCategories().catch((e) => setError(e instanceof Error ? e.message : 'Error cargando categorias'));
+    void loadCategories().catch((e) => setError(e instanceof Error ? e.message : 'Error cargando categorías'));
   }, []);
 
   useEffect(() => {
@@ -56,10 +56,10 @@ export function AdminProductsPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-black tracking-tight text-zinc-900">Productos</h1>
-            <p className="mt-1 text-sm text-zinc-600">Administra catalogo con identificacion por SKU y codigo de barras.</p>
+            <p className="mt-1 text-sm text-zinc-600">Administra catálogo con identificación por SKU y código de barras.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <button type="button" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">Categorias</button>
+            <button type="button" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">Categorías</button>
             <Link to="/admin/productos/crear" className="btn-primary !h-10 !rounded-xl px-5 text-sm font-bold">+ Nuevo producto</Link>
           </div>
         </div>
@@ -77,7 +77,7 @@ export function AdminProductsPage() {
               className="h-11 rounded-2xl border border-zinc-200 px-3 text-sm"
             />
             <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className="h-11 rounded-2xl border border-zinc-200 px-3 text-sm font-bold">
-              <option value="">Categoria: Todas</option>
+              <option value="">Categoría: Todas</option>
               {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
             <select value={activeFilter} onChange={(e) => setActiveFilter(e.target.value)} className="h-11 rounded-2xl border border-zinc-200 px-3 text-sm font-bold">

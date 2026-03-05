@@ -28,7 +28,7 @@ const ORDER_VARIABLES: VariableInfo[] = [
   { key: '{my_orders_url}', description: 'Link a /mis-pedidos' },
   { key: '{store_url}', description: 'Link a /tienda' },
   { key: '{shop_address}', description: 'Dirección del local (Admin > Configuración)' },
-  { key: '{shop_hours}', description: 'Horarios (Admin > Configuracion)' },
+  { key: '{shop_hours}', description: 'Horarios (Admin > Configuración)' },
   { key: '{shop_phone}', description: 'Teléfono del local' },
   { key: '{shop_name}', description: 'Nombre del negocio' },
 ];

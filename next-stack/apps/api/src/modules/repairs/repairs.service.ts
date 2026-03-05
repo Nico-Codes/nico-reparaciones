@@ -33,14 +33,14 @@ export class RepairsService {
     const repair = await this.prisma.repair.findUnique({ where: { id: repairId } });
 
     if (!repair) {
-      return { ok: false, found: false, message: 'Reparacion no encontrada' };
+      return { ok: false, found: false, message: 'Reparación no encontrada' };
     }
 
     if (customerPhone) {
       const inputPhoneNorm = this.normalizePhone(customerPhone);
       const repairPhoneNorm = this.normalizePhone(repair.customerPhone);
       if (!inputPhoneNorm || !repairPhoneNorm || inputPhoneNorm !== repairPhoneNorm) {
-        return { ok: false, found: false, message: 'No coincide el telefono de la reparacion' };
+        return { ok: false, found: false, message: 'No coincide el teléfono de la reparación' };
       }
     }
 
@@ -72,7 +72,7 @@ export class RepairsService {
       data,
     });
 
-    await this.createEvent(repair.id, 'CREATED', 'Reparacion creada', {
+    await this.createEvent(repair.id, 'CREATED', 'Reparación creada', {
       status: repair.status,
       quotedPrice: repair.quotedPrice != null ? Number(repair.quotedPrice) : null,
     });
@@ -453,8 +453,8 @@ export class RepairsService {
     const map: Record<string, string> = {
       RECEIVED: 'Recibido',
       DIAGNOSING: 'Diagnosticando',
-      WAITING_APPROVAL: 'Esperando aprobacion',
-      REPAIRING: 'En reparacion',
+      WAITING_APPROVAL: 'Esperando aprobación',
+      REPAIRING: 'En reparación',
       READY_PICKUP: 'Listo para retirar',
       DELIVERED: 'Entregado',
       CANCELLED: 'Cancelado',

@@ -170,7 +170,7 @@ export function AdminWarrantyCreatePage() {
       return;
     }
     if (source === 'REPAIR' && !selectedRepairId) {
-      setError('Selecciona la reparacion asociada');
+      setError('Seleccioná la reparación asociada');
       return;
     }
     if (source === 'PRODUCT' && !productId) {

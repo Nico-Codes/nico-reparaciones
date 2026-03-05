@@ -1,0 +1,86 @@
+# Legacy Route Parity (Web/SPA)
+
+Estado de compatibilidad de rutas legacy de Laravel contra el router React (`apps/web/src/App.tsx`), mas chequeo de views, botones y acciones.
+
+## Rutas cubiertas con alias/redirect
+
+### Publico y auth
+- `/tienda` -> `/store`
+- `/tienda/categoria/:slug` -> `/store?category=:slug`
+- `/producto/:slug` -> `/store/:slug`
+- `/ayuda` -> `/help`
+- `/login` -> `/auth/login`
+- `/registro` -> `/auth/register`
+- `/olvide-contrasena` -> `/auth/forgot-password`
+- `/resetear-contrasena/:token` -> `/auth/reset-password?token=:token`
+- `/carrito` -> `/cart`
+- `/mis-pedidos` -> `/orders`
+- `/mis-pedidos/:id` -> `/orders/:id`
+- `/pedido/:id` -> `/orders/:id`
+- `/mis-reparaciones` -> `/repairs`
+- `/mis-reparaciones/:id` -> `/repairs/:id`
+- `/mi-cuenta` -> `/orders` (fallback temporal)
+- `/email/verificar` -> `/auth/verify-email`
+- `/email/verificar/:id/:hash` -> `/auth/verify-email`
+- `/reparacion/:id/presupuesto` -> `/reparacion` (fallback temporal)
+
+### Admin
+- `/admin/dashboard` -> `/admin`
+- `/admin/pedidos` -> `/admin/orders`
+- `/admin/pedidos/:id` -> `/admin/orders/:id`
+- `/admin/pedidos/:id/imprimir` -> `/admin/orders/:id/print`
+- `/admin/pedidos/:id/ticket` -> `/admin/orders/:id/ticket`
+- `/admin/reparaciones` -> `/admin/repairs`
+- `/admin/reparaciones/crear` -> `/admin/repairs`
+- `/admin/reparaciones/:id` -> `/admin/repairs/:id`
+- `/admin/reparaciones/:id/imprimir` -> `/admin/repairs/:id/print`
+- `/admin/reparaciones/:id/ticket` -> `/admin/repairs/:id/ticket`
+- `/admin/usuarios` -> `/admin/users`
+- `/admin/configuracion` -> `/admin/configuraciones`
+- `/admin/configuracion/identidad-visual` -> `/admin/configuracion/identidadvisual`
+- `/admin/configuracion/portada-tienda` -> `/admin/configuracion/portadatienda`
+- `/admin/configuracion/correos` -> `/admin/mail-templates`
+- `/admin/configuracion/ayuda` -> `/admin/help`
+- `/admin/whatsapp-pedidos` -> `/admin/whatsapppedidos`
+- `/admin/tipos-reparacion` -> `/admin/tiposreparacion`
+- `/admin/grupos-modelos` -> `/admin/gruposmodelos`
+- `/admin/tipos-dispositivo` -> `/admin/tiposdispositivo`
+- `/admin/catalogo-dispositivos` -> `/admin/catalogodispositivos`
+- `/admin/categorias` -> `/admin/productos` (fallback temporal)
+- `/admin/categorias/crear` -> `/admin/productos/crear` (fallback temporal)
+- `/admin/categorias/:id/editar` -> `/admin/productos` (fallback temporal)
+- `/admin/productos/:id/etiqueta` -> `/admin/productos/:id/editar` (fallback temporal)
+- `/admin/precios/:id/editar` -> `/admin/precios`
+- `/admin/ventas-rapidas` -> `/admin/orders` (fallback temporal)
+- `/admin/ventas-rapidas/ticket` -> `/admin/orders` (fallback temporal)
+- `/admin/ventas-rapidas/historial` -> `/admin/orders` (fallback temporal)
+
+## Compatibilidad de views/botones/acciones
+
+- Navegacion de frontend:
+- 50 paths detectados en `to`, `navigate` y `href`.
+- 0 paths sin route definido en `apps/web/src/App.tsx`.
+
+- Acciones API frontend:
+- 69 llamados unicos detectados en `apps/web/src/features/**/(api|http).ts`.
+- 0 llamados sin endpoint backend (comparados contra controllers de Nest en `apps/api/src/modules/**`).
+
+Este chequeo queda automatizado con:
+- `npm run qa:route-parity`
+
+## Validacion tecnica ejecutada
+
+- `npm run qa:route-parity` -> OK
+- `npm run smoke:web` -> OK
+- `npm run qa:frontend:e2e` -> OK
+
+## Assets visuales legacy compatibles
+
+- `manifest.webmanifest` (copiado en `apps/web/public/manifest.webmanifest`)
+- `favicon-48x48.png` (copiado en `apps/web/public/favicon-48x48.png`)
+
+## Pendientes funcionales (sin paridad 1:1 aun)
+
+- Flujo completo de aprobacion/rechazo de presupuesto firmado (`/reparacion/:id/presupuesto/...`) hoy cae en fallback.
+- View dedicada de `mi-cuenta` (`/mi-cuenta`) aun no existe en React.
+- Views dedicadas de `categorias` admin y `ventas rapidas` admin aun no existen en React (hoy usan fallback de navegacion).

@@ -213,7 +213,7 @@ export class AdminService {
     if (outOfStockProducts > 0) alerts.push({ id: 'stock-out', severity: 'high', title: 'Productos sin stock', value: outOfStockProducts });
     if (lowStockProducts > 0) alerts.push({ id: 'stock-low', severity: 'medium', title: 'Productos con stock bajo', value: lowStockProducts });
     if (repairsReadyPickup > 0) alerts.push({ id: 'repairs-ready', severity: 'low', title: 'Reparaciones listas para entregar', value: repairsReadyPickup });
-    if (ordersPending > 0) alerts.push({ id: 'orders-pending', severity: 'medium', title: 'Pedidos pendientes/preparacion', value: ordersPending });
+    if (ordersPending > 0) alerts.push({ id: 'orders-pending', severity: 'medium', title: 'Pedidos pendientes/preparación', value: ordersPending });
 
     return {
       metrics: {
@@ -300,11 +300,11 @@ export class AdminService {
   async updateUserRole(targetUserId: string, roleRaw: string, actorUserId?: string | null) {
     const role = this.parseUserRole(roleRaw);
     if (!role) {
-      return { message: 'Rol invalido' };
+      return { message: 'Rol inválido' };
     }
 
     if (actorUserId && actorUserId === targetUserId && role !== 'ADMIN') {
-      return { message: 'No podes quitarte el rol admin a vos mismo' };
+      return { message: 'No podés quitarte el rol admin a vos mismo' };
     }
 
     const user = await this.prisma.user.update({
@@ -450,7 +450,7 @@ export class AdminService {
     const text = [
       `Reporte semanal dashboard ${businessName}`,
       `Fecha: ${now.toISOString()}`,
-      `Rango: ultimos ${rangeDays} dias`,
+      `Rango: últimos ${rangeDays} días`,
       '',
       'KPIs',
       `Productos totales: ${dashboard.metrics.products.total}`,
@@ -586,7 +586,7 @@ export class AdminService {
       text: [
         `Prueba SMTP de ${businessName}`,
         '',
-        'Si recibiste este correo, la configuracion de mail del sistema responde correctamente.',
+        'Si recibiste este correo, la configuración de mail del sistema responde correctamente.',
         `Fecha: ${new Date().toISOString()}`,
         `Estado actual SMTP: ${smtpHealth.label}`,
       ].join('\n'),
@@ -709,7 +709,7 @@ export class AdminService {
     const groupId = (input.deviceModelGroupId ?? '').trim() || null;
     if (groupId) {
       const group = await this.prisma.deviceModelGroup.findUnique({ where: { id: groupId } });
-      if (!group || group.deviceBrandId !== input.deviceBrandId) throw new BadRequestException('Grupo invalido para esta marca');
+      if (!group || group.deviceBrandId !== input.deviceBrandId) throw new BadRequestException('Grupo inválido para esta marca');
     }
     await this.prisma.deviceModel.update({
       where: { id: modelId },
@@ -967,7 +967,7 @@ export class AdminService {
     const index = items.findIndex((i) => i.id === id);
     if (index < 0) throw new BadRequestException('Proveedor no encontrado');
     const row = items[index];
-    const q = (queryRaw ?? '').trim() || 'modulo a30';
+    const q = (queryRaw ?? '').trim() || 'módulo a30';
     const now = new Date().toISOString();
 
     if (!row.searchEndpoint) {
@@ -1086,10 +1086,12 @@ export class AdminService {
         const product = row.productId ? productById.get(row.productId) : null;
         const repairLookupCode = row.repairId ? `r-${row.repairId.slice(0, 13)}` : '';
         return (
+          row.id.toLowerCase().includes(q) ||
           row.title.toLowerCase().includes(q) ||
           (row.reason ?? '').toLowerCase().includes(q) ||
           (row.notes ?? '').toLowerCase().includes(q) ||
           (row.repairId ?? '').toLowerCase().includes(q) ||
+          (row.orderId ?? '').toLowerCase().includes(q) ||
           repairLookupCode.includes(q) ||
           (repair?.customerName ?? '').toLowerCase().includes(q) ||
           (product?.name ?? '').toLowerCase().includes(q) ||
@@ -1257,7 +1259,7 @@ export class AdminService {
       },
     });
 
-    const result = await this.warranties({ q: created.id });
+    const result = await this.warranties();
     const row = result.items.find((i) => i.id === created.id);
     return { item: row ?? null };
   }
@@ -1512,17 +1514,17 @@ export class AdminService {
     const templates = [
       {
         templateKey: 'repair_status_update',
-        label: 'Actualizacion de reparacion',
+        label: 'Actualización de reparación',
         description: 'Mensaje para avisar cambios de estado en reparaciones.',
         bodyDefault:
-          'Hola {{customer_name}}, tu reparacion {{repair_id}} ahora esta en estado: {{repair_status}}. {{extra_message}}',
+          'Hola {{customer_name}}, tu reparación {{repair_id}} ahora está en estado: {{repair_status}}. {{extra_message}}',
       },
       {
         templateKey: 'order_status_update',
-        label: 'Actualizacion de pedido',
+        label: 'Actualización de pedido',
         description: 'Mensaje para avisar cambios de estado en pedidos.',
         bodyDefault:
-          'Hola {{customer_name}}, tu pedido {{order_id}} ahora esta: {{order_status}}. Total: {{order_total}}',
+          'Hola {{customer_name}}, tu pedido {{order_id}} ahora está: {{order_status}}. Total: {{order_total}}',
       },
     ];
 
@@ -1790,8 +1792,8 @@ export class AdminService {
     if (!ext || !allowedExts.includes(ext)) {
       throw new BadRequestException(`Formato no permitido. Permitidos: ${allowedExts.join(', ')}`);
     }
-    if (!file.buffer || !Buffer.isBuffer(file.buffer)) throw new BadRequestException('Archivo invalido');
-    if (file.size > spec.maxKb * 1024) throw new BadRequestException(`Archivo supera el maximo (${spec.maxKb} KB)`);
+    if (!file.buffer || !Buffer.isBuffer(file.buffer)) throw new BadRequestException('Archivo inválido');
+    if (file.size > spec.maxKb * 1024) throw new BadRequestException(`Archivo supera el máximo (${spec.maxKb} KB)`);
 
     const publicRoot = this.resolveWebPublicDir();
     const relPath = `brand-assets/identity/${spec.fileBase}.${ext}`;
@@ -1867,19 +1869,19 @@ export class AdminService {
   private whatsappTemplateDefs(channel: 'repairs' | 'orders') {
     if (channel === 'repairs') {
       return [
-        { templateKey: 'received', label: 'Recibido', description: 'Mensaje para reparacion recibida.' },
-        { templateKey: 'diagnosing', label: 'Diagnosticando', description: 'Mensaje para reparacion en diagnostico.' },
-        { templateKey: 'waiting_approval', label: 'Esperando aprobacion', description: 'Mensaje para solicitar aprobacion.' },
-        { templateKey: 'repairing', label: 'En reparacion', description: 'Mensaje para reparacion en curso.' },
-        { templateKey: 'ready_pickup', label: 'Listo para retirar', description: 'Mensaje para reparacion lista para retiro.' },
-        { templateKey: 'delivered', label: 'Entregado', description: 'Mensaje para reparacion entregada.' },
-        { templateKey: 'cancelled', label: 'Cancelado', description: 'Mensaje para reparacion cancelada.' },
+        { templateKey: 'received', label: 'Recibido', description: 'Mensaje para reparación recibida.' },
+        { templateKey: 'diagnosing', label: 'Diagnosticando', description: 'Mensaje para reparación en diagnóstico.' },
+        { templateKey: 'waiting_approval', label: 'Esperando aprobación', description: 'Mensaje para solicitar aprobación.' },
+        { templateKey: 'repairing', label: 'En reparación', description: 'Mensaje para reparación en curso.' },
+        { templateKey: 'ready_pickup', label: 'Listo para retirar', description: 'Mensaje para reparación lista para retiro.' },
+        { templateKey: 'delivered', label: 'Entregado', description: 'Mensaje para reparación entregada.' },
+        { templateKey: 'cancelled', label: 'Cancelado', description: 'Mensaje para reparación cancelada.' },
       ] as const;
     }
     return [
       { templateKey: 'pendiente', label: 'Pendiente', description: 'Mensaje para pedido pendiente.' },
       { templateKey: 'confirmado', label: 'Confirmado', description: 'Mensaje para pedido confirmado.' },
-      { templateKey: 'preparando', label: 'Preparando', description: 'Mensaje para pedido en preparacion.' },
+      { templateKey: 'preparando', label: 'Preparando', description: 'Mensaje para pedido en preparación.' },
       { templateKey: 'listo_retirar', label: 'Listo para retirar', description: 'Mensaje para pedido listo para retiro.' },
       { templateKey: 'entregado', label: 'Entregado', description: 'Mensaje para pedido entregado.' },
       { templateKey: 'cancelado', label: 'Cancelado', description: 'Mensaje para pedido cancelado.' },
@@ -1891,12 +1893,12 @@ export class AdminService {
       if (templateKey === 'waiting_approval') {
         return [
           'Hola {customer_name}',
-          'Tu reparacion ({code}) esta en estado: *{status_label}*.',
-          'Necesitamos tu aprobacion para continuar.',
-          'Aproba o rechaza aca: {approval_url}',
+          'Tu reparación ({code}) está en estado: *{status_label}*.',
+          'Necesitamos tu aprobación para continuar.',
+          'Aprobá o rechazá acá: {approval_url}',
           '',
-          'Podes consultar el estado en: {lookup_url}',
-          'Codigo: {code}',
+          'Podés consultar el estado en: {lookup_url}',
+          'Código: {code}',
           'Equipo: {device}',
           'NicoReparaciones',
         ].join('\n');
@@ -1904,14 +1906,14 @@ export class AdminService {
       if (templateKey === 'ready_pickup') {
         return [
           'Hola {customer_name}',
-          'Tu reparacion ({code}) esta en estado: *{status_label}*.',
-          'Ya esta lista para retirar.',
+          'Tu reparación ({code}) está en estado: *{status_label}*.',
+          'Ya está lista para retirar.',
           '',
-          'Direccion: {shop_address}',
+          'Dirección: {shop_address}',
           'Horarios: {shop_hours}',
           '',
-          'Podes consultar el estado en: {lookup_url}',
-          'Codigo: {code}',
+          'Podés consultar el estado en: {lookup_url}',
+          'Código: {code}',
           'Equipo: {device}',
           'NicoReparaciones',
         ].join('\n');
@@ -1919,21 +1921,21 @@ export class AdminService {
       if (templateKey === 'delivered') {
         return [
           'Hola {customer_name}',
-          'Tu reparacion ({code}) esta en estado: *{status_label}*.',
+          'Tu reparación ({code}) está en estado: *{status_label}*.',
           'Gracias por tu visita.',
           '',
-          'Podes consultar el estado en: {lookup_url}',
-          'Codigo: {code}',
+          'Podés consultar el estado en: {lookup_url}',
+          'Código: {code}',
           'Equipo: {device}',
           'NicoReparaciones',
         ].join('\n');
       }
       return [
         'Hola {customer_name}',
-        'Tu reparacion ({code}) esta en estado: *{status_label}*.',
+        'Tu reparación ({code}) está en estado: *{status_label}*.',
         '',
-        'Podes consultar el estado en: {lookup_url}',
-        'Codigo: {code}',
+        'Podés consultar el estado en: {lookup_url}',
+        'Código: {code}',
         'Equipo: {device}',
         'NicoReparaciones',
       ].join('\n');
@@ -1941,7 +1943,7 @@ export class AdminService {
 
     const base = [
       'Hola {customer_name}',
-      'Tu pedido *#{order_id}* esta en estado: *{status_label}*.',
+      'Tu pedido *#{order_id}* está en estado: *{status_label}*.',
       'Total: {total}',
       'Items: {items_count}',
       '',
@@ -1951,7 +1953,7 @@ export class AdminService {
       'Tienda: {store_url}',
     ];
     if (templateKey === 'listo_retirar') {
-      base.push('', 'Direccion: {shop_address}', 'Horarios: {shop_hours}', 'Telefono: {shop_phone}');
+      base.push('', 'Dirección: {shop_address}', 'Horarios: {shop_hours}', 'Teléfono: {shop_phone}');
     }
     if (templateKey === 'entregado') {
       base.push('', 'Gracias por tu compra.');

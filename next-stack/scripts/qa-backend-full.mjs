@@ -98,13 +98,13 @@ async function main() {
   console.log('[qa:backend:full] Paso 2/6: db:generate');
   const generateCode = await runNpmScript('db:generate');
   if (generateCode !== 0) {
-    console.warn('[qa:backend:full] WARN: db:generate falló (posible archivo Prisma bloqueado en Windows). Continúo con QA.');
+    console.warn('[qa:backend:full] WARN: db:generate failed (possible Prisma file lock on Windows). Continuing QA.');
   }
 
-  console.log('[qa:backend:full] Paso 3/6: db:migrate');
+  console.log('[qa:backend:full] Paso 3/6: db:migrate (deploy)');
   const migrateCode = await runNpmScript('db:migrate');
   if (migrateCode !== 0) {
-    console.warn('[qa:backend:full] WARN: db:migrate falló. Intentando fallback con db:push (útil en PostgreSQL antiguos/locales).');
+    console.warn('[qa:backend:full] WARN: db:migrate failed. Trying fallback db:push (legacy/local PostgreSQL compatibility).');
     if ((await runNpmScript('db:push:skip-generate')) !== 0) process.exit(1);
   }
 
@@ -124,7 +124,7 @@ async function main() {
   const apiUrl = (process.env.SMOKE_API_URL || process.env.API_URL || 'http://localhost:3001').replace(/\/$/, '');
   const healthy = await waitForHealth(`${apiUrl}/api/health`, 45_000);
   if (!healthy) {
-    console.error('[qa:backend:full] FAIL: API no respondió health a tiempo');
+    console.error('[qa:backend:full] FAIL: API did not answer health in time');
     await killProcessTree(apiProc.pid);
     process.exit(1);
   }

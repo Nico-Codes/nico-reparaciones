@@ -26,7 +26,7 @@ const WHATSAPP_VARIABLES: VariableInfo[] = [
   { key: '{warranty_days}', description: 'Garantía en días' },
   { key: '{approval_url}', description: 'Link firmado para que el cliente apruebe/rechace presupuesto' },
   { key: '{shop_address}', description: 'Dirección del local (Admin > Configuración)' },
-  { key: '{shop_hours}', description: 'Horarios (Admin > Configuracion)' },
+  { key: '{shop_hours}', description: 'Horarios (Admin > Configuración)' },
 ];
 
 const TEMPLATE_ORDER: RepairTemplateDef[] = [

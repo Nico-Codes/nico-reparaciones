@@ -90,11 +90,11 @@ export class AuthService {
       if (twoFa.enabled) {
         const code = (input as LoginInput & { twoFactorCode?: string }).twoFactorCode?.trim() ?? '';
         if (!code) {
-          throw new UnauthorizedException('Codigo 2FA requerido');
+          throw new UnauthorizedException('Código 2FA requerido');
         }
         const valid = await this.verifyAdminTwoFactorCode(user.id, code);
         if (!valid) {
-          throw new UnauthorizedException('Codigo 2FA invalido');
+          throw new UnauthorizedException('Código 2FA inválido');
         }
       }
     }
@@ -118,7 +118,7 @@ export class AuthService {
         user: this.usersService.toPublicUser(user),
       };
     } catch {
-      throw new UnauthorizedException('Token invalido o expirado');
+      throw new UnauthorizedException('Token inválido o expirado');
     }
   }
 
@@ -169,7 +169,7 @@ export class AuthService {
     });
 
     if (!record || record.usedAt || record.expiresAt < new Date()) {
-      throw new BadRequestException('Token de verificacion invalido o expirado');
+      throw new BadRequestException('Token de verificacion inválido o expirado');
     }
 
     await this.prisma.$transaction([
@@ -227,7 +227,7 @@ export class AuthService {
     });
 
     if (!record || record.revokedAt || record.expiresAt < new Date()) {
-      throw new UnauthorizedException('Refresh token invalido o expirado');
+      throw new UnauthorizedException('Refresh token inválido o expirado');
     }
 
     const tokens = await this.issueTokens(record.user.id, record.user.email, record.user.role);
@@ -252,7 +252,7 @@ export class AuthService {
     });
 
     if (!record || record.usedAt || record.expiresAt < new Date()) {
-      throw new BadRequestException('Token de recuperacion invalido o expirado');
+      throw new BadRequestException('Token de recuperacion inválido o expirado');
     }
 
     const passwordHash = await bcrypt.hash(input.password, 10);
@@ -366,7 +366,7 @@ export class AuthService {
     const pending = await this.getAppSetting(this.twoFactorSettingKey(userId, 'pending_secret'));
     const secret = (pending ?? '').trim();
     if (!secret) throw new BadRequestException('Primero genera un secreto 2FA');
-    if (!this.verifyTotpCode(secret, code)) throw new BadRequestException('Codigo 2FA invalido');
+    if (!this.verifyTotpCode(secret, code)) throw new BadRequestException('Código 2FA inválido');
 
     await this.upsertAppSetting(this.twoFactorSettingKey(userId, 'secret'), secret, 'security_2fa', 'Admin 2FA secret', 'text');
     await this.upsertAppSetting(this.twoFactorSettingKey(userId, 'enabled'), '1', 'security_2fa', 'Admin 2FA enabled', 'boolean');
@@ -380,8 +380,8 @@ export class AuthService {
     const enabled = (((await this.getAppSetting(this.twoFactorSettingKey(userId, 'enabled'))) ?? '0') === '1');
     if (enabled && secret) {
       const normalized = (code ?? '').trim();
-      if (!normalized) throw new BadRequestException('Codigo 2FA requerido para desactivar');
-      if (!this.verifyTotpCode(secret, normalized)) throw new BadRequestException('Codigo 2FA invalido');
+      if (!normalized) throw new BadRequestException('Código 2FA requerido para desactivar');
+      if (!this.verifyTotpCode(secret, normalized)) throw new BadRequestException('Código 2FA inválido');
     }
     await this.upsertAppSetting(this.twoFactorSettingKey(userId, 'enabled'), '0', 'security_2fa', 'Admin 2FA enabled', 'boolean');
     await this.upsertAppSetting(this.twoFactorSettingKey(userId, 'secret'), '', 'security_2fa', 'Admin 2FA secret', 'text');
@@ -402,7 +402,7 @@ export class AuthService {
     const accessToken = await this.jwtService.signAsync(payload);
     const refreshToken = this.generateRawToken();
     const refreshTokenHash = this.hashToken(refreshToken);
-    const refreshExpiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30); // 30 dias
+    const refreshExpiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30); // 30 días
 
     await this.prisma.refreshToken.create({
       data: {
@@ -425,7 +425,7 @@ export class AuthService {
     try {
       return await this.jwtService.verifyAsync<JwtPayload>(accessToken);
     } catch {
-      throw new UnauthorizedException('Token invalido o expirado');
+      throw new UnauthorizedException('Token inválido o expirado');
     }
   }
 
