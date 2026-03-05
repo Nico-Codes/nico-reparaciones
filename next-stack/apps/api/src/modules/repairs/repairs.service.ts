@@ -1,4 +1,5 @@
-import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Inject, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { Prisma, type Repair } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 
@@ -23,9 +24,17 @@ type UpdateRepairInput = Partial<Omit<CreateRepairInput, 'userId'>> & {
   status?: string;
 };
 
+type QuoteApprovalTokenPayload = {
+  type: 'repair_quote';
+  repairId: string;
+};
+
 @Injectable()
 export class RepairsService {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(JwtService) private readonly jwtService: JwtService,
+  ) {}
 
   async publicLookup(repairIdRaw: string, customerPhoneRaw?: string | null) {
     const repairId = repairIdRaw.trim();
@@ -48,6 +57,100 @@ export class RepairsService {
       ok: true,
       found: true,
       item: this.serializePublicLookup(repair),
+    };
+  }
+
+  async publicQuoteApproval(repairIdRaw: string, tokenRaw: string) {
+    const repairId = repairIdRaw.trim();
+    const token = tokenRaw.trim();
+    await this.verifyQuoteApprovalToken(repairId, token);
+    const repair = await this.prisma.repair.findUnique({ where: { id: repairId } });
+    if (!repair) throw new NotFoundException('Reparacion no encontrada');
+    return {
+      ok: true,
+      canDecide: repair.status === 'WAITING_APPROVAL',
+      item: this.serializePublicQuoteApproval(repair),
+    };
+  }
+
+  async publicQuoteApprove(repairIdRaw: string, tokenRaw: string) {
+    return this.applyPublicQuoteDecision(repairIdRaw, tokenRaw, 'REPAIRING', 'Presupuesto aprobado. Empezamos con la reparacion.');
+  }
+
+  async publicQuoteReject(repairIdRaw: string, tokenRaw: string) {
+    return this.applyPublicQuoteDecision(repairIdRaw, tokenRaw, 'CANCELLED', 'Presupuesto rechazado. La reparacion quedo cancelada.');
+  }
+
+  private async applyPublicQuoteDecision(
+    repairIdRaw: string,
+    tokenRaw: string,
+    toStatus: 'REPAIRING' | 'CANCELLED',
+    successMessage: string,
+  ) {
+    const repairId = repairIdRaw.trim();
+    const token = tokenRaw.trim();
+    await this.verifyQuoteApprovalToken(repairId, token);
+
+    const current = await this.prisma.repair.findUnique({ where: { id: repairId } });
+    if (!current) throw new NotFoundException('Reparacion no encontrada');
+
+    if (current.status !== 'WAITING_APPROVAL') {
+      return {
+        ok: true,
+        changed: false,
+        canDecide: false,
+        message: 'Esta reparacion ya no esta esperando aprobacion.',
+        item: this.serializePublicQuoteApproval(current),
+      };
+    }
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      const update = await tx.repair.updateMany({
+        where: { id: repairId, status: 'WAITING_APPROVAL' },
+        data: { status: toStatus },
+      });
+
+      const updated = await tx.repair.findUnique({ where: { id: repairId } });
+      if (!updated) throw new NotFoundException('Reparacion no encontrada');
+
+      if (update.count === 1) {
+        const message =
+          toStatus === 'REPAIRING'
+            ? 'Cliente aprobo el presupuesto desde enlace publico.'
+            : 'Cliente rechazo el presupuesto desde enlace publico.';
+        await tx.repairEventLog.create({
+          data: {
+            repairId,
+            eventType: 'STATUS_CHANGED',
+            message,
+            metaJson: JSON.stringify({
+              fromStatus: 'WAITING_APPROVAL',
+              toStatus,
+              source: 'public_quote_approval',
+            }),
+          },
+        });
+      }
+
+      return { updated, changed: update.count === 1 };
+    });
+
+    if (!result.changed) {
+      return {
+        ok: true,
+        changed: false,
+        canDecide: false,
+        message: 'Esta reparacion ya no esta esperando aprobacion.',
+        item: this.serializePublicQuoteApproval(result.updated),
+      };
+    }
+
+    return {
+      ok: true,
+      changed: true,
+      canDecide: false,
+      message: successMessage,
+      item: this.serializePublicQuoteApproval(result.updated),
     };
   }
 
@@ -288,6 +391,24 @@ export class RepairsService {
     };
   }
 
+  private serializePublicQuoteApproval(repair: Repair) {
+    return {
+      id: repair.id,
+      customerName: repair.customerName,
+      customerPhoneMasked: repair.customerPhone ? this.maskPhone(repair.customerPhone) : null,
+      deviceBrand: repair.deviceBrand,
+      deviceModel: repair.deviceModel,
+      issueLabel: repair.issueLabel,
+      status: repair.status,
+      statusLabel: this.repairStatusLabel(repair.status),
+      quotedPrice: repair.quotedPrice != null ? Number(repair.quotedPrice) : null,
+      finalPrice: repair.finalPrice != null ? Number(repair.finalPrice) : null,
+      notes: repair.notes,
+      createdAt: repair.createdAt.toISOString(),
+      updatedAt: repair.updatedAt.toISOString(),
+    };
+  }
+
   private maskPhone(phone: string) {
     const digits = this.normalizePhone(phone);
     if (!digits) return null;
@@ -391,6 +512,7 @@ export class RepairsService {
     try {
       const statusKey = this.repairStatusTemplateKey(repair.status);
       const webBase = this.getWebBaseUrl();
+      const approvalUrl = statusKey === 'waiting_approval' ? await this.createPublicQuoteApprovalUrl(repair.id) : '';
       const settingsKeys = [
         `whatsapp_repairs_template.${statusKey}.body`,
         'shop_address',
@@ -411,7 +533,7 @@ export class RepairsService {
         device: [repair.deviceBrand, repair.deviceModel].filter(Boolean).join(' ').trim(),
         final_price: repair.finalPrice != null ? `$${Number(repair.finalPrice).toLocaleString('es-AR')}` : '',
         warranty_days: '',
-        approval_url: '',
+        approval_url: approvalUrl,
         shop_address: (map.get('shop_address') || '').trim(),
         shop_hours: (map.get('shop_hours') || '').trim(),
       };
@@ -483,6 +605,50 @@ export class RepairsService {
 
   private applyTemplateVars(template: string, vars: Record<string, string>) {
     return template.replace(/\{([a-zA-Z0-9_]+)\}/g, (_m, key) => vars[key] ?? '');
+  }
+
+  private async createPublicQuoteApprovalUrl(repairId: string) {
+    const token = await this.signQuoteApprovalToken(repairId);
+    const base = this.getWebBaseUrl();
+    return `${base}/reparacion/${encodeURIComponent(repairId)}/presupuesto?token=${encodeURIComponent(token)}`;
+  }
+
+  private async signQuoteApprovalToken(repairId: string) {
+    const payload: QuoteApprovalTokenPayload = {
+      type: 'repair_quote',
+      repairId,
+    };
+    return this.jwtService.signAsync(payload, {
+      secret: this.getQuoteApprovalSecret(),
+      expiresIn: this.getQuoteApprovalTtlSeconds(),
+    });
+  }
+
+  private async verifyQuoteApprovalToken(repairId: string, token: string) {
+    try {
+      const payload = await this.jwtService.verifyAsync<QuoteApprovalTokenPayload>(token, {
+        secret: this.getQuoteApprovalSecret(),
+      });
+      if (payload.type !== 'repair_quote' || payload.repairId !== repairId) {
+        throw new UnauthorizedException('Enlace invalido o expirado');
+      }
+    } catch {
+      throw new UnauthorizedException('Enlace invalido o expirado');
+    }
+  }
+
+  private getQuoteApprovalSecret() {
+    const explicit = (process.env.REPAIR_QUOTE_APPROVAL_SECRET ?? '').trim();
+    if (explicit) return explicit;
+    const accessSecret = (process.env.JWT_ACCESS_SECRET ?? '').trim();
+    if (accessSecret) return `${accessSecret}.repair-quote`;
+    return 'dev-access-secret-change-me.repair-quote';
+  }
+
+  private getQuoteApprovalTtlSeconds() {
+    const raw = Number.parseInt((process.env.REPAIR_QUOTE_APPROVAL_TTL_SECONDS ?? '').trim(), 10);
+    if (Number.isFinite(raw) && raw > 0) return raw;
+    return 60 * 60 * 24 * 7;
   }
 
   private getWebBaseUrl() {

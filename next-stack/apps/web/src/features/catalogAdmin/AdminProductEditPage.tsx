@@ -230,7 +230,7 @@ export function AdminProductEditPage() {
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2">
             <button type="button" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">Garantía</button>
-            <button type="button" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">Etiqueta</button>
+            <Link to={`/admin/productos/${encodeURIComponent(product.id)}/etiqueta`} className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">Etiqueta</Link>
             <Link to="/admin/productos" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">Volver</Link>
           </div>
         </div>

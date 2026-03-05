@@ -4,6 +4,11 @@ const ACCESS_KEY = 'nico_next_access_token';
 const REFRESH_KEY = 'nico_next_refresh_token';
 const USER_KEY = 'nico_next_user';
 
+function emitAuthChanged() {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new Event('nico:auth-changed'));
+}
+
 export const authStorage = {
   getAccessToken() {
     return localStorage.getItem(ACCESS_KEY);
@@ -24,10 +29,16 @@ export const authStorage = {
     localStorage.setItem(ACCESS_KEY, tokens.accessToken);
     localStorage.setItem(REFRESH_KEY, tokens.refreshToken);
     localStorage.setItem(USER_KEY, JSON.stringify(user));
+    emitAuthChanged();
+  },
+  setUser(user: AuthUser) {
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
+    emitAuthChanged();
   },
   clear() {
     localStorage.removeItem(ACCESS_KEY);
     localStorage.removeItem(REFRESH_KEY);
     localStorage.removeItem(USER_KEY);
+    emitAuthChanged();
   },
 };

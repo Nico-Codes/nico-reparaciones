@@ -15,6 +15,22 @@ type AdminListInput = {
   q?: string;
 };
 
+type QuickSaleConfirmInput = {
+  adminUserId: string;
+  items: Array<{ productId: string; quantity: number }>;
+  paymentMethod: string;
+  customerName?: string;
+  customerPhone?: string;
+  notes?: string;
+};
+
+type QuickSalesHistoryInput = {
+  from?: string;
+  to?: string;
+  payment?: string;
+  adminId?: string;
+};
+
 type OrderWithItems = Prisma.OrderGetPayload<{
   include: { items: true };
 }>;
@@ -36,6 +52,13 @@ type SerializableOrder = OrderWithItems & {
 
 @Injectable()
 export class OrdersService {
+  private static readonly WALKIN_EMAIL = 'walkin@nico.local';
+  private static readonly PAYMENT_METHODS = {
+    local: 'Pago en el local',
+    mercado_pago: 'Mercado Pago',
+    transferencia: 'Transferencia',
+  } as const;
+
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(CartService) private readonly cartService: CartService,
@@ -210,6 +233,179 @@ export class OrdersService {
     return { item: this.serializeOrder(order) };
   }
 
+  async adminConfirmQuickSale(input: QuickSaleConfirmInput) {
+    const dedupMap = new Map<string, number>();
+    for (const rawLine of input.items) {
+      const productId = rawLine.productId.trim();
+      const quantity = Math.max(1, Math.min(999, Math.trunc(Number(rawLine.quantity) || 0)));
+      if (!productId) continue;
+      dedupMap.set(productId, (dedupMap.get(productId) ?? 0) + quantity);
+    }
+    const dedupItems = Array.from(dedupMap.entries()).map(([productId, quantity]) => ({ productId, quantity }));
+    const quote = await this.cartService.quote(dedupItems);
+    const validLines = quote.items.filter((i) => i.valid);
+    if (!validLines.length) {
+      throw new BadRequestException('No hay items validos para confirmar la venta rapida');
+    }
+    const invalid = quote.items.filter((i) => !i.valid);
+    if (invalid.length > 0) {
+      throw new BadRequestException({
+        message: 'Hay items invalidos en la venta rapida',
+        invalidItems: invalid.map((i) => ({ productId: i.productId, reason: i.reason })),
+      });
+    }
+    await this.assertQuickSaleMarginGuard(validLines.map((line) => ({ productId: line.productId })));
+
+    const walkin = await this.getOrCreateWalkinUser();
+    const normalizedPayment = this.normalizePaymentMethod(input.paymentMethod);
+    const total = validLines.reduce((acc, line) => acc + line.lineTotal, 0);
+
+    const order = await this.prisma.$transaction(async (tx) => {
+      const productIds = validLines.map((l) => l.productId);
+      const products = await tx.product.findMany({
+        where: { id: { in: productIds } },
+        select: { id: true, stock: true, active: true, price: true, name: true },
+      });
+      const byId = new Map(products.map((p) => [p.id, p]));
+
+      for (const line of validLines) {
+        const p = byId.get(line.productId);
+        if (!p || !p.active) {
+          throw new BadRequestException(`Producto invalido en venta rapida: ${line.name}`);
+        }
+        if (p.stock < line.quantity) {
+          throw new BadRequestException(`Stock insuficiente para ${line.name}`);
+        }
+      }
+
+      const created = await tx.order.create({
+        data: {
+          userId: walkin.id,
+          status: 'ENTREGADO',
+          total: new Prisma.Decimal(total),
+          paymentMethod: normalizedPayment,
+          isQuickSale: true,
+          quickSaleAdminId: input.adminUserId,
+          items: {
+            create: validLines.map((line) => ({
+              productId: line.productId,
+              nameSnapshot: line.name,
+              unitPrice: new Prisma.Decimal(line.unitPrice),
+              quantity: line.quantity,
+              lineTotal: new Prisma.Decimal(line.lineTotal),
+            })),
+          },
+        },
+        include: {
+          user: { select: { id: true, name: true, email: true } },
+          items: true,
+        },
+      });
+
+      for (const line of validLines) {
+        await tx.product.update({
+          where: { id: line.productId },
+          data: {
+            stock: { decrement: line.quantity },
+          },
+        });
+      }
+
+      return created;
+    });
+
+    await this.createQuickSaleWhatsappLog(order.id, {
+      customerName: input.customerName ?? '',
+      customerPhone: input.customerPhone ?? '',
+      notes: input.notes ?? '',
+      paymentMethod: normalizedPayment,
+      itemCount: validLines.reduce((acc, line) => acc + line.quantity, 0),
+    });
+
+    return { item: this.serializeOrder(order) };
+  }
+
+  async adminQuickSales(params?: QuickSalesHistoryInput) {
+    const range = this.resolveQuickSalesRange(params?.from, params?.to);
+    const payment = this.normalizePaymentFilter(params?.payment);
+    const adminId = (params?.adminId ?? '').trim();
+
+    const where: Prisma.OrderWhereInput = {
+      isQuickSale: true,
+      createdAt: {
+        gte: range.fromStart,
+        lte: range.toEnd,
+      },
+      ...(payment ? { paymentMethod: payment } : {}),
+      ...(adminId ? { quickSaleAdminId: adminId } : {}),
+    };
+
+    const [orders, summary, admins] = await Promise.all([
+      this.prisma.order.findMany({
+        where,
+        include: {
+          user: { select: { id: true, name: true, email: true } },
+          items: { orderBy: { createdAt: 'asc' } },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 200,
+      }),
+      this.prisma.order.aggregate({
+        where,
+        _count: { id: true },
+        _sum: { total: true },
+      }),
+      this.prisma.order.findMany({
+        where: { isQuickSale: true, quickSaleAdminId: { not: null } },
+        select: { quickSaleAdminId: true },
+        distinct: ['quickSaleAdminId'],
+      }),
+    ]);
+
+    const adminIds = admins.map((row) => row.quickSaleAdminId).filter((id): id is string => Boolean(id));
+    const adminsResolved =
+      adminIds.length > 0
+        ? await this.prisma.user.findMany({
+            where: { id: { in: adminIds } },
+            select: { id: true, name: true, email: true },
+            orderBy: { name: 'asc' },
+          })
+        : [];
+    const adminById = new Map(adminsResolved.map((a) => [a.id, a]));
+
+    return {
+      from: range.from,
+      to: range.to,
+      payment,
+      adminId: adminId || null,
+      paymentMethods: this.paymentMethods(),
+      summary: {
+        salesCount: Number(summary._count.id ?? 0),
+        salesTotal: Number(summary._sum.total ?? 0),
+      },
+      admins: adminsResolved.map((a) => ({
+        id: a.id,
+        name: a.name,
+        email: a.email,
+      })),
+      items: orders.map((order) => ({
+        ...this.serializeOrder(order),
+        itemsCount: order.items.reduce((acc, line) => acc + line.quantity, 0),
+        admin: order.quickSaleAdminId
+          ? (() => {
+              const admin = adminById.get(order.quickSaleAdminId);
+              if (!admin) return null;
+              return {
+                id: admin.id,
+                name: admin.name,
+                email: admin.email,
+              };
+            })()
+          : null,
+      })),
+    };
+  }
+
   private normalizeStatus(statusRaw?: string): OrderStatus | null {
     const value = (statusRaw ?? '').trim().toUpperCase();
     if (!value) return null;
@@ -224,6 +420,7 @@ export class OrdersService {
       total: Number(order.total),
       paymentMethod: order.paymentMethod,
       isQuickSale: order.isQuickSale,
+      quickSaleAdminId: order.quickSaleAdminId,
       createdAt: order.createdAt.toISOString(),
       updatedAt: order.updatedAt.toISOString(),
       user: order.user
@@ -242,6 +439,128 @@ export class OrdersService {
         lineTotal: Number(i.lineTotal),
       })),
     };
+  }
+
+  private paymentMethods() {
+    return Object.entries(OrdersService.PAYMENT_METHODS).map(([key, label]) => ({ key, label }));
+  }
+
+  private normalizePaymentMethod(raw?: string | null) {
+    const value = (raw ?? '').trim().toLowerCase();
+    return value in OrdersService.PAYMENT_METHODS ? value : 'local';
+  }
+
+  private normalizePaymentFilter(raw?: string) {
+    const value = (raw ?? '').trim().toLowerCase();
+    if (!value) return '';
+    return value in OrdersService.PAYMENT_METHODS ? value : '';
+  }
+
+  private resolveQuickSalesRange(fromRaw?: string, toRaw?: string) {
+    const now = new Date();
+    const fallback = now.toISOString().slice(0, 10);
+    const valid = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value);
+    const from = valid(fromRaw ?? '') ? (fromRaw as string) : fallback;
+    const to = valid(toRaw ?? '') ? (toRaw as string) : fallback;
+    const fromStart = new Date(`${from}T00:00:00.000`);
+    const toEnd = new Date(`${to}T23:59:59.999`);
+    if (fromStart.getTime() > toEnd.getTime()) {
+      return {
+        from: to,
+        to: from,
+        fromStart: new Date(`${to}T00:00:00.000`),
+        toEnd: new Date(`${from}T23:59:59.999`),
+      };
+    }
+    return { from, to, fromStart, toEnd };
+  }
+
+  private async getOrCreateWalkinUser() {
+    const existing = await this.prisma.user.findUnique({
+      where: { email: OrdersService.WALKIN_EMAIL },
+      select: { id: true, name: true, email: true },
+    });
+    if (existing) return existing;
+    return this.prisma.user.create({
+      data: {
+        name: 'Venta mostrador',
+        email: OrdersService.WALKIN_EMAIL,
+        role: 'USER',
+        emailVerified: true,
+        emailVerifiedAt: new Date(),
+      },
+      select: { id: true, name: true, email: true },
+    });
+  }
+
+  private async assertQuickSaleMarginGuard(lines: Array<{ productId: string }>) {
+    if (!lines.length) return;
+    const blockNegative = await this.isNegativeMarginBlocked();
+    if (!blockNegative) return;
+    const products = await this.prisma.product.findMany({
+      where: { id: { in: lines.map((line) => line.productId) } },
+      select: { id: true, name: true, costPrice: true, price: true },
+    });
+    for (const product of products) {
+      const costPrice = Number(product.costPrice ?? 0);
+      const salePrice = Number(product.price ?? 0);
+      if (costPrice > 0 && salePrice < costPrice) {
+        throw new BadRequestException(
+          `No se puede confirmar: ${product.name} tiene margen negativo (guard activo).`,
+        );
+      }
+    }
+  }
+
+  private async isNegativeMarginBlocked() {
+    const keys = ['product_prevent_negative_margin', 'product_pricing.block_negative_margin'];
+    const rows = await this.prisma.appSetting.findMany({
+      where: { key: { in: keys } },
+      select: { key: true, value: true },
+    });
+    const map = new Map(rows.map((r) => [r.key, (r.value ?? '').trim()]));
+    const direct = map.get('product_prevent_negative_margin');
+    if (direct) return direct !== '0';
+    const legacy = map.get('product_pricing.block_negative_margin');
+    if (legacy) return legacy !== '0';
+    return true;
+  }
+
+  private async createQuickSaleWhatsappLog(
+    orderId: string,
+    details: {
+      customerName: string;
+      customerPhone: string;
+      notes: string;
+      paymentMethod: string;
+      itemCount: number;
+    },
+  ) {
+    try {
+      const paymentLabel = OrdersService.PAYMENT_METHODS[details.paymentMethod as keyof typeof OrdersService.PAYMENT_METHODS] ?? details.paymentMethod;
+      await this.prisma.whatsAppLog.create({
+        data: {
+          channel: 'orders',
+          templateKey: 'orders.quick_sale',
+          targetType: 'order',
+          targetId: orderId,
+          phone: details.customerPhone || null,
+          recipient: details.customerName || null,
+          status: 'PENDING',
+          message: `Venta rapida confirmada #${orderId}. Pago: ${paymentLabel}. Items: ${details.itemCount}.`,
+          metaJson: JSON.stringify({
+            source: 'quick_sale_confirm',
+            orderId,
+            customerName: details.customerName || null,
+            customerPhone: details.customerPhone || null,
+            notes: details.notes || null,
+            paymentMethod: details.paymentMethod,
+          }),
+        },
+      });
+    } catch {
+      // no bloquear confirmacion por log
+    }
   }
 
   private async createOrderWhatsappLog(order: OrderWithUserAndItems) {

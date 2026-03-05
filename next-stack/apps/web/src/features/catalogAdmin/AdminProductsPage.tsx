@@ -59,7 +59,7 @@ export function AdminProductsPage() {
             <p className="mt-1 text-sm text-zinc-600">Administra catálogo con identificación por SKU y código de barras.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <button type="button" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">Categorías</button>
+            <Link to="/admin/categorias" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">Categorías</Link>
             <Link to="/admin/productos/crear" className="btn-primary !h-10 !rounded-xl px-5 text-sm font-bold">+ Nuevo producto</Link>
           </div>
         </div>
@@ -203,9 +203,13 @@ export function AdminProductsPage() {
                               <span>Destacado</span>
                               <Pill tone={p.featured ? 'amber' : 'zinc'}>{p.featured ? 'Si' : 'No'}</Pill>
                             </button>
-                            <button type="button" className="flex h-9 w-full items-center rounded-xl px-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50">
+                            <Link
+                              to={`/admin/productos/${encodeURIComponent(p.id)}/etiqueta`}
+                              onClick={() => setOpenActionsId(null)}
+                              className="flex h-9 w-full items-center rounded-xl px-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
+                            >
                               Etiqueta
-                            </button>
+                            </Link>
                             <Link
                               to={`/admin/productos/${encodeURIComponent(p.id)}/editar`}
                               onClick={() => setOpenActionsId(null)}

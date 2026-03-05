@@ -1,5 +1,5 @@
 import { authJsonRequest, publicJsonRequest } from '@/features/auth/http';
-import type { PublicRepairLookupItem, RepairItem, RepairTimelineEvent } from './types';
+import type { PublicRepairLookupItem, PublicRepairQuoteApprovalItem, RepairItem, RepairTimelineEvent } from './types';
 
 export const repairsApi = {
   publicLookup(input: { repairId: string; customerPhone: string }) {
@@ -7,6 +7,30 @@ export const repairsApi = {
       method: 'POST',
       body: JSON.stringify(input),
     });
+  },
+  publicQuoteApproval(id: string, token: string) {
+    const qs = new URLSearchParams({ token: token.trim() });
+    return publicJsonRequest<{ ok: boolean; canDecide: boolean; item: PublicRepairQuoteApprovalItem }>(
+      `/repairs/${encodeURIComponent(id)}/quote-approval?${qs.toString()}`,
+    );
+  },
+  publicQuoteApprove(id: string, token: string) {
+    return publicJsonRequest<{ ok: boolean; changed: boolean; canDecide: boolean; message: string; item: PublicRepairQuoteApprovalItem }>(
+      `/repairs/${encodeURIComponent(id)}/quote-approval/approve`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ token }),
+      },
+    );
+  },
+  publicQuoteReject(id: string, token: string) {
+    return publicJsonRequest<{ ok: boolean; changed: boolean; canDecide: boolean; message: string; item: PublicRepairQuoteApprovalItem }>(
+      `/repairs/${encodeURIComponent(id)}/quote-approval/reject`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ token }),
+      },
+    );
   },
   my() {
     return authJsonRequest<{ items: RepairItem[] }>('/repairs/my');

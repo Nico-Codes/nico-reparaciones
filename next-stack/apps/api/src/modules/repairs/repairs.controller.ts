@@ -50,6 +50,10 @@ const publicLookupSchema = z.object({
   customerPhone: z.string().trim().min(6).max(60),
 });
 
+const publicQuoteTokenSchema = z.object({
+  token: z.string().trim().min(10).max(4096),
+});
+
 function zodBadRequest(parsed: z.SafeParseError<unknown>) {
   return new BadRequestException({
     message: 'Validacion invalida',
@@ -66,6 +70,27 @@ export class RepairsController {
     const parsed = publicLookupSchema.safeParse(body);
     if (!parsed.success) throw zodBadRequest(parsed);
     return this.repairsService.publicLookup(parsed.data.repairId, parsed.data.customerPhone);
+  }
+
+  @Get(':id/quote-approval')
+  publicQuoteApproval(@Param('id') id: string, @Query() query: unknown) {
+    const parsed = publicQuoteTokenSchema.safeParse(query);
+    if (!parsed.success) throw zodBadRequest(parsed);
+    return this.repairsService.publicQuoteApproval(id, parsed.data.token);
+  }
+
+  @Post(':id/quote-approval/approve')
+  publicQuoteApprove(@Param('id') id: string, @Body() body: unknown) {
+    const parsed = publicQuoteTokenSchema.safeParse(body);
+    if (!parsed.success) throw zodBadRequest(parsed);
+    return this.repairsService.publicQuoteApprove(id, parsed.data.token);
+  }
+
+  @Post(':id/quote-approval/reject')
+  publicQuoteReject(@Param('id') id: string, @Body() body: unknown) {
+    const parsed = publicQuoteTokenSchema.safeParse(body);
+    if (!parsed.success) throw zodBadRequest(parsed);
+    return this.repairsService.publicQuoteReject(id, parsed.data.token);
   }
 
   @Get('my')

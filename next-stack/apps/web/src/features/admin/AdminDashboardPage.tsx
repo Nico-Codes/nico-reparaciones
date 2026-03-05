@@ -140,6 +140,7 @@ export function AdminDashboardPage() {
           <div className="flex flex-wrap gap-2">
             <NavChip to="/store" label="Ver tienda" />
             <NavChip to="/admin/orders" label="Pedidos" />
+            <NavChip to="/admin/ventas-rapidas" label="Venta rápida" />
             <NavChip to="/admin/alertas" label="Alertas" />
             <NavChip to="/admin/repairs" label="Reparaciones" />
             <NavChip to="/admin/productos" label="Productos" />
@@ -150,7 +151,7 @@ export function AdminDashboardPage() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Link to="/admin/orders" className="btn-primary !h-11 !rounded-2xl px-5 text-sm font-black">
+            <Link to="/admin/ventas-rapidas" className="btn-primary !h-11 !rounded-2xl px-5 text-sm font-black">
               + Nueva venta
             </Link>
             <Link to="/admin/repairs" className="btn-primary !h-11 !rounded-2xl px-5 text-sm font-black">

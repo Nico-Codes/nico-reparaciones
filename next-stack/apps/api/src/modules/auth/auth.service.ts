@@ -7,6 +7,8 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import type { AppSetting } from '@prisma/client';
 import type {
+  AccountPasswordUpdateInput,
+  AccountUpdateInput,
   BootstrapAdminInput,
   ForgotPasswordInput,
   LoginInput,
@@ -129,6 +131,82 @@ export class AuthService {
     }
     return {
       user: this.usersService.toPublicUser(user),
+    };
+  }
+
+  async updateAccountByUserId(userId: string, input: AccountUpdateInput) {
+    const user = await this.usersService.findById(userId);
+    if (!user) throw new UnauthorizedException('Usuario no encontrado');
+
+    const normalizedName = input.name.trim();
+    const normalizedEmail = input.email.trim().toLowerCase();
+    const emailChanged = normalizedEmail !== user.email;
+
+    if (emailChanged) {
+      const existing = await this.usersService.findByEmail(normalizedEmail);
+      if (existing && existing.id !== userId) {
+        throw new BadRequestException('Ya existe una cuenta con ese email');
+      }
+    }
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        name: normalizedName,
+        email: normalizedEmail,
+        ...(emailChanged ? { emailVerified: false, emailVerifiedAt: null } : {}),
+      },
+    });
+
+    if (emailChanged) {
+      const verification = await this.createEmailVerificationToken(updated.id);
+      if (verification.rawToken) {
+        void this.mailService.sendTemplate({
+          templateKey: 'verify_email',
+          to: updated.email,
+          vars: {
+            user_name: updated.name,
+            verify_url: `${this.getWebBaseUrl()}/auth/verify-email?token=${verification.rawToken}`,
+          },
+        });
+      }
+      return {
+        user: this.usersService.toPublicUser(updated),
+        emailVerification: {
+          required: true,
+          status: 'pending',
+          ...(verification.previewToken ? { previewToken: verification.previewToken } : {}),
+        },
+      };
+    }
+
+    return {
+      user: this.usersService.toPublicUser(updated),
+    };
+  }
+
+  async updateAccountPasswordByUserId(userId: string, input: AccountPasswordUpdateInput) {
+    const user = await this.usersService.findById(userId);
+    if (!user) throw new UnauthorizedException('Usuario no encontrado');
+    if (!user.passwordHash) {
+      throw new BadRequestException('Este usuario no tiene contraseña local configurada');
+    }
+
+    const currentOk = await bcrypt.compare(input.currentPassword, user.passwordHash);
+    if (!currentOk) {
+      throw new BadRequestException('La contraseña actual no es correcta');
+    }
+
+    if (input.currentPassword === input.newPassword) {
+      throw new BadRequestException('La nueva contraseña no puede ser igual a la actual');
+    }
+
+    const nextHash = await bcrypt.hash(input.newPassword, 10);
+    await this.usersService.updatePassword(userId, nextHash);
+
+    return {
+      ok: true,
+      message: 'Contrasena actualizada correctamente',
     };
   }
 

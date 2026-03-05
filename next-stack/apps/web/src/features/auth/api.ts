@@ -24,6 +24,24 @@ export const authApi = {
     }
     return authJsonRequest<{ user: AuthResponse['user'] }>('/auth/me', { method: 'GET' });
   },
+  account() {
+    return authJsonRequest<{ user: AuthResponse['user'] }>('/auth/account', { method: 'GET' });
+  },
+  updateAccount(input: { name: string; email: string }) {
+    return authJsonRequest<{ user: AuthResponse['user']; emailVerification?: { required: boolean; status: string; previewToken?: string } }>(
+      '/auth/account',
+      {
+        method: 'PATCH',
+        body: JSON.stringify(input),
+      },
+    );
+  },
+  updateAccountPassword(input: { currentPassword: string; newPassword: string }) {
+    return authJsonRequest<{ ok: boolean; message: string }>('/auth/account/password', {
+      method: 'PATCH',
+      body: JSON.stringify(input),
+    });
+  },
   refresh(refreshToken?: string) {
     const token = refreshToken ?? authStorage.getRefreshToken();
     return publicJsonRequest<AuthResponse>('/auth/refresh', {

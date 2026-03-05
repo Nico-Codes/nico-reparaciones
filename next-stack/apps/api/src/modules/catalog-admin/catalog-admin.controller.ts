@@ -72,6 +72,11 @@ export class CatalogAdminController {
     return this.service.updateCategory(id, parsed.data);
   }
 
+  @Delete('categories/:id')
+  deleteCategory(@Param('id') id: string) {
+    return this.service.deleteCategory(id);
+  }
+
   @Get('products')
   products(@Query('q') q?: string, @Query('categoryId') categoryId?: string, @Query('active') active?: string) {
     return this.service.products({ q, categoryId, active });

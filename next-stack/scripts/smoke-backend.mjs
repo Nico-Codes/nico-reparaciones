@@ -152,6 +152,7 @@ async function main() {
   logStep('cart/quote invalid', { errors: cartInvalid.data.errors.length });
 
   let createdOrderId = null;
+  let quickSaleOrderId = null;
   const firstBuyable = products.data.items.find((p) => p?.id);
   if (firstBuyable) {
     const cartValid = await req('/cart/quote', {
@@ -175,6 +176,23 @@ async function main() {
     assert(checkoutOrder?.id, 'orders/checkout sin item.id', checkout.data);
     createdOrderId = checkoutOrder.id;
     logStep('orders/checkout', { orderId: createdOrderId, total: checkoutOrder.total });
+
+    const quickSale = await req('/orders/admin/quick-sales/confirm', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${refreshTokens.accessToken}` },
+      body: JSON.stringify({
+        items: [{ productId: firstBuyable.id, quantity: 1 }],
+        paymentMethod: 'local',
+        customerName: 'Cliente mostrador',
+        customerPhone: '+5491111111111',
+        notes: 'Smoke quick sale',
+      }),
+    });
+    assert(quickSale.res.ok, 'orders/admin/quick-sales/confirm fallo', { status: quickSale.res.status, body: quickSale.data });
+    assert(quickSale.data?.item?.isQuickSale === true, 'quick sale sin flag isQuickSale', quickSale.data);
+    assert(quickSale.data?.item?.status === 'ENTREGADO', 'quick sale sin estado ENTREGADO', quickSale.data);
+    quickSaleOrderId = quickSale.data.item.id;
+    logStep('orders/admin/quick-sales/confirm', { orderId: quickSaleOrderId });
   } else {
     logStep('orders/checkout', { skipped: 'sin productos disponibles' });
   }
@@ -192,6 +210,25 @@ async function main() {
   assert(ordersAdmin.res.ok, 'orders/admin fallo', { status: ordersAdmin.res.status, body: ordersAdmin.data });
   assert(Array.isArray(ordersAdmin.data?.items), 'orders/admin payload invalido', ordersAdmin.data);
   logStep('orders/admin', { count: ordersAdmin.data.items.length });
+
+  const today = new Date().toISOString().slice(0, 10);
+  const quickSalesHistory = await req(`/orders/admin/quick-sales?from=${today}&to=${today}`, {
+    headers: { Authorization: `Bearer ${refreshTokens.accessToken}` },
+  });
+  assert(quickSalesHistory.res.ok, 'orders/admin/quick-sales fallo', {
+    status: quickSalesHistory.res.status,
+    body: quickSalesHistory.data,
+  });
+  assert(Array.isArray(quickSalesHistory.data?.items), 'orders/admin/quick-sales payload invalido', quickSalesHistory.data);
+  assert(Array.isArray(quickSalesHistory.data?.paymentMethods), 'orders/admin/quick-sales sin paymentMethods', quickSalesHistory.data);
+  if (quickSaleOrderId) {
+    assert(
+      quickSalesHistory.data.items.some((row) => row?.id === quickSaleOrderId),
+      'orders/admin/quick-sales no incluye quick sale creada',
+      { quickSaleOrderId, count: quickSalesHistory.data.items.length },
+    );
+  }
+  logStep('orders/admin/quick-sales', { count: quickSalesHistory.data.items.length });
 
   if (createdOrderId) {
     const orderMyDetail = await req(`/orders/my/${encodeURIComponent(createdOrderId)}`, {

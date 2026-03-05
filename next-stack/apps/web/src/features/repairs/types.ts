@@ -32,6 +32,22 @@ export type PublicRepairLookupItem = {
   updatedAt: string;
 };
 
+export type PublicRepairQuoteApprovalItem = {
+  id: string;
+  customerName: string;
+  customerPhoneMasked: string | null;
+  deviceBrand: string | null;
+  deviceModel: string | null;
+  issueLabel: string | null;
+  status: string;
+  statusLabel: string;
+  quotedPrice: number | null;
+  finalPrice: number | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type RepairTimelineEvent = {
   id: string;
   eventType: string;

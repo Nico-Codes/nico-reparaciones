@@ -12,6 +12,7 @@ import { AdminCalculationsHubPage } from '@/features/admin/AdminCalculationsHubP
 import { AdminProductPricingRulesPage } from '@/features/admin/AdminProductPricingRulesPage';
 import { AdminRepairPricingRulesPage } from '@/features/admin/AdminRepairPricingRulesPage';
 import { AdminRepairPricingRuleCreatePage } from '@/features/admin/AdminRepairPricingRuleCreatePage';
+import { AdminRepairPricingRuleEditPage } from '@/features/admin/AdminRepairPricingRuleEditPage';
 import { AdminModelGroupsPage } from '@/features/admin/AdminModelGroupsPage';
 import { AdminRepairTypesPage } from '@/features/admin/AdminRepairTypesPage';
 import { AdminDevicesCatalogPage } from '@/features/admin/AdminDevicesCatalogPage';
@@ -30,17 +31,22 @@ import { RequireAdmin } from '@/features/auth/RequireAdmin';
 import { RequireAuth } from '@/features/auth/RequireAuth';
 import { ResetPasswordPage } from '@/features/auth/ResetPasswordPage';
 import { VerifyEmailPage } from '@/features/auth/VerifyEmailPage';
+import { MyAccountPage } from '@/features/auth/MyAccountPage';
 import { authStorage } from '@/features/auth/storage';
 import { CartPage } from '@/features/cart/CartPage';
 import { AdminProductsPage } from '@/features/catalogAdmin/AdminProductsPage';
 import { AdminProductEditPage } from '@/features/catalogAdmin/AdminProductEditPage';
 import { AdminProductCreatePage } from '@/features/catalogAdmin/AdminProductCreatePage';
+import { AdminProductLabelPage } from '@/features/catalogAdmin/AdminProductLabelPage';
+import { AdminCategoriesPage } from '@/features/catalogAdmin/AdminCategoriesPage';
 import { AdminDeviceCatalogPage } from '@/features/deviceCatalog/AdminDeviceCatalogPage';
 import { CheckoutPage } from '@/features/orders/CheckoutPage';
 import { AdminOrdersPage } from '@/features/orders/AdminOrdersPage';
 import { AdminOrderDetailPage } from '@/features/orders/AdminOrderDetailPage';
 import { AdminOrderPrintPage } from '@/features/orders/AdminOrderPrintPage';
 import { AdminOrderTicketPage } from '@/features/orders/AdminOrderTicketPage';
+import { AdminQuickSalesPage } from '@/features/orders/AdminQuickSalesPage';
+import { AdminQuickSalesHistoryPage } from '@/features/orders/AdminQuickSalesHistoryPage';
 import { MyOrdersPage } from '@/features/orders/MyOrdersPage';
 import { OrderDetailPage } from '@/features/orders/OrderDetailPage';
 import { AdminRepairsListPage } from '@/features/repairs/AdminRepairsListPage';
@@ -49,6 +55,7 @@ import { AdminRepairPrintPage } from '@/features/repairs/AdminRepairPrintPage';
 import { AdminRepairTicketPage } from '@/features/repairs/AdminRepairTicketPage';
 import { MyRepairsPage } from '@/features/repairs/MyRepairsPage';
 import { PublicRepairLookupPage } from '@/features/repairs/PublicRepairLookupPage';
+import { PublicRepairQuoteApprovalPage } from '@/features/repairs/PublicRepairQuoteApprovalPage';
 import { RepairDetailPage } from '@/features/repairs/RepairDetailPage';
 import { AdminWarrantyCreatePage } from '@/features/warranties/AdminWarrantyCreatePage';
 import { AdminWarrantiesPage } from '@/features/warranties/AdminWarrantiesPage';
@@ -138,11 +145,12 @@ function AdminProductCreateAliasRedirect() {
 
 function AdminProductLabelAliasRedirect() {
   const { id = '' } = useParams();
-  return <Navigate to={id ? `/admin/productos/${encodeURIComponent(id)}/editar` : '/admin/productos'} replace />;
+  return <Navigate to={id ? `/admin/productos/${encodeURIComponent(id)}/etiqueta` : '/admin/productos'} replace />;
 }
 
 function LegacyAdminPricingEditAliasRedirect() {
-  return <Navigate to="/admin/precios" replace />;
+  const { id = '' } = useParams();
+  return <Navigate to={id ? `/admin/precios/${encodeURIComponent(id)}/editar` : '/admin/precios'} replace />;
 }
 
 function ApiAuthAliasRedirect() {
@@ -180,7 +188,7 @@ export default function App() {
         <Route path="/store/:slug" element={withShell(<StoreProductDetailPage />)} />
         <Route path="/producto/:slug" element={withShell(<LegacyProductAliasRedirect />)} />
         <Route path="/reparacion" element={withShell(<PublicRepairLookupPage />)} />
-        <Route path="/reparacion/:id/presupuesto" element={withShell(<Navigate to="/reparacion" replace />)} />
+        <Route path="/reparacion/:id/presupuesto" element={withShell(<PublicRepairQuoteApprovalPage />)} />
         <Route path="/repair-lookup" element={withShell(<PublicRepairLookupPage />)} />
         <Route path="/help" element={withShell(<HelpPage />)} />
         <Route path="/ayuda" element={withShell(<Navigate to="/help" replace />)} />
@@ -200,7 +208,7 @@ export default function App() {
         <Route path="/repairs/:id" element={<RequireAuth>{withShell(<RepairDetailPage />)}</RequireAuth>} />
         <Route path="/mis-reparaciones" element={<RequireAuth>{withShell(<LegacyRepairsAliasRedirect />)}</RequireAuth>} />
         <Route path="/mis-reparaciones/:id" element={<RequireAuth>{withShell(<LegacyRepairsAliasRedirect />)}</RequireAuth>} />
-        <Route path="/mi-cuenta" element={<RequireAuth>{withShell(<Navigate to="/orders" replace />)}</RequireAuth>} />
+        <Route path="/mi-cuenta" element={<RequireAuth>{withShell(<MyAccountPage />)}</RequireAuth>} />
         <Route path="/email/verificar" element={<RequireAuth>{withShell(<Navigate to="/auth/verify-email" replace />)}</RequireAuth>} />
         <Route path="/email/verificar/:id/:hash" element={<RequireAuth>{withShell(<Navigate to="/auth/verify-email" replace />)}</RequireAuth>} />
         <Route path="/admin" element={<RequireAdmin>{withShell(<AdminDashboardPage />)}</RequireAdmin>} />
@@ -218,13 +226,14 @@ export default function App() {
         <Route path="/admin/products" element={<RequireAdmin><Navigate to="/admin/productos" replace /></RequireAdmin>} />
         <Route path="/admin/products/create" element={<RequireAdmin><AdminProductCreateAliasRedirect /></RequireAdmin>} />
         <Route path="/admin/products/:id/edit" element={<RequireAdmin><AdminProductEditAliasRedirect /></RequireAdmin>} />
+        <Route path="/admin/products/:id/label" element={<RequireAdmin><AdminProductLabelAliasRedirect /></RequireAdmin>} />
         <Route path="/admin/productos" element={<RequireAdmin>{withShell(<AdminProductsPage />)}</RequireAdmin>} />
         <Route path="/admin/productos/crear" element={<RequireAdmin>{withShell(<AdminProductCreatePage />)}</RequireAdmin>} />
         <Route path="/admin/productos/:id/editar" element={<RequireAdmin>{withShell(<AdminProductEditPage />)}</RequireAdmin>} />
-        <Route path="/admin/productos/:id/etiqueta" element={<RequireAdmin><AdminProductLabelAliasRedirect /></RequireAdmin>} />
-        <Route path="/admin/categorias" element={<RequireAdmin><Navigate to="/admin/productos" replace /></RequireAdmin>} />
-        <Route path="/admin/categorias/crear" element={<RequireAdmin><Navigate to="/admin/productos/crear" replace /></RequireAdmin>} />
-        <Route path="/admin/categorias/:id/editar" element={<RequireAdmin><Navigate to="/admin/productos" replace /></RequireAdmin>} />
+        <Route path="/admin/productos/:id/etiqueta" element={<RequireAdmin><AdminProductLabelPage /></RequireAdmin>} />
+        <Route path="/admin/categorias" element={<RequireAdmin>{withShell(<AdminCategoriesPage />)}</RequireAdmin>} />
+        <Route path="/admin/categorias/crear" element={<RequireAdmin>{withShell(<AdminCategoriesPage />)}</RequireAdmin>} />
+        <Route path="/admin/categorias/:id/editar" element={<RequireAdmin>{withShell(<AdminCategoriesPage />)}</RequireAdmin>} />
         <Route path="/admin/users" element={<RequireAdmin>{withShell(<AdminUsersPage />)}</RequireAdmin>} />
         <Route path="/admin/usuarios" element={<RequireAdmin><Navigate to="/admin/users" replace /></RequireAdmin>} />
         <Route path="/admin/configuraciones" element={<RequireAdmin>{withShell(<AdminSettingsHubPage />)}</RequireAdmin>} />
@@ -243,7 +252,8 @@ export default function App() {
         <Route path="/admin/calculos/productos" element={<RequireAdmin>{withShell(<AdminProductPricingRulesPage />)}</RequireAdmin>} />
         <Route path="/admin/precios" element={<RequireAdmin>{withShell(<AdminRepairPricingRulesPage />)}</RequireAdmin>} />
         <Route path="/admin/precios/crear" element={<RequireAdmin>{withShell(<AdminRepairPricingRuleCreatePage />)}</RequireAdmin>} />
-        <Route path="/admin/precios/:id/editar" element={<RequireAdmin><LegacyAdminPricingEditAliasRedirect /></RequireAdmin>} />
+        <Route path="/admin/precios/:id/editar" element={<RequireAdmin>{withShell(<AdminRepairPricingRuleEditPage />)}</RequireAdmin>} />
+        <Route path="/admin/pricing/:id/edit" element={<RequireAdmin><LegacyAdminPricingEditAliasRedirect /></RequireAdmin>} />
         <Route path="/admin/gruposmodelos" element={<RequireAdmin>{withShell(<AdminModelGroupsPage />)}</RequireAdmin>} />
         <Route path="/admin/grupos-modelos" element={<RequireAdmin><Navigate to="/admin/gruposmodelos" replace /></RequireAdmin>} />
         <Route path="/admin/tiposreparacion" element={<RequireAdmin>{withShell(<AdminRepairTypesPage />)}</RequireAdmin>} />
@@ -268,9 +278,9 @@ export default function App() {
         <Route path="/admin/reparaciones/:id" element={<RequireAdmin><LegacyAdminRepairsAliasRedirect /></RequireAdmin>} />
         <Route path="/admin/reparaciones/:id/imprimir" element={<RequireAdmin><LegacyAdminRepairPrintAliasRedirect /></RequireAdmin>} />
         <Route path="/admin/reparaciones/:id/ticket" element={<RequireAdmin><LegacyAdminRepairTicketAliasRedirect /></RequireAdmin>} />
-        <Route path="/admin/ventas-rapidas" element={<RequireAdmin><Navigate to="/admin/orders" replace /></RequireAdmin>} />
-        <Route path="/admin/ventas-rapidas/ticket" element={<RequireAdmin><Navigate to="/admin/orders" replace /></RequireAdmin>} />
-        <Route path="/admin/ventas-rapidas/historial" element={<RequireAdmin><Navigate to="/admin/orders" replace /></RequireAdmin>} />
+        <Route path="/admin/ventas-rapidas" element={<RequireAdmin>{withShell(<AdminQuickSalesPage />)}</RequireAdmin>} />
+        <Route path="/admin/ventas-rapidas/ticket" element={<RequireAdmin>{withShell(<AdminQuickSalesPage />)}</RequireAdmin>} />
+        <Route path="/admin/ventas-rapidas/historial" element={<RequireAdmin>{withShell(<AdminQuickSalesHistoryPage />)}</RequireAdmin>} />
         <Route path="/admin/garantias" element={<RequireAdmin>{withShell(<AdminWarrantiesPage />)}</RequireAdmin>} />
         <Route path="/admin/warranties" element={<RequireAdmin><Navigate to="/admin/garantias" replace /></RequireAdmin>} />
         <Route path="/admin/garantias/crear" element={<RequireAdmin>{withShell(<AdminWarrantyCreatePage />)}</RequireAdmin>} />

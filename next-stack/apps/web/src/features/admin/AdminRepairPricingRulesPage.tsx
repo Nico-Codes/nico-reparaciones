@@ -286,6 +286,12 @@ export function AdminRepairPricingRulesPage() {
                   <InlineText value={row.shippingFee} onChange={(v) => patchRow(row.id, { shippingFee: v })} />
                   <InlineText value={row.priority} onChange={(v) => patchRow(row.id, { priority: v })} />
                   <div className="flex items-center gap-2">
+                    <Link
+                      to={`/admin/precios/${encodeURIComponent(row.id)}/editar`}
+                      className="btn-outline !h-8 !rounded-xl px-3 text-sm font-bold"
+                    >
+                      Editar
+                    </Link>
                     <button
                       type="button"
                       onClick={() => void saveRow(row)}

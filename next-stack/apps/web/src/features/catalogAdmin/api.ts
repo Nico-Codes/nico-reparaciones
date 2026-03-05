@@ -51,6 +51,9 @@ export const catalogAdminApi = {
   updateCategory(id: string, input: Partial<{ name: string; slug: string; active: boolean }>) {
     return authJsonRequest<{ item: AdminCategory }>(`/catalog-admin/categories/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(input) });
   },
+  deleteCategory(id: string) {
+    return authJsonRequest<{ ok: boolean }>(`/catalog-admin/categories/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  },
   products(params?: { q?: string; categoryId?: string; active?: string }) {
     const qs = new URLSearchParams();
     if (params?.q) qs.set('q', params.q);

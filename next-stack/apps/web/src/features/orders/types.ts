@@ -13,6 +13,7 @@ export type OrderItem = {
   total: number;
   paymentMethod: string | null;
   isQuickSale: boolean;
+  quickSaleAdminId?: string | null;
   user?: {
     id: string;
     name: string;
@@ -21,4 +22,13 @@ export type OrderItem = {
   createdAt: string;
   updatedAt: string;
   items: OrderLine[];
+};
+
+export type QuickSaleHistoryItem = OrderItem & {
+  itemsCount: number;
+  admin?: {
+    id: string;
+    name: string;
+    email: string;
+  } | null;
 };

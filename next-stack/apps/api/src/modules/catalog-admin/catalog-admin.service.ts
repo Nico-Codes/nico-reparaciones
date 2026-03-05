@@ -83,6 +83,19 @@ export class CatalogAdminService {
     return { item };
   }
 
+  async deleteCategory(id: string) {
+    const found = await this.prisma.category.findUnique({
+      where: { id },
+      select: { id: true, _count: { select: { products: true } } },
+    });
+    if (!found) throw new NotFoundException('Categoria no encontrada');
+    if (found._count.products > 0) {
+      throw new BadRequestException('No se puede eliminar una categoria con productos asociados');
+    }
+    await this.prisma.category.delete({ where: { id } });
+    return { ok: true };
+  }
+
   async products(params?: ProductListParams) {
     const q = (params?.q ?? '').trim();
     const categoryId = (params?.categoryId ?? '').trim();

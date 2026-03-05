@@ -1,4 +1,5 @@
 import {
+  Patch,
   Body,
   Controller,
   Get,
@@ -12,6 +13,8 @@ import {
   UsePipes,
 } from '@nestjs/common';
 import type {
+  AccountPasswordUpdateInput,
+  AccountUpdateInput,
   BootstrapAdminInput,
   ForgotPasswordInput,
   LoginInput,
@@ -21,6 +24,8 @@ import type {
   VerifyEmailInput,
 } from '@nico/contracts';
 import {
+  accountPasswordUpdateSchema,
+  accountUpdateSchema,
   bootstrapAdminSchema,
   forgotPasswordSchema,
   loginSchema,
@@ -106,6 +111,35 @@ export class AuthController {
   async meProtected(@CurrentUser() user: AuthenticatedUser | null) {
     if (!user) throw new UnauthorizedException('Usuario no autenticado');
     return this.authService.meByUserId(user.id);
+  }
+
+  @Get('account')
+  @UseGuards(JwtAuthGuard)
+  async account(@CurrentUser() user: AuthenticatedUser | null) {
+    if (!user) throw new UnauthorizedException('Usuario no autenticado');
+    return this.authService.meByUserId(user.id);
+  }
+
+  @Patch('account')
+  @UseGuards(JwtAuthGuard)
+  @UsePipes(new ZodValidationPipe(accountUpdateSchema))
+  async updateAccount(
+    @CurrentUser() user: AuthenticatedUser | null,
+    @Body() input: AccountUpdateInput,
+  ) {
+    if (!user) throw new UnauthorizedException('Usuario no autenticado');
+    return this.authService.updateAccountByUserId(user.id, input);
+  }
+
+  @Patch('account/password')
+  @UseGuards(JwtAuthGuard)
+  @UsePipes(new ZodValidationPipe(accountPasswordUpdateSchema))
+  async updateAccountPassword(
+    @CurrentUser() user: AuthenticatedUser | null,
+    @Body() input: AccountPasswordUpdateInput,
+  ) {
+    if (!user) throw new UnauthorizedException('Usuario no autenticado');
+    return this.authService.updateAccountPasswordByUserId(user.id, input);
   }
 
   private extractBearerToken(header?: string): string | null {

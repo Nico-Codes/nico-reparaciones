@@ -57,3 +57,17 @@ export const bootstrapAdminSchema = z.object({
 });
 
 export type BootstrapAdminInput = z.infer<typeof bootstrapAdminSchema>;
+
+export const accountUpdateSchema = z.object({
+  name: z.string().trim().min(2).max(120),
+  email: z.string().trim().email().max(190),
+});
+
+export type AccountUpdateInput = z.infer<typeof accountUpdateSchema>;
+
+export const accountPasswordUpdateSchema = z.object({
+  currentPassword: z.string().min(1).max(128),
+  newPassword: z.string().min(8).max(128),
+});
+
+export type AccountPasswordUpdateInput = z.infer<typeof accountPasswordUpdateSchema>;

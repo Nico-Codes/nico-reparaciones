@@ -83,7 +83,7 @@ function AccountMenu({
               <HelpCircle className="h-4 w-4 text-zinc-700" />
               Ayuda
             </Link>
-            <Link className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-zinc-800 hover:bg-zinc-100" to="/orders">
+            <Link className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-zinc-800 hover:bg-zinc-100" to="/mi-cuenta">
               <User className="h-4 w-4 text-zinc-500" />
               Mi cuenta
             </Link>
@@ -102,6 +102,7 @@ function AccountMenu({
                 </Link>
                 <Link className="rounded-xl px-3 py-2 text-sm font-semibold text-zinc-800 hover:bg-zinc-100" to="/admin/repairs">Reparaciones</Link>
                 <Link className="rounded-xl px-3 py-2 text-sm font-semibold text-zinc-800 hover:bg-zinc-100" to="/admin/orders">Pedidos</Link>
+                <Link className="rounded-xl px-3 py-2 text-sm font-semibold text-zinc-800 hover:bg-zinc-100" to="/admin/ventas-rapidas">Venta rápida</Link>
                 <Link className="rounded-xl px-3 py-2 text-sm font-semibold text-zinc-800 hover:bg-zinc-100" to="/admin/configuraciones">Configuración</Link>
               </>
             ) : null}
@@ -135,9 +136,11 @@ export function AppShell({ children }: AppShellProps) {
     const sync = () => setAuthUser(authStorage.getUser());
     window.addEventListener('storage', sync);
     window.addEventListener('focus', sync);
+    window.addEventListener('nico:auth-changed', sync);
     return () => {
       window.removeEventListener('storage', sync);
       window.removeEventListener('focus', sync);
+      window.removeEventListener('nico:auth-changed', sync);
     };
   }, []);
 
@@ -278,6 +281,7 @@ export function AppShell({ children }: AppShellProps) {
                           <NavLink to="/admin" className="rounded-lg px-2 py-2 text-sm font-semibold hover:bg-white">Panel</NavLink>
                           <NavLink to="/admin/repairs" className="rounded-lg px-2 py-2 text-sm font-semibold hover:bg-white">Reparaciones</NavLink>
                           <NavLink to="/admin/orders" className="rounded-lg px-2 py-2 text-sm font-semibold hover:bg-white">Pedidos</NavLink>
+                          <NavLink to="/admin/ventas-rapidas" className="rounded-lg px-2 py-2 text-sm font-semibold hover:bg-white">Venta rápida</NavLink>
                           <NavLink to="/admin/products" className="rounded-lg px-2 py-2 text-sm font-semibold hover:bg-white">Productos</NavLink>
                           <NavLink to="/admin/configuraciones" className="rounded-lg px-2 py-2 text-sm font-semibold hover:bg-white">Configuración</NavLink>
                         </div>

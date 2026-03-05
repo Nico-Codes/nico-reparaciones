@@ -19,10 +19,10 @@ Estado de compatibilidad de rutas legacy de Laravel contra el router React (`app
 - `/pedido/:id` -> `/orders/:id`
 - `/mis-reparaciones` -> `/repairs`
 - `/mis-reparaciones/:id` -> `/repairs/:id`
-- `/mi-cuenta` -> `/orders` (fallback temporal)
+- `/mi-cuenta` -> `/mi-cuenta` (view React real)
 - `/email/verificar` -> `/auth/verify-email`
 - `/email/verificar/:id/:hash` -> `/auth/verify-email`
-- `/reparacion/:id/presupuesto` -> `/reparacion` (fallback temporal)
+- `/reparacion/:id/presupuesto` -> `/reparacion/:id/presupuesto` (view React real)
 
 ### Admin
 - `/admin/dashboard` -> `/admin`
@@ -46,23 +46,23 @@ Estado de compatibilidad de rutas legacy de Laravel contra el router React (`app
 - `/admin/grupos-modelos` -> `/admin/gruposmodelos`
 - `/admin/tipos-dispositivo` -> `/admin/tiposdispositivo`
 - `/admin/catalogo-dispositivos` -> `/admin/catalogodispositivos`
-- `/admin/categorias` -> `/admin/productos` (fallback temporal)
-- `/admin/categorias/crear` -> `/admin/productos/crear` (fallback temporal)
-- `/admin/categorias/:id/editar` -> `/admin/productos` (fallback temporal)
-- `/admin/productos/:id/etiqueta` -> `/admin/productos/:id/editar` (fallback temporal)
-- `/admin/precios/:id/editar` -> `/admin/precios`
-- `/admin/ventas-rapidas` -> `/admin/orders` (fallback temporal)
-- `/admin/ventas-rapidas/ticket` -> `/admin/orders` (fallback temporal)
-- `/admin/ventas-rapidas/historial` -> `/admin/orders` (fallback temporal)
+- `/admin/categorias` -> `/admin/categorias` (view React real)
+- `/admin/categorias/crear` -> `/admin/categorias/crear` (view React real)
+- `/admin/categorias/:id/editar` -> `/admin/categorias/:id/editar` (view React real)
+- `/admin/productos/:id/etiqueta` -> `/admin/productos/:id/etiqueta` (view React real)
+- `/admin/precios/:id/editar` -> `/admin/precios/:id/editar` (view React real)
+- `/admin/ventas-rapidas` -> `/admin/ventas-rapidas` (view React real)
+- `/admin/ventas-rapidas/ticket` -> `/admin/ventas-rapidas/ticket` (view React real)
+- `/admin/ventas-rapidas/historial` -> `/admin/ventas-rapidas/historial` (view React real)
 
 ## Compatibilidad de views/botones/acciones
 
 - Navegacion de frontend:
-- 50 paths detectados en `to`, `navigate` y `href`.
+- 58 paths detectados en `to`, `navigate` y `href`.
 - 0 paths sin route definido en `apps/web/src/App.tsx`.
 
 - Acciones API frontend:
-- 69 llamados unicos detectados en `apps/web/src/features/**/(api|http).ts`.
+- 77 llamados unicos detectados en `apps/web/src/features/**/(api|http).ts`.
 - 0 llamados sin endpoint backend (comparados contra controllers de Nest en `apps/api/src/modules/**`).
 
 Este chequeo queda automatizado con:
@@ -81,6 +81,4 @@ Este chequeo queda automatizado con:
 
 ## Pendientes funcionales (sin paridad 1:1 aun)
 
-- Flujo completo de aprobacion/rechazo de presupuesto firmado (`/reparacion/:id/presupuesto/...`) hoy cae en fallback.
-- View dedicada de `mi-cuenta` (`/mi-cuenta`) aun no existe en React.
-- Views dedicadas de `categorias` admin y `ventas rapidas` admin aun no existen en React (hoy usan fallback de navegacion).
+- Sin pendientes de rutas legacy mapeadas en este documento.
