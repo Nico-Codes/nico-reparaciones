@@ -1,32 +1,29 @@
-# Deploy Guide (VPS Ubuntu + Nginx + PM2 + PostgreSQL)
+﻿# Deploy Guide (VPS Ubuntu + Nginx + PM2 + PostgreSQL)
 
-Guía práctica para desplegar `next-stack` cuando decidas salir de local.
+Guía práctica para desplegar `next-stack` en producción.
 
-## 1. Arquitectura recomendada
+## 1) Arquitectura recomendada
 
 - `Nginx` como reverse proxy (HTTPS)
-- `Node.js` para:
-  - API NestJS (`@nico/api`)
-  - frontend web servido como archivos estáticos (recomendado)
-- `PM2` para proceso API
-- `PostgreSQL` (local en VPS o administrado externo)
+- API NestJS (`@nico/api`) detrás de PM2
+- Frontend React servido como estático (`apps/web/dist`)
+- PostgreSQL (local o administrado)
 
-## 2. Requisitos recomendados del VPS
+## 2) Requisitos mínimos VPS
 
-- Ubuntu 22.04 LTS o 24.04 LTS
+- Ubuntu 22.04/24.04 LTS
 - 2 vCPU
-- 2 GB RAM (mínimo usable)
+- 2 GB RAM (mínimo)
 - 20+ GB SSD
-- Latencia razonable con tu zona de operación
 
-## 3. Instalación base del servidor
+## 3) Base del servidor
 
 ```bash
 sudo apt update && sudo apt upgrade -y
 sudo apt install -y curl git nginx ufw
 ```
 
-### Node.js LTS (ejemplo: 22.x)
+### Node.js LTS (ejemplo 22.x)
 
 ```bash
 curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
@@ -42,20 +39,19 @@ sudo npm install -g pm2
 pm2 -v
 ```
 
-## 4. PostgreSQL
+## 4) PostgreSQL
 
-### Opción A (recomendada): PostgreSQL administrado
-- Usar proveedor externo (mejor backups/operación)
-- Configurar `DATABASE_URL` con TLS si aplica
+### Opción A (recomendada): administrado
 
-### Opción B: PostgreSQL en el VPS
+- Usar proveedor externo (backup/operación más simple)
+- Configurar `DATABASE_URL` con TLS si corresponde
+
+### Opción B: en VPS
 
 ```bash
 sudo apt install -y postgresql postgresql-contrib
 sudo -u postgres psql
 ```
-
-Crear DB/usuario:
 
 ```sql
 CREATE USER nico_app WITH PASSWORD 'CAMBIAR_ESTA_CLAVE';
@@ -63,7 +59,7 @@ CREATE DATABASE nico_reparaciones_next OWNER nico_app;
 GRANT ALL PRIVILEGES ON DATABASE nico_reparaciones_next TO nico_app;
 ```
 
-## 5. Subir el proyecto
+## 5) Subir proyecto
 
 ```bash
 cd /var/www
@@ -75,16 +71,14 @@ cd next-stack
 npm install
 ```
 
-## 6. Variables de entorno (producción)
-
-Crear archivo:
+## 6) Variables de entorno (producción)
 
 ```bash
 cp .env.production.example .env.production
 nano .env.production
 ```
 
-Completar como mínimo:
+Completar al menos:
 - `DATABASE_URL`
 - `JWT_ACCESS_SECRET`
 - `JWT_REFRESH_SECRET`
@@ -94,6 +88,7 @@ Completar como mínimo:
 - `CORS_ORIGINS`
 - `MAIL_PREVIEW_TOKENS=0`
 - `ALLOW_ADMIN_BOOTSTRAP=0`
+- `ALLOW_DEMO_SEED=0`
 
 Validar:
 
@@ -101,63 +96,52 @@ Validar:
 npm run deploy:check
 ```
 
-## 7. Build y migraciones (producción)
+## 7) Gate final de migración antes de deploy
+
+```bash
+npm run qa:migration:close
+```
+
+Incluye:
+- backend full
+- route parity
+- e2e frontend
+- auditoría visual admin
+- parity visual legacy vs next
+- auditoría responsive (desktop/tablet/mobile)
+- chequeo de desacople legacy
+
+## 8) Build + migraciones
 
 ```bash
 npm run build
 npm run db:migrate:deploy
 ```
 
-Seed:
-- En producción real, evitar seed demo completo.
-- Si necesitás seed inicial controlado, crear uno específico (`seed:prod:init`) más adelante.
+Nota:
+- Evitar seed demo en producción.
+- Si necesitás seed inicial, usar uno controlado para prod.
 
-## 8. Ejecutar API con PM2
-
-Desde `next-stack/`:
+## 9) API con PM2
 
 ```bash
 pm2 start ecosystem.config.cjs
 pm2 save
 pm2 startup
-```
-
-Ver logs:
-
-```bash
 pm2 logs nico-api
 ```
 
-Tambien podes usar el comando directo (sin ecosystem):
-
-```bash
-pm2 start npm --name nico-api -- run start:prod:api
-```
-
-## 9. Frontend web (recomendado: servir estático con Nginx)
-
-Construir frontend:
+## 10) Frontend estático
 
 ```bash
 npm run build --workspace @nico/web
-```
-
-Publicar carpeta estática:
-
-```bash
 sudo mkdir -p /var/www/nico-web
 sudo rsync -av --delete apps/web/dist/ /var/www/nico-web/
 ```
 
-## 10. Nginx (frontend + proxy API)
+## 11) Nginx
 
-Crear config:
-
-```bash
-sudo nano /etc/nginx/sites-available/nico-reparaciones
-```
-
-Ejemplo (ajustar dominios):
+`/etc/nginx/sites-available/nico-reparaciones`
 
 ```nginx
 server {
@@ -182,22 +166,20 @@ server {
 }
 ```
 
-Activar:
-
 ```bash
 sudo ln -s /etc/nginx/sites-available/nico-reparaciones /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl reload nginx
 ```
 
-## 11. HTTPS (Let's Encrypt)
+## 12) HTTPS (Let's Encrypt)
 
 ```bash
 sudo apt install -y certbot python3-certbot-nginx
 sudo certbot --nginx -d tu-dominio.com -d www.tu-dominio.com
 ```
 
-## 12. Firewall básico
+## 13) Firewall
 
 ```bash
 sudo ufw allow OpenSSH
@@ -206,36 +188,30 @@ sudo ufw enable
 sudo ufw status
 ```
 
-## 13. QA post-deploy (mínimo)
+## 14) QA post-deploy mínimo
 
-- `GET https://api.tu-dominio.com/api/health`
-- Login
-- Tienda / carrito / checkout
-- Admin dashboard
-- Correos (verify/reset/order)
+- `GET /api/health`
+- login admin/user
+- tienda/carrito/checkout
+- admin dashboard
+- mails (verify/reset/order)
 
-## 14. Operación / mantenimiento
+## 15) Operación
 
 - Backup DB diario
-- Rotación de logs PM2 / sistema
-- Monitoreo de uso RAM/CPU
-- Actualización controlada:
+- Monitoreo RAM/CPU
+- Rotación de logs
+- Update controlado:
   - `git pull`
   - `npm install`
+  - `npm run qa:migration:close`
   - `npm run build`
   - `npm run db:migrate:deploy`
   - `pm2 restart nico-api`
-  - `rsync` de `apps/web/dist/`
+  - `rsync apps/web/dist`
 
-## 15. Notas para tu proyecto actual (importante)
+## 16) Referencias
 
-- En local estás usando PostgreSQL 12 con fallback `db:push`.
-- Para producción conviene PostgreSQL moderno (14/15/16+) para usar migraciones Prisma (`db:migrate:deploy`) sin problemas.
-- No dejar `ALLOW_ADMIN_BOOTSTRAP=1` ni `MAIL_PREVIEW_TOKENS=1` en producción.
-
-
-
-Ver runbooks:
-
-- Backup/restore: `docs/BACKUP_RESTORE_RUNBOOK.md`
-- Primer arranque: `docs/FIRST_START_RUNBOOK.md`
+- `docs/BACKUP_RESTORE_RUNBOOK.md`
+- `docs/FIRST_START_RUNBOOK.md`
+- `docs/PREHOSTING_CHECKLIST.md`

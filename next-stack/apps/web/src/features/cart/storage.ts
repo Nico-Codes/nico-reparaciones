@@ -1,6 +1,12 @@
 import type { CartLocalItem } from './types';
 
 const CART_KEY = 'nico_next_cart';
+export const CART_CHANGED_EVENT = 'nico-next-cart-changed';
+export const CART_ADDED_EVENT = 'nico-next-cart-added';
+
+export type CartAddedDetail = {
+  productName: string;
+};
 
 function read(): CartLocalItem[] {
   try {
@@ -24,7 +30,11 @@ function write(items: CartLocalItem[]) {
   const prev = localStorage.getItem(CART_KEY);
   if (prev === next) return;
   localStorage.setItem(CART_KEY, next);
-  window.dispatchEvent(new CustomEvent('nico-next-cart-changed'));
+  window.dispatchEvent(new CustomEvent(CART_CHANGED_EVENT));
+}
+
+function dispatchCartAdded(detail: CartAddedDetail) {
+  window.dispatchEvent(new CustomEvent<CartAddedDetail>(CART_ADDED_EVENT, { detail }));
 }
 
 export const cartStorage = {
@@ -35,7 +45,7 @@ export const cartStorage = {
   clear() {
     write([]);
   },
-  add(productId: string, quantity = 1) {
+  add(productId: string, quantity = 1, options?: { productName?: string }) {
     const items = read();
     const idx = items.findIndex((i) => i.productId === productId);
     if (idx >= 0) {
@@ -44,6 +54,8 @@ export const cartStorage = {
       items.push({ productId, quantity: Math.max(1, Math.min(999, quantity)) });
     }
     write(items);
+    const productName = options?.productName?.trim();
+    if (productName) dispatchCartAdded({ productName });
   },
   update(productId: string, quantity: number) {
     const items = read()

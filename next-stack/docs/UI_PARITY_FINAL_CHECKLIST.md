@@ -1,13 +1,31 @@
-# UI Parity Final Checklist (Legacy -> Next Stack)
+﻿# UI Parity Final Checklist (Legacy -> Next Stack)
 
 Objetivo: validar que las vistas clave del `next-stack` mantengan paridad visual y UX con el stack legacy (`Laravel/Blade`).
 
+## Estado automático (2026-03-06)
+
+- `qa:backend:full`: OK
+- `smoke:web`: OK
+- `qa:route-parity`: OK
+- `qa:frontend:e2e`: OK (incluye aliases legacy públicos + rutas admin críticas + validación de mojibake)
+- `qa:admin:visual`: OK (`artifacts/admin-visual-audit/20260306-103653/report.md`)
+- `qa:visual-parity`: OK (`artifacts/visual-parity/20260306-103733/report.md`)
+- `qa:responsive:visual`: OK (`artifacts/responsive-visual/20260306-103817/report.md`)
+- `qa:migration:close`: OK
+- `db:fix-mojibake:dry-run --include-products`: OK (`rowsChanged=0`)
+- `db:migrate:visual-assets`: OK (`filesCopied=11`, `settingsUpserted=18`)
+- `db:migrate:legacy-settings --dry-run`: OK (sin registros legacy pendientes en settings JSON)
+
+Pendiente para cierre 100%: revisión visual/manual final vista por vista (desktop, tablet y mobile) con dataset de producción o casi-producción.
+
+Si legacy no levanta por entorno (ej: MySQL apagado), `qa:visual-parity` ya usa fallback automático a SQLite.
+
 ## Preparación
 
-- Levantar legacy (`http://127.0.0.1:8000`)
-- Levantar next-stack (`http://localhost:5174`)
-- Usar el mismo dataset (o lo más parecido posible)
-- Comparar en paralelo (dos ventanas)
+- Levantar legacy (`http://127.0.0.1:8000`) o usar fallback SQLite automático del script.
+- Levantar next-stack (`http://localhost:5174`).
+- Usar el mismo dataset (o lo más parecido posible).
+- Comparar en paralelo (dos ventanas).
 - Probar en:
   - Desktop ancho (`>= 1280px`)
   - Tablet (`~768px`)
@@ -56,7 +74,7 @@ Objetivo: validar que las vistas clave del `next-stack` mantengan paridad visual
 - Selector de cantidad (`- / input / +`)
 - CTA `Agregar al carrito`
 - CTAs secundarios (`Ver carrito`, `Seguir comprando`)
-- Texto de reparación (`Consultar reparacion`)
+- Texto de reparación (`Consultar reparación`)
 
 ### 3) `/admin/orders`
 
@@ -93,13 +111,13 @@ Objetivo: validar que las vistas clave del `next-stack` mantengan paridad visual
 - `/repairs`
 - `/repairs/:id`
 - `/admin`
-- `/admin/products`
-- `/admin/settings`
+- `/admin/productos`
+- `/admin/configuraciones`
 - `/admin/users`
 - `/admin/mail-templates`
 - `/admin/whatsapp`
 - `/admin/help`
-- `/admin/device-catalog`
+- `/admin/catalogodispositivos`
 - `/auth/login`
 - `/auth/register`
 - `/auth/forgot-password`
@@ -144,11 +162,15 @@ Objetivo: validar que las vistas clave del `next-stack` mantengan paridad visual
 - `/admin/orders` cambia estado
 - `/admin/repairs` cambia estado + guarda detalle
 
-## Cierre de etapa (marcar cuando esté listo)
+## Cierre de etapa
 
 - [ ] Paridad visual aceptada en vistas críticas
 - [ ] Paridad visual aceptada en vistas medias
-- [ ] Responsive validado (desktop/tablet/mobile)
-- [ ] Sin textos rotos / encoding
-- [ ] QA funcional rápida OK
+- [x] Responsive validado automáticamente (desktop/tablet/mobile)
+- [x] Sin textos rotos / encoding en código, API y seed actual
+- [x] QA funcional automática OK (`qa:backend:full`, `smoke:web`, `qa:route-parity`, `qa:frontend:e2e`)
+- [x] QA visual automática OK (`qa:admin:visual`, `qa:visual-parity`, `qa:responsive:visual`)
 
+## Nota técnica no bloqueante
+
+- `vite build` sigue advirtiendo chunks > 500 kB. No bloquea funcionalidad/paridad, pero conviene resolverlo antes de producción para mejorar carga inicial.

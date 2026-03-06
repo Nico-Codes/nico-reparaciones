@@ -1,10 +1,10 @@
-# Legacy Route Parity (Web/SPA)
+﻿# Legacy Route Parity (Web/SPA)
 
-Estado de compatibilidad de rutas legacy de Laravel contra el router React (`apps/web/src/App.tsx`), mas chequeo de views, botones y acciones.
+Estado de compatibilidad de rutas legacy de Laravel contra el router React (`apps/web/src/App.tsx`), más chequeo de views, botones y acciones.
 
 ## Rutas cubiertas con alias/redirect
 
-### Publico y auth
+### Público y auth
 - `/tienda` -> `/store`
 - `/tienda/categoria/:slug` -> `/store?category=:slug`
 - `/producto/:slug` -> `/store/:slug`
@@ -57,28 +57,52 @@ Estado de compatibilidad de rutas legacy de Laravel contra el router React (`app
 
 ## Compatibilidad de views/botones/acciones
 
-- Navegacion de frontend:
+- Navegación de frontend:
 - 58 paths detectados en `to`, `navigate` y `href`.
 - 0 paths sin route definido en `apps/web/src/App.tsx`.
 
 - Acciones API frontend:
-- 77 llamados unicos detectados en `apps/web/src/features/**/(api|http).ts`.
+- 77 llamados únicos detectados en `apps/web/src/features/**/(api|http).ts`.
 - 0 llamados sin endpoint backend (comparados contra controllers de Nest en `apps/api/src/modules/**`).
 
 Este chequeo queda automatizado con:
 - `npm run qa:route-parity`
 
-## Validacion tecnica ejecutada
+## Validación técnica ejecutada
 
 - `npm run qa:route-parity` -> OK
 - `npm run smoke:web` -> OK
-- `npm run qa:frontend:e2e` -> OK
+- `npm run qa:frontend:e2e` -> OK (cubre aliases legacy públicos, rutas admin críticas y chequeo de mojibake en render)
+- `npm run qa:visual-parity` -> OK (capturas legacy+next generadas y reporte consolidado)
+- `npm run qa:admin:visual` -> OK (auditoría de vistas admin sin rutas fallidas ni mojibake)
+- `npm run qa:responsive:visual` -> OK (capturas desktop/tablet/mobile sin fallos ni mojibake)
+- `npm run qa:backend:full` -> OK (db/check/migrate/seed + smoke backend completo)
+- `npm run qa:migration:close` -> OK (gate final de cierre técnico)
+
+## Validación visual automatizada (legacy vs next)
+
+- Script: `scripts/qa-visual-parity.mjs`
+- Comando: `npm run qa:visual-parity`
+- Salida: `artifacts/visual-parity/<timestamp>/report.md` + capturas `*.legacy.png` / `*.next.png`
+- Estado local actual: OK con legacy levantado y comparación completa ejecutada.
+- Último reporte validado: `artifacts/visual-parity/20260306-103733/report.md`.
 
 ## Assets visuales legacy compatibles
 
-- `manifest.webmanifest` (copiado en `apps/web/public/manifest.webmanifest`)
-- `favicon-48x48.png` (copiado en `apps/web/public/favicon-48x48.png`)
+- `brand/**` (logo e identidad)
+- `icons/**` (iconos de navegación y panel)
+- `img/**` (imágenes generales legacy)
+- `brand-assets/**` (assets de portada y branding)
+- `favicon.ico`
+- `favicon-16x16.png`
+- `favicon-32x32.png`
+- `android-chrome-192x192.png`
+- `android-chrome-512x512.png`
+- `apple-touch-icon.png`
+- `site.webmanifest`
 
-## Pendientes funcionales (sin paridad 1:1 aun)
+Todo lo anterior quedó migrado con `npm run db:migrate:visual-assets`.
+
+## Pendientes funcionales (sin paridad 1:1 aún)
 
 - Sin pendientes de rutas legacy mapeadas en este documento.

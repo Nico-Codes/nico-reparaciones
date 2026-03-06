@@ -2,6 +2,7 @@
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, ShoppingCart, Wrench, LogOut, User, MailWarning, Package, WrenchIcon, HelpCircle, Settings } from 'lucide-react';
 import { useCartCount } from '@/features/cart/useCart';
+import { CartAddedPopup } from '@/features/cart/CartAddedPopup';
 import { authStorage } from '@/features/auth/storage';
 import type { AuthUser } from '@/features/auth/types';
 import { storeApi } from '@/features/store/api';
@@ -359,6 +360,8 @@ export function AppShell({ children }: AppShellProps) {
           <div className="text-zinc-400">Hecho con React + NestJS</div>
         </div>
       </footer>
+
+      <CartAddedPopup />
     </div>
   );
 }

@@ -48,7 +48,7 @@ export function StoreProductDetailPage() {
 
   function addToCart() {
     if (!item || !hasStock) return;
-    cartStorage.add(item.id, qty);
+    cartStorage.add(item.id, qty, { productName: item.name });
   }
 
   if (loading) {
@@ -194,4 +194,3 @@ export function StoreProductDetailPage() {
     </div>
   );
 }
-

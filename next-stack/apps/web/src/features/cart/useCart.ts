@@ -1,15 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
-import { cartStorage } from './storage';
+import { cartStorage, CART_CHANGED_EVENT } from './storage';
 
 export function useCartCount() {
   const [count, setCount] = useState(() => cartStorage.count());
 
   useEffect(() => {
     const update = () => setCount(cartStorage.count());
-    window.addEventListener('nico-next-cart-changed', update as EventListener);
+    window.addEventListener(CART_CHANGED_EVENT, update as EventListener);
     window.addEventListener('storage', update);
     return () => {
-      window.removeEventListener('nico-next-cart-changed', update as EventListener);
+      window.removeEventListener(CART_CHANGED_EVENT, update as EventListener);
       window.removeEventListener('storage', update);
     };
   }, []);
@@ -22,10 +22,10 @@ export function useCartItems() {
 
   useEffect(() => {
     const update = () => setItems(cartStorage.getItems());
-    window.addEventListener('nico-next-cart-changed', update as EventListener);
+    window.addEventListener(CART_CHANGED_EVENT, update as EventListener);
     window.addEventListener('storage', update);
     return () => {
-      window.removeEventListener('nico-next-cart-changed', update as EventListener);
+      window.removeEventListener(CART_CHANGED_EVENT, update as EventListener);
       window.removeEventListener('storage', update);
     };
   }, []);

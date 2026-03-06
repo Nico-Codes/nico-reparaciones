@@ -14,6 +14,7 @@ REM      - nico-dev.bat next-start   (iniciar API + Web del next-stack)
 REM      - nico-dev.bat next-stop    (detener API/Web del next-stack)
 REM      - nico-dev.bat next-qa      (QA full del next-stack)
 REM      - nico-dev.bat next-preprod (checks preproduccion del next-stack)
+REM      - nico-dev.bat next-close   (gate final de cierre de migracion)
 REM      - nico-dev.bat stop    (detener entorno)
 REM      - nico-dev.bat local-ready
 REM      - nico-dev.bat e2e
@@ -69,6 +70,7 @@ if /I "%~1"=="next-start" goto :next_start
 if /I "%~1"=="next-stop" goto :next_stop
 if /I "%~1"=="next-qa" goto :next_qa
 if /I "%~1"=="next-preprod" goto :next_preprod
+if /I "%~1"=="next-close" goto :next_close
 if /I "%~1"=="local-ready" goto :local_ready
 if /I "%~1"=="e2e" goto :e2e_ready
 if /I "%~1"=="e2e-full" set "RUN_E2E_FULL=1" & goto :e2e_ready
@@ -96,10 +98,12 @@ echo A^) Next start (API + Web)
 echo B^) Next stop
 echo C^) Next QA full
 echo D^) Next preprod (deploy-check + qa:preprod)
+echo E^) Next close migration gate (qa:migration:close)
 echo Q^) Salir
 echo ================================================
-choice /C 123456789ABCDQ /N /M "Selecciona opcion [1-9,A-D,Q]: "
-if errorlevel 14 goto :end_ok
+choice /C 123456789ABCDEQ /N /M "Selecciona opcion [1-9,A-E,Q]: "
+if errorlevel 15 goto :end_ok
+if errorlevel 14 goto :next_close
 if errorlevel 13 goto :next_preprod
 if errorlevel 12 goto :next_qa
 if errorlevel 11 goto :next_stop
@@ -125,6 +129,7 @@ echo   nico-dev.bat next-start
 echo   nico-dev.bat next-stop
 echo   nico-dev.bat next-qa
 echo   nico-dev.bat next-preprod
+echo   nico-dev.bat next-close
 echo   nico-dev.bat local-ready
 echo   nico-dev.bat e2e
 echo   nico-dev.bat e2e-full
@@ -263,6 +268,19 @@ call npm --prefix "%NEXT_STACK_ROOT%" run deploy:check || goto :end_fail
 call npm --prefix "%NEXT_STACK_ROOT%" run qa:preprod || goto :end_fail
 echo.
 echo [OK] Next preprod completado.
+exit /b 0
+
+:next_close
+echo.
+echo [NEXT-CLOSE] Ejecutando gate final de cierre de migracion...
+if not exist "%NEXT_STACK_ROOT%\package.json" (
+    echo [ERROR] No se encontro next-stack en: %NEXT_STACK_ROOT%
+    goto :end_fail
+)
+where npm >nul 2>&1 || (echo [ERROR] npm no encontrado. Instala Node.js LTS. & goto :end_fail)
+call npm --prefix "%NEXT_STACK_ROOT%" run qa:migration:close || goto :end_fail
+echo.
+echo [OK] Gate final completado.
 exit /b 0
 
 :setup

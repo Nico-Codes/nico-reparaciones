@@ -1,54 +1,60 @@
-# Migración total a React + NestJS + Prisma + PostgreSQL
+﻿# Migración total a React + NestJS + Prisma + PostgreSQL
 
 ## Estado actual
 
-Este directorio (`next-stack/`) contiene la base del nuevo stack, creada en paralelo al sistema Laravel existente para migrar sin perder referencia funcional.
+`next-stack/` es la base principal del sistema nuevo y ya cubre el flujo funcional del negocio.
 
 ## Stack objetivo
 
-- Frontend: React + TypeScript + Tailwind CSS + shadcn/ui
-- Backend: NestJS + TypeScript + Zod (contratos/validación compartida)
+- Frontend: React + TypeScript + Tailwind
+- Backend: NestJS + TypeScript + Zod
 - DB: PostgreSQL + Prisma
-- Versionado/Deploy: Git + GitHub (cuando decidas publicar)
+- Operación: scripts QA + runbooks
 
-## Estrategia recomendada (sin romper negocio)
+## Progreso por fases
 
-### Fase 1: Base técnica (hecha en esta etapa)
+### Fase 1: Base técnica
 - Monorepo con `apps/api`, `apps/web`, `packages/contracts`
-- API NestJS con `/api/health`
-- Prisma configurado con esquema inicial base
-- Web React con UI base y componentes `shadcn-ready`
+- API NestJS productiva en local
+- Prisma con migraciones activas
+- Web React operativa
 
-### Fase 2: Dominio y autenticación (próxima)
-- Migrar modelos reales desde MySQL/Laravel a Prisma (completo)
-- Auth NestJS (email/password + Google opcional)
-- Verificación de correo y recuperación de contraseña
-- Roles `USER/ADMIN` + guards
+Estado: **completa**
 
-### Fase 3: Módulos core del negocio
-- Tienda + categorías + producto
-- Carrito + checkout + pedidos
-- Reparaciones + pricing rules + WhatsApp logs
-- Admin dashboard + alertas + configuración
+### Fase 2: Auth y dominio
+- Auth completo (login/register/me/refresh/verify/forgot/reset)
+- Roles/guards admin-user
+- Tienda, carrito, checkout, pedidos
+- Reparaciones, pricing, catálogo técnico
 
-### Fase 4: Cutover (cuando esté validado)
-- E2E del nuevo stack
-- Migración de datos final
-- Freeze de Laravel
-- Deploy
+Estado: **completa**
 
-## Cómo ejecutar (una vez instaladas dependencias)
+### Fase 3: Admin y paridad
+- Dashboard y módulos admin funcionales
+- Rutas legacy mapeadas
+- Migración de assets visuales
+- WhatsApp/mail/help/settings conectados
+
+Estado: **completa**
+
+### Fase 4: Cierre de migración
+- QA técnica de cierre (`qa:migration:close`) en verde
+- Auditoría visual responsive automatizada en verde
+- Chequeo de desacople legacy en verde
+- Pendiente: deploy real + aprobación visual manual final
+
+Estado: **en cierre**
+
+## Comandos clave
 
 1. `cd next-stack`
-2. `copy .env.example .env` (o crear `.env`)
-3. `docker compose up -d`
-4. `npm install`
-5. `npm run db:generate`
-6. `npm run db:migrate`
-7. `npm run db:migrate:dev -- --name <nombre>` (solo si necesitas crear una migracion nueva en un entorno compatible)
-8. `npm run dev:api`
-9. `npm run dev:web`
+2. `npm install`
+3. `npm run qa:migration:close`
+4. `npm run qa:preprod`
 
-## Próximo objetivo concreto recomendado
+## Definición de 100% cerrado
 
-Migrar **Auth + User + sesión** primero. Todo lo demás depende de eso.
+- QA técnica de cierre en verde
+- Aprobación visual manual final (desktop/tablet/mobile)
+- Deploy productivo ejecutado y validado
+- Stack legacy fuera de operación activa

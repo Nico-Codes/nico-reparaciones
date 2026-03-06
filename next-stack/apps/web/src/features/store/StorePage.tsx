@@ -361,7 +361,7 @@ function StoreGridCard({ product }: { product: StoreProduct }) {
               disabled={!hasStock}
               aria-label="Agregar al carrito"
               title={hasStock ? 'Agregar al carrito' : 'Sin stock'}
-              onClick={() => cartStorage.add(product.id, 1)}
+              onClick={() => cartStorage.add(product.id, 1, { productName: product.name })}
             >
               <ShoppingCart className="h-4 w-4" />
             </button>
