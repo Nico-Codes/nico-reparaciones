@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ordersApi } from './api';
@@ -28,7 +28,7 @@ export function MyOrdersPage() {
   }, []);
 
   return (
-    <div className="store-shell">
+    <div className="store-shell" data-my-orders-page>
       <section className="page-head store-hero">
         <div>
           <div className="page-title">Mis pedidos</div>

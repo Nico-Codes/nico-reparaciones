@@ -1,5 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { CustomSelect } from '@/components/ui/custom-select';
 import { repairsApi } from './api';
 import type { RepairItem, RepairTimelineEvent } from './types';
 
@@ -54,16 +55,17 @@ export function AdminRepairDetailPage() {
   const [costPrice, setCostPrice] = useState('');
   const [finalPrice, setFinalPrice] = useState('');
   const [paidAmount, setPaidAmount] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('Transferencia');
+  const [paymentMethod, setPaymentMethod] = useState('TRANSFERENCIA');
   const [warrantyDays, setWarrantyDays] = useState('100');
   const [paymentNotes, setPaymentNotes] = useState('');
   const [internalNotes, setInternalNotes] = useState('');
-  const [provider, setProvider] = useState('Puntocell');
+  const [provider, setProvider] = useState('PUNTOCELL');
   const [sparePart, setSparePart] = useState('');
   const [purchaseRef, setPurchaseRef] = useState('');
 
   useEffect(() => {
     let mounted = true;
+
     async function load() {
       if (!id) return;
       setLoading(true);
@@ -90,6 +92,7 @@ export function AdminRepairDetailPage() {
         if (mounted) setLoading(false);
       }
     }
+
     void load();
     return () => {
       mounted = false;
@@ -105,6 +108,21 @@ export function AdminRepairDetailPage() {
       due: Math.max(0, final - paid),
     };
   }, [finalPrice, paidAmount]);
+
+  const statusOptions = useMemo(
+    () => Object.keys(STATUS_LABELS).map((statusKey) => ({ value: statusKey, label: statusLabel(statusKey) })),
+    [],
+  );
+  const issueOptions = issueLabel ? [{ value: issueLabel, label: issueLabel }] : [{ value: '', label: 'Seleccionar falla' }];
+  const providerOptions = [
+    { value: 'PUNTOCELL', label: 'Puntocell' },
+    { value: 'EVOPHONE', label: 'Evophone' },
+  ];
+  const paymentOptions = [
+    { value: 'TRANSFERENCIA', label: 'Transferencia' },
+    { value: 'EFECTIVO', label: 'Efectivo' },
+    { value: 'DEBITO', label: 'Débito' },
+  ];
 
   async function saveChanges() {
     if (!item) return;
@@ -146,7 +164,7 @@ export function AdminRepairDetailPage() {
               </span>
             </div>
             <p className="mt-2 text-sm text-zinc-700">
-              <span className="font-black">{customerName}</span>  -  {customerPhone || 'Sin teléfono'}  -  {[deviceBrand, deviceModel].filter(Boolean).join(' ') || 'Sin equipo'}
+              <span className="font-black">{customerName}</span> · {customerPhone || 'Sin teléfono'} · {[deviceBrand, deviceModel].filter(Boolean).join(' ') || 'Sin equipo'}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -165,7 +183,7 @@ export function AdminRepairDetailPage() {
         <div className="space-y-4">
           <section className="card">
             <div className="card-head flex items-center justify-between gap-2">
-              <div className="text-xl font-black tracking-tight text-zinc-900">Acciones rapidas</div>
+              <div className="text-xl font-black tracking-tight text-zinc-900">Acciones rápidas</div>
               <span className="badge-zinc">{repairCodeLabel(item.id)}</span>
             </div>
             <div className="card-body space-y-2">
@@ -208,9 +226,7 @@ export function AdminRepairDetailPage() {
             <div className="card-body space-y-3">
               <label className="block">
                 <span className="mb-1 block text-sm font-bold text-zinc-700">Nuevo estado</span>
-                <select value={status} onChange={(e) => setStatus(e.target.value)} className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm">
-                  {Object.keys(STATUS_LABELS).map((s) => <option key={s} value={s}>{statusLabel(s)}</option>)}
-                </select>
+                <CustomSelect value={status} onChange={setStatus} options={statusOptions} triggerClassName="min-h-10 rounded-xl" ariaLabel="Nuevo estado de reparación" />
               </label>
               <button type="button" onClick={() => void saveChanges()} disabled={saving} className="inline-flex h-11 w-full items-center justify-center rounded-2xl border border-zinc-300 bg-zinc-300 px-4 text-sm font-bold text-white disabled:opacity-80">
                 {saving ? 'Guardando...' : 'Guardar estado'}
@@ -226,6 +242,23 @@ export function AdminRepairDetailPage() {
                 <span className="badge-zinc">{timeline.length} cambios</span>
                 <button type="button" className="btn-ghost !h-8 !rounded-xl px-2 text-sm font-bold">Ver historial</button>
               </div>
+            </div>
+            <div className="card-body">
+              {timeline.length === 0 ? (
+                <div className="text-sm text-zinc-600">Sin eventos registrados.</div>
+              ) : (
+                <div className="space-y-2">
+                  {timeline.map((event) => (
+                    <div key={event.id} className="rounded-lg border border-zinc-200 bg-white px-3 py-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="text-xs font-black text-zinc-800">{event.eventType}</div>
+                        <div className="text-[11px] text-zinc-500">{new Date(event.createdAt).toLocaleString('es-AR')}</div>
+                      </div>
+                      {event.message ? <div className="mt-1 text-sm text-zinc-700">{event.message}</div> : null}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </section>
 
@@ -252,13 +285,11 @@ export function AdminRepairDetailPage() {
                   <span className="mb-1 block text-sm font-bold text-zinc-700">Falla principal *</span>
                   <input value={issueLabel} onChange={(e) => setIssueLabel(e.target.value)} className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm" />
                 </label>
-                <select value={issueLabel} onChange={(e) => setIssueLabel(e.target.value)} className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm">
-                  <option value={issueLabel || ''}>{issueLabel || 'Seleccionar falla'}</option>
-                </select>
+                <CustomSelect value={issueLabel} onChange={setIssueLabel} options={issueOptions} triggerClassName="min-h-10 rounded-xl" ariaLabel="Falla principal" />
                 <button type="button" className="btn-outline !h-10 !rounded-xl px-4 text-sm font-bold">+ Agregar falla</button>
               </div>
               <label className="block">
-                <span className="mb-1 block text-sm font-bold text-zinc-700">Diagnostico</span>
+                <span className="mb-1 block text-sm font-bold text-zinc-700">Diagnóstico</span>
                 <textarea value={diagnosis} onChange={(e) => setDiagnosis(e.target.value)} rows={4} className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm" />
               </label>
             </div>
@@ -277,21 +308,18 @@ export function AdminRepairDetailPage() {
 
             <label className="block">
               <span className="mb-1 block text-sm font-bold text-zinc-700">Proveedor asociado</span>
-              <select value={provider} onChange={(e) => setProvider(e.target.value)} className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm">
-                <option>Puntocell</option>
-                <option>Evophone</option>
-              </select>
+              <CustomSelect value={provider} onChange={setProvider} options={providerOptions} triggerClassName="min-h-10 rounded-xl" ariaLabel="Proveedor asociado" />
             </label>
 
             <div className="grid gap-3 md:grid-cols-2">
-              <label className="block"><span className="mb-1 block text-sm font-bold text-zinc-700">Repuesto elegido</span><input value={sparePart} onChange={(e) => setSparePart(e.target.value)} placeholder="Ej: módulo samsung a30" className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm" /></label>
+              <label className="block"><span className="mb-1 block text-sm font-bold text-zinc-700">Repuesto elegido</span><input value={sparePart} onChange={(e) => setSparePart(e.target.value)} placeholder="Ej: módulo Samsung A30" className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm" /></label>
               <label className="block"><span className="mb-1 block text-sm font-bold text-zinc-700">Referencia de compra</span><input value={purchaseRef} onChange={(e) => setPurchaseRef(e.target.value)} placeholder="URL o referencia" className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm" /></label>
             </div>
 
             <div className="flex items-center justify-between gap-3">
               <div>
                 <div className="text-sm font-bold text-zinc-700">Equipo</div>
-                <div className="text-sm text-zinc-600">Celular - {[deviceBrand, deviceModel].filter(Boolean).join(' ') || 'Sin equipo'}</div>
+                <div className="text-sm text-zinc-600">Celular · {[deviceBrand, deviceModel].filter(Boolean).join(' ') || 'Sin equipo'}</div>
               </div>
               <button type="button" className="btn-ghost !h-9 !rounded-xl px-3 text-sm font-bold">Ver equipo</button>
             </div>
@@ -313,7 +341,7 @@ export function AdminRepairDetailPage() {
 
             <div className="grid gap-3 md:grid-cols-3">
               <label className="block"><span className="mb-1 block text-sm font-bold text-zinc-700">Pagado</span><input value={paidAmount} onChange={(e) => setPaidAmount(e.target.value)} className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm" /></label>
-              <label className="block"><span className="mb-1 block text-sm font-bold text-zinc-700">Método</span><select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm"><option>Transferencia</option><option>Efectivo</option><option>Débito</option></select></label>
+              <label className="block"><span className="mb-1 block text-sm font-bold text-zinc-700">Método</span><CustomSelect value={paymentMethod} onChange={setPaymentMethod} options={paymentOptions} triggerClassName="min-h-10 rounded-xl" ariaLabel="Método de pago" /></label>
               <label className="block"><span className="mb-1 block text-sm font-bold text-zinc-700">Garantía (días)</span><input value={warrantyDays} onChange={(e) => setWarrantyDays(e.target.value)} className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm" /></label>
             </div>
 
@@ -345,4 +373,3 @@ function Row({ label, value, strong = false, valueClass = '' }: { label: string;
     </div>
   );
 }
-

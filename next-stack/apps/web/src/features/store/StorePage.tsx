@@ -2,6 +2,7 @@
 import { Link, useSearchParams } from 'react-router-dom';
 import { Search, SlidersHorizontal, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { CustomSelect } from '@/components/ui/custom-select';
 import { cartStorage } from '@/features/cart/storage';
 import { useCartCount } from '@/features/cart/useCart';
 import { storeApi } from './api';
@@ -9,7 +10,7 @@ import type { StoreCategory, StoreHeroConfig, StoreProduct, StoreProductsRespons
 
 const SORT_OPTIONS = [
   { value: 'relevance', label: 'Relevancia' },
-  { value: 'newest', label: 'Mas nuevos' },
+  { value: 'newest', label: 'Más nuevos' },
   { value: 'price_asc', label: 'Menor precio' },
   { value: 'price_desc', label: 'Mayor precio' },
   { value: 'name_asc', label: 'Nombre A-Z' },
@@ -94,8 +95,13 @@ export function StorePage() {
 
   const selectedCategoryLabel = useMemo(() => {
     if (!category) return 'Todas';
-    return categories.find((c) => c.slug === category)?.name ?? category;
+    return categories.find((item) => item.slug === category)?.name ?? category;
   }, [categories, category]);
+
+  const sortOptions = useMemo(
+    () => SORT_OPTIONS.map((option) => ({ value: option.value, label: option.label })),
+    [],
+  );
 
   const products = productsData?.items ?? [];
   const showHero = !category;
@@ -187,7 +193,7 @@ export function StorePage() {
                   <input
                     value={qInput}
                     onChange={(e) => setQInput(e.target.value)}
-                    placeholder="Ej: iPhone, display, bateria..."
+                    placeholder="Ej: iPhone, display, batería..."
                     className="w-full rounded-2xl border border-zinc-200 bg-white py-3 pl-10 pr-4 text-base font-semibold text-zinc-900 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-200/40 sm:text-sm md:h-11 md:py-0"
                   />
                 </div>
@@ -195,7 +201,7 @@ export function StorePage() {
                 <button
                   type="button"
                   className="store-mobile-sort-btn md:hidden"
-                  onClick={() => setMobileFiltersOpen((v) => !v)}
+                  onClick={() => setMobileFiltersOpen((value) => !value)}
                   aria-label="Ordenar resultados"
                   aria-expanded={mobileFiltersOpen}
                 >
@@ -205,17 +211,17 @@ export function StorePage() {
                 <div className={`store-mobile-sort-menu md:hidden ${mobileFiltersOpen ? '' : 'hidden'}`}>
                   <div className="store-mobile-sort-title">Ordenar por</div>
                   <div className="grid gap-1">
-                    {SORT_OPTIONS.map((opt) => (
+                    {SORT_OPTIONS.map((option) => (
                       <button
-                        key={opt.value}
+                        key={option.value}
                         type="button"
-                        className={`store-mobile-sort-option ${sort === opt.value ? 'is-active' : ''}`}
+                        className={`store-mobile-sort-option ${sort === option.value ? 'is-active' : ''}`}
                         onClick={() => {
-                          applyQuery({ sort: opt.value });
+                          applyQuery({ sort: option.value });
                           setMobileFiltersOpen(false);
                         }}
                       >
-                        {opt.label}
+                        {option.label}
                       </button>
                     ))}
                   </div>
@@ -225,20 +231,20 @@ export function StorePage() {
 
             <div className="hidden md:col-span-3 md:block">
               <div className="text-xs font-black text-zinc-700">Ordenar</div>
-              <select
-                value={sort}
-                onChange={(e) => applyQuery({ sort: e.target.value })}
-                className="mt-1 h-11 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold text-zinc-900 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-200/40 md:py-0"
-              >
-                {SORT_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
+              <div className="mt-1">
+                <CustomSelect
+                  value={sort}
+                  onChange={(value) => applyQuery({ sort: value })}
+                  options={sortOptions}
+                  triggerClassName="min-h-11 rounded-2xl font-semibold"
+                  ariaLabel="Ordenar productos"
+                />
+              </div>
             </div>
 
             <div className="hidden md:col-span-2 md:flex md:items-center md:gap-2">
               <button type="submit" className="btn-primary h-11 w-full justify-center md:min-w-28">Aplicar</button>
-              {(q || sort !== 'relevance') ? (
+              {q || sort !== 'relevance' ? (
                 <button
                   type="button"
                   className="btn-outline h-11 w-full justify-center md:min-w-28"
@@ -313,7 +319,7 @@ export function StorePage() {
                           setSearchParams(new URLSearchParams());
                         }}
                       >
-                        Limpiar busqueda
+                        Limpiar búsqueda
                       </button>
                     ) : null}
                     {category ? <Link className="btn-outline" to="/store">Ver todas</Link> : null}

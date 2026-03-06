@@ -1,5 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { CustomSelect } from '@/components/ui/custom-select';
 import { repairsApi } from '@/features/repairs/api';
 import type { RepairItem } from '@/features/repairs/types';
 import { adminApi, type AdminProviderItem } from '@/features/admin/api';
@@ -162,11 +163,49 @@ export function AdminWarrantyCreatePage() {
 
   const backTo = repairIdParam ? `/admin/repairs/${encodeURIComponent(repairIdParam)}` : '/admin/garantias';
 
+  const sourceOptions = useMemo(
+    () => [
+      { value: 'REPAIR', label: 'Reparación' },
+      { value: 'PRODUCT', label: 'Producto' },
+    ],
+    [],
+  );
+
+  const repairOptions = useMemo(() => {
+    const base = [{ value: '', label: 'Sin asociar' }];
+    const extra = repair && !repairs.some((row) => row.id === repair.id) ? [repair] : [];
+    return base.concat(
+      [...extra, ...repairs].map((repairRow) => ({
+        value: repairRow.id,
+        label: `${repairCode(repairRow.id)} - ${repairRow.customerName}`,
+      })),
+    );
+  }, [repair, repairs]);
+
+  const productOptions = useMemo(
+    () => [
+      { value: '', label: 'Sin asociar' },
+      ...products.map((product) => ({
+        value: product.id,
+        label: `${product.name}${product.sku ? ` (${product.sku})` : ''}`,
+      })),
+    ],
+    [products],
+  );
+
+  const providerOptions = useMemo(
+    () => [
+      { value: '', label: 'Sin definir' },
+      ...providers.map((provider) => ({ value: provider.id, label: provider.name })),
+    ],
+    [providers],
+  );
+
   async function saveIncident() {
     setError('');
     const titleValue = title.trim();
     if (!titleValue) {
-      setError('El titulo es obligatorio');
+      setError('El título es obligatorio');
       return;
     }
     if (source === 'REPAIR' && !selectedRepairId) {
@@ -174,7 +213,7 @@ export function AdminWarrantyCreatePage() {
       return;
     }
     if (source === 'PRODUCT' && !productId) {
-      setError('Selecciona el producto asociado');
+      setError('Seleccioná el producto asociado');
       return;
     }
 
@@ -240,10 +279,13 @@ export function AdminWarrantyCreatePage() {
           <div className="grid gap-4 md:grid-cols-2">
             <label className="block">
               <span className="mb-1 block text-sm font-bold text-zinc-700">Origen *</span>
-              <select value={source} onChange={(e) => setSource(e.target.value as 'REPAIR' | 'PRODUCT')} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm">
-                <option value="REPAIR">Reparación</option>
-                <option value="PRODUCT">Producto</option>
-              </select>
+              <CustomSelect
+                value={source}
+                onChange={(value) => setSource(value as 'REPAIR' | 'PRODUCT')}
+                options={sourceOptions}
+                triggerClassName="min-h-11 rounded-2xl font-bold"
+                ariaLabel="Seleccionar origen"
+              />
             </label>
             <label className="block">
               <span className="mb-1 block text-sm font-bold text-zinc-700">Título *</span>
@@ -259,33 +301,24 @@ export function AdminWarrantyCreatePage() {
           <div className="grid gap-4 md:grid-cols-2">
             <label className="block">
               <span className="mb-1 block text-sm font-bold text-zinc-700">Reparación asociada</span>
-              <select
-                className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm"
+              <CustomSelect
                 value={selectedRepairId}
                 disabled={source !== 'REPAIR'}
-                onChange={(e) => {
-                  const nextRepairId = e.target.value;
+                onChange={(nextRepairId) => {
                   setSelectedRepairId(nextRepairId);
                   const nextRepair =
                     nextRepairId === repair?.id
                       ? repair
-                      : repairs.find((r) => r.id === nextRepairId) ?? null;
+                      : repairs.find((row) => row.id === nextRepairId) ?? null;
                   if (!nextRepair) return;
                   const resolvedCost = nextRepair.finalPrice ?? nextRepair.quotedPrice;
                   if (resolvedCost != null) setUnitCost(String(resolvedCost));
                   if (!title.trim()) setTitle(`Garantía reparación ${repairCode(nextRepair.id)}`);
                 }}
-              >
-                <option value="">Sin asociar</option>
-                {repair && !repairs.some((r) => r.id === repair.id) ? (
-                  <option value={repair.id}>{`${repairCode(repair.id)} - ${repair.customerName}`}</option>
-                ) : null}
-                {repairs.map((repairRow) => (
-                  <option key={repairRow.id} value={repairRow.id}>
-                    {`${repairCode(repairRow.id)} - ${repairRow.customerName}`}
-                  </option>
-                ))}
-              </select>
+                options={repairOptions}
+                triggerClassName="min-h-11 rounded-2xl font-bold"
+                ariaLabel="Seleccionar reparación asociada"
+              />
               <p className="mt-1 text-xs text-zinc-500">
                 {loadingRepairs || loadingRepair
                   ? 'Cargando reparaciones...'
@@ -296,28 +329,22 @@ export function AdminWarrantyCreatePage() {
             </label>
             <label className="block">
               <span className="mb-1 block text-sm font-bold text-zinc-700">Producto asociado</span>
-              <select
-                className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm"
+              <CustomSelect
                 value={productId}
                 disabled={source !== 'PRODUCT'}
-                onChange={(e) => {
-                  const nextProductId = e.target.value;
+                onChange={(nextProductId) => {
                   setProductId(nextProductId);
-                  const selected = products.find((p) => p.id === nextProductId) ?? null;
+                  const selected = products.find((product) => product.id === nextProductId) ?? null;
                   if (selected?.costPrice != null) setUnitCost(String(selected.costPrice));
                   if (selected?.supplierId) setProviderId(selected.supplierId);
                   if (selected && !title.trim()) setTitle(`Garantía de producto: ${selected.name}`);
                 }}
-              >
-                <option value="">Sin asociar</option>
-                {products.map((product) => (
-                  <option key={product.id} value={product.id}>
-                    {product.name}{product.sku ? ` (${product.sku})` : ''}
-                  </option>
-                ))}
-              </select>
+                options={productOptions}
+                triggerClassName="min-h-11 rounded-2xl font-bold"
+                ariaLabel="Seleccionar producto asociado"
+              />
               <p className="mt-1 text-xs text-zinc-500">
-                {loadingProducts ? 'Cargando productos...' : 'Selecciona un producto cuando el origen sea Producto.'}
+                {loadingProducts ? 'Cargando productos...' : 'Seleccioná un producto cuando el origen sea Producto.'}
               </p>
             </label>
           </div>
@@ -326,14 +353,15 @@ export function AdminWarrantyCreatePage() {
             <div>
               <label className="block">
                 <span className="mb-1 block text-sm font-bold text-zinc-700">Proveedor</span>
-                <select value={providerId} onChange={(e) => setProviderId(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm">
-                  <option value="">Sin definir</option>
-                  {providers.map((provider) => (
-                    <option key={provider.id} value={provider.id}>{provider.name}</option>
-                  ))}
-                </select>
+                <CustomSelect
+                  value={providerId}
+                  onChange={setProviderId}
+                  options={providerOptions}
+                  triggerClassName="min-h-11 rounded-2xl font-bold"
+                  ariaLabel="Seleccionar proveedor"
+                />
               </label>
-              <p className="mt-1 text-xs text-zinc-500">{loadingProviders ? 'Cargando proveedores...' : 'Puedes dejarlo manual o autocompletar desde el proveedor.'}</p>
+              <p className="mt-1 text-xs text-zinc-500">{loadingProviders ? 'Cargando proveedores...' : 'Podés dejarlo manual o autocompletar desde el proveedor.'}</p>
             </div>
             <label className="block">
               <span className="mb-1 block text-sm font-bold text-zinc-700">Pedido asociado (opcional)</span>
@@ -364,7 +392,7 @@ export function AdminWarrantyCreatePage() {
                 <span className="mb-1 block text-sm font-bold text-zinc-700">Costo unitario *</span>
                 <input type="number" min="0" value={unitCost} onChange={(e) => setUnitCost(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" />
               </label>
-              <p className="mt-1 text-xs text-zinc-500">Se autocompleta desde la reparación/producto cuando existe contexto.</p>
+              <p className="mt-1 text-xs text-zinc-500">Se autocompleta desde la reparación o el producto cuando existe contexto.</p>
               <div className="mt-2">
                 <span className="inline-flex h-7 items-center rounded-full border border-sky-300 bg-sky-50 px-3 text-xs font-bold text-sky-700">
                   Origen costo: {source === 'REPAIR' ? 'Reparación' : selectedProduct ? 'Producto' : 'Manual'}

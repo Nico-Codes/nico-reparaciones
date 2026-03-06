@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { CustomSelect } from '@/components/ui/custom-select';
 import { adminApi } from '@/features/admin/api';
 import { deviceCatalogApi } from '@/features/deviceCatalog/api';
 import { repairsApi } from '@/features/repairs/api';
@@ -60,7 +61,7 @@ export function AdminRepairPricingRuleEditPage() {
     setLoadingPage(true);
     setError('');
     try {
-      const [t, b, i, m, rulesRes] = await Promise.all([
+      const [typesRes, brandsRes, issuesRes, modelsRes, rulesRes] = await Promise.all([
         adminApi.deviceTypes(),
         deviceCatalogApi.brands(),
         deviceCatalogApi.issues(),
@@ -69,15 +70,15 @@ export function AdminRepairPricingRuleEditPage() {
       ]);
 
       const rules = (rulesRes.items as RepairRuleApiItem[]) ?? [];
-      const current = rules.find((r) => r.id === id);
+      const current = rules.find((rule) => rule.id === id);
       if (!current) {
         throw new Error('Regla no encontrada');
       }
 
-      setDeviceTypes(t.items.filter((x) => x.active));
-      setBrands(b.items.filter((x) => x.active));
-      setIssues(i.items.filter((x) => x.active));
-      setModels(m.items.filter((x) => x.active));
+      setDeviceTypes(typesRes.items.filter((item) => item.active));
+      setBrands(brandsRes.items.filter((item) => item.active));
+      setIssues(issuesRes.items.filter((item) => item.active));
+      setModels(modelsRes.items.filter((item) => item.active));
 
       setName(current.name ?? '');
       setDeviceTypeId(current.deviceTypeId ?? '');
@@ -110,29 +111,53 @@ export function AdminRepairPricingRuleEditPage() {
   useEffect(() => {
     if (brandId) return;
     setModelId('');
-    if (issueId && !issues.some((i) => i.id === issueId && (!deviceTypeId || i.deviceTypeId === deviceTypeId))) {
+    if (issueId && !issues.some((issue) => issue.id === issueId && (!deviceTypeId || issue.deviceTypeId === deviceTypeId))) {
       setIssueId('');
     }
-  }, [deviceTypeId]);
+  }, [deviceTypeId, brandId, issueId, issues]);
 
   useEffect(() => {
-    const selectedBrand = brands.find((b) => b.id === brandId);
+    const selectedBrand = brands.find((brand) => brand.id === brandId);
     if (selectedBrand?.deviceTypeId && selectedBrand.deviceTypeId !== deviceTypeId) {
       setDeviceTypeId(selectedBrand.deviceTypeId);
     }
   }, [brandId, brands, deviceTypeId]);
 
   const filteredBrands = useMemo(
-    () => (deviceTypeId ? brands.filter((b) => b.deviceTypeId === deviceTypeId) : brands),
+    () => (deviceTypeId ? brands.filter((brand) => brand.deviceTypeId === deviceTypeId) : brands),
     [brands, deviceTypeId],
   );
   const filteredModels = useMemo(
-    () => (brandId ? models.filter((m) => m.brandId === brandId) : models),
+    () => (brandId ? models.filter((model) => model.brandId === brandId) : models),
     [models, brandId],
   );
   const filteredIssues = useMemo(
-    () => (deviceTypeId ? issues.filter((i) => i.deviceTypeId === deviceTypeId) : issues),
+    () => (deviceTypeId ? issues.filter((issue) => issue.deviceTypeId === deviceTypeId) : issues),
     [issues, deviceTypeId],
+  );
+
+  const deviceTypeOptions = useMemo(
+    () => [{ value: '', label: '-' }, ...deviceTypes.map((type) => ({ value: type.id, label: type.name }))],
+    [deviceTypes],
+  );
+  const brandOptions = useMemo(
+    () => [{ value: '', label: '-' }, ...filteredBrands.map((brand) => ({ value: brand.id, label: brand.name }))],
+    [filteredBrands],
+  );
+  const modelOptions = useMemo(
+    () => [{ value: '', label: '-' }, ...filteredModels.map((model) => ({ value: model.id, label: model.name }))],
+    [filteredModels],
+  );
+  const issueOptions = useMemo(
+    () => [{ value: '', label: '-' }, ...filteredIssues.map((issue) => ({ value: issue.id, label: issue.name }))],
+    [filteredIssues],
+  );
+  const calcModeOptions = useMemo(
+    () => [
+      { value: 'BASE_PLUS_MARGIN', label: 'Base + % margen' },
+      { value: 'FIXED_TOTAL', label: 'Total fijo' },
+    ],
+    [],
   );
 
   async function save() {
@@ -141,17 +166,17 @@ export function AdminRepairPricingRuleEditPage() {
     setError('');
     try {
       await repairsApi.pricingRulesUpdate(id, {
-        name: name.trim() || `Regla ${issueText || 'reparacion'}`,
+        name: name.trim() || `Regla ${issueText || 'reparación'}`,
         active,
         priority: Number(priority || 0),
-        deviceTypeId: deviceTypeId || (brands.find((b) => b.id === brandId)?.deviceTypeId ?? null),
+        deviceTypeId: deviceTypeId || (brands.find((brand) => brand.id === brandId)?.deviceTypeId ?? null),
         deviceBrandId: brandId || null,
-        deviceModelGroupId: models.find((m) => m.id === modelId)?.deviceModelGroupId ?? null,
+        deviceModelGroupId: models.find((model) => model.id === modelId)?.deviceModelGroupId ?? null,
         deviceModelId: modelId || null,
         deviceIssueTypeId: issueId || null,
-        deviceBrand: brandText.trim() || (brands.find((b) => b.id === brandId)?.name ?? null),
-        deviceModel: modelText.trim() || (models.find((m) => m.id === modelId)?.name ?? null),
-        issueLabel: issueText.trim() || (issues.find((i) => i.id === issueId)?.name ?? null),
+        deviceBrand: brandText.trim() || (brands.find((brand) => brand.id === brandId)?.name ?? null),
+        deviceModel: modelText.trim() || (models.find((model) => model.id === modelId)?.name ?? null),
+        issueLabel: issueText.trim() || (issues.find((issue) => issue.id === issueId)?.name ?? null),
         basePrice: Number(basePrice || 0),
         profitPercent: Number(profitPercent || 0),
         calcMode,
@@ -175,7 +200,7 @@ export function AdminRepairPricingRuleEditPage() {
           <div>
             <h1 className="text-2xl font-black tracking-tight text-zinc-900">Editar regla</h1>
             <p className="mt-1 text-sm text-zinc-600">
-              Ajusta el calculo automatico manteniendo alcance por tipo, marca, modelo/grupo y falla.
+              Ajustá el cálculo automático manteniendo alcance por tipo, marca, modelo/grupo y falla.
             </p>
           </div>
           <Link to="/admin/precios" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">
@@ -194,52 +219,58 @@ export function AdminRepairPricingRuleEditPage() {
         <section className="card mx-auto w-full max-w-[820px]">
           <div className="card-body space-y-4 md:space-y-5">
             <Field label="Nombre de la regla *">
-              <input value={name} onChange={(e) => setName(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" placeholder="Ej: Modulo Samsung A linea media" />
+              <input value={name} onChange={(e) => setName(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" placeholder="Ej: Módulo Samsung A línea media" />
             </Field>
 
             <div className="grid gap-4 md:grid-cols-3">
-              <Field label="Tipo de dispositivo (catalogo, opcional)">
-                <select
+              <Field label="Tipo de dispositivo (catálogo, opcional)">
+                <CustomSelect
                   value={deviceTypeId}
-                  onChange={(e) => {
-                    setDeviceTypeId(e.target.value);
+                  onChange={(value) => {
+                    setDeviceTypeId(value);
                     setBrandId('');
                     setModelId('');
                   }}
-                  className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm"
+                  options={deviceTypeOptions}
                   disabled={loadingPage}
-                >
-                  <option value="">-</option>
-                  {deviceTypes.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                </select>
+                  triggerClassName="min-h-11 rounded-2xl font-bold"
+                  ariaLabel="Seleccionar tipo de dispositivo"
+                />
               </Field>
-              <Field label="Marca (catalogo, opcional)">
-                <select
+              <Field label="Marca (catálogo, opcional)">
+                <CustomSelect
                   value={brandId}
-                  onChange={(e) => {
-                    setBrandId(e.target.value);
+                  onChange={(value) => {
+                    setBrandId(value);
                     setModelId('');
                   }}
-                  className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm"
+                  options={brandOptions}
                   disabled={loadingPage}
-                >
-                  <option value="">-</option>
-                  {filteredBrands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-                </select>
+                  triggerClassName="min-h-11 rounded-2xl font-bold"
+                  ariaLabel="Seleccionar marca"
+                />
               </Field>
-              <Field label="Modelo (catalogo, opcional)">
-                <select value={modelId} onChange={(e) => setModelId(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" disabled={loadingPage}>
-                  <option value="">-</option>
-                  {filteredModels.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-                </select>
+              <Field label="Modelo (catálogo, opcional)">
+                <CustomSelect
+                  value={modelId}
+                  onChange={setModelId}
+                  options={modelOptions}
+                  disabled={loadingPage}
+                  triggerClassName="min-h-11 rounded-2xl font-bold"
+                  ariaLabel="Seleccionar modelo"
+                />
               </Field>
             </div>
 
-            <Field label="Tipo de reparacion / falla (catalogo, opcional)">
-              <select value={issueId} onChange={(e) => setIssueId(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" disabled={loadingPage}>
-                <option value="">-</option>
-                {filteredIssues.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}
-              </select>
+            <Field label="Tipo de reparación / falla (catálogo, opcional)">
+              <CustomSelect
+                value={issueId}
+                onChange={setIssueId}
+                options={issueOptions}
+                disabled={loadingPage}
+                triggerClassName="min-h-11 rounded-2xl font-bold"
+                ariaLabel="Seleccionar tipo de reparación"
+              />
             </Field>
 
             <div className="grid gap-4 md:grid-cols-3">
@@ -255,19 +286,22 @@ export function AdminRepairPricingRuleEditPage() {
             </div>
 
             <div className="grid gap-4 md:grid-cols-4">
-              <Field label="Modo de calculo">
-                <select value={calcMode} onChange={(e) => setCalcMode(e.target.value as 'BASE_PLUS_MARGIN' | 'FIXED_TOTAL')} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm">
-                  <option value="BASE_PLUS_MARGIN">Base + % margen</option>
-                  <option value="FIXED_TOTAL">Total fijo</option>
-                </select>
+              <Field label="Modo de cálculo">
+                <CustomSelect
+                  value={calcMode}
+                  onChange={(value) => setCalcMode(value as 'BASE_PLUS_MARGIN' | 'FIXED_TOTAL')}
+                  options={calcModeOptions}
+                  triggerClassName="min-h-11 rounded-2xl font-bold"
+                  ariaLabel="Seleccionar modo de cálculo"
+                />
               </Field>
-              <Field label="Minimo de ganancia (opcional)">
+              <Field label="Mínimo de ganancia (opcional)">
                 <input value={minProfit} onChange={(e) => setMinProfit(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" placeholder="0" disabled={calcMode === 'FIXED_TOTAL'} />
               </Field>
-              <Field label="Minimo final (opcional)">
+              <Field label="Mínimo final (opcional)">
                 <input value={minFinalPrice} onChange={(e) => setMinFinalPrice(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" placeholder="0" />
               </Field>
-              <Field label="Envio (opcional)">
+              <Field label="Envío (opcional)">
                 <input value={shippingFee} onChange={(e) => setShippingFee(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" placeholder="0" />
               </Field>
             </div>
@@ -279,8 +313,8 @@ export function AdminRepairPricingRuleEditPage() {
               <Field label="Modelo (texto fallback)">
                 <input value={modelText} onChange={(e) => setModelText(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" placeholder="A32" />
               </Field>
-              <Field label="Reparacion (texto fallback)">
-                <input value={issueText} onChange={(e) => setIssueText(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" placeholder="Modulo" />
+              <Field label="Reparación (texto fallback)">
+                <input value={issueText} onChange={(e) => setIssueText(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" placeholder="Módulo" />
               </Field>
             </div>
 
@@ -318,7 +352,7 @@ function Field({
   children,
 }: {
   label: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <div>

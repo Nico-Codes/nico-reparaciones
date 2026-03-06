@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { CustomSelect } from '@/components/ui/custom-select';
 import { adminApi, type AdminProviderItem } from '@/features/admin/api';
 
 function money(value: number) {
@@ -9,6 +10,11 @@ function money(value: number) {
 function toSearchMode(modeLabel: string) {
   return modeLabel.toLowerCase().includes('json') ? 'json' : 'html';
 }
+
+const providerModeOptions = [
+  { value: 'JSON API', label: 'JSON API' },
+  { value: 'HTML simple', label: 'HTML simple' },
+];
 
 export function AdminProvidersPage() {
   const [providers, setProviders] = useState<AdminProviderItem[]>([]);
@@ -50,15 +56,15 @@ export function AdminProvidersPage() {
     () => [...providers].sort((a, b) => a.priority - b.priority),
     [providers],
   );
-  const totalIncidents = providers.reduce((acc, p) => acc + p.incidents, 0);
-  const openIncidents = providers.reduce((acc, p) => acc + p.warrantiesExpired, 0);
-  const closedIncidents = providers.reduce((acc, p) => acc + p.warrantiesOk, 0);
-  const accumulatedLoss = providers.reduce((acc, p) => acc + p.loss, 0);
+  const totalIncidents = providers.reduce((acc, provider) => acc + provider.incidents, 0);
+  const openIncidents = providers.reduce((acc, provider) => acc + provider.warrantiesExpired, 0);
+  const closedIncidents = providers.reduce((acc, provider) => acc + provider.warrantiesOk, 0);
+  const accumulatedLoss = providers.reduce((acc, provider) => acc + provider.loss, 0);
 
   function movePriority(id: string, dir: -1 | 1) {
     setProviders((prev) => {
       const sorted = [...prev].sort((a, b) => a.priority - b.priority);
-      const idx = sorted.findIndex((p) => p.id === id);
+      const idx = sorted.findIndex((provider) => provider.id === id);
       const target = idx + dir;
       if (idx < 0 || target < 0 || target >= sorted.length) return prev;
       const current = sorted[idx];
@@ -71,7 +77,7 @@ export function AdminProvidersPage() {
   }
 
   function patchProvider(id: string, patch: Partial<AdminProviderItem>) {
-    setProviders((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+    setProviders((prev) => prev.map((provider) => (provider.id === id ? { ...provider, ...patch } : provider)));
   }
 
   async function saveOrder() {
@@ -82,7 +88,7 @@ export function AdminProvidersPage() {
       const res = await adminApi.reorderProviders(
         [...providers]
           .sort((a, b) => a.priority - b.priority)
-          .map((p) => p.id),
+          .map((provider) => provider.id),
       );
       setProviders(res.items);
       setMessage('Orden de búsqueda actualizado.');
@@ -122,7 +128,7 @@ export function AdminProvidersPage() {
         active: true,
       });
       setProviders((prev) => [...prev, res.item]);
-      setDraft((d) => ({ ...d, name: '', phone: '', notes: '' }));
+      setDraft((state) => ({ ...state, name: '', phone: '', notes: '' }));
       setMessage('Proveedor creado.');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo crear el proveedor');
@@ -222,26 +228,26 @@ export function AdminProvidersPage() {
           <span className="badge-zinc">Arrastra para ordenar</span>
         </div>
         <div className="card-body space-y-2.5">
-          {ordered.map((p, idx) => (
+          {ordered.map((provider, idx) => (
             <div
-              key={`${p.id}-priority`}
+              key={`${provider.id}-priority`}
               className="flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-3 py-2.5"
             >
               <div>
-                <div className="text-lg font-black tracking-tight text-zinc-900">{p.name}</div>
+                <div className="text-lg font-black tracking-tight text-zinc-900">{provider.name}</div>
                 <div className="text-sm text-zinc-500">Prioridad #{idx + 1}</div>
               </div>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => movePriority(p.id, -1)}
+                  onClick={() => movePriority(provider.id, -1)}
                   className="btn-ghost !h-8 !w-8 !rounded-xl p-0 text-base font-black"
                 >
                   ↑
                 </button>
                 <button
                   type="button"
-                  onClick={() => movePriority(p.id, 1)}
+                  onClick={() => movePriority(provider.id, 1)}
                   className="btn-ghost !h-8 !w-8 !rounded-xl p-0 text-base font-black"
                 >
                   ↓
@@ -288,7 +294,7 @@ export function AdminProvidersPage() {
               <label className="mb-1 block text-sm font-bold text-zinc-700">Nombre *</label>
               <input
                 value={draft.name}
-                onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
+                onChange={(e) => setDraft((state) => ({ ...state, name: e.target.value }))}
                 placeholder="Ej: Importadora Centro"
                 className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm"
               />
@@ -297,7 +303,7 @@ export function AdminProvidersPage() {
               <label className="mb-1 block text-sm font-bold text-zinc-700">Teléfono (opcional)</label>
               <input
                 value={draft.phone}
-                onChange={(e) => setDraft((d) => ({ ...d, phone: e.target.value }))}
+                onChange={(e) => setDraft((state) => ({ ...state, phone: e.target.value }))}
                 placeholder="Ej: 3511234567"
                 className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm"
               />
@@ -308,7 +314,7 @@ export function AdminProvidersPage() {
               <label className="mb-1 block text-sm font-bold text-zinc-700">Prioridad de búsqueda</label>
               <input
                 value={draft.priority}
-                onChange={(e) => setDraft((d) => ({ ...d, priority: e.target.value }))}
+                onChange={(e) => setDraft((state) => ({ ...state, priority: e.target.value }))}
                 className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm"
               />
             </div>
@@ -317,7 +323,7 @@ export function AdminProvidersPage() {
             <label className="mb-1 block text-sm font-bold text-zinc-700">Notas (opcional)</label>
             <textarea
               value={draft.notes}
-              onChange={(e) => setDraft((d) => ({ ...d, notes: e.target.value }))}
+              onChange={(e) => setDraft((state) => ({ ...state, notes: e.target.value }))}
               rows={3}
               placeholder="Contacto, zona, tiempos, etc."
               className="w-full rounded-2xl border border-zinc-200 px-3 py-2 text-sm"
@@ -329,7 +335,7 @@ export function AdminProvidersPage() {
                 id="draft-enabled"
                 type="checkbox"
                 checked={draft.enabled}
-                onChange={(e) => setDraft((d) => ({ ...d, enabled: e.target.checked }))}
+                onChange={(e) => setDraft((state) => ({ ...state, enabled: e.target.checked }))}
                 className="h-4 w-4"
               />
               <label htmlFor="draft-enabled" className="text-sm font-bold text-zinc-900">
@@ -339,20 +345,19 @@ export function AdminProvidersPage() {
             <div className="grid gap-3 md:grid-cols-2">
               <div>
                 <label className="mb-1 block text-sm font-bold text-zinc-700">Modo</label>
-                <select
+                <CustomSelect
                   value={draft.mode}
-                  onChange={(e) => setDraft((d) => ({ ...d, mode: e.target.value }))}
-                  className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm"
-                >
-                  <option>JSON API</option>
-                  <option>HTML simple</option>
-                </select>
+                  onChange={(value) => setDraft((state) => ({ ...state, mode: value }))}
+                  options={providerModeOptions}
+                  triggerClassName="min-h-11 rounded-2xl font-bold"
+                  ariaLabel="Seleccionar modo de búsqueda"
+                />
               </div>
               <div>
                 <label className="mb-1 block text-sm font-bold text-zinc-700">Endpoint (usar {'{query}'})</label>
                 <input
                   value={draft.endpoint}
-                  onChange={(e) => setDraft((d) => ({ ...d, endpoint: e.target.value }))}
+                  onChange={(e) => setDraft((state) => ({ ...state, endpoint: e.target.value }))}
                   className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm"
                 />
               </div>
@@ -361,7 +366,7 @@ export function AdminProvidersPage() {
               <label className="mb-1 block text-sm font-bold text-zinc-700">Config JSON (opcional)</label>
               <textarea
                 value={draft.configJson}
-                onChange={(e) => setDraft((d) => ({ ...d, configJson: e.target.value }))}
+                onChange={(e) => setDraft((state) => ({ ...state, configJson: e.target.value }))}
                 rows={3}
                 className="w-full rounded-2xl border border-zinc-200 px-3 py-2 text-sm"
               />
@@ -396,113 +401,112 @@ export function AdminProvidersPage() {
                   <div className="text-center">ACCIONES</div>
                   <div className="text-left">CONFIG</div>
                 </div>
-                {ordered.map((p, idx) => (
-                  <div key={p.id} className={idx ? 'border-t border-zinc-100' : ''}>
+                {ordered.map((provider, idx) => (
+                  <div key={provider.id} className={idx ? 'border-t border-zinc-100' : ''}>
                     <div className="grid grid-cols-[1.25fr_0.7fr_0.55fr_0.65fr_0.8fr_0.7fr_0.65fr_0.95fr_0.9fr_1.35fr] items-center gap-3 px-3 py-3">
-                      <div className="text-lg font-black tracking-tight text-zinc-900">{p.name}</div>
-                      <div className="text-sm text-zinc-500">{p.phone || '-'}</div>
-                      <div className="text-right text-lg font-black text-zinc-900">{p.products}</div>
-                      <div className="text-right text-lg font-black text-zinc-900">{p.incidents}</div>
+                      <div className="text-lg font-black tracking-tight text-zinc-900">{provider.name}</div>
+                      <div className="text-sm text-zinc-500">{provider.phone || '-'}</div>
+                      <div className="text-right text-lg font-black text-zinc-900">{provider.products}</div>
+                      <div className="text-right text-lg font-black text-zinc-900">{provider.incidents}</div>
                       <div className="text-center text-sm font-bold text-zinc-900">
                         <div>
-                          {p.warrantiesOk}/{p.warrantiesExpired}
+                          {provider.warrantiesOk}/{provider.warrantiesExpired}
                         </div>
                         <div className="text-zinc-500">Tasa visible de incidentes</div>
                       </div>
-                      <div className={`text-right text-xl font-black ${p.loss > 0 ? 'text-rose-700' : 'text-zinc-900'}`}>
-                        {p.loss > 0 ? money(p.loss) : '$ 0'}
+                      <div className={`text-right text-xl font-black ${provider.loss > 0 ? 'text-rose-700' : 'text-zinc-900'}`}>
+                        {provider.loss > 0 ? money(provider.loss) : '$ 0'}
                       </div>
                       <div className="text-center">
                         <div className="inline-flex h-8 items-center rounded-full border border-sky-200 bg-sky-50 px-3 text-sm font-black text-sky-700">
-                          {p.score}/100
+                          {provider.score}/100
                         </div>
-                        <div className="mt-1 text-xs font-bold text-zinc-700">{p.confidenceLabel}</div>
+                        <div className="mt-1 text-xs font-bold text-zinc-700">{provider.confidenceLabel}</div>
                         <div className="mt-1 text-xs text-zinc-500">
-                          {p.lastProbeAt} | q: &quot;{p.lastQuery}&quot; | n: {p.lastResults}
+                          {provider.lastProbeAt} | q: &quot;{provider.lastQuery}&quot; | n: {provider.lastResults}
                         </div>
                       </div>
                       <div className="text-center">
                         <div className="inline-flex h-8 items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 text-sm font-black text-emerald-700">
-                          {p.active ? 'Activo' : 'Inactivo'}
+                          {provider.active ? 'Activo' : 'Inactivo'}
                         </div>
                       </div>
                       <div className="flex items-center justify-center gap-2">
                         <button
                           type="button"
-                          onClick={() => void saveProvider({ ...p, searchEnabled: !p.searchEnabled })}
+                          onClick={() => void saveProvider({ ...provider, searchEnabled: !provider.searchEnabled })}
                           className="inline-flex h-9 items-center justify-center rounded-xl border border-sky-200 bg-sky-50 px-3 text-sm font-black text-sky-700"
                         >
-                          Buscador {p.searchEnabled ? 'ON' : 'OFF'}
+                          Buscador {provider.searchEnabled ? 'ON' : 'OFF'}
                         </button>
                         <button
                           type="button"
-                          onClick={() => void probeProvider(p)}
+                          onClick={() => void probeProvider(provider)}
                           className="btn-outline !h-9 !rounded-xl px-3 text-sm font-bold"
                         >
                           Probar búsqueda
                         </button>
                         <button
                           type="button"
-                          onClick={() => void toggleProvider(p)}
+                          onClick={() => void toggleProvider(provider)}
                           className="btn-outline !h-9 !rounded-xl px-3 text-sm font-bold"
                         >
-                          {p.active ? 'Desactivar' : 'Activar'}
+                          {provider.active ? 'Desactivar' : 'Activar'}
                         </button>
                       </div>
                       <div className="space-y-2">
                         <div className="grid grid-cols-[1.2fr_1fr] gap-2">
                           <input
-                            value={p.name}
-                            onChange={(e) => patchProvider(p.id, { name: e.target.value })}
+                            value={provider.name}
+                            onChange={(e) => patchProvider(provider.id, { name: e.target.value })}
                             className="h-10 rounded-xl border border-zinc-200 px-3 text-sm"
                           />
                           <input
-                            value={p.notes}
-                            onChange={(e) => patchProvider(p.id, { notes: e.target.value })}
+                            value={provider.notes}
+                            onChange={(e) => patchProvider(provider.id, { notes: e.target.value })}
                             placeholder="Notas"
                             className="h-10 rounded-xl border border-zinc-200 px-3 text-sm"
                           />
                         </div>
                         <div className="grid grid-cols-[0.45fr_0.6fr_auto] items-center gap-2">
                           <input
-                            value={String(p.priority)}
-                            onChange={(e) => patchProvider(p.id, { priority: Number(e.target.value) || p.priority })}
+                            value={String(provider.priority)}
+                            onChange={(e) => patchProvider(provider.id, { priority: Number(e.target.value) || provider.priority })}
                             className="h-10 rounded-xl border border-zinc-200 px-3 text-sm"
                           />
                           <label className="flex items-center justify-center gap-2 text-sm font-bold text-zinc-700">
                             <input
                               type="checkbox"
-                              checked={p.searchEnabled}
-                              onChange={(e) => patchProvider(p.id, { searchEnabled: e.target.checked })}
+                              checked={provider.searchEnabled}
+                              onChange={(e) => patchProvider(provider.id, { searchEnabled: e.target.checked })}
                             />
                             Búsqueda habilitada
                           </label>
                           <button
                             type="button"
-                            onClick={() => void saveProvider(p)}
+                            onClick={() => void saveProvider(provider)}
                             className="text-sm font-black text-zinc-900"
                           >
                             Actualizar
                           </button>
                         </div>
                         <div className="grid grid-cols-[0.75fr_1.25fr] gap-2">
-                          <select
-                            value={p.mode}
-                            onChange={(e) => patchProvider(p.id, { mode: e.target.value })}
-                            className="h-10 rounded-xl border border-zinc-200 px-3 text-sm"
-                          >
-                            <option>HTML simple</option>
-                            <option>JSON API</option>
-                          </select>
+                          <CustomSelect
+                            value={provider.mode}
+                            onChange={(value) => patchProvider(provider.id, { mode: value })}
+                            options={providerModeOptions}
+                            triggerClassName="h-10 min-h-10 rounded-xl px-3 text-sm font-bold"
+                            ariaLabel="Seleccionar modo de proveedor"
+                          />
                           <input
-                            value={p.endpoint}
-                            onChange={(e) => patchProvider(p.id, { endpoint: e.target.value })}
+                            value={provider.endpoint}
+                            onChange={(e) => patchProvider(provider.id, { endpoint: e.target.value })}
                             className="h-10 rounded-xl border border-zinc-200 px-3 text-sm"
                           />
                         </div>
                         <textarea
-                          value={p.configJson}
-                          onChange={(e) => patchProvider(p.id, { configJson: e.target.value })}
+                          value={provider.configJson}
+                          onChange={(e) => patchProvider(provider.id, { configJson: e.target.value })}
                           rows={2}
                           className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm"
                         />

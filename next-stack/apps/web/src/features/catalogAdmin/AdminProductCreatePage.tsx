@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { CustomSelect } from '@/components/ui/custom-select';
 import { adminApi } from '@/features/admin/api';
 import { catalogAdminApi, type AdminCategory } from './api';
 import { productPricingApi } from './productPricingApi';
@@ -46,7 +47,7 @@ export function AdminProductCreatePage() {
   const [recommendedPrice, setRecommendedPrice] = useState<number | null>(null);
   const [recommendedMarginPercent, setRecommendedMarginPercent] = useState<number | null>(null);
   const [recommendedRuleName, setRecommendedRuleName] = useState<string | null>(null);
-  const [pricingHint, setPricingHint] = useState('Define categoría + costo para calcular automáticamente.');
+  const [pricingHint, setPricingHint] = useState('Definí categoría + costo para calcular automáticamente.');
   const [loadingRecommendation, setLoadingRecommendation] = useState(false);
   const [preventNegativeMargin, setPreventNegativeMargin] = useState(true);
 
@@ -99,7 +100,7 @@ export function AdminProductCreatePage() {
       setRecommendedPrice(null);
       setRecommendedMarginPercent(null);
       setRecommendedRuleName(null);
-      setPricingHint('Define categoría + costo para calcular automáticamente.');
+      setPricingHint('Definí categoría + costo para calcular automáticamente.');
       return;
     }
 
@@ -118,13 +119,13 @@ export function AdminProductCreatePage() {
           setPricingHint(
             res.rule?.name
               ? `Regla: ${res.rule.name} (${res.marginPercent}% margen).`
-              : `Sin regla especifica. Margen base: ${res.marginPercent}%.`,
+              : `Sin regla específica. Margen base: ${res.marginPercent}%.`,
           );
         } catch {
           setRecommendedPrice(null);
           setRecommendedMarginPercent(null);
           setRecommendedRuleName(null);
-          setPricingHint('No se pudo calcular precio recomendado.');
+          setPricingHint('No se pudo calcular el precio recomendado.');
         } finally {
           setLoadingRecommendation(false);
         }
@@ -134,11 +135,27 @@ export function AdminProductCreatePage() {
     return () => clearTimeout(timeout);
   }, [categoryId, costPrice]);
 
+  const categoryOptions = useMemo(
+    () => [
+      { value: '', label: 'Sin categoría' },
+      ...categories.map((category) => ({ value: category.id, label: category.name })),
+    ],
+    [categories],
+  );
+
+  const supplierOptions = useMemo(
+    () => [
+      { value: '', label: 'Sin proveedor' },
+      ...suppliers.map((supplier) => ({ value: supplier.id, label: supplier.name })),
+    ],
+    [suppliers],
+  );
+
   const marginStats = useMemo(() => {
     const c = Number(costPrice || 0);
     const p = Number(price || 0);
     const utility = p - c;
-    const margin = c > 0 ? ((utility / c) * 100) : 0;
+    const margin = c > 0 ? (utility / c) * 100 : 0;
     const tone: 'emerald' | 'amber' | 'rose' = utility > 0 ? 'emerald' : utility === 0 ? 'amber' : 'rose';
     return { utility, margin, tone };
   }, [costPrice, price]);
@@ -150,7 +167,7 @@ export function AdminProductCreatePage() {
       const trimmedName = name.trim();
       const nextSlug = slugify(slug.trim() || trimmedName);
       if (!trimmedName || nextSlug.length < 2) {
-        setError('Nombre y slug validos son requeridos.');
+        setError('Nombre y slug válidos son requeridos.');
         return;
       }
 
@@ -196,8 +213,8 @@ export function AdminProductCreatePage() {
       <section className="store-hero">
         <div className="grid gap-4 md:grid-cols-[1.1fr_auto] md:items-start">
           <div className="grid gap-3 md:grid-cols-[160px_1fr] md:items-start">
-            <h1 className="text-2xl font-black tracking-tight text-zinc-900 md:text-[2.05rem] leading-tight">Nuevo<br/>producto</h1>
-            <p className="pt-1 text-sm text-zinc-600 md:max-w-md">Alta completa en catálogo con precio, stock, categoría e imagen.</p>
+            <h1 className="text-2xl font-black leading-tight tracking-tight text-zinc-900 md:text-[2.05rem]">Nuevo<br/>producto</h1>
+            <p className="max-w-md pt-1 text-sm text-zinc-600">Alta completa en catálogo con precio, stock, categoría e imagen.</p>
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2">
             <Link to="/admin/productos" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">Volver</Link>
@@ -224,7 +241,7 @@ export function AdminProductCreatePage() {
                 <span className="mb-1 block text-sm font-bold text-zinc-700">Slug (opcional)</span>
                 <input value={slug} onChange={(e) => setSlug(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" />
               </label>
-              <p className="mt-1 text-xs text-zinc-500">Si lo dejas vacio, se genera desde el nombre.</p>
+              <p className="mt-1 text-xs text-zinc-500">Si lo dejás vacío, se genera desde el nombre.</p>
             </div>
             <label className="block">
               <span className="mb-1 block text-sm font-bold text-zinc-700">SKU *</span>
@@ -240,17 +257,23 @@ export function AdminProductCreatePage() {
           <div className="grid gap-4 md:grid-cols-2">
             <label className="block">
               <span className="mb-1 block text-sm font-bold text-zinc-700">Categoría</span>
-              <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm">
-                <option value="">Sin categoría</option>
-                {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+              <CustomSelect
+                value={categoryId}
+                onChange={setCategoryId}
+                options={categoryOptions}
+                triggerClassName="min-h-11 rounded-2xl font-bold"
+                ariaLabel="Seleccionar categoría"
+              />
             </label>
             <label className="block">
               <span className="mb-1 block text-sm font-bold text-zinc-700">Proveedor</span>
-              <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm">
-                <option value="">Sin proveedor</option>
-                {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
+              <CustomSelect
+                value={supplierId}
+                onChange={setSupplierId}
+                options={supplierOptions}
+                triggerClassName="min-h-11 rounded-2xl font-bold"
+                ariaLabel="Seleccionar proveedor"
+              />
             </label>
           </div>
 
@@ -301,7 +324,7 @@ export function AdminProductCreatePage() {
           </div>
 
           <label className="block">
-            <span className="mb-1 block text-sm font-bold text-zinc-700">Descripcion (opcional)</span>
+            <span className="mb-1 block text-sm font-bold text-zinc-700">Descripción (opcional)</span>
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} placeholder="Detalles, compatibilidad, color, etc." className="w-full rounded-2xl border border-zinc-200 px-3 py-2 text-sm" />
           </label>
 
@@ -343,7 +366,7 @@ export function AdminProductCreatePage() {
             </div>
             <div>
               <div className="mb-1 text-sm font-bold text-zinc-700">Vista previa</div>
-              <div className="flex h-[116px] w-[116px] items-center justify-center rounded-2xl border border-zinc-200 bg-zinc-50 text-sm font-bold text-zinc-400 overflow-hidden">
+              <div className="flex h-[116px] w-[116px] items-center justify-center overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50 text-sm font-bold text-zinc-400">
                 {imagePreview ? <img src={imagePreview} alt="preview" className="h-full w-full object-cover" /> : 'Sin imagen'}
               </div>
             </div>

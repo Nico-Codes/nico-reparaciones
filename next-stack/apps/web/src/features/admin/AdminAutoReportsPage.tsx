@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { CustomSelect } from '@/components/ui/custom-select';
 import { adminApi } from './api';
 import { adminSettingsApi, type AdminSettingItem } from './settingsApi';
 
@@ -20,6 +21,12 @@ const DAY_OPTIONS = [
   { value: 'friday', label: 'Viernes' },
   { value: 'saturday', label: 'Sábado' },
   { value: 'sunday', label: 'Domingo' },
+] as const;
+
+const RANGE_OPTIONS = [
+  { value: '7', label: 'Últimos 7 días' },
+  { value: '30', label: 'Últimos 30 días' },
+  { value: '90', label: 'Últimos 90 días' },
 ] as const;
 
 const STATUS_META: Record<string, { label: string; className: string }> = {
@@ -68,7 +75,7 @@ export function AdminAutoReportsPage() {
     async function load() {
       const res = await adminSettingsApi.list();
       if (!mounted) return;
-      const map = new Map<string, AdminSettingItem>(res.items.map((i) => [i.key, i]));
+      const map = new Map<string, AdminSettingItem>(res.items.map((item) => [item.key, item]));
       setSettingsMap(map);
 
       const nextForm: ReportForm = {
@@ -118,7 +125,7 @@ export function AdminAutoReportsPage() {
 
   async function saveSettings(items: Array<{ key: string; value: string; group: string; label: string; type: string }>) {
     const res = await adminSettingsApi.save(items);
-    setSettingsMap(new Map<string, AdminSettingItem>(res.items.map((i) => [i.key, i])));
+    setSettingsMap(new Map<string, AdminSettingItem>(res.items.map((item) => [item.key, item])));
     return res;
   }
 
@@ -150,7 +157,7 @@ export function AdminAutoReportsPage() {
   async function reloadSettingsOnly() {
     try {
       const res = await adminSettingsApi.list();
-      setSettingsMap(new Map<string, AdminSettingItem>(res.items.map((i) => [i.key, i])));
+      setSettingsMap(new Map<string, AdminSettingItem>(res.items.map((item) => [item.key, item])));
     } catch {
       // leave current UI state
     }
@@ -214,7 +221,7 @@ export function AdminAutoReportsPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-black tracking-tight text-zinc-900">Reportes automáticos</h1>
-            <p className="mt-1 text-sm text-zinc-600">Configura envío semanal de KPIs del dashboard.</p>
+            <p className="mt-1 text-sm text-zinc-600">Configurá envío semanal de KPIs del dashboard.</p>
           </div>
           <Link to="/admin/configuraciones" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">
             Volver a configuración
@@ -227,7 +234,7 @@ export function AdminAutoReportsPage() {
           <div>
             <div className="text-xl font-black tracking-tight text-zinc-900">Reportes semanales</div>
             <p className="mt-1 text-sm text-zinc-500">
-              Define destinatarios y frecuencia para el envío automático de resúmenes.
+              Definí destinatarios y frecuencia para el envío automático de resúmenes.
             </p>
           </div>
           <span className="inline-flex h-7 items-center rounded-full border border-sky-200 bg-sky-50 px-3 text-sm font-black text-sky-700">
@@ -242,7 +249,7 @@ export function AdminAutoReportsPage() {
             <label className="mb-2 block text-sm font-bold text-zinc-900">Emails destinatarios (separados por coma)</label>
             <textarea
               value={form.weeklyEmails}
-              onChange={(e) => setForm((p) => ({ ...p, weeklyEmails: e.target.value }))}
+              onChange={(e) => setForm((prev) => ({ ...prev, weeklyEmails: e.target.value }))}
               rows={3}
               disabled={loading}
               className="w-full rounded-2xl border border-zinc-200 px-3 py-3 text-sm disabled:bg-zinc-50"
@@ -253,54 +260,48 @@ export function AdminAutoReportsPage() {
           <div className="grid gap-3 lg:grid-cols-3">
             <div>
               <label className="mb-2 block text-sm font-bold text-zinc-900">Día de envío</label>
-              <select
+              <CustomSelect
                 value={form.sendDay}
-                onChange={(e) => setForm((p) => ({ ...p, sendDay: e.target.value }))}
+                onChange={(value) => setForm((prev) => ({ ...prev, sendDay: value }))}
                 disabled={loading}
-                className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm disabled:bg-zinc-50"
-              >
-                {DAY_OPTIONS.map((day) => (
-                  <option key={day.value} value={day.value}>
-                    {day.label}
-                  </option>
-                ))}
-              </select>
+                options={[...DAY_OPTIONS]}
+                triggerClassName="min-h-11 rounded-2xl font-bold"
+                ariaLabel="Seleccionar día de envío"
+              />
             </div>
             <div>
               <label className="mb-2 block text-sm font-bold text-zinc-900">Hora de envío</label>
               <input
                 type="time"
                 value={form.sendHour}
-                onChange={(e) => setForm((p) => ({ ...p, sendHour: e.target.value }))}
+                onChange={(e) => setForm((prev) => ({ ...prev, sendHour: e.target.value }))}
                 disabled={loading}
                 className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm disabled:bg-zinc-50"
               />
             </div>
             <div>
               <label className="mb-2 block text-sm font-bold text-zinc-900">Rango del reporte</label>
-              <select
+              <CustomSelect
                 value={form.reportRange}
-                onChange={(e) => setForm((p) => ({ ...p, reportRange: e.target.value as ReportForm['reportRange'] }))}
+                onChange={(value) => setForm((prev) => ({ ...prev, reportRange: value as ReportForm['reportRange'] }))}
                 disabled={loading}
-                className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm disabled:bg-zinc-50"
-              >
-                <option value="7">Últimos 7 días</option>
-                <option value="30">Últimos 30 días</option>
-                <option value="90">Últimos 90 días</option>
-              </select>
+                options={[...RANGE_OPTIONS]}
+                triggerClassName="min-h-11 rounded-2xl font-bold"
+                ariaLabel="Seleccionar rango del reporte"
+              />
             </div>
           </div>
 
           <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3 md:p-4">
             <div className="text-xl font-black tracking-tight text-zinc-900">Alertas operativas automáticas</div>
-            <p className="mt-1 text-sm text-zinc-600">Correo diario con pedidos/reparaciones demoradas (anti-spam incluido).</p>
+            <p className="mt-1 text-sm text-zinc-600">Correo diario con pedidos y reparaciones demoradas (anti-spam incluido).</p>
 
             <div className="mt-4 grid gap-3 lg:grid-cols-2">
               <div>
                 <label className="mb-2 block text-sm font-bold text-zinc-900">Emails para alertas operativas (opcional)</label>
                 <textarea
                   value={form.alertsEmails}
-                  onChange={(e) => setForm((p) => ({ ...p, alertsEmails: e.target.value }))}
+                  onChange={(e) => setForm((prev) => ({ ...prev, alertsEmails: e.target.value }))}
                   rows={3}
                   placeholder="ops@tudominio.com, soporte@tudominio.com"
                   disabled={loading}
@@ -315,7 +316,7 @@ export function AdminAutoReportsPage() {
                   min={5}
                   max={10080}
                   value={form.antiSpamWindow}
-                  onChange={(e) => setForm((p) => ({ ...p, antiSpamWindow: e.target.value }))}
+                  onChange={(e) => setForm((prev) => ({ ...prev, antiSpamWindow: e.target.value }))}
                   disabled={loading}
                   className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm disabled:bg-zinc-50"
                 />
@@ -354,7 +355,7 @@ export function AdminAutoReportsPage() {
           </div>
 
           <div className="rounded-2xl border border-zinc-200 bg-white px-3 py-3 text-sm text-zinc-600">
-            Alertas operativas automáticas: se ejecuta <code>ops:operational-alerts-email</code> diariamente. Si no configuras destinatarios
+            Alertas operativas automáticas: se ejecuta <code>ops:operational-alerts-email</code> diariamente. Si no configurás destinatarios
             específicos, se envían a admins o a los emails del reporte semanal.
           </div>
 

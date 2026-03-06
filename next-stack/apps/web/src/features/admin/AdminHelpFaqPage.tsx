@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { CustomSelect } from '@/components/ui/custom-select';
 import { helpFaqAdminApi, type HelpFaqAdminItem, type HelpFaqUpdateInput } from './helpFaqApi';
 
 export function AdminHelpFaqPage() {
@@ -37,7 +38,16 @@ export function AdminHelpFaqPage() {
     void load();
   }, [q, activeFilter, categoryFilter]);
 
-  const categories = useMemo(() => Array.from(new Set(items.map((i) => i.category).filter(Boolean))).sort(), [items]);
+  const categories = useMemo(() => Array.from(new Set(items.map((item) => item.category).filter(Boolean))).sort(), [items]);
+  const activeOptions = [
+    { value: '', label: 'Activas e inactivas' },
+    { value: '1', label: 'Solo activas' },
+    { value: '0', label: 'Solo inactivas' },
+  ];
+  const categoryOptions = useMemo(
+    () => [{ value: '', label: 'Todas las categorías' }, ...categories.map((category) => ({ value: category, label: category }))],
+    [categories],
+  );
 
   async function createItem(e: React.FormEvent) {
     e.preventDefault();
@@ -64,7 +74,7 @@ export function AdminHelpFaqPage() {
     setError('');
     try {
       const res = await helpFaqAdminApi.update(id, patch);
-      setItems((prev) => sortItems(prev.map((x) => (x.id === id ? res.item : x))));
+      setItems((prev) => sortItems(prev.map((entry) => (entry.id === id ? res.item : entry))));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error actualizando FAQ');
     }
@@ -90,14 +100,14 @@ export function AdminHelpFaqPage() {
           <div className="card-body p-4">
             <div className="text-sm font-bold uppercase tracking-wide text-zinc-500">Nueva pregunta</div>
             <form className="mt-3 grid gap-2" onSubmit={(e) => void createItem(e)}>
-              <input value={form.question} onChange={(e) => setForm((p) => ({ ...p, question: e.target.value }))} placeholder="¿Cómo sigo mi pedido?" className="h-10 rounded-xl border border-zinc-200 px-3 text-sm" required />
-              <textarea value={form.answer} onChange={(e) => setForm((p) => ({ ...p, answer: e.target.value }))} rows={5} placeholder="Respuesta..." className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm" required />
+              <input value={form.question} onChange={(e) => setForm((prev) => ({ ...prev, question: e.target.value }))} placeholder="¿Cómo sigo mi pedido?" className="h-10 rounded-xl border border-zinc-200 px-3 text-sm" required />
+              <textarea value={form.answer} onChange={(e) => setForm((prev) => ({ ...prev, answer: e.target.value }))} rows={5} placeholder="Respuesta..." className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm" required />
               <div className="grid grid-cols-2 gap-2">
-                <input value={form.category} onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))} placeholder="general" className="h-10 rounded-xl border border-zinc-200 px-3 text-sm" />
-                <input value={form.sortOrder} onChange={(e) => setForm((p) => ({ ...p, sortOrder: e.target.value }))} type="number" placeholder="Orden" className="h-10 rounded-xl border border-zinc-200 px-3 text-sm" />
+                <input value={form.category} onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value }))} placeholder="general" className="h-10 rounded-xl border border-zinc-200 px-3 text-sm" />
+                <input value={form.sortOrder} onChange={(e) => setForm((prev) => ({ ...prev, sortOrder: e.target.value }))} type="number" placeholder="Orden" className="h-10 rounded-xl border border-zinc-200 px-3 text-sm" />
               </div>
               <label className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-700">
-                <input type="checkbox" checked={form.active} onChange={(e) => setForm((p) => ({ ...p, active: e.target.checked }))} />
+                <input type="checkbox" checked={form.active} onChange={(e) => setForm((prev) => ({ ...prev, active: e.target.checked }))} />
                 Activa
               </label>
               <button className="btn-primary h-11 w-full justify-center" type="submit" disabled={creating}>
@@ -111,15 +121,8 @@ export function AdminHelpFaqPage() {
           <div className="card-body p-4">
             <div className="mb-3 grid gap-2 md:grid-cols-[1fr_180px_180px_auto]">
               <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar..." className="h-10 rounded-xl border border-zinc-200 px-3 text-sm" />
-              <select value={activeFilter} onChange={(e) => setActiveFilter(e.target.value)} className="h-10 rounded-xl border border-zinc-200 px-3 text-sm">
-                <option value="">Activas e inactivas</option>
-                <option value="1">Solo activas</option>
-                <option value="0">Solo inactivas</option>
-              </select>
-              <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="h-10 rounded-xl border border-zinc-200 px-3 text-sm">
-                <option value="">Todas las categorías</option>
-                {categories.map((c) => <option key={c} value={c}>{c}</option>)}
-              </select>
+              <CustomSelect value={activeFilter} onChange={setActiveFilter} options={activeOptions} triggerClassName="min-h-10 rounded-xl" ariaLabel="Filtrar por estado de FAQ" />
+              <CustomSelect value={categoryFilter} onChange={setCategoryFilter} options={categoryOptions} triggerClassName="min-h-10 rounded-xl" ariaLabel="Filtrar por categoría FAQ" />
               <button className="btn-outline h-10 justify-center px-4" type="button" onClick={() => void load()}>Actualizar</button>
             </div>
 
@@ -135,7 +138,7 @@ export function AdminHelpFaqPage() {
                       <div className="min-w-0 flex-1">
                         <input
                           value={item.question}
-                          onChange={(e) => setItems((prev) => prev.map((x) => (x.id === item.id ? { ...x, question: e.target.value } : x)))}
+                          onChange={(e) => setItems((prev) => prev.map((entry) => (entry.id === item.id ? { ...entry, question: e.target.value } : entry)))}
                           onBlur={(e) => void patchItem(item.id, { question: e.target.value })}
                           className="h-9 w-full rounded-xl border border-zinc-200 px-3 text-sm font-black text-zinc-900"
                         />
@@ -149,21 +152,21 @@ export function AdminHelpFaqPage() {
                     <textarea
                       rows={4}
                       value={item.answer}
-                      onChange={(e) => setItems((prev) => prev.map((x) => (x.id === item.id ? { ...x, answer: e.target.value } : x)))}
+                      onChange={(e) => setItems((prev) => prev.map((entry) => (entry.id === item.id ? { ...entry, answer: e.target.value } : entry)))}
                       onBlur={(e) => void patchItem(item.id, { answer: e.target.value })}
                       className="mt-3 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm"
                     />
                     <div className="mt-2 grid grid-cols-2 gap-2 md:grid-cols-3">
                       <input
                         value={item.category}
-                        onChange={(e) => setItems((prev) => prev.map((x) => (x.id === item.id ? { ...x, category: e.target.value } : x)))}
+                        onChange={(e) => setItems((prev) => prev.map((entry) => (entry.id === item.id ? { ...entry, category: e.target.value } : entry)))}
                         onBlur={(e) => void patchItem(item.id, { category: e.target.value })}
                         className="h-9 rounded-xl border border-zinc-200 px-3 text-sm"
                       />
                       <input
                         value={String(item.sortOrder)}
                         type="number"
-                        onChange={(e) => setItems((prev) => prev.map((x) => (x.id === item.id ? { ...x, sortOrder: Number(e.target.value || 0) } : x)))}
+                        onChange={(e) => setItems((prev) => prev.map((entry) => (entry.id === item.id ? { ...entry, sortOrder: Number(e.target.value || 0) } : entry)))}
                         onBlur={(e) => void patchItem(item.id, { sortOrder: Number(e.target.value || 0) })}
                         className="h-9 rounded-xl border border-zinc-200 px-3 text-sm"
                       />

@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { CustomSelect } from '@/components/ui/custom-select';
 import { authStorage } from '@/features/auth/storage';
 import { adminUsersApi, type AdminUserRow } from './usersApi';
 
@@ -36,7 +37,7 @@ export function AdminUsersPage() {
         return;
       }
       if (res.item) {
-        setItems((prev) => prev.map((u) => (u.id === userId ? res.item! : u)));
+        setItems((prev) => prev.map((user) => (user.id === userId ? res.item! : user)));
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error actualizando rol');
@@ -45,27 +46,37 @@ export function AdminUsersPage() {
 
   const stats = useMemo(() => ({
     total: items.length,
-    admins: items.filter((u) => u.role === 'ADMIN').length,
-    verified: items.filter((u) => u.emailVerified).length,
+    admins: items.filter((user) => user.role === 'ADMIN').length,
+    verified: items.filter((user) => user.emailVerified).length,
   }), [items]);
+
+  const roleOptions = [
+    { value: '', label: 'Todos los roles' },
+    { value: 'ADMIN', label: 'ADMIN' },
+    { value: 'USER', label: 'USER' },
+  ];
+  const rowRoleOptions = [
+    { value: 'USER', label: 'USER' },
+    { value: 'ADMIN', label: 'ADMIN' },
+  ];
 
   return (
     <div className="store-shell">
       <div className="page-head store-hero">
-          <div>
-            <div className="page-title">Usuarios</div>
-            <div className="page-subtitle">Listado de usuarios y cambio de roles (USER/ADMIN).</div>
-          </div>
-          <Link to="/admin" className="btn-outline h-11 w-full justify-center sm:w-auto">Volver a admin</Link>
+        <div>
+          <div className="page-title">Usuarios</div>
+          <div className="page-subtitle">Listado de usuarios y cambio de roles (USER/ADMIN).</div>
+        </div>
+        <Link to="/admin" className="btn-outline h-11 w-full justify-center sm:w-auto">Volver a admin</Link>
       </div>
 
-        {error ? <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">{error}</div> : null}
+      {error ? <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">{error}</div> : null}
 
-        <div className="mt-4 grid gap-4 md:grid-cols-3">
-          <Stat label="Usuarios listados" value={String(stats.total)} />
-          <Stat label="Admins" value={String(stats.admins)} />
-          <Stat label="Emails verificados" value={String(stats.verified)} />
-        </div>
+      <div className="mt-4 grid gap-4 md:grid-cols-3">
+        <Stat label="Usuarios listados" value={String(stats.total)} />
+        <Stat label="Admins" value={String(stats.admins)} />
+        <Stat label="Emails verificados" value={String(stats.verified)} />
+      </div>
 
       <section className="mt-4 card">
         <div className="card-body p-4">
@@ -76,11 +87,13 @@ export function AdminUsersPage() {
               placeholder="Buscar por nombre o email..."
               className="h-10 rounded-xl border border-zinc-200 px-3 text-sm"
             />
-            <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} className="h-10 rounded-xl border border-zinc-200 px-3 text-sm">
-              <option value="">Todos los roles</option>
-              <option value="ADMIN">ADMIN</option>
-              <option value="USER">USER</option>
-            </select>
+            <CustomSelect
+              value={roleFilter}
+              onChange={setRoleFilter}
+              options={roleOptions}
+              triggerClassName="min-h-10 rounded-xl"
+              ariaLabel="Filtrar por rol"
+            />
             <button className="btn-outline h-10 justify-center px-4" type="button" onClick={() => void load()}>Actualizar</button>
           </div>
 
@@ -90,31 +103,30 @@ export function AdminUsersPage() {
             <div className="rounded-xl border border-zinc-200 p-3 text-sm">No hay usuarios.</div>
           ) : (
             <div className="space-y-2">
-              {items.map((u) => {
-                const isSelf = currentUser?.id === u.id;
+              {items.map((user) => {
+                const isSelf = currentUser?.id === user.id;
                 return (
-                  <div key={u.id} className="rounded-xl border border-zinc-200 p-3">
+                  <div key={user.id} className="rounded-xl border border-zinc-200 p-3">
                     <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-center">
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <div className="truncate text-sm font-black text-zinc-900">{u.name}</div>
+                          <div className="truncate text-sm font-black text-zinc-900">{user.name}</div>
                           {isSelf ? <span className="rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-xs font-bold text-sky-700">Vos</span> : null}
-                          <span className={`rounded-full border px-2 py-0.5 text-xs font-bold ${u.emailVerified ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-amber-200 bg-amber-50 text-amber-700'}`}>
-                            {u.emailVerified ? 'Verificado' : 'Sin verificar'}
+                          <span className={`rounded-full border px-2 py-0.5 text-xs font-bold ${user.emailVerified ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-amber-200 bg-amber-50 text-amber-700'}`}>
+                            {user.emailVerified ? 'Verificado' : 'Sin verificar'}
                           </span>
                         </div>
-                        <div className="truncate text-sm text-zinc-600">{u.email}</div>
-                        <div className="mt-1 text-xs text-zinc-500">Alta: {new Date(u.createdAt).toLocaleString('es-AR')}</div>
+                        <div className="truncate text-sm text-zinc-600">{user.email}</div>
+                        <div className="mt-1 text-xs text-zinc-500">Alta: {new Date(user.createdAt).toLocaleString('es-AR')}</div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <select
-                          value={u.role}
-                          onChange={(e) => void changeRole(u.id, e.target.value as 'USER' | 'ADMIN')}
-                          className="h-10 rounded-xl border border-zinc-200 px-3 text-sm"
-                        >
-                          <option value="USER">USER</option>
-                          <option value="ADMIN">ADMIN</option>
-                        </select>
+                      <div className="flex items-center gap-2 min-w-[140px]">
+                        <CustomSelect
+                          value={user.role}
+                          onChange={(nextRole) => void changeRole(user.id, nextRole as 'USER' | 'ADMIN')}
+                          options={rowRoleOptions}
+                          triggerClassName="min-h-10 rounded-xl"
+                          ariaLabel={`Rol de ${user.name}`}
+                        />
                       </div>
                     </div>
                   </div>

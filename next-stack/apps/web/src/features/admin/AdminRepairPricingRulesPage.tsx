@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { CustomSelect } from '@/components/ui/custom-select';
 import { adminApi } from '@/features/admin/api';
 import { deviceCatalogApi } from '@/features/deviceCatalog/api';
 import { repairsApi } from '@/features/repairs/api';
@@ -78,13 +79,13 @@ export function AdminRepairPricingRulesPage() {
       ]);
       const nextRows = res.items.map(fromApi);
       setRows(nextRows);
-      setDeviceTypes(catalogTypes.items.filter((x) => x.active));
-      setBrandsCatalog(catalogBrands.items.filter((x) => x.active));
-      setModelsCatalog(catalogModels.items.filter((x) => x.active));
-      setIssuesCatalog(catalogIssues.items.filter((x) => x.active));
+      setDeviceTypes(catalogTypes.items.filter((item) => item.active));
+      setBrandsCatalog(catalogBrands.items.filter((item) => item.active));
+      setModelsCatalog(catalogModels.items.filter((item) => item.active));
+      setIssuesCatalog(catalogIssues.items.filter((item) => item.active));
 
-      const { names: groupLookups, byBrand } = await loadModelGroupLookups(catalogBrands.items.filter((x) => x.active).map((b) => b.id));
-      setDeviceTypeNames(Object.fromEntries(catalogTypes.items.map((t) => [t.id, t.name])));
+      const { names: groupLookups, byBrand } = await loadModelGroupLookups(catalogBrands.items.filter((item) => item.active).map((brand) => brand.id));
+      setDeviceTypeNames(Object.fromEntries(catalogTypes.items.map((type) => [type.id, type.name])));
       setModelGroupNames(groupLookups);
       setModelGroupsByBrand(byBrand);
     } catch (e) {
@@ -95,15 +96,20 @@ export function AdminRepairPricingRulesPage() {
   }
 
   async function loadModelGroupLookups(brandIds: string[]) {
-    if (brandIds.length === 0) return { names: {} as Record<string, string>, byBrand: {} as Record<string, Array<{ id: string; name: string; slug: string; active: boolean }>> };
+    if (brandIds.length === 0) {
+      return {
+        names: {} as Record<string, string>,
+        byBrand: {} as Record<string, Array<{ id: string; name: string; slug: string; active: boolean }>>,
+      };
+    }
     const settled = await Promise.allSettled(brandIds.map((brandId) => adminApi.modelGroups(brandId)));
     const names: Record<string, string> = {};
     const byBrand: Record<string, Array<{ id: string; name: string; slug: string; active: boolean }>> = {};
-    settled.forEach((res, idx) => {
-      if (res.status !== 'fulfilled') return;
-      const brandId = brandIds[idx];
-      byBrand[brandId] = res.value.groups.filter((g) => g.active);
-      for (const g of res.value.groups) names[g.id] = g.name;
+    settled.forEach((result, index) => {
+      if (result.status !== 'fulfilled') return;
+      const brandId = brandIds[index];
+      byBrand[brandId] = result.value.groups.filter((group) => group.active);
+      for (const group of result.value.groups) names[group.id] = group.name;
     });
     return { names, byBrand };
   }
@@ -125,19 +131,21 @@ export function AdminRepairPricingRulesPage() {
           next.deviceBrandId = null;
           next.deviceModelId = null;
           next.deviceModelGroupId = null;
-          next.deviceIssueTypeId = next.deviceIssueTypeId && issuesCatalog.some((i) => i.id === next.deviceIssueTypeId && (!next.deviceTypeId || i.deviceTypeId === next.deviceTypeId))
-            ? next.deviceIssueTypeId
-            : null;
+          next.deviceIssueTypeId =
+            next.deviceIssueTypeId &&
+            issuesCatalog.some((issue) => issue.id === next.deviceIssueTypeId && (!next.deviceTypeId || issue.deviceTypeId === next.deviceTypeId))
+              ? next.deviceIssueTypeId
+              : null;
         }
         if ('deviceBrandId' in patch) {
-          const brand = brandsCatalog.find((b) => b.id === next.deviceBrandId);
+          const brand = brandsCatalog.find((item) => item.id === next.deviceBrandId);
           next.deviceTypeId = brand?.deviceTypeId ?? next.deviceTypeId ?? null;
           next.deviceModelId = null;
           next.deviceModelGroupId = null;
           if (brand) next.brand = brand.name;
         }
         if ('deviceModelId' in patch) {
-          const model = modelsCatalog.find((m) => m.id === next.deviceModelId);
+          const model = modelsCatalog.find((item) => item.id === next.deviceModelId);
           next.deviceModelGroupId = model?.deviceModelGroupId ?? null;
           if (model) next.model = model.name;
         }
@@ -145,7 +153,7 @@ export function AdminRepairPricingRulesPage() {
           next.deviceModelId = null;
         }
         if ('deviceIssueTypeId' in patch) {
-          const issue = issuesCatalog.find((i) => i.id === next.deviceIssueTypeId);
+          const issue = issuesCatalog.find((item) => item.id === next.deviceIssueTypeId);
           if (issue) next.repairType = issue.name;
         }
         return next;
@@ -202,6 +210,14 @@ export function AdminRepairPricingRulesPage() {
     }
   }
 
+  const calcModeOptions = useMemo(
+    () => [
+      { value: 'BASE_PLUS_MARGIN', label: 'Base + %' },
+      { value: 'FIXED_TOTAL', label: 'Fijo' },
+    ],
+    [],
+  );
+
   return (
     <div className="store-shell space-y-5">
       <section className="store-hero">
@@ -209,7 +225,7 @@ export function AdminRepairPricingRulesPage() {
           <div>
             <h1 className="text-2xl font-black tracking-tight text-zinc-900">Reglas de precios (auto)</h1>
             <p className="mt-1 text-sm text-zinc-600">
-              Configura cálculo automático por tipo, marca, grupo/modelo y falla con edición en línea.
+              Configurá cálculo automático por tipo, marca, grupo/modelo y falla con edición en línea.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -256,7 +272,7 @@ export function AdminRepairPricingRulesPage() {
                   <div className="flex items-center">
                     <input type="checkbox" checked={row.active} onChange={(e) => patchRow(row.id, { active: e.target.checked })} className="h-4 w-4" />
                   </div>
-                  <InlineText value={row.name} onChange={(v) => patchRow(row.id, { name: v })} />
+                  <InlineText value={row.name} onChange={(value) => patchRow(row.id, { name: value })} />
                   <ScopeEditorCell
                     row={row}
                     deviceTypes={deviceTypes}
@@ -268,23 +284,21 @@ export function AdminRepairPricingRulesPage() {
                     modelGroupsByBrand={modelGroupsByBrand}
                     onPatch={patchScope}
                   />
-                  <InlineText value={row.brand} onChange={(v) => patchRow(row.id, { brand: v })} />
-                  <InlineText value={row.model} onChange={(v) => patchRow(row.id, { model: v })} />
-                  <InlineText value={row.repairType} onChange={(v) => patchRow(row.id, { repairType: v })} />
-                  <select
+                  <InlineText value={row.brand} onChange={(value) => patchRow(row.id, { brand: value })} />
+                  <InlineText value={row.model} onChange={(value) => patchRow(row.id, { model: value })} />
+                  <InlineText value={row.repairType} onChange={(value) => patchRow(row.id, { repairType: value })} />
+                  <TinySelect
                     value={row.calcMode}
-                    onChange={(e) => patchRow(row.id, { calcMode: e.target.value as 'BASE_PLUS_MARGIN' | 'FIXED_TOTAL' })}
-                    className="h-10 w-full rounded-xl border border-zinc-200 px-2 text-xs"
-                  >
-                    <option value="BASE_PLUS_MARGIN">Base+%</option>
-                    <option value="FIXED_TOTAL">Fijo</option>
-                  </select>
-                  <InlineText value={row.basePrice} onChange={(v) => patchRow(row.id, { basePrice: v })} />
-                  <InlineText value={row.percent} onChange={(v) => patchRow(row.id, { percent: v })} />
-                  <InlineText value={row.minProfit} onChange={(v) => patchRow(row.id, { minProfit: v })} />
-                  <InlineText value={row.minFinalPrice} onChange={(v) => patchRow(row.id, { minFinalPrice: v })} />
-                  <InlineText value={row.shippingFee} onChange={(v) => patchRow(row.id, { shippingFee: v })} />
-                  <InlineText value={row.priority} onChange={(v) => patchRow(row.id, { priority: v })} />
+                    onChange={(value) => patchRow(row.id, { calcMode: value as 'BASE_PLUS_MARGIN' | 'FIXED_TOTAL' })}
+                    options={calcModeOptions}
+                    ariaLabel="Seleccionar modo de cálculo"
+                  />
+                  <InlineText value={row.basePrice} onChange={(value) => patchRow(row.id, { basePrice: value })} />
+                  <InlineText value={row.percent} onChange={(value) => patchRow(row.id, { percent: value })} />
+                  <InlineText value={row.minProfit} onChange={(value) => patchRow(row.id, { minProfit: value })} />
+                  <InlineText value={row.minFinalPrice} onChange={(value) => patchRow(row.id, { minFinalPrice: value })} />
+                  <InlineText value={row.shippingFee} onChange={(value) => patchRow(row.id, { shippingFee: value })} />
+                  <InlineText value={row.priority} onChange={(value) => patchRow(row.id, { priority: value })} />
                   <div className="flex items-center gap-2">
                     <Link
                       to={`/admin/precios/${encodeURIComponent(row.id)}/editar`}
@@ -319,12 +333,38 @@ export function AdminRepairPricingRulesPage() {
   );
 }
 
-function InlineText({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function InlineText({ value, onChange }: { value: string; onChange: (value: string) => void }) {
   return (
     <input
       value={value}
       onChange={(e) => onChange(e.target.value)}
       className="h-10 w-full rounded-xl border border-zinc-200 px-2 text-sm"
+    />
+  );
+}
+
+function TinySelect({
+  value,
+  onChange,
+  options,
+  ariaLabel,
+  disabled = false,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  options: Array<{ value: string; label: string }>;
+  ariaLabel: string;
+  disabled?: boolean;
+}) {
+  return (
+    <CustomSelect
+      value={value}
+      onChange={onChange}
+      options={options}
+      disabled={disabled}
+      triggerClassName="h-8 min-h-8 rounded-lg px-2 text-xs font-semibold"
+      menuClassName="text-xs"
+      ariaLabel={ariaLabel}
     />
   );
 }
@@ -350,81 +390,50 @@ function ScopeEditorCell({
   modelGroupsByBrand: Record<string, Array<{ id: string; name: string; slug: string; active: boolean }>>;
   onPatch: (rowId: string, patch: Partial<RepairRuleRow>) => void;
 }) {
-  const filteredBrands = brandsCatalog.filter((b) => !row.deviceTypeId || b.deviceTypeId === row.deviceTypeId);
-  const filteredModels = modelsCatalog.filter((m) => !row.deviceBrandId || m.brandId === row.deviceBrandId);
-  const filteredIssues = issuesCatalog.filter((i) => !row.deviceTypeId || i.deviceTypeId === row.deviceTypeId);
+  const filteredBrands = brandsCatalog.filter((brand) => !row.deviceTypeId || brand.deviceTypeId === row.deviceTypeId);
+  const filteredModels = modelsCatalog.filter((model) => !row.deviceBrandId || model.brandId === row.deviceBrandId);
+  const filteredIssues = issuesCatalog.filter((issue) => !row.deviceTypeId || issue.deviceTypeId === row.deviceTypeId);
   const groupOptions = row.deviceBrandId ? (modelGroupsByBrand[row.deviceBrandId] ?? []) : [];
+
+  const typeOptions = [{ value: '', label: 'Tipo: Global' }, ...deviceTypes.map((type) => ({ value: type.id, label: type.name }))];
+  const brandOptions = [{ value: '', label: 'Marca: Todas' }, ...filteredBrands.map((brand) => ({ value: brand.id, label: brand.name }))];
+  const groupSelectOptions = [{ value: '', label: row.deviceBrandId ? 'Grupo: Todos' : 'Grupo: primero marca' }, ...groupOptions.map((group) => ({ value: group.id, label: group.name }))];
+  const modelOptions = [{ value: '', label: 'Modelo: Todos' }, ...filteredModels.filter((model) => !row.deviceModelGroupId || model.deviceModelGroupId === row.deviceModelGroupId).map((model) => ({ value: model.id, label: model.name }))];
+  const issueOptions = [{ value: '', label: 'Falla: Todas' }, ...filteredIssues.map((issue) => ({ value: issue.id, label: issue.name }))];
 
   return (
     <div className="space-y-1.5">
-      <select
+      <TinySelect
         value={row.deviceTypeId ?? ''}
-        onChange={(e) => onPatch(row.id, { deviceTypeId: e.target.value || null })}
-        className="h-8 w-full rounded-lg border border-zinc-200 bg-white px-2 text-xs"
-        title="Tipo de dispositivo"
-      >
-        <option value="">Tipo: Global</option>
-        {deviceTypes.map((t) => (
-          <option key={t.id} value={t.id}>
-            {t.name}
-          </option>
-        ))}
-      </select>
-      <select
+        onChange={(value) => onPatch(row.id, { deviceTypeId: value || null })}
+        options={typeOptions}
+        ariaLabel="Seleccionar tipo de dispositivo"
+      />
+      <TinySelect
         value={row.deviceBrandId ?? ''}
-        onChange={(e) => onPatch(row.id, { deviceBrandId: e.target.value || null })}
-        className="h-8 w-full rounded-lg border border-zinc-200 bg-white px-2 text-xs"
-        title="Marca"
-      >
-        <option value="">Marca: Todas</option>
-        {filteredBrands.map((b) => (
-          <option key={b.id} value={b.id}>
-            {b.name}
-          </option>
-        ))}
-      </select>
-      <select
+        onChange={(value) => onPatch(row.id, { deviceBrandId: value || null })}
+        options={brandOptions}
+        ariaLabel="Seleccionar marca"
+      />
+      <TinySelect
         value={row.deviceModelGroupId ?? ''}
-        onChange={(e) => onPatch(row.id, { deviceModelGroupId: e.target.value || null })}
-        className="h-8 w-full rounded-lg border border-zinc-200 bg-white px-2 text-xs"
-        title="Grupo de modelo"
+        onChange={(value) => onPatch(row.id, { deviceModelGroupId: value || null })}
+        options={groupSelectOptions}
+        ariaLabel="Seleccionar grupo de modelo"
         disabled={!row.deviceBrandId}
-      >
-        <option value="">{row.deviceBrandId ? 'Grupo: Todos' : 'Grupo: primero marca'}</option>
-        {groupOptions.map((g) => (
-          <option key={g.id} value={g.id}>
-            {g.name}
-          </option>
-        ))}
-      </select>
-      <select
+      />
+      <TinySelect
         value={row.deviceModelId ?? ''}
-        onChange={(e) => onPatch(row.id, { deviceModelId: e.target.value || null })}
-        className="h-8 w-full rounded-lg border border-zinc-200 bg-white px-2 text-xs"
-        title="Modelo"
-      >
-        <option value="">Modelo: Todos</option>
-        {filteredModels
-          .filter((m) => !row.deviceModelGroupId || m.deviceModelGroupId === row.deviceModelGroupId)
-          .map((m) => (
-          <option key={m.id} value={m.id}>
-            {m.name}
-          </option>
-          ))}
-      </select>
-      <select
+        onChange={(value) => onPatch(row.id, { deviceModelId: value || null })}
+        options={modelOptions}
+        ariaLabel="Seleccionar modelo"
+      />
+      <TinySelect
         value={row.deviceIssueTypeId ?? ''}
-        onChange={(e) => onPatch(row.id, { deviceIssueTypeId: e.target.value || null })}
-        className="h-8 w-full rounded-lg border border-zinc-200 bg-white px-2 text-xs"
-        title="Falla / tipo de reparación"
-      >
-        <option value="">Falla: Todas</option>
-        {filteredIssues.map((i) => (
-          <option key={i.id} value={i.id}>
-            {i.name}
-          </option>
-        ))}
-      </select>
+        onChange={(value) => onPatch(row.id, { deviceIssueTypeId: value || null })}
+        options={issueOptions}
+        ariaLabel="Seleccionar falla"
+      />
       <div className="space-y-1">
         <ScopePill label="Tipo" value={row.deviceTypeId ? (deviceTypeNames[row.deviceTypeId] ?? row.deviceTypeId) : 'Global'} />
         <ScopePill label="Grupo" value={row.deviceModelGroupId ? (modelGroupNames[row.deviceModelGroupId] ?? row.deviceModelGroupId) : 'Todos'} />

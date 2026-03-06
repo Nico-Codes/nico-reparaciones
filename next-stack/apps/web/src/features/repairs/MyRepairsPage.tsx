@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { repairsApi } from './api';
@@ -28,7 +28,7 @@ export function MyRepairsPage() {
   }, []);
 
   return (
-    <div className="store-shell">
+    <div className="store-shell" data-my-repairs-page>
       <section className="page-head store-hero">
         <div>
           <div className="page-title">Mis reparaciones</div>

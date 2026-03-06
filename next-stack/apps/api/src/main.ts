@@ -1,4 +1,4 @@
-import 'reflect-metadata';
+﻿import 'reflect-metadata';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
@@ -17,6 +17,17 @@ function env(name: string) {
 
 function isProductionLike() {
   return ['production', 'prod'].includes(env('NODE_ENV').toLowerCase());
+}
+
+function isLocalDevOrigin(value: string) {
+  try {
+    const url = new URL(value);
+    const isHttp = url.protocol === 'http:' || url.protocol === 'https:';
+    const isLoopback = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
+    return isHttp && isLoopback;
+  } catch {
+    return false;
+  }
 }
 
 function isHttpsUrl(value: string) {
@@ -111,6 +122,7 @@ async function bootstrap() {
     origin: allowedOrigins.length
       ? (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
           if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+          if (!isProductionLike() && isLocalDevOrigin(origin)) return callback(null, true);
           return callback(new Error('Origen no permitido por CORS'), false);
         }
       : true,

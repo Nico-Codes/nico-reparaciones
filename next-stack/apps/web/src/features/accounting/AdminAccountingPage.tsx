@@ -1,10 +1,17 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { CustomSelect } from '@/components/ui/custom-select';
 import { adminApi, type AdminAccountingItem } from '@/features/admin/api';
 
 function money(n: number) {
   return `$ ${n.toLocaleString('es-AR')}`;
 }
+
+const directionOptions = [
+  { value: '', label: 'Dirección: Todas' },
+  { value: 'inflow', label: 'Ingreso' },
+  { value: 'outflow', label: 'Egreso' },
+];
 
 export function AdminAccountingPage() {
   const [rows, setRows] = useState<AdminAccountingItem[]>([]);
@@ -60,6 +67,11 @@ export function AdminAccountingPage() {
     };
   }, [refreshTick]);
 
+  const categoryOptions = useMemo(
+    () => [{ value: '', label: 'Categoría: Todas' }, ...availableCategories.map((item) => ({ value: item, label: item }))],
+    [availableCategories],
+  );
+
   return (
     <div className="store-shell space-y-5">
       <section className="store-hero">
@@ -105,22 +117,22 @@ export function AdminAccountingPage() {
         </div>
         <div className="card-body">
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {categories.map((c) => (
-              <div key={c.category} className="rounded-2xl border border-zinc-200 bg-white p-4">
-                <div className="text-3xl font-black tracking-tight text-zinc-900">{c.category}</div>
-                <div className="mt-1 text-sm text-zinc-600">Asientos: {c.entriesCount}</div>
+            {categories.map((item) => (
+              <div key={item.category} className="rounded-2xl border border-zinc-200 bg-white p-4">
+                <div className="text-3xl font-black tracking-tight text-zinc-900">{item.category}</div>
+                <div className="mt-1 text-sm text-zinc-600">Asientos: {item.entriesCount}</div>
                 <div className="mt-2 text-sm text-zinc-700">
-                  Ingreso: <span className="font-black text-emerald-700">{money(c.inflowTotal)}</span>
+                  Ingreso: <span className="font-black text-emerald-700">{money(item.inflowTotal)}</span>
                 </div>
                 <div className="text-sm text-zinc-700">
-                  Egreso: <span className="font-black text-rose-700">{money(c.outflowTotal)}</span>
+                  Egreso: <span className="font-black text-rose-700">{money(item.outflowTotal)}</span>
                 </div>
                 <div
                   className={`mt-2 text-xl font-black tracking-tight ${
-                    c.netTotal >= 0 ? 'text-emerald-700' : 'text-rose-700'
+                    item.netTotal >= 0 ? 'text-emerald-700' : 'text-rose-700'
                   }`}
                 >
-                  Neto: {money(c.netTotal)}
+                  Neto: {money(item.netTotal)}
                 </div>
               </div>
             ))}
@@ -137,27 +149,20 @@ export function AdminAccountingPage() {
               placeholder="Buscar descripción, evento o tipo..."
               className="h-11 rounded-2xl border border-zinc-200 px-3 text-sm"
             />
-            <select
+            <CustomSelect
               value={direction}
-              onChange={(e) => setDirection(e.target.value as '' | 'inflow' | 'outflow')}
-              className="h-11 rounded-2xl border border-zinc-200 px-3 text-sm font-bold"
-            >
-              <option value="">Dirección: Todas</option>
-              <option value="inflow">Ingreso</option>
-              <option value="outflow">Egreso</option>
-            </select>
-            <select
+              onChange={(value) => setDirection(value as '' | 'inflow' | 'outflow')}
+              options={directionOptions}
+              triggerClassName="min-h-11 rounded-2xl font-bold"
+              ariaLabel="Filtrar por dirección"
+            />
+            <CustomSelect
               value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="h-11 rounded-2xl border border-zinc-200 px-3 text-sm font-bold"
-            >
-              <option value="">Categoría: Todas</option>
-              {availableCategories.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
+              onChange={setCategory}
+              options={categoryOptions}
+              triggerClassName="min-h-11 rounded-2xl font-bold"
+              ariaLabel="Filtrar por categoría"
+            />
             <input
               type="date"
               value={from}
@@ -173,7 +178,7 @@ export function AdminAccountingPage() {
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => setRefreshTick((v) => v + 1)}
+                onClick={() => setRefreshTick((value) => value + 1)}
                 className="btn-outline !h-11 !rounded-xl px-4 text-sm font-bold"
               >
                 Filtrar
@@ -184,7 +189,7 @@ export function AdminAccountingPage() {
                   setQ('');
                   setDirection('');
                   setCategory('');
-                  setRefreshTick((v) => v + 1);
+                  setRefreshTick((value) => value + 1);
                 }}
                 className="btn-ghost !h-11 !rounded-xl px-4 text-sm font-bold"
               >
@@ -207,36 +212,36 @@ export function AdminAccountingPage() {
         {loading ? (
           <div className="px-4 py-8 text-sm text-zinc-600">Cargando asientos...</div>
         ) : (
-          rows.map((r, idx) => (
+          rows.map((row, index) => (
             <div
-              key={r.id}
+              key={row.id}
               className={`grid grid-cols-[1.1fr_0.8fr_0.8fr_1.4fr_1fr_0.8fr] items-center gap-3 px-3 py-3 ${
-                idx ? 'border-t border-zinc-100' : ''
+                index ? 'border-t border-zinc-100' : ''
               }`}
             >
-              <div className="text-sm font-bold text-zinc-900">{r.date}</div>
+              <div className="text-sm font-bold text-zinc-900">{row.date}</div>
               <div>
                 <span
                   className={`inline-flex h-8 items-center rounded-full border px-3 text-sm font-bold ${
-                    r.direction === 'Ingreso'
+                    row.direction === 'Ingreso'
                       ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
                       : 'border-rose-200 bg-rose-50 text-rose-700'
                   }`}
                 >
-                  {r.direction}
+                  {row.direction}
                 </span>
               </div>
-              <div className="text-sm font-bold text-zinc-900">{r.category}</div>
+              <div className="text-sm font-bold text-zinc-900">{row.category}</div>
               <div>
-                <div className="text-sm font-black text-zinc-900">{r.description}</div>
+                <div className="text-sm font-black text-zinc-900">{row.description}</div>
               </div>
-              <div className="text-sm text-zinc-500">{r.source}</div>
+              <div className="text-sm text-zinc-500">{row.source}</div>
               <div
                 className={`text-right text-xl font-black ${
-                  r.direction === 'Ingreso' ? 'text-emerald-700' : 'text-rose-700'
+                  row.direction === 'Ingreso' ? 'text-emerald-700' : 'text-rose-700'
                 }`}
               >
-                {money(Math.abs(r.amount))}
+                {money(Math.abs(row.amount))}
               </div>
             </div>
           ))

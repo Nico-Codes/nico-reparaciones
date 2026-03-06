@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { authApi } from './api';
 import { authStorage } from './storage';
@@ -53,7 +53,7 @@ export function MyAccountPage() {
       authStorage.setUser(res.user);
       setProfileNotice(
         res.emailVerification?.required
-          ? 'Perfil guardado. Tu correo cambio y requiere nueva verificacion.'
+          ? 'Perfil guardado. Tu correo cambió y requiere nueva verificación.'
           : 'Perfil guardado correctamente.',
       );
       if (res.emailVerification?.previewToken) {
@@ -73,27 +73,27 @@ export function MyAccountPage() {
     setPasswordNotice('');
     try {
       if (newPassword !== confirmPassword) {
-        throw new Error('La confirmacion no coincide con la nueva contrasena');
+        throw new Error('La confirmación no coincide con la nueva contraseña');
       }
       const res = await authApi.updateAccountPassword({ currentPassword, newPassword });
-      setPasswordNotice(res.message || 'Contrasena actualizada correctamente');
+      setPasswordNotice(res.message || 'Contraseña actualizada correctamente');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error actualizando contrasena');
+      setError(e instanceof Error ? e.message : 'Error actualizando contraseña');
     } finally {
       setSavingPassword(false);
     }
   }
 
   return (
-    <div className="store-shell space-y-5">
+    <div className="store-shell space-y-5" data-my-account-page>
       <section className="store-hero">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-black tracking-tight text-zinc-900">Mi cuenta</h1>
-            <p className="mt-1 text-sm text-zinc-600">Actualiza tu perfil y tu contrasena.</p>
+            <p className="mt-1 text-sm text-zinc-600">Actualiza tu perfil y tu contraseña.</p>
           </div>
           <Link to="/orders" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">
             Volver a pedidos
@@ -151,7 +151,7 @@ export function MyAccountPage() {
               ) : null}
               {previewToken ? (
                 <div className="mt-3 break-all rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
-                  <div className="font-bold">Preview token verificacion (dev)</div>
+                  <div className="font-bold">Preview token verificación (dev)</div>
                   {previewToken}
                 </div>
               ) : null}
@@ -160,13 +160,13 @@ export function MyAccountPage() {
 
           <section className="card">
             <div className="card-head">
-              <div className="text-xl font-black tracking-tight text-zinc-900">Contrasena</div>
-              <p className="mt-1 text-sm text-zinc-500">Cambia tu contrasena de acceso.</p>
+              <div className="text-xl font-black tracking-tight text-zinc-900">Contraseña</div>
+              <p className="mt-1 text-sm text-zinc-500">Cambia tu contraseña de acceso.</p>
             </div>
             <div className="card-body">
               <form className="grid gap-4 md:grid-cols-3" onSubmit={onSavePassword}>
                 <Field
-                  label="Contrasena actual"
+                  label="Contraseña actual"
                   value={currentPassword}
                   onChange={setCurrentPassword}
                   placeholder="********"
@@ -174,7 +174,7 @@ export function MyAccountPage() {
                   autoComplete="current-password"
                 />
                 <Field
-                  label="Nueva contrasena"
+                  label="Nueva contraseña"
                   value={newPassword}
                   onChange={setNewPassword}
                   placeholder="********"
@@ -182,7 +182,7 @@ export function MyAccountPage() {
                   autoComplete="new-password"
                 />
                 <Field
-                  label="Confirmar nueva contrasena"
+                  label="Confirmar nueva contraseña"
                   value={confirmPassword}
                   onChange={setConfirmPassword}
                   placeholder="********"
@@ -195,7 +195,7 @@ export function MyAccountPage() {
                     disabled={savingPassword}
                     className="btn-primary !h-11 !rounded-xl px-6 text-sm font-bold"
                   >
-                    {savingPassword ? 'Actualizando...' : 'Actualizar contrasena'}
+                    {savingPassword ? 'Actualizando...' : 'Actualizar contraseña'}
                   </button>
                 </div>
               </form>

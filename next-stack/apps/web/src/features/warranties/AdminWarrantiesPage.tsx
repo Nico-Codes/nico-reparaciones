@@ -1,10 +1,23 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { CustomSelect } from '@/components/ui/custom-select';
 import { adminApi, type AdminWarrantyItem } from '@/features/admin/api';
 
 function money(n: number) {
   return `$ ${n.toLocaleString('es-AR')}`;
 }
+
+const sourceTypeOptions = [
+  { value: '', label: 'Origen: Todos' },
+  { value: 'repair', label: 'Reparación' },
+  { value: 'product', label: 'Producto' },
+];
+
+const statusOptions = [
+  { value: '', label: 'Estado: Todos' },
+  { value: 'open', label: 'Abierto' },
+  { value: 'closed', label: 'Cerrado' },
+];
 
 export function AdminWarrantiesPage() {
   const [items, setItems] = useState<AdminWarrantyItem[]>([]);
@@ -150,24 +163,20 @@ export function AdminWarrantiesPage() {
               placeholder="Buscar título, motivo o nota..."
               className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm"
             />
-            <select
+            <CustomSelect
               value={sourceType}
-              onChange={(e) => setSourceType(e.target.value as '' | 'repair' | 'product')}
-              className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm"
-            >
-              <option value="">Origen: Todos</option>
-              <option value="repair">Reparación</option>
-              <option value="product">Producto</option>
-            </select>
-            <select
+              onChange={(value) => setSourceType(value as '' | 'repair' | 'product')}
+              options={sourceTypeOptions}
+              triggerClassName="min-h-11 rounded-2xl font-bold"
+              ariaLabel="Filtrar por origen"
+            />
+            <CustomSelect
               value={status}
-              onChange={(e) => setStatus(e.target.value as '' | 'open' | 'closed')}
-              className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm"
-            >
-              <option value="">Estado: Todos</option>
-              <option value="open">Abierto</option>
-              <option value="closed">Cerrado</option>
-            </select>
+              onChange={(value) => setStatus(value as '' | 'open' | 'closed')}
+              options={statusOptions}
+              triggerClassName="min-h-11 rounded-2xl font-bold"
+              ariaLabel="Filtrar por estado"
+            />
             <input
               value={from}
               onChange={(e) => setFrom(e.target.value)}

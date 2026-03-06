@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { repairsApi } from './api';
 import type { RepairItem } from './types';
@@ -77,7 +77,7 @@ export function AdminRepairsListPage() {
   const visibleItems = useMemo(() => items.slice(0, 50), [items]);
 
   return (
-    <div className="store-shell">
+    <div className="store-shell" data-admin-repairs-page>
       {error ? <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">{error}</div> : null}
 
       <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-[0_8px_30px_-18px_#0f172a47]">

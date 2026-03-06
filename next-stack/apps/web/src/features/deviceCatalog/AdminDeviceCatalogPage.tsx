@@ -1,6 +1,7 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { deviceCatalogApi } from './api';
+import { CustomSelect } from '@/components/ui/custom-select';
+import { deviceCatalogApi } from '@/features/deviceCatalog/api';
 
 function slugify(value: string) {
   return value
@@ -25,9 +26,9 @@ export function AdminDeviceCatalogPage() {
   async function loadAll() {
     setError('');
     try {
-      const [b, i] = await Promise.all([deviceCatalogApi.brands(), deviceCatalogApi.issues()]);
-      setBrands(b.items);
-      setIssues(i.items);
+      const [brandsRes, issuesRes] = await Promise.all([deviceCatalogApi.brands(), deviceCatalogApi.issues()]);
+      setBrands(brandsRes.items);
+      setIssues(issuesRes.items);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error cargando catálogo');
     }
@@ -51,7 +52,11 @@ export function AdminDeviceCatalogPage() {
     void loadModels(selectedBrandId || undefined);
   }, [selectedBrandId]);
 
-  const selectableBrands = useMemo(() => brands.filter((b) => b.active), [brands]);
+  const selectableBrands = useMemo(() => brands.filter((brand) => brand.active), [brands]);
+  const brandOptions = useMemo(
+    () => [{ value: '', label: 'Seleccionar marca' }, ...selectableBrands.map((brand) => ({ value: brand.id, label: brand.name }))],
+    [selectableBrands],
+  );
 
   return (
     <div className="store-shell">
@@ -65,8 +70,8 @@ export function AdminDeviceCatalogPage() {
       {error ? <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">{error}</div> : null}
 
       <div className="mt-4 grid gap-4 xl:grid-cols-3">
-          <section className="card">
-            <div className="card-body p-4">
+        <section className="card">
+          <div className="card-body p-4">
             <div className="text-sm font-bold uppercase tracking-wide text-zinc-500">Marcas</div>
             <form className="mt-3 flex gap-2" onSubmit={async (e) => {
               e.preventDefault();
@@ -77,19 +82,19 @@ export function AdminDeviceCatalogPage() {
               <input value={brandName} onChange={(e) => setBrandName(e.target.value)} placeholder="Samsung" className="h-10 flex-1 rounded-xl border border-zinc-200 px-3 text-sm" required />
               <button className="btn-primary h-10 justify-center px-4" type="submit">Agregar</button>
             </form>
-            <div className="mt-3 space-y-2 max-h-96 overflow-auto pr-1">
-              {brands.map((b) => (
-                <div key={b.id} className="flex items-center justify-between gap-2 rounded-xl border border-zinc-200 p-2">
-                  <button type="button" onClick={() => setSelectedBrandId(b.id)} className={`text-left text-sm font-semibold ${selectedBrandId === b.id ? 'text-sky-700' : 'text-zinc-900'}`}>{b.name}</button>
-                  <button type="button" onClick={async () => { await deviceCatalogApi.deleteBrand(b.id); await loadAll(); await loadModels(selectedBrandId || undefined); }} className="text-xs font-bold text-rose-700">Borrar</button>
+            <div className="mt-3 max-h-96 space-y-2 overflow-auto pr-1">
+              {brands.map((brand) => (
+                <div key={brand.id} className="flex items-center justify-between gap-2 rounded-xl border border-zinc-200 p-2">
+                  <button type="button" onClick={() => setSelectedBrandId(brand.id)} className={`text-left text-sm font-semibold ${selectedBrandId === brand.id ? 'text-sky-700' : 'text-zinc-900'}`}>{brand.name}</button>
+                  <button type="button" onClick={async () => { await deviceCatalogApi.deleteBrand(brand.id); await loadAll(); await loadModels(selectedBrandId || undefined); }} className="text-xs font-bold text-rose-700">Borrar</button>
                 </div>
               ))}
             </div>
-            </div>
-          </section>
+          </div>
+        </section>
 
-          <section className="card">
-            <div className="card-body p-4">
+        <section className="card">
+          <div className="card-body p-4">
             <div className="text-sm font-bold uppercase tracking-wide text-zinc-500">Modelos</div>
             <form className="mt-3 grid gap-2" onSubmit={async (e) => {
               e.preventDefault();
@@ -98,29 +103,32 @@ export function AdminDeviceCatalogPage() {
               setModelName('');
               await loadModels(selectedBrandId);
             }}>
-              <select value={selectedBrandId} onChange={(e) => setSelectedBrandId(e.target.value)} className="h-10 rounded-xl border border-zinc-200 px-3 text-sm">
-                <option value="">Seleccionar marca</option>
-                {selectableBrands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-              </select>
+              <CustomSelect
+                value={selectedBrandId}
+                onChange={setSelectedBrandId}
+                options={brandOptions}
+                triggerClassName="min-h-10 h-10 rounded-xl text-sm font-bold"
+                ariaLabel="Seleccionar marca"
+              />
               <input value={modelName} onChange={(e) => setModelName(e.target.value)} placeholder="A32 5G" className="h-10 rounded-xl border border-zinc-200 px-3 text-sm" required />
               <button className="btn-primary h-10 justify-center px-4" type="submit" disabled={!selectedBrandId}>Agregar modelo</button>
             </form>
-            <div className="mt-3 space-y-2 max-h-96 overflow-auto pr-1">
-              {models.map((m) => (
-                <div key={m.id} className="flex items-center justify-between gap-2 rounded-xl border border-zinc-200 p-2">
+            <div className="mt-3 max-h-96 space-y-2 overflow-auto pr-1">
+              {models.map((model) => (
+                <div key={model.id} className="flex items-center justify-between gap-2 rounded-xl border border-zinc-200 p-2">
                   <div className="min-w-0">
-                    <div className="text-sm font-semibold text-zinc-900">{m.name}</div>
-                    <div className="text-xs text-zinc-500">{m.brand.name}</div>
+                    <div className="text-sm font-semibold text-zinc-900">{model.name}</div>
+                    <div className="text-xs text-zinc-500">{model.brand.name}</div>
                   </div>
-                  <button type="button" onClick={async () => { await deviceCatalogApi.deleteModel(m.id); await loadModels(selectedBrandId || undefined); }} className="text-xs font-bold text-rose-700">Borrar</button>
+                  <button type="button" onClick={async () => { await deviceCatalogApi.deleteModel(model.id); await loadModels(selectedBrandId || undefined); }} className="text-xs font-bold text-rose-700">Borrar</button>
                 </div>
               ))}
             </div>
-            </div>
-          </section>
+          </div>
+        </section>
 
-          <section className="card">
-            <div className="card-body p-4">
+        <section className="card">
+          <div className="card-body p-4">
             <div className="text-sm font-bold uppercase tracking-wide text-zinc-500">Fallas</div>
             <form className="mt-3 flex gap-2" onSubmit={async (e) => {
               e.preventDefault();
@@ -131,18 +139,17 @@ export function AdminDeviceCatalogPage() {
               <input value={issueName} onChange={(e) => setIssueName(e.target.value)} placeholder="Cambio de módulo" className="h-10 flex-1 rounded-xl border border-zinc-200 px-3 text-sm" required />
               <button className="btn-primary h-10 justify-center px-4" type="submit">Agregar</button>
             </form>
-            <div className="mt-3 space-y-2 max-h-96 overflow-auto pr-1">
-              {issues.map((i) => (
-                <div key={i.id} className="flex items-center justify-between gap-2 rounded-xl border border-zinc-200 p-2">
-                  <div className="text-sm font-semibold text-zinc-900">{i.name}</div>
-                  <button type="button" onClick={async () => { await deviceCatalogApi.deleteIssue(i.id); await loadAll(); }} className="text-xs font-bold text-rose-700">Borrar</button>
+            <div className="mt-3 max-h-96 space-y-2 overflow-auto pr-1">
+              {issues.map((issue) => (
+                <div key={issue.id} className="flex items-center justify-between gap-2 rounded-xl border border-zinc-200 p-2">
+                  <div className="text-sm font-semibold text-zinc-900">{issue.name}</div>
+                  <button type="button" onClick={async () => { await deviceCatalogApi.deleteIssue(issue.id); await loadAll(); }} className="text-xs font-bold text-rose-700">Borrar</button>
                 </div>
               ))}
             </div>
-            </div>
-          </section>
-        </div>
+          </div>
+        </section>
+      </div>
     </div>
   );
 }
-

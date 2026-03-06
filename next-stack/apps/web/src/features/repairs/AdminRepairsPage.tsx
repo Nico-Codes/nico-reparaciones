@@ -1,6 +1,8 @@
-﻿import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { ActionDropdown } from '@/components/ui/action-dropdown';
 import { Button } from '@/components/ui/button';
+import { CustomSelect, type CustomSelectOption } from '@/components/ui/custom-select';
 import { adminApi } from '@/features/admin/api';
 import { deviceCatalogApi } from '@/features/deviceCatalog/api';
 import { repairsApi } from './api';
@@ -30,8 +32,26 @@ function repairStatusLabel(status: string) {
   return STATUS_LABELS[status as (typeof STATUSES)[number]] ?? status;
 }
 
+const STATUS_OPTIONS: CustomSelectOption[] = [
+  { value: '', label: 'Todos los estados' },
+  ...STATUSES.map((status) => ({ value: status, label: repairStatusLabel(status) })),
+];
+
+const STATUS_OPTIONS_NO_EMPTY: CustomSelectOption[] = STATUSES.map((status) => ({
+  value: status,
+  label: repairStatusLabel(status),
+}));
+
 function repairStatusBadgeClass(status: string) {
   return STATUS_BADGE_CLASS[status as (typeof STATUSES)[number]] ?? 'badge-zinc';
+}
+
+function repairPrintHref(repairId: string) {
+  return `/admin/repairs/${encodeURIComponent(repairId)}/print`;
+}
+
+function repairTicketHref(repairId: string) {
+  return `/admin/repairs/${encodeURIComponent(repairId)}/ticket`;
 }
 
 function repairCodeLabel(id: string) {
@@ -495,7 +515,7 @@ export function AdminRepairsPage() {
   }
 
   return (
-    <div className="store-shell">
+    <div className="store-shell" data-admin-repairs-page>
       <section className="page-head store-hero">
         <div>
           <div className="page-title">Reparaciones</div>
@@ -686,10 +706,14 @@ export function AdminRepairsPage() {
             <div className="mb-3 rounded-xl border border-zinc-200 bg-zinc-50 p-2">
               <div className="flex flex-wrap gap-2">
               <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar ID / cliente / teléfono / modelo / falla..." className="h-10 flex-1 min-w-[220px] rounded-xl border border-zinc-200 px-3 text-sm" />
-              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="h-10 min-w-[200px] rounded-xl border border-zinc-200 px-3 text-sm">
-                <option value="">Todos los estados</option>
-                {STATUSES.map((s) => <option key={s} value={s}>{repairStatusLabel(s)}</option>)}
-              </select>
+              <CustomSelect
+                value={statusFilter}
+                onChange={setStatusFilter}
+                options={STATUS_OPTIONS}
+                className="min-w-[200px]"
+                triggerClassName="min-h-10 rounded-xl"
+                ariaLabel="Filtrar por estado"
+              />
               <input
                 type="date"
                 value={fromDate}
@@ -764,9 +788,33 @@ export function AdminRepairsPage() {
                         <button type="button" className="inline-flex h-10 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-4 text-sm font-bold text-emerald-700">
                           WhatsApp
                         </button>
-                        <button type="button" className="btn-ghost !h-10 !rounded-xl px-3 text-sm font-bold">
-                          Mas
-                        </button>
+                        <ActionDropdown
+                          renderTrigger={({ open, toggle, triggerRef, menuId }) => (
+                            <button
+                              ref={triggerRef}
+                              type="button"
+                              aria-haspopup="menu"
+                              aria-controls={menuId}
+                              aria-expanded={open ? 'true' : 'false'}
+                              onClick={toggle}
+                              className="btn-ghost !h-10 !rounded-xl px-3 text-sm font-bold"
+                            >
+                              Más
+                            </button>
+                          )}
+                          menuClassName="min-w-[12rem]"
+                        >
+                          {(close) => (
+                            <>
+                              <Link to={repairPrintHref(r.id)} target="_blank" rel="noreferrer" className="dropdown-item" onClick={close}>
+                                Imprimir
+                              </Link>
+                              <Link to={repairTicketHref(r.id)} target="_blank" rel="noreferrer" className="dropdown-item" onClick={close}>
+                                Ticket
+                              </Link>
+                            </>
+                          )}
+                        </ActionDropdown>
                         <span className="badge-amber">WA pendiente</span>
                       </div>
                     </div>
@@ -775,9 +823,14 @@ export function AdminRepairsPage() {
                       <div className="mt-3 border-t border-zinc-100 pt-3">
                         <div className="flex flex-wrap items-center gap-2">
                           <label className="text-xs font-bold uppercase tracking-wide text-zinc-500">Estado</label>
-                          <select value={r.status} onChange={(e) => void changeStatus(r.id, e.target.value)} className="h-9 min-w-[220px] rounded-xl border border-zinc-200 px-3 text-sm">
-                            {STATUSES.map((s) => <option key={s} value={s}>{repairStatusLabel(s)}</option>)}
-                          </select>
+                          <CustomSelect
+                            value={r.status}
+                            onChange={(nextStatus) => void changeStatus(r.id, nextStatus)}
+                            options={STATUS_OPTIONS_NO_EMPTY}
+                            className="min-w-[220px]"
+                            triggerClassName="min-h-9 rounded-xl"
+                            ariaLabel="Estado de la reparación"
+                          />
                           <span className={repairStatusBadgeClass(r.status)}>{repairStatusLabel(r.status)}</span>
                         </div>
                       </div>
@@ -863,13 +916,14 @@ export function AdminRepairsPage() {
                   <div className="grid gap-2 sm:grid-cols-3">
                     <label className="block">
                       <span className="mb-1 block text-sm font-bold text-zinc-700">Estado</span>
-                      <select
+                      <CustomSelect
                         value={editForm.status}
-                        onChange={(e) => setEditForm((p) => ({ ...p, status: e.target.value }))}
-                        className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm"
-                      >
-                        {STATUSES.map((s) => <option key={s} value={s}>{repairStatusLabel(s)}</option>)}
-                      </select>
+                        onChange={(nextStatus) => setEditForm((p) => ({ ...p, status: nextStatus }))}
+                        options={STATUS_OPTIONS_NO_EMPTY}
+                        className="w-full"
+                        triggerClassName="min-h-10 rounded-xl"
+                        ariaLabel="Estado de edición"
+                      />
                     </label>
                     <Field label="Presupuesto" type="number" value={editForm.quotedPrice} onChange={(v) => setEditForm((p) => ({ ...p, quotedPrice: v }))} />
                     <Field label="Precio final" type="number" value={editForm.finalPrice} onChange={(v) => setEditForm((p) => ({ ...p, finalPrice: v }))} />
@@ -965,19 +1019,15 @@ function SelectField({
   return (
     <label className="block">
       <span className="mb-1 block text-sm font-bold text-zinc-700">{label}</span>
-      <select
+      <CustomSelect
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={onChange}
         disabled={disabled}
-        className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm disabled:bg-zinc-100 disabled:text-zinc-400"
-      >
-        <option value="">{placeholder}</option>
-        {options.map((opt) => (
-          <option key={opt.value} value={opt.value}>
-            {opt.label}
-          </option>
-        ))}
-      </select>
+        options={[{ value: '', label: placeholder }, ...options]}
+        className="w-full"
+        triggerClassName="min-h-10 rounded-xl"
+        ariaLabel={label}
+      />
     </label>
   );
 }

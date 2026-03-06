@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { CustomSelect } from '@/components/ui/custom-select';
 import { adminSettingsApi, type AdminSettingItem } from './settingsApi';
 
 type BusinessForm = {
@@ -23,6 +24,12 @@ const DEFAULT_FORM: BusinessForm = {
   storeHeroTitle: '',
   storeHeroText: '',
 };
+
+const ticketPaperOptions = [
+  { value: '80', label: '80 mm' },
+  { value: '58', label: '58 mm' },
+  { value: 'a4', label: 'A4' },
+];
 
 function settingValue(map: Map<string, AdminSettingItem>, key: string, fallback = '') {
   return map.get(key)?.value ?? fallback;
@@ -114,7 +121,7 @@ export function AdminBusinessSettingsPage() {
 
       <section className="card">
         <div className="card-body space-y-4 p-4 md:p-5">
-          <Field label='WhatsApp del local (opcional)' hint='Se usa para el botón "Escribir por WhatsApp".'>
+          <Field label="WhatsApp del local (opcional)" hint='Se usa para el botón "Escribir por WhatsApp".'>
             <input
               value={form.shopWhatsapp}
               onChange={(e) => setForm((prev) => ({ ...prev, shopWhatsapp: e.target.value }))}
@@ -147,21 +154,19 @@ export function AdminBusinessSettingsPage() {
           </Field>
 
           <Field label="Papel ticket por defecto" hint='Se usa en "Confirmar e imprimir" y en reimpresión de ventas rápidas.'>
-            <select
+            <CustomSelect
               value={form.ticketPaper}
-              onChange={(e) => setForm((prev) => ({ ...prev, ticketPaper: e.target.value }))}
+              onChange={(value) => setForm((prev) => ({ ...prev, ticketPaper: value }))}
               disabled={loading}
-              className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm"
-            >
-              <option value="80">80 mm</option>
-              <option value="58">58 mm</option>
-              <option value="a4">A4</option>
-            </select>
+              options={ticketPaperOptions}
+              triggerClassName="min-h-11 rounded-2xl font-bold"
+              ariaLabel="Seleccionar papel ticket por defecto"
+            />
           </Field>
 
           <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
             <div className="text-xl font-black tracking-tight text-zinc-900">Alertas operativas (dashboard)</div>
-            <p className="mt-1 text-sm text-zinc-600">Define cuándo un pedido o reparación se considera demorado.</p>
+            <p className="mt-1 text-sm text-zinc-600">Definí cuándo un pedido o reparación se considera demorado.</p>
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               <div>
                 <label className="mb-2 block text-sm font-bold text-zinc-900">Pedido demorado (horas)</label>
@@ -236,7 +241,7 @@ function Field({
 }: {
   label: string;
   hint?: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <div>

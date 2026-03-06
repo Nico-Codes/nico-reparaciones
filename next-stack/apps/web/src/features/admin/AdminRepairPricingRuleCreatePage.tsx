@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { CustomSelect } from '@/components/ui/custom-select';
 import { adminApi } from '@/features/admin/api';
 import { deviceCatalogApi } from '@/features/deviceCatalog/api';
 import { repairsApi } from '@/features/repairs/api';
@@ -36,7 +37,12 @@ export function AdminRepairPricingRuleCreatePage() {
     setLoadingCatalog(true);
     setError('');
     try {
-      const [t, b, i, m] = await Promise.all([adminApi.deviceTypes(), deviceCatalogApi.brands(), deviceCatalogApi.issues(), deviceCatalogApi.models()]);
+      const [t, b, i, m] = await Promise.all([
+        adminApi.deviceTypes(),
+        deviceCatalogApi.brands(),
+        deviceCatalogApi.issues(),
+        deviceCatalogApi.models(),
+      ]);
       setDeviceTypes(t.items.filter((x) => x.active));
       setBrands(b.items.filter((x) => x.active));
       setIssues(i.items.filter((x) => x.active));
@@ -55,29 +61,53 @@ export function AdminRepairPricingRuleCreatePage() {
   useEffect(() => {
     if (brandId) return;
     setModelId('');
-    if (issueId && !issues.some((i) => i.id === issueId && (!deviceTypeId || i.deviceTypeId === deviceTypeId))) {
+    if (issueId && !issues.some((issue) => issue.id === issueId && (!deviceTypeId || issue.deviceTypeId === deviceTypeId))) {
       setIssueId('');
     }
-  }, [deviceTypeId]);
+  }, [deviceTypeId, brandId, issueId, issues]);
 
   useEffect(() => {
-    const selectedBrand = brands.find((b) => b.id === brandId);
+    const selectedBrand = brands.find((brand) => brand.id === brandId);
     if (selectedBrand?.deviceTypeId && selectedBrand.deviceTypeId !== deviceTypeId) {
       setDeviceTypeId(selectedBrand.deviceTypeId);
     }
   }, [brandId, brands, deviceTypeId]);
 
   const filteredBrands = useMemo(
-    () => (deviceTypeId ? brands.filter((b) => b.deviceTypeId === deviceTypeId) : brands),
+    () => (deviceTypeId ? brands.filter((brand) => brand.deviceTypeId === deviceTypeId) : brands),
     [brands, deviceTypeId],
   );
   const filteredModels = useMemo(
-    () => (brandId ? models.filter((m) => m.brandId === brandId) : models),
+    () => (brandId ? models.filter((model) => model.brandId === brandId) : models),
     [models, brandId],
   );
   const filteredIssues = useMemo(
-    () => (deviceTypeId ? issues.filter((i) => i.deviceTypeId === deviceTypeId) : issues),
+    () => (deviceTypeId ? issues.filter((issue) => issue.deviceTypeId === deviceTypeId) : issues),
     [issues, deviceTypeId],
+  );
+
+  const deviceTypeOptions = useMemo(
+    () => [{ value: '', label: '-' }, ...deviceTypes.map((type) => ({ value: type.id, label: type.name }))],
+    [deviceTypes],
+  );
+  const brandOptions = useMemo(
+    () => [{ value: '', label: '-' }, ...filteredBrands.map((brand) => ({ value: brand.id, label: brand.name }))],
+    [filteredBrands],
+  );
+  const modelOptions = useMemo(
+    () => [{ value: '', label: '-' }, ...filteredModels.map((model) => ({ value: model.id, label: model.name }))],
+    [filteredModels],
+  );
+  const issueOptions = useMemo(
+    () => [{ value: '', label: '-' }, ...filteredIssues.map((issue) => ({ value: issue.id, label: issue.name }))],
+    [filteredIssues],
+  );
+  const calcModeOptions = useMemo(
+    () => [
+      { value: 'BASE_PLUS_MARGIN', label: 'Base + % margen' },
+      { value: 'FIXED_TOTAL', label: 'Total fijo' },
+    ],
+    [],
   );
 
   async function save() {
@@ -88,14 +118,14 @@ export function AdminRepairPricingRuleCreatePage() {
         name: name.trim() || `Regla ${issueText || 'reparación'}`,
         active,
         priority: Number(priority || 0),
-        deviceTypeId: deviceTypeId || (brands.find((b) => b.id === brandId)?.deviceTypeId ?? null),
+        deviceTypeId: deviceTypeId || (brands.find((brand) => brand.id === brandId)?.deviceTypeId ?? null),
         deviceBrandId: brandId || null,
-        deviceModelGroupId: models.find((m) => m.id === modelId)?.deviceModelGroupId ?? null,
+        deviceModelGroupId: models.find((model) => model.id === modelId)?.deviceModelGroupId ?? null,
         deviceModelId: modelId || null,
         deviceIssueTypeId: issueId || null,
-        deviceBrand: brandText.trim() || (brands.find((b) => b.id === brandId)?.name ?? null),
-        deviceModel: modelText.trim() || (models.find((m) => m.id === modelId)?.name ?? null),
-        issueLabel: issueText.trim() || (issues.find((i) => i.id === issueId)?.name ?? null),
+        deviceBrand: brandText.trim() || (brands.find((brand) => brand.id === brandId)?.name ?? null),
+        deviceModel: modelText.trim() || (models.find((model) => model.id === modelId)?.name ?? null),
+        issueLabel: issueText.trim() || (issues.find((issue) => issue.id === issueId)?.name ?? null),
         basePrice: Number(basePrice || 0),
         profitPercent: Number(profitPercent || 0),
         calcMode,
@@ -119,7 +149,7 @@ export function AdminRepairPricingRuleCreatePage() {
           <div>
             <h1 className="text-2xl font-black tracking-tight text-zinc-900">Crear regla</h1>
             <p className="mt-1 text-sm text-zinc-600">
-              Configura cálculo automático por tipo, marca, grupo/modelo y falla con soporte completo de modo margen/fijo.
+              Configurá cálculo automático por tipo, marca, grupo/modelo y falla con soporte completo de modo margen o fijo.
             </p>
           </div>
           <Link to="/admin/precios" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">
@@ -138,47 +168,53 @@ export function AdminRepairPricingRuleCreatePage() {
 
           <div className="grid gap-4 md:grid-cols-3">
             <Field label="Tipo de dispositivo (catálogo, opcional)">
-              <select
+              <CustomSelect
                 value={deviceTypeId}
-                onChange={(e) => {
-                  setDeviceTypeId(e.target.value);
+                onChange={(value) => {
+                  setDeviceTypeId(value);
                   setBrandId('');
                   setModelId('');
                 }}
-                className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm"
+                options={deviceTypeOptions}
                 disabled={loadingCatalog}
-              >
-                <option value="">-</option>
-                {deviceTypes.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-              </select>
+                triggerClassName="min-h-11 rounded-2xl font-bold"
+                ariaLabel="Seleccionar tipo de dispositivo"
+              />
             </Field>
             <Field label="Marca (catálogo, opcional)">
-              <select
+              <CustomSelect
                 value={brandId}
-                onChange={(e) => {
-                  setBrandId(e.target.value);
+                onChange={(value) => {
+                  setBrandId(value);
                   setModelId('');
                 }}
-                className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm"
+                options={brandOptions}
                 disabled={loadingCatalog}
-              >
-                <option value="">-</option>
-                {filteredBrands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-              </select>
+                triggerClassName="min-h-11 rounded-2xl font-bold"
+                ariaLabel="Seleccionar marca"
+              />
             </Field>
             <Field label="Modelo (catálogo, opcional)">
-              <select value={modelId} onChange={(e) => setModelId(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" disabled={loadingCatalog}>
-                <option value="">-</option>
-                {filteredModels.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-              </select>
+              <CustomSelect
+                value={modelId}
+                onChange={setModelId}
+                options={modelOptions}
+                disabled={loadingCatalog}
+                triggerClassName="min-h-11 rounded-2xl font-bold"
+                ariaLabel="Seleccionar modelo"
+              />
             </Field>
           </div>
 
           <Field label="Tipo de reparación / falla (catálogo, opcional)">
-            <select value={issueId} onChange={(e) => setIssueId(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" disabled={loadingCatalog}>
-              <option value="">-</option>
-              {filteredIssues.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}
-            </select>
+            <CustomSelect
+              value={issueId}
+              onChange={setIssueId}
+              options={issueOptions}
+              disabled={loadingCatalog}
+              triggerClassName="min-h-11 rounded-2xl font-bold"
+              ariaLabel="Seleccionar tipo de reparación"
+            />
           </Field>
 
           <div className="grid gap-4 md:grid-cols-3">
@@ -195,10 +231,13 @@ export function AdminRepairPricingRuleCreatePage() {
 
           <div className="grid gap-4 md:grid-cols-4">
             <Field label="Modo de cálculo">
-              <select value={calcMode} onChange={(e) => setCalcMode(e.target.value as 'BASE_PLUS_MARGIN' | 'FIXED_TOTAL')} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm">
-                <option value="BASE_PLUS_MARGIN">Base + % margen</option>
-                <option value="FIXED_TOTAL">Total fijo</option>
-              </select>
+              <CustomSelect
+                value={calcMode}
+                onChange={(value) => setCalcMode(value as 'BASE_PLUS_MARGIN' | 'FIXED_TOTAL')}
+                options={calcModeOptions}
+                triggerClassName="min-h-11 rounded-2xl font-bold"
+                ariaLabel="Seleccionar modo de cálculo"
+              />
             </Field>
             <Field label="Mínimo de ganancia (opcional)">
               <input value={minProfit} onChange={(e) => setMinProfit(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" placeholder="0" disabled={calcMode === 'FIXED_TOTAL'} />
@@ -256,7 +295,7 @@ function Field({
   children,
 }: {
   label: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <div>

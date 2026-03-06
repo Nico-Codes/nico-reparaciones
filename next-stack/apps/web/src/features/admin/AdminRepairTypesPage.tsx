@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { deviceCatalogApi } from '@/features/deviceCatalog/api';
 
@@ -38,11 +38,11 @@ export function AdminRepairTypesPage() {
     try {
       const res = await deviceCatalogApi.issues();
       setRows(
-        res.items.map((i) => ({
-          id: i.id,
-          name: i.name,
-          slug: i.slug,
-          active: i.active,
+        res.items.map((item) => ({
+          id: item.id,
+          name: item.name,
+          slug: item.slug,
+          active: item.active,
         })),
       );
     } catch (e) {

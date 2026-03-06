@@ -16,8 +16,8 @@ const MOJIBAKE_PATTERN = /\u00C3[\u0080-\u00BF]|\u00C2[\u0080-\u00BF]|\u00E2[\u0
 
 const ADMIN_ROUTES = [
   { path: '/admin', selectors: ['text=/Panel Admin/i'] },
-  { path: '/admin/orders', selectors: ['text=/Pedidos/i'] },
-  { path: '/admin/repairs', selectors: ['text=/Repar/i'] },
+  { path: '/admin/orders', selectors: ['[data-admin-orders-page]'] },
+  { path: '/admin/repairs', selectors: ['[data-admin-repairs-page]'] },
   { path: '/admin/productos', selectors: ['text=/Productos/i'] },
   { path: '/admin/categorias', selectors: ['text=/Categor/i'] },
   { path: '/admin/ventas-rapidas', selectors: ['text=/Venta r.pida/i'] },

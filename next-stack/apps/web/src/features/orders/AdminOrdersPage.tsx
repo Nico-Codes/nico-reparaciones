@@ -1,5 +1,7 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { ActionDropdown } from '@/components/ui/action-dropdown';
+import { CustomSelect } from '@/components/ui/custom-select';
 import { ordersApi } from './api';
 import type { OrderItem } from './types';
 
@@ -32,6 +34,19 @@ function orderStatusBadgeClass(status: (typeof ORDER_STATUSES)[number] | string)
 
 function orderStatusLabel(status: string) {
   return ORDER_STATUS_LABELS[status as (typeof ORDER_STATUSES)[number]] ?? status;
+}
+
+const ORDER_STATUS_OPTIONS = ORDER_STATUSES.map((status) => ({
+  value: status,
+  label: orderStatusLabel(status),
+}));
+
+function orderPrintHref(orderId: string) {
+  return `/admin/orders/${encodeURIComponent(orderId)}/print`;
+}
+
+function orderTicketHref(orderId: string) {
+  return `/admin/orders/${encodeURIComponent(orderId)}/ticket`;
 }
 
 export function AdminOrdersPage() {
@@ -123,7 +138,7 @@ export function AdminOrdersPage() {
   }, [items]);
 
   return (
-    <div className="store-shell">
+    <div className="store-shell" data-admin-orders-page>
       <section className="page-head store-hero">
         <div>
           <div className="page-title">Pedidos (Admin)</div>
@@ -235,12 +250,69 @@ export function AdminOrdersPage() {
                     <button type="button" className="inline-flex h-10 items-center justify-center rounded-2xl border border-amber-300 bg-amber-50 px-4 text-sm font-bold text-amber-700">
                       WA pendiente
                     </button>
-                    <button type="button" className="btn-ghost !h-10 !rounded-2xl px-2.5 text-lg leading-none shadow-none">
-                      …
-                    </button>
-                    <button type="button" onClick={() => setSelectedId(order.id)} className="btn-primary !h-10 !rounded-2xl px-4 text-sm font-bold">
-                      Estado
-                    </button>
+                    <ActionDropdown
+                      renderTrigger={({ open, toggle, triggerRef, menuId }) => (
+                        <button
+                          ref={triggerRef}
+                          type="button"
+                          aria-haspopup="menu"
+                          aria-controls={menuId}
+                          aria-expanded={open ? 'true' : 'false'}
+                          onClick={toggle}
+                          className="btn-ghost !h-10 !rounded-2xl px-2.5 text-lg leading-none shadow-none"
+                        >
+                          ⋯
+                        </button>
+                      )}
+                      menuClassName="min-w-[12rem]"
+                    >
+                      {(close) => (
+                        <>
+                          <Link to={orderPrintHref(order.id)} target="_blank" rel="noreferrer" className="dropdown-item" onClick={close}>
+                            Imprimir
+                          </Link>
+                          <Link to={orderTicketHref(order.id)} target="_blank" rel="noreferrer" className="dropdown-item" onClick={close}>
+                            Ticket
+                          </Link>
+                        </>
+                      )}
+                    </ActionDropdown>
+                    <ActionDropdown
+                      renderTrigger={({ open, toggle, triggerRef, menuId }) => (
+                        <button
+                          ref={triggerRef}
+                          type="button"
+                          aria-haspopup="menu"
+                          aria-controls={menuId}
+                          aria-expanded={open ? 'true' : 'false'}
+                          onClick={toggle}
+                          className="btn-primary !h-10 !rounded-2xl px-4 text-sm font-bold"
+                        >
+                          Estado
+                        </button>
+                      )}
+                      menuClassName="min-w-[13rem]"
+                    >
+                      {(close) => (
+                        <>
+                          {ORDER_STATUS_OPTIONS.map((option) => (
+                            <button
+                              key={option.value}
+                              type="button"
+                              className={`dropdown-item ${order.status === option.value ? 'bg-sky-50 text-sky-700 ring-1 ring-sky-100' : ''}`}
+                              onClick={() => {
+                                void changeStatus(order.id, option.value);
+                                close();
+                              }}
+                              aria-disabled={order.status === option.value ? 'true' : 'false'}
+                              disabled={order.status === option.value}
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </>
+                      )}
+                    </ActionDropdown>
                   </div>
 
                   {selectedId === order.id ? (
@@ -261,13 +333,14 @@ export function AdminOrdersPage() {
                           <div className="grid gap-3 lg:grid-cols-[240px_1fr]">
                             <div>
                               <label className="mb-1 block text-sm font-bold text-zinc-700">Estado</label>
-                              <select
+                              <CustomSelect
                                 value={detail.status}
-                                onChange={(e) => void changeStatus(detail.id, e.target.value)}
-                                className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm"
-                              >
-                                {ORDER_STATUSES.map((s) => <option key={s} value={s}>{orderStatusLabel(s)}</option>)}
-                              </select>
+                                onChange={(nextStatus) => void changeStatus(detail.id, nextStatus)}
+                                options={ORDER_STATUS_OPTIONS}
+                                className="w-full"
+                                triggerClassName="min-h-10 rounded-xl"
+                                ariaLabel="Estado del pedido"
+                              />
                               <div className="mt-2">
                                 <span className={orderStatusBadgeClass(detail.status)}>{orderStatusLabel(detail.status)}</span>
                               </div>
@@ -337,4 +410,3 @@ function WhatsappChip({ label, count, active = false }: { label: string; count: 
     </button>
   );
 }
-

@@ -1,11 +1,21 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { CustomSelect } from '@/components/ui/custom-select';
 import { adminApi } from '@/features/admin/api';
 import { catalogAdminApi, type AdminCategory, type AdminProduct } from './api';
 import { productPricingApi } from './productPricingApi';
 
 function peso(n: number) {
   return `$ ${Math.round(n || 0).toLocaleString('es-AR')}`;
+}
+
+function slugify(raw: string) {
+  return raw
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
 }
 
 export function AdminProductEditPage() {
@@ -35,7 +45,7 @@ export function AdminProductEditPage() {
   const [recommendedPrice, setRecommendedPrice] = useState<number | null>(null);
   const [recommendedMarginPercent, setRecommendedMarginPercent] = useState<number | null>(null);
   const [recommendedRuleName, setRecommendedRuleName] = useState<string | null>(null);
-  const [pricingHint, setPricingHint] = useState('Define categoría + costo para calcular automáticamente.');
+  const [pricingHint, setPricingHint] = useState('Definí categoría + costo para calcular automáticamente.');
   const [loadingRecommendation, setLoadingRecommendation] = useState(false);
   const [preventNegativeMargin, setPreventNegativeMargin] = useState(true);
 
@@ -92,7 +102,9 @@ export function AdminProductEditPage() {
       }
     }
     void load();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, [id]);
 
   useEffect(() => {
@@ -103,7 +115,7 @@ export function AdminProductEditPage() {
       setRecommendedPrice(null);
       setRecommendedMarginPercent(null);
       setRecommendedRuleName(null);
-      setPricingHint('Define categoría + costo para calcular automáticamente.');
+      setPricingHint('Definí categoría + costo para calcular automáticamente.');
       return;
     }
 
@@ -122,13 +134,13 @@ export function AdminProductEditPage() {
           setPricingHint(
             res.rule?.name
               ? `Regla: ${res.rule.name} (${res.marginPercent}% margen).`
-              : `Sin regla especifica. Margen base: ${res.marginPercent}%.`,
+              : `Sin regla específica. Margen base: ${res.marginPercent}%.`,
           );
         } catch {
           setRecommendedPrice(null);
           setRecommendedMarginPercent(null);
           setRecommendedRuleName(null);
-          setPricingHint('No se pudo calcular precio recomendado.');
+          setPricingHint('No se pudo calcular el precio recomendado.');
         } finally {
           setLoadingRecommendation(false);
         }
@@ -138,11 +150,27 @@ export function AdminProductEditPage() {
     return () => clearTimeout(timeout);
   }, [id, categoryId, costPrice]);
 
+  const categoryOptions = useMemo(
+    () => [
+      { value: '', label: 'Sin categoría' },
+      ...categories.map((category) => ({ value: category.id, label: category.name })),
+    ],
+    [categories],
+  );
+
+  const supplierOptions = useMemo(
+    () => [
+      { value: '', label: 'Sin proveedor' },
+      ...suppliers.map((supplier) => ({ value: supplier.id, label: supplier.name })),
+    ],
+    [suppliers],
+  );
+
   const marginStats = useMemo(() => {
     const c = Number(costPrice || 0);
     const p = Number(price || 0);
     const utility = p - c;
-    const margin = c > 0 ? ((utility / c) * 100) : 0;
+    const margin = c > 0 ? (utility / c) * 100 : 0;
     const tone: 'emerald' | 'amber' | 'rose' = utility > 0 ? 'emerald' : utility === 0 ? 'amber' : 'rose';
     return { utility, margin, tone };
   }, [costPrice, price]);
@@ -161,7 +189,7 @@ export function AdminProductEditPage() {
 
       const res = await catalogAdminApi.updateProduct(id, {
         name: name.trim(),
-        slug: (slug.trim() || name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')),
+        slug: slugify(slug.trim() || name.trim()),
         sku: sku.trim() || null,
         barcode: barcode.trim() || null,
         categoryId: categoryId || null,
@@ -225,8 +253,8 @@ export function AdminProductEditPage() {
       <section className="store-hero">
         <div className="grid gap-4 md:grid-cols-[1.1fr_auto] md:items-start">
           <div className="grid gap-3 md:grid-cols-[160px_1fr] md:items-start">
-            <h1 className="text-2xl font-black tracking-tight text-zinc-900 md:text-[2.05rem] leading-tight">Editar<br/>producto</h1>
-            <p className="pt-1 text-sm text-zinc-600 md:max-w-md">Actualiza identificación, precio, stock, categoría e imagen.</p>
+            <h1 className="text-2xl font-black leading-tight tracking-tight text-zinc-900 md:text-[2.05rem]">Editar<br/>producto</h1>
+            <p className="max-w-md pt-1 text-sm text-zinc-600">Actualiza identificación, precio, stock, categoría e imagen.</p>
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2">
             <button type="button" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">Garantía</button>
@@ -255,7 +283,7 @@ export function AdminProductEditPage() {
                 <span className="mb-1 block text-sm font-bold text-zinc-700">Slug (opcional)</span>
                 <input value={slug} onChange={(e) => setSlug(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" />
               </label>
-              <p className="mt-1 text-xs text-zinc-500">Si lo dejas vacio, se genera desde el nombre.</p>
+              <p className="mt-1 text-xs text-zinc-500">Si lo dejás vacío, se genera desde el nombre.</p>
             </div>
             <label className="block">
               <span className="mb-1 block text-sm font-bold text-zinc-700">SKU interno *</span>
@@ -271,17 +299,23 @@ export function AdminProductEditPage() {
           <div className="grid gap-4 md:grid-cols-2">
             <label className="block">
               <span className="mb-1 block text-sm font-bold text-zinc-700">Categoría *</span>
-              <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm">
-                <option value="">Sin categoría</option>
-                {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+              <CustomSelect
+                value={categoryId}
+                onChange={setCategoryId}
+                options={categoryOptions}
+                triggerClassName="min-h-11 rounded-2xl font-bold"
+                ariaLabel="Seleccionar categoría"
+              />
             </label>
             <label className="block">
               <span className="mb-1 block text-sm font-bold text-zinc-700">Proveedor</span>
-              <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm">
-                <option value="">Sin proveedor</option>
-                {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
+              <CustomSelect
+                value={supplierId}
+                onChange={setSupplierId}
+                options={supplierOptions}
+                triggerClassName="min-h-11 rounded-2xl font-bold"
+                ariaLabel="Seleccionar proveedor"
+              />
             </label>
           </div>
 
@@ -320,7 +354,7 @@ export function AdminProductEditPage() {
           </label>
 
           <label className="block">
-            <span className="mb-1 block text-sm font-bold text-zinc-700">Descripcion (opcional)</span>
+            <span className="mb-1 block text-sm font-bold text-zinc-700">Descripción (opcional)</span>
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} placeholder="Detalles, compatibilidad, color, etc." className="w-full rounded-2xl border border-zinc-200 px-3 py-2 text-sm" />
           </label>
 
@@ -358,7 +392,7 @@ export function AdminProductEditPage() {
             </div>
             <div>
               <div className="mb-1 text-sm font-bold text-zinc-700">Vista previa</div>
-              <div className="flex h-[116px] w-[116px] items-center justify-center rounded-2xl border border-zinc-200 bg-zinc-50 text-sm font-bold text-zinc-400 overflow-hidden">
+              <div className="flex h-[116px] w-[116px] items-center justify-center overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50 text-sm font-bold text-zinc-400">
                 {imagePreview ? <img src={imagePreview} alt="preview" className="h-full w-full object-cover" /> : 'Sin imagen'}
               </div>
             </div>

@@ -1,5 +1,7 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { ActionDropdown } from '@/components/ui/action-dropdown';
+import { CustomSelect } from '@/components/ui/custom-select';
 import { catalogAdminApi, type AdminCategory, type AdminProduct } from './api';
 
 export function AdminProductsPage() {
@@ -10,7 +12,8 @@ export function AdminProductsPage() {
   const [q, setQ] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [activeFilter, setActiveFilter] = useState('');
-  const [openActionsId, setOpenActionsId] = useState<string | null>(null);
+  const [featuredFilter, setFeaturedFilter] = useState('');
+  const [stockFilter, setStockFilter] = useState('');
 
   async function loadCategories() {
     const res = await catalogAdminApi.categories();
@@ -40,11 +43,30 @@ export function AdminProductsPage() {
 
   const rows = useMemo(() => products.slice(0, 80), [products]);
   const tableCols = '32px 2.5fr 0.85fr 0.9fr 1.05fr 0.65fr 0.95fr 0.95fr 1.05fr 1.9fr 1.1fr';
+  const categoryOptions = useMemo(
+    () => [{ value: '', label: 'Categoría: Todas' }, ...categories.map((category) => ({ value: category.id, label: category.name }))],
+    [categories],
+  );
+  const activeOptions = [
+    { value: '', label: 'Estado: Todos' },
+    { value: '1', label: 'Estado: Activos' },
+    { value: '0', label: 'Estado: Inactivos' },
+  ];
+  const featuredOptions = [
+    { value: '', label: 'Destacado: Todos' },
+    { value: '1', label: 'Destacado: Sí' },
+    { value: '0', label: 'Destacado: No' },
+  ];
+  const stockOptions = [
+    { value: '', label: 'Stock: Todos' },
+    { value: 'with', label: 'Stock: Con stock' },
+    { value: 'empty', label: 'Stock: Sin stock' },
+  ];
 
   async function patchProduct(id: string, patch: Record<string, unknown>) {
     try {
       const res = await catalogAdminApi.updateProduct(id, patch);
-      setProducts((prev) => prev.map((p) => (p.id === id ? res.item : p)));
+      setProducts((prev) => prev.map((product) => (product.id === id ? res.item : product)));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error actualizando producto');
     }
@@ -76,21 +98,10 @@ export function AdminProductsPage() {
               placeholder="Buscar por nombre, slug, SKU"
               className="h-11 rounded-2xl border border-zinc-200 px-3 text-sm"
             />
-            <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className="h-11 rounded-2xl border border-zinc-200 px-3 text-sm font-bold">
-              <option value="">Categoría: Todas</option>
-              {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-            <select value={activeFilter} onChange={(e) => setActiveFilter(e.target.value)} className="h-11 rounded-2xl border border-zinc-200 px-3 text-sm font-bold">
-              <option value="">Estado: Todos</option>
-              <option value="1">Estado: Activos</option>
-              <option value="0">Estado: Inactivos</option>
-            </select>
-            <select className="h-11 rounded-2xl border border-zinc-200 px-3 text-sm font-bold">
-              <option>Destacado: Todos</option>
-            </select>
-            <select className="h-11 rounded-2xl border border-zinc-200 px-3 text-sm font-bold">
-              <option>Stock: Todos</option>
-            </select>
+            <CustomSelect value={categoryId} onChange={setCategoryId} options={categoryOptions} triggerClassName="min-h-11 rounded-2xl font-bold" ariaLabel="Filtrar por categoría" />
+            <CustomSelect value={activeFilter} onChange={setActiveFilter} options={activeOptions} triggerClassName="min-h-11 rounded-2xl font-bold" ariaLabel="Filtrar por estado" />
+            <CustomSelect value={featuredFilter} onChange={setFeaturedFilter} options={featuredOptions} triggerClassName="min-h-11 rounded-2xl font-bold" ariaLabel="Filtrar por destacado" />
+            <CustomSelect value={stockFilter} onChange={setStockFilter} options={stockOptions} triggerClassName="min-h-11 rounded-2xl font-bold" ariaLabel="Filtrar por stock" />
             <button type="button" onClick={() => void loadProducts()} className="btn-outline !h-11 !rounded-xl px-5 text-sm font-bold">
               Filtrar
             </button>
@@ -106,7 +117,7 @@ export function AdminProductsPage() {
               <div>PRODUCTO</div>
               <div>SKU</div>
               <div>BARCODE</div>
-              <div>CATEGORIA</div>
+              <div>CATEGORÍA</div>
               <div>PROV.</div>
               <div className="text-right">COSTO</div>
               <div className="text-right">VENTA</div>
@@ -120,32 +131,33 @@ export function AdminProductsPage() {
             ) : rows.length === 0 ? (
               <div className="p-4 text-sm text-zinc-600">No hay productos.</div>
             ) : (
-              rows.map((p, idx) => {
-                const cost = Number(p.costPrice ?? 0);
-                const sale = Number(p.price ?? 0);
+              rows.map((product, idx) => {
+                const cost = Number(product.costPrice ?? 0);
+                const sale = Number(product.price ?? 0);
                 const marginPct = cost > 0 ? Math.round(((sale - cost) / cost) * 100) : 0;
                 const marginVal = Math.max(0, sale - cost);
                 return (
                   <div
-                    key={p.id}
-                    className={`grid items-center gap-0 px-2 py-2 ${idx ? 'border-t border-zinc-100' : ''}`} style={{ gridTemplateColumns: tableCols }}
+                    key={product.id}
+                    className={`grid items-center gap-0 px-2 py-2 ${idx ? 'border-t border-zinc-100' : ''}`}
+                    style={{ gridTemplateColumns: tableCols }}
                   >
-                    <div><input type="checkbox" aria-label={`Seleccionar ${p.name}`} /></div>
+                    <div><input type="checkbox" aria-label={`Seleccionar ${product.name}`} /></div>
 
                     <div className="flex min-w-0 items-center gap-2">
                       <div className="h-8 w-8 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50">
-                        {p.imageUrl ? <img src={p.imageUrl} alt={p.name} className="h-full w-full object-cover" loading="lazy" /> : null}
+                        {product.imageUrl ? <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover" loading="lazy" /> : null}
                       </div>
                       <div className="min-w-0">
-                        <div className="truncate text-sm font-black tracking-tight text-zinc-900">{p.name}</div>
-                        <div className="text-xs text-zinc-500">ID: {p.id.slice(0, 4)}</div>
+                        <div className="truncate text-sm font-black tracking-tight text-zinc-900">{product.name}</div>
+                        <div className="text-xs text-zinc-500">ID: {product.id.slice(0, 4)}</div>
                       </div>
                     </div>
 
-                    <div className="truncate text-xs font-black leading-tight text-zinc-800">{p.sku || '-'}</div>
-                    <div className="truncate text-xs leading-tight text-zinc-800">{p.barcode || '-'}</div>
-                    <div className="truncate text-xs text-zinc-900">{p.category?.name || '-'}</div>
-                    <div className="truncate text-xs text-zinc-900">{p.supplier?.name || '-'}</div>
+                    <div className="truncate text-xs font-black leading-tight text-zinc-800">{product.sku || '-'}</div>
+                    <div className="truncate text-xs leading-tight text-zinc-800">{product.barcode || '-'}</div>
+                    <div className="truncate text-xs text-zinc-900">{product.category?.name || '-'}</div>
+                    <div className="truncate text-xs text-zinc-900">{product.supplier?.name || '-'}</div>
 
                     <div className="text-right">
                       <div className="text-xs font-black leading-tight text-zinc-900">$ {cost.toLocaleString('es-AR')}</div>
@@ -164,63 +176,61 @@ export function AdminProductsPage() {
                     <div className="flex items-center gap-1">
                       <div className="inline-flex min-h-[34px] min-w-[42px] flex-col items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-1.5 py-1 text-center">
                         <div className="text-[11px] font-black tracking-tight text-emerald-800">Stock</div>
-                        <div className="text-xs font-black text-emerald-700">{p.stock}</div>
+                        <div className="text-xs font-black text-emerald-700">{product.stock}</div>
                       </div>
-                      <QuickStockCell value={p.stock} onSave={(v) => void patchProduct(p.id, { stock: Math.max(0, Math.trunc(v)) })} />
+                      <QuickStockCell value={product.stock} onSave={(nextValue) => void patchProduct(product.id, { stock: Math.max(0, Math.trunc(nextValue)) })} />
                     </div>
 
-                    <div className="relative flex items-center justify-end">
-                      <button
-                        type="button"
-                        onClick={() => setOpenActionsId((prev) => (prev === p.id ? null : p.id))}
-                        className="btn-outline !h-8 !rounded-xl px-2.5 text-xs font-bold"
-                        aria-expanded={openActionsId === p.id}
-                      >
-                        Acciones
-                      </button>
-                      {openActionsId === p.id ? (
-                        <div className="absolute right-0 top-10 z-20 min-w-[180px] rounded-2xl border border-zinc-200 bg-white p-2 shadow-[0_18px_45px_-24px_rgba(15,23,42,0.28)]">
-                          <div className="space-y-1">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                void patchProduct(p.id, { active: !p.active });
-                                setOpenActionsId(null);
-                              }}
-                              className="flex h-9 w-full items-center justify-between rounded-xl px-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
-                            >
-                              <span>Estado</span>
-                              <Pill tone={p.active ? 'emerald' : 'zinc'}>{p.active ? 'Activo' : 'Inactivo'}</Pill>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                void patchProduct(p.id, { featured: !p.featured });
-                                setOpenActionsId(null);
-                              }}
-                              className="flex h-9 w-full items-center justify-between rounded-xl px-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
-                            >
-                              <span>Destacado</span>
-                              <Pill tone={p.featured ? 'amber' : 'zinc'}>{p.featured ? 'Si' : 'No'}</Pill>
-                            </button>
-                            <Link
-                              to={`/admin/productos/${encodeURIComponent(p.id)}/etiqueta`}
-                              onClick={() => setOpenActionsId(null)}
-                              className="flex h-9 w-full items-center rounded-xl px-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
-                            >
-                              Etiqueta
-                            </Link>
-                            <Link
-                              to={`/admin/productos/${encodeURIComponent(p.id)}/editar`}
-                              onClick={() => setOpenActionsId(null)}
-                              className="flex h-9 w-full items-center rounded-xl px-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
-                            >
-                              Editar
-                            </Link>
-                          </div>
-                        </div>
-                      ) : null}
-                    </div>
+                    <ActionDropdown
+                      className="flex items-center justify-end"
+                      renderTrigger={({ open, toggle, triggerRef, menuId }) => (
+                        <button
+                          ref={triggerRef}
+                          type="button"
+                          onClick={toggle}
+                          className="btn-outline !h-8 !rounded-xl px-2.5 text-xs font-bold"
+                          aria-haspopup="menu"
+                          aria-controls={menuId}
+                          aria-expanded={open ? 'true' : 'false'}
+                        >
+                          Acciones
+                        </button>
+                      )}
+                      menuClassName="min-w-[12rem]"
+                    >
+                      {(close) => (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              void patchProduct(product.id, { active: !product.active });
+                              close();
+                            }}
+                            className="dropdown-item flex items-center justify-between gap-2"
+                          >
+                            <span>Estado</span>
+                            <Pill tone={product.active ? 'emerald' : 'zinc'}>{product.active ? 'Activo' : 'Inactivo'}</Pill>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              void patchProduct(product.id, { featured: !product.featured });
+                              close();
+                            }}
+                            className="dropdown-item flex items-center justify-between gap-2"
+                          >
+                            <span>Destacado</span>
+                            <Pill tone={product.featured ? 'amber' : 'zinc'}>{product.featured ? 'Sí' : 'No'}</Pill>
+                          </button>
+                          <Link to={`/admin/productos/${encodeURIComponent(product.id)}/etiqueta`} onClick={close} className="dropdown-item">
+                            Etiqueta
+                          </Link>
+                          <Link to={`/admin/productos/${encodeURIComponent(product.id)}/editar`} onClick={close} className="dropdown-item">
+                            Editar
+                          </Link>
+                        </>
+                      )}
+                    </ActionDropdown>
                   </div>
                 );
               })

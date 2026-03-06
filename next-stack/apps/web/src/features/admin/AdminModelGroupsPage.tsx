@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { CustomSelect } from '@/components/ui/custom-select';
 import { deviceCatalogApi } from '@/features/deviceCatalog/api';
 import { adminApi } from './api';
 
@@ -34,7 +35,7 @@ export function AdminModelGroupsPage() {
       try {
         const typesRes = await adminApi.deviceTypes();
         if (!mounted) return;
-        setDeviceTypes(typesRes.items.filter((i) => i.active));
+        setDeviceTypes(typesRes.items.filter((item) => item.active));
       } catch (e) {
         if (!mounted) return;
         setError(e instanceof Error ? e.message : 'Error cargando catálogo');
@@ -56,11 +57,11 @@ export function AdminModelGroupsPage() {
       try {
         const brandsRes = await deviceCatalogApi.brands(deviceType || undefined);
         if (!mounted) return;
-        const activeBrands = brandsRes.items.filter((i) => i.active);
+        const activeBrands = brandsRes.items.filter((item) => item.active);
         setBrands(activeBrands);
         setBrand((prev) => {
           if (!prev) return prev;
-          return activeBrands.some((b) => b.id === prev) ? prev : '';
+          return activeBrands.some((brandItem) => brandItem.id === prev) ? prev : '';
         });
       } catch (e) {
         if (!mounted) return;
@@ -100,6 +101,10 @@ export function AdminModelGroupsPage() {
     void loadBrandData(brand);
   }, [brand]);
 
+  const deviceTypeOptions = [{ value: '', label: 'Elegí...' }, ...deviceTypes.map((type) => ({ value: type.id, label: type.name }))];
+  const brandOptions = [{ value: '', label: 'Elegí...' }, ...brands.map((brandItem) => ({ value: brandItem.id, label: brandItem.name }))];
+  const groupOptions = [{ value: '', label: '- sin grupo -' }, ...groups.map((group) => ({ value: group.id, label: group.name }))];
+
   async function createGroup() {
     if (!brand || !newGroupName.trim()) return;
     setCreatingGroup(true);
@@ -119,7 +124,7 @@ export function AdminModelGroupsPage() {
   }
 
   function patchGroupLocal(id: string, patch: Partial<GroupRow>) {
-    setGroups((prev) => prev.map((g) => (g.id === id ? { ...g, ...patch } : g)));
+    setGroups((prev) => prev.map((group) => (group.id === id ? { ...group, ...patch } : group)));
   }
 
   async function saveGroup(group: GroupRow) {
@@ -143,7 +148,7 @@ export function AdminModelGroupsPage() {
     setSuccess('');
     try {
       await adminApi.assignModelGroup(modelId, { deviceBrandId: brand, deviceModelGroupId: deviceModelGroupId || null });
-      setModels((prev) => prev.map((m) => (m.id === modelId ? { ...m, deviceModelGroupId: deviceModelGroupId || null } : m)));
+      setModels((prev) => prev.map((model) => (model.id === modelId ? { ...model, deviceModelGroupId: deviceModelGroupId || null } : model)));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo asignar el modelo');
     } finally {
@@ -179,31 +184,25 @@ export function AdminModelGroupsPage() {
           <div className="grid gap-4 md:grid-cols-[1fr_1fr_auto] md:items-end">
             <div>
               <label className="mb-1.5 block text-sm font-bold text-zinc-800">Tipo dispositivo</label>
-              <select
+              <CustomSelect
                 value={deviceType}
-                onChange={(e) => setDeviceType(e.target.value)}
+                onChange={setDeviceType}
                 disabled={loadingFilters}
-                className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm"
-              >
-                <option value="">Elegí...</option>
-                {deviceTypes.map((t) => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
-                ))}
-              </select>
+                options={deviceTypeOptions}
+                triggerClassName="min-h-11 rounded-2xl font-bold"
+                ariaLabel="Seleccionar tipo de dispositivo"
+              />
             </div>
             <div>
               <label className="mb-1.5 block text-sm font-bold text-zinc-800">Marca</label>
-              <select
+              <CustomSelect
                 value={brand}
-                onChange={(e) => setBrand(e.target.value)}
+                onChange={setBrand}
                 disabled={loadingFilters || loadingBrands}
-                className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm"
-              >
-                <option value="">Elegí...</option>
-                {brands.map((b) => (
-                  <option key={b.id} value={b.id}>{b.name}</option>
-                ))}
-              </select>
+                options={brandOptions}
+                triggerClassName="min-h-11 rounded-2xl font-bold"
+                ariaLabel="Seleccionar marca"
+              />
             </div>
             <button
               type="button"
@@ -261,34 +260,34 @@ export function AdminModelGroupsPage() {
                 {!loadingBrandData && groups.length === 0 ? (
                   <div className="rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 px-3 py-4 text-sm text-zinc-600">No hay grupos cargados para esta marca.</div>
                 ) : null}
-                {groups.map((g) => (
-                  <div key={g.id} className="rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm space-y-3">
-                    <div className="grid gap-3 sm:grid-cols-3 items-end">
+                {groups.map((group) => (
+                  <div key={group.id} className="space-y-3 rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm">
+                    <div className="grid items-end gap-3 sm:grid-cols-3">
                       <div className="space-y-1 sm:col-span-2">
                         <label className="text-xs font-black uppercase text-zinc-500">Nombre</label>
                         <input
                           className="h-11 w-full rounded-xl border border-zinc-200 px-3 text-sm"
-                          value={g.name}
-                          onChange={(e) => patchGroupLocal(g.id, { name: e.target.value })}
+                          value={group.name}
+                          onChange={(e) => patchGroupLocal(group.id, { name: e.target.value })}
                         />
                       </div>
                       <label className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-700">
                         <input
                           className="h-4 w-4 rounded border-zinc-300"
                           type="checkbox"
-                          checked={g.active}
-                          onChange={(e) => patchGroupLocal(g.id, { active: e.target.checked })}
+                          checked={group.active}
+                          onChange={(e) => patchGroupLocal(group.id, { active: e.target.checked })}
                         />
                         <span>Activo</span>
                       </label>
                     </div>
                     <button
                       type="button"
-                      onClick={() => void saveGroup(g)}
-                      disabled={savingGroupId === g.id || !g.name.trim()}
+                      onClick={() => void saveGroup(group)}
+                      disabled={savingGroupId === group.id || !group.name.trim()}
                       className="btn-outline !h-10 !rounded-xl px-4 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      {savingGroupId === g.id ? 'Guardando...' : 'Guardar'}
+                      {savingGroupId === group.id ? 'Guardando...' : 'Guardar'}
                     </button>
                   </div>
                 ))}
@@ -310,26 +309,23 @@ export function AdminModelGroupsPage() {
                 {!loadingBrandData && models.length === 0 ? (
                   <div className="rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 px-3 py-4 text-sm text-zinc-600">No hay modelos para esta marca.</div>
                 ) : null}
-                {models.map((m) => (
-                  <div key={m.id} className="rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm">
+                {models.map((model) => (
+                  <div key={model.id} className="rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div className="min-w-0">
-                        <div className="truncate font-semibold text-zinc-900">{m.name}</div>
-                        <div className="text-xs text-zinc-500">ID: {m.id}</div>
+                        <div className="truncate font-semibold text-zinc-900">{model.name}</div>
+                        <div className="text-xs text-zinc-500">ID: {model.id}</div>
                       </div>
                       <div className="w-full sm:w-56">
                         <label className="mb-1 block text-xs font-black uppercase text-zinc-500 sm:hidden">Grupo</label>
-                        <select
-                          className="h-11 w-full rounded-xl border border-zinc-200 px-3 text-sm"
-                          value={m.deviceModelGroupId ?? ''}
-                          disabled={assigningModelId === m.id}
-                          onChange={(e) => void assignModel(m.id, e.target.value)}
-                        >
-                          <option value="">- sin grupo -</option>
-                          {groups.map((g) => (
-                            <option key={g.id} value={g.id}>{g.name}</option>
-                          ))}
-                        </select>
+                        <CustomSelect
+                          value={model.deviceModelGroupId ?? ''}
+                          onChange={(value) => void assignModel(model.id, value)}
+                          options={groupOptions}
+                          disabled={assigningModelId === model.id}
+                          triggerClassName="min-h-11 rounded-xl font-bold"
+                          ariaLabel="Seleccionar grupo"
+                        />
                       </div>
                     </div>
                   </div>

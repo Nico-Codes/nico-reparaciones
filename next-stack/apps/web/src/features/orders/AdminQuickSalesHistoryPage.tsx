@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { CustomSelect } from '@/components/ui/custom-select';
 import { ordersApi } from './api';
 import type { QuickSaleHistoryItem } from './types';
 
@@ -45,6 +46,14 @@ export function AdminQuickSalesHistoryPage() {
   }, []);
 
   const rows = useMemo(() => items.slice(0, 200), [items]);
+  const paymentOptions = useMemo(
+    () => [{ value: '', label: 'Todos' }, ...paymentMethods.map((paymentMethod) => ({ value: paymentMethod.key, label: paymentMethod.label }))],
+    [paymentMethods],
+  );
+  const adminOptions = useMemo(
+    () => [{ value: '', label: 'Todos' }, ...admins.map((admin) => ({ value: admin.id, label: admin.name }))],
+    [admins],
+  );
 
   return (
     <div className="store-shell space-y-5">
@@ -84,17 +93,23 @@ export function AdminQuickSalesHistoryPage() {
             </div>
             <div className="grid gap-1">
               <label className="text-sm font-bold text-zinc-700">Pago</label>
-              <select value={payment} onChange={(e) => setPayment(e.target.value)} className="h-11 rounded-2xl border border-zinc-200 px-3 text-sm font-bold">
-                <option value="">Todos</option>
-                {paymentMethods.map((pm) => <option key={pm.key} value={pm.key}>{pm.label}</option>)}
-              </select>
+              <CustomSelect
+                value={payment}
+                onChange={setPayment}
+                options={paymentOptions}
+                triggerClassName="min-h-11 rounded-2xl font-bold"
+                ariaLabel="Filtrar por método de pago"
+              />
             </div>
             <div className="grid gap-1">
               <label className="text-sm font-bold text-zinc-700">Admin</label>
-              <select value={adminId} onChange={(e) => setAdminId(e.target.value)} className="h-11 rounded-2xl border border-zinc-200 px-3 text-sm font-bold">
-                <option value="">Todos</option>
-                {admins.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-              </select>
+              <CustomSelect
+                value={adminId}
+                onChange={setAdminId}
+                options={adminOptions}
+                triggerClassName="min-h-11 rounded-2xl font-bold"
+                ariaLabel="Filtrar por administrador"
+              />
             </div>
             <div className="flex items-end">
               <button type="submit" className="btn-primary !h-11 !w-full !rounded-xl px-5 text-sm font-bold">Aplicar</button>

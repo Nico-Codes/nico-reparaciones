@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { CustomSelect } from '@/components/ui/custom-select';
 import { catalogAdminApi, type AdminProduct } from '@/features/catalogAdmin/api';
 import { ordersApi } from './api';
 
@@ -43,7 +44,7 @@ export function AdminQuickSalesPage() {
         q: query.trim() || undefined,
         active: '1',
       });
-      setProducts(res.items.filter((p) => p.active && p.stock > 0).slice(0, 50));
+      setProducts(res.items.filter((product) => product.active && product.stock > 0).slice(0, 50));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error cargando productos');
     } finally {
@@ -62,9 +63,9 @@ export function AdminQuickSalesPage() {
     setSuccess('');
     try {
       const res = await catalogAdminApi.products({ q: code, active: '1' });
-      const exact = res.items.find((p) => {
-        const sku = (p.sku ?? '').trim().toLowerCase();
-        const barcode = (p.barcode ?? '').trim().toLowerCase();
+      const exact = res.items.find((product) => {
+        const sku = (product.sku ?? '').trim().toLowerCase();
+        const barcode = (product.barcode ?? '').trim().toLowerCase();
         const cmp = code.toLowerCase();
         return sku === cmp || barcode === cmp;
       });
@@ -121,6 +122,11 @@ export function AdminQuickSalesPage() {
     const total = cart.reduce((acc, line) => acc + line.quantity * Number(line.product.price || 0), 0);
     return { itemsCount, total };
   }, [cart]);
+
+  const paymentMethodOptions = useMemo(
+    () => PAYMENT_METHODS.map((method) => ({ value: method.key, label: method.label })),
+    [],
+  );
 
   async function confirmSale(afterAction: 'view' | 'print_ticket' | 'print_a4') {
     if (!cart.length) {
@@ -241,18 +247,18 @@ export function AdminQuickSalesPage() {
                 <div className="text-sm text-zinc-600">Sin resultados para mostrar.</div>
               ) : (
                 <div className="grid gap-2">
-                  {products.map((p) => (
-                    <div key={p.id} className="rounded-2xl border border-zinc-200 bg-white p-3">
+                  {products.map((product) => (
+                    <div key={product.id} className="rounded-2xl border border-zinc-200 bg-white p-3">
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <div className="min-w-0">
-                          <div className="truncate text-sm font-black text-zinc-900">{p.name}</div>
+                          <div className="truncate text-sm font-black text-zinc-900">{product.name}</div>
                           <div className="text-xs text-zinc-500">
-                            SKU: {p.sku || '-'} | Barcode: {p.barcode || '-'} | Stock: {p.stock}
+                            SKU: {product.sku || '-'} | Barcode: {product.barcode || '-'} | Stock: {product.stock}
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className="text-sm font-black text-zinc-900">$ {Number(p.price).toLocaleString('es-AR')}</div>
-                          <button type="button" onClick={() => addToCart(p, 1)} className="btn-outline !h-9 !rounded-xl px-4 text-sm font-bold">
+                          <div className="text-sm font-black text-zinc-900">$ {Number(product.price).toLocaleString('es-AR')}</div>
+                          <button type="button" onClick={() => addToCart(product, 1)} className="btn-outline !h-9 !rounded-xl px-4 text-sm font-bold">
                             Agregar
                           </button>
                         </div>
@@ -323,13 +329,13 @@ export function AdminQuickSalesPage() {
                   </div>
                   <div className="grid gap-1">
                     <label className="text-sm font-bold text-zinc-700">Método de pago</label>
-                    <select
+                    <CustomSelect
                       value={paymentMethod}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                      className="h-11 rounded-2xl border border-zinc-200 px-3 text-sm font-bold"
-                    >
-                      {PAYMENT_METHODS.map((pm) => <option key={pm.key} value={pm.key}>{pm.label}</option>)}
-                    </select>
+                      onChange={setPaymentMethod}
+                      options={paymentMethodOptions}
+                      triggerClassName="min-h-11 rounded-2xl font-bold"
+                      ariaLabel="Seleccionar método de pago"
+                    />
                   </div>
                   <div className="grid gap-1">
                     <label className="text-sm font-bold text-zinc-700">Notas (opcional)</label>

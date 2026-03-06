@@ -387,8 +387,8 @@ async function main() {
 
     const adminRoutes = [
       { path: '/admin', selectors: ['text=/Panel Admin/i'] },
-      { path: '/admin/orders', selectors: ['text=/Pedidos/i'] },
-      { path: '/admin/repairs', selectors: ['text=CODIGO', 'text=CLIENTE'] },
+      { path: '/admin/orders', selectors: ['[data-admin-orders-page]'] },
+      { path: '/admin/repairs', selectors: ['[data-admin-repairs-page]'] },
       { path: '/admin/categorias', selectors: ['text=/Categor/i', 'input[placeholder*="Ej: Fundas"]'] },
       { path: '/admin/categorias/crear', selectors: ['text=/Categor/i', 'input[placeholder*="Ej: Fundas"]'] },
       { path: '/admin/productos', selectors: ['text=/Productos/i'] },
@@ -448,8 +448,8 @@ async function main() {
       { from: '/admin/suppliers', to: '/admin/proveedores', selectors: ['text=/Proveedores/i'] },
       { from: '/admin/warranties', to: '/admin/garantias', selectors: ['text=/Garant/i'] },
       { from: '/admin/accounting', to: '/admin/contabilidad', selectors: ['text=/Contabilidad/i'] },
-      { from: '/admin/pedidos', to: '/admin/orders', selectors: ['text=/Pedidos/i'] },
-      { from: '/admin/reparaciones', to: '/admin/repairs', selectors: ['text=/Repar/i'] },
+      { from: '/admin/pedidos', to: '/admin/orders', selectors: ['[data-admin-orders-page]'] },
+      { from: '/admin/reparaciones', to: '/admin/repairs', selectors: ['[data-admin-repairs-page]'] },
     ];
 
     for (const alias of adminAliases) {
@@ -467,13 +467,13 @@ async function main() {
     await gotoAndExpect(page, `${WEB_URL}/orders`, {
       pathname: '/orders',
       label: '/orders (sesion USER)',
-      selectors: ['text=/Mis pedidos/i'],
+      selectors: ['[data-my-orders-page]'],
     });
 
     await gotoAndExpect(page, `${WEB_URL}/repairs`, {
       pathname: '/repairs',
       label: '/repairs (sesion USER)',
-      selectors: ['text=/Mis reparaciones/i'],
+      selectors: ['[data-my-repairs-page]'],
     });
 
     await gotoAndExpect(page, `${WEB_URL}/checkout`, {
@@ -485,7 +485,7 @@ async function main() {
     await gotoAndExpect(page, `${WEB_URL}/mi-cuenta`, {
       pathname: '/mi-cuenta',
       label: '/mi-cuenta (sesion USER)',
-      selectors: ['text=/Mi cuenta/i'],
+      selectors: ['[data-my-account-page]'],
     });
 
     await gotoAndExpect(page, `${WEB_URL}/admin`, {

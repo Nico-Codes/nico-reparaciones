@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { CustomSelect } from '@/components/ui/custom-select';
 import { deviceCatalogApi } from '@/features/deviceCatalog/api';
 import { adminApi } from './api';
 
@@ -39,14 +40,14 @@ export function AdminDevicesCatalogPage() {
 
   async function loadDeviceTypes() {
     const res = await adminApi.deviceTypes();
-    setDeviceTypes(res.items.filter((t) => t.active));
-    setDeviceType((prev) => prev || res.items.find((t) => t.active)?.id || '');
+    setDeviceTypes(res.items.filter((type) => type.active));
+    setDeviceType((prev) => prev || res.items.find((type) => type.active)?.id || '');
   }
 
   async function loadBrandsAndIssues(typeId?: string) {
-    const [b, i] = await Promise.all([deviceCatalogApi.brands(typeId), deviceCatalogApi.issues(typeId)]);
-    setBrands(b.items);
-    setIssues(i.items);
+    const [brandsRes, issuesRes] = await Promise.all([deviceCatalogApi.brands(typeId), deviceCatalogApi.issues(typeId)]);
+    setBrands(brandsRes.items);
+    setIssues(issuesRes.items);
   }
 
   async function loadModels(brandId?: string) {
@@ -72,7 +73,7 @@ export function AdminDevicesCatalogPage() {
 
   useEffect(() => {
     void loadBrandsAndIssues(deviceType || undefined).catch((e) =>
-      setError(e instanceof Error ? e.message : 'Error cargando marcas/fallas'),
+      setError(e instanceof Error ? e.message : 'Error cargando marcas y fallas'),
     );
   }, [deviceType]);
 
@@ -82,10 +83,19 @@ export function AdminDevicesCatalogPage() {
     );
   }, [selectedBrandId]);
 
-  const activeBrands = useMemo(() => brands.filter((b) => b.active), [brands]);
+  const activeBrands = useMemo(() => brands.filter((brand) => brand.active), [brands]);
   const filteredModels = useMemo(
-    () => (selectedBrandId ? models.filter((m) => m.brandId === selectedBrandId) : models),
+    () => (selectedBrandId ? models.filter((model) => model.brandId === selectedBrandId) : models),
     [models, selectedBrandId],
+  );
+
+  const deviceTypeOptions = useMemo(
+    () => [{ value: '', label: 'Elegí...' }, ...deviceTypes.map((type) => ({ value: type.id, label: type.name }))],
+    [deviceTypes],
+  );
+  const brandOptions = useMemo(
+    () => [{ value: '', label: activeBrands[0]?.name ?? 'Elegí...' }, ...activeBrands.map((brand) => ({ value: brand.id, label: brand.name }))],
+    [activeBrands],
   );
 
   async function handleCreateBrand() {
@@ -171,37 +181,29 @@ export function AdminDevicesCatalogPage() {
       <section className="card">
         <div className="card-head">
           <div className="text-xl font-black tracking-tight text-zinc-900">Filtro de catálogo</div>
-          <p className="mt-1 text-sm text-zinc-500">Selecciona tipo y marca para administrar cada bloque.</p>
+          <p className="mt-1 text-sm text-zinc-500">Seleccioná tipo y marca para administrar cada bloque.</p>
         </div>
         <div className="card-body space-y-3">
           <div className="grid gap-4 lg:grid-cols-2">
             <div>
               <label className="mb-1.5 block text-sm font-bold text-zinc-800">Tipo</label>
-              <select
+              <CustomSelect
                 value={deviceType}
-                onChange={(e) => setDeviceType(e.target.value)}
-                className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm"
-              >
-                <option value="">Elegí...</option>
-                {deviceTypes.map((t) => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
-                ))}
-              </select>
+                onChange={setDeviceType}
+                options={deviceTypeOptions}
+                triggerClassName="min-h-11 rounded-2xl font-bold"
+                ariaLabel="Seleccionar tipo de dispositivo"
+              />
             </div>
             <div>
               <label className="mb-1.5 block text-sm font-bold text-zinc-800">Marca (para modelos)</label>
-              <select
+              <CustomSelect
                 value={selectedBrandId}
-                onChange={(e) => setSelectedBrandId(e.target.value)}
-                className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm"
-              >
-                <option value="">{activeBrands[0]?.name ?? 'Motorola'}</option>
-                {activeBrands.map((brand) => (
-                  <option key={brand.id} value={brand.id}>
-                    {brand.name}
-                  </option>
-                ))}
-              </select>
+                onChange={setSelectedBrandId}
+                options={brandOptions}
+                triggerClassName="min-h-11 rounded-2xl font-bold"
+                ariaLabel="Seleccionar marca"
+              />
             </div>
           </div>
           <div className="grid gap-2 text-xs text-zinc-500 lg:grid-cols-3">

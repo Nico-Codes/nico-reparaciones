@@ -1,5 +1,7 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { ActionDropdown } from '@/components/ui/action-dropdown';
+import { CustomSelect } from '@/components/ui/custom-select';
 import { ordersApi } from './api';
 import type { OrderItem } from './types';
 
@@ -34,6 +36,11 @@ function orderStatusBadgeClass(status: string) {
   }
 }
 
+const ORDER_STATUS_OPTIONS = ORDER_STATUSES.map((status) => ({
+  value: status,
+  label: orderStatusLabel(status),
+}));
+
 export function AdminOrderDetailPage() {
   const { id = '' } = useParams();
   const [item, setItem] = useState<OrderItem | null>(null);
@@ -63,13 +70,15 @@ export function AdminOrderDetailPage() {
     void load();
   }, [id]);
 
-  async function saveStatus() {
+  async function saveStatus(nextStatus?: string) {
     if (!item) return;
+    const targetStatus = nextStatus ?? status;
     setSaving(true);
     setError('');
     try {
-      const res = await ordersApi.adminUpdateStatus(item.id, status);
+      const res = await ordersApi.adminUpdateStatus(item.id, targetStatus);
       setItem(res.item);
+      setStatus(res.item.status);
       setComment('');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error guardando estado');
@@ -105,7 +114,7 @@ export function AdminOrderDetailPage() {
   }
 
   const contactValue = item.user?.email || 'Sin contacto';
-  const whatsappMessage = `Hola ${item.user?.name || 'cliente'}, tu pedido #${item.id.slice(0, 2)} está en estado: ${orderStatusLabel(status || item.status)}.`;
+  const whatsappMessage = `Hola ${item.user?.name || 'cliente'}, tu pedido #${item.id.slice(0, 6)} está en estado: ${orderStatusLabel(status || item.status)}.`;
   const waHistoryDate = new Date().toLocaleDateString('es-AR');
   const waHistoryTime = new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
 
@@ -133,7 +142,42 @@ export function AdminOrderDetailPage() {
                 Ticket
               </Link>
               <span className={orderStatusBadgeClass(item.status)}>{orderStatusLabel(item.status)}</span>
-              <button type="button" className="btn-primary !h-9 !rounded-xl px-4 text-sm font-bold">Estado</button>
+              <ActionDropdown
+                renderTrigger={({ open, toggle, triggerRef, menuId }) => (
+                  <button
+                    ref={triggerRef}
+                    type="button"
+                    aria-haspopup="menu"
+                    aria-controls={menuId}
+                    aria-expanded={open ? 'true' : 'false'}
+                    onClick={toggle}
+                    className="btn-primary !h-9 !rounded-xl px-4 text-sm font-bold"
+                  >
+                    Estado
+                  </button>
+                )}
+                menuClassName="min-w-[13rem]"
+              >
+                {(close) => (
+                  <>
+                    {ORDER_STATUS_OPTIONS.map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        className={`dropdown-item ${item.status === option.value ? 'bg-sky-50 text-sky-700 ring-1 ring-sky-100' : ''}`}
+                        onClick={() => {
+                          void saveStatus(option.value);
+                          close();
+                        }}
+                        disabled={item.status === option.value}
+                        aria-disabled={item.status === option.value ? 'true' : 'false'}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </>
+                )}
+              </ActionDropdown>
             </div>
             <div className="mt-1 text-xs uppercase tracking-wide text-zinc-500">Total</div>
             <div className="text-2xl font-black tracking-tight text-zinc-900">${item.total.toLocaleString('es-AR')}</div>
@@ -146,7 +190,7 @@ export function AdminOrderDetailPage() {
           <section className="card">
             <div className="card-head flex items-center justify-between gap-2">
               <div className="text-xl font-black tracking-tight text-zinc-900">Acciones rápidas</div>
-              <span className="badge-zinc">Pedido #{item.id.slice(0, 2)}</span>
+              <span className="badge-zinc">Pedido #{item.id.slice(0, 6)}</span>
             </div>
             <div className="card-body space-y-2">
               <div className="grid grid-cols-2 gap-2">
@@ -178,7 +222,7 @@ export function AdminOrderDetailPage() {
                 <span className="font-bold text-zinc-900">{item.user?.name || 'Venta rápida'}</span>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <span className="text-zinc-500">Teléfono</span>
+                <span className="text-zinc-500">Contacto</span>
                 <span className="font-bold text-zinc-900">{item.user?.email || 'No informado'}</span>
               </div>
             </div>
@@ -192,11 +236,14 @@ export function AdminOrderDetailPage() {
             <div className="card-body space-y-3">
               <div>
                 <label className="mb-1 block text-sm font-bold text-zinc-700">Estado</label>
-                <select value={status} onChange={(e) => setStatus(e.target.value)} className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm">
-                  {ORDER_STATUSES.map((s) => (
-                    <option key={s} value={s}>{orderStatusLabel(s)}</option>
-                  ))}
-                </select>
+                <CustomSelect
+                  value={status}
+                  onChange={setStatus}
+                  options={ORDER_STATUS_OPTIONS}
+                  className="w-full"
+                  triggerClassName="min-h-10 rounded-xl"
+                  ariaLabel="Estado del pedido"
+                />
               </div>
               <div>
                 <label className="mb-1 block text-sm font-bold text-zinc-700">Comentario (opcional)</label>
@@ -243,7 +290,7 @@ export function AdminOrderDetailPage() {
                   <div className="flex items-start justify-between gap-2 text-xs">
                     <div>
                       <div className="font-black text-zinc-900">{waSent ? 'Enviado' : 'Pendiente'}</div>
-                      <div className="mt-0.5 text-zinc-600">Tel: {contactValue} · Por: —</div>
+                      <div className="mt-0.5 text-zinc-600">Contacto: {contactValue} · Por: —</div>
                     </div>
                     <div className="text-zinc-500">{waHistoryDate} {waHistoryTime}</div>
                   </div>

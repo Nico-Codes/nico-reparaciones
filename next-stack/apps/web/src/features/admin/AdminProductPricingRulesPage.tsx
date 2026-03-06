@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { CustomSelect } from '@/components/ui/custom-select';
 import { catalogAdminApi, type AdminCategory, type AdminProduct } from '@/features/catalogAdmin/api';
 import { productPricingApi, type ProductPricingRuleItem } from '@/features/catalogAdmin/productPricingApi';
 
@@ -91,12 +92,29 @@ export function AdminProductPricingRulesPage() {
   }, []);
 
   const productOptions = useMemo(
-    () => (form.categoryId ? products.filter((p) => p.categoryId === form.categoryId) : products),
+    () => (form.categoryId ? products.filter((product) => product.categoryId === form.categoryId) : products),
     [products, form.categoryId],
   );
   const simProductOptions = useMemo(
-    () => (simCategoryId ? products.filter((p) => p.categoryId === simCategoryId) : products),
+    () => (simCategoryId ? products.filter((product) => product.categoryId === simCategoryId) : products),
     [products, simCategoryId],
+  );
+
+  const categorySelectOptions = useMemo(
+    () => [{ value: '', label: 'Todas' }, ...categories.map((category) => ({ value: category.id, label: category.name }))],
+    [categories],
+  );
+  const simCategoryOptions = useMemo(
+    () => [{ value: '', label: 'Seleccionar categoría...' }, ...categories.map((category) => ({ value: category.id, label: category.name }))],
+    [categories],
+  );
+  const simProductSelectOptions = useMemo(
+    () => [{ value: '', label: 'Todos' }, ...simProductOptions.map((product) => ({ value: product.id, label: product.name }))],
+    [simProductOptions],
+  );
+  const formProductOptions = useMemo(
+    () => [{ value: '', label: 'Todos' }, ...productOptions.map((product) => ({ value: product.id, label: product.name }))],
+    [productOptions],
   );
 
   useEffect(() => {
@@ -202,7 +220,7 @@ export function AdminProductPricingRulesPage() {
         priority: Number(row.priority || 0),
         active: row.active,
       });
-      setRules((prev) => prev.map((x) => (x.id === row.id ? fromApiRule(res.item) : x)));
+      setRules((prev) => prev.map((item) => (item.id === row.id ? fromApiRule(res.item) : item)));
       setSuccess('Regla guardada.');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo guardar la regla');
@@ -217,7 +235,7 @@ export function AdminProductPricingRulesPage() {
     setSuccess('');
     try {
       await productPricingApi.deleteRule(id);
-      setRules((prev) => prev.filter((r) => r.id !== id));
+      setRules((prev) => prev.filter((rule) => rule.id !== id));
       setSuccess('Regla eliminada.');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo eliminar la regla');
@@ -226,8 +244,8 @@ export function AdminProductPricingRulesPage() {
     }
   }
 
-  const categoryName = (id: string | null) => categories.find((c) => c.id === id)?.name ?? 'Todas';
-  const productName = (id: string | null) => products.find((p) => p.id === id)?.name ?? 'Todos';
+  const categoryName = (id: string | null) => categories.find((category) => category.id === id)?.name ?? 'Todas';
+  const productName = (id: string | null) => products.find((product) => product.id === id)?.name ?? 'Todos';
 
   return (
     <div className="store-shell space-y-5">
@@ -236,7 +254,7 @@ export function AdminProductPricingRulesPage() {
           <div>
             <h1 className="text-2xl font-black tracking-tight text-zinc-900">Reglas de productos (costo -&gt; venta)</h1>
             <p className="mt-1 text-sm text-zinc-600">
-              Define margen por categoría o producto. El sistema aplica la mejor coincidencia.
+              Definí margen por categoría o producto. El sistema aplica la mejor coincidencia.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -258,7 +276,7 @@ export function AdminProductPricingRulesPage() {
             <div>
               <label className="mb-2 block text-sm font-bold text-zinc-900">Margen por defecto (%)</label>
               <input value={defaultMargin} onChange={(e) => setDefaultMargin(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" />
-              <p className="mt-2 text-sm text-zinc-500">Se usa cuando no hay una regla puntual para el producto o categoría.</p>
+              <p className="mt-2 text-sm text-zinc-500">Se usa cuando no hay una regla puntual para el producto o la categoría.</p>
             </div>
             <label className="flex items-center gap-2 text-sm font-bold text-zinc-900">
               <input type="checkbox" checked={blockNegative} onChange={(e) => setBlockNegative(e.target.checked)} className="h-4 w-4" />
@@ -279,17 +297,26 @@ export function AdminProductPricingRulesPage() {
           <div className="card-body space-y-3">
             <div>
               <label className="mb-2 block text-sm font-bold text-zinc-900">Categoría</label>
-              <select value={simCategoryId} onChange={(e) => { setSimCategoryId(e.target.value); setSimProductId(''); }} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm">
-                <option value="">Seleccionar categoría...</option>
-                {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+              <CustomSelect
+                value={simCategoryId}
+                onChange={(value) => {
+                  setSimCategoryId(value);
+                  setSimProductId('');
+                }}
+                options={simCategoryOptions}
+                triggerClassName="min-h-11 rounded-2xl font-bold"
+                ariaLabel="Seleccionar categoría para simulación"
+              />
             </div>
             <div>
               <label className="mb-2 block text-sm font-bold text-zinc-900">Producto (opcional)</label>
-              <select value={simProductId} onChange={(e) => setSimProductId(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm">
-                <option value="">Todos</option>
-                {simProductOptions.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
+              <CustomSelect
+                value={simProductId}
+                onChange={setSimProductId}
+                options={simProductSelectOptions}
+                triggerClassName="min-h-11 rounded-2xl font-bold"
+                ariaLabel="Seleccionar producto para simulación"
+              />
             </div>
             <div>
               <label className="mb-2 block text-sm font-bold text-zinc-900">Costo</label>
@@ -297,7 +324,7 @@ export function AdminProductPricingRulesPage() {
             </div>
             <div className="rounded-2xl border border-zinc-200 bg-white px-3 py-3 text-sm text-zinc-700">
               {!simCategoryId
-                ? 'Selecciona categoría para simular.'
+                ? 'Seleccioná una categoría para simular.'
                 : simLoading
                   ? 'Simulando...'
                   : simResult
@@ -315,30 +342,30 @@ export function AdminProductPricingRulesPage() {
         <div className="card-body space-y-4">
           <div>
             <label className="mb-2 block text-sm font-bold text-zinc-900">Nombre *</label>
-            <input value={form.name} onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))} placeholder="Ej: Cables económicos (< 5000) +50%" className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" />
+            <input value={form.name} onChange={(e) => setForm((state) => ({ ...state, name: e.target.value }))} placeholder="Ej: Cables económicos (< 5000) +50%" className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" />
           </div>
           <div className="grid gap-3 md:grid-cols-3">
             <SelectField
               label="Categoría (opcional)"
               value={form.categoryId}
-              onChange={(v) => setForm((s) => ({ ...s, categoryId: v, productId: '' }))}
-              options={[{ value: '', label: 'Todas' }, ...categories.map((c) => ({ value: c.id, label: c.name }))]}
+              onChange={(value) => setForm((state) => ({ ...state, categoryId: value, productId: '' }))}
+              options={categorySelectOptions}
             />
             <SelectField
               label="Producto (opcional)"
               value={form.productId}
-              onChange={(v) => setForm((s) => ({ ...s, productId: v }))}
-              options={[{ value: '', label: 'Todos' }, ...productOptions.map((p) => ({ value: p.id, label: p.name }))]}
+              onChange={(value) => setForm((state) => ({ ...state, productId: value }))}
+              options={formProductOptions}
             />
-            <InputField label="Margen % *" value={form.marginPercent} onChange={(v) => setForm((s) => ({ ...s, marginPercent: v }))} />
+            <InputField label="Margen % *" value={form.marginPercent} onChange={(value) => setForm((state) => ({ ...state, marginPercent: value }))} />
           </div>
           <div className="grid gap-3 md:grid-cols-3">
-            <InputField label="Costo mínimo" value={form.costMin} onChange={(v) => setForm((s) => ({ ...s, costMin: v }))} placeholder="Ej: 0" />
-            <InputField label="Costo máximo" value={form.costMax} onChange={(v) => setForm((s) => ({ ...s, costMax: v }))} placeholder="Ej: 5000" />
-            <InputField label="Prioridad" value={form.priority} onChange={(v) => setForm((s) => ({ ...s, priority: v }))} />
+            <InputField label="Costo mínimo" value={form.costMin} onChange={(value) => setForm((state) => ({ ...state, costMin: value }))} placeholder="Ej: 0" />
+            <InputField label="Costo máximo" value={form.costMax} onChange={(value) => setForm((state) => ({ ...state, costMax: value }))} placeholder="Ej: 5000" />
+            <InputField label="Prioridad" value={form.priority} onChange={(value) => setForm((state) => ({ ...state, priority: value }))} />
           </div>
           <label className="flex items-center gap-2 text-sm font-bold text-zinc-900">
-            <input type="checkbox" checked={form.active} onChange={(e) => setForm((s) => ({ ...s, active: e.target.checked }))} className="h-4 w-4" />
+            <input type="checkbox" checked={form.active} onChange={(e) => setForm((state) => ({ ...state, active: e.target.checked }))} className="h-4 w-4" />
             Regla activa
           </label>
           <div className="flex justify-end">
@@ -361,26 +388,28 @@ export function AdminProductPricingRulesPage() {
             {rules.map((rule) => (
               <div key={rule.id} className="rounded-2xl border border-zinc-200 bg-white p-3">
                 <div className="grid gap-3 md:grid-cols-[1.6fr_0.9fr_0.9fr_0.7fr_0.8fr_0.8fr_0.8fr]">
-                  <EditableInput label="Nombre" value={rule.name} onChange={(v) => patchRule(rule.id, { name: v })} />
+                  <EditableInput label="Nombre" value={rule.name} onChange={(value) => patchRule(rule.id, { name: value })} />
                   <EditableSelect
                     label="Categoría"
                     value={rule.categoryId ?? ''}
-                    onChange={(v) => patchRule(rule.id, { categoryId: v || null, productId: null })}
-                    options={[{ value: '', label: 'Todas' }, ...categories.map((c) => ({ value: c.id, label: c.name }))]}
+                    onChange={(value) => patchRule(rule.id, { categoryId: value || null, productId: null })}
+                    options={categorySelectOptions}
                   />
                   <EditableSelect
                     label="Producto"
                     value={rule.productId ?? ''}
-                    onChange={(v) => patchRule(rule.id, { productId: v || null })}
+                    onChange={(value) => patchRule(rule.id, { productId: value || null })}
                     options={[
                       { value: '', label: 'Todos' },
-                      ...products.filter((p) => !rule.categoryId || p.categoryId === rule.categoryId).map((p) => ({ value: p.id, label: p.name })),
+                      ...products
+                        .filter((product) => !rule.categoryId || product.categoryId === rule.categoryId)
+                        .map((product) => ({ value: product.id, label: product.name })),
                     ]}
                   />
-                  <EditableInput label="%" value={rule.marginPercent} onChange={(v) => patchRule(rule.id, { marginPercent: v })} />
-                  <EditableInput label="Min" value={rule.costMin} onChange={(v) => patchRule(rule.id, { costMin: v })} />
-                  <EditableInput label="Max" value={rule.costMax} onChange={(v) => patchRule(rule.id, { costMax: v })} />
-                  <EditableInput label="Prioridad" value={rule.priority} onChange={(v) => patchRule(rule.id, { priority: v })} />
+                  <EditableInput label="%" value={rule.marginPercent} onChange={(value) => patchRule(rule.id, { marginPercent: value })} />
+                  <EditableInput label="Min" value={rule.costMin} onChange={(value) => patchRule(rule.id, { costMin: value })} />
+                  <EditableInput label="Max" value={rule.costMax} onChange={(value) => patchRule(rule.id, { costMax: value })} />
+                  <EditableInput label="Prioridad" value={rule.priority} onChange={(value) => patchRule(rule.id, { priority: value })} />
                 </div>
                 <div className="mt-2 text-xs text-zinc-500">
                   Aplica a: {categoryName(rule.categoryId)} / {productName(rule.productId)}
@@ -416,15 +445,19 @@ function SelectField({
 }: {
   label: string;
   value: string;
-  onChange: (v: string) => void;
+  onChange: (value: string) => void;
   options: Array<{ value: string; label: string }>;
 }) {
   return (
     <div>
       <label className="mb-2 block text-sm font-bold text-zinc-900">{label}</label>
-      <select value={value} onChange={(e) => onChange(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm">
-        {options.map((option) => <option key={option.value || '__all'} value={option.value}>{option.label}</option>)}
-      </select>
+      <CustomSelect
+        value={value}
+        onChange={onChange}
+        options={options}
+        triggerClassName="min-h-11 rounded-2xl font-bold"
+        ariaLabel={label}
+      />
     </div>
   );
 }
@@ -437,7 +470,7 @@ function InputField({
 }: {
   label: string;
   value: string;
-  onChange: (v: string) => void;
+  onChange: (value: string) => void;
   placeholder?: string;
 }) {
   return (
@@ -448,7 +481,7 @@ function InputField({
   );
 }
 
-function EditableInput({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+function EditableInput({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
   return (
     <div>
       <div className="mb-2 text-sm font-black text-zinc-700">{label}</div>
@@ -465,15 +498,19 @@ function EditableSelect({
 }: {
   label: string;
   value: string;
-  onChange: (v: string) => void;
+  onChange: (value: string) => void;
   options: Array<{ value: string; label: string }>;
 }) {
   return (
     <div>
       <div className="mb-2 text-sm font-black text-zinc-700">{label}</div>
-      <select value={value} onChange={(e) => onChange(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm">
-        {options.map((option) => <option key={option.value || '__all'} value={option.value}>{option.label}</option>)}
-      </select>
+      <CustomSelect
+        value={value}
+        onChange={onChange}
+        options={options}
+        triggerClassName="min-h-11 rounded-2xl font-bold"
+        ariaLabel={label}
+      />
     </div>
   );
 }
