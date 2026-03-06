@@ -3,8 +3,8 @@ import path from 'node:path';
 import process from 'node:process';
 import { copyFile, mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { config as loadEnv } from 'dotenv';
 import { PrismaClient } from '@prisma/client';
+import { loadCanonicalEnv, resolveCanonicalEnvPaths } from '../src/load-canonical-env.js';
 
 type CliOptions = {
   dryRun: boolean;
@@ -27,7 +27,7 @@ const apiRoot = path.resolve(__dirname, '..');
 const nextStackRoot = path.resolve(apiRoot, '..', '..');
 const repoRoot = path.resolve(nextStackRoot, '..');
 
-const envCandidates = [path.join(apiRoot, '.env'), path.join(nextStackRoot, '.env')];
+const envCandidates = resolveCanonicalEnvPaths();
 const targetStorageRoot = path.join(nextStackRoot, 'apps', 'web', 'public', 'storage');
 const sourceStorageCandidates = [
   path.join(repoRoot, 'storage', 'app', 'public'),
@@ -44,11 +44,7 @@ function parseOptions(argv: string[]): CliOptions {
 }
 
 function loadEnvFiles() {
-  for (const envPath of envCandidates) {
-    if (fs.existsSync(envPath)) {
-      loadEnv({ path: envPath, override: false });
-    }
-  }
+  loadCanonicalEnv();
 }
 
 function cleanNullable(value: unknown) {

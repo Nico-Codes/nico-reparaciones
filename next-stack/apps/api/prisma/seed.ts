@@ -1,5 +1,7 @@
-import 'dotenv/config';
 import { PrismaClient, Prisma } from '@prisma/client';
+import { loadCanonicalEnv } from '../src/load-canonical-env.js';
+
+loadCanonicalEnv();
 
 const prisma = new PrismaClient();
 

@@ -1,4 +1,4 @@
-import fs from 'node:fs';
+﻿import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { config as loadEnv } from 'dotenv';
@@ -78,7 +78,7 @@ if (!corsOrigins) {
 }
 
 if (fs.existsSync(apiEnv)) {
-  warnings.push('apps/api/.env existe; ahora los scripts Prisma usan next-stack/.env. Evitá duplicar valores si no es necesario.');
+  warnings.push('apps/api/.env existe; el canon es next-stack/.env. Eliminá o ignorá ese archivo para evitar divergencia.');
 }
 
 if (get('API_URL') && get('VITE_API_URL') && get('API_URL') !== get('VITE_API_URL')) {
@@ -104,3 +104,4 @@ if (errors.length) {
 }
 
 console.log('[env:check] OK');
+

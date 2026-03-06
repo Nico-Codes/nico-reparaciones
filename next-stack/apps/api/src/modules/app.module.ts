@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { loadCanonicalEnv, resolveCanonicalEnvPaths } from '../load-canonical-env.js';
 import { AdminModule } from './admin/admin.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { CartModule } from './cart/cart.module.js';
@@ -16,12 +17,17 @@ import { PrismaModule } from './prisma/prisma.module.js';
 import { RepairsModule } from './repairs/repairs.module.js';
 import { StoreModule } from './store/store.module.js';
 
+loadCanonicalEnv();
+
 const throttleTtlMs = Number(process.env.THROTTLE_TTL_MS ?? 60_000);
 const throttleLimit = Number(process.env.THROTTLE_LIMIT ?? 120);
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: resolveCanonicalEnvPaths(),
+    }),
     ThrottlerModule.forRoot([
       {
         ttl: throttleTtlMs,

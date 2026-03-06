@@ -8,8 +8,11 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { HttpExceptionFilter } from './common/http-exception.filter.js';
 import { appLog, isTruthy } from './common/logging.js';
+import { loadCanonicalEnv } from './load-canonical-env.js';
 import { AppModule } from './modules/app.module.js';
 import { PrismaService } from './modules/prisma/prisma.service.js';
+
+loadCanonicalEnv();
 
 function env(name: string) {
   return (process.env[name] ?? '').trim();

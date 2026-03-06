@@ -2,8 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { config as loadEnv } from 'dotenv';
 import { PrismaClient } from '@prisma/client';
+import { loadCanonicalEnv, resolveCanonicalEnvPaths } from '../src/load-canonical-env.js';
 
 type CliOptions = {
   dryRun: boolean;
@@ -97,14 +97,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const apiRoot = path.resolve(__dirname, '..');
 const monorepoRoot = path.resolve(apiRoot, '..', '..');
-const envCandidates = [path.join(apiRoot, '.env'), path.join(monorepoRoot, '.env')];
+const envCandidates = resolveCanonicalEnvPaths();
 
 function loadEnvFiles() {
-  for (const envPath of envCandidates) {
-    if (fs.existsSync(envPath)) {
-      loadEnv({ path: envPath, override: false });
-    }
-  }
+  loadCanonicalEnv();
 }
 
 function parseOptions(argv: string[]): CliOptions {

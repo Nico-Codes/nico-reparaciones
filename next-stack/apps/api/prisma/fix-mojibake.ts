@@ -2,8 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { config as loadEnv } from 'dotenv';
 import { PrismaClient } from '@prisma/client';
+import { loadCanonicalEnv, resolveCanonicalEnvPaths } from '../src/load-canonical-env.js';
 
 type CliOptions = {
   dryRun: boolean;
@@ -25,20 +25,14 @@ type ModelStats = {
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const apiRoot = path.resolve(__dirname, '..');
-const monorepoRoot = path.resolve(apiRoot, '..', '..');
-const envCandidates = [path.join(apiRoot, '.env'), path.join(monorepoRoot, '.env')];
+const envCandidates = resolveCanonicalEnvPaths();
 
 // Typical UTF-8/Latin1 mojibake markers.
 const suspiciousPattern = /\u00C3[\u0080-\u00BF]|\u00C2[\u0080-\u00BF]|\u00E2[\u0080-\u00BF]{1,2}|\uFFFD/u;
 const invalidControlChars = /[\u0000-\u0008\u000B\u000C\u000E-\u001F]/u;
 
 function loadEnvFiles() {
-  for (const envPath of envCandidates) {
-    if (fs.existsSync(envPath)) {
-      loadEnv({ path: envPath, override: false });
-    }
-  }
+  loadCanonicalEnv();
 }
 
 function parseOptions(argv: string[]): CliOptions {
