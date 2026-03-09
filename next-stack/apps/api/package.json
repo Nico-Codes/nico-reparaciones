@@ -20,15 +20,8 @@
     "db:studio": "dotenv -e ../../.env -- prisma studio",
     "db:seed": "dotenv -e ../../.env -- tsx prisma/seed.ts",
     "db:seed:demo": "dotenv -e ../../.env -- tsx prisma/seed.ts",
-    "legacy:migrate:settings:deprecated": "dotenv -e ../../.env -- tsx ../../legacy-support/deprecated/api/migrate-legacy-settings.ts",
-    "legacy:migrate:settings:cleanup:deprecated": "dotenv -e ../../.env -- tsx ../../legacy-support/deprecated/api/migrate-legacy-settings.ts --cleanup",
     "db:fix-mojibake": "dotenv -e ../../.env -- tsx prisma/fix-mojibake.ts --apply",
-    "db:fix-mojibake:dry-run": "dotenv -e ../../.env -- tsx prisma/fix-mojibake.ts",
-    "legacy:migrate:product-images:deprecated": "dotenv -e ../../.env -- tsx ../../legacy-support/deprecated/api/migrate-legacy-product-images.ts",
-    "legacy:migrate:product-images:dry-run:deprecated": "dotenv -e ../../.env -- tsx ../../legacy-support/deprecated/api/migrate-legacy-product-images.ts --dry-run",
-    "legacy:migrate:product-images:cleanup:deprecated": "dotenv -e ../../.env -- tsx ../../legacy-support/deprecated/api/migrate-legacy-product-images.ts --cleanup-legacy",
-    "legacy:migrate:visual-assets:deprecated": "dotenv -e ../../.env -- tsx ../../legacy-support/deprecated/api/migrate-legacy-visual-assets.ts",
-    "legacy:migrate:visual-assets:dry-run:deprecated": "dotenv -e ../../.env -- tsx ../../legacy-support/deprecated/api/migrate-legacy-visual-assets.ts --dry-run"
+    "db:fix-mojibake:dry-run": "dotenv -e ../../.env -- tsx prisma/fix-mojibake.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.6",

@@ -1,96 +1,53 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# NicoReparaciones
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Estado actual del repositorio:
 
-> Estado actual del repo: esta raiz Laravel es historica y de soporte legacy. El codigo operativo canonico vive en `next-stack/`. Ver `project-docs/ROOT_LEGACY_POLICY.md` y `project-docs/ROOT_LEGACY_RETIREMENT_CHECKLIST.md`.
+- stack operativo canonico: `next-stack/`
+- root Laravel legacy: retirado del flujo operativo y en proceso de eliminacion total
+- documentacion viva: `project-docs/`
+- runbooks tecnicos del stack nuevo: `next-stack/docs/`
+- contexto funcional/historico extendido: `docs/CONOCIMIENTO_COMPLETO_NICOREPARACIONES.txt`
 
-## NicoReparaciones - Operacion rapida
+## Stack activo
 
-- Health check operativo: `php artisan ops:health-check`
-- Modo estricto: `php artisan ops:health-check --strict`
-- Modo produccion desde local/staging: `php artisan ops:health-check --strict --assume-production`
-- En produccion, el health-check marca `FAIL` si mail no esta listo para envio real (`MAIL_MAILER=log/array` o faltan `MAIL_FROM_ADDRESS`, `MAIL_HOST`, `MAIL_PORT` cuando aplica).
-- Plantilla recomendada de produccion: `/.env.production.example`
-- Preflight de produccion (health strict + caches + health strict): `composer run ops:prepare:production`
-- En Windows tambien disponible: `nico-dev.bat prod-preflight`
-- Backup operativo (DB + archivos): `php artisan ops:backup --only=all`
-- Solo backup de base de datos: `php artisan ops:backup --only=db`
-- Solo backup de archivos: `php artisan ops:backup --only=files`
-- Prune de backups viejos: `php artisan ops:backup --prune-only`
-- Test de alertas operativas: `php artisan ops:alert-test`
-- Envio manual reporte semanal dashboard: `php artisan ops:dashboard-report-email --range=30 --to=ops@tu-dominio.com` (tambien disponible en Admin > Configuracion)
-- Envio manual alertas operativas (pedidos/reparaciones demoradas): `php artisan ops:operational-alerts-email --force`
-- Prueba rapida de correo por terminal: `php artisan ops:mail-test --to=ops@tu-dominio.com` (agrega `--force-sync` para bypass de cola)
-- Mail async opcional (recomendado prod): `OPS_MAIL_ASYNC_ENABLED=true` + worker `php artisan queue:work --queue=mail,default --tries=3 --backoff=60`
-- En local, `nico-dev.bat start` levanta/detiene automaticamente Mailpit (`http://127.0.0.1:8025`) y el queue worker de mail si `OPS_MAIL_ASYNC_ENABLED=true`.
-- Validacion local completa (health + mail + tests criticos): `nico-dev.bat local-ready` o `composer run ops:local:ready`
-- Validacion local integral (funcional + E2E critico): `nico-dev.bat project-ready` (usar `nico-dev.bat project-ready-full` para E2E completo)
-- Quality gate local: `composer quality`
-- Checklist de produccion: `docs/OPERACION_PRODUCCION.md`
-- Checklist de cierre mail local: `docs/MAIL_QA_CIERRE.md`
-- Checklist de validacion local integral: `docs/LOCAL_READY_CHECK.md`
-- Guia de scripts batch: `docs/BAT_SCRIPTS_GUIDE.md`
-- E2E (Playwright):
-  - Instalar navegador: `npm run e2e:install`
-  - Ejecutar suite critica: `npm run e2e:critical`
-  - Ejecutar suite completa: `npm run e2e` o `npm run e2e:full`
-  - Runner local Windows: `nico-dev.bat e2e` (critico) / `nico-dev.bat e2e-full`
-  - Ver reporte HTML: `npm run e2e:report`
-  - Ejecutar contra un server ya levantado: `E2E_BASE_URL=http://127.0.0.1:8000 npm run e2e`
-- Checklist E2E local: `docs/E2E_LOCAL_READY_CHECK.md`
+- Frontend: `React + TypeScript + Vite + Tailwind CSS`
+- Backend: `NestJS + TypeScript + Prisma`
+- Base principal: `PostgreSQL`
+- Contratos compartidos: `next-stack/packages/contracts`
 
-## About Laravel
+## Comandos principales
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Desde la raiz:
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- `nico-dev.bat setup`
+- `nico-dev.bat start`
+- `nico-dev.bat stop`
+- `nico-dev.bat qa`
+- `nico-dev.bat preprod`
+- `nico-dev.bat close`
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Directo sobre `next-stack/`:
 
-## Learning Laravel
+```bash
+npm --prefix next-stack install
+npm --prefix next-stack run env:check
+npm --prefix next-stack run dev:api
+npm --prefix next-stack run dev:web
+npm --prefix next-stack run smoke:backend
+npm --prefix next-stack run smoke:web
+npm --prefix next-stack run qa:route-parity
+npm --prefix next-stack run qa:migration:close
+```
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+## Fuente de verdad del repo
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+- arquitectura y gobernanza: `project-docs/`
+- codigo operativo: `next-stack/apps/api`, `next-stack/apps/web`
+- assets canonicos: `next-stack/apps/web/public`
+- entorno canonico: `next-stack/.env`
 
-## Laravel Sponsors
+## Notas
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
-
-### Premium Partners
-
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
-
-## Contributing
-
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+- No usar tooling Laravel root ni asumir que la raiz sigue siendo runtime valido.
+- No reintroducir soporte legacy fuera de `project-docs/` sin una decision tecnica documentada.
+- Antes de tocar partes sensibles del repo, revisar `AGENTS.md` y `project-docs/WORKFLOW_AI.md`.

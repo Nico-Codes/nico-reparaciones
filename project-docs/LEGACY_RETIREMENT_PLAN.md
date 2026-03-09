@@ -1,49 +1,23 @@
-﻿# LEGACY_RETIREMENT_PLAN
+# LEGACY_RETIREMENT_PLAN
 
-## Objetivo
+## Estado actual
 
-Definir un retiro ordenado del soporte legacy restante sin mezclar runtime canonico con herramientas historicas.
+El retiro del legacy quedo materialmente ejecutado.
 
-## Estado despues de Fase 4F
+- runtime Laravel root: retirado
+- tooling `legacy-support`: retirado
+- auth social legacy: retirada
+- parity visual legacy: retirada del flujo del repo
+- migradores legacy: retirados del repo activo
 
-- Google auth legacy: retirado.
-- `laravel/socialite`: retirado.
-- `public/` root: mirror legacy, no canon.
-- parity visual legacy: deprecated y fuera del gate principal.
-- migradores legacy: deprecated y fuera del flujo normal.
-- soporte legacy activo real: compatibilidad de assets y existencia del root Laravel historico.
+## Lo que queda por decidir
 
-## Orden recomendado de retiro
+### Etapa final opcional
+1. conservar o no `docs/CONOCIMIENTO_COMPLETO_NICOREPARACIONES.txt` como contexto historico extendido
+2. conservar o no los PDFs historicos de raiz
+3. hacer una limpieza final de menciones historicas si se busca un repo mas austero
 
-### Etapa 1. Retiro efectivo de tooling deprecated
-1. validar con humano que no se necesitan rescates adicionales desde legacy
-2. eliminar `next-stack/legacy-support/deprecated/api/*`
-3. eliminar `next-stack/legacy-support/deprecated/qa/qa-visual-parity.mjs`
-4. eliminar `next-stack/legacy-support/deprecated/sqlite/legacy-visual-parity.sqlite`
+## Conclusion
 
-Bloquea:
-- limpieza fuerte del repo legacy con menos ambiguedad
-
-### Etapa 2. Retiro de duplicados root y mirrors
-1. confirmar que `public/` root ya no se necesita ni siquiera como mirror
-2. retirar duplicados de `public/` root
-3. retirar fallback historico de `storage/app/public` y `public/storage` si sigue vacio
-
-### Etapa 3. Composer/runtime residual del root
-1. auditar `predis/predis`
-2. decidir si el root Laravel debe quedar archivado o retirado
-3. revisar si `tests/`, `e2e/`, `scripts/`, `tools/` del root conservan algun valor
-
-### Etapa 4. Retiro final del root
-Prerequisitos minimos:
-- sin tooling deprecated vivo
-- sin dependencia real de `public/` root
-- composer residual auditado
-- decision humana explicita sobre archivo o retiro total
-
-## Bloqueadores actuales del retiro final
-
-- existencia del runtime legacy root como contexto historico
-- assets duplicados del root todavia presentes
-- decision pendiente sobre `predis/predis`
-- residuos de esquema legacy no prioritarios
+El repo ya no depende del legacy para operar, validar ni desarrollar.
+El siguiente paso ya no es tecnico-estructural sino de curacion documental final.

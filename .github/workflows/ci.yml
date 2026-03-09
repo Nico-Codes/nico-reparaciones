@@ -12,62 +12,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  backend-tests:
-    name: Backend Tests (PHP 8.2)
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: "8.2"
-          extensions: mbstring, sqlite, pdo_sqlite, dom, curl
-          coverage: none
-
-      - name: Install Composer dependencies
-        uses: ramsey/composer-install@v3
-        with:
-          composer-options: --no-interaction --prefer-dist --no-progress
-
-      - name: Prepare environment
-        run: |
-          cp .env.example .env
-          php artisan key:generate --ansi
-
-      - name: Run tests
-        run: php artisan test --ansi
-
-      - name: Prepare sqlite database for health check
-        run: |
-          mkdir -p database
-          touch database/database.sqlite
-          DB_CONNECTION=sqlite \
-          DB_DATABASE=database/database.sqlite \
-          CACHE_STORE=file \
-          ADMIN_COUNTERS_CACHE_STORE=file \
-          QUEUE_CONNECTION=database \
-          php artisan migrate --force --ansi
-
-      - name: Run strict ops health check
-        run: |
-          APP_ENV=local \
-          APP_DEBUG=false \
-          APP_URL=https://ci.local \
-          SESSION_SECURE_COOKIE=true \
-          ADMIN_ALLOWED_EMAILS=ci@example.com \
-          ADMIN_2FA_SESSION_MINUTES=15 \
-          DB_CONNECTION=sqlite \
-          DB_DATABASE=database/database.sqlite \
-          CACHE_STORE=file \
-          ADMIN_COUNTERS_CACHE_STORE=file \
-          QUEUE_CONNECTION=database \
-          php artisan ops:health-check --strict --ansi
-
-  frontend-build:
-    name: Frontend Build (Node 20)
+  next-stack:
+    name: Next Stack Gate
     runs-on: ubuntu-latest
 
     steps:
@@ -79,45 +25,48 @@ jobs:
         with:
           node-version: "20"
           cache: npm
+          cache-dependency-path: next-stack/package-lock.json
+
+      - name: Prepare env
+        run: |
+          cp next-stack/.env.example next-stack/.env
 
       - name: Install dependencies
+        working-directory: next-stack
         run: npm ci
 
-      - name: Build assets
-        run: npm run build
+      - name: Env check
+        working-directory: next-stack
+        run: npm run env:check
 
-  e2e-smoke:
-    name: E2E Smoke (Playwright)
-    runs-on: ubuntu-latest
-    needs: [backend-tests, frontend-build]
+      - name: Typecheck API
+        working-directory: next-stack
+        run: npm run typecheck --workspace @nico/api
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Typecheck Web
+        working-directory: next-stack
+        run: npm run typecheck --workspace @nico/web
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: "8.2"
-          extensions: mbstring, sqlite, pdo_sqlite, dom, curl
-          coverage: none
+      - name: Build API
+        working-directory: next-stack
+        run: npm run build --workspace @nico/api
 
-      - name: Install Composer dependencies
-        uses: ramsey/composer-install@v3
-        with:
-          composer-options: --no-interaction --prefer-dist --no-progress
+      - name: Build Web
+        working-directory: next-stack
+        run: npm run build --workspace @nico/web
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: npm
+      - name: Smoke backend
+        working-directory: next-stack
+        run: npm run smoke:backend
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Smoke web
+        working-directory: next-stack
+        run: npm run smoke:web
 
-      - name: Install Playwright browser
-        run: npx playwright install --with-deps chromium
+      - name: Route parity
+        working-directory: next-stack
+        run: npm run qa:route-parity
 
-      - name: Run E2E smoke tests
-        run: npm run e2e
+      - name: Legacy detach
+        working-directory: next-stack
+        run: npm run qa:legacy:detach

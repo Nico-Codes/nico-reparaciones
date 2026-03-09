@@ -18,8 +18,6 @@
     "qa:frontend:e2e": "node ./scripts/qa-frontend-e2e.mjs",
     "qa:backend:full": "node ./scripts/qa-backend-full.mjs",
     "qa:route-parity": "node ./scripts/qa-route-parity.mjs",
-    "legacy:assets:sync": "node ./legacy-support/assets/sync-canonical-assets-to-legacy-root.mjs",
-    "legacy:parity:deprecated": "node ./legacy-support/deprecated/qa/qa-visual-parity.mjs",
     "qa:admin:visual": "node ./scripts/qa-admin-visual-audit.mjs",
     "qa:responsive:visual": "node ./scripts/qa-responsive-visual.mjs",
     "qa:legacy:detach": "node ./scripts/qa-legacy-detach.mjs",
@@ -40,14 +38,7 @@
     "db:push:skip-generate": "npm run db:push:skip-generate --workspace @nico/api",
     "db:studio": "npm run db:studio --workspace @nico/api",
     "db:seed": "npm run db:seed --workspace @nico/api",
-    "db:seed:demo": "npm run db:seed:demo --workspace @nico/api",
-    "legacy:migrate:settings:deprecated": "npm run legacy:migrate:settings:deprecated --workspace @nico/api",
-    "legacy:migrate:settings:cleanup:deprecated": "npm run legacy:migrate:settings:cleanup:deprecated --workspace @nico/api",
-    "legacy:migrate:product-images:deprecated": "npm run legacy:migrate:product-images:deprecated --workspace @nico/api",
-    "legacy:migrate:product-images:dry-run:deprecated": "npm run legacy:migrate:product-images:dry-run:deprecated --workspace @nico/api",
-    "legacy:migrate:product-images:cleanup:deprecated": "npm run legacy:migrate:product-images:cleanup:deprecated --workspace @nico/api",
-    "legacy:migrate:visual-assets:deprecated": "npm run legacy:migrate:visual-assets:deprecated --workspace @nico/api",
-    "legacy:migrate:visual-assets:dry-run:deprecated": "npm run legacy:migrate:visual-assets:dry-run:deprecated --workspace @nico/api"
+    "db:seed:demo": "npm run db:seed:demo --workspace @nico/api"
   },
   "devDependencies": {
     "playwright": "^1.58.2"

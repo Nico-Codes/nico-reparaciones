@@ -1,22 +1,12 @@
-﻿# BACKEND_MAP
+# BACKEND_MAP
 
-## Base del backend
+## Backend operativo
 
-Ubicacion operativa:
-
+Ubicacion:
 - `next-stack/apps/api`
 
-Entrypoint:
+## Modulos principales cargados
 
-- `next-stack/apps/api/src/main.ts`
-
-Modulo raiz:
-
-- `next-stack/apps/api/src/modules/app.module.ts`
-
-## Modulos cargados en AppModule
-
-- `PrismaModule`
 - `HealthModule`
 - `HelpModule`
 - `MailModule`
@@ -29,77 +19,15 @@ Modulo raiz:
 - `PricingModule`
 - `RepairsModule`
 - `StoreModule`
+- `PrismaModule`
 
-## Controllers principales
+## Seguridad
 
-- `HealthController`
-- `AuthController`
-- `StoreController`
-- `CartController`
-- `OrdersController`
-- `RepairsController`
-- `PricingController`
-- `CatalogAdminController`
-- `DeviceCatalogController`
-- `AdminController`
+- `JwtAuthGuard`
+- `RolesGuard`
+- roles `USER` y `ADMIN`
+- throttling, logging, health endpoints, correo SMTP y 2FA admin
 
-## Auth, guards y roles
+## Observacion clave
 
-Roles confirmados:
-
-- `USER`
-- `ADMIN`
-
-Piezas confirmadas:
-
-- `jwt-auth.guard.ts`
-- `roles.guard.ts`
-- `roles.decorator.ts`
-- `current-user.decorator.ts`
-
-## Prisma y entidades centrales
-
-Schema:
-
-- `next-stack/apps/api/prisma/schema.prisma`
-
-Entidades principales:
-
-- `User`
-- `RefreshToken`
-- `Category`
-- `Product`
-- `Order`
-- `OrderItem`
-- `Repair`
-- `RepairPricingRule`
-- `DeviceType`
-- `DeviceBrand`
-- `DeviceModel`
-- `DeviceIssueType`
-- `DeviceModelGroup`
-- `Supplier`
-- `WarrantyIncident`
-- `AppSetting`
-- `WhatsAppLog`
-- `HelpFaqItem`
-
-## Scripts Prisma y soporte legacy
-
-Operativos:
-
-- `db-check.ts`
-- `seed.ts`
-- `fix-mojibake.ts`
-
-Tooling legacy archivado:
-
-- `next-stack/legacy-support/deprecated/api/migrate-legacy-settings.ts`
-- `next-stack/legacy-support/deprecated/api/migrate-legacy-product-images.ts`
-- `next-stack/legacy-support/deprecated/api/migrate-legacy-visual-assets.ts`
-
-## Lectura tecnica actual
-
-- El backend nuevo es autosuficiente para runtime normal.
-- La capa legacy de migracion ya no forma parte del flujo operativo diario.
-- El siguiente retiro fuerte del legado no depende del backend Nest, sino del runtime/root legacy restante.
+No existe ya backend legacy dentro del repo. Todo comportamiento servidor activo parte de `next-stack/apps/api`.

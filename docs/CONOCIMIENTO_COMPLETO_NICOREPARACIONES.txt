@@ -1,4 +1,9 @@
-﻿NICOREPARACIONES - DOCUMENTO MAESTRO DE CONOCIMIENTO DEL PROYECTO
+NOTA 2026-03-09
+- Este documento conserva contexto historico amplio del proyecto.
+- La verdad operativa actual vive en project-docs/ y next-stack/.
+- El runtime Laravel root, public/ root y next-stack/legacy-support/ ya fueron retirados materialmente del repo activo.
+
+NICOREPARACIONES - DOCUMENTO MAESTRO DE CONOCIMIENTO DEL PROYECTO
 Fecha de corte: 2026-03-06
 
 ========================================================================
@@ -1308,3 +1313,5 @@ El sistema nuevo cubre:
 La migracion local esta cerrada y validada tecnicamente.
 El siguiente escalon ya no es migracion de codigo, sino despliegue real y
 operacion productiva.
+
+

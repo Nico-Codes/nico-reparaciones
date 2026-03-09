@@ -45,3 +45,15 @@ Registrar decisiones tecnicas confirmadas para evitar dependencia de memoria ora
 - Archivos / modulos afectados: `next-stack/apps/api/package.json`, `next-stack/package.json`, `next-stack/legacy-support/deprecated/api/*`, `project-docs/LEGACY_SUPPORT_MAP.md`
 - Validacion requerida: typecheck/build/smokes/route parity.
 - Responsable: Codex + operador humano
+
+### [DL-0020]
+- Fecha: 2026-03-09
+- Estado: aceptada
+- Tema: retiro material del root Laravel y del soporte legacy
+- Contexto: tras retirar auth social, parity legacy y migradores del flujo normal, el repo ya no tenia dependencia tecnica real del runtime Laravel ni de `next-stack/legacy-support/`.
+- Decision: eliminar el runtime Laravel root, eliminar `next-stack/legacy-support/`, reescribir `nico-dev.bat`, `README.md` y CI hacia `next-stack/` y tratar la raiz restante solo como meta-repo + documentacion.
+- Impacto: el repositorio queda alineado con una sola arquitectura operativa y deja de mezclar stacks, mirrors y tooling historico.
+- Alternativas consideradas: conservar el root como historico activo; descartado por complejidad innecesaria y por ir contra la estrategia de eliminacion total del legacy.
+- Archivos / modulos afectados: runtime Laravel root, `next-stack/legacy-support/`, `.github/workflows/ci.yml`, `nico-dev.bat`, `README.md`, `project-docs/*`.
+- Validacion requerida: gate operativo del nuevo stack.
+- Responsable: Codex + operador humano

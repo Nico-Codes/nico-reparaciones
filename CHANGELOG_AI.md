@@ -51,3 +51,29 @@
 - Riesgos / notas:
   - `legacy:parity:deprecated` y `legacy:migrate:*:deprecated` siguen existiendo solo como soporte historico/manual.
   - el siguiente paso razonable pasa a ser retirar duplicados root y avanzar sobre el retiro fuerte del root Laravel.
+
+### 2026-03-09 - Codex
+- Alcance: Fase 4G para retirar materialmente el root Laravel y consolidar el repo alrededor de `next-stack/`.
+- Tipo de intervencion: cleanup estructural fuerte + reescritura de entrypoints + actualizacion documental.
+- Archivos tocados:
+  - eliminacion del runtime Laravel root (`app/`, `bootstrap/`, `config/`, `database/`, `public/`, `resources/`, `routes/`, `storage/`, `tests/`, `e2e/`, `scripts/`, `tools/`, `vendor/`, `node_modules/`, `composer.json`, `composer.lock`, `package.json`, `package-lock.json`, `artisan`, configs root asociadas)
+  - eliminacion de `next-stack/legacy-support/`
+  - `nico-dev.bat`
+  - `README.md`
+  - `.github/workflows/ci.yml`
+  - `.gitignore`
+  - `next-stack/apps/api/package.json`
+  - `project-docs/*` relevantes al retiro del legacy
+- ¿Cambio comportamiento funcional?: No del producto. Si del repositorio y tooling: el stack operativo queda solo en `next-stack/`.
+- Validaciones ejecutadas:
+  - `npm run env:check`
+  - `npm run typecheck --workspace @nico/api`
+  - `npm run typecheck --workspace @nico/web`
+  - `npm run build --workspace @nico/api`
+  - `npm run build --workspace @nico/web`
+  - `npm run smoke:backend`
+  - `npm run smoke:web`
+  - `npm run qa:route-parity`
+- Riesgos / notas:
+  - el unico material root restante es documental/historico
+  - el siguiente paso ya no es tecnico, sino decidir si se conserva o reduce aun mas el material historico de raiz

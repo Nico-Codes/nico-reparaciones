@@ -1,75 +1,36 @@
-﻿# ROOT_LEGACY_POLICY
-
-## Objetivo
-
-Definir que representa hoy la raiz Laravel y bajo que condiciones puede retirarse.
+# ROOT_LEGACY_POLICY
 
 ## Estado actual
 
-- La raiz Laravel no es la fuente operativa canonica.
-- Sigue siendo un historico activo y sensible.
-- Ya no concentra auth social.
-- Ya no sostiene el gate principal de parity visual.
-- Su anclaje principal hoy es existir como runtime/historico mientras sigan presentes duplicados del root y residuos legacy por retirar.
+- El runtime Laravel root fue retirado materialmente del repositorio.
+- La raiz ya no forma parte del sistema operativo real.
+- El codigo vivo del proyecto esta en `next-stack/`.
+- En la raiz solo quedan entrypoints del repo, documentacion y material historico puntual.
 
-## Zonas del root
+## Que representa hoy la raiz
 
-### Soporte todavia activo
-- `app/`
-- `bootstrap/`
-- `config/`
-- `database/`
-- `public/`
-- `resources/`
-- `routes/`
-- `tests/`
-- `e2e/`
-- `scripts/`
-- `tools/`
-- `composer.json`
-- `composer.lock`
-- `package.json`
+- `next-stack/`: stack canonico operativo.
+- `project-docs/`: fuente viva de contexto, arquitectura y decisiones.
+- `docs/`: apoyo historico/complementario.
+- PDFs historicos: material de referencia, no operativo.
 
-### Historico util
-- `docs/` root
-- `storage/app/backups/`
-- `storage/app/benchmarks/`
-- PDFs historicos en raiz
+## Que ya no existe
 
-### Dependencia local no canonica
-- `vendor/`
-- `node_modules/`
-- `database/database.sqlite`
-- `database/e2e.sqlite`
+- runtime Laravel
+- `public/` root como mirror
+- `storage/` legacy
+- `composer.json` / `composer.lock` del root
+- tooling `legacy-support/`
 
-### Artefacto regenerable
-- `bootstrap/cache/*`
-- `storage/framework/**`
-- `storage/logs/*.log`
-- `storage/app/dev/*.pid`
+## Politica permanente
 
-## Politica sobre `public/` root
+- No reintroducir runtime Laravel en la raiz.
+- No recrear `public/` root ni mirrors de assets fuera del canon `next-stack/apps/web/public`.
+- Si hiciera falta rescate historico puntual, debe hacerse desde backup externo o control de versiones, no desde un runtime paralelo dentro del repo.
 
-- `public/` root no es fuente de verdad.
-- `public/` root es un mirror legacy transitorio.
-- No editarlo manualmente como fuente primaria.
-- Su retiro fuerte queda habilitado una vez desaparezca la necesidad de runtime legacy y se elimine el tooling deprecated residual.
+## Condicion de retiro final
 
-## Politica sobre storage legacy
+A nivel tecnico, el root Laravel ya fue retirado. Lo que resta decidir es solo si:
 
-- `storage/app/public` y `public/storage` no son fuente canonica.
-- Ya no tienen rol operativo principal.
-- Solo quedan como fallback historico y candidatos de retiro posterior.
-
-## Que no debe tocarse todavia
-
-- `public/` root mientras no haya decision formal de retiro fuerte
-- `composer.json` y `composer.lock` sin cerrar auditoria residual del root
-- residuos de esquema legacy sin decision humana
-
-## Condiciones para retiro final del root
-
-1. retirar `legacy-support/deprecated/`
-2. retirar duplicados en `public/` root
-3. auditar composer residual del root
-4. decidir archivo o eliminacion total del runtime Laravel
+1. se conservan o no materiales historicos no operativos en `docs/` y PDFs root
+2. se hace una limpieza final de referencias historicas secundarias

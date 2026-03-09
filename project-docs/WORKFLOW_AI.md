@@ -1,56 +1,28 @@
-﻿# WORKFLOW_AI
+# WORKFLOW_AI
 
-## Objetivo
+## Flujo recomendado
 
-Definir una metodologia estable entre humano, ChatGPT y Codex para mantener y evolucionar este repo sin perder control tecnico.
+1. tomar `project-docs/` como fuente viva
+2. tocar codigo operativo solo dentro de `next-stack/`
+3. validar referencias antes de borrar o simplificar
+4. registrar decisiones en `project-docs/DECISIONS_LOG.md`
+5. registrar cambios asistidos por IA en `CHANGELOG_AI.md`
 
-## Principio general
+## Regla de oro
 
-La secuencia recomendada es:
+No reintroducir runtime o soporte legacy dentro del repo.
 
-1. entender
-2. mapear
-3. documentar
-4. proponer
-5. ejecutar cambios chicos y verificables
-6. registrar decisiones
+## Gates canonicos
 
-## Gate operativo vigente
+- `env:check`
+- typecheck api/web
+- build api/web
+- `smoke:backend`
+- `smoke:web`
+- `qa:route-parity`
 
-El baseline canonico para validar el proyecto nuevo es:
+## Cuando hacer cambios grandes
 
-- `npm run env:check`
-- `npm run typecheck --workspace @nico/api`
-- `npm run typecheck --workspace @nico/web`
-- `npm run build --workspace @nico/api`
-- `npm run build --workspace @nico/web`
-- `npm run smoke:backend`
-- `npm run smoke:web`
-- `npm run qa:route-parity`
-
-Checks adicionales del nuevo stack segun el bloque:
-
-- `qa:frontend:e2e`
-- `qa:admin:visual`
-- `qa:responsive:visual`
-- `qa:legacy:detach`
-
-## Parity legacy
-
-- `legacy:parity:deprecated` no es gate.
-- Solo puede ejecutarse como herramienta manual/historica con una razon documentada.
-- No debe reintroducirse en el flujo normal salvo decision tecnica registrada.
-
-## Legacy support
-
-- `next-stack/legacy-support/assets/` = compatibilidad transitoria activa.
-- `next-stack/legacy-support/deprecated/` = tooling archivado, fuera del flujo normal.
-
-## Regla para cambios high-risk
-
-Antes de tocar root Laravel, duplicados del root, Composer legacy o residuos de esquema:
-
-- actualizar `project-docs/`
-- registrar decision en `project-docs/DECISIONS_LOG.md`
-- registrar intervencion en `CHANGELOG_AI.md`
-- correr el gate operativo vigente
+- primero documentar el criterio
+- luego aplicar el cambio
+- al final correr el gate del nuevo stack

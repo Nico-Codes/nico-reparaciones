@@ -1,56 +1,28 @@
-﻿# CANONICAL_SOURCES
+# CANONICAL_SOURCES
 
-## Objetivo
+## Fuentes canonicas
 
-Definir fuentes canonicas y no canonicas del repositorio para evitar duplicacion, drift y limpiezas ciegas.
+- Codigo operativo: `next-stack/`
+- Frontend: `next-stack/apps/web`
+- Backend: `next-stack/apps/api`
+- Contratos compartidos: `next-stack/packages/contracts`
+- Assets visuales: `next-stack/apps/web/public`
+- Entorno: `next-stack/.env`
+- Documentacion viva: `project-docs/`
+- Runbooks del stack actual: `next-stack/docs/`
 
-## 1. Codigo operativo canonico
+## Fuentes historicas no canonicas
 
-### Canonico
-- `next-stack/apps/web`
-- `next-stack/apps/api`
-- `next-stack/packages/contracts`
-
-### Regla
-- Toda feature nueva debe nacer en `next-stack/`.
-- La raiz Laravel no es fuente operativa para desarrollo nuevo.
-
-## 2. Assets visuales canonicos
-
-### Canonico
-- `next-stack/apps/web/public`
-
-### No canonico
-- `public/` root = mirror de compatibilidad legacy.
-- `storage/app/public` y `public/storage` = fallback historico, no fuente primaria.
-
-## 3. Entorno/configuracion canonica
-
-### Canonico
-- `next-stack/.env`
-- `next-stack/.env.example`
-- `next-stack/.env.production.example`
-
-## 4. Documentacion viva canonica
-
-### Canonico
-- `project-docs/`
-
-### Complementario
-- `next-stack/docs/` = runbooks y docs operativas del nuevo stack
-
-### Historico
 - `docs/` root
-- `docs/CONOCIMIENTO_COMPLETO_NICOREPARACIONES.txt`
+- PDFs historicos en raiz
 
-## 5. Legacy support transitorio
+## Fuentes retiradas
 
-### Activo
-- `next-stack/legacy-support/assets/`
+- runtime Laravel root
+- `public/` root
+- `storage/` root
+- `next-stack/legacy-support/`
 
-### Deprecated
-- `next-stack/legacy-support/deprecated/`
+## Regla permanente
 
-### Regla
-- no volver a mezclar tooling deprecated dentro de carpetas operativas del nuevo stack.
-- `legacy:parity:deprecated` y `legacy:migrate:*:deprecated` no forman parte del flujo normal.
+Si una pieza no vive bajo `next-stack/` o `project-docs/`, no debe asumirse como fuente operativa del sistema.
