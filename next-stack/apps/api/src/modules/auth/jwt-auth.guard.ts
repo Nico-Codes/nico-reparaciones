@@ -48,7 +48,7 @@ export class JwtAuthGuard implements CanActivate {
       return jwt.verify(accessToken, secret) as JwtPayload;
     } catch (error) {
       console.warn('[auth] jwt verify failed in guard', error instanceof Error ? error.message : error);
-      throw new UnauthorizedException('Token invalido o expirado');
+      throw new UnauthorizedException('Token inválido o expirado');
     }
   }
 }

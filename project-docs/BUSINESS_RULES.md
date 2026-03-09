@@ -146,3 +146,20 @@ Pendiente de validacion detallada:
 - politica exacta de mensajes por template de WhatsApp
 - detalle completo de formulas de pricing por pantalla y excepciones historicas
 - si existe una regla operativa formal para auth social en el nuevo stack
+
+## Validacion Fase 4A (2026-03-06)
+
+### Reglas confirmadas por codigo y smoke
+- `checkout` requiere usuario autenticado en frontend (`RequireAuth`) y backend (`JwtAuthGuard`).
+- `orders/admin*`, `repairs/admin*`, `catalog-admin*`, `device-catalog*`, `pricing/repairs/*` y `admin/*` requieren rol `ADMIN` en backend.
+- Login admin puede exigir TOTP si 2FA esta habilitado en `AppSetting`.
+- `register` crea usuarios con rol `USER`.
+- `bootstrap-admin` puede elevar/crear admin solo en entorno permitido por configuracion.
+- `store/branding` y `store/hero` dependen de `AppSetting` y hacen fallback seguro a assets por defecto.
+- `orders/checkout` revalida carrito via `cart/quote`; no depende ciegamente del estado local del frontend.
+- `pricing/repairs/resolve` y `catalog-admin/product-pricing/resolve` siguen activos y no quedaron rotos por la consolidacion de entorno.
+
+### Residuo funcional a tener en cuenta
+- Google auth fue retirado en Fase 4D.
+- El sistema queda solo con auth clasica.
+- `google_id` puede seguir existiendo solo como residuo de esquema legacy, no como regla funcional activa.

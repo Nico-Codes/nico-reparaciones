@@ -5,12 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
-
-
-
+use Illuminate\Validation\Rule;
 
 class AccountController extends Controller
 {
@@ -26,81 +22,73 @@ class AccountController extends Controller
         $user = Auth::user();
         $currentEmail = Str::lower(trim((string) $user->email));
 
-            $data = $request->validate([
-                'name'      => ['required', 'string', 'max:255'],
-                'last_name' => ['required', 'string', 'max:255'],
-                'phone'     => ['required', 'string', 'max:30', 'regex:/^(?=(?:\\D*\\d){8,15}\\D*$)[0-9+()\\s-]{8,30}$/'],
-                'email'     => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
-            ], [
-                'name.required'       => 'Ingresá tu nombre.',
-                'name.max'            => 'El nombre no puede superar :max caracteres.',
-                'last_name.required'  => 'Ingresá tu apellido.',
-                'last_name.max'       => 'El apellido no puede superar :max caracteres.',
-                'phone.required'      => 'Ingresá tu teléfono/WhatsApp.',
-                'phone.regex'         => 'Ingresá un teléfono válido (solo números, espacios, +, -, paréntesis).',
-                'phone.max'           => 'El teléfono no puede superar :max caracteres.',
-                'email.required'      => 'Ingresá tu email.',
-                'email.email'         => 'Ingresá un email válido.',
-                'email.unique'        => 'Este email ya está registrado.',
-                'email.max'           => 'El email no puede superar :max caracteres.',
-            ]);
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'last_name' => ['required', 'string', 'max:255'],
+            'phone' => ['required', 'string', 'max:30', 'regex:/^(?=(?:\\D*\\d){8,15}\\D*$)[0-9+()\\s-]{8,30}$/'],
+            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+        ], [
+            'name.required' => 'IngresÃ¡ tu nombre.',
+            'name.max' => 'El nombre no puede superar :max caracteres.',
+            'last_name.required' => 'IngresÃ¡ tu apellido.',
+            'last_name.max' => 'El apellido no puede superar :max caracteres.',
+            'phone.required' => 'IngresÃ¡ tu telÃ©fono/WhatsApp.',
+            'phone.regex' => 'IngresÃ¡ un telÃ©fono vÃ¡lido (solo nÃºmeros, espacios, +, -, parÃ©ntesis).',
+            'phone.max' => 'El telÃ©fono no puede superar :max caracteres.',
+            'email.required' => 'IngresÃ¡ tu email.',
+            'email.email' => 'IngresÃ¡ un email vÃ¡lido.',
+            'email.unique' => 'Este email ya estÃ¡ registrado.',
+            'email.max' => 'El email no puede superar :max caracteres.',
+        ]);
 
+        $data['name'] = trim($data['name']);
+        $data['last_name'] = trim($data['last_name']);
+        $data['phone'] = trim($data['phone']);
+        $data['email'] = Str::lower(trim($data['email']));
 
-            $data['name']      = trim($data['name']);
-            $data['last_name'] = trim($data['last_name']);
-            $data['phone']     = trim($data['phone']);
-            $data['email']     = Str::lower(trim($data['email']));
+        $emailChanged = $data['email'] !== $currentEmail;
 
-            $emailChanged = $data['email'] !== $currentEmail;
+        $user->fill($data);
+        if ($emailChanged) {
+            $user->email_verified_at = null;
+        }
+        $user->save();
 
-            $user->fill($data);
-            if ($emailChanged) {
-                $user->email_verified_at = null;
-            }
-            $user->save();
-
-            if ($emailChanged) {
-                $user->sendEmailVerificationNotification();
-
-                return redirect()
-                    ->route('verification.notice')
-                    ->with('success', 'Email actualizado. Verifica tu nuevo correo para habilitar todas las funciones.');
-            }
-
-            $returnTo = $request->session()->pull('profile_return_to');
-
-            if ($returnTo) {
-                return redirect()
-                    ->to($returnTo)
-                    ->with('success', 'Datos actualizados. Ya podés continuar.');
-            }
+        if ($emailChanged) {
+            $user->sendEmailVerificationNotification();
 
             return redirect()
-                ->route('account.edit')
-                ->with('success', 'Datos actualizados.');
+                ->route('verification.notice')
+                ->with('success', 'Email actualizado. Verifica tu nuevo correo para habilitar todas las funciones.');
+        }
 
+        $returnTo = $request->session()->pull('profile_return_to');
+
+        if ($returnTo) {
+            return redirect()
+                ->to($returnTo)
+                ->with('success', 'Datos actualizados. Ya podÃ©s continuar.');
+        }
+
+        return redirect()
+            ->route('account.edit')
+            ->with('success', 'Datos actualizados.');
     }
 
     public function updatePassword(Request $request)
     {
         $user = Auth::user();
-        $isGoogle = !empty($user->google_id);
 
-        // ✅ Reglas: si NO es Google, pedimos contraseña actual.
-        // Si es Google, permitimos setear una nueva sin current_password.
         $rules = [
+            'current_password' => ['required', 'string'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ];
 
-        if (!$isGoogle) {
-            $rules['current_password'] = ['required', 'string'];
-        }
-
         $messages = [
-            'current_password.required' => 'Ingresá tu contraseña actual.',
-            'password.required'         => 'Ingresá una nueva contraseña.',
-            'password.min'              => 'La nueva contraseña debe tener al menos :min caracteres.',
-            'password.confirmed'        => 'La repetición de la contraseña no coincide.',
+            'current_password.required' => 'IngresÃ¡ tu contraseÃ±a actual.',
+            'password.required' => 'IngresÃ¡ una nueva contraseÃ±a.',
+            'password.min' => 'La nueva contraseÃ±a debe tener al menos :min caracteres.',
+            'password.confirmed' => 'La repeticiÃ³n de la contraseÃ±a no coincide.',
         ];
 
         $validator = \Illuminate\Support\Facades\Validator::make($request->all(), $rules, $messages);
@@ -114,16 +102,12 @@ class AccountController extends Controller
 
         $data = $validator->validated();
 
-        // ✅ Si NO es Google, verificamos contraseña actual
-        if (!$isGoogle) {
-            if (!Hash::check($data['current_password'], $user->password)) {
-                return back()
-                    ->withErrors(['current_password' => 'La contraseña actual no es correcta.'])
-                    ->withFragment('security');
-            }
+        if (!Hash::check($data['current_password'], $user->password)) {
+            return back()
+                ->withErrors(['current_password' => 'La contraseÃ±a actual no es correcta.'])
+                ->withFragment('security');
         }
 
-        // ✅ Setear nueva contraseña
         $user->password = Hash::make($data['password']);
         $user->save();
 
@@ -131,12 +115,7 @@ class AccountController extends Controller
 
         return redirect()
             ->route('account.edit')
-            ->with('password_success', 'Contraseña actualizada.')
+            ->with('password_success', 'ContraseÃ±a actualizada.')
             ->withFragment('security');
-
-}
-
-
-
-
+    }
 }

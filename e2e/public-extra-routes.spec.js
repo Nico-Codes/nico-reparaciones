@@ -3,10 +3,6 @@
 const customerEmail = process.env.E2E_CUSTOMER_EMAIL || 'e2e.customer@nico.local';
 const customerPassword = process.env.E2E_CUSTOMER_PASSWORD || 'e2e12345';
 
-const expectRedirectStatus = (status) => {
-  expect([301, 302, 303, 307, 308]).toContain(status);
-};
-
 const loginCustomer = async (page) => {
   await page.goto('/login');
   await page.locator('input[name="email"]').fill(customerEmail);
@@ -24,18 +20,6 @@ test('public infra routes respond as expected', async ({ page }) => {
   const manifestJson = JSON.parse(manifestText);
   expect(typeof manifestJson.name).toBe('string');
   expect(Array.isArray(manifestJson.icons)).toBeTruthy();
-
-  const googleRedirect = await page.request.get('/auth/google', { maxRedirects: 0 });
-  expectRedirectStatus(googleRedirect.status());
-  const googleLocation = googleRedirect.headers().location || '';
-  expect(
-    googleLocation.includes('google') ||
-      googleLocation.includes('/login') ||
-      googleLocation.includes('/auth/google')
-  ).toBeTruthy();
-
-  const googleCallback = await page.request.get('/auth/google/callback', { maxRedirects: 0 });
-  expectRedirectStatus(googleCallback.status());
 
   const storageBlocked = await page.request.get('/storage/e2e-no-file.txt', { maxRedirects: 0 });
   expect([403, 404]).toContain(storageBlocked.status());

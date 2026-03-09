@@ -3,7 +3,10 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { PrismaClient } from '@prisma/client';
-import { loadCanonicalEnv, resolveCanonicalEnvPaths } from '../src/load-canonical-env.js';
+import { loadCanonicalEnv } from '../../../apps/api/src/load-canonical-env.js';
+
+// Transitional legacy-support script. Keep isolated from the runtime API code.
+console.warn('[legacy:migrate:settings:deprecated] Script archivado. Usar solo como rescate manual.');
 
 type CliOptions = {
   dryRun: boolean;
@@ -95,9 +98,7 @@ const FIXED_LEGACY_SETTING_KEYS = [
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const apiRoot = path.resolve(__dirname, '..');
-const monorepoRoot = path.resolve(apiRoot, '..', '..');
-const envCandidates = resolveCanonicalEnvPaths();
+const monorepoRoot = path.resolve(__dirname, '..', '..', '..');
 
 function loadEnvFiles() {
   loadCanonicalEnv();

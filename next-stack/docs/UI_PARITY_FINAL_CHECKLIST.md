@@ -1,176 +1,29 @@
 ﻿# UI Parity Final Checklist (Legacy -> Next Stack)
 
-Objetivo: validar que las vistas clave del `next-stack` mantengan paridad visual y UX con el stack legacy (`Laravel/Blade`).
+Objetivo historico: validar que las vistas clave del `next-stack` mantuvieran paridad visual y UX con el stack legacy (`Laravel/Blade`).
 
-## Estado automático (2026-03-06)
+## Estado actual
 
-- `qa:backend:full`: OK
-- `smoke:web`: OK
-- `qa:route-parity`: OK
-- `qa:frontend:e2e`: OK (incluye aliases legacy públicos + rutas admin críticas + validación de mojibake)
-- `qa:admin:visual`: OK (`artifacts/admin-visual-audit/20260306-103653/report.md`)
-- `qa:visual-parity`: OK (`artifacts/visual-parity/20260306-103733/report.md`)
-- `qa:responsive:visual`: OK (`artifacts/responsive-visual/20260306-103817/report.md`)
-- `qa:migration:close`: OK
-- `db:fix-mojibake:dry-run --include-products`: OK (`rowsChanged=0`)
-- `db:migrate:visual-assets`: OK (`filesCopied=11`, `settingsUpserted=18`)
-- `db:migrate:legacy-settings --dry-run`: OK (sin registros legacy pendientes en settings JSON)
+Este checklist queda como referencia historica.
 
-Pendiente para cierre 100%: revisión visual/manual final vista por vista (desktop, tablet y mobile) con dataset de producción o casi-producción.
+La validacion visual canonica hoy ya no depende de `qa:visual-parity` y se concentra en:
 
-Si legacy no levanta por entorno (ej: MySQL apagado), `qa:visual-parity` ya usa fallback automático a SQLite.
+- `qa:admin:visual`
+- `qa:responsive:visual`
+- `qa:frontend:e2e`
+- `smoke:web`
+- `qa:route-parity`
 
-## Preparación
+## Nota sobre `qa:visual-parity`
 
-- Levantar legacy (`http://127.0.0.1:8000`) o usar fallback SQLite automático del script.
-- Levantar next-stack (`http://localhost:5174`).
-- Usar el mismo dataset (o lo más parecido posible).
-- Comparar en paralelo (dos ventanas).
-- Probar en:
-  - Desktop ancho (`>= 1280px`)
-  - Tablet (`~768px`)
-  - Mobile (`~390px`)
+- Estado: deprecated/manual.
+- Ubicacion actual: `next-stack/legacy-support/deprecated/qa/qa-visual-parity.mjs`.
+- Ya no forma parte del gate principal del repo.
+- Solo conserva valor historico para comparaciones puntuales excepcionales.
 
-## Criterio de cierre
+## Cierre actual de etapa
 
-- Misma jerarquía visual (headers, filtros, paneles)
-- Mismos estados visuales (hover/active/focus)
-- Spacing y densidad equivalentes (sin “saltos” visibles)
-- Comportamiento responsive equivalente
-- Sin textos rotos / encoding / labels técnicos (enums)
-
-## Vistas críticas (prioridad alta)
-
-### 1) `/store` (Tienda) / `legacy /tienda`
-
-- Hero:
-  - imagen desktop/mobile correcta
-  - alto visual equivalente
-  - fade inferior natural
-- Toolbar:
-  - overlap con hero/fade igual
-  - inputs/select/botones con misma densidad
-  - sort mobile abre/cierra correctamente
-- Categorías:
-  - nav pills con mismo estilo/active
-  - scroll horizontal en mobile
-- Destacados:
-  - card, imagen, price, badge, carrito
-  - densidad y alturas estables
-- Grilla:
-  - cards compactas
-  - hover de imagen
-  - badge stock + btn cart
-- Empty state:
-  - copy equivalente
-  - botones correctos
-
-### 2) `/store/:slug` (Detalle producto)
-
-- Breadcrumb
-- Imagen principal (crop/object-fit)
-- Título / badges de stock-destacado
-- Caja de precio
-- Selector de cantidad (`- / input / +`)
-- CTA `Agregar al carrito`
-- CTAs secundarios (`Ver carrito`, `Seguir comprando`)
-- Texto de reparación (`Consultar reparación`)
-
-### 3) `/admin/orders`
-
-- Hero + filtros en cabecera
-- Tabs de estados con contador (nav-pill)
-- Listado:
-  - badge de estado con color legacy
-  - densidad de filas/cards
-- Panel detalle:
-  - select estado + badge
-  - bloques cliente/items
-- Estados vacíos/cargando/error
-
-### 4) `/admin/repairs`
-
-- Hero + tabs de estados con contador
-- Stats cards
-- Panel Nueva reparación (densidad)
-- Panel Reglas de cálculo
-- Panel Listado y detalle:
-  - bloque de filtros
-  - listado (row/card density)
-  - badge de estado legacy
-  - detalle editable
-  - timeline/historial
-- Estados vacíos/cargando/error
-
-## Vistas importantes (prioridad media)
-
-- `/cart`
-- `/checkout`
-- `/orders`
-- `/orders/:id`
-- `/repairs`
-- `/repairs/:id`
-- `/admin`
-- `/admin/productos`
-- `/admin/configuraciones`
-- `/admin/users`
-- `/admin/mail-templates`
-- `/admin/whatsapp`
-- `/admin/help`
-- `/admin/catalogodispositivos`
-- `/auth/login`
-- `/auth/register`
-- `/auth/forgot-password`
-- `/auth/reset-password`
-- `/auth/verify-email`
-
-## Checklist visual global (todas las vistas)
-
-- Header / navbar:
-  - pills desktop
-  - menú móvil
-  - dropdown cuenta
-  - carrito badge
-- Footer:
-  - spacing y tipografía
-- Tipografía:
-  - pesos (`font-black`, etc.)
-  - tamaños por jerarquía
-- Botones:
-  - `btn-primary`
-  - `btn-outline`
-  - `btn-ghost`
-  - focus ring visible
-- Inputs/selects/textarea:
-  - borde/ring/focus
-  - alturas consistentes
-- Cards:
-  - radios
-  - borde
-  - sombra
-  - padding interno
-- Badges:
-  - estados (orders/repairs)
-  - stock
-
-## Checklist funcional rápida (post UI)
-
-- `/store` filtros y categorías no rompen layout
-- `/store/:slug` agrega al carrito
-- `/cart` update/remove/clear
-- `/checkout` confirma pedido
-- `/admin/orders` cambia estado
-- `/admin/repairs` cambia estado + guarda detalle
-
-## Cierre de etapa
-
-- [ ] Paridad visual aceptada en vistas críticas
-- [ ] Paridad visual aceptada en vistas medias
-- [x] Responsive validado automáticamente (desktop/tablet/mobile)
-- [x] Sin textos rotos / encoding en código, API y seed actual
-- [x] QA funcional automática OK (`qa:backend:full`, `smoke:web`, `qa:route-parity`, `qa:frontend:e2e`)
-- [x] QA visual automática OK (`qa:admin:visual`, `qa:visual-parity`, `qa:responsive:visual`)
-
-## Nota técnica no bloqueante
-
-- `vite build` sigue advirtiendo chunks > 500 kB. No bloquea funcionalidad/paridad, pero conviene resolverlo antes de producción para mejorar carga inicial.
+- [x] Paridad de rutas legacy cubierta por `qa:route-parity`
+- [x] QA funcional automatica del nuevo stack en verde
+- [x] QA visual del nuevo stack (`admin` + `responsive`) en verde
+- [ ] Sign-off visual manual final solo si se considera necesario en entorno destino

@@ -176,8 +176,6 @@ export default function App() {
         <Route path="/auth/login" element={<LoginPage />} />
         <Route path="/auth/register" element={<RegisterPage />} />
         <Route path="/auth/verify-email" element={withShell(<VerifyEmailPage />)} />
-        <Route path="/auth/google" element={<Navigate to="/auth/login" replace />} />
-        <Route path="/auth/google/callback" element={<Navigate to="/auth/login" replace />} />
         <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
         <Route path="/auth/bootstrap-admin" element={<BootstrapAdminPage />} />

@@ -74,7 +74,6 @@ Dependencias relevantes confirmadas en `composer.json`:
 
 - `laravel/framework`
 - `firebase/php-jwt`
-- `laravel/socialite`
 - `predis/predis`
 
 ## Stack nuevo en `next-stack/`

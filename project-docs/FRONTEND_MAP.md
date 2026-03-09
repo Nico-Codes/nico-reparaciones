@@ -111,8 +111,8 @@ Rutas legacy alias relevantes:
 
 Nota importante:
 
-- existen `/auth/google` y `/auth/google/callback` en el router, pero hoy redirigen a login.
-- No se confirmo integracion real de auth social en el nuevo stack. Debe tratarse como pendiente de validacion.
+- no existen rutas `/auth/google` ni `/auth/google/callback` en el router nuevo.
+- el auth social no forma parte del stack nuevo.
 
 ## Rutas de usuario autenticado
 
@@ -281,3 +281,25 @@ Confirmado por codigo:
   - `features/auth/AuthStatusCard.tsx`
   La eliminacion se hizo despues de `rg` sin imports operativos y typecheck en verde.
 
+
+## Validacion Fase 4A (2026-03-06)
+
+### Rutas criticas confirmadas por codigo
+- Publicas: `/`, `/store`, `/store/:slug`, `/cart`, `/reparacion`, `/reparacion/:id/presupuesto`, `/help`
+- Auth: `/auth/login`, `/auth/register`, `/auth/forgot-password`, `/auth/reset-password`, `/auth/verify-email`, `/auth/bootstrap-admin`
+- Usuario autenticado: `/checkout`, `/orders`, `/orders/:id`, `/repairs`, `/repairs/:id`, `/mi-cuenta`
+- Admin: `/admin`, `/admin/orders`, `/admin/repairs`, `/admin/productos`, `/admin/configuraciones`, `/admin/precios`, `/admin/whatsapp`, `/admin/whatsapppedidos`, `/admin/seguridad/2fa` y subrutas asociadas
+
+### Guards confirmados
+- `RequireAuth` protege checkout, pedidos, reparaciones y cuenta.
+- `RequireAdmin` protege dashboard y modulo admin completo.
+- `RootEntryRedirect` envia a `/admin` o `/store` segun la sesion local existente.
+
+### Hallazgo residual confirmado
+- el router nuevo ya no expone `/auth/google*`.
+- el auth social fue retirado como alcance del proyecto en Fase 4D.
+
+### Evidencia funcional
+- `npm run smoke:web` OK
+- `npm run qa:route-parity` OK
+- No se detectaron imports rotos ni navegacion a paths inexistentes en el router auditado.

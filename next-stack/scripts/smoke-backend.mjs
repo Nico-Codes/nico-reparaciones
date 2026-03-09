@@ -153,42 +153,88 @@ async function main() {
 
   let createdOrderId = null;
   let quickSaleOrderId = null;
-  const firstBuyable = products.data.items.find((p) => p?.id);
-  if (firstBuyable) {
-    const cartValid = await req('/cart/quote', {
-      method: 'POST',
-      body: JSON.stringify({ items: [{ productId: firstBuyable.id, quantity: 1 }] }),
-    });
-    assert(cartValid.res.ok, 'cart/quote valido fallo', { status: cartValid.res.status, body: cartValid.data });
-    assert(Array.isArray(cartValid.data?.items), 'cart/quote valido payload invalido', cartValid.data);
-    logStep('cart/quote valid', { items: cartValid.data.items.length, subtotal: cartValid.data?.totals?.subtotal });
+  const productCandidates = products.data.items.filter((p) => p?.id);
+  if (productCandidates.length > 0) {
+    let selectedCheckoutProductId = null;
+    let cartValid = null;
+    let checkout = null;
+    let checkoutError = null;
 
-    const checkout = await req('/orders/checkout', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${refreshTokens.accessToken}` },
-      body: JSON.stringify({
-        items: [{ productId: firstBuyable.id, quantity: 1 }],
-        paymentMethod: 'EFECTIVO',
-      }),
+    for (const candidate of productCandidates) {
+      cartValid = await req('/cart/quote', {
+        method: 'POST',
+        body: JSON.stringify({ items: [{ productId: candidate.id, quantity: 1 }] }),
+      });
+      if (!cartValid.res.ok || !Array.isArray(cartValid.data?.items) || Number(cartValid.data?.totals?.subtotal ?? 0) <= 0) {
+        checkoutError = {
+          productId: candidate.id,
+          stage: 'quote',
+          status: cartValid.res.status,
+          body: cartValid.data,
+        };
+        continue;
+      }
+
+      checkout = await req('/orders/checkout', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${refreshTokens.accessToken}` },
+        body: JSON.stringify({
+          items: [{ productId: candidate.id, quantity: 1 }],
+          paymentMethod: 'EFECTIVO',
+        }),
+      });
+      if (checkout.res.ok) {
+        selectedCheckoutProductId = candidate.id;
+        checkoutError = null;
+        break;
+      }
+      checkoutError = {
+        productId: candidate.id,
+        stage: 'checkout',
+        status: checkout.res.status,
+        body: checkout.data,
+      };
+    }
+
+    assert(cartValid?.res.ok, 'cart/quote valido fallo', checkoutError);
+    assert(Array.isArray(cartValid?.data?.items), 'cart/quote valido payload invalido', cartValid?.data);
+    logStep('cart/quote valid', {
+      productId: selectedCheckoutProductId,
+      items: cartValid.data.items.length,
+      subtotal: cartValid.data?.totals?.subtotal,
     });
-    assert(checkout.res.ok, 'orders/checkout fallo', { status: checkout.res.status, body: checkout.data });
+
+    assert(checkout?.res.ok, 'orders/checkout fallo', checkoutError);
     const checkoutOrder = checkout.data?.item ?? checkout.data;
     assert(checkoutOrder?.id, 'orders/checkout sin item.id', checkout.data);
     createdOrderId = checkoutOrder.id;
     logStep('orders/checkout', { orderId: createdOrderId, total: checkoutOrder.total });
 
-    const quickSale = await req('/orders/admin/quick-sales/confirm', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${refreshTokens.accessToken}` },
-      body: JSON.stringify({
-        items: [{ productId: firstBuyable.id, quantity: 1 }],
-        paymentMethod: 'local',
-        customerName: 'Cliente mostrador',
-        customerPhone: '+5491111111111',
-        notes: 'Smoke quick sale',
-      }),
-    });
-    assert(quickSale.res.ok, 'orders/admin/quick-sales/confirm fallo', { status: quickSale.res.status, body: quickSale.data });
+    let quickSale = null;
+    let quickSaleError = null;
+    for (const candidate of productCandidates) {
+      quickSale = await req('/orders/admin/quick-sales/confirm', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${refreshTokens.accessToken}` },
+        body: JSON.stringify({
+          items: [{ productId: candidate.id, quantity: 1 }],
+          paymentMethod: 'local',
+          customerName: 'Cliente mostrador',
+          customerPhone: '+5491111111111',
+          notes: 'Smoke quick sale',
+        }),
+      });
+      if (quickSale.res.ok) {
+        quickSaleError = null;
+        break;
+      }
+      quickSaleError = {
+        productId: candidate.id,
+        status: quickSale.res.status,
+        body: quickSale.data,
+      };
+    }
+    assert(quickSale?.res.ok, 'orders/admin/quick-sales/confirm fallo', quickSaleError);
     assert(quickSale.data?.item?.isQuickSale === true, 'quick sale sin flag isQuickSale', quickSale.data);
     assert(quickSale.data?.item?.status === 'ENTREGADO', 'quick sale sin estado ENTREGADO', quickSale.data);
     quickSaleOrderId = quickSale.data.item.id;

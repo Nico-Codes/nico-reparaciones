@@ -4,7 +4,10 @@ import process from 'node:process';
 import { copyFile, mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { PrismaClient } from '@prisma/client';
-import { loadCanonicalEnv, resolveCanonicalEnvPaths } from '../src/load-canonical-env.js';
+import { loadCanonicalEnv } from '../../../apps/api/src/load-canonical-env.js';
+
+// Transitional legacy-support script. Keep isolated from the runtime API code.
+console.warn('[legacy:migrate:product-images:deprecated] Script archivado. Usar solo como rescate manual.');
 
 type CliOptions = {
   dryRun: boolean;
@@ -23,16 +26,13 @@ type MigrationSummary = {
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const apiRoot = path.resolve(__dirname, '..');
-const nextStackRoot = path.resolve(apiRoot, '..', '..');
+const nextStackRoot = path.resolve(__dirname, '..', '..', '..');
 const repoRoot = path.resolve(nextStackRoot, '..');
-
-const envCandidates = resolveCanonicalEnvPaths();
 const targetStorageRoot = path.join(nextStackRoot, 'apps', 'web', 'public', 'storage');
 const sourceStorageCandidates = [
+  targetStorageRoot,
   path.join(repoRoot, 'storage', 'app', 'public'),
   path.join(repoRoot, 'public', 'storage'),
-  targetStorageRoot,
 ];
 
 function parseOptions(argv: string[]): CliOptions {

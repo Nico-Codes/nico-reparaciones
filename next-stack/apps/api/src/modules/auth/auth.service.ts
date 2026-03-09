@@ -79,12 +79,12 @@ export class AuthService {
   async login(input: LoginInput) {
     const user = await this.usersService.findByEmail(input.email);
     if (!user?.passwordHash) {
-      throw new UnauthorizedException('Credenciales invalidas');
+      throw new UnauthorizedException('Credenciales inválidas');
     }
 
     const ok = await bcrypt.compare(input.password, user.passwordHash);
     if (!ok) {
-      throw new UnauthorizedException('Credenciales invalidas');
+      throw new UnauthorizedException('Credenciales inválidas');
     }
 
     if (user.role === 'ADMIN') {
@@ -206,7 +206,7 @@ export class AuthService {
 
     return {
       ok: true,
-      message: 'Contrasena actualizada correctamente',
+      message: 'Contraseña actualizada correctamente',
     };
   }
 
@@ -247,7 +247,7 @@ export class AuthService {
     });
 
     if (!record || record.usedAt || record.expiresAt < new Date()) {
-      throw new BadRequestException('Token de verificacion inválido o expirado');
+      throw new BadRequestException('Token de verificación inválido o expirado');
     }
 
     await this.prisma.$transaction([
@@ -275,7 +275,7 @@ export class AuthService {
     if (!user) {
       return {
         ok: true,
-        message: 'Si el email existe, se envio un enlace de recuperacion',
+        message: 'Si el email existe, se envió un enlace de recuperación',
       };
     }
 
@@ -292,7 +292,7 @@ export class AuthService {
     }
     return {
       ok: true,
-      message: 'Si el email existe, se envio un enlace de recuperacion',
+      message: 'Si el email existe, se envió un enlace de recuperación',
       ...(reset.previewToken ? { previewToken: reset.previewToken } : {}),
     };
   }
@@ -330,7 +330,7 @@ export class AuthService {
     });
 
     if (!record || record.usedAt || record.expiresAt < new Date()) {
-      throw new BadRequestException('Token de recuperacion inválido o expirado');
+      throw new BadRequestException('Token de recuperación inválido o expirado');
     }
 
     const passwordHash = await bcrypt.hash(input.password, 10);
@@ -356,7 +356,7 @@ export class AuthService {
 
     return {
       ok: true,
-      message: 'Contrasena actualizada correctamente',
+      message: 'Contraseña actualizada correctamente',
     };
   }
 
@@ -367,7 +367,7 @@ export class AuthService {
 
     const expectedKey = process.env.ADMIN_BOOTSTRAP_KEY ?? 'nico-dev-admin';
     if (input.setupKey !== expectedKey) {
-      throw new UnauthorizedException('Setup key invalida');
+      throw new UnauthorizedException('Setup key inválida');
     }
 
     const normalizedEmail = input.email.trim().toLowerCase();

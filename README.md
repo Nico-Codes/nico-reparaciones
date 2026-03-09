@@ -7,6 +7,8 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
+> Estado actual del repo: esta raiz Laravel es historica y de soporte legacy. El codigo operativo canonico vive en `next-stack/`. Ver `project-docs/ROOT_LEGACY_POLICY.md` y `project-docs/ROOT_LEGACY_RETIREMENT_CHECKLIST.md`.
+
 ## NicoReparaciones - Operacion rapida
 
 - Health check operativo: `php artisan ops:health-check`

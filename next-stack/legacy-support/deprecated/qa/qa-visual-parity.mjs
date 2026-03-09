@@ -4,9 +4,13 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { chromium } from 'playwright';
+import { syncCanonicalAssetsToLegacyRoot } from '../../assets/sync-canonical-assets-to-legacy-root.mjs';
+
+console.warn('[legacy:parity:deprecated] Tool archivada. No forma parte del gate canonico.');
 
 const ROOT = process.cwd();
 const REPO_ROOT = resolve(ROOT, '..');
+const LEGACY_SUPPORT_ROOT = resolve(ROOT, 'legacy-support');
 const LEGACY_BASE_URL = process.env.LEGACY_BASE_URL || 'http://127.0.0.1:8000';
 const NEXT_BASE_URL = process.env.NEXT_BASE_URL || 'http://127.0.0.1:4174';
 const API_HEALTH_URL = process.env.API_HEALTH_URL || 'http://127.0.0.1:3001/api/health';
@@ -15,7 +19,8 @@ const START_LEGACY = process.env.VISUAL_PARITY_START_LEGACY !== '0';
 const REQUEST_TIMEOUT_MS = Number(process.env.VISUAL_PARITY_REQUEST_TIMEOUT_MS || 15000);
 const QA_THROTTLE_LIMIT = process.env.QA_THROTTLE_LIMIT || process.env.THROTTLE_LIMIT || '1000';
 const LEGACY_PARITY_DB_MODE = (process.env.LEGACY_PARITY_DB_MODE || 'auto').trim().toLowerCase();
-const LEGACY_SQLITE_DB = process.env.LEGACY_SQLITE_DB || resolve(REPO_ROOT, 'database', 'legacy-visual-parity.sqlite');
+const LEGACY_SQLITE_DB =
+  process.env.LEGACY_SQLITE_DB || resolve(LEGACY_SUPPORT_ROOT, 'deprecated', 'sqlite', 'legacy-visual-parity.sqlite');
 const MOJIBAKE_PATTERN = /\u00C3[\u0080-\u00BF]|\u00C2[\u0080-\u00BF]|\u00E2[\u0080-\u00BF]{1,2}|\uFFFD/u;
 
 const ROUTES = [
@@ -229,6 +234,9 @@ async function main() {
     } else {
       console.log('[qa:visual-parity] Next web already running.');
     }
+
+    const assetSyncSummary = await syncCanonicalAssetsToLegacyRoot();
+    console.log('[qa:visual-parity] Synced canonical assets to legacy root mirror.', assetSyncSummary);
 
     const legacyUp = await isUp(LEGACY_HEALTH_URL);
     if (legacyUp) {

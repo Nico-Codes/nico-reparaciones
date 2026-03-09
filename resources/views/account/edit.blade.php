@@ -77,7 +77,7 @@
           <div class="mt-1">
             Te falta:
             <span class="font-extrabold">
-              {{ $missingLast ? 'apellido' : '' }}{{ ($missingLast && $missingPhone) ? ' y ' : '' }}{{ $missingPhone ? 'teléfono' : '' }}
+              {{ $missingLast ? 'apellido' : '' }}{{ ($missingLast && $missingPhone) ? ' y ' : '' }}{{ $missingPhone ? 'telÃ©fono' : '' }}
             </span>.
           </div>
           <div class="mt-1">Es necesario para asociar compras y recibir avisos por WhatsApp.</div>
@@ -132,7 +132,7 @@
           </div>
 
           <div>
-            <label for="phone">Teléfono / WhatsApp</label>
+            <label for="phone">TelÃ©fono / WhatsApp</label>
             <input
               id="phone"
               name="phone"
@@ -177,7 +177,7 @@
   <div class="card mt-4 max-w-2xl reveal-item" id="security">
     <div class="card-head items-start">
       <div class="font-black">Seguridad</div>
-      <span class="badge-zinc shrink-0">Contraseña</span>
+      <span class="badge-zinc shrink-0">ContraseÃ±a</span>
     </div>
 
     <div class="card-body p-4 sm:p-5">
@@ -197,35 +197,25 @@
         @csrf
         @method('PUT')
 
-        @php
-          $isGoogle = (bool) (auth()->user()->google_id ?? false);
-        @endphp
-
-        @if(!$isGoogle)
-          <div>
-            <label for="current_password">Contraseña actual</label>
-            <input
-              id="current_password"
-              name="current_password"
-              type="password"
-              required
-              autocomplete="current-password"
-              class="mt-1 h-11 w-full rounded-2xl border bg-white px-3 py-2 text-base sm:text-sm outline-none focus:ring-2 border-zinc-200 focus:border-sky-300 focus:ring-sky-100 @error('current_password') border-rose-300 focus:border-rose-300 focus:ring-rose-100 @enderror"
-              placeholder="********"
-            >
-            @error('current_password')
-              <p class="mt-1 text-xs font-semibold text-rose-700">{{ $message }}</p>
-            @enderror
-          </div>
-        @else
-          <div class="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700">
-            Estás ingresando con Google. Puedes establecer una contraseña nueva sin ingresar la actual.
-          </div>
-        @endif
+        <div>
+          <label for="current_password">ContraseÃ±a actual</label>
+          <input
+            id="current_password"
+            name="current_password"
+            type="password"
+            required
+            autocomplete="current-password"
+            class="mt-1 h-11 w-full rounded-2xl border bg-white px-3 py-2 text-base sm:text-sm outline-none focus:ring-2 border-zinc-200 focus:border-sky-300 focus:ring-sky-100 @error('current_password') border-rose-300 focus:border-rose-300 focus:ring-rose-100 @enderror"
+            placeholder="********"
+          >
+          @error('current_password')
+            <p class="mt-1 text-xs font-semibold text-rose-700">{{ $message }}</p>
+          @enderror
+        </div>
 
         <div class="grid gap-3 sm:grid-cols-2">
           <div>
-            <label for="password">Nueva contraseña</label>
+            <label for="password">Nueva contraseÃ±a</label>
             <input
               id="password"
               name="password"
@@ -243,7 +233,7 @@
           </div>
 
           <div>
-            <label for="password_confirmation">Repetir nueva contraseña</label>
+            <label for="password_confirmation">Repetir nueva contraseÃ±a</label>
             <input
               id="password_confirmation"
               name="password_confirmation"
@@ -260,7 +250,7 @@
         </div>
 
         <div class="grid gap-2 sm:flex sm:flex-row">
-          <button class="btn-primary h-11 w-full sm:w-auto" type="submit" data-testid="account-password-submit">Actualizar contraseña</button>
+          <button class="btn-primary h-11 w-full sm:w-auto" type="submit" data-testid="account-password-submit">Actualizar contraseÃ±a</button>
         </div>
       </form>
     </div>

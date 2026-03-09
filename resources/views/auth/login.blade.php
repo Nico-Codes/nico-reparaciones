@@ -29,13 +29,6 @@
       </div>
     @endif
 
-    @if (config('services.google.client_id'))
-      <a href="{{ route('auth.google.redirect') }}"
-        class="mb-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
-        Continuar con Google
-      </a>
-    @endif
-
     <form method="POST" action="{{ route('login.post') }}" class="space-y-4" data-disable-on-submit>
       @csrf
 

@@ -77,9 +77,6 @@ Route::middleware('guest')->group(function () {
     Route::get('/resetear-contrasena/{token}', [AuthController::class, 'showResetPassword'])->name('password.reset');
     Route::post('/resetear-contrasena', [AuthController::class, 'resetPassword'])->name('password.update');
 
-    // Google OAuth
-    Route::get('/auth/google', [AuthController::class, 'googleRedirect'])->name('auth.google.redirect');
-    Route::get('/auth/google/callback', [AuthController::class, 'googleCallback'])->name('auth.google.callback');
 });
 
 Route::post('/logout', [AuthController::class, 'logout'])

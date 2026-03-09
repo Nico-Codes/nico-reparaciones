@@ -4,7 +4,11 @@ import process from 'node:process';
 import { copyFile, cp, mkdir, readdir, stat } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { PrismaClient } from '@prisma/client';
-import { loadCanonicalEnv, resolveCanonicalEnvPaths } from '../src/load-canonical-env.js';
+import { loadCanonicalEnv } from '../../../apps/api/src/load-canonical-env.js';
+import { CANONICAL_PUBLIC_ROOT } from '../../assets/sync-canonical-assets-to-legacy-root.mjs';
+
+// Transitional legacy-support script. Keep isolated from the runtime API code.
+console.warn('[legacy:migrate:visual-assets:deprecated] Script archivado. Usar solo como rescate manual.');
 
 type CliOptions = {
   dryRun: boolean;
@@ -19,7 +23,7 @@ type SettingUpsert = {
 };
 
 type MigrationSummary = {
-  sourcePublic: string;
+  sourceCandidates: string[];
   targetPublic: string;
   filesCopied: number;
   filesSkipped: number;
@@ -30,18 +34,16 @@ type MigrationSummary = {
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const apiRoot = path.resolve(__dirname, '..');
-const nextStackRoot = path.resolve(apiRoot, '..', '..');
+const nextStackRoot = path.resolve(__dirname, '..', '..', '..');
 const repoRoot = path.resolve(nextStackRoot, '..');
-
-const envCandidates = resolveCanonicalEnvPaths();
-const legacyPublicCandidates = [path.join(repoRoot, 'public'), path.join(nextStackRoot, 'public')];
 const targetWebPublic = path.join(nextStackRoot, 'apps', 'web', 'public');
+const sourcePublicCandidates = [CANONICAL_PUBLIC_ROOT, path.join(repoRoot, 'public')];
 
 const ROOT_FILES = [
   'favicon.ico',
   'favicon-16x16.png',
   'favicon-32x32.png',
+  'favicon-48x48.png',
   'android-chrome-192x192.png',
   'android-chrome-512x512.png',
   'apple-touch-icon.png',
@@ -110,7 +112,7 @@ async function pickLatestFileByPrefix(dir: string, prefix: string): Promise<stri
 
 class LegacyVisualAssetsMigrator {
   private readonly summary: MigrationSummary = {
-    sourcePublic: '',
+    sourceCandidates: sourcePublicCandidates,
     targetPublic: targetWebPublic,
     filesCopied: 0,
     filesSkipped: 0,
@@ -127,23 +129,12 @@ class LegacyVisualAssetsMigrator {
   }
 
   async run() {
-    const sourcePublic = this.resolveSourcePublicDir();
-    this.summary.sourcePublic = sourcePublic;
-
     await this.ensureDir(targetWebPublic);
-    await this.copyVisualFiles(sourcePublic);
+    await this.copyVisualFiles();
     const settings = await this.buildSettingsUpserts(targetWebPublic);
     await this.applySettings(settings);
     await this.ensureBusinessNameSetting();
     this.printSummary();
-  }
-
-  private resolveSourcePublicDir() {
-    const found = legacyPublicCandidates.find((candidate) => exists(candidate));
-    if (!found) {
-      throw new Error(`No se encontro carpeta public legacy. Candidatos: ${legacyPublicCandidates.join(', ')}`);
-    }
-    return found;
   }
 
   private async ensureDir(dir: string) {
@@ -151,11 +142,23 @@ class LegacyVisualAssetsMigrator {
     await mkdir(dir, { recursive: true });
   }
 
-  private async copyVisualFiles(sourcePublic: string) {
+  private resolveExistingSource(relativePath: string) {
+    for (const candidateRoot of sourcePublicCandidates) {
+      const candidatePath = path.join(candidateRoot, ...relativePath.split('/'));
+      if (exists(candidatePath)) return candidatePath;
+    }
+    return null;
+  }
+
+  private async copyVisualFiles() {
     for (const dirName of COPY_DIRS) {
-      const sourceDir = path.join(sourcePublic, dirName);
+      const sourceDir = this.resolveExistingSource(dirName);
       const targetDir = path.join(targetWebPublic, dirName);
-      if (!exists(sourceDir)) {
+      if (!sourceDir) {
+        this.summary.filesSkipped += 1;
+        continue;
+      }
+      if (path.resolve(sourceDir) === path.resolve(targetDir)) {
         this.summary.filesSkipped += 1;
         continue;
       }
@@ -171,9 +174,13 @@ class LegacyVisualAssetsMigrator {
     }
 
     for (const fileName of ROOT_FILES) {
-      const sourceFile = path.join(sourcePublic, fileName);
+      const sourceFile = this.resolveExistingSource(fileName);
       const targetFile = path.join(targetWebPublic, fileName);
-      if (!exists(sourceFile)) {
+      if (!sourceFile) {
+        this.summary.filesSkipped += 1;
+        continue;
+      }
+      if (path.resolve(sourceFile) === path.resolve(targetFile)) {
         this.summary.filesSkipped += 1;
         continue;
       }

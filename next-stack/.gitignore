@@ -6,3 +6,5 @@ apps/web/dist/
 apps/api/.env
 .env
 artifacts/
+legacy-support/sqlite/
+.dev-logs/

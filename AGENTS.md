@@ -1,84 +1,46 @@
 ﻿# Reglas permanentes para agentes e IA en NicoReparaciones
 
 ## Alcance general
-- Este repositorio contiene tres categorías que deben distinguirse siempre:
-  - `canónico operativo`: `next-stack/`
-  - `histórico / soporte transitorio`: raíz Laravel/Blade/PHP
-  - `candidato a retiro`: solo lo clasificado explícitamente en `project-docs/CLEANUP_CANDIDATES.md` o `project-docs/CLEANUP_EXECUTION_PLAN.md`
-- Antes de tocar código o assets, identificar en qué categoría cae cada archivo.
+- Este repositorio contiene tres categorias:
+  - `canonico operativo`: `next-stack/`
+  - `legacy support transitorio`: `next-stack/legacy-support/assets/`
+  - `legacy support deprecated`: `next-stack/legacy-support/deprecated/`
+  - `historico / soporte sensible`: raiz Laravel
+- Antes de tocar codigo, assets o tooling, identificar en que categoria cae cada archivo.
 
-## Fuentes canónicas obligatorias
-- Código operativo canónico:
+## Fuentes canonicas obligatorias
+- Codigo operativo canonico:
   - `next-stack/apps/web`
   - `next-stack/apps/api`
   - `next-stack/packages/contracts`
-- Assets visuales canónicos: `next-stack/apps/web/public`
-- Entorno/configuración canónica: `next-stack/.env` y sus `.env*.example`
-- Documentación viva canónica: `project-docs/`
+- Assets visuales canonicos: `next-stack/apps/web/public`
+- Entorno/configuracion canonica: `next-stack/.env` y sus `.env*.example`
+- Documentacion viva canonica: `project-docs/`
 - Runbooks operativos del nuevo stack: `next-stack/docs/`
-- `next-stack/apps/api/.env` no debe recrearse; si aparece, tratarlo como drift respecto de la fuente canónica.
 
-## Fuentes no canónicas / históricas
-- La raíz Laravel no debe tratarse como fuente primaria para features nuevas.
-- `public/` root es histórico/transitorio; no usarlo como fuente primaria de assets del nuevo stack.
-- `docs/` root es histórico/general; no usarlo como única fuente viva de gobernanza.
+## Legacy support
+- `next-stack/legacy-support/assets/` contiene solo compatibilidad transitoria canon -> root legacy.
+- `next-stack/legacy-support/deprecated/` contiene tooling archivado:
+  - parity visual legacy
+  - SQLite de parity legacy
+  - migradores legacy
+- No reintroducir estas piezas deprecated al flujo operativo normal.
+- Cualquier uso manual de `legacy-support/deprecated/` debe quedar registrado en `project-docs/DECISIONS_LOG.md` y `CHANGELOG_AI.md`.
 
-## Reglas críticas
-- No hacer cambios destructivos sin validación humana explícita.
-- No borrar archivos, carpetas, assets, scripts, dependencias o documentación sensible sin auditar referencias primero.
-- No asumir que algo está muerto solo porque no parece usarse; confirmar con búsqueda real en el repo y documentar el hallazgo.
-- No refactorizar masivamente sin dejar antes contexto y criterio en `project-docs/`.
-- No modificar comportamiento funcional del sistema en fases de auditoría/documentación.
+## Root Laravel historico
+- Antes de tocar la raiz Laravel, revisar:
+  - `project-docs/ROOT_LEGACY_POLICY.md`
+  - `project-docs/ROOT_LEGACY_RETIREMENT_CHECKLIST.md`
+- No tratar `public/` root como fuente primaria de assets.
+- No tratar `storage/`, `bootstrap/cache/` o `vendor/` como una sola categoria: hay mezcla de runtime legacy, historico y artefactos regenerables.
 
-## Limpieza y deuda técnica
-- Toda propuesta de cleanup debe comenzar con auditoría y clasificación de riesgo.
-- Queda prohibido hacer cleanup destructivo sin clasificar primero el cambio como `bajo`, `medio` o `alto` riesgo.
-- Antes de eliminar algo, registrar:
-  - ubicación
-  - evidencia de por qué parece obsoleto
-  - riesgo
-  - validaciones humanas necesarias
-- Si el cleanup toca artefactos generados pero hay locks del sistema operativo por procesos de desarrollo, no forzar borrados a ciegas: detener procesos o dejar el ítem pendiente documentado.
-- No eliminar configuraciones, assets o scripts vinculados a migración, QA, parity visual o soporte legacy sin verificar dependencias cruzadas.
-- Si un cambio toca fuentes canónicas, aliases legacy, env, branding o soporte root legacy, registrar decisión en `project-docs/DECISIONS_LOG.md` antes o junto con la intervención.
-
-## Dependencias y librerías
-- No introducir librerías nuevas sin justificar necesidad técnica, impacto y alternativas.
-- Si una dependencia parece sospechosa o duplicada, documentarla primero en `project-docs/CLEANUP_CANDIDATES.md` o `project-docs/OPEN_QUESTIONS.md`.
-
-## Cambios en código
-- No dejar código comentado como “basura legacy”.
-- Si se toca un archivo, reportar exactamente:
-  - qué se tocó
-  - por qué
-  - si cambia comportamiento o no
-- Antes de tocar módulos sensibles, revisar contexto en:
-  - `project-docs/CANONICAL_SOURCES.md`
-  - `project-docs/ARCHITECTURE.md`
-  - `project-docs/FRONTEND_MAP.md`
-  - `project-docs/BACKEND_MAP.md`
-  - `project-docs/BUSINESS_RULES.md`
-
-## Módulos sensibles
-Tratar con especial cuidado:
-- autenticación y refresh tokens
-- settings dinámicos vía `AppSetting`
-- branding/assets públicos
-- pricing de reparaciones y productos
-- dashboard/admin service y catálogos
-- rutas alias legacy
-- scripts QA, visual parity y detach del legacy
-- políticas de `.env` y configuración operativa
-
-## Ambigüedad y validación
-- Cuando haya ambigüedad real, preguntar antes de asumir si el riesgo de error es alto.
-- Si una intervención afecta cleanup, deploy, auth, pricing o assets compartidos, pedir validación antes de ejecutar cambios irreversibles.
-- Distinguir siempre entre:
-  - `histórico`
-  - `canónico`
-  - `candidato a retiro`
+## Reglas criticas
+- No hacer cambios destructivos sin validar referencias reales.
+- No borrar piezas del root, aliases legacy, duplicados root o residuos de esquema sin decision humana explicita.
+- No usar tooling deprecated como argumento para mantener vivo el legacy “por si acaso”. Si algo se quiere conservar, debe quedar justificado documentalmente.
+- El gate canonico del proyecto es el del nuevo stack; `legacy:parity:deprecated` no forma parte del baseline.
 
 ## Registro y trazabilidad
-- Registrar decisiones técnicas en `project-docs/DECISIONS_LOG.md`.
+- Registrar decisiones tecnicas en `project-docs/DECISIONS_LOG.md`.
 - Registrar cambios asistidos por IA en `CHANGELOG_AI.md`.
-- Si una intervención relevante altera el entendimiento del repo, actualizar la documentación viva correspondiente.
+- Si una intervencion altera el entendimiento del repo, actualizar la documentacion viva correspondiente.
