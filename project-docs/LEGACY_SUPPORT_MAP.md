@@ -2,16 +2,15 @@
 
 ## Estado actual
 
-El soporte legacy tecnico fue retirado del repositorio activo.
+No existe soporte legacy tecnico dentro del repo activo.
 
-## Retirado
+## Resultado del retiro
 
-- `next-stack/legacy-support/assets/`
-- `next-stack/legacy-support/deprecated/`
-- parity visual legacy
-- SQLite legacy de parity
-- migradores legacy de settings/assets/product images
+- parity legacy: retirada
+- migradores legacy: retirados
+- mirrors de assets root: retirados
+- runtime Laravel: retirado
 
-## Situacion residual
+## Lectura correcta
 
-No queda soporte legacy vivo dentro del repo. Lo historico restante es documental, no tecnico-operativo.
+Cualquier referencia al legacy debe interpretarse solo como historia del proyecto registrada en `project-docs/DECISIONS_LOG.md` y `CHANGELOG_AI.md`.

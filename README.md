@@ -1,53 +1,70 @@
 # NicoReparaciones
 
-Estado actual del repositorio:
+NicoReparaciones es una plataforma web para un negocio de reparacion de dispositivos y venta de electronica.
 
-- stack operativo canonico: `next-stack/`
-- root Laravel legacy: retirado del flujo operativo y en proceso de eliminacion total
+## Estado del proyecto
+
+- migracion al nuevo stack: completada
+- stack operativo unico: `next-stack/`
+- root Laravel legacy: retirado del repositorio operativo
 - documentacion viva: `project-docs/`
-- runbooks tecnicos del stack nuevo: `next-stack/docs/`
-- contexto funcional/historico extendido: `docs/CONOCIMIENTO_COMPLETO_NICOREPARACIONES.txt`
+- runbooks tecnicos del stack actual: `next-stack/docs/`
 
-## Stack activo
+## Stack actual
 
 - Frontend: `React + TypeScript + Vite + Tailwind CSS`
 - Backend: `NestJS + TypeScript + Prisma`
-- Base principal: `PostgreSQL`
+- Base de datos principal: `PostgreSQL`
 - Contratos compartidos: `next-stack/packages/contracts`
 
-## Comandos principales
+## Estructura importante
 
-Desde la raiz:
+- `next-stack/apps/web`: frontend React
+- `next-stack/apps/api`: backend NestJS
+- `next-stack/packages/contracts`: contratos compartidos
+- `project-docs/`: contexto, arquitectura, reglas y decisiones
+- `next-stack/docs/`: runbooks tecnicos del stack actual
 
+## Primer arranque
+
+### Desde la raiz
 - `nico-dev.bat setup`
 - `nico-dev.bat start`
-- `nico-dev.bat stop`
-- `nico-dev.bat qa`
-- `nico-dev.bat preprod`
-- `nico-dev.bat close`
 
-Directo sobre `next-stack/`:
-
+### Directo sobre el stack canonico
 ```bash
 npm --prefix next-stack install
+npm --prefix next-stack run db:generate
 npm --prefix next-stack run env:check
 npm --prefix next-stack run dev:api
 npm --prefix next-stack run dev:web
+```
+
+## Checks principales
+
+```bash
+npm --prefix next-stack run env:check
+npm --prefix next-stack run typecheck --workspace @nico/api
+npm --prefix next-stack run typecheck --workspace @nico/web
+npm --prefix next-stack run build --workspace @nico/api
+npm --prefix next-stack run build --workspace @nico/web
 npm --prefix next-stack run smoke:backend
 npm --prefix next-stack run smoke:web
 npm --prefix next-stack run qa:route-parity
-npm --prefix next-stack run qa:migration:close
+npm --prefix next-stack run qa:legacy:detach
 ```
 
 ## Fuente de verdad del repo
 
-- arquitectura y gobernanza: `project-docs/`
-- codigo operativo: `next-stack/apps/api`, `next-stack/apps/web`
+- contexto y gobernanza: `project-docs/`
+- codigo operativo: `next-stack/apps/api` y `next-stack/apps/web`
 - assets canonicos: `next-stack/apps/web/public`
 - entorno canonico: `next-stack/.env`
 
-## Notas
+## Reglas de trabajo
 
-- No usar tooling Laravel root ni asumir que la raiz sigue siendo runtime valido.
-- No reintroducir soporte legacy fuera de `project-docs/` sin una decision tecnica documentada.
-- Antes de tocar partes sensibles del repo, revisar `AGENTS.md` y `project-docs/WORKFLOW_AI.md`.
+- no reintroducir runtime legacy
+- no crear segundas fuentes de verdad para assets, env o documentacion
+- registrar decisiones tecnicas en `project-docs/DECISIONS_LOG.md`
+- registrar cambios asistidos por IA en `CHANGELOG_AI.md`
+- revisar `AGENTS.md` y `project-docs/WORKFLOW_AI.md` antes de cambios sensibles

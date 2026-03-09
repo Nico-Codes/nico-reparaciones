@@ -1,28 +1,21 @@
 # CANONICAL_SOURCES
 
-## Fuentes canonicas
+## Fuentes canonicas del proyecto
 
-- Codigo operativo: `next-stack/`
-- Frontend: `next-stack/apps/web`
-- Backend: `next-stack/apps/api`
-- Contratos compartidos: `next-stack/packages/contracts`
-- Assets visuales: `next-stack/apps/web/public`
-- Entorno: `next-stack/.env`
-- Documentacion viva: `project-docs/`
-- Runbooks del stack actual: `next-stack/docs/`
+- codigo operativo: `next-stack/`
+- frontend: `next-stack/apps/web`
+- backend: `next-stack/apps/api`
+- contratos compartidos: `next-stack/packages/contracts`
+- assets visuales: `next-stack/apps/web/public`
+- entorno y configuracion: `next-stack/.env` y `.env*.example` dentro de `next-stack/`
+- documentacion viva: `project-docs/`
+- runbooks operativos: `next-stack/docs/`
 
-## Fuentes historicas no canonicas
+## Fuentes no canonicas
 
-- `docs/` root
-- PDFs historicos en raiz
-
-## Fuentes retiradas
-
-- runtime Laravel root
-- `public/` root
-- `storage/` root
-- `next-stack/legacy-support/`
+No existen otras fuentes operativas dentro del repo.
+Cualquier referencia al legado debe entenderse solo como historial documental, no como base tecnica activa.
 
 ## Regla permanente
 
-Si una pieza no vive bajo `next-stack/` o `project-docs/`, no debe asumirse como fuente operativa del sistema.
+Si una pieza no vive bajo `next-stack/`, `project-docs/` o `next-stack/docs/`, no debe asumirse como fuente de verdad del sistema.

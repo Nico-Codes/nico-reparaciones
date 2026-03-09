@@ -77,3 +77,33 @@
 - Riesgos / notas:
   - el unico material root restante es documental/historico
   - el siguiente paso ya no es tecnico, sino decidir si se conserva o reduce aun mas el material historico de raiz
+
+### 2026-03-09 - Codex
+- Alcance: Fase Final de cierre de migracion para consolidar documentacion, retirar historicos narrativos redundantes y declarar el repo cerrado sobre el nuevo stack.
+- Tipo de intervencion: consolidacion documental final + limpieza de historicos.
+- Archivos tocados:
+  - `project-docs/MIGRATION_CLOSURE.md`
+  - `project-docs/MIGRATION_STATUS.md`
+  - `project-docs/PROJECT_CONTEXT.md`
+  - `project-docs/REPO_MAP.md`
+  - `project-docs/WORKFLOW_AI.md`
+  - `project-docs/CANONICAL_SOURCES.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `README.md`
+  - `AGENTS.md`
+  - `next-stack/docs/DEPLOY_VPS_UBUNTU.md`
+  - historicos documentales retirados de la raiz
+- ¿Cambio comportamiento funcional?: No del producto. Si del repositorio: cierre formal de migracion y reduccion de ruido documental.
+- Validaciones ejecutadas:
+  - `npm run env:check`
+  - `npm run typecheck --workspace @nico/api`
+  - `npm run typecheck --workspace @nico/web`
+  - `npm run build --workspace @nico/api`
+  - `npm run build --workspace @nico/web`
+  - `npm run smoke:backend`
+  - `npm run smoke:web`
+  - `npm run qa:route-parity`
+  - `npm run qa:legacy:detach`
+- Riesgos / notas:
+  - `project-docs/` queda como unica documentacion viva.
+  - `next-stack/docs/` queda como capa de runbooks operativos del stack actual.

@@ -57,3 +57,15 @@ Registrar decisiones tecnicas confirmadas para evitar dependencia de memoria ora
 - Archivos / modulos afectados: runtime Laravel root, `next-stack/legacy-support/`, `.github/workflows/ci.yml`, `nico-dev.bat`, `README.md`, `project-docs/*`.
 - Validacion requerida: gate operativo del nuevo stack.
 - Responsable: Codex + operador humano
+
+### [DL-0021]
+- Fecha: 2026-03-09
+- Estado: aceptada
+- Tema: cierre oficial de migracion y consolidacion documental final
+- Contexto: el stack nuevo ya habia reemplazado completamente al legacy y el repo quedo sin runtime Laravel ni tooling heredado activo.
+- Decision: declarar oficialmente cerrada la migracion, consolidar `project-docs/` como unica documentacion viva, mantener `next-stack/docs/` como runbooks del stack actual y retirar historicos narrativos redundantes del repo.
+- Impacto: elimina ambiguedad sobre el estado del proyecto y deja un repositorio coherente para desarrollo normal sobre el nuevo stack.
+- Alternativas consideradas: conservar documentos historicos narrativos dentro del repo; descartado por duplicacion y ruido documental.
+- Archivos / modulos afectados: `project-docs/MIGRATION_CLOSURE.md`, `project-docs/MIGRATION_STATUS.md`, `README.md`, `AGENTS.md`, `CHANGELOG_AI.md`, historicos documentales retirados.
+- Validacion requerida: gate canonico del nuevo stack.
+- Responsable: Codex + operador humano

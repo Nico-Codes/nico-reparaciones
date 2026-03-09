@@ -2,20 +2,14 @@
 
 ## Estado actual
 
-La limpieza estructural mayor ya fue ejecutada:
-- runtime Laravel root retirado
-- soporte legacy retirado
-- batch/CI/readme alineados al nuevo stack
+La limpieza de migracion y consolidacion del repo esta cerrada.
 
-## Limpieza pendiente de baja complejidad
+## Trabajo futuro ya fuera de migracion
 
-1. decidir si `docs/` historico se conserva completo o se reduce
-2. decidir si los PDFs historicos de raiz se conservan o salen del repo
-3. hacer una pasada final de narrativa/documentacion si se quiere un repo mas austero
+- mejoras funcionales del stack nuevo
+- optimizacion tecnica del frontend o backend
+- decisiones de deploy y operacion productiva
 
-## Lo que ya no aplica
+## No hay etapas pendientes de retiro legacy
 
-- retirar parity legacy
-- retirar migradores legacy
-- retirar mirrors root de assets
-- retirar runtime Laravel
+El legacy ya no forma parte del sistema operativo del repositorio.

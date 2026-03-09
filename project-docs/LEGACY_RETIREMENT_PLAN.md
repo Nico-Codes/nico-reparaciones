@@ -2,22 +2,16 @@
 
 ## Estado actual
 
-El retiro del legacy quedo materialmente ejecutado.
+El retiro del legado esta completado.
 
-- runtime Laravel root: retirado
-- tooling `legacy-support`: retirado
-- auth social legacy: retirada
-- parity visual legacy: retirada del flujo del repo
-- migradores legacy: retirados del repo activo
+## Resultado
 
-## Lo que queda por decidir
+- runtime legacy: retirado
+- tooling legacy: retirado
+- documentacion de transicion redundante: retirada
+- repo consolidado sobre `next-stack/`
 
-### Etapa final opcional
-1. conservar o no `docs/CONOCIMIENTO_COMPLETO_NICOREPARACIONES.txt` como contexto historico extendido
-2. conservar o no los PDFs historicos de raiz
-3. hacer una limpieza final de menciones historicas si se busca un repo mas austero
+## Siguiente etapa
 
-## Conclusion
-
-El repo ya no depende del legacy para operar, validar ni desarrollar.
-El siguiente paso ya no es tecnico-estructural sino de curacion documental final.
+No existe una siguiente etapa de retiro legacy.
+Las tareas futuras pertenecen al ciclo normal de evolucion del stack nuevo.

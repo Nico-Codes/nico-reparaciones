@@ -1,27 +1,39 @@
 # MIGRATION_STATUS
 
-## Estado resumido
+## Estado actual
 
-La migracion tecnica esta cerrada.
+La migracion tecnica y estructural esta cerrada.
 
 - stack operativo real: `next-stack/`
 - root Laravel legacy: retirado materialmente
 - soporte parity/migradores legacy: retirado
 - assets canonicos: `next-stack/apps/web/public`
 - entorno canonico: `next-stack/.env`
+- documentacion viva: `project-docs/`
 
 ## Evidencia tecnica
 
-- `env:check`, typecheck, build, smoke y route parity corren sobre `next-stack`
-- CI reescrito para el nuevo stack
-- `nico-dev.bat` reescrito para el nuevo stack
-- el repo ya no contiene runtime Laravel ni tooling legacy activo
+- `env:check` corre sobre `next-stack`
+- typecheck y build de API y web corren sobre `next-stack`
+- `smoke:backend` y `smoke:web` validan la base operativa real
+- `qa:route-parity` valida rutas y consumo API del stack nuevo
+- `qa:legacy:detach` confirma ausencia de acoples operativos al legado
+- CI y batch raiz ya fueron reescritos al stack nuevo
 
-## Pendientes reales
+## Qué significa “migracion cerrada”
+
+Significa que:
+- el nuevo stack reemplazo al legacy dentro del repo operativo
+- ya no existe convivencia tecnica entre stacks
+- el proyecto puede continuar evolucionando sin depender del runtime Laravel
+
+## Lo pendiente no pertenece a migracion
 
 - deploy productivo real
-- posibles limpiezas documentales finales en `docs/` y material historico de raiz
+- endurecimiento y operacion del entorno destino
+- mejoras funcionales o tecnicas futuras del stack nuevo
 
 ## Conclusion
 
-La migracion dejo de ser una transicion entre stacks: el stack viejo ya fue retirado del repositorio operativo.
+La migracion no esta “casi cerrada”: esta cerrada.
+El proyecto ya fue consolidado oficialmente sobre el nuevo stack.

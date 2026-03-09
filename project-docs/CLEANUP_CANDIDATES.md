@@ -1,26 +1,9 @@
 # CLEANUP_CANDIDATES
 
-## Candidatos restantes
+## Estado actual
 
-### 1. `docs/CONOCIMIENTO_COMPLETO_NICOREPARACIONES.txt`
-- Motivo: sigue siendo util como contexto historico extendido, pero podria migrarse totalmente a `project-docs/` si se quiere unificar fuentes.
-- Riesgo: medio
-- Validacion humana: si
+No quedan candidatos de limpieza vinculados a la migracion ni historicos redundantes dentro del repo operativo.
 
-### 2. PDFs historicos de raiz
-- Motivo: no son operativos.
-- Riesgo: bajo
-- Validacion humana: recomendable
+## Criterio futuro
 
-### 3. `docs/` root restante
-- Motivo: ya no describe tooling operativo del sistema.
-- Riesgo: bajo/medio segun valor documental percibido.
-- Validacion humana: si
-
-## Ya retirado
-
-- root Laravel runtime
-- `next-stack/legacy-support/`
-- parity legacy
-- migradores legacy
-- mirrors root de assets
+Cualquier nuevo candidato de cleanup debe nacer de cambios posteriores al cierre de migracion, no de arrastres legacy.
