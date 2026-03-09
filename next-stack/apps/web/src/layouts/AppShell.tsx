@@ -1,10 +1,11 @@
-﻿import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { HelpCircle, LogOut, Menu, Package, Settings, User, Wrench, WrenchIcon, X } from 'lucide-react';
+import { ChevronDown, HelpCircle, LogOut, Menu, Package, Settings, User, Wrench, WrenchIcon, X } from 'lucide-react';
 import { CartAddedPopup } from '@/features/cart/CartAddedPopup';
 import { useCartCount } from '@/features/cart/useCart';
 import { authStorage } from '@/features/auth/storage';
 import type { AuthUser } from '@/features/auth/types';
+import { cn } from '@/lib/utils';
 import { storeApi } from '@/features/store/api';
 import type { StoreBrandingAssets } from '@/features/store/types';
 
@@ -21,8 +22,25 @@ type LinkItem = {
   badgeCount?: number;
 };
 
+type ShellContext = 'admin' | 'store' | 'account';
+
 function isActiveGroup(pathname: string, prefixes: string[]) {
   return prefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+}
+
+function resolveShellContext(pathname: string): ShellContext {
+  if (pathname === '/admin' || pathname.startsWith('/admin/')) return 'admin';
+  if (
+    pathname === '/checkout' ||
+    pathname === '/mi-cuenta' ||
+    pathname === '/orders' ||
+    pathname.startsWith('/orders/') ||
+    pathname === '/repairs' ||
+    pathname.startsWith('/repairs/')
+  ) {
+    return 'account';
+  }
+  return 'store';
 }
 
 function WarnIcon() {
@@ -126,6 +144,7 @@ function MenuLink({
 export function AppShell({ children }: AppShellProps) {
   const location = useLocation();
   const navigate = useNavigate();
+  const shellContext = resolveShellContext(location.pathname);
   const cartCount = useCartCount();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
@@ -229,7 +248,7 @@ export function AppShell({ children }: AppShellProps) {
   const iconRepairsUrl = branding?.icons.misReparaciones || null;
   const iconDashboardUrl = branding?.icons.dashboard || null;
   const iconStoreUrl = branding?.icons.tienda || null;
-  const emailStatusText = authUser?.emailVerified ? 'Email verificado' : 'Email pendiente de verificación';
+  const emailStatusText = authUser?.emailVerified ? 'Correo verificado' : 'Correo pendiente de verificación';
   const userInitial = authUser?.name?.trim()?.charAt(0)?.toUpperCase() || 'U';
 
   const desktopLinks = useMemo<LinkItem[]>(
@@ -307,15 +326,15 @@ export function AppShell({ children }: AppShellProps) {
   const focusFirstAccountItem = () => focusAccountItem(0);
 
   return (
-    <div className="min-h-screen bg-zinc-50 text-zinc-900">
-      <header className="sticky top-0 z-[80] border-b border-zinc-200 bg-white shadow-sm md:bg-white/90 md:backdrop-blur">
+    <div className="app-shell text-zinc-900" data-shell-context={shellContext}>
+      <header className="shell-header sticky top-0 z-[80] border-b shadow-sm">
         <div className="container-page">
           <div className="flex h-14 items-center justify-between gap-3">
             <div className="flex min-w-0 items-center gap-3">
               {!isDesktop ? (
                 <button
                   className="icon-btn"
-                  aria-label="Abrir menu"
+                  aria-label="Abrir menú"
                   aria-expanded={sidebarOpen ? 'true' : 'false'}
                   type="button"
                   onClick={() => {
@@ -337,7 +356,7 @@ export function AppShell({ children }: AppShellProps) {
                 )}
                 <div className="min-w-0 leading-tight">
                   <BrandWordmark title={brandTitle} />
-                  <div className="hidden truncate text-[11px] text-zinc-500 sm:block">Servicio Tecnico Profesional y Tienda de Electronica</div>
+                  <div className="hidden truncate text-[11px] text-zinc-500 sm:block">Servicio técnico profesional y tienda de electrónica</div>
                 </div>
               </Link>
             </div>
@@ -370,7 +389,7 @@ export function AppShell({ children }: AppShellProps) {
                 </>
               ) : null}
 
-              <Link to="/carrito" className="relative mr-2 inline-flex items-center justify-center rounded-none border-0 bg-transparent p-0 text-zinc-800 transition-colors hover:bg-transparent hover:text-sky-700" aria-label="Carrito">
+              <Link to="/cart" className="relative mr-2 inline-flex items-center justify-center rounded-none border-0 bg-transparent p-0 text-zinc-800 transition-colors hover:bg-transparent hover:text-sky-700" aria-label="Carrito">
                 {iconCartUrl ? <img src={iconCartUrl} alt="" className="h-7 w-7 object-contain" /> : <CartGlyph />}
                 {cartCount > 0 ? (
                   <span className="absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-sky-600 px-1 text-[10px] font-black leading-4 text-white ring-2 ring-white">
@@ -398,7 +417,7 @@ export function AppShell({ children }: AppShellProps) {
                     aria-expanded={accountOpen ? 'true' : 'false'}
                     aria-haspopup="menu"
                     aria-controls="account-menu"
-                    aria-label="Abrir menu de cuenta"
+                    aria-label="Abrir menú de cuenta"
                     type="button"
                     onClick={() => {
                       if (!isDesktop) setSidebarOpen(false);
@@ -416,7 +435,7 @@ export function AppShell({ children }: AppShellProps) {
                       <User className="h-5 w-5" />
                     </span>
                     <span className="hidden max-w-[12rem] truncate sm:inline">{authUser.name || 'Cuenta'}</span>
-                    <span className="hidden sm:inline">▼</span>
+                    <ChevronDown className="hidden h-4 w-4 text-zinc-500 sm:inline-block" />
                   </button>
                   <div className="absolute right-0 top-full h-2 w-64" aria-hidden="true" />
 
@@ -524,10 +543,10 @@ export function AppShell({ children }: AppShellProps) {
                       <Wrench className="h-4 w-4 text-sky-600" />
                     </div>
                   )}
-                  <div className="font-black text-zinc-900">Menu</div>
+                  <div className="font-black text-zinc-900">Menú</div>
                 </div>
 
-                <button className="icon-btn" aria-label="Cerrar menu" type="button" onClick={() => setSidebarOpen(false)}>
+                <button className="icon-btn" aria-label="Cerrar menú" type="button" onClick={() => setSidebarOpen(false)}>
                   <X className="h-5 w-5" />
                 </button>
               </div>
@@ -546,7 +565,7 @@ export function AppShell({ children }: AppShellProps) {
                 ) : null}
 
                 <div className="sidebar-section space-y-2">
-                  <div className="sidebar-title">Navegacion</div>
+                  <div className="sidebar-title">Navegación</div>
                   <div className="sidebar-links">
                     {sidebarNavLinks.map((link) => (
                       <Link key={link.label} className={`sidebar-link ${link.active ? 'active' : ''}`} to={link.to} onClick={() => setSidebarOpen(false)}>
@@ -584,7 +603,7 @@ export function AppShell({ children }: AppShellProps) {
                       <>
                         <button type="button" className={`sidebar-link flex items-center justify-between gap-2 ${adminSectionOpen ? 'active' : ''}`} onClick={() => setAdminSectionOpen((prev) => !prev)}>
                           <span>Admin</span>
-                          <span className={`transition-transform ${adminSectionOpen ? 'rotate-180' : ''}`}>⌄</span>
+                          <ChevronDown className={`h-4 w-4 transition-transform ${adminSectionOpen ? 'rotate-180' : ''}`} />
                         </button>
                         <div className={adminSectionOpen ? '' : 'hidden'}>
                           <div className="ml-2 grid gap-1 border-l border-zinc-200 pl-2">
@@ -623,9 +642,9 @@ export function AppShell({ children }: AppShellProps) {
         ) : null}
       </header>
 
-      <main className="container-page py-6">{children}</main>
+      <main className={cn('shell-main container-page')}>{children}</main>
 
-      <footer className="mt-8 border-t border-zinc-100 bg-white">
+      <footer className="shell-footer mt-8 border-t bg-white">
         <div className="container-page grid gap-6 py-6 md:grid-cols-3">
           <div>
             <div className="flex items-center gap-2">
@@ -634,15 +653,15 @@ export function AppShell({ children }: AppShellProps) {
               </div>
               <div className="font-black tracking-tight">{brandTitle}</div>
             </div>
-            <p className="mt-2 text-sm text-zinc-500">Tienda simple + consulta de reparaciones.</p>
+            <p className="mt-2 text-sm text-zinc-500">Tienda, seguimiento de reparaciones y panel administrativo en una sola plataforma.</p>
           </div>
 
           <div className="text-sm">
             <div className="mb-2 font-black text-zinc-900">Accesos</div>
             <div className="grid gap-1 text-zinc-700">
               <Link to="/store" className="hover:text-zinc-900">Tienda</Link>
-              <Link to="/carrito" className="hover:text-zinc-900">Carrito</Link>
-              <Link to="/reparacion" className="hover:text-zinc-900">Consultar Reparación</Link>
+              <Link to="/cart" className="hover:text-zinc-900">Carrito</Link>
+              <Link to="/reparacion" className="hover:text-zinc-900">Consultar reparación</Link>
             </div>
           </div>
 
@@ -677,3 +696,4 @@ export function AppShell({ children }: AppShellProps) {
     </div>
   );
 }
+

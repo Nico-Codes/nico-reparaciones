@@ -2,12 +2,17 @@ import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 
 const TARGET_SELECTOR = [
+  'main [data-reveal]',
   'main .page-head',
+  'main .page-header',
+  'main .filter-bar',
   'main .store-hero',
   'main .store-front-hero',
   'main .store-toolbar',
   'main .store-categories',
   'main .card',
+  'main .section-card',
+  'main .empty-state',
 ].join(', ');
 
 function collectTargets(root: ParentNode = document) {

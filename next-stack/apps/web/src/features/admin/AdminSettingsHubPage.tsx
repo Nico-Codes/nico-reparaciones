@@ -1,164 +1,223 @@
-﻿import { Link } from 'react-router-dom';
+import type { LucideIcon } from 'lucide-react';
+import {
+  BarChart3,
+  Building2,
+  Calculator,
+  FileText,
+  HelpCircle,
+  ImageIcon,
+  Mail,
+  MessageSquare,
+  Palette,
+  ShieldCheck,
+} from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/ui/page-header';
+import { PageShell } from '@/components/ui/page-shell';
+import { SectionCard } from '@/components/ui/section-card';
+import { StatusBadge } from '@/components/ui/status-badge';
 
 type ConfigCard = {
   title: string;
   description: string;
   tag: string;
   to?: string;
-  icon?: string;
-  tone?: 'sky' | 'zinc';
+  icon: LucideIcon;
+  tone?: 'accent' | 'info';
 };
 
 const DAILY_CARDS: ConfigCard[] = [
   {
     title: 'Correo SMTP',
-    description: 'Estado de mail y prueba de envío al instante.',
+    description: 'Estado del correo y prueba de envío inmediata desde el panel.',
     tag: 'Listo',
     to: '/admin/configuracion/mail',
-    icon: '⚙',
-    tone: 'sky',
+    icon: Mail,
+    tone: 'info',
   },
   {
     title: 'Reportes automáticos',
-    description: 'Destinatarios, día/hora y envío manual de KPIs.',
+    description: 'Destinatarios, frecuencia y disparo manual de reportes operativos.',
     tag: 'Activo',
     to: '/admin/configuracion/reportes',
-    icon: '📊',
-    tone: 'sky',
+    icon: BarChart3,
+    tone: 'info',
   },
   {
     title: 'Datos del negocio',
-    description: 'Teléfono, dirección y horarios usados por toda la web.',
-    tag: 'Básico',
+    description: 'Teléfono, dirección y horarios compartidos con la web pública.',
+    tag: 'Base',
     to: '/admin/configuracion/negocio',
-    icon: '⚙',
-    tone: 'sky',
+    icon: Building2,
+    tone: 'info',
   },
   {
     title: 'Reglas de cálculo',
-    description: 'Productos y reparaciones con cálculo automático editable.',
+    description: 'Parámetros de productos y reparaciones con cálculo automático.',
     tag: 'Módulo',
     to: '/admin/calculos',
-    icon: '⚙',
-    tone: 'sky',
+    icon: Calculator,
+    tone: 'info',
   },
 ];
 
 const ADVANCED_CARDS: ConfigCard[] = [
   {
     title: 'Plantillas de correo',
-    description: 'Textos de verificación, recuperación y confirmación.',
-    tag: 'Por defecto',
+    description: 'Verificación, recuperación y confirmaciones editables.',
+    tag: 'Predeterminado',
     to: '/admin/mail-templates',
-    icon: '⚙',
+    icon: FileText,
   },
   {
     title: 'Centro de ayuda',
-    description: 'Problemas y respuestas editables para usuarios y admin.',
+    description: 'Preguntas y respuestas visibles para usuarios y equipo interno.',
     tag: 'Módulo',
     to: '/admin/help',
-    icon: '⚙',
+    icon: HelpCircle,
   },
   {
     title: 'Identidad visual',
-    description: 'Logos, íconos y recursos visuales editables.',
+    description: 'Logos, favicons, iconos y recursos visuales del sistema.',
     tag: 'Módulo',
     to: '/admin/configuracion/identidadvisual',
-    icon: '🏛',
+    icon: Palette,
   },
   {
     title: 'Portada de tienda',
-    description: 'Cambia la imagen de fondo principal sin tocar código.',
+    description: 'Imagen principal y configuración visual de la home comercial.',
     tag: 'Módulo',
     to: '/admin/configuracion/portadatienda',
-    icon: '🏛',
+    icon: ImageIcon,
   },
   {
     title: 'Seguridad 2FA',
-    description: 'Gestión de segundo factor para acceso admin.',
-    tag: 'Módulo',
+    description: 'Segundo factor para reforzar el acceso al panel administrativo.',
+    tag: 'Seguridad',
     to: '/admin/seguridad/2fa',
-    icon: '⚙',
+    icon: ShieldCheck,
   },
   {
     title: 'Plantillas WhatsApp',
-    description: 'Mensajes de seguimiento para reparaciones.',
+    description: 'Mensajes por estado para reparaciones y seguimiento al cliente.',
     tag: 'Módulo',
     to: '/admin/whatsapp',
-    icon: '📦',
+    icon: MessageSquare,
   },
   {
     title: 'WhatsApp pedidos',
-    description: 'Mensajes por estado para comunicación de pedidos.',
+    description: 'Mensajes por estado para confirmación y retiro de pedidos.',
     tag: 'Módulo',
     to: '/admin/whatsapppedidos',
-    icon: '📦',
+    icon: MessageSquare,
   },
 ];
 
 export function AdminSettingsHubPage() {
   return (
-    <div className="store-shell space-y-6">
-      <section className="store-hero">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-black tracking-tight text-zinc-900">Configuración</h1>
-            <p className="mt-1 text-sm text-zinc-600">Centro de control para ajustes del sistema.</p>
-          </div>
-          <Link to="/admin" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">Volver al panel</Link>
-        </div>
-      </section>
+    <PageShell context="admin">
+      <PageHeader
+        context="admin"
+        eyebrow="Configuración"
+        title="Centro de configuración"
+        subtitle="Ajustes operativos, visuales y de comunicación para todo el sistema."
+        actions={
+          <Button variant="outline" asChild>
+            <Link to="/admin">Volver al panel</Link>
+          </Button>
+        }
+      />
 
-      <ConfigSection title="USO DIARIO" cards={DAILY_CARDS} tone="sky" />
-      <ConfigSection title="CONFIGURACIÓN AVANZADA" cards={ADVANCED_CARDS} tone="zinc" />
-    </div>
+      <ConfigSection
+        title="Operación diaria"
+        description="Configuraciones que impactan el funcionamiento diario del negocio."
+        cards={DAILY_CARDS}
+        tone="info"
+      />
+
+      <ConfigSection
+        title="Configuración avanzada"
+        description="Módulos visuales, seguridad y automatizaciones que complementan la operación."
+        cards={ADVANCED_CARDS}
+        tone="accent"
+      />
+    </PageShell>
   );
 }
 
-function ConfigSection({ title, cards, tone }: { title: string; cards: ConfigCard[]; tone: 'sky' | 'zinc' }) {
+function ConfigSection({
+  title,
+  description,
+  cards,
+  tone,
+}: {
+  title: string;
+  description: string;
+  cards: ConfigCard[];
+  tone: 'accent' | 'info';
+}) {
   return (
-    <section className="space-y-3">
-      <div className="text-sm font-black uppercase tracking-wide text-zinc-500">{title}</div>
+    <SectionCard title={title} description={description}>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {cards.map((card) => (
           <ConfigModuleCard key={card.title} card={card} sectionTone={tone} />
         ))}
       </div>
-    </section>
+    </SectionCard>
   );
 }
 
-function ConfigModuleCard({ card, sectionTone }: { card: ConfigCard; sectionTone: 'sky' | 'zinc' }) {
+function ConfigModuleCard({
+  card,
+  sectionTone,
+}: {
+  card: ConfigCard;
+  sectionTone: 'accent' | 'info';
+}) {
+  const Icon = card.icon;
   const tone = card.tone ?? sectionTone;
-  const cardTone = tone === 'sky'
-    ? 'border-sky-100 bg-gradient-to-r from-white to-sky-50/70'
-    : 'border-zinc-100 bg-white';
+  const toneClass =
+    tone === 'info'
+      ? 'border-sky-100 bg-gradient-to-br from-white to-sky-50/75'
+      : 'border-indigo-100 bg-gradient-to-br from-white to-indigo-50/75';
 
   const content = (
     <>
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="text-xl font-black tracking-tight text-zinc-900">{card.title}</div>
-          <p className="mt-1 text-sm leading-6 text-zinc-600">{card.description}</p>
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-zinc-100 bg-white text-zinc-700 shadow-sm">
+              <Icon className="h-5 w-5" />
+            </span>
+            <StatusBadge
+              tone={tone === 'info' ? 'info' : 'accent'}
+              size="sm"
+              label={card.tag}
+            />
+          </div>
+          <div className="text-lg font-extrabold tracking-tight text-zinc-950">{card.title}</div>
+          <p className="text-sm leading-6 text-zinc-600">{card.description}</p>
         </div>
-        <div className="text-lg text-zinc-400">{card.icon ?? '⚙'}</div>
       </div>
-      <div className="mt-4 space-y-2">
-        <span className="inline-flex h-7 items-center rounded-full border border-zinc-200 bg-zinc-50 px-3 text-sm font-bold text-zinc-700">
-          {card.tag}
-        </span>
-        <div className="block text-sm font-black text-sky-700">Abrir módulo</div>
-      </div>
+      <div className="mt-5 text-sm font-bold text-sky-700">Abrir módulo</div>
     </>
   );
 
   if (!card.to) {
-    return <div className={`card ${cardTone}`}><div className="card-body p-4">{content}</div></div>;
+    return (
+      <div className={`section-card ${toneClass}`}>
+        <div className="section-card__body">{content}</div>
+      </div>
+    );
   }
 
   return (
-    <Link to={card.to} className={`card block transition hover:-translate-y-0.5 hover:shadow-[0_14px_34px_-24px_#0f172a33] ${cardTone}`}>
-      <div className="card-body p-4">{content}</div>
+    <Link
+      to={card.to}
+      className={`section-card block transition duration-150 hover:-translate-y-0.5 hover:border-zinc-200 hover:shadow-[0_20px_40px_-28px_rgba(15,23,42,0.35)] ${toneClass}`}
+    >
+      <div className="section-card__body">{content}</div>
     </Link>
   );
 }

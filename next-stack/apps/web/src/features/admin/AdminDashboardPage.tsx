@@ -1,8 +1,17 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
+import { FilterBar } from '@/components/ui/filter-bar';
+import { LoadingBlock } from '@/components/ui/loading-block';
+import { PageHeader } from '@/components/ui/page-header';
+import { PageShell } from '@/components/ui/page-shell';
+import { SectionCard } from '@/components/ui/section-card';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { adminApi, type AdminDashboardResponse } from './api';
 
 type RangeKey = '7' | '30' | '90';
+type BadgeTone = 'neutral' | 'info' | 'accent' | 'success' | 'warning' | 'danger';
 
 const ORDER_STATUS_LABELS: Record<string, string> = {
   PENDING: 'Pendiente',
@@ -17,30 +26,38 @@ const REPAIR_STATUS_LABELS: Record<string, string> = {
   RECEIVED: 'Recibido',
   DIAGNOSING: 'Diagnosticando',
   WAITING_APPROVAL: 'Esperando aprobación',
+  REPAIRING: 'En reparación',
   IN_REPAIR: 'En reparación',
   READY_PICKUP: 'Listo para retirar',
   DELIVERED: 'Entregado',
   CANCELLED: 'Cancelado',
 };
 
-const ORDER_STATUS_TONES: Record<string, string> = {
-  PENDING: 'bg-amber-50 text-amber-700 border-amber-200',
-  CONFIRMED: 'bg-sky-50 text-sky-700 border-sky-200',
-  PREPARING: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-  READY_PICKUP: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  DELIVERED: 'bg-zinc-100 text-zinc-700 border-zinc-200',
-  CANCELLED: 'bg-rose-50 text-rose-700 border-rose-200',
+const ORDER_STATUS_TONES: Record<string, BadgeTone> = {
+  PENDING: 'warning',
+  CONFIRMED: 'info',
+  PREPARING: 'accent',
+  READY_PICKUP: 'success',
+  DELIVERED: 'neutral',
+  CANCELLED: 'danger',
 };
 
-const REPAIR_STATUS_TONES: Record<string, string> = {
-  RECEIVED: 'bg-amber-50 text-amber-700 border-amber-200',
-  DIAGNOSING: 'bg-sky-50 text-sky-700 border-sky-200',
-  WAITING_APPROVAL: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-  IN_REPAIR: 'bg-blue-50 text-blue-700 border-blue-200',
-  READY_PICKUP: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  DELIVERED: 'bg-zinc-100 text-zinc-700 border-zinc-200',
-  CANCELLED: 'bg-rose-50 text-rose-700 border-rose-200',
+const REPAIR_STATUS_TONES: Record<string, BadgeTone> = {
+  RECEIVED: 'warning',
+  DIAGNOSING: 'info',
+  WAITING_APPROVAL: 'accent',
+  REPAIRING: 'accent',
+  IN_REPAIR: 'accent',
+  READY_PICKUP: 'success',
+  DELIVERED: 'neutral',
+  CANCELLED: 'danger',
 };
+
+const RANGE_OPTIONS: Array<{ key: RangeKey; label: string }> = [
+  { key: '7', label: '7 días' },
+  { key: '30', label: '30 días' },
+  { key: '90', label: '90 días' },
+];
 
 export function AdminDashboardPage() {
   const [data, setData] = useState<AdminDashboardResponse | null>(null);
@@ -48,42 +65,37 @@ export function AdminDashboardPage() {
   const [error, setError] = useState('');
   const [range, setRange] = useState<RangeKey>('30');
 
-  async function load() {
-    setLoading(true);
-    setError('');
-    try {
-      const res = await adminApi.dashboard();
-      setData(res);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error cargando dashboard');
-    } finally {
-      setLoading(false);
-    }
-  }
-
   useEffect(() => {
-    void load();
+    let mounted = true;
+
+    async function loadDashboard() {
+      setLoading(true);
+      setError('');
+      try {
+        const res = await adminApi.dashboard();
+        if (!mounted) return;
+        setData(res);
+      } catch (e) {
+        if (!mounted) return;
+        setError(e instanceof Error ? e.message : 'No se pudo cargar el dashboard.');
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+
+    void loadDashboard();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const summary = useMemo(() => {
     if (!data) return null;
 
-    const deliveredOrders = data.recent.orders.filter((o) => o.status === 'DELIVERED');
-    const deliveredRevenue = deliveredOrders.reduce((acc, o) => acc + o.total, 0);
+    const deliveredOrders = data.recent.orders.filter((order) => order.status === 'DELIVERED');
+    const deliveredRevenue = deliveredOrders.reduce((acc, order) => acc + order.total, 0);
     const ticketAverage = deliveredOrders.length ? deliveredRevenue / deliveredOrders.length : 0;
-    const deliveryRate = data.metrics.orders.createdToday
-      ? Math.round((deliveredOrders.length / data.metrics.orders.createdToday) * 100)
-      : null;
-
-    const deliveredRepairs = data.recent.repairs.filter((r) => r.status === 'DELIVERED');
-    const avgRepairValue = deliveredRepairs.length
-      ? deliveredRepairs.reduce((acc, r) => acc + (r.finalPrice ?? r.quotedPrice ?? 0), 0) / deliveredRepairs.length
-      : 0;
-
-    const lowStockProducts = data.metrics.products.lowStock;
-    const pendingApprovals = data.metrics.repairs.open;
-    const whatsappPending = data.alerts.find((a) => a.id === 'pending-flow-orders')?.value ?? 0;
-
     const orderStatusCounts: Record<string, number> = {
       PENDING: 0,
       CONFIRMED: 0,
@@ -92,481 +104,422 @@ export function AdminDashboardPage() {
       DELIVERED: 0,
       CANCELLED: 0,
     };
-    for (const order of data.recent.orders) {
-      if (order.status in orderStatusCounts) orderStatusCounts[order.status] += 1;
-    }
 
     const repairStatusCounts: Record<string, number> = {
       RECEIVED: 0,
       DIAGNOSING: 0,
       WAITING_APPROVAL: 0,
-      IN_REPAIR: 0,
+      REPAIRING: 0,
       READY_PICKUP: 0,
       DELIVERED: 0,
       CANCELLED: 0,
     };
-    for (const repair of data.recent.repairs) {
-      if (repair.status in repairStatusCounts) repairStatusCounts[repair.status] += 1;
+
+    for (const order of data.recent.orders) {
+      if (order.status in orderStatusCounts) orderStatusCounts[order.status] += 1;
     }
+
+    for (const repair of data.recent.repairs) {
+      const key = repair.status === 'IN_REPAIR' ? 'REPAIRING' : repair.status;
+      if (key in repairStatusCounts) repairStatusCounts[key] += 1;
+    }
+
+    const deliveredRepairs = data.recent.repairs.filter((repair) =>
+      repair.status === 'DELIVERED',
+    );
 
     return {
       deliveredRevenue,
       ticketAverage,
-      deliveryRate,
-      avgRepairValue,
-      lowStockProducts,
-      pendingApprovals,
-      whatsappPending,
+      avgRepairValue: deliveredRepairs.length
+        ? deliveredRepairs.reduce((acc, repair) => acc + (repair.finalPrice ?? repair.quotedPrice ?? 0), 0) / deliveredRepairs.length
+        : 0,
+      lowStockProducts: data.metrics.products.lowStock,
+      pendingApprovals: repairStatusCounts.WAITING_APPROVAL,
+      whatsappPending: data.alerts.find((alert) => alert.id === 'pending-flow-orders')?.value ?? 0,
       orderStatusCounts,
       repairStatusCounts,
     };
   }, [data]);
 
-  const loadingCard = <div className="h-40 animate-pulse rounded-2xl border border-zinc-200 bg-white" />;
-
   return (
-    <div className="space-y-5">
-      <section className="card">
-        <div className="card-body space-y-4">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <h1 className="text-2xl font-black tracking-tight text-zinc-900">Panel Admin</h1>
-              <p className="mt-1 text-sm text-zinc-600">
-                Panel inteligente · rango actual: <span className="font-bold text-zinc-900">{range} días</span>
-              </p>
-            </div>
-          </div>
+    <PageShell context="admin">
+      <PageHeader
+        context="admin"
+        eyebrow="Panel operativo"
+        title="Dashboard administrativo"
+        subtitle="Métricas de pedidos, reparaciones y operación del negocio en una sola vista."
+        actions={
+          <>
+            <Button variant="outline" asChild>
+              <Link to="/admin/orders">Ver pedidos</Link>
+            </Button>
+            <Button asChild>
+              <Link to="/admin/ventas-rapidas">Nueva venta</Link>
+            </Button>
+          </>
+        }
+      />
 
-          <div className="flex flex-wrap gap-2">
-            <NavChip to="/store" label="Ver tienda" />
-            <NavChip to="/admin/orders" label="Pedidos" />
-            <NavChip to="/admin/ventas-rapidas" label="Venta rápida" />
-            <NavChip to="/admin/alertas" label="Alertas" />
-            <NavChip to="/admin/repairs" label="Reparaciones" />
-            <NavChip to="/admin/productos" label="Productos" />
-            <NavChip to="/admin/proveedores" label="Proveedores" />
-            <NavChip to="/admin/garantias" label="Garantías" />
-            <NavChip to="/admin/contabilidad" label="Contabilidad" />
-            <NavChip to="/admin/configuraciones" label="Configuración" />
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            <Link to="/admin/ventas-rapidas" className="btn-primary !h-11 !rounded-2xl px-5 text-sm font-black">
-              + Nueva venta
-            </Link>
-            <Link to="/admin/repairs" className="btn-primary !h-11 !rounded-2xl px-5 text-sm font-black">
-              + Nueva reparación
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      <section className="card">
-        <div className="card-body flex flex-wrap items-center justify-between gap-3">
+      <FilterBar
+        actions={
+          <>
+            <Button variant="outline" asChild>
+              <Link to="/admin/repairs">Reparaciones</Link>
+            </Button>
+            <Button variant="ghost" asChild>
+              <Link to="/admin/configuraciones">Configuración</Link>
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-3">
           <div>
-            <h2 className="text-xl font-black tracking-tight text-zinc-900">Rango de análisis</h2>
-            <p className="text-sm text-zinc-500">Afecta KPIs y top productos.</p>
+            <div className="text-sm font-extrabold text-zinc-950">Rango de análisis</div>
+            <p className="mt-1 text-sm text-zinc-600">
+              Ajusta el contexto de lectura para métricas y actividad reciente.
+            </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {(['7', '30', '90'] as RangeKey[]).map((key) => (
-              <button
-                key={key}
+          <div className="flex flex-wrap gap-2">
+            {RANGE_OPTIONS.map((option) => (
+              <Button
+                key={option.key}
                 type="button"
-                onClick={() => setRange(key)}
-                className={`inline-flex h-11 min-w-[84px] items-center justify-center rounded-xl border px-4 text-sm font-bold transition ${
-                  range === key
-                    ? 'border-zinc-900 bg-zinc-900 text-white'
-                    : 'border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300'
-                }`}
+                variant={range === option.key ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setRange(option.key)}
               >
-                {key} días
-              </button>
+                {option.label}
+              </Button>
             ))}
-            <button
-              type="button"
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 text-sm font-bold text-zinc-700 transition hover:border-zinc-300"
-            >
-              <span aria-hidden="true">▼</span>
-              Exportar
-            </button>
           </div>
         </div>
-      </section>
+      </FilterBar>
 
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">{error}</div>
+        <SectionCard tone="info" className="border-rose-200 bg-rose-50">
+          <div className="text-sm font-semibold text-rose-700">{error}</div>
+        </SectionCard>
       ) : null}
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {loading || !data || !summary ? (
-          Array.from({ length: 4 }).map((_, i) => <div key={i}>{loadingCard}</div>)
+          Array.from({ length: 4 }).map((_, index) => (
+            <SectionCard key={index} title="Cargando métricas" description="Preparando resumen operativo.">
+              <LoadingBlock lines={4} />
+            </SectionCard>
+          ))
         ) : (
           <>
-            <KpiCard
-              title="PEDIDOS · ÚLTIMOS 30 DÍAS"
+            <MetricCard
+              title="Pedidos creados"
               value={String(data.metrics.orders.createdToday)}
-              metaRight="sin historial"
-              lines={[
-                `Activos: ${data.metrics.orders.pendingFlow}`,
-                `Pendientes: ${summary.orderStatusCounts.PENDING}`,
+              hint={`Rango activo: ${range} días`}
+              details={[
+                `En flujo: ${data.metrics.orders.pendingFlow}`,
+                `Listos para retirar: ${summary.orderStatusCounts.READY_PICKUP}`,
               ]}
+              badge={<StatusBadge tone="info" label="Operación" />}
             />
-            <KpiCard
-              title="VENTAS ENTREGADAS · ÚLTIMOS 30 DÍAS"
+            <MetricCard
+              title="Ingresos entregados"
               value={`$ ${summary.deliveredRevenue.toLocaleString('es-AR')}`}
-              metaRight="sin historial"
-              lines={['Basado en pedidos con estado', 'entregado.']}
+              hint="Pedidos entregados dentro del rango."
+              details={[
+                `Ticket promedio: $ ${Math.round(summary.ticketAverage).toLocaleString('es-AR')}`,
+                `WhatsApp pendientes: ${summary.whatsappPending}`,
+              ]}
+              badge={<StatusBadge tone="success" label="Ventas" />}
             />
-            <KpiCard
-              title="REPARACIONES · ÚLTIMOS 30 DÍAS"
+            <MetricCard
+              title="Reparaciones activas"
               value={String(data.metrics.repairs.open)}
-              metaRight="sin historial"
-              lines={[`Activas: ${data.metrics.repairs.open}`, `Total: ${data.metrics.repairs.createdToday}`]}
-            />
-            <KpiCard
-              title="WHATSAPP PENDIENTES (ESTADO ACTUAL)"
-              value={String(summary.whatsappPending)}
-              lines={[
-                `Pedidos: ${data.metrics.orders.pendingFlow}  -  Reparaciones: ${data.metrics.repairs.readyPickup}`,
-                'Enviados (actual): Pedidos 0  -  Reparaciones 0',
+              hint="Equipos en curso y esperando definición."
+              details={[
+                `Nuevas en el día: ${data.metrics.repairs.createdToday}`,
+                `Esperando aprobación: ${summary.pendingApprovals}`,
               ]}
-              chips={[
-                `Pedidos: ${data.metrics.orders.pendingFlow}`,
-                `Reparaciones: ${data.metrics.repairs.readyPickup}`,
+              badge={<StatusBadge tone="accent" label="Taller" />}
+            />
+            <MetricCard
+              title="Productos con bajo stock"
+              value={String(summary.lowStockProducts)}
+              hint={`Catálogo total: ${data.metrics.products.total} productos`}
+              details={[
+                `Sin stock: ${data.metrics.products.outOfStock}`,
+                `Promedio reparación entregada: $ ${Math.round(summary.avgRepairValue).toLocaleString('es-AR')}`,
               ]}
-            />
-          </>
-        )}
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {loading || !data || !summary ? (
-          Array.from({ length: 4 }).map((_, i) => <div key={`s-${i}`}>{loadingCard}</div>)
-        ) : (
-          <>
-            <KpiCard
-              title="TICKET PROMEDIO (ENTREGADOS)"
-              value={`$ ${Math.round(summary.ticketAverage).toLocaleString('es-AR')}`}
-              metaRight="sin historial"
-              lines={['Promedio de pedidos entregados en', `${range} días.`]}
-            />
-            <KpiCard
-              title="TASA DE ENTREGA"
-              value={summary.deliveryRate === null ? '--' : `${summary.deliveryRate}%`}
-              metaRight="sin historial"
-              lines={['Entregados sobre pedidos creados en', 'el rango.']}
-            />
-            <KpiCard
-              title="TIEMPO MEDIO REPARACIÓN ENTREGADA"
-              value={`${summary.avgRepairValue > 0 ? '0,0' : '0,0'} h`}
-              metaRight="sin historial"
-              lines={['Basado en reparaciones con recibido', 'y entregado.']}
-            />
-            <KpiCard
-              title="PRESUPUESTOS ESPERANDO APROBACIÓN"
-              value={String(summary.pendingApprovals)}
-              lines={[`Más de 48h: ${summary.pendingApprovals}`, '']}
+              badge={<StatusBadge tone="warning" label="Stock" />}
             />
           </>
         )}
       </div>
 
       <div className="grid gap-4 xl:grid-cols-2">
-        <AlertPanel
-          title="Alertas pedidos demorados"
-          subtitle="Más de 24 h en pendiente/confirmado/preparando."
-          actionLabel="Ir a pedidos"
-          actionTo="/admin/orders"
-          total={data?.metrics.orders.pendingFlow ?? 0}
-          okMessage="Sin pedidos demorados. Todo ok."
-        />
-        <AlertPanel
-          title="Alertas reparaciones demoradas"
-          subtitle="Más de 3 días en estados activos."
-          actionLabel="Ir a reparaciones"
-          actionTo="/admin/repairs"
-          total={data?.metrics.repairs.open ?? 0}
-          okMessage="Sin reparaciones demoradas. Todo ok."
-        />
-      </div>
+        <SectionCard
+          title="Alertas operativas"
+          description="Monitorea pedidos y reparaciones que requieren seguimiento."
+          actions={
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/admin/alertas">Ver alertas</Link>
+            </Button>
+          }
+        >
+          {loading || !data ? (
+            <LoadingBlock lines={3} />
+          ) : (
+            <div className="grid gap-3">
+              {data.alerts.map((alert) => (
+                <div
+                  key={alert.id}
+                  className="flex items-center justify-between rounded-2xl border border-zinc-100 bg-zinc-50 px-4 py-3"
+                >
+                  <div>
+                    <div className="text-sm font-bold text-zinc-950">{alert.title}</div>
+                    <div className="mt-1 text-sm text-zinc-600">Valor actual reportado por el backend.</div>
+                  </div>
+                  <StatusBadge
+                    tone={alert.severity === 'high' ? 'danger' : alert.severity === 'medium' ? 'warning' : 'info'}
+                    label={String(alert.value)}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+        </SectionCard>
 
-      <section>
-        <div className="mb-2 flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-black tracking-tight text-zinc-900">Gráficos</h2>
-            <p className="text-sm text-zinc-500">Opcional.</p>
+        <SectionCard
+          title="Accesos frecuentes"
+          description="Atajos para acciones comunes del panel."
+        >
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Button variant="secondary" asChild>
+              <Link to="/admin/productos">Productos</Link>
+            </Button>
+            <Button variant="secondary" asChild>
+              <Link to="/admin/proveedores">Proveedores</Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link to="/admin/garantias">Garantías</Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link to="/admin/contabilidad">Contabilidad</Link>
+            </Button>
           </div>
-          <span className="text-sm font-bold text-zinc-900">Ver</span>
-        </div>
+        </SectionCard>
+      </div>
 
-        <div className="grid gap-4 xl:grid-cols-3">
-          <StatusListCard
-            title="Pedidos por estado"
-            actionLabel="Ver"
-            actionTo="/admin/orders"
-            items={Object.entries(summary?.orderStatusCounts ?? {}).map(([status, count]) => ({
-              label: ORDER_STATUS_LABELS[status] ?? status,
-              count,
-              tone: ORDER_STATUS_TONES[status] ?? 'bg-zinc-100 text-zinc-700 border-zinc-200',
-            }))}
-          />
-          <StatusListCard
-            title="Reparaciones por estado"
-            actionLabel="Ver"
-            actionTo="/admin/repairs"
-            items={Object.entries(summary?.repairStatusCounts ?? {}).map(([status, count]) => ({
-              label: REPAIR_STATUS_LABELS[status] ?? status,
-              count,
-              tone: REPAIR_STATUS_TONES[status] ?? 'bg-zinc-100 text-zinc-700 border-zinc-200',
-            }))}
-          />
-          <StockLowCard lowStock={summary?.lowStockProducts ?? 0} totalProducts={data?.metrics.products.total ?? 0} />
-        </div>
-      </section>
+      <div className="grid gap-4 xl:grid-cols-3">
+        <StatusSummaryCard
+          title="Pedidos por estado"
+          items={Object.entries(summary?.orderStatusCounts ?? {}).map(([status, count]) => ({
+            label: ORDER_STATUS_LABELS[status] ?? status,
+            count,
+            tone: ORDER_STATUS_TONES[status] ?? 'neutral',
+          }))}
+          actionTo="/admin/orders"
+        />
+        <StatusSummaryCard
+          title="Reparaciones por estado"
+          items={Object.entries(summary?.repairStatusCounts ?? {}).map(([status, count]) => ({
+            label: REPAIR_STATUS_LABELS[status] ?? status,
+            count,
+            tone: REPAIR_STATUS_TONES[status] ?? 'neutral',
+          }))}
+          actionTo="/admin/repairs"
+        />
+        <SectionCard
+          title="Productos destacados"
+          description="Lectura rápida del catálogo y movimientos recientes."
+          actions={
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/admin/productos">Ver catálogo</Link>
+            </Button>
+          }
+        >
+          {loading || !data ? (
+            <LoadingBlock lines={4} />
+          ) : data.recent.orders.length === 0 ? (
+            <EmptyState
+              title="Todavía no hay actividad de ventas"
+              description="Cuando entren pedidos, aquí aparecerá una lectura rápida de los productos más recientes."
+            />
+          ) : (
+            <div className="grid gap-3">
+              {data.recent.orders.slice(0, 3).map((order) => (
+                <div key={order.id} className="rounded-2xl border border-zinc-100 bg-zinc-50 px-4 py-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="text-sm font-bold text-zinc-950">
+                        {order.itemsPreview[0]?.name ?? 'Pedido sin ítems'}
+                      </div>
+                      <div className="text-sm text-zinc-600">
+                        Pedido {order.id.slice(0, 8)} · {new Date(order.createdAt).toLocaleDateString('es-AR')}
+                      </div>
+                    </div>
+                    <StatusBadge
+                      tone={ORDER_STATUS_TONES[order.status] ?? 'neutral'}
+                      label={ORDER_STATUS_LABELS[order.status] ?? order.status}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </SectionCard>
+      </div>
 
       <div className="grid gap-4 xl:grid-cols-2">
-        <SimpleInfoCard
-          title="Top productos (últimos 30 días)"
-          subtitle="Por cantidad vendida (excluye cancelados)."
-          actionLabel="Ver pedidos"
+        <ActivityCard
+          title="Pedidos recientes"
+          description="Últimos pedidos registrados en el sistema."
+          items={data?.recent.orders ?? []}
+          emptyTitle="No hay pedidos recientes"
+          emptyDescription="Cuando se registren ventas, aparecerán aquí para seguimiento rápido."
+          renderItem={(order) => (
+            <div className="flex items-start justify-between gap-3 rounded-2xl border border-zinc-100 bg-zinc-50 px-4 py-3">
+              <div className="space-y-1">
+                <div className="text-sm font-bold text-zinc-950">Pedido {order.id.slice(0, 8)}</div>
+                <div className="text-sm text-zinc-600">
+                  {order.user?.name ?? 'Cliente sin cuenta'} · {new Date(order.createdAt).toLocaleString('es-AR')}
+                </div>
+              </div>
+              <div className="text-right">
+                <StatusBadge tone={ORDER_STATUS_TONES[order.status] ?? 'neutral'} size="sm" label={ORDER_STATUS_LABELS[order.status] ?? order.status} />
+                <div className="mt-2 text-sm font-bold text-zinc-950">$ {order.total.toLocaleString('es-AR')}</div>
+              </div>
+            </div>
+          )}
           actionTo="/admin/orders"
-        >
-          {data && data.recent.orders.length > 0 ? (
-            <div className="space-y-2">
-              {data.recent.orders.slice(0, 3).map((o) => (
-                <div key={o.id} className="rounded-xl border border-zinc-100 bg-zinc-50 p-3 text-sm text-zinc-700">
-                  {o.itemsPreview[0]?.name ?? 'Pedido sin ítems'}  -  ${o.total.toLocaleString('es-AR')}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-zinc-600">Aún no hay ventas en este rango.</p>
-          )}
-        </SimpleInfoCard>
+        />
 
-        <SimpleInfoCard
-          title="Actividad reciente"
-          subtitle="Últimos movimientos (opcional)."
-          actionLabel="Ver actividad"
-          actionTo="/admin"
-        >
-          {data && (data.recent.orders.length > 0 || data.recent.repairs.length > 0) ? (
-            <div className="space-y-2">
-              {data.recent.orders.slice(0, 2).map((o) => (
-                <div key={`o-${o.id}`} className="rounded-xl border border-zinc-100 bg-zinc-50 p-3 text-sm text-zinc-700">
-                  Pedido {o.id.slice(0, 8)}  -  {ORDER_STATUS_LABELS[o.status] ?? o.status}
+        <ActivityCard
+          title="Reparaciones recientes"
+          description="Últimos ingresos del taller."
+          items={data?.recent.repairs ?? []}
+          emptyTitle="No hay reparaciones recientes"
+          emptyDescription="Cuando entren reparaciones, el panel mostrará los movimientos más recientes."
+          renderItem={(repair) => (
+            <div className="flex items-start justify-between gap-3 rounded-2xl border border-zinc-100 bg-zinc-50 px-4 py-3">
+              <div className="space-y-1">
+                <div className="text-sm font-bold text-zinc-950">{repair.customerName}</div>
+                <div className="text-sm text-zinc-600">
+                  {[repair.deviceBrand, repair.deviceModel].filter(Boolean).join(' · ') || 'Equipo sin detalle'}
                 </div>
-              ))}
-              {data.recent.repairs.slice(0, 2).map((r) => (
-                <div key={`r-${r.id}`} className="rounded-xl border border-zinc-100 bg-zinc-50 p-3 text-sm text-zinc-700">
-                  Reparación {r.id.slice(0, 8)}  -  {REPAIR_STATUS_LABELS[r.status] ?? r.status}
-                </div>
-              ))}
+              </div>
+              <StatusBadge
+                tone={REPAIR_STATUS_TONES[repair.status === 'IN_REPAIR' ? 'REPAIRING' : repair.status] ?? 'neutral'}
+                size="sm"
+                label={REPAIR_STATUS_LABELS[repair.status] ?? repair.status}
+              />
             </div>
-          ) : (
-            <p className="text-sm text-zinc-600">Sin actividad reciente para mostrar.</p>
           )}
-        </SimpleInfoCard>
+          actionTo="/admin/repairs"
+        />
       </div>
-    </div>
+    </PageShell>
   );
 }
 
-function NavChip({
-  to,
-  label,
-  disabled,
-}: {
-  to: string;
-  label: string;
-  disabled?: boolean;
-}) {
-  if (disabled) {
-    return (
-      <span className="inline-flex h-11 items-center justify-center rounded-2xl border border-zinc-200 bg-white px-4 text-sm font-bold text-zinc-700">
-        {label}
-      </span>
-    );
-  }
-  return (
-    <Link
-      to={to}
-      className="inline-flex h-11 items-center justify-center rounded-2xl border border-zinc-200 bg-white px-4 text-sm font-bold text-zinc-800 transition hover:border-zinc-300 hover:bg-zinc-50"
-    >
-      {label}
-    </Link>
-  );
-}
-
-function KpiCard({
+function MetricCard({
   title,
   value,
-  lines,
-  metaRight,
-  chips,
+  hint,
+  details,
+  badge,
 }: {
   title: string;
   value: string;
-  lines: string[];
-  metaRight?: string;
-  chips?: string[];
+  hint: string;
+  details: string[];
+  badge?: ReactNode;
 }) {
   return (
-    <section className="card">
-      <div className="card-body min-h-[180px]">
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="text-xs font-black uppercase tracking-wide text-zinc-500">{title}</h3>
-          {metaRight ? <span className="text-xs text-zinc-400">{metaRight}</span> : null}
-        </div>
-        <div className="mt-2 text-3xl font-black tracking-tight text-zinc-900">{value}</div>
-        {chips?.length ? (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {chips.map((chip) => (
-              <span key={chip} className="inline-flex rounded-full border border-zinc-200 bg-white px-3 py-1 text-xs font-bold text-zinc-700">
-                {chip}
-              </span>
-            ))}
-          </div>
-        ) : null}
-        <div className="mt-3 space-y-1 text-sm leading-tight text-zinc-700">
-          {lines.filter(Boolean).map((line, i) => (
-            <p key={`${line}-${i}`}>{line}</p>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function AlertPanel({
-  title,
-  subtitle,
-  actionLabel,
-  actionTo,
-  total,
-  okMessage,
-}: {
-  title: string;
-  subtitle: string;
-  actionLabel: string;
-  actionTo: string;
-  total: number;
-  okMessage: string;
-}) {
-  return (
-    <section className="card">
-      <div className="card-head flex items-center justify-between gap-3">
+    <SectionCard className="h-full" bodyClassName="flex h-full flex-col gap-4">
+      <div className="flex items-start justify-between gap-3">
         <div>
-          <h3 className="text-sm font-black text-zinc-900">{title}</h3>
-          <p className="text-xs text-zinc-500">{subtitle}</p>
+          <div className="text-sm font-bold text-zinc-600">{title}</div>
+          <div className="mt-2 text-3xl font-black tracking-tight text-zinc-950">{value}</div>
         </div>
-        <Link to={actionTo} className="btn-outline !h-9 !rounded-xl px-4 text-sm font-bold">
-          {actionLabel}
-        </Link>
+        {badge}
       </div>
-      <div className="card-body">
-        <p className="text-base text-zinc-700">
-          Total con alerta: <span className="font-black text-zinc-900">{total}</span>
-        </p>
-        <div className="mt-3 rounded-xl border border-zinc-100 bg-zinc-50 p-3 text-sm text-zinc-600">
-          {total > 0 ? 'Hay elementos para revisar en este módulo.' : okMessage}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function StatusListCard({
-  title,
-  actionLabel,
-  actionTo,
-  items,
-}: {
-  title: string;
-  actionLabel: string;
-  actionTo: string;
-  items: Array<{ label: string; count: number; tone: string }>;
-}) {
-  return (
-    <section className="card">
-      <div className="card-head flex items-center justify-between gap-2">
-        <h3 className="text-xl font-black tracking-tight text-zinc-900">{title}</h3>
-        <Link to={actionTo} className="btn-outline !h-9 !rounded-xl px-4 text-sm font-bold">
-          {actionLabel}
-        </Link>
-      </div>
-      <div className="card-body space-y-2.5">
-        {items.map((item) => (
-          <div key={item.label} className="flex items-center justify-between gap-3 rounded-2xl border border-zinc-100 bg-zinc-50 px-3 py-2.5">
-            <span className="text-sm font-bold text-zinc-900">{item.label}</span>
-            <span className={`inline-flex min-w-10 items-center justify-center rounded-full border px-2 py-1 text-sm font-black ${item.tone}`}>
-              {item.count}
-            </span>
+      <div className="text-sm text-zinc-600">{hint}</div>
+      <div className="grid gap-2">
+        {details.map((detail) => (
+          <div key={detail} className="rounded-2xl border border-zinc-100 bg-zinc-50 px-3 py-2 text-sm text-zinc-700">
+            {detail}
           </div>
         ))}
       </div>
-    </section>
+    </SectionCard>
   );
 }
 
-function StockLowCard({ totalProducts, lowStock }: { totalProducts: number; lowStock: number }) {
-  return (
-    <section className="card">
-      <div className="card-head flex items-center justify-between gap-2">
-        <div>
-          <h3 className="text-xl font-black tracking-tight text-zinc-900">Stock bajo</h3>
-          <p className="text-sm text-zinc-500">Productos con stock menor o igual a 3</p>
-        </div>
-        <Link to="/admin/productos" className="btn-outline !h-9 !rounded-xl px-4 text-sm font-bold">
-          Productos
-        </Link>
-      </div>
-      <div className="card-body">
-        <p className="text-base text-zinc-700">
-          Total productos: <span className="font-black text-zinc-900">{totalProducts}</span>  -  Bajo stock:{' '}
-          <span className="font-black text-rose-700">{lowStock}</span>
-        </p>
-        <div className="mt-4 rounded-2xl border border-zinc-100 bg-zinc-50 p-3">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <div className="text-sm font-black text-zinc-900">Panel de stock</div>
-              <div className="text-xs text-zinc-500">Revisa /admin/productos para el detalle completo.</div>
-            </div>
-            <span className="inline-flex rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-black text-rose-700">
-              Stock: {lowStock}
-            </span>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function SimpleInfoCard({
+function StatusSummaryCard({
   title,
-  subtitle,
-  actionLabel,
+  items,
   actionTo,
-  children,
 }: {
   title: string;
-  subtitle: string;
-  actionLabel: string;
+  items: Array<{ label: string; count: number; tone: BadgeTone }>;
   actionTo: string;
-  children: React.ReactNode;
 }) {
   return (
-    <section className="card">
-      <div className="card-head flex items-center justify-between gap-2">
-        <div>
-          <h3 className="text-xl font-black tracking-tight text-zinc-900">{title}</h3>
-          <p className="text-sm text-zinc-500">{subtitle}</p>
-        </div>
-        <Link to={actionTo} className="btn-outline !h-9 !rounded-xl px-4 text-sm font-bold">
-          {actionLabel}
-        </Link>
+    <SectionCard
+      title={title}
+      actions={
+        <Button variant="outline" size="sm" asChild>
+          <Link to={actionTo}>Ver detalle</Link>
+        </Button>
+      }
+    >
+      <div className="grid gap-3">
+        {items.map((item) => (
+          <div
+            key={item.label}
+            className="flex items-center justify-between rounded-2xl border border-zinc-100 bg-zinc-50 px-4 py-3"
+          >
+            <span className="text-sm font-semibold text-zinc-900">{item.label}</span>
+            <StatusBadge tone={item.tone} label={String(item.count)} />
+          </div>
+        ))}
       </div>
-      <div className="card-body">{children}</div>
-    </section>
+    </SectionCard>
+  );
+}
+
+function ActivityCard<T>({
+  title,
+  description,
+  items,
+  renderItem,
+  emptyTitle,
+  emptyDescription,
+  actionTo,
+}: {
+  title: string;
+  description: string;
+  items: T[];
+  renderItem: (item: T) => ReactNode;
+  emptyTitle: string;
+  emptyDescription: string;
+  actionTo: string;
+}) {
+  return (
+    <SectionCard
+      title={title}
+      description={description}
+      actions={
+        <Button variant="outline" size="sm" asChild>
+          <Link to={actionTo}>Abrir módulo</Link>
+        </Button>
+      }
+    >
+      {items.length === 0 ? (
+        <EmptyState title={emptyTitle} description={emptyDescription} />
+      ) : (
+        <div className="grid gap-3">{items.slice(0, 4).map((item, index) => <div key={index}>{renderItem(item)}</div>)}</div>
+      )}
+    </SectionCard>
   );
 }

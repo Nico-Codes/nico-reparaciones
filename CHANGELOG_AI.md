@@ -13,6 +13,45 @@
 ---
 
 ### 2026-03-09 - Codex
+- Alcance: primera fase real de aplicación visual sobre la base frontend del proyecto.
+- Tipo de intervencion: fundación visual reusable + ajuste de shell + adopción limitada en vistas representativas.
+- Archivos tocados:
+  - `next-stack/apps/web/src/styles.css`
+  - `next-stack/apps/web/src/layouts/AppShell.tsx`
+  - `next-stack/apps/web/src/components/GlobalVisualEnhancements.tsx`
+  - `next-stack/apps/web/src/components/ui/button.tsx`
+  - `next-stack/apps/web/src/components/ui/page-shell.tsx`
+  - `next-stack/apps/web/src/components/ui/page-header.tsx`
+  - `next-stack/apps/web/src/components/ui/section-card.tsx`
+  - `next-stack/apps/web/src/components/ui/status-badge.tsx`
+  - `next-stack/apps/web/src/components/ui/empty-state.tsx`
+  - `next-stack/apps/web/src/components/ui/loading-block.tsx`
+  - `next-stack/apps/web/src/components/ui/text-field.tsx`
+  - `next-stack/apps/web/src/components/ui/filter-bar.tsx`
+  - `next-stack/apps/web/src/features/admin/AdminDashboardPage.tsx`
+  - `next-stack/apps/web/src/features/admin/AdminSettingsHubPage.tsx`
+  - `next-stack/apps/web/src/features/store/StorePage.tsx`
+  - `next-stack/apps/web/src/features/auth/MyAccountPage.tsx`
+  - `next-stack/apps/web/src/features/orders/MyOrdersPage.tsx`
+  - `project-docs/UI_STYLE_GUIDE.md`
+  - `project-docs/DESIGN_SYSTEM.md`
+  - `project-docs/UI_APPLICATION_PLAN.md`
+  - `project-docs/DECISIONS_LOG.md`
+- ¿Cambio comportamiento funcional?: No en lógica de negocio. Sí en presentación, shell, navegación interna y consistencia de la experiencia frontend.
+- Validaciones ejecutadas:
+  - `npm run env:check`
+  - `npm run typecheck --workspace @nico/api`
+  - `npm run typecheck --workspace @nico/web`
+  - `npm run build --workspace @nico/api`
+  - `npm run build --workspace @nico/web`
+  - `npm run smoke:backend`
+  - `npm run smoke:web`
+  - `npm run qa:route-parity`
+- Riesgos / notas:
+  - esta fase crea la fundación reutilizable, pero no cierra todavía admin core, carrito, checkout ni detalle de producto
+  - la siguiente fase debe expandir esta base a listados admin y flujo comercial sin volver a introducir wrappers o badges ad-hoc
+
+### 2026-03-09 - Codex
 - Alcance: Fase 4F para sacar parity legacy y migradores legacy del flujo normal del repo.
 - Tipo de intervencion: deprecacion / archivado controlado + alineacion documental y de scripts.
 - Archivos tocados:
@@ -107,3 +146,25 @@
 - Riesgos / notas:
   - `project-docs/` queda como unica documentacion viva.
   - `next-stack/docs/` queda como capa de runbooks operativos del stack actual.
+
+### 2026-03-09 - Codex
+- Alcance: auditoria UI/UX inicial + definicion de design system y plan de aplicacion visual del frontend.
+- Tipo de intervencion: documentacion de producto / frontend, sin cambios funcionales.
+- Archivos tocados:
+  - `project-docs/UI_STYLE_GUIDE.md`
+  - `project-docs/DESIGN_SYSTEM.md`
+  - `project-docs/UI_APPLICATION_PLAN.md`
+  - `project-docs/DECISIONS_LOG.md`
+- ¿Cambio comportamiento funcional?: No.
+- Validaciones ejecutadas:
+  - `npm run env:check`
+  - `npm run typecheck --workspace @nico/api`
+  - `npm run typecheck --workspace @nico/web`
+  - `npm run build --workspace @nico/api`
+  - `npm run build --workspace @nico/web`
+  - `npm run smoke:backend`
+  - `npm run smoke:web`
+  - `npm run qa:route-parity`
+- Riesgos / notas:
+  - la fase cierra solo diagnostico, sistema visual y plan
+  - la aplicacion visual real queda para una fase posterior con primitives y barrido por areas

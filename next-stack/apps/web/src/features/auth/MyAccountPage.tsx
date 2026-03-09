@@ -1,5 +1,12 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { LoadingBlock } from '@/components/ui/loading-block';
+import { PageHeader } from '@/components/ui/page-header';
+import { PageShell } from '@/components/ui/page-shell';
+import { SectionCard } from '@/components/ui/section-card';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { TextField } from '@/components/ui/text-field';
 import { authApi } from './api';
 import { authStorage } from './storage';
 
@@ -7,6 +14,7 @@ export function MyAccountPage() {
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [emailVerified, setEmailVerified] = useState(false);
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -21,224 +29,206 @@ export function MyAccountPage() {
 
   useEffect(() => {
     let mounted = true;
-    async function load() {
+
+    async function loadAccount() {
       setLoading(true);
       setError('');
+
       try {
         const res = await authApi.account();
         if (!mounted) return;
         setName(res.user.name ?? '');
         setEmail(res.user.email ?? '');
+        setEmailVerified(Boolean(res.user.emailVerified));
       } catch (e) {
         if (!mounted) return;
-        setError(e instanceof Error ? e.message : 'Error cargando mi cuenta');
+        setError(e instanceof Error ? e.message : 'No se pudieron cargar los datos de tu cuenta.');
       } finally {
         if (mounted) setLoading(false);
       }
     }
-    void load();
+
+    void loadAccount();
+
     return () => {
       mounted = false;
     };
   }, []);
 
-  async function onSaveProfile(e: React.FormEvent) {
-    e.preventDefault();
+  async function onSaveProfile(event: FormEvent) {
+    event.preventDefault();
     setSavingProfile(true);
     setError('');
     setProfileNotice('');
     setPreviewToken('');
+
     try {
       const res = await authApi.updateAccount({ name, email });
       authStorage.setUser(res.user);
+      setEmailVerified(Boolean(res.user.emailVerified));
       setProfileNotice(
         res.emailVerification?.required
-          ? 'Perfil guardado. Tu correo cambió y requiere nueva verificación.'
+          ? 'Perfil guardado. El nuevo correo requiere verificación.'
           : 'Perfil guardado correctamente.',
       );
       if (res.emailVerification?.previewToken) {
         setPreviewToken(res.emailVerification.previewToken);
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error guardando perfil');
+      setError(e instanceof Error ? e.message : 'No se pudo guardar el perfil.');
     } finally {
       setSavingProfile(false);
     }
   }
 
-  async function onSavePassword(e: React.FormEvent) {
-    e.preventDefault();
+  async function onSavePassword(event: FormEvent) {
+    event.preventDefault();
     setSavingPassword(true);
     setError('');
     setPasswordNotice('');
+
     try {
       if (newPassword !== confirmPassword) {
-        throw new Error('La confirmación no coincide con la nueva contraseña');
+        throw new Error('La confirmación no coincide con la nueva contraseña.');
       }
       const res = await authApi.updateAccountPassword({ currentPassword, newPassword });
-      setPasswordNotice(res.message || 'Contraseña actualizada correctamente');
+      setPasswordNotice(res.message || 'Contraseña actualizada correctamente.');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error actualizando contraseña');
+      setError(e instanceof Error ? e.message : 'No se pudo actualizar la contraseña.');
     } finally {
       setSavingPassword(false);
     }
   }
 
   return (
-    <div className="store-shell space-y-5" data-my-account-page>
-      <section className="store-hero">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-black tracking-tight text-zinc-900">Mi cuenta</h1>
-            <p className="mt-1 text-sm text-zinc-600">Actualiza tu perfil y tu contraseña.</p>
-          </div>
-          <Link to="/orders" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">
-            Volver a pedidos
-          </Link>
-        </div>
-      </section>
+    <PageShell context="account">
+      <PageHeader
+        context="account"
+        eyebrow="Mi cuenta"
+        title="Perfil y seguridad"
+        subtitle="Gestiona tus datos personales y el acceso a tu cuenta."
+        actions={
+          <>
+            <StatusBadge tone={emailVerified ? 'success' : 'warning'} label={emailVerified ? 'Correo verificado' : 'Correo pendiente'} />
+            <Button variant="outline" asChild>
+              <Link to="/orders">Ver pedidos</Link>
+            </Button>
+          </>
+        }
+      />
 
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">{error}</div>
+        <SectionCard tone="info" className="border-rose-200 bg-rose-50">
+          <div className="text-sm font-semibold text-rose-700">{error}</div>
+        </SectionCard>
       ) : null}
 
       {loading ? (
-        <section className="card">
-          <div className="card-body text-sm text-zinc-600">Cargando datos de la cuenta...</div>
-        </section>
+        <SectionCard title="Cargando cuenta" description="Preparando tus datos personales.">
+          <LoadingBlock lines={4} />
+        </SectionCard>
       ) : (
         <>
-          <section className="card">
-            <div className="card-head">
-              <div className="text-xl font-black tracking-tight text-zinc-900">Perfil</div>
-              <p className="mt-1 text-sm text-zinc-500">Nombre y correo para tu cuenta.</p>
-            </div>
-            <div className="card-body">
-              <form className="grid gap-4 md:grid-cols-2" onSubmit={onSaveProfile}>
-                <Field
-                  label="Nombre"
-                  value={name}
-                  onChange={setName}
-                  placeholder="Tu nombre"
-                  type="text"
-                  autoComplete="name"
-                />
-                <Field
-                  label="Email"
-                  value={email}
-                  onChange={setEmail}
-                  placeholder="tu@email.com"
-                  type="email"
-                  autoComplete="email"
-                />
-                <div className="md:col-span-2">
-                  <button
-                    type="submit"
-                    disabled={savingProfile}
-                    className="btn-primary !h-11 !rounded-xl px-6 text-sm font-bold"
-                  >
-                    {savingProfile ? 'Guardando...' : 'Guardar perfil'}
-                  </button>
-                </div>
-              </form>
-              {profileNotice ? (
-                <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-                  {profileNotice}
-                </div>
-              ) : null}
-              {previewToken ? (
-                <div className="mt-3 break-all rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
-                  <div className="font-bold">Preview token verificación (dev)</div>
-                  {previewToken}
-                </div>
-              ) : null}
-            </div>
-          </section>
+          <SectionCard
+            title="Perfil"
+            description="Estos datos se usan para identificar tu cuenta y las notificaciones."
+            actions={<StatusBadge tone="info" size="sm" label="Cuenta activa" />}
+          >
+            <form className="grid gap-4 md:grid-cols-2" onSubmit={onSaveProfile}>
+              <TextField
+                label="Nombre"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                placeholder="Tu nombre"
+                autoComplete="name"
+                required
+              />
+              <TextField
+                label="Correo electrónico"
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="tu@email.com"
+                autoComplete="email"
+                required
+              />
+              <div className="md:col-span-2 flex flex-wrap gap-3">
+                <Button type="submit" disabled={savingProfile}>
+                  {savingProfile ? 'Guardando perfil...' : 'Guardar perfil'}
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link to="/auth/verify-email">Verificar correo</Link>
+                </Button>
+              </div>
+            </form>
 
-          <section className="card">
-            <div className="card-head">
-              <div className="text-xl font-black tracking-tight text-zinc-900">Contraseña</div>
-              <p className="mt-1 text-sm text-zinc-500">Cambia tu contraseña de acceso.</p>
-            </div>
-            <div className="card-body">
-              <form className="grid gap-4 md:grid-cols-3" onSubmit={onSavePassword}>
-                <Field
-                  label="Contraseña actual"
-                  value={currentPassword}
-                  onChange={setCurrentPassword}
-                  placeholder="********"
-                  type="password"
-                  autoComplete="current-password"
-                />
-                <Field
-                  label="Nueva contraseña"
-                  value={newPassword}
-                  onChange={setNewPassword}
-                  placeholder="********"
-                  type="password"
-                  autoComplete="new-password"
-                />
-                <Field
-                  label="Confirmar nueva contraseña"
-                  value={confirmPassword}
-                  onChange={setConfirmPassword}
-                  placeholder="********"
-                  type="password"
-                  autoComplete="new-password"
-                />
-                <div className="md:col-span-3">
-                  <button
-                    type="submit"
-                    disabled={savingPassword}
-                    className="btn-primary !h-11 !rounded-xl px-6 text-sm font-bold"
-                  >
-                    {savingPassword ? 'Actualizando...' : 'Actualizar contraseña'}
-                  </button>
-                </div>
-              </form>
-              {passwordNotice ? (
-                <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-                  {passwordNotice}
-                </div>
-              ) : null}
-            </div>
-          </section>
+            {profileNotice ? (
+              <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                {profileNotice}
+              </div>
+            ) : null}
+
+            {previewToken ? (
+              <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
+                <div className="font-bold">Token de vista previa para verificación (desarrollo)</div>
+                <div className="mt-1 break-all">{previewToken}</div>
+              </div>
+            ) : null}
+          </SectionCard>
+
+          <SectionCard
+            title="Contraseña"
+            description="Actualiza tu clave de acceso para mantener la cuenta protegida."
+          >
+            <form className="grid gap-4 md:grid-cols-3" onSubmit={onSavePassword}>
+              <TextField
+                label="Contraseña actual"
+                type="password"
+                value={currentPassword}
+                onChange={(event) => setCurrentPassword(event.target.value)}
+                placeholder="********"
+                autoComplete="current-password"
+                required
+              />
+              <TextField
+                label="Nueva contraseña"
+                type="password"
+                value={newPassword}
+                onChange={(event) => setNewPassword(event.target.value)}
+                placeholder="********"
+                autoComplete="new-password"
+                required
+              />
+              <TextField
+                label="Confirmar nueva contraseña"
+                type="password"
+                value={confirmPassword}
+                onChange={(event) => setConfirmPassword(event.target.value)}
+                placeholder="********"
+                autoComplete="new-password"
+                required
+              />
+              <div className="md:col-span-3 flex flex-wrap gap-3">
+                <Button type="submit" disabled={savingPassword}>
+                  {savingPassword ? 'Actualizando contraseña...' : 'Actualizar contraseña'}
+                </Button>
+                <Button variant="ghost" asChild>
+                  <Link to="/repairs">Ver reparaciones</Link>
+                </Button>
+              </div>
+            </form>
+
+            {passwordNotice ? (
+              <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                {passwordNotice}
+              </div>
+            ) : null}
+          </SectionCard>
         </>
       )}
-    </div>
-  );
-}
-
-function Field({
-  label,
-  value,
-  onChange,
-  placeholder,
-  type,
-  autoComplete,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  type: string;
-  autoComplete?: string;
-}) {
-  return (
-    <label className="block">
-      <span className="text-xs font-black uppercase tracking-wide text-zinc-600">{label}</span>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        autoComplete={autoComplete}
-        className="mt-1 h-11 w-full rounded-2xl border border-zinc-200 bg-white px-3 text-sm outline-none ring-0 focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
-        required
-      />
-    </label>
+    </PageShell>
   );
 }
