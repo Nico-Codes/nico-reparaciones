@@ -673,7 +673,7 @@ body.nr-scroll-lock {
   isolation: isolate;
   z-index: 30;
   overflow: visible;
-  margin-top: -18px;
+  margin-top: calc(var(--hero-fade-size, 96px) * -0.82);
   margin-bottom: 0;
   border-color: transparent;
   box-shadow:
@@ -689,11 +689,11 @@ body.nr-scroll-lock {
 }
 
 @media (max-width: 767px) {
-  .store-toolbar { margin-top: -12px; }
+  .store-toolbar { margin-top: calc(var(--hero-fade-size, 96px) * -0.8); }
 }
 
 @media (min-width: 1024px) {
-  .store-toolbar { margin-top: -22px; margin-bottom: 10px; }
+  .store-toolbar { margin-top: calc(var(--hero-fade-size, 96px) * -0.86); margin-bottom: 10px; }
 }
 
 .store-toolbar.is-stuck {
