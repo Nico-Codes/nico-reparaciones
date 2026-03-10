@@ -13,6 +13,128 @@
 ---
 
 ### 2026-03-09 - Codex
+- Alcance: fase final corta de polish visual centrada en quick wins activos, barrido final de copy/encoding y retiro de residuos legacy visibles.
+- Tipo de intervencion: consolidación visual final sobre vistas activas de detalle y catálogo + limpieza semántica/copy.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/catalogAdmin/AdminCategoriesPage.tsx`
+  - `next-stack/apps/web/src/features/orders/AdminOrderDetailPage.tsx`
+  - `next-stack/apps/web/src/features/repairs/AdminRepairDetailPage.tsx`
+  - `next-stack/apps/web/src/features/orders/OrderDetailPage.tsx`
+  - `next-stack/apps/web/src/features/repairs/RepairDetailPage.tsx`
+  - `next-stack/apps/web/src/features/orders/order-ui.ts`
+  - `next-stack/apps/web/src/features/repairs/repair-ui.ts`
+  - `project-docs/UI_STYLE_GUIDE.md`
+  - `project-docs/DESIGN_SYSTEM.md`
+  - `project-docs/UI_APPLICATION_PLAN.md`
+  - `project-docs/DECISIONS_LOG.md`
+- ¿Cambio comportamiento funcional?: No en lógica de negocio. Sí en claridad de seguimiento, estructura de detalle, consistencia visual y copy visible en vistas activas.
+- Validaciones ejecutadas:
+  - `npm run env:check`
+  - `npm run typecheck --workspace @nico/api`
+  - `npm run typecheck --workspace @nico/web`
+  - `npm run build --workspace @nico/api`
+  - `npm run build --workspace @nico/web`
+  - `npm run smoke:backend`
+  - `npm run smoke:web`
+  - `npm run qa:route-parity`
+  - `npm run qa:responsive:visual`
+  - `npm run qa:admin:visual`
+- Riesgos / notas:
+  - el frontend principal queda visualmente sólido en las vistas activas core.
+  - lo que resta ya es menor y se concentra en barridos secundarios fuera del bloque principal del producto.
+
+### 2026-03-09 - Codex
+- Alcance: fase final de pulido global del frontend centrada en módulos secundarios admin y reducción de residuos visuales legacy en vistas activas.
+- Tipo de intervencion: adopción del design system sobre formularios, listados y módulos secundarios + limpieza de copy/encoding + refuerzo responsive.
+- Archivos tocados:
+  - `next-stack/apps/web/src/components/ui/textarea-field.tsx`
+  - `next-stack/apps/web/src/styles.css`
+  - `next-stack/apps/web/src/features/admin/AdminAlertsPage.tsx`
+  - `next-stack/apps/web/src/features/admin/AdminBusinessSettingsPage.tsx`
+  - `next-stack/apps/web/src/features/catalogAdmin/AdminProductsPage.tsx`
+  - `next-stack/apps/web/src/features/catalogAdmin/AdminProductCreatePage.tsx`
+  - `next-stack/apps/web/src/features/catalogAdmin/AdminProductEditPage.tsx`
+  - `next-stack/apps/web/src/features/catalogAdmin/AdminProductLabelPage.tsx`
+  - `project-docs/UI_STYLE_GUIDE.md`
+  - `project-docs/DESIGN_SYSTEM.md`
+  - `project-docs/UI_APPLICATION_PLAN.md`
+  - `project-docs/DECISIONS_LOG.md`
+- ¿Cambio comportamiento funcional?: No en lógica de negocio principal. Sí en calidad visual, agrupación de formularios, filtros activos reales en catálogo, claridad de acciones y eliminación de ruido/no-op en vistas admin secundarias.
+- Validaciones ejecutadas:
+  - `npm run env:check`
+  - `npm run typecheck --workspace @nico/api`
+  - `npm run typecheck --workspace @nico/web`
+  - `npm run build --workspace @nico/api`
+  - `npm run build --workspace @nico/web`
+  - `npm run smoke:backend`
+  - `npm run smoke:web`
+  - `npm run qa:route-parity`
+  - `npm run qa:responsive:visual`
+  - `npm run qa:admin:visual`
+- Riesgos / notas:
+  - quedan pendientes menores en módulos admin no críticos y en un barrido final de copy/encoding fuera de las vistas activas tocadas.
+  - `TextAreaField` y `choice-card` pasan a ser patrones canónicos para formularios administrativos.
+
+### 2026-03-09 - Codex
+- Alcance: fase de aplicación visual centrada en cuenta usuario y pulido transversal del frontend.
+- Tipo de intervencion: adopción real del design system en listados y detalles de pedidos/reparaciones + refuerzo de patterns reutilizables.
+- Archivos tocados:
+  - `next-stack/apps/web/src/components/ui/progress-steps.tsx`
+  - `next-stack/apps/web/src/features/orders/order-ui.ts`
+  - `next-stack/apps/web/src/features/repairs/repair-ui.ts`
+  - `next-stack/apps/web/src/features/orders/MyOrdersPage.tsx`
+  - `next-stack/apps/web/src/features/repairs/MyRepairsPage.tsx`
+  - `next-stack/apps/web/src/features/orders/OrderDetailPage.tsx`
+  - `next-stack/apps/web/src/features/repairs/RepairDetailPage.tsx`
+  - `next-stack/apps/web/src/styles.css`
+  - `project-docs/UI_STYLE_GUIDE.md`
+  - `project-docs/DESIGN_SYSTEM.md`
+  - `project-docs/UI_APPLICATION_PLAN.md`
+  - `project-docs/DECISIONS_LOG.md`
+- ¿Cambio comportamiento funcional?: No en lógica de negocio. Sí en jerarquía visual, lectura de estados, seguimiento de pedidos/reparaciones, calidad del copy y consistencia account/store/admin.
+- Validaciones ejecutadas:
+  - `npm run env:check`
+  - `npm run typecheck --workspace @nico/api`
+  - `npm run typecheck --workspace @nico/web`
+  - `npm run build --workspace @nico/api`
+  - `npm run build --workspace @nico/web`
+  - `npm run smoke:backend`
+  - `npm run smoke:web`
+  - `npm run qa:route-parity`
+  - `npm run qa:responsive:visual`
+- Riesgos / notas:
+  - queda pendiente un barrido final sobre admin secundario y pulido fino de responsive/copy en vistas activas no tocadas.
+  - `ProgressSteps`, `account-record` y `fact-list` pasan a ser patrones canónicos para cuenta usuario.
+
+### 2026-03-09 - Codex
+- Alcance: segunda fase de aplicación visual sobre pantallas core del producto.
+- Tipo de intervencion: adopción real del design system en admin core + flujo comercial principal.
+- Archivos tocados:
+  - `next-stack/apps/web/src/styles.css`
+  - `next-stack/apps/web/src/features/orders/AdminOrdersPage.tsx`
+  - `next-stack/apps/web/src/features/repairs/AdminRepairsListPage.tsx`
+  - `next-stack/apps/web/src/features/store/StoreProductDetailPage.tsx`
+  - `next-stack/apps/web/src/features/cart/CartPage.tsx`
+  - `next-stack/apps/web/src/features/orders/CheckoutPage.tsx`
+  - `project-docs/UI_STYLE_GUIDE.md`
+  - `project-docs/DESIGN_SYSTEM.md`
+  - `project-docs/UI_APPLICATION_PLAN.md`
+  - `project-docs/DECISIONS_LOG.md`
+- ¿Cambio comportamiento funcional?: No en lógica de negocio. Sí en jerarquía visual, shell por contexto, filtros, estados, acciones visibles y consistencia del flujo admin/comercial.
+- Validaciones ejecutadas:
+  - `npm run env:check`
+  - `npm run typecheck --workspace @nico/api`
+  - `npm run typecheck --workspace @nico/web`
+  - `npm run build --workspace @nico/api`
+  - `npm run build --workspace @nico/web`
+  - `npm run smoke:backend`
+  - `npm run smoke:web`
+  - `npm run qa:route-parity`
+- Riesgos / notas:
+  - la base reusable ya quedo validada en pantallas core, pero todavia falta extenderla a cuenta usuario y detalle de pedidos/reparaciones.
+  - en los archivos tocados se eliminaron wrappers impropios, badges inconsistentes y copy/encoding roto.
+
+### 2026-03-09 - Codex
 - Alcance: primera fase real de aplicación visual sobre la base frontend del proyecto.
 - Tipo de intervencion: fundación visual reusable + ajuste de shell + adopción limitada en vistas representativas.
 - Archivos tocados:

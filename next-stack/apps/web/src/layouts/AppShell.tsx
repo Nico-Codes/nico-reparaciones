@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 import { ChevronDown, HelpCircle, LogOut, Menu, Package, Settings, User, Wrench, WrenchIcon, X } from 'lucide-react';
 import { CartAddedPopup } from '@/features/cart/CartAddedPopup';
 import { useCartCount } from '@/features/cart/useCart';
@@ -239,7 +240,7 @@ export function AppShell({ children }: AppShellProps) {
 
   const isAdmin = authUser?.role === 'ADMIN';
   const brandLogoUrl = branding?.logoPrincipal || null;
-  const brandTitle = (branding?.siteTitle ?? 'NicoReparaciones').trim() || 'NicoReparaciones';
+  const brandTitle = (branding?.siteTitle || 'NicoReparaciones').trim();
   const iconCartUrl = branding?.icons.carrito || null;
   const iconLogoutUrl = branding?.icons.logout || null;
   const iconSettingsUrl = branding?.icons.settings || null;
@@ -325,9 +326,125 @@ export function AppShell({ children }: AppShellProps) {
 
   const focusFirstAccountItem = () => focusAccountItem(0);
 
+  const mobileSidebarLayer =
+    !isDesktop && typeof document !== 'undefined'
+      ? createPortal(
+          <>
+            <div className={`fixed inset-0 z-[180] bg-zinc-950/40 ${sidebarOpen ? '' : 'hidden'}`} aria-hidden="true" onClick={() => setSidebarOpen(false)} />
+
+            <aside className={`fixed left-0 top-0 z-[190] flex h-full w-[86%] max-w-xs transform flex-col bg-white shadow-xl transition-transform duration-200 ease-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`} aria-label="Men?">
+              <div className="flex h-14 items-center justify-between border-b border-zinc-100 px-4">
+                <div className="flex items-center gap-2">
+                  {brandLogoUrl ? (
+                    <img src={brandLogoUrl} className="h-8 w-8 rounded-xl bg-white object-contain ring-1 ring-zinc-100" alt="NicoReparaciones" />
+                  ) : (
+                    <div className="grid h-8 w-8 place-items-center rounded-xl bg-white ring-1 ring-zinc-100">
+                      <Wrench className="h-4 w-4 text-sky-600" />
+                    </div>
+                  )}
+                  <div className="font-black text-zinc-900">Men?</div>
+                </div>
+
+                <button className="icon-btn" aria-label="Cerrar men?" type="button" onClick={() => setSidebarOpen(false)}>
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="flex-1 space-y-4 overflow-y-auto p-4">
+                {authUser ? (
+                  <div className="card">
+                    <div className="card-body flex items-center gap-3">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-50 font-black text-sky-700 ring-1 ring-sky-100">{userInitial}</div>
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate font-black text-zinc-900">{authUser.name}</div>
+                        <div className="sidebar-sub truncate">{authUser.email}</div>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+
+                <div className="sidebar-section space-y-2">
+                  <div className="sidebar-title">Navegaci?n</div>
+                  <div className="sidebar-links">
+                    {sidebarNavLinks.map((link) => (
+                      <Link key={link.label} className={`sidebar-link ${link.active ? 'active' : ''}`} to={link.to} onClick={() => setSidebarOpen(false)}>
+                        <span className="inline-flex items-center gap-2">
+                          <MenuLinkIcon iconUrl={link.icon} fallback={link.label === 'Tienda' ? <Wrench className="h-4 w-4 text-sky-600" /> : link.label === 'Reparaci?n' ? <WrenchIcon className="h-4 w-4 text-zinc-700" /> : <Settings className="h-4 w-4 text-zinc-500" />} />
+                          <span>{link.label}</span>
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="sidebar-section space-y-2">
+                  <div className="sidebar-title">Cuenta</div>
+                  <div className="sidebar-links">
+                    {accountLinks.map((link) => (
+                      <Link key={link.label} className={`sidebar-link ${link.active ? 'active' : ''} ${link.highlight === 'warning' ? 'text-amber-700' : ''}`} to={link.to} onClick={() => setSidebarOpen(false)}>
+                        <span className="inline-flex items-center gap-2">
+                          <MenuLinkIcon
+                            iconUrl={link.icon}
+                            fallback={
+                              link.label === 'Mis pedidos' ? <Package className="h-4 w-4 text-blue-600" /> :
+                              link.label === 'Mis reparaciones' ? <WrenchIcon className="h-4 w-4 text-zinc-700" /> :
+                              link.label === 'Ayuda' ? <HelpCircle className="h-4 w-4 text-zinc-700" /> :
+                              link.label === 'Mi cuenta' ? <User className="h-4 w-4 text-zinc-500" /> :
+                              <WarnIcon />
+                            }
+                          />
+                          <span>{link.label}</span>
+                        </span>
+                      </Link>
+                    ))}
+
+                    {isAdmin ? (
+                      <>
+                        <button type="button" className={`sidebar-link flex items-center justify-between gap-2 ${adminSectionOpen ? 'active' : ''}`} onClick={() => setAdminSectionOpen((prev) => !prev)}>
+                          <span>Admin</span>
+                          <ChevronDown className={`h-4 w-4 transition-transform ${adminSectionOpen ? 'rotate-180' : ''}`} />
+                        </button>
+                        <div className={adminSectionOpen ? '' : 'hidden'}>
+                          <div className="ml-2 grid gap-1 border-l border-zinc-200 pl-2">
+                            {adminLinks.map((link) => (
+                              <Link key={link.label} className={`sidebar-link font-semibold text-zinc-700 ${link.active ? 'active' : ''}`} to={link.to} onClick={() => setSidebarOpen(false)}>
+                                <span className="inline-flex items-center gap-2">
+                                  <MenuLinkIcon iconUrl={link.icon} fallback={link.label === 'Panel admin' ? <Settings className="h-4 w-4 text-zinc-500" /> : <Wrench className="h-4 w-4 text-zinc-500" />} />
+                                  <span>{link.label}</span>
+                                  <LinkBadge count={link.badgeCount} />
+                                </span>
+                              </Link>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    ) : null}
+
+                    {authUser ? (
+                      <button type="button" className="sidebar-link text-rose-700" onClick={logout}>
+                        <span className="inline-flex items-center gap-2">
+                          <MenuLinkIcon iconUrl={iconLogoutUrl} fallback={<LogOut className="h-4 w-4" />} />
+                          <span>Cerrar sesi?n</span>
+                        </span>
+                      </button>
+                    ) : (
+                      <>
+                        <Link className="sidebar-link" to="/auth/login" onClick={() => setSidebarOpen(false)}><span>Iniciar sesi?n</span></Link>
+                        <Link className="sidebar-link" to="/auth/register" onClick={() => setSidebarOpen(false)}><span>Crear cuenta</span></Link>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </aside>
+          </>,
+          document.body,
+        )
+      : null;
+
   return (
     <div className="app-shell text-zinc-900" data-shell-context={shellContext}>
-      <header className="shell-header sticky top-0 z-[80] border-b shadow-sm">
+      <header className="shell-header sticky top-0 z-[140] border-b shadow-sm">
         <div className="container-page">
           <div className="flex h-14 items-center justify-between gap-3">
             <div className="flex min-w-0 items-center gap-3">
@@ -529,118 +646,9 @@ export function AppShell({ children }: AppShellProps) {
           </div>
         </div>
 
-        {!isDesktop ? (
-          <>
-            <div className={`fixed inset-0 z-[90] bg-zinc-950/40 ${sidebarOpen ? '' : 'hidden'}`} aria-hidden="true" onClick={() => setSidebarOpen(false)} />
-
-            <aside className={`fixed left-0 top-0 z-[100] flex h-full w-[86%] max-w-xs transform flex-col bg-white shadow-xl transition-transform duration-200 ease-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`} aria-label="Menu">
-              <div className="flex h-14 items-center justify-between border-b border-zinc-100 px-4">
-                <div className="flex items-center gap-2">
-                  {brandLogoUrl ? (
-                    <img src={brandLogoUrl} className="h-8 w-8 rounded-xl bg-white object-contain ring-1 ring-zinc-100" alt="NicoReparaciones" />
-                  ) : (
-                    <div className="grid h-8 w-8 place-items-center rounded-xl bg-white ring-1 ring-zinc-100">
-                      <Wrench className="h-4 w-4 text-sky-600" />
-                    </div>
-                  )}
-                  <div className="font-black text-zinc-900">Menú</div>
-                </div>
-
-                <button className="icon-btn" aria-label="Cerrar menú" type="button" onClick={() => setSidebarOpen(false)}>
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-
-              <div className="flex-1 space-y-4 overflow-y-auto p-4">
-                {authUser ? (
-                  <div className="card">
-                    <div className="card-body flex items-center gap-3">
-                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-50 font-black text-sky-700 ring-1 ring-sky-100">{userInitial}</div>
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate font-black text-zinc-900">{authUser.name}</div>
-                        <div className="sidebar-sub truncate">{authUser.email}</div>
-                      </div>
-                    </div>
-                  </div>
-                ) : null}
-
-                <div className="sidebar-section space-y-2">
-                  <div className="sidebar-title">Navegación</div>
-                  <div className="sidebar-links">
-                    {sidebarNavLinks.map((link) => (
-                      <Link key={link.label} className={`sidebar-link ${link.active ? 'active' : ''}`} to={link.to} onClick={() => setSidebarOpen(false)}>
-                        <span className="inline-flex items-center gap-2">
-                          <MenuLinkIcon iconUrl={link.icon} fallback={link.label === 'Tienda' ? <Wrench className="h-4 w-4 text-sky-600" /> : link.label === 'Reparación' ? <WrenchIcon className="h-4 w-4 text-zinc-700" /> : <Settings className="h-4 w-4 text-zinc-500" />} />
-                          <span>{link.label}</span>
-                        </span>
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="sidebar-section space-y-2">
-                  <div className="sidebar-title">Cuenta</div>
-                  <div className="sidebar-links">
-                    {accountLinks.map((link) => (
-                      <Link key={link.label} className={`sidebar-link ${link.active ? 'active' : ''} ${link.highlight === 'warning' ? 'text-amber-700' : ''}`} to={link.to} onClick={() => setSidebarOpen(false)}>
-                        <span className="inline-flex items-center gap-2">
-                          <MenuLinkIcon
-                            iconUrl={link.icon}
-                            fallback={
-                              link.label === 'Mis pedidos' ? <Package className="h-4 w-4 text-blue-600" /> :
-                              link.label === 'Mis reparaciones' ? <WrenchIcon className="h-4 w-4 text-zinc-700" /> :
-                              link.label === 'Ayuda' ? <HelpCircle className="h-4 w-4 text-zinc-700" /> :
-                              link.label === 'Mi cuenta' ? <User className="h-4 w-4 text-zinc-500" /> :
-                              <WarnIcon />
-                            }
-                          />
-                          <span>{link.label}</span>
-                        </span>
-                      </Link>
-                    ))}
-
-                    {isAdmin ? (
-                      <>
-                        <button type="button" className={`sidebar-link flex items-center justify-between gap-2 ${adminSectionOpen ? 'active' : ''}`} onClick={() => setAdminSectionOpen((prev) => !prev)}>
-                          <span>Admin</span>
-                          <ChevronDown className={`h-4 w-4 transition-transform ${adminSectionOpen ? 'rotate-180' : ''}`} />
-                        </button>
-                        <div className={adminSectionOpen ? '' : 'hidden'}>
-                          <div className="ml-2 grid gap-1 border-l border-zinc-200 pl-2">
-                            {adminLinks.map((link) => (
-                              <Link key={link.label} className={`sidebar-link font-semibold text-zinc-700 ${link.active ? 'active' : ''}`} to={link.to} onClick={() => setSidebarOpen(false)}>
-                                <span className="inline-flex items-center gap-2">
-                                  <MenuLinkIcon iconUrl={link.icon} fallback={link.label === 'Panel admin' ? <Settings className="h-4 w-4 text-zinc-500" /> : <Wrench className="h-4 w-4 text-zinc-500" />} />
-                                  <span>{link.label}</span>
-                                  <LinkBadge count={link.badgeCount} />
-                                </span>
-                              </Link>
-                            ))}
-                          </div>
-                        </div>
-                      </>
-                    ) : null}
-
-                    {authUser ? (
-                      <button type="button" className="sidebar-link text-rose-700" onClick={logout}>
-                        <span className="inline-flex items-center gap-2">
-                          <MenuLinkIcon iconUrl={iconLogoutUrl} fallback={<LogOut className="h-4 w-4" />} />
-                          <span>Cerrar sesión</span>
-                        </span>
-                      </button>
-                    ) : (
-                      <>
-                        <Link className="sidebar-link" to="/auth/login" onClick={() => setSidebarOpen(false)}><span>Iniciar sesión</span></Link>
-                        <Link className="sidebar-link" to="/auth/register" onClick={() => setSidebarOpen(false)}><span>Crear cuenta</span></Link>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </aside>
-          </>
-        ) : null}
       </header>
+
+      {mobileSidebarLayer}
 
       <main className={cn('shell-main container-page')}>{children}</main>
 
@@ -696,4 +704,5 @@ export function AppShell({ children }: AppShellProps) {
     </div>
   );
 }
+
 

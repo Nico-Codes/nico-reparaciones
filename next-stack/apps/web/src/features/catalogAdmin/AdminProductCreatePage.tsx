@@ -1,12 +1,21 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
+import { ArrowLeft, ImagePlus, PackagePlus, Percent, Sparkles, Tag } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { LoadingBlock } from '@/components/ui/loading-block';
+import { PageHeader } from '@/components/ui/page-header';
+import { PageShell } from '@/components/ui/page-shell';
+import { SectionCard } from '@/components/ui/section-card';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { TextAreaField } from '@/components/ui/textarea-field';
+import { TextField } from '@/components/ui/text-field';
 import { CustomSelect } from '@/components/ui/custom-select';
 import { adminApi } from '@/features/admin/api';
 import { catalogAdminApi, type AdminCategory } from './api';
 import { productPricingApi } from './productPricingApi';
 
-function peso(n: number) {
-  return `$ ${Math.round(n || 0).toLocaleString('es-AR')}`;
+function money(value: number) {
+  return `$ ${Math.round(value || 0).toLocaleString('es-AR')}`;
 }
 
 function slugify(raw: string) {
@@ -47,13 +56,13 @@ export function AdminProductCreatePage() {
   const [recommendedPrice, setRecommendedPrice] = useState<number | null>(null);
   const [recommendedMarginPercent, setRecommendedMarginPercent] = useState<number | null>(null);
   const [recommendedRuleName, setRecommendedRuleName] = useState<string | null>(null);
-  const [pricingHint, setPricingHint] = useState('Definí categoría + costo para calcular automáticamente.');
+  const [pricingHint, setPricingHint] = useState('Definí categoría y costo para calcular automáticamente.');
   const [loadingRecommendation, setLoadingRecommendation] = useState(false);
   const [preventNegativeMargin, setPreventNegativeMargin] = useState(true);
 
   function clearPreviewObjectUrl() {
-    setPreviewObjectUrl((prev) => {
-      if (prev) URL.revokeObjectURL(prev);
+    setPreviewObjectUrl((current) => {
+      if (current) URL.revokeObjectURL(current);
       return null;
     });
   }
@@ -66,27 +75,30 @@ export function AdminProductCreatePage() {
 
   useEffect(() => {
     let mounted = true;
+
     async function load() {
       setLoading(true);
       setError('');
       try {
-        const [cats, settings, providersRes] = await Promise.all([
+        const [categoriesResponse, settings, providersResponse] = await Promise.all([
           catalogAdminApi.categories(),
           productPricingApi.settings().catch(() => null),
           adminApi.providers({ active: '1' }).catch(() => ({ items: [] })),
         ]);
         if (!mounted) return;
-        setCategories(cats.items);
-        setSuppliers(providersRes.items.map((p) => ({ id: p.id, name: p.name })));
+        setCategories(categoriesResponse.items);
+        setSuppliers(providersResponse.items.map((provider) => ({ id: provider.id, name: provider.name })));
         setPreventNegativeMargin(settings?.preventNegativeMargin ?? true);
-      } catch (e) {
+      } catch (cause) {
         if (!mounted) return;
-        setError(e instanceof Error ? e.message : 'Error cargando formulario');
+        setError(cause instanceof Error ? cause.message : 'No se pudo cargar el formulario.');
       } finally {
         if (mounted) setLoading(false);
       }
     }
+
     void load();
+
     return () => {
       mounted = false;
     };
@@ -100,7 +112,7 @@ export function AdminProductCreatePage() {
       setRecommendedPrice(null);
       setRecommendedMarginPercent(null);
       setRecommendedRuleName(null);
-      setPricingHint('Definí categoría + costo para calcular automáticamente.');
+      setPricingHint('Definí categoría y costo para calcular automáticamente.');
       return;
     }
 
@@ -108,18 +120,18 @@ export function AdminProductCreatePage() {
       void (async () => {
         setLoadingRecommendation(true);
         try {
-          const res = await productPricingApi.resolveRecommendedPrice({
+          const response = await productPricingApi.resolveRecommendedPrice({
             categoryId: category,
             costPrice: cost,
             productId: null,
           });
-          setRecommendedPrice(res.recommendedPrice);
-          setRecommendedMarginPercent(res.marginPercent);
-          setRecommendedRuleName(res.rule?.name ?? null);
+          setRecommendedPrice(response.recommendedPrice);
+          setRecommendedMarginPercent(response.marginPercent);
+          setRecommendedRuleName(response.rule?.name ?? null);
           setPricingHint(
-            res.rule?.name
-              ? `Regla: ${res.rule.name} (${res.marginPercent}% margen).`
-              : `Sin regla específica. Margen base: ${res.marginPercent}%.`,
+            response.rule?.name
+              ? `Regla aplicada: ${response.rule.name} (${response.marginPercent}% de margen).`
+              : `Sin regla específica. Margen base sugerido: ${response.marginPercent}%.`,
           );
         } catch {
           setRecommendedPrice(null);
@@ -135,28 +147,24 @@ export function AdminProductCreatePage() {
     return () => clearTimeout(timeout);
   }, [categoryId, costPrice]);
 
+  const finalSlug = useMemo(() => slugify(slug.trim() || name.trim()), [name, slug]);
+
   const categoryOptions = useMemo(
-    () => [
-      { value: '', label: 'Sin categoría' },
-      ...categories.map((category) => ({ value: category.id, label: category.name })),
-    ],
+    () => [{ value: '', label: 'Sin categoría' }, ...categories.map((category) => ({ value: category.id, label: category.name }))],
     [categories],
   );
 
   const supplierOptions = useMemo(
-    () => [
-      { value: '', label: 'Sin proveedor' },
-      ...suppliers.map((supplier) => ({ value: supplier.id, label: supplier.name })),
-    ],
+    () => [{ value: '', label: 'Sin proveedor' }, ...suppliers.map((supplier) => ({ value: supplier.id, label: supplier.name }))],
     [suppliers],
   );
 
   const marginStats = useMemo(() => {
-    const c = Number(costPrice || 0);
-    const p = Number(price || 0);
-    const utility = p - c;
-    const margin = c > 0 ? (utility / c) * 100 : 0;
-    const tone: 'emerald' | 'amber' | 'rose' = utility > 0 ? 'emerald' : utility === 0 ? 'amber' : 'rose';
+    const cost = Number(costPrice || 0);
+    const sale = Number(price || 0);
+    const utility = sale - cost;
+    const margin = cost > 0 ? (utility / cost) * 100 : 0;
+    const tone: 'success' | 'warning' | 'danger' = utility > 0 ? 'success' : utility === 0 ? 'warning' : 'danger';
     return { utility, margin, tone };
   }, [costPrice, price]);
 
@@ -167,18 +175,18 @@ export function AdminProductCreatePage() {
       const trimmedName = name.trim();
       const nextSlug = slugify(slug.trim() || trimmedName);
       if (!trimmedName || nextSlug.length < 2) {
-        setError('Nombre y slug válidos son requeridos.');
+        setError('Completá un nombre válido para generar el producto.');
         return;
       }
 
       const nextCost = Number(costPrice || 0);
       const nextPrice = Number(price || 0);
       if (preventNegativeMargin && Number.isFinite(nextCost) && Number.isFinite(nextPrice) && nextPrice < nextCost) {
-        setError('El precio de venta no puede ser menor al costo (guard de margen activo).');
+        setError('El precio de venta no puede quedar por debajo del costo mientras el guard de margen esté activo.');
         return;
       }
 
-      const createRes = await catalogAdminApi.createProduct({
+      const response = await catalogAdminApi.createProduct({
         name: trimmedName,
         slug: nextSlug,
         sku: sku.trim() || null,
@@ -195,190 +203,302 @@ export function AdminProductCreatePage() {
       });
 
       if (imageFile) {
-        await catalogAdminApi.uploadProductImage(createRes.item.id, imageFile);
+        await catalogAdminApi.uploadProductImage(response.item.id, imageFile);
       }
 
       navigate('/admin/productos', { replace: true });
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error creando producto');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No se pudo crear el producto.');
     } finally {
       setSaving(false);
     }
   }
 
-  if (loading) return <div className="store-shell"><div className="card"><div className="card-body">Cargando formulario...</div></div></div>;
+  if (loading) {
+    return (
+      <PageShell context="admin" className="space-y-6">
+        <PageHeader
+          context="admin"
+          eyebrow="Catálogo"
+          title="Nuevo producto"
+          subtitle="Cargando categorías, proveedores y reglas de precio para preparar el alta."
+          actions={<StatusBadge tone="info" label="Preparando" />}
+        />
+        <SectionCard>
+          <LoadingBlock label="Cargando formulario de producto" lines={4} />
+        </SectionCard>
+      </PageShell>
+    );
+  }
 
   return (
-    <div className="store-shell space-y-5">
-      <section className="store-hero">
-        <div className="grid gap-4 md:grid-cols-[1.1fr_auto] md:items-start">
-          <div className="grid gap-3 md:grid-cols-[160px_1fr] md:items-start">
-            <h1 className="text-2xl font-black leading-tight tracking-tight text-zinc-900 md:text-[2.05rem]">Nuevo<br/>producto</h1>
-            <p className="max-w-md pt-1 text-sm text-zinc-600">Alta completa en catálogo con precio, stock, categoría e imagen.</p>
-          </div>
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            <Link to="/admin/productos" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">Volver</Link>
+    <PageShell context="admin" className="space-y-6">
+      <PageHeader
+        context="admin"
+        eyebrow="Catálogo"
+        title="Nuevo producto"
+        subtitle="Alta completa con precio, stock, publicación e imagen desde una vista administrativa más clara y ordenada."
+        actions={(
+          <>
+            <StatusBadge tone="accent" label="Alta" />
+            <Button asChild variant="outline" size="sm">
+              <Link to="/admin/productos">
+                <ArrowLeft className="h-4 w-4" />
+                Volver
+              </Link>
+            </Button>
+          </>
+        )}
+      />
+
+      {error ? (
+        <div className="ui-alert ui-alert--danger">
+          <Tag className="mt-0.5 h-4 w-4 flex-none" />
+          <div>
+            <span className="ui-alert__title">No se pudo preparar el alta del producto.</span>
+            <div className="ui-alert__text">{error}</div>
           </div>
         </div>
-      </section>
+      ) : null}
 
-      {error ? <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">{error}</div> : null}
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.28fr)_minmax(22rem,0.92fr)]">
+        <div className="space-y-6">
+          <SectionCard
+            title="Identificación y clasificación"
+            description="Datos base para que el producto quede correctamente indexado y fácil de encontrar en catálogo."
+            actions={<StatusBadge tone="neutral" size="sm" label={finalSlug ? `Slug: ${finalSlug}` : 'Sin slug'} />}
+          >
+            <div className="grid gap-4 md:grid-cols-2">
+              <TextField label="Nombre" value={name} onChange={(event) => setName(event.target.value)} placeholder="Ej: Módulo de carga iPhone 12" />
+              <TextField label="Slug" value={slug} onChange={(event) => setSlug(event.target.value)} placeholder="Se genera automáticamente si queda vacío" hint="Si lo dejás vacío, se construye a partir del nombre." />
+            </div>
 
-      <section className="card">
-        <div className="card-head flex items-center justify-between gap-2">
-          <div className="text-xl font-black tracking-tight text-zinc-900">Datos del producto</div>
-          <span className="badge-zinc">Alta</span>
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <TextField label="SKU interno" value={sku} onChange={(event) => setSku(event.target.value)} placeholder="Ej: IP12-MOD-CARGA" />
+              <TextField label="Código de barras" value={barcode} onChange={(event) => setBarcode(event.target.value)} placeholder="Ej: 7791234567890" />
+            </div>
+
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <SelectField label="Categoría" value={categoryId} onChange={setCategoryId} options={categoryOptions} ariaLabel="Seleccionar categoría" />
+              <SelectField label="Proveedor" value={supplierId} onChange={setSupplierId} options={supplierOptions} ariaLabel="Seleccionar proveedor" />
+            </div>
+
+            <div className="mt-4">
+              <TextAreaField
+                label="Descripción comercial"
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+                rows={4}
+                placeholder="Detalle, compatibilidad, color, observaciones y argumentos de venta."
+              />
+            </div>
+          </SectionCard>
+
+          <SectionCard
+            title="Precio, stock y publicación"
+            description="Definí el costo, el precio sugerido y cómo querés mostrar el producto dentro del sistema."
+            actions={<StatusBadge tone={marginStats.tone} size="sm" label={marginStats.tone === 'danger' ? 'Margen negativo' : marginStats.tone === 'warning' ? 'Sin margen' : 'Margen saludable'} />}
+          >
+            <div className="grid gap-4 md:grid-cols-2">
+              <TextField
+                label="Referencia de compra"
+                value={purchaseRef}
+                onChange={(event) => setPurchaseRef(event.target.value)}
+                placeholder="Ej: Factura 0081-000123"
+              />
+              <TextField type="number" min={0} label="Stock inicial" value={stock} onChange={(event) => setStock(event.target.value)} />
+            </div>
+
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <TextField type="number" min={0} label="Precio de costo" value={costPrice} onChange={(event) => setCostPrice(event.target.value)} />
+              <TextField type="number" min={0} label="Precio de venta" value={price} onChange={(event) => setPrice(event.target.value)} />
+            </div>
+
+            <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(15rem,0.88fr)]">
+              <div className="summary-box">
+                <div className="summary-box__label">Precio recomendado</div>
+                <div className="summary-box__value">{loadingRecommendation ? 'Calculando…' : money(recommendedPrice ?? 0)}</div>
+                <div className="summary-box__hint">{pricingHint}</div>
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  <Button type="button" variant="outline" size="sm" onClick={() => setPrice(String(recommendedPrice ?? 0))} disabled={recommendedPrice == null || loadingRecommendation}>
+                    <Sparkles className="h-4 w-4" />
+                    Usar recomendado
+                  </Button>
+                  {recommendedRuleName ? <StatusBadge tone="info" size="sm" label={recommendedRuleName} /> : null}
+                </div>
+              </div>
+              <div className="summary-box">
+                <div className="summary-box__label">Margen estimado</div>
+                <div className="summary-box__value">
+                  {marginStats.margin >= 0 ? '+' : ''}
+                  {marginStats.margin.toFixed(1)}%
+                </div>
+                <div className="summary-box__hint">Utilidad estimada: {money(marginStats.utility)}.</div>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <StatusBadge tone={preventNegativeMargin ? 'warning' : 'neutral'} size="sm" label={preventNegativeMargin ? 'Guard de margen activo' : 'Margen libre'} />
+                  {recommendedMarginPercent != null ? <StatusBadge tone="accent" size="sm" label={`${recommendedMarginPercent}% sugerido`} /> : null}
+                </div>
+              </div>
+            </div>
+
+            <div className="choice-grid mt-4">
+              <BooleanChoice
+                checked={active}
+                onChange={setActive}
+                title="Producto activo"
+                hint="Disponible para publicar y vender dentro del sistema."
+              />
+              <BooleanChoice
+                checked={featured}
+                onChange={setFeatured}
+                title="Producto destacado"
+                hint="Se usa para reforzar visibilidad en módulos comerciales."
+              />
+            </div>
+          </SectionCard>
         </div>
-        <div className="card-body space-y-4">
-          <label className="block">
-            <span className="mb-1 block text-sm font-bold text-zinc-700">Nombre *</span>
-            <input value={name} onChange={(e) => setName(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" />
-          </label>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <label className="block">
-                <span className="mb-1 block text-sm font-bold text-zinc-700">Slug (opcional)</span>
-                <input value={slug} onChange={(e) => setSlug(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" />
-              </label>
-              <p className="mt-1 text-xs text-zinc-500">Si lo dejás vacío, se genera desde el nombre.</p>
-            </div>
-            <label className="block">
-              <span className="mb-1 block text-sm font-bold text-zinc-700">SKU *</span>
-              <input value={sku} onChange={(e) => setSku(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" />
-            </label>
-          </div>
-
-          <label className="block">
-            <span className="mb-1 block text-sm font-bold text-zinc-700">Código de barras (opcional)</span>
-            <input value={barcode} onChange={(e) => setBarcode(e.target.value)} placeholder="Ej: 7791234567890" className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" />
-          </label>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <label className="block">
-              <span className="mb-1 block text-sm font-bold text-zinc-700">Categoría</span>
-              <CustomSelect
-                value={categoryId}
-                onChange={setCategoryId}
-                options={categoryOptions}
-                triggerClassName="min-h-11 rounded-2xl font-bold"
-                ariaLabel="Seleccionar categoría"
-              />
-            </label>
-            <label className="block">
-              <span className="mb-1 block text-sm font-bold text-zinc-700">Proveedor</span>
-              <CustomSelect
-                value={supplierId}
-                onChange={setSupplierId}
-                options={supplierOptions}
-                triggerClassName="min-h-11 rounded-2xl font-bold"
-                ariaLabel="Seleccionar proveedor"
-              />
-            </label>
-          </div>
-
-          <label className="block">
-            <span className="mb-1 block text-sm font-bold text-zinc-700">Referencia de compra (opcional)</span>
-            <input value={purchaseRef} onChange={(e) => setPurchaseRef(e.target.value)} placeholder="Ej: Factura 0081-000123, lote A12" className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" />
-          </label>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <label className="block">
-              <span className="mb-1 block text-sm font-bold text-zinc-700">Precio de costo *</span>
-              <input type="number" min="0" value={costPrice} onChange={(e) => setCostPrice(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" />
-            </label>
-            <div>
-              <label className="block">
-                <span className="mb-1 block text-sm font-bold text-zinc-700">Precio de venta *</span>
-                <input type="number" min="0" value={price} onChange={(e) => setPrice(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" />
-              </label>
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <button type="button" onClick={() => setPrice(String(recommendedPrice ?? 0))} disabled={recommendedPrice == null || loadingRecommendation} className="btn-outline !h-8 !rounded-xl px-3 text-xs font-bold disabled:opacity-60">Usar recomendado</button>
-                <span className="badge-zinc">{loadingRecommendation ? 'Calculando...' : `Recomendado: ${peso(recommendedPrice ?? 0)}`}</span>
-              </div>
-              <p className="mt-2 text-xs text-zinc-500">{pricingHint}</p>
-              {recommendedRuleName ? (
-                <p className="mt-1 text-xs text-zinc-500">Regla aplicada: {recommendedRuleName} ({recommendedMarginPercent ?? 0}% margen)</p>
-              ) : null}
-              <div className={`mt-2 rounded-xl border px-3 py-2 text-sm font-bold ${marginStats.tone === 'emerald' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : marginStats.tone === 'amber' ? 'border-amber-200 bg-amber-50 text-amber-700' : 'border-rose-200 bg-rose-50 text-rose-700'}`}>
-                Margen {marginStats.margin >= 0 ? '+' : ''}{marginStats.margin.toFixed(1)}%. Utilidad: {peso(marginStats.utility)}.
+        <div className="space-y-6">
+          <SectionCard
+            tone="info"
+            title="Imagen del producto"
+            description="Adjuntá la imagen comercial desde esta misma vista y revisá la previsualización antes de guardar."
+            actions={<ImagePlus className="h-4 w-4 text-sky-600" />}
+          >
+            <div className="media-surface">
+              <div className="media-surface__frame flex items-center justify-center overflow-hidden">
+                {imagePreview ? <img src={imagePreview} alt="Vista previa del producto" className="h-full w-full object-cover" /> : <div className="media-surface__placeholder">Sin imagen cargada</div>}
               </div>
             </div>
-          </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <label className="block max-w-md">
-              <span className="mb-1 block text-sm font-bold text-zinc-700">Stock *</span>
-              <input type="number" min="0" value={stock} onChange={(e) => setStock(e.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" />
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              <label className="flex items-center gap-2 rounded-2xl border border-zinc-200 px-3 py-2 text-sm font-bold text-zinc-700">
-                <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />
-                Activo
-              </label>
-              <label className="flex items-center gap-2 rounded-2xl border border-zinc-200 px-3 py-2 text-sm font-bold text-zinc-700">
-                <input type="checkbox" checked={featured} onChange={(e) => setFeatured(e.target.checked)} />
-                Destacado
-              </label>
-            </div>
-          </div>
-
-          <label className="block">
-            <span className="mb-1 block text-sm font-bold text-zinc-700">Descripción (opcional)</span>
-            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} placeholder="Detalles, compatibilidad, color, etc." className="w-full rounded-2xl border border-zinc-200 px-3 py-2 text-sm" />
-          </label>
-
-          <div className="grid gap-4 md:grid-cols-[1fr_160px] md:items-start">
-            <div>
-              <label className="block">
-                <span className="mb-1 block text-sm font-bold text-zinc-700">Imagen (opcional)</span>
+            <div className="mt-4 space-y-3">
+              <label className="ui-field">
+                <span className="ui-field__label">Archivo</span>
                 <input
                   type="file"
                   accept="image/jpeg,image/jpg,image/png,image/webp"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (!f) return;
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (!file) return;
                     clearPreviewObjectUrl();
-                    const url = URL.createObjectURL(f);
-                    setImageFile(f);
+                    const url = URL.createObjectURL(file);
+                    setImageFile(file);
                     setPreviewObjectUrl(url);
                     setImagePreview(url);
                   }}
-                  className="block h-11 w-full rounded-2xl border border-zinc-200 px-3 py-2 text-sm file:mr-3 file:rounded-xl file:border-0 file:bg-zinc-100 file:px-3 file:py-1.5 file:text-sm file:font-bold"
+                  className="block min-h-[2.85rem] w-full rounded-[0.95rem] border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-800 shadow-[0_1px_2px_rgba(15,23,42,0.06)] file:mr-3 file:rounded-xl file:border-0 file:bg-zinc-100 file:px-3 file:py-1.5 file:text-sm file:font-bold"
                 />
+                <span className="ui-field__hint">Formatos permitidos: JPG, PNG o WEBP. Máximo 4 MB.</span>
               </label>
-              <div className="mt-2 flex flex-wrap gap-2">
-                <button
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
                   type="button"
+                  variant="outline"
+                  size="sm"
                   onClick={() => {
                     clearPreviewObjectUrl();
                     setImageFile(null);
                     setImagePreview(null);
                   }}
-                  disabled={saving || !imagePreview}
-                  className="btn-outline !h-10 !rounded-xl px-4 text-sm font-bold disabled:opacity-60"
+                  disabled={!imagePreview}
                 >
                   Quitar imagen
-                </button>
-                {imageFile ? <span className="badge-zinc">{imageFile.name}</span> : null}
-              </div>
-              <p className="mt-2 text-xs text-zinc-500">JPG/PNG/WEBP. Máximo 4 MB. Se sube automáticamente al guardar el producto.</p>
-            </div>
-            <div>
-              <div className="mb-1 text-sm font-bold text-zinc-700">Vista previa</div>
-              <div className="flex h-[116px] w-[116px] items-center justify-center overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50 text-sm font-bold text-zinc-400">
-                {imagePreview ? <img src={imagePreview} alt="preview" className="h-full w-full object-cover" /> : 'Sin imagen'}
+                </Button>
+                {imageFile ? <StatusBadge tone="neutral" size="sm" label={imageFile.name} /> : null}
               </div>
             </div>
-          </div>
-        </div>
-      </section>
+          </SectionCard>
 
-      <div className="flex flex-wrap items-center justify-end gap-3 pb-2">
-        <button type="button" onClick={() => void save()} disabled={saving} className="btn-primary !h-11 !rounded-2xl px-6 text-sm font-bold">
-          {saving ? 'Guardando...' : 'Crear producto'}
-        </button>
+          <SectionCard
+            title="Resumen previo"
+            description="Último control antes de crear el producto en el catálogo."
+            actions={<Percent className="h-4 w-4 text-zinc-500" />}
+          >
+            <div className="fact-list">
+              <div className="fact-row">
+                <span className="fact-label">Nombre</span>
+                <span className="fact-value fact-value--text">{name.trim() || 'Sin completar'}</span>
+              </div>
+              <div className="fact-row">
+                <span className="fact-label">Slug final</span>
+                <span className="fact-value fact-value--text">{finalSlug || 'Sin generar'}</span>
+              </div>
+              <div className="fact-row">
+                <span className="fact-label">Categoría</span>
+                <span className="fact-value fact-value--text">{categories.find((category) => category.id === categoryId)?.name || 'Sin categoría'}</span>
+              </div>
+              <div className="fact-row">
+                <span className="fact-label">Proveedor</span>
+                <span className="fact-value fact-value--text">{suppliers.find((supplier) => supplier.id === supplierId)?.name || 'Sin proveedor'}</span>
+              </div>
+              <div className="fact-row">
+                <span className="fact-label">Venta</span>
+                <span className="fact-value">{money(Number(price || 0))}</span>
+              </div>
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-center justify-end gap-3">
+              <Button type="button" variant="outline" onClick={() => navigate('/admin/productos')}>
+                Cancelar
+              </Button>
+              <Button type="button" onClick={() => void save()} disabled={saving}>
+                <PackagePlus className="h-4 w-4" />
+                {saving ? 'Guardando…' : 'Crear producto'}
+              </Button>
+            </div>
+          </SectionCard>
+        </div>
       </div>
+    </PageShell>
+  );
+}
+
+function SelectField({
+  label,
+  value,
+  onChange,
+  options,
+  ariaLabel,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: Array<{ value: string; label: string }>;
+  ariaLabel: string;
+}) {
+  return (
+    <div className="ui-field min-w-0">
+      <span className="ui-field__label">{label}</span>
+      <CustomSelect
+        value={value}
+        onChange={onChange}
+        options={options}
+        className="w-full"
+        triggerClassName="min-h-11 rounded-[1rem]"
+        ariaLabel={ariaLabel}
+      />
     </div>
+  );
+}
+
+function BooleanChoice({
+  checked,
+  onChange,
+  title,
+  hint,
+}: {
+  checked: boolean;
+  onChange: (value: boolean) => void;
+  title: string;
+  hint: string;
+}) {
+  return (
+    <label className={`choice-card ${checked ? 'is-active' : ''}`}>
+      <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} />
+      <div>
+        <div className="choice-card__title">{title}</div>
+        <div className="choice-card__hint">{hint}</div>
+      </div>
+    </label>
   );
 }

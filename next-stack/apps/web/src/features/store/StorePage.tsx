@@ -1,18 +1,16 @@
-import { useEffect, useMemo, useState, type CSSProperties } from 'react';
+﻿import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Search, SlidersHorizontal, ShoppingCart } from 'lucide-react';
+import { Check, Search, ShoppingCart, SlidersHorizontal, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FilterBar } from '@/components/ui/filter-bar';
 import { LoadingBlock } from '@/components/ui/loading-block';
-import { PageHeader } from '@/components/ui/page-header';
 import { PageShell } from '@/components/ui/page-shell';
 import { SectionCard } from '@/components/ui/section-card';
-import { StatusBadge } from '@/components/ui/status-badge';
 import { TextField } from '@/components/ui/text-field';
 import { CustomSelect } from '@/components/ui/custom-select';
 import { cartStorage } from '@/features/cart/storage';
-import { useCartCount } from '@/features/cart/useCart';
 import { storeApi } from './api';
 import type { StoreCategory, StoreHeroConfig, StoreProduct, StoreProductsResponse } from './types';
 
@@ -35,11 +33,14 @@ export function StorePage() {
   const [error, setError] = useState('');
   const [qInput, setQInput] = useState(searchParams.get('q') ?? '');
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
-  const cartCount = useCartCount();
+  const mobileSortTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const bodyOverflowRef = useRef('');
+  const bodyPaddingRightRef = useRef('');
 
   const q = searchParams.get('q') ?? '';
   const category = searchParams.get('category');
   const sort = (searchParams.get('sort') ?? 'relevance') as StoreProductsResponse['meta']['sort'];
+  const [mobileSortDraft, setMobileSortDraft] = useState(sort);
 
   useEffect(() => {
     let active = true;
@@ -84,6 +85,33 @@ export function StorePage() {
     };
   }, [q, category, sort]);
 
+  useEffect(() => {
+    if (!mobileFiltersOpen) return;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setMobileFiltersOpen(false);
+      mobileSortTriggerRef.current?.focus();
+    };
+
+    setMobileSortDraft(sort);
+
+    const body = document.body;
+    const scrollbarWidth = Math.max(0, window.innerWidth - document.documentElement.clientWidth);
+    bodyOverflowRef.current = body.style.overflow;
+    bodyPaddingRightRef.current = body.style.paddingRight;
+    body.style.overflow = 'hidden';
+    if (scrollbarWidth > 0) body.style.paddingRight = `${scrollbarWidth}px`;
+
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = bodyOverflowRef.current;
+      document.body.style.paddingRight = bodyPaddingRightRef.current;
+    };
+  }, [mobileFiltersOpen, sort]);
+
   function applyQuery(next: { q?: string; category?: string | null; sort?: string }) {
     const params = new URLSearchParams(searchParams);
     if (next.q !== undefined) {
@@ -102,18 +130,17 @@ export function StorePage() {
     setSearchParams(params);
   }
 
-  const selectedCategoryLabel = useMemo(() => {
-    if (!category) return 'Todas las categorías';
-    return categories.find((item) => item.slug === category)?.name ?? category;
-  }, [categories, category]);
-
   const sortOptions = useMemo(
     () => SORT_OPTIONS.map((option) => ({ value: option.value, label: option.label })),
     [],
   );
+  const selectedCategoryLabel = useMemo(
+    () => (category ? categories.find((item) => item.slug === category)?.name ?? 'Categoría actual' : 'Todas las categorías'),
+    [categories, category],
+  );
 
   const products = productsData?.items ?? [];
-  const showHero = !category;
+  const isInitialLoading = loading && !productsData;
   const hero = heroConfig ?? {
     imageDesktop: '/brand/logo.png',
     imageMobile: '/brand/logo.png',
@@ -136,67 +163,109 @@ export function StorePage() {
     return String(Math.max(0, Math.min(1, scaled)));
   })();
 
+  const heroVisualVars = {
+    ['--hero-fade-desktop' as string]: hero.fadeRgbDesktop,
+    ['--hero-fade-mobile' as string]: hero.fadeRgbMobile,
+    ['--hero-fade-intensity' as string]: hero.fadeIntensity,
+    ['--hero-fade-size' as string]: `${hero.fadeSize}px`,
+    ['--hero-fade-hold' as string]: `${hero.fadeHold}%`,
+    ['--hero-fade-mid-alpha' as string]: fadeMidAlphaComputed,
+  } as CSSProperties;
+
+  const mobileSortLabel = SORT_OPTIONS.find((option) => option.value === sort)?.label ?? 'Relevancia';
+
+  const mobileSortSheet =
+    mobileFiltersOpen && typeof document !== 'undefined'
+      ? createPortal(
+          <div className="store-mobile-sort-overlay" role="presentation">
+            <button
+              type="button"
+              className="store-mobile-sort-backdrop"
+              aria-label="Cerrar panel de orden"
+              onClick={() => {
+                setMobileFiltersOpen(false);
+                mobileSortTriggerRef.current?.focus();
+              }}
+            />
+            <div className="store-mobile-sort-sheet" role="dialog" aria-modal="true" aria-labelledby="store-mobile-sort-title">
+              <div className="store-mobile-sort-sheet__header">
+                <div className="store-mobile-sort-sheet__heading">
+                  <h2 id="store-mobile-sort-title" className="store-mobile-sort-sheet__title">Ordenar productos</h2>
+                  <p className="store-mobile-sort-sheet__subtitle">Elegí cómo querés ver el catálogo.</p>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Cerrar ordenamiento"
+                  onClick={() => {
+                    setMobileFiltersOpen(false);
+                    mobileSortTriggerRef.current?.focus();
+                  }}
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+
+              <div className="store-mobile-sort-options">
+                {SORT_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    className={`store-mobile-sort-option ${mobileSortDraft === option.value ? 'is-active' : ''}`}
+                    onClick={() => setMobileSortDraft(option.value)}
+                  >
+                    <span>{option.label}</span>
+                    {mobileSortDraft === option.value ? <Check className="h-4 w-4" /> : null}
+                  </button>
+                ))}
+              </div>
+
+              <div className="store-mobile-sort-actions">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setMobileFiltersOpen(false);
+                    mobileSortTriggerRef.current?.focus();
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => {
+                    applyQuery({ sort: mobileSortDraft });
+                    setMobileFiltersOpen(false);
+                    mobileSortTriggerRef.current?.focus();
+                  }}
+                >
+                  Aplicar
+                </Button>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )
+      : null;
+
   return (
-    <PageShell context="store" className={showHero ? 'gap-4' : undefined}>
-      {showHero ? (
-        <>
-          <section
-            className="store-front-hero store-front-hero--fullbleed store-front-hero--flush"
-            style={
-              {
-                ['--hero-fade-desktop' as string]: hero.fadeRgbDesktop,
-                ['--hero-fade-mobile' as string]: hero.fadeRgbMobile,
-              } as CSSProperties
-            }
-          >
-            <picture className="store-front-hero__picture" aria-hidden="true">
-              <source media="(max-width: 767px)" srcSet={hero.imageMobile || hero.imageDesktop} />
-              <img src={hero.imageDesktop} alt="" className="store-front-hero__media" loading="eager" decoding="async" />
-            </picture>
-          </section>
-          <div
-            className="store-front-fade store-front-hero--fullbleed"
-            style={
-              {
-                ['--hero-fade-desktop' as string]: hero.fadeRgbDesktop,
-                ['--hero-fade-mobile' as string]: hero.fadeRgbMobile,
-                ['--hero-fade-intensity' as string]: hero.fadeIntensity,
-                ['--hero-fade-size' as string]: `${hero.fadeSize}px`,
-                ['--hero-fade-hold' as string]: `${hero.fadeHold}%`,
-                ['--hero-fade-mid-alpha' as string]: fadeMidAlphaComputed,
-              } as CSSProperties
-            }
-            aria-hidden="true"
-          />
-        </>
-      ) : null}
-
-      <PageHeader
-        context="store"
-        eyebrow={showHero ? 'Tienda' : selectedCategoryLabel}
-        title={hero.title?.trim() || 'Explorá productos con stock real'}
-        subtitle={
-          hero.subtitle?.trim() ||
-          'Catálogo simple, categorías claras y retiro en local con confirmación rápida.'
-        }
-        actions={
-          <>
-            <Button variant="outline" asChild>
-              <Link to="/reparacion">Consultar reparación</Link>
-            </Button>
-            <Button asChild>
-              <Link to="/cart">
-                Ver carrito
-                {cartCount > 0 ? <StatusBadge tone="neutral" size="sm" label={String(cartCount)} /> : null}
-              </Link>
-            </Button>
-          </>
-        }
-      />
-
+    <PageShell context="store" className="page-shell--store-front">
+      <div className="store-front-band store-front-band--flush" style={heroVisualVars}>
+        <section className="store-front-hero">
+          <picture className="store-front-hero__picture" aria-hidden="true">
+            <source media="(max-width: 767px)" srcSet={hero.imageMobile || hero.imageDesktop} />
+            <img src={hero.imageDesktop} alt="" className="store-front-hero__media" loading="eager" decoding="async" />
+          </picture>
+        </section>
+        <div className="store-front-fade" aria-hidden="true" />
+      </div>
       <FilterBar
+        className="store-toolbar"
         actions={
-          <>
+          <div className="store-toolbar-actions store-toolbar-actions--desktop">
             <Button type="submit" form="store-filter-form">
               Aplicar
             </Button>
@@ -206,34 +275,70 @@ export function StorePage() {
                 variant="outline"
                 onClick={() => {
                   setQInput('');
+                  setMobileFiltersOpen(false);
                   setSearchParams(new URLSearchParams());
                 }}
-              >
+          >
                 Limpiar
               </Button>
             ) : null}
-          </>
+          </div>
         }
       >
         <form
           id="store-filter-form"
-          className="grid gap-3 lg:grid-cols-[minmax(0,2fr)_16rem]"
+          className="store-filter-grid"
           onSubmit={(event) => {
             event.preventDefault();
             applyQuery({ q: qInput });
           }}
         >
-          <TextField
-            label="Buscar"
-            value={qInput}
-            onChange={(event) => setQInput(event.target.value)}
-            placeholder="Ej. iPhone, display, batería"
-            leadingIcon={<Search className="h-4 w-4" />}
-          />
+          <div className="store-filter-grid__search">
+            <div className="store-desktop-search">
+              <TextField
+                label="Buscar"
+                value={qInput}
+                onChange={(event) => setQInput(event.target.value)}
+                placeholder="Ej. iPhone, display, batería"
+                leadingIcon={<Search className="h-4 w-4" />}
+              />
+            </div>
 
-          <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-[0.12em] text-zinc-500">Ordenar</label>
-            <div className="hidden md:block">
+            <div className="store-mobile-controls">
+              <TextField
+                aria-label="Buscar productos"
+                value={qInput}
+                onChange={(event) => setQInput(event.target.value)}
+                placeholder="Buscar productos"
+                leadingIcon={<Search className="h-4 w-4" />}
+                wrapperClassName="store-mobile-controls__search"
+              />
+              <div className="store-mobile-controls__sort">
+                <Button
+                  ref={mobileSortTriggerRef}
+                  type="button"
+                  variant="outline"
+                  className="store-mobile-sort-btn"
+                  aria-label={`Ordenar productos. Orden actual: ${mobileSortLabel}`}
+                  aria-expanded={mobileFiltersOpen}
+                  onClick={() => setMobileFiltersOpen((value) => !value)}
+                >
+                  <SlidersHorizontal className="h-4 w-4" />
+                  <span className="store-mobile-sort-btn__label">Ordenar</span>
+                </Button>
+              </div>
+            </div>
+
+            <div className="store-mobile-apply-row">
+              <Button type="submit" className="w-full">
+                Aplicar
+              </Button>
+            </div>
+          </div>
+
+          <div className="store-filter-grid__sort space-y-2">
+            <label className="store-sort-label text-xs font-bold uppercase tracking-[0.12em] text-zinc-500">Ordenar</label>
+            <div className="store-desktop-sort">
               <CustomSelect
                 value={sort}
                 onChange={(value) => applyQuery({ sort: value })}
@@ -242,42 +347,12 @@ export function StorePage() {
                 ariaLabel="Ordenar productos"
               />
             </div>
-            <div className="md:hidden">
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                aria-label="Mostrar opciones de orden"
-                aria-expanded={mobileFiltersOpen}
-                onClick={() => setMobileFiltersOpen((value) => !value)}
-              >
-                <SlidersHorizontal className="h-4 w-4" />
-              </Button>
-              <div className={`store-mobile-sort-menu ${mobileFiltersOpen ? '' : 'hidden'}`}>
-                <div className="store-mobile-sort-title">Ordenar por</div>
-                <div className="grid gap-1">
-                  {SORT_OPTIONS.map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      className={`store-mobile-sort-option ${sort === option.value ? 'is-active' : ''}`}
-                      onClick={() => {
-                        applyQuery({ sort: option.value });
-                        setMobileFiltersOpen(false);
-                      }}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
           </div>
         </form>
       </FilterBar>
 
       {categories.length > 0 ? (
-        <SectionCard title="Categorías" description="Filtrá el catálogo sin perder el contexto de compra.">
+        <SectionCard className="store-categories" title="Categorías" description="Filtrá el catálogo sin perder el contexto de compra.">
           <div className="flex gap-2 overflow-x-auto overscroll-x-contain pb-1 md:flex-wrap md:overflow-visible">
             <button
               type="button"
@@ -305,8 +380,9 @@ export function StorePage() {
           <div className="text-sm font-semibold text-rose-700">{error}</div>
         </SectionCard>
       ) : null}
+      {mobileSortSheet}
 
-      {loading ? (
+      {isInitialLoading ? (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 3 }).map((_, index) => (
             <SectionCard key={index} title="Cargando catálogo" description="Preparando resultados.">
@@ -314,42 +390,47 @@ export function StorePage() {
             </SectionCard>
           ))}
         </div>
-      ) : products.length > 0 ? (
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-5">
-          {products.map((product) => (
-            <StoreGridCard key={product.id} product={product} />
-          ))}
-        </div>
       ) : (
-        <SectionCard>
-          <EmptyState
-            title={q ? 'No encontramos productos para tu búsqueda' : 'Todavía no hay productos publicados'}
-            description={
-              q
-                ? `No encontramos coincidencias para "${q}"${selectedCategoryLabel !== 'Todas las categorías' ? ` en "${selectedCategoryLabel}"` : ''}.`
-                : 'Cuando el catálogo tenga productos activos, aparecerán aquí con su stock real.'
-            }
-            actions={
-              <>
-                {(q || category) ? (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setQInput('');
-                      setSearchParams(new URLSearchParams());
-                    }}
-                  >
-                    Limpiar filtros
-                  </Button>
-                ) : null}
-                <Button variant="ghost" asChild>
-                  <Link to="/reparacion">Consultar reparación</Link>
-                </Button>
-              </>
-            }
-          />
-        </SectionCard>
+        <div data-store-results-shell className={loading ? 'is-loading' : ''}>
+          {products.length > 0 ? (
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-5">
+              {products.map((product) => (
+                <StoreGridCard key={product.id} product={product} />
+              ))}
+            </div>
+          ) : (
+            <SectionCard>
+              <EmptyState
+                title={q ? 'No encontramos productos para tu búsqueda' : 'Todavía no hay productos publicados'}
+                description={
+                  q
+                    ? `No encontramos coincidencias para "${q}"${selectedCategoryLabel !== 'Todas las categorías' ? ` en "${selectedCategoryLabel}"` : ''}.`
+                    : 'Cuando el catálogo tenga productos activos, aparecerán acá con su stock real.'
+                }
+                actions={
+                  <>
+                    {(q || category) ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setQInput('');
+                          setMobileFiltersOpen(false);
+                          setSearchParams(new URLSearchParams());
+                        }}
+                      >
+                        Limpiar filtros
+                      </Button>
+                    ) : null}
+                    <Button variant="ghost" asChild>
+                      <Link to="/reparacion">Consultar reparación</Link>
+                    </Button>
+                  </>
+                }
+              />
+            </SectionCard>
+          )}
+        </div>
       )}
     </PageShell>
   );
@@ -399,3 +480,5 @@ function StoreGridCard({ product }: { product: StoreProduct }) {
     </div>
   );
 }
+
+

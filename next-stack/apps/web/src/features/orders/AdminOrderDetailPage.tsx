@@ -1,40 +1,29 @@
-﻿import { useEffect, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
+import { ArrowLeft, PackageCheck, ReceiptText, ShoppingBag } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
-import { ActionDropdown } from '@/components/ui/action-dropdown';
+import { Button } from '@/components/ui/button';
 import { CustomSelect } from '@/components/ui/custom-select';
+import { EmptyState } from '@/components/ui/empty-state';
+import { LoadingBlock } from '@/components/ui/loading-block';
+import { PageHeader } from '@/components/ui/page-header';
+import { PageShell } from '@/components/ui/page-shell';
+import { ProgressSteps } from '@/components/ui/progress-steps';
+import { SectionCard } from '@/components/ui/section-card';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { ordersApi } from './api';
+import {
+  formatDateTime,
+  money,
+  orderCode,
+  orderProgressSteps,
+  orderStatusLabel,
+  orderStatusSummary,
+  orderStatusTone,
+  paymentMethodLabel,
+} from './order-ui';
 import type { OrderItem } from './types';
 
 const ORDER_STATUSES = ['PENDIENTE', 'CONFIRMADO', 'PREPARANDO', 'LISTO_RETIRO', 'ENTREGADO', 'CANCELADO'] as const;
-const ORDER_STATUS_LABELS: Record<(typeof ORDER_STATUSES)[number], string> = {
-  PENDIENTE: 'Pendiente',
-  CONFIRMADO: 'Confirmado',
-  PREPARANDO: 'Preparando',
-  LISTO_RETIRO: 'Listo para retirar',
-  ENTREGADO: 'Entregado',
-  CANCELADO: 'Cancelado',
-};
-
-function orderStatusLabel(status: string) {
-  return ORDER_STATUS_LABELS[status as (typeof ORDER_STATUSES)[number]] ?? status;
-}
-
-function orderStatusBadgeClass(status: string) {
-  switch (status) {
-    case 'PENDIENTE':
-      return 'badge-amber';
-    case 'CONFIRMADO':
-      return 'badge-sky';
-    case 'PREPARANDO':
-      return 'badge-indigo';
-    case 'LISTO_RETIRO':
-      return 'badge-emerald';
-    case 'CANCELADO':
-      return 'badge-rose';
-    default:
-      return 'badge-zinc';
-  }
-}
 
 const ORDER_STATUS_OPTIONS = ORDER_STATUSES.map((status) => ({
   value: status,
@@ -46,10 +35,9 @@ export function AdminOrderDetailPage() {
   const [item, setItem] = useState<OrderItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [status, setStatus] = useState('');
-  const [comment, setComment] = useState('');
+  const [notice, setNotice] = useState('');
+  const [status, setStatus] = useState('PENDIENTE');
   const [saving, setSaving] = useState(false);
-  const [waSent, setWaSent] = useState(false);
 
   async function load() {
     if (!id) return;
@@ -60,7 +48,7 @@ export function AdminOrderDetailPage() {
       setItem(res.item);
       setStatus(res.item.status);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error cargando pedido');
+      setError(e instanceof Error ? e.message : 'No se pudo cargar el pedido.');
     } finally {
       setLoading(false);
     }
@@ -70,172 +58,243 @@ export function AdminOrderDetailPage() {
     void load();
   }, [id]);
 
-  async function saveStatus(nextStatus?: string) {
+  async function saveStatus() {
     if (!item) return;
-    const targetStatus = nextStatus ?? status;
     setSaving(true);
     setError('');
+    setNotice('');
     try {
-      const res = await ordersApi.adminUpdateStatus(item.id, targetStatus);
+      const res = await ordersApi.adminUpdateStatus(item.id, status);
       setItem(res.item);
       setStatus(res.item.status);
-      setComment('');
+      setNotice('Estado actualizado correctamente.');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error guardando estado');
+      setError(e instanceof Error ? e.message : 'No se pudo guardar el estado.');
     } finally {
       setSaving(false);
     }
   }
 
+  const totalItems = useMemo(
+    () => item?.items.reduce((accumulator, line) => accumulator + line.quantity, 0) ?? 0,
+    [item],
+  );
+
   if (loading) {
     return (
-      <div className="store-shell">
-        <div className="card"><div className="card-body">Cargando pedido...</div></div>
-      </div>
+      <PageShell context="admin">
+        <PageHeader
+          context="admin"
+          eyebrow="Pedidos"
+          title="Cargando detalle"
+          subtitle="Estamos preparando la información completa del pedido."
+          actions={<StatusBadge label="Cargando" tone="info" />}
+        />
+        <SectionCard>
+          <LoadingBlock label="Cargando pedido" lines={6} />
+        </SectionCard>
+      </PageShell>
     );
   }
 
-  if (error) {
+  if (error && !item) {
     return (
-      <div className="store-shell space-y-4">
-        <Link to="/admin/orders" className="btn-outline">← Volver</Link>
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">{error}</div>
-      </div>
+      <PageShell context="admin">
+        <PageHeader
+          context="admin"
+          eyebrow="Pedidos"
+          title="Pedido no disponible"
+          subtitle="No pudimos recuperar el detalle solicitado."
+          actions={
+            <Button asChild variant="outline" size="sm">
+              <Link to="/admin/orders">
+                <ArrowLeft className="h-4 w-4" />
+                Volver a pedidos
+              </Link>
+            </Button>
+          }
+        />
+        <SectionCard>
+          <EmptyState
+            icon={<ReceiptText className="h-5 w-5" />}
+            title={error}
+            description="Volvé al listado para revisar otro pedido o reintentá la carga desde el panel."
+            actions={
+              <Button asChild>
+                <Link to="/admin/orders">Ir al listado</Link>
+              </Button>
+            }
+          />
+        </SectionCard>
+      </PageShell>
     );
   }
 
   if (!item) {
     return (
-      <div className="store-shell space-y-4">
-        <Link to="/admin/orders" className="btn-outline">← Volver</Link>
-        <div className="card"><div className="card-body">No se encontró el pedido.</div></div>
-      </div>
+      <PageShell context="admin">
+        <PageHeader
+          context="admin"
+          eyebrow="Pedidos"
+          title="Pedido no encontrado"
+          subtitle="El registro solicitado no está disponible en este momento."
+          actions={
+            <Button asChild variant="outline" size="sm">
+              <Link to="/admin/orders">Volver a pedidos</Link>
+            </Button>
+          }
+        />
+        <SectionCard>
+          <EmptyState
+            icon={<ShoppingBag className="h-5 w-5" />}
+            title="No encontramos el pedido"
+            description="Revisá el listado completo y abrí otro pedido desde la grilla principal."
+          />
+        </SectionCard>
+      </PageShell>
     );
   }
 
-  const contactValue = item.user?.email || 'Sin contacto';
-  const whatsappMessage = `Hola ${item.user?.name || 'cliente'}, tu pedido #${item.id.slice(0, 6)} está en estado: ${orderStatusLabel(status || item.status)}.`;
-  const waHistoryDate = new Date().toLocaleDateString('es-AR');
-  const waHistoryTime = new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+  const statusLabel = orderStatusLabel(item.status);
+  const statusTone = orderStatusTone(item.status);
+  const statusSummary = orderStatusSummary(item.status);
+  const customerLabel = item.user?.name || 'Venta rápida';
+  const contactLabel = item.user?.email || 'Sin contacto registrado';
+  const channelLabel = item.isQuickSale ? 'Venta rápida' : 'Compra web';
+  const paymentLabel = paymentMethodLabel(item.paymentMethod);
 
   return (
-    <div className="store-shell space-y-4">
-      <section className="store-hero">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-3">
-              <Link to="/admin/orders" className="btn-ghost !h-9 !rounded-xl px-2 text-sm font-black">
-                ← Volver
+    <PageShell context="admin" className="space-y-5">
+      <PageHeader
+        context="admin"
+        eyebrow="Pedidos"
+        title={`Pedido ${orderCode(item.id)}`}
+        subtitle={`${customerLabel} · ${formatDateTime(item.createdAt)}`}
+        actions={
+          <>
+            <StatusBadge label={statusLabel} tone={statusTone} />
+            <Button asChild variant="outline" size="sm">
+              <Link to="/admin/orders">
+                <ArrowLeft className="h-4 w-4" />
+                Volver
               </Link>
-              <h1 className="text-2xl font-black tracking-tight text-zinc-900">Pedido #{item.id.slice(0, 6)}</h1>
-            </div>
-            <p className="mt-1 text-sm text-zinc-600">
-              Creado {new Date(item.createdAt).toLocaleDateString('es-AR')} {new Date(item.createdAt).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} · Usuario: {item.user?.email || 'local'}
-            </p>
-          </div>
-          <div className="text-right">
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              <Link to={`/admin/orders/${item.id}/print`} target="_blank" rel="noreferrer" className="btn-outline !h-9 !rounded-xl px-4 text-sm font-bold">
-                Imprimir
-              </Link>
-              <Link to={`/admin/orders/${item.id}/ticket`} target="_blank" rel="noreferrer" className="btn-outline !h-9 !rounded-xl px-4 text-sm font-bold">
-                Ticket
-              </Link>
-              <span className={orderStatusBadgeClass(item.status)}>{orderStatusLabel(item.status)}</span>
-              <ActionDropdown
-                renderTrigger={({ open, toggle, triggerRef, menuId }) => (
-                  <button
-                    ref={triggerRef}
-                    type="button"
-                    aria-haspopup="menu"
-                    aria-controls={menuId}
-                    aria-expanded={open ? 'true' : 'false'}
-                    onClick={toggle}
-                    className="btn-primary !h-9 !rounded-xl px-4 text-sm font-bold"
-                  >
-                    Estado
-                  </button>
-                )}
-                menuClassName="min-w-[13rem]"
-              >
-                {(close) => (
-                  <>
-                    {ORDER_STATUS_OPTIONS.map((option) => (
-                      <button
-                        key={option.value}
-                        type="button"
-                        className={`dropdown-item ${item.status === option.value ? 'bg-sky-50 text-sky-700 ring-1 ring-sky-100' : ''}`}
-                        onClick={() => {
-                          void saveStatus(option.value);
-                          close();
-                        }}
-                        disabled={item.status === option.value}
-                        aria-disabled={item.status === option.value ? 'true' : 'false'}
-                      >
-                        {option.label}
-                      </button>
-                    ))}
-                  </>
-                )}
-              </ActionDropdown>
-            </div>
-            <div className="mt-1 text-xs uppercase tracking-wide text-zinc-500">Total</div>
-            <div className="text-2xl font-black tracking-tight text-zinc-900">${item.total.toLocaleString('es-AR')}</div>
+            </Button>
+            <Button asChild variant="outline" size="sm">
+              <a href={`/admin/orders/${item.id}/print`} target="_blank" rel="noreferrer">Imprimir</a>
+            </Button>
+            <Button asChild variant="outline" size="sm">
+              <a href={`/admin/orders/${item.id}/ticket`} target="_blank" rel="noreferrer">Ticket</a>
+            </Button>
+          </>
+        }
+      />
+
+      <div className="nr-stat-grid">
+        <div className="nr-stat-card">
+          <div className="nr-stat-card__label">Total</div>
+          <div className="nr-stat-card__value">{money(item.total)}</div>
+          <div className="nr-stat-card__meta">Importe confirmado del pedido.</div>
+        </div>
+        <div className="nr-stat-card">
+          <div className="nr-stat-card__label">Ítems</div>
+          <div className="nr-stat-card__value">{totalItems}</div>
+          <div className="nr-stat-card__meta">{item.items.length} líneas en la operación.</div>
+        </div>
+        <div className="nr-stat-card">
+          <div className="nr-stat-card__label">Canal</div>
+          <div className="nr-stat-card__value">{channelLabel}</div>
+          <div className="nr-stat-card__meta">{paymentLabel}</div>
+        </div>
+      </div>
+
+      {error ? (
+        <div className="ui-alert ui-alert--danger" data-reveal>
+          <ReceiptText className="mt-0.5 h-4 w-4 flex-none" />
+          <div>
+            <span className="ui-alert__title">No se pudo completar la acción</span>
+            <div className="ui-alert__text">{error}</div>
           </div>
         </div>
-      </section>
+      ) : null}
 
-      <div className="grid gap-4 xl:grid-cols-[0.78fr_1.52fr]">
-        <div className="space-y-4">
-          <section className="card">
-            <div className="card-head flex items-center justify-between gap-2">
-              <div className="text-xl font-black tracking-tight text-zinc-900">Acciones rápidas</div>
-              <span className="badge-zinc">Pedido #{item.id.slice(0, 6)}</span>
-            </div>
-            <div className="card-body space-y-2">
-              <div className="grid grid-cols-2 gap-2">
-                <Link to={`/admin/orders/${item.id}/print`} target="_blank" rel="noreferrer" className="btn-outline !h-10 !rounded-xl justify-center">
-                  Imprimir
-                </Link>
-                <Link to={`/admin/orders/${item.id}/ticket`} target="_blank" rel="noreferrer" className="btn-outline !h-10 !rounded-xl justify-center">
-                  Ticket
-                </Link>
-              </div>
-              <button type="button" className="btn-outline !h-10 !w-full !rounded-xl justify-center">Abrir WhatsApp</button>
-              <div className="grid grid-cols-2 gap-2">
-                <button type="button" className="inline-flex h-10 items-center justify-center rounded-xl border border-zinc-200 bg-zinc-100 px-3 text-sm font-bold text-zinc-500" disabled>
-                  Marcar entregado
-                </button>
-                <button type="button" className="btn-outline !h-10 !rounded-xl justify-center">Cancelar pedido</button>
-              </div>
-            </div>
-          </section>
+      {notice ? (
+        <div className="ui-alert ui-alert--success" data-reveal>
+          <PackageCheck className="mt-0.5 h-4 w-4 flex-none" />
+          <div>
+            <span className="ui-alert__title">Estado guardado</span>
+            <div className="ui-alert__text">{notice}</div>
+          </div>
+        </div>
+      ) : null}
 
-          <section className="card">
-            <div className="card-head flex items-center justify-between gap-2">
-              <div className="text-xl font-black tracking-tight text-zinc-900">Cliente</div>
-              <span className="badge-zinc">{item.user ? 'web' : 'local'}</span>
-            </div>
-            <div className="card-body space-y-2 text-sm">
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-zinc-500">Nombre</span>
-                <span className="font-bold text-zinc-900">{item.user?.name || 'Venta rápida'}</span>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-zinc-500">Contacto</span>
-                <span className="font-bold text-zinc-900">{item.user?.email || 'No informado'}</span>
-              </div>
-            </div>
-          </section>
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.25fr)_minmax(20rem,0.8fr)]">
+        <div className="space-y-5">
+          <SectionCard
+            title="Seguimiento"
+            description="Estado actual del pedido y próximos pasos para el retiro o cierre de la operación."
+            actions={<StatusBadge label={statusLabel} tone={statusTone} size="sm" />}
+          >
+            <div className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(16rem,0.85fr)]">
+              <ProgressSteps items={orderProgressSteps(item.status)} />
 
-          <section className="card">
-            <div className="card-head flex items-center justify-between gap-2">
-              <div className="text-xl font-black tracking-tight text-zinc-900">Actualizar estado</div>
-              <span className={orderStatusBadgeClass(item.status)}>{orderStatusLabel(item.status)}</span>
+              <div className="account-stack">
+                <div className="summary-box">
+                  <div className="summary-box__label">Resumen operativo</div>
+                  <div className="summary-box__value">{money(item.total)}</div>
+                  <div className="summary-box__hint">
+                    {channelLabel}. {item.items.length} líneas y {totalItems} unidades registradas.
+                  </div>
+                </div>
+
+                <div className={`ui-alert ${item.status === 'CANCELADO' ? 'ui-alert--danger' : item.status === 'LISTO_RETIRO' ? 'ui-alert--success' : 'ui-alert--info'}`}>
+                  <PackageCheck className="mt-0.5 h-4 w-4 flex-none" />
+                  <div>
+                    <span className="ui-alert__title">{statusLabel}</span>
+                    <div className="ui-alert__text">{statusSummary}</div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="card-body space-y-3">
+          </SectionCard>
+
+          <SectionCard
+            title="Productos del pedido"
+            description="Detalle completo de los artículos incluidos, con precio unitario y subtotal."
+            actions={<StatusBadge label={`${item.items.length} líneas`} tone="info" size="sm" />}
+          >
+            <div className="line-list">
+              {item.items.map((line) => (
+                <div key={line.id} className="line-item">
+                  <div className="line-item__main">
+                    <div className="line-item__title">{line.name}</div>
+                    <div className="line-item__meta">
+                      {line.quantity} × {money(line.unitPrice)}
+                    </div>
+                  </div>
+                  <div className="line-item__total">{money(line.lineTotal)}</div>
+                </div>
+              ))}
+            </div>
+          </SectionCard>
+        </div>
+
+        <aside className="account-stack account-sticky">
+          <SectionCard title="Cliente y operación" description="Datos principales del pedido para gestionar seguimiento y retiro.">
+            <div className="fact-list">
+              <FactRow label="Código" value={orderCode(item.id)} />
+              <FactRow label="Cliente" value={customerLabel} />
+              <FactRow label="Contacto" value={contactLabel} />
+              <FactRow label="Creado" value={formatDateTime(item.createdAt)} />
+              <FactRow label="Última actualización" value={formatDateTime(item.updatedAt)} />
+              <FactRow label="Pago" value={paymentLabel} />
+              <FactRow label="Canal" value={channelLabel} />
+            </div>
+          </SectionCard>
+
+          <SectionCard title="Actualizar estado" description="Guardá cambios de estado sin salir del detalle.">
+            <div className="space-y-4">
               <div>
-                <label className="mb-1 block text-sm font-bold text-zinc-700">Estado</label>
+                <label className="mb-1 block text-sm font-bold text-zinc-700">Estado del pedido</label>
                 <CustomSelect
                   value={status}
                   onChange={setStatus}
@@ -245,94 +304,33 @@ export function AdminOrderDetailPage() {
                   ariaLabel="Estado del pedido"
                 />
               </div>
-              <div>
-                <label className="mb-1 block text-sm font-bold text-zinc-700">Comentario (opcional)</label>
-                <input
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  placeholder="Ej: listo para retirar"
-                  className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm"
-                />
-              </div>
-              <button type="button" onClick={() => void saveStatus()} disabled={saving} className="btn-primary !h-10 !w-full !rounded-xl justify-center">
+              <Button type="button" onClick={() => void saveStatus()} disabled={saving} className="w-full justify-center">
                 {saving ? 'Guardando...' : 'Guardar estado'}
-              </button>
+              </Button>
             </div>
-          </section>
+          </SectionCard>
 
-          <section className="card">
-            <div className="card-head flex items-center justify-between gap-2">
-              <div className="text-xl font-black tracking-tight text-zinc-900">WhatsApp</div>
-              <span className="badge-zinc">{contactValue}</span>
+          <SectionCard tone="muted" title="Siguiente paso" description="Usá este panel para revisar la operación y mantener el estado al día.">
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
+              <Button asChild variant="outline" className="w-full justify-center">
+                <a href={`/admin/orders/${item.id}/print`} target="_blank" rel="noreferrer">Imprimir comprobante</a>
+              </Button>
+              <Button asChild variant="ghost" className="w-full justify-center">
+                <a href={`/admin/orders/${item.id}/ticket`} target="_blank" rel="noreferrer">Abrir ticket</a>
+              </Button>
             </div>
-            <div className="card-body space-y-3">
-              <div>
-                <div className="mb-1 text-sm font-bold text-zinc-500">Mensaje</div>
-                <p className="text-sm leading-relaxed text-zinc-800">{whatsappMessage}</p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <button type="button" className="btn-outline !h-10 !rounded-xl justify-center">
-                  Abrir WhatsApp
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setWaSent(true)}
-                  className="btn-primary !h-10 !rounded-xl justify-center"
-                >
-                  Marcar como enviado
-                </button>
-              </div>
-
-              <div>
-                <div className="mb-1 text-sm font-bold text-zinc-500">Historial de envíos</div>
-                <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
-                  <div className="flex items-start justify-between gap-2 text-xs">
-                    <div>
-                      <div className="font-black text-zinc-900">{waSent ? 'Enviado' : 'Pendiente'}</div>
-                      <div className="mt-0.5 text-zinc-600">Contacto: {contactValue} · Por: —</div>
-                    </div>
-                    <div className="text-zinc-500">{waHistoryDate} {waHistoryTime}</div>
-                  </div>
-                  <p className="mt-3 text-sm leading-relaxed text-zinc-800">{whatsappMessage}</p>
-                </div>
-              </div>
-            </div>
-          </section>
-        </div>
-
-        <section className="card">
-          <div className="card-head flex items-center justify-between gap-2">
-            <div className="text-xl font-black tracking-tight text-zinc-900">Items del pedido</div>
-            <div className="text-2xl font-black tracking-tight text-zinc-900">${item.total.toLocaleString('es-AR')}</div>
-          </div>
-          <div className="card-body">
-            <div className="overflow-hidden rounded-xl border border-zinc-200">
-              <div className="grid grid-cols-[1.4fr_0.8fr_0.5fr_0.8fr] gap-2 bg-zinc-50 px-3 py-2 text-xs font-black uppercase tracking-wide text-zinc-500">
-                <div>Producto</div>
-                <div className="text-right">Precio</div>
-                <div className="text-right">Cant.</div>
-                <div className="text-right">Subtotal</div>
-              </div>
-              {item.items.map((line) => (
-                <div key={line.id} className="grid grid-cols-[1.4fr_0.8fr_0.5fr_0.8fr] gap-2 border-t border-zinc-100 px-3 py-3 text-sm">
-                  <div className="font-bold text-zinc-900">{line.name}</div>
-                  <div className="text-right font-bold text-zinc-900">${line.unitPrice.toLocaleString('es-AR')}</div>
-                  <div className="text-right font-bold text-zinc-900">{line.quantity}</div>
-                  <div className="text-right font-black text-zinc-900">${line.lineTotal.toLocaleString('es-AR')}</div>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-3 rounded-xl border border-zinc-200 px-3 py-3">
-              <div className="flex items-center justify-between gap-3 text-sm">
-                <span className="text-zinc-700">Total</span>
-                <span className="text-xl font-black tracking-tight text-zinc-900">${item.total.toLocaleString('es-AR')}</span>
-              </div>
-            </div>
-          </div>
-        </section>
+          </SectionCard>
+        </aside>
       </div>
+    </PageShell>
+  );
+}
+
+function FactRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="fact-row">
+      <div className="fact-label">{label}</div>
+      <div className="fact-value fact-value--text">{value}</div>
     </div>
   );
 }

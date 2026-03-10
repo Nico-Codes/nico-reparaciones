@@ -16,7 +16,21 @@ Implementación principal:
 - `next-stack/apps/web/src/components/ui/empty-state.tsx`
 - `next-stack/apps/web/src/components/ui/loading-block.tsx`
 - `next-stack/apps/web/src/components/ui/text-field.tsx`
+- `next-stack/apps/web/src/components/ui/textarea-field.tsx`
 - `next-stack/apps/web/src/components/ui/filter-bar.tsx`
+- `next-stack/apps/web/src/components/ui/progress-steps.tsx`
+
+Patrones reforzados en la fase actual:
+- `ui-alert` para mensajes críticos y warnings
+- `nr-stat-grid` / `nr-stat-card` para resúmenes y KPIs compactos
+- `admin-entity-row` para listados operativos del admin
+- `account-record` para listados de cuenta con densidad intermedia
+- `progress-steps` para seguimiento de pedidos y reparaciones
+- `fact-list` para pares etiqueta/valor en resúmenes y detalles
+- `line-item` para listas de líneas comerciales
+- `quantity-stepper` para cantidad en producto y carrito
+- `checkout-option` para opciones de pago
+- `choice-card` para toggles administrativos binarios
 
 ## Tokens activos
 
@@ -144,6 +158,16 @@ Uso recomendado:
 - formularios de cuenta
 - formularios admin
 
+### TextAreaField
+Archivo:
+- `next-stack/apps/web/src/components/ui/textarea-field.tsx`
+
+Uso recomendado:
+- descripciones
+- notas operativas
+- settings de negocio
+- bloques de texto en formularios admin
+
 ### FilterBar
 Archivo:
 - `next-stack/apps/web/src/components/ui/filter-bar.tsx`
@@ -196,20 +220,32 @@ Vistas que ya adoptan esta base:
 - `AdminDashboardPage`
 - `AdminSettingsHubPage`
 - `StorePage`
-- `MyAccountPage`
-- `MyOrdersPage`
-
-## Pendiente para la siguiente fase
-
-Prioridad alta:
 - `AdminOrdersPage`
+- `AdminOrderDetailPage`
 - `AdminRepairsListPage`
+- `AdminRepairDetailPage`
+- `AdminCategoriesPage`
+- `AdminProductsPage`
+- `AdminProductCreatePage`
+- `AdminProductEditPage`
+- `AdminProductLabelPage`
+- `AdminBusinessSettingsPage`
+- `AdminAlertsPage`
+- `StoreProductDetailPage`
 - `CartPage`
 - `CheckoutPage`
-- `StoreProductDetailPage`
+- `MyAccountPage`
+- `MyOrdersPage`
 - `MyRepairsPage`
 - `OrderDetailPage`
 - `RepairDetailPage`
+
+## Pendiente para la siguiente fase
+
+Pendiente menor:
+- quick wins adicionales sobre módulos admin secundarios fuera del bloque crítico
+- barrido final de copy/encoding en vistas activas no tocadas
+- revisión visual fina de densidad y spacing residual en algunos formularios largos
 
 ## Antipatrones prohibidos a partir de ahora
 

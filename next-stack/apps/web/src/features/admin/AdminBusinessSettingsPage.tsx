@@ -1,5 +1,14 @@
-﻿import { useEffect, useState, type ReactNode } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
+import { AlertTriangle, Building2, Clock3, Store } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { LoadingBlock } from '@/components/ui/loading-block';
+import { PageHeader } from '@/components/ui/page-header';
+import { PageShell } from '@/components/ui/page-shell';
+import { SectionCard } from '@/components/ui/section-card';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { TextAreaField } from '@/components/ui/textarea-field';
+import { TextField } from '@/components/ui/text-field';
 import { CustomSelect } from '@/components/ui/custom-select';
 import { adminSettingsApi, type AdminSettingItem } from './settingsApi';
 
@@ -43,12 +52,17 @@ export function AdminBusinessSettingsPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  const isDirty = useMemo(
+    () => JSON.stringify(form) !== JSON.stringify(initialForm),
+    [form, initialForm],
+  );
+
   async function load() {
     setLoading(true);
     setError('');
     try {
-      const res = await adminSettingsApi.list();
-      const map = new Map<string, AdminSettingItem>(res.items.map((i) => [i.key, i]));
+      const response = await adminSettingsApi.list();
+      const map = new Map<string, AdminSettingItem>(response.items.map((item) => [item.key, item]));
       const next: BusinessForm = {
         shopWhatsapp: settingValue(map, 'shop_phone', ''),
         shopAddress: settingValue(map, 'shop_address', ''),
@@ -61,8 +75,8 @@ export function AdminBusinessSettingsPage() {
       };
       setForm(next);
       setInitialForm(next);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error cargando datos de negocio');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No se pudieron cargar los datos del negocio.');
     } finally {
       setLoading(false);
     }
@@ -88,9 +102,9 @@ export function AdminBusinessSettingsPage() {
         { key: 'store_hero_subtitle', value: form.storeHeroText, group: 'branding', label: 'Texto portada tienda', type: 'textarea' },
       ]);
       setInitialForm(form);
-      setSuccess('Datos guardados.');
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error guardando datos de negocio');
+      setSuccess('Los datos del negocio se guardaron correctamente.');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No se pudieron guardar los cambios.');
     } finally {
       setSaving(false);
     }
@@ -102,152 +116,222 @@ export function AdminBusinessSettingsPage() {
     setSuccess('');
   }
 
+  if (loading) {
+    return (
+      <PageShell context="admin" className="space-y-6">
+        <PageHeader
+          context="admin"
+          eyebrow="Configuración"
+          title="Datos del negocio"
+          subtitle="Cargando los ajustes base que usa el sistema en mensajes, comprobantes y vistas públicas."
+          actions={<StatusBadge tone="info" label="Cargando" />}
+        />
+        <SectionCard>
+          <LoadingBlock label="Cargando datos del negocio" lines={4} />
+        </SectionCard>
+      </PageShell>
+    );
+  }
+
   return (
-    <div className="store-shell space-y-5">
-      <section className="store-hero">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+    <PageShell context="admin" className="space-y-6">
+      <PageHeader
+        context="admin"
+        eyebrow="Configuración"
+        title="Datos del negocio"
+        subtitle="Información general reutilizada en mensajes, comprobantes, alertas y portada de la tienda."
+        actions={(
+          <>
+            <StatusBadge tone={isDirty ? 'warning' : 'success'} label={isDirty ? 'Cambios pendientes' : 'Sin cambios pendientes'} />
+            <Button asChild variant="outline" size="sm">
+              <Link to="/admin/configuraciones">Volver a configuración</Link>
+            </Button>
+          </>
+        )}
+      />
+
+      {error ? (
+        <div className="ui-alert ui-alert--danger">
+          <AlertTriangle className="mt-0.5 h-4 w-4 flex-none" />
           <div>
-            <h1 className="text-2xl font-black tracking-tight text-zinc-900">Datos del negocio</h1>
-            <p className="mt-1 text-sm text-zinc-600">Información base usada en mensajes y comprobantes.</p>
+            <span className="ui-alert__title">No se pudo guardar la configuración.</span>
+            <div className="ui-alert__text">{error}</div>
           </div>
-          <Link to="/admin/configuraciones" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">
-            Volver a configuración
-          </Link>
         </div>
-      </section>
+      ) : null}
 
-      {error ? <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">{error}</div> : null}
-      {success ? <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">{success}</div> : null}
+      {success ? (
+        <div className="ui-alert ui-alert--success">
+          <Building2 className="mt-0.5 h-4 w-4 flex-none" />
+          <div>
+            <span className="ui-alert__title">Configuración actualizada.</span>
+            <div className="ui-alert__text">{success}</div>
+          </div>
+        </div>
+      ) : null}
 
-      <section className="card">
-        <div className="card-body space-y-4 p-4 md:p-5">
-          <Field label="WhatsApp del local (opcional)" hint='Se usa para el botón "Escribir por WhatsApp".'>
-            <input
-              value={form.shopWhatsapp}
-              onChange={(e) => setForm((prev) => ({ ...prev, shopWhatsapp: e.target.value }))}
-              placeholder="Ej: +54 341 5550000"
-              disabled={loading}
-              className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm"
-            />
-          </Field>
-
-          <Field label="Dirección del local (opcional)" hint="Placeholder: {shop_address}">
-            <textarea
-              value={form.shopAddress}
-              onChange={(e) => setForm((prev) => ({ ...prev, shopAddress: e.target.value }))}
-              rows={3}
-              placeholder="Ej: Av. San Martín 123"
-              disabled={loading}
-              className="w-full rounded-2xl border border-zinc-200 px-3 py-3 text-sm"
-            />
-          </Field>
-
-          <Field label="Horarios (opcional)" hint="Placeholder: {shop_hours}">
-            <textarea
-              value={form.shopHours}
-              onChange={(e) => setForm((prev) => ({ ...prev, shopHours: e.target.value }))}
-              rows={3}
-              placeholder="Ej: Lun a Vie 9-13 / 16-20"
-              disabled={loading}
-              className="w-full rounded-2xl border border-zinc-200 px-3 py-3 text-sm"
-            />
-          </Field>
-
-          <Field label="Papel ticket por defecto" hint='Se usa en "Confirmar e imprimir" y en reimpresión de ventas rápidas.'>
-            <CustomSelect
-              value={form.ticketPaper}
-              onChange={(value) => setForm((prev) => ({ ...prev, ticketPaper: value }))}
-              disabled={loading}
-              options={ticketPaperOptions}
-              triggerClassName="min-h-11 rounded-2xl font-bold"
-              ariaLabel="Seleccionar papel ticket por defecto"
-            />
-          </Field>
-
-          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-            <div className="text-xl font-black tracking-tight text-zinc-900">Alertas operativas (dashboard)</div>
-            <p className="mt-1 text-sm text-zinc-600">Definí cuándo un pedido o reparación se considera demorado.</p>
-            <div className="mt-4 grid gap-3 md:grid-cols-2">
-              <div>
-                <label className="mb-2 block text-sm font-bold text-zinc-900">Pedido demorado (horas)</label>
-                <input
-                  type="number"
-                  min={0}
-                  value={form.orderDelayHours}
-                  onChange={(e) => setForm((prev) => ({ ...prev, orderDelayHours: e.target.value }))}
-                  disabled={loading}
-                  className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm"
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(22rem,0.9fr)]">
+        <div className="space-y-6">
+          <SectionCard
+            title="Contacto y atención"
+            description="Datos visibles para clientes y placeholders reutilizados por templates de mensajes."
+            actions={<StatusBadge tone="info" size="sm" label="Canal público" />}
+          >
+            <div className="grid gap-4 md:grid-cols-2">
+              <TextField
+                label="WhatsApp del local"
+                hint='Se usa en el botón "Escribir por WhatsApp".'
+                value={form.shopWhatsapp}
+                onChange={(event) => setForm((current) => ({ ...current, shopWhatsapp: event.target.value }))}
+                placeholder="Ej: +54 341 5550000"
+              />
+              <div className="ui-field min-w-0">
+                <span className="ui-field__label">Papel ticket por defecto</span>
+                <CustomSelect
+                  value={form.ticketPaper}
+                  onChange={(value) => setForm((current) => ({ ...current, ticketPaper: value }))}
+                  options={ticketPaperOptions}
+                  triggerClassName="min-h-11 rounded-[1rem]"
+                  ariaLabel="Seleccionar papel ticket por defecto"
                 />
-                <p className="mt-2 text-sm text-zinc-500">Estados: pendiente, confirmado, preparando.</p>
-              </div>
-              <div>
-                <label className="mb-2 block text-sm font-bold text-zinc-900">Reparación demorada (días)</label>
-                <input
-                  type="number"
-                  min={0}
-                  value={form.repairDelayDays}
-                  onChange={(e) => setForm((prev) => ({ ...prev, repairDelayDays: e.target.value }))}
-                  disabled={loading}
-                  className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm"
-                />
-                <p className="mt-2 text-sm text-zinc-500">Estados: recibido, diagnosticando, esperando aprobación, reparando.</p>
+                <span className="ui-field__hint">Se usa al confirmar e imprimir tickets o comprobantes.</span>
               </div>
             </div>
-          </div>
 
-          <div className="rounded-2xl border border-zinc-200 bg-white px-3 py-3 text-sm text-zinc-700">
-            Portada de tienda: la imagen se cambia desde <span className="font-black">Configuración &gt; Identidad visual &gt; Fondo portada tienda</span>.
-          </div>
+            <div className="mt-4 grid gap-4 lg:grid-cols-2">
+              <TextAreaField
+                label="Dirección del local"
+                hint="Placeholder disponible: {shop_address}"
+                value={form.shopAddress}
+                onChange={(event) => setForm((current) => ({ ...current, shopAddress: event.target.value }))}
+                rows={4}
+                placeholder="Ej: Av. San Martín 123"
+              />
+              <TextAreaField
+                label="Horarios de atención"
+                hint="Placeholder disponible: {shop_hours}"
+                value={form.shopHours}
+                onChange={(event) => setForm((current) => ({ ...current, shopHours: event.target.value }))}
+                rows={4}
+                placeholder="Ej: Lun a Vie 9-13 / 16-20"
+              />
+            </div>
+          </SectionCard>
 
-          <Field label="Título portada tienda (opcional)">
-            <input
-              value={form.storeHeroTitle}
-              onChange={(e) => setForm((prev) => ({ ...prev, storeHeroTitle: e.target.value }))}
-              placeholder="Ej: Novedades de la semana"
-              disabled={loading}
-              className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm"
-            />
-          </Field>
+          <SectionCard
+            title="Alertas operativas"
+            description="Definí cuándo un pedido o una reparación deben aparecer como demorados en el dashboard."
+            actions={<StatusBadge tone="accent" size="sm" label="Operación interna" />}
+          >
+            <div className="grid gap-4 md:grid-cols-2">
+              <TextField
+                type="number"
+                min={0}
+                label="Pedido demorado (horas)"
+                hint="Aplica a pedidos pendientes, confirmados o preparando."
+                value={form.orderDelayHours}
+                onChange={(event) => setForm((current) => ({ ...current, orderDelayHours: event.target.value }))}
+              />
+              <TextField
+                type="number"
+                min={0}
+                label="Reparación demorada (días)"
+                hint="Aplica a recibido, diagnosticando, esperando aprobación y reparando."
+                value={form.repairDelayDays}
+                onChange={(event) => setForm((current) => ({ ...current, repairDelayDays: event.target.value }))}
+              />
+            </div>
+          </SectionCard>
 
-          <Field label="Texto portada tienda (opcional)">
-            <textarea
-              value={form.storeHeroText}
-              onChange={(e) => setForm((prev) => ({ ...prev, storeHeroText: e.target.value }))}
-              rows={3}
-              placeholder="Ej: Ingresaron nuevos módulos, cables y accesorios."
-              disabled={loading}
-              className="w-full rounded-2xl border border-zinc-200 px-3 py-3 text-sm"
-            />
-          </Field>
+          <SectionCard
+            title="Portada de tienda"
+            description="Definí el texto principal del hero público. La imagen visual se administra por separado desde identidad visual."
+            actions={<StatusBadge tone="neutral" size="sm" label="Branding" />}
+          >
+            <div className="ui-alert ui-alert--info mb-4">
+              <Store className="mt-0.5 h-4 w-4 flex-none" />
+              <div>
+                <span className="ui-alert__title">Imagen de portada</span>
+                <div className="ui-alert__text">La imagen del hero se gestiona desde Configuración &gt; Identidad visual &gt; Fondo portada tienda.</div>
+              </div>
+            </div>
 
-          <div className="flex flex-wrap items-center justify-end gap-3 pt-1">
-            <button type="button" onClick={cancelChanges} disabled={loading || saving} className="btn-outline !h-11 !rounded-xl px-5 text-sm font-bold">
+            <div className="grid gap-4 lg:grid-cols-2">
+              <TextField
+                label="Título de portada"
+                value={form.storeHeroTitle}
+                onChange={(event) => setForm((current) => ({ ...current, storeHeroTitle: event.target.value }))}
+                placeholder="Ej: Novedades de la semana"
+              />
+              <TextAreaField
+                label="Texto de portada"
+                value={form.storeHeroText}
+                onChange={(event) => setForm((current) => ({ ...current, storeHeroText: event.target.value }))}
+                rows={4}
+                placeholder="Ej: Ingresaron nuevos módulos, cables y accesorios."
+              />
+            </div>
+          </SectionCard>
+        </div>
+
+        <div className="space-y-6">
+          <SectionCard
+            tone="muted"
+            title="Resumen rápido"
+            description="Referencia de uso para soporte, mensajes y vistas públicas del sistema."
+            actions={<Clock3 className="h-4 w-4 text-zinc-500" />}
+          >
+            <div className="fact-list">
+              <div className="fact-row">
+                <span className="fact-label">WhatsApp</span>
+                <span className="fact-value fact-value--text">{form.shopWhatsapp || 'No configurado'}</span>
+              </div>
+              <div className="fact-row">
+                <span className="fact-label">Dirección</span>
+                <span className="fact-value fact-value--text">{form.shopAddress || 'No configurada'}</span>
+              </div>
+              <div className="fact-row">
+                <span className="fact-label">Horarios</span>
+                <span className="fact-value fact-value--text">{form.shopHours || 'No configurados'}</span>
+              </div>
+              <div className="fact-row">
+                <span className="fact-label">Ticket</span>
+                <span className="fact-value">{form.ticketPaper.toUpperCase()}</span>
+              </div>
+            </div>
+          </SectionCard>
+
+          <SectionCard
+            tone="info"
+            title="Publicación"
+            description="Estado del contenido principal que impacta en la tienda y en la comunicación con clientes."
+          >
+            <div className="choice-grid">
+              <div className={`choice-card ${form.storeHeroTitle.trim() ? 'is-active' : ''}`}>
+                <div>
+                  <div className="choice-card__title">Hero con título</div>
+                  <div className="choice-card__hint">{form.storeHeroTitle.trim() ? 'Se mostrará el encabezado personalizado.' : 'Si queda vacío, se usa el valor por defecto.'}</div>
+                </div>
+              </div>
+              <div className={`choice-card ${form.storeHeroText.trim() ? 'is-active' : ''}`}>
+                <div>
+                  <div className="choice-card__title">Hero con texto auxiliar</div>
+                  <div className="choice-card__hint">{form.storeHeroText.trim() ? 'La portada mostrará un mensaje secundario propio.' : 'Si queda vacío, se usa el texto estándar.'}</div>
+                </div>
+              </div>
+            </div>
+          </SectionCard>
+
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            <Button type="button" variant="outline" onClick={cancelChanges} disabled={!isDirty || saving}>
               Cancelar
-            </button>
-            <button type="button" onClick={() => void save()} disabled={loading || saving} className="btn-primary !h-11 !rounded-xl px-5 text-sm font-bold">
-              {saving ? 'Guardando...' : 'Guardar'}
-            </button>
+            </Button>
+            <Button type="button" onClick={() => void save()} disabled={saving || !isDirty}>
+              {saving ? 'Guardando...' : 'Guardar cambios'}
+            </Button>
           </div>
         </div>
-      </section>
-    </div>
-  );
-}
-
-function Field({
-  label,
-  hint,
-  children,
-}: {
-  label: string;
-  hint?: string;
-  children: ReactNode;
-}) {
-  return (
-    <div>
-      <label className="mb-2 block text-sm font-bold text-zinc-900">{label}</label>
-      {children}
-      {hint ? <p className="mt-2 text-sm text-zinc-500">{hint}</p> : null}
-    </div>
+      </div>
+    </PageShell>
   );
 }

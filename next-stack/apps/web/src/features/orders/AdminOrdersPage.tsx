@@ -1,7 +1,17 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { AlertTriangle, ClipboardList, MessageSquareMore, PackageCheck, RefreshCcw, Search, Truck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ActionDropdown } from '@/components/ui/action-dropdown';
+import { Button } from '@/components/ui/button';
 import { CustomSelect } from '@/components/ui/custom-select';
+import { EmptyState } from '@/components/ui/empty-state';
+import { FilterBar } from '@/components/ui/filter-bar';
+import { LoadingBlock } from '@/components/ui/loading-block';
+import { PageHeader } from '@/components/ui/page-header';
+import { PageShell } from '@/components/ui/page-shell';
+import { SectionCard } from '@/components/ui/section-card';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { TextField } from '@/components/ui/text-field';
 import { ordersApi } from './api';
 import type { OrderItem } from './types';
 
@@ -15,25 +25,27 @@ const ORDER_STATUS_LABELS: Record<(typeof ORDER_STATUSES)[number], string> = {
   CANCELADO: 'Cancelado',
 };
 
-function orderStatusBadgeClass(status: (typeof ORDER_STATUSES)[number] | string) {
-  switch (status) {
-    case 'PENDIENTE':
-      return 'badge-amber';
-    case 'CONFIRMADO':
-      return 'badge-sky';
-    case 'PREPARANDO':
-      return 'badge-indigo';
-    case 'LISTO_RETIRO':
-      return 'badge-emerald';
-    case 'CANCELADO':
-      return 'badge-rose';
-    default:
-      return 'badge-zinc';
-  }
-}
+type BadgeTone = 'neutral' | 'info' | 'accent' | 'success' | 'warning' | 'danger';
 
 function orderStatusLabel(status: string) {
   return ORDER_STATUS_LABELS[status as (typeof ORDER_STATUSES)[number]] ?? status;
+}
+
+function orderStatusTone(status: string): BadgeTone {
+  switch (status) {
+    case 'PENDIENTE':
+      return 'warning';
+    case 'CONFIRMADO':
+      return 'info';
+    case 'PREPARANDO':
+      return 'accent';
+    case 'LISTO_RETIRO':
+      return 'success';
+    case 'CANCELADO':
+      return 'danger';
+    default:
+      return 'neutral';
+  }
 }
 
 const ORDER_STATUS_OPTIONS = ORDER_STATUSES.map((status) => ({
@@ -41,12 +53,35 @@ const ORDER_STATUS_OPTIONS = ORDER_STATUSES.map((status) => ({
   label: orderStatusLabel(status),
 }));
 
+const ORDER_FILTER_OPTIONS = [{ value: '', label: 'Todos los estados' }, ...ORDER_STATUS_OPTIONS];
+
 function orderPrintHref(orderId: string) {
   return `/admin/orders/${encodeURIComponent(orderId)}/print`;
 }
 
 function orderTicketHref(orderId: string) {
   return `/admin/orders/${encodeURIComponent(orderId)}/ticket`;
+}
+
+function money(value: number) {
+  return `$ ${value.toLocaleString('es-AR')}`;
+}
+
+function formatDateTime(value: string) {
+  const date = new Date(value);
+  return `${date.toLocaleDateString('es-AR')} ${date.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}`;
+}
+
+function timeAgo(dateIso: string) {
+  const diffMs = Date.now() - new Date(dateIso).getTime();
+  const mins = Math.max(0, Math.floor(diffMs / 60000));
+  if (mins < 60) return `hace ${Math.max(1, mins)} min`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `hace ${hours} h`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `hace ${days} día${days === 1 ? '' : 's'}`;
+  const weeks = Math.floor(days / 7);
+  return `hace ${weeks} semana${weeks === 1 ? '' : 's'}`;
 }
 
 export function AdminOrdersPage() {
@@ -58,7 +93,6 @@ export function AdminOrdersPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<OrderItem | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
-  const [showStatusBar, setShowStatusBar] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -66,12 +100,12 @@ export function AdminOrdersPage() {
     try {
       const res = await ordersApi.adminOrders({ q, status: statusFilter || undefined });
       setItems(res.items);
-      if (selectedId && !res.items.some((i) => i.id === selectedId)) {
+      if (selectedId && !res.items.some((item) => item.id === selectedId)) {
         setSelectedId(null);
         setDetail(null);
       }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error cargando pedidos');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Error cargando pedidos');
     } finally {
       setLoading(false);
     }
@@ -86,32 +120,30 @@ export function AdminOrdersPage() {
     setLoadingDetail(true);
     void ordersApi
       .adminOrder(selectedId)
-      .then((res) => setDetail(res.item))
-      .catch((e) => setError(e instanceof Error ? e.message : 'Error cargando detalle'))
+      .then((response) => setDetail(response.item))
+      .catch((cause) => setError(cause instanceof Error ? cause.message : 'Error cargando el detalle'))
       .finally(() => setLoadingDetail(false));
   }, [selectedId]);
 
   async function changeStatus(orderId: string, status: string) {
     try {
-      const res = await ordersApi.adminUpdateStatus(orderId, status);
-      setItems((prev) => prev.map((o) => (o.id === orderId ? res.item : o)));
-      setDetail((prev) => (prev?.id === orderId ? res.item : prev));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error actualizando pedido');
+      const response = await ordersApi.adminUpdateStatus(orderId, status);
+      setItems((current) => current.map((order) => (order.id === orderId ? response.item : order)));
+      setDetail((current) => (current?.id === orderId ? response.item : current));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Error actualizando el pedido');
     }
   }
 
-  const totals = useMemo(() => {
-    const total = items.reduce((acc, i) => acc + i.total, 0);
-    return { count: items.length, total };
-  }, [items]);
+  const totals = useMemo(() => ({
+    count: items.length,
+    total: items.reduce((accumulator, item) => accumulator + item.total, 0),
+  }), [items]);
 
   const statusCounts = useMemo(() => {
     const counts: Record<string, number> = { all: items.length };
     for (const status of ORDER_STATUSES) counts[status] = 0;
-    for (const item of items) {
-      counts[item.status] = (counts[item.status] ?? 0) + 1;
-    }
+    for (const item of items) counts[item.status] = (counts[item.status] ?? 0) + 1;
     return counts;
   }, [items]);
 
@@ -120,59 +152,111 @@ export function AdminOrdersPage() {
     { value: 'PENDIENTE', label: 'Pendiente', countKey: 'PENDIENTE' },
     { value: 'CONFIRMADO', label: 'Confirmado', countKey: 'CONFIRMADO' },
     { value: 'PREPARANDO', label: 'Preparando', countKey: 'PREPARANDO' },
-    { value: 'LISTO_RETIRO', label: 'Listo', countKey: 'LISTO_RETIRO' },
+    { value: 'LISTO_RETIRO', label: 'Listo para retirar', countKey: 'LISTO_RETIRO' },
     { value: 'ENTREGADO', label: 'Entregado', countKey: 'ENTREGADO' },
     { value: 'CANCELADO', label: 'Cancelado', countKey: 'CANCELADO' },
   ] as const;
 
   const whatsappCounters = useMemo(() => {
-    const pending = items.filter((o) => o.status === 'PENDIENTE').length;
-    const sent = items.filter((o) => o.status === 'CONFIRMADO' || o.status === 'PREPARANDO' || o.status === 'LISTO_RETIRO').length;
-    const noPhone = items.filter((o) => !o.user?.email).length;
+    const pending = items.filter((order) => order.status === 'PENDIENTE').length;
+    const inFlow = items.filter((order) => order.status === 'CONFIRMADO' || order.status === 'PREPARANDO' || order.status === 'LISTO_RETIRO').length;
+    const withoutEmail = items.filter((order) => !order.user?.email).length;
     return {
       all: items.length,
       pending,
-      sent,
-      noPhone,
+      inFlow,
+      withoutEmail,
     };
   }, [items]);
 
+  const selectedDetail = detail && detail.id === selectedId ? detail : null;
+  const hasFilters = q.trim().length > 0 || statusFilter.length > 0;
+
   return (
-    <div className="store-shell" data-admin-orders-page>
-      <section className="page-head store-hero">
-        <div>
-          <div className="page-title">Pedidos (Admin)</div>
-          <p className="page-subtitle">Listado y control rápido de pedidos.</p>
-        </div>
-        <div className="flex w-full flex-wrap items-center gap-2 md:w-auto md:justify-end">
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Buscar: #id, nombre, teléfono..."
-            className="h-11 w-full rounded-2xl border border-zinc-200 bg-white px-4 text-sm sm:flex-1 sm:min-w-[260px] md:w-[320px] md:flex-none"
-          />
-          <button type="button" className="btn-primary !h-11 !rounded-2xl px-5" onClick={() => void load()}>
-            Filtrar
-          </button>
-          <button type="button" className="btn-ghost !h-11 !rounded-2xl px-2" onClick={() => setStatusFilter(statusFilter ? '' : 'PENDIENTE')}>
-            Ver filtros
-          </button>
-        </div>
+    <PageShell context="admin" className="space-y-6" data-admin-orders-page>
+      <PageHeader
+        context="admin"
+        eyebrow="Operación comercial"
+        title="Pedidos"
+        subtitle="Seguimiento, cambio de estado y revisión rápida del detalle sin salir del listado."
+        actions={(
+          <>
+            <StatusBadge label={`${totals.count} pedidos`} tone="info" />
+            <Button type="button" variant="outline" size="sm" onClick={() => void load()}>
+              <RefreshCcw className="h-4 w-4" />
+              Actualizar
+            </Button>
+          </>
+        )}
+      />
+
+      <section className="nr-stat-grid" data-reveal>
+        <MetricCard label="Pedidos visibles" value={String(totals.count)} meta="Listado actual según filtros" />
+        <MetricCard label="Facturación visible" value={money(totals.total)} meta="Suma de los pedidos cargados" />
+        <MetricCard label="Pendientes" value={String(statusCounts.PENDIENTE ?? 0)} meta="Pedidos todavía sin confirmar" />
+        <MetricCard label="Listos para retirar" value={String(statusCounts.LISTO_RETIRO ?? 0)} meta="Operaciones listas para entrega" />
       </section>
 
-      <div className="mt-5 flex items-center justify-between gap-2">
-        <div className="text-xs font-black uppercase tracking-wide text-zinc-500">Estados</div>
-        <button
-          type="button"
-          onClick={() => setShowStatusBar((v) => !v)}
-          className="text-sm font-bold text-zinc-900 hover:text-sky-700"
-        >
-          {showStatusBar ? 'Ocultar estados' : 'Ver estados'}
-        </button>
-      </div>
+      <FilterBar
+        actions={(
+          <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:justify-end">
+            {hasFilters ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setQ('');
+                  setStatusFilter('');
+                }}
+              >
+                Limpiar
+              </Button>
+            ) : null}
+            <Button type="button" variant="outline" size="sm" onClick={() => void load()}>
+              <RefreshCcw className="h-4 w-4" />
+              Recargar
+            </Button>
+          </div>
+        )}
+      >
+        <TextField
+          value={q}
+          onChange={(event) => setQ(event.target.value)}
+          label="Buscar"
+          placeholder="Pedido, cliente o email"
+          leadingIcon={<Search className="h-4 w-4" />}
+          wrapperClassName="min-w-0 sm:min-w-[18rem]"
+        />
+        <div className="ui-field min-w-0 sm:min-w-[14rem]">
+          <span className="ui-field__label">Estado</span>
+          <CustomSelect
+            value={statusFilter}
+            onChange={setStatusFilter}
+            options={ORDER_FILTER_OPTIONS}
+            className="w-full"
+            triggerClassName="min-h-11 rounded-[1rem]"
+            ariaLabel="Filtrar pedidos por estado"
+          />
+        </div>
+      </FilterBar>
 
-      {showStatusBar ? (
-        <div className="mt-2 flex items-center gap-2 overflow-x-auto pb-1">
+      <SectionCard
+        title="Seguimiento rápido"
+        description="Cambios de estado, acceso al detalle y revisión de actividad reciente desde una sola vista."
+        actions={<StatusBadge label={statusFilter ? `Filtrado: ${orderStatusLabel(statusFilter)}` : 'Todos los estados'} tone={statusFilter ? orderStatusTone(statusFilter) : 'neutral'} />}
+      >
+        {error ? (
+          <div className="ui-alert ui-alert--danger mb-4">
+            <AlertTriangle className="mt-0.5 h-4 w-4 flex-none" />
+            <div>
+              <span className="ui-alert__title">No se pudo actualizar el listado.</span>
+              <div className="ui-alert__text">{error}</div>
+            </div>
+          </div>
+        ) : null}
+
+        <div className="status-tab-list">
           {statusTabs.map((tab) => {
             const isActive = statusFilter === tab.value;
             return (
@@ -180,89 +264,99 @@ export function AdminOrdersPage() {
                 key={tab.countKey}
                 type="button"
                 onClick={() => setStatusFilter(tab.value)}
-                className={`nav-pill whitespace-nowrap ${isActive ? 'nav-pill-active' : ''}`}
+                className={`status-tab ${isActive ? 'is-active' : ''}`}
               >
                 <span>{tab.label}</span>
-                <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-black ring-1 ring-zinc-200 bg-white/70 text-zinc-700">
-                  {statusCounts[tab.countKey] ?? 0}
-                </span>
+                <span className="status-tab__count">{statusCounts[tab.countKey] ?? 0}</span>
               </button>
             );
           })}
         </div>
-      ) : null}
 
-      {error ? <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">{error}</div> : null}
+        <div className="counter-row mt-4">
+          <CounterChip label="Pendientes de seguimiento" count={whatsappCounters.pending} icon={<MessageSquareMore className="h-4 w-4" />} />
+          <CounterChip label="En flujo activo" count={whatsappCounters.inFlow} icon={<Truck className="h-4 w-4" />} />
+          <CounterChip label="Sin email" count={whatsappCounters.withoutEmail} icon={<AlertTriangle className="h-4 w-4" />} />
+        </div>
 
-      <div className="mt-4">
-        <section className="space-y-3">
+        <div className="mt-4 admin-collection">
           {loading ? (
-            <div className="card"><div className="card-body text-sm">Cargando pedidos...</div></div>
+            <SectionCard tone="muted" bodyClassName="space-y-3">
+              <LoadingBlock label="Cargando pedidos" lines={4} />
+            </SectionCard>
           ) : items.length === 0 ? (
-            <div className="card"><div className="card-body text-sm">No hay pedidos.</div></div>
+            <EmptyState
+              title="No hay pedidos para mostrar"
+              description={hasFilters ? 'Prueba con otro estado o quita el texto de búsqueda.' : 'Todavía no hay pedidos registrados en el panel.'}
+              actions={hasFilters ? (
+                <Button type="button" variant="outline" onClick={() => { setQ(''); setStatusFilter(''); }}>
+                  Limpiar filtros
+                </Button>
+              ) : undefined}
+            />
           ) : (
-            items.map((order) => (
-              <div
-                key={order.id}
-                className={`card transition ${selectedId === order.id ? 'ring-2 ring-sky-200' : ''}`}
-              >
-                <div className="card-body !p-4 md:!p-4">
-                  <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
+            items.map((order) => {
+              const isActive = selectedId === order.id;
+              const customerName = order.user?.name || 'Venta local';
+              const email = order.user?.email || 'Sin email';
+              return (
+                <article key={order.id} className={`admin-entity-row ${isActive ? 'is-active' : ''}`}>
+                  <div className="admin-entity-row__top">
+                    <div className="admin-entity-row__heading">
+                      <div className="admin-entity-row__title-row">
                         <button
                           type="button"
-                          onClick={() => setSelectedId(order.id)}
-                          className="text-left text-[1.05rem] font-black tracking-tight text-zinc-900 hover:text-sky-700"
+                          className="admin-entity-row__title"
+                          onClick={() => {
+                            setSelectedId((current) => {
+                              if (current === order.id) {
+                                setDetail(null);
+                                return null;
+                              }
+                              return order.id;
+                            });
+                          }}
                         >
                           Pedido #{order.id.slice(0, 6)}
                         </button>
-                        <span className={`inline-flex h-7 items-center rounded-full border px-3 text-sm font-bold ${orderStatusBadgeClass(order.status)}`}>
-                          {orderStatusLabel(order.status)}
-                        </span>
-                        <span className="inline-flex h-7 items-center rounded-full border border-zinc-200 bg-zinc-50 px-3 text-sm font-bold text-zinc-800">
-                          {order.user ? 'web' : 'local'}
-                        </span>
+                        <StatusBadge label={orderStatusLabel(order.status)} tone={orderStatusTone(order.status)} />
+                        <StatusBadge label={order.user ? 'Web' : 'Venta local'} tone="neutral" />
+                        {!order.user?.email ? <StatusBadge label="Sin email" tone="warning" /> : null}
                       </div>
-                      <div className="mt-1 text-sm text-zinc-700">
-                        <span className="font-bold text-zinc-900">{order.user?.name || 'Venta rápida'}</span>
-                        <span className="text-zinc-500"> · </span>
-                        <span>{detail?.id === order.id && detail.user?.email ? detail.user.email : (order.user?.email || 'sin usuario')}</span>
-                        <span className="text-zinc-500"> · </span>
-                        <span>{new Date(order.createdAt).toLocaleDateString('es-AR')} {new Date(order.createdAt).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</span>
-                        <span className="text-zinc-500"> · </span>
-                        <span className="font-bold text-zinc-800">hace unos segundos</span>
+                      <div className="admin-entity-row__meta">
+                        <span>{customerName}</span>
+                        <span>{email}</span>
+                        <span>{formatDateTime(order.createdAt)}</span>
+                        <span>{timeAgo(order.createdAt)}</span>
                       </div>
                     </div>
-                    <div className="min-w-[116px] text-right">
-                      <div className="text-xs font-black uppercase tracking-wide text-zinc-500">TOTAL</div>
-                      <div className="text-[1.05rem] font-black tracking-tight text-zinc-900">${order.total.toLocaleString('es-AR')}</div>
+                    <div className="admin-entity-row__aside">
+                      <span className="admin-entity-row__eyebrow">Total</span>
+                      <div className="admin-entity-row__value">{money(order.total)}</div>
                     </div>
                   </div>
 
-                  <div className="mt-2.5 flex flex-wrap items-center justify-end gap-2">
-                    <Link to={`/admin/orders/${encodeURIComponent(order.id)}`} className="btn-outline !h-10 !rounded-2xl px-4 text-sm font-bold shadow-none">
-                      Abrir
-                    </Link>
-                    <button type="button" className="inline-flex h-10 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 px-4 text-sm font-bold text-emerald-700">
-                      WhatsApp
-                    </button>
-                    <button type="button" className="inline-flex h-10 items-center justify-center rounded-2xl border border-amber-300 bg-amber-50 px-4 text-sm font-bold text-amber-700">
-                      WA pendiente
-                    </button>
+                  <div className="admin-entity-row__actions">
+                    <Button type="button" variant="secondary" size="sm" onClick={() => setSelectedId((current) => (current === order.id ? null : order.id))}>
+                      {isActive ? 'Ocultar resumen' : 'Ver resumen'}
+                    </Button>
+                    <Button asChild variant="outline" size="sm">
+                      <Link to={`/admin/orders/${encodeURIComponent(order.id)}`}>Abrir detalle</Link>
+                    </Button>
                     <ActionDropdown
                       renderTrigger={({ open, toggle, triggerRef, menuId }) => (
-                        <button
+                        <Button
                           ref={triggerRef}
                           type="button"
+                          variant="ghost"
+                          size="sm"
                           aria-haspopup="menu"
                           aria-controls={menuId}
                           aria-expanded={open ? 'true' : 'false'}
                           onClick={toggle}
-                          className="btn-ghost !h-10 !rounded-2xl px-2.5 text-lg leading-none shadow-none"
                         >
-                          ⋯
-                        </button>
+                          Acciones
+                        </Button>
                       )}
                       menuClassName="min-w-[12rem]"
                     >
@@ -279,17 +373,18 @@ export function AdminOrdersPage() {
                     </ActionDropdown>
                     <ActionDropdown
                       renderTrigger={({ open, toggle, triggerRef, menuId }) => (
-                        <button
+                        <Button
                           ref={triggerRef}
                           type="button"
+                          variant="default"
+                          size="sm"
                           aria-haspopup="menu"
                           aria-controls={menuId}
                           aria-expanded={open ? 'true' : 'false'}
                           onClick={toggle}
-                          className="btn-primary !h-10 !rounded-2xl px-4 text-sm font-bold"
                         >
                           Estado
-                        </button>
+                        </Button>
                       )}
                       menuClassName="min-w-[13rem]"
                     >
@@ -315,49 +410,62 @@ export function AdminOrdersPage() {
                     </ActionDropdown>
                   </div>
 
-                  {selectedId === order.id ? (
-                    <div className="mt-4 border-t border-zinc-100 pt-4">
+                  {isActive ? (
+                    <div className="admin-entity-row__detail">
                       {loadingDetail ? (
-                        <div className="rounded-xl border border-zinc-200 p-4 text-sm">Cargando detalle...</div>
-                      ) : !detail || detail.id !== order.id ? (
-                        <div className="rounded-xl border border-zinc-200 p-4 text-sm">No se pudo cargar el detalle.</div>
+                        <LoadingBlock label="Cargando detalle del pedido" lines={3} />
+                      ) : !selectedDetail ? (
+                        <EmptyState
+                          title="No se pudo cargar el detalle"
+                          description="Reintenta la carga o abre el pedido en su vista completa."
+                          actions={<Button type="button" variant="outline" onClick={() => void load()}>Actualizar listado</Button>}
+                        />
                       ) : (
                         <div className="space-y-4">
-                          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                            <InfoCard label="Total" value={`$${detail.total.toLocaleString('es-AR')}`} />
-                            <InfoCard label="Método" value={detail.paymentMethod || 'sin método'} />
-                            <InfoCard label="Items" value={String(detail.items.length)} />
-                            <InfoCard label="Fecha" value={new Date(detail.createdAt).toLocaleDateString('es-AR')} />
-                          </div>
+                          <section className="nr-stat-grid">
+                            <MetricCard label="Método de pago" value={selectedDetail.paymentMethod || 'Sin definir'} meta="Información registrada en la compra" />
+                            <MetricCard label="Items" value={String(selectedDetail.items.length)} meta="Líneas incluidas en el pedido" />
+                            <MetricCard label="Actualizado" value={formatDateTime(selectedDetail.updatedAt)} meta="Último cambio registrado" />
+                            <MetricCard label="Canal" value={selectedDetail.user ? 'Compra web' : 'Venta local'} meta="Origen de la operación" />
+                          </section>
 
-                          <div className="grid gap-3 lg:grid-cols-[240px_1fr]">
-                            <div>
-                              <label className="mb-1 block text-sm font-bold text-zinc-700">Estado</label>
-                              <CustomSelect
-                                value={detail.status}
-                                onChange={(nextStatus) => void changeStatus(detail.id, nextStatus)}
-                                options={ORDER_STATUS_OPTIONS}
-                                className="w-full"
-                                triggerClassName="min-h-10 rounded-xl"
-                                ariaLabel="Estado del pedido"
-                              />
-                              <div className="mt-2">
-                                <span className={orderStatusBadgeClass(detail.status)}>{orderStatusLabel(detail.status)}</span>
+                          <div className="detail-grid">
+                            <div className="detail-stack">
+                              <div className="detail-panel">
+                                <div className="detail-panel__label">Estado actual</div>
+                                <div className="mt-3 space-y-3">
+                                  <CustomSelect
+                                    value={selectedDetail.status}
+                                    onChange={(nextStatus) => void changeStatus(selectedDetail.id, nextStatus)}
+                                    options={ORDER_STATUS_OPTIONS}
+                                    className="w-full"
+                                    triggerClassName="min-h-11 rounded-[1rem]"
+                                    ariaLabel="Estado del pedido"
+                                  />
+                                  <StatusBadge label={orderStatusLabel(selectedDetail.status)} tone={orderStatusTone(selectedDetail.status)} />
+                                </div>
+                              </div>
+                              <div className="detail-panel">
+                                <div className="detail-panel__label">Cliente</div>
+                                <div className="detail-panel__value">
+                                  <div className="font-semibold text-zinc-900">{selectedDetail.user?.name || 'Venta local'}</div>
+                                  <div>{selectedDetail.user?.email || 'Sin email asociado'}</div>
+                                </div>
                               </div>
                             </div>
 
-                            <div>
-                              <div className="mb-1 text-sm font-bold text-zinc-700">Items</div>
-                              <div className="space-y-2">
-                                {detail.items.map((line) => (
-                                  <div key={line.id} className="rounded-xl border border-zinc-200 p-3">
-                                    <div className="flex items-start justify-between gap-3">
-                                      <div className="min-w-0">
-                                        <div className="truncate text-sm font-semibold text-zinc-900">{line.name}</div>
-                                        <div className="text-xs text-zinc-500">Cant. {line.quantity} · Unit. ${line.unitPrice.toLocaleString('es-AR')}</div>
+                            <div className="detail-panel">
+                              <div className="detail-panel__label">Items del pedido</div>
+                              <div className="mt-3 line-list">
+                                {selectedDetail.items.map((line) => (
+                                  <div key={line.id} className="line-item">
+                                    <div className="line-item__main">
+                                      <div className="line-item__title">{line.name}</div>
+                                      <div className="line-item__meta">
+                                        Cantidad {line.quantity} · Unitario {money(line.unitPrice)}
                                       </div>
-                                      <div className="text-sm font-bold text-zinc-900">${line.lineTotal.toLocaleString('es-AR')}</div>
                                     </div>
+                                    <div className="line-item__total">{money(line.lineTotal)}</div>
                                   </div>
                                 ))}
                               </div>
@@ -367,46 +475,40 @@ export function AdminOrdersPage() {
                       )}
                     </div>
                   ) : null}
-                </div>
-              </div>
-            ))
+                </article>
+              );
+            })
           )}
-
-          <div className="mt-1 flex flex-wrap gap-2">
-            <WhatsappChip active label="WhatsApp: Todos" count={whatsappCounters.all} />
-            <WhatsappChip label="WA pendiente" count={whatsappCounters.pending} />
-            <WhatsappChip label="WA enviado" count={whatsappCounters.sent} />
-            <WhatsappChip label="Sin teléfono" count={whatsappCounters.noPhone} />
-          </div>
-        </section>
-      </div>
-    </div>
+        </div>
+      </SectionCard>
+    </PageShell>
   );
 }
 
-function InfoCard({ label, value }: { label: string; value: string }) {
+function MetricCard({ label, value, meta }: { label: string; value: string; meta: string }) {
   return (
-    <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
-      <div className="text-xs font-bold uppercase tracking-wide text-zinc-500">{label}</div>
-      <div className="mt-1 text-sm font-black text-zinc-900">{value}</div>
-    </div>
+    <article className="nr-stat-card">
+      <div className="nr-stat-card__label">{label}</div>
+      <div className="nr-stat-card__value">{value}</div>
+      <div className="nr-stat-card__meta">{meta}</div>
+    </article>
   );
 }
 
-function WhatsappChip({ label, count, active = false }: { label: string; count: number; active?: boolean }) {
+function CounterChip({
+  label,
+  count,
+  icon,
+}: {
+  label: string;
+  count: number;
+  icon: React.ReactNode;
+}) {
   return (
-    <button
-      type="button"
-      className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-bold transition ${
-        active
-          ? 'border-sky-300 bg-sky-50 text-sky-900'
-          : 'border-zinc-200 bg-white text-zinc-800 hover:border-zinc-300'
-      }`}
-    >
+    <div className="counter-chip">
+      {icon}
       <span>{label}</span>
-      <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full border border-zinc-200 bg-white px-1 text-[11px] font-black text-zinc-700">
-        {count}
-      </span>
-    </button>
+      <span className="counter-chip__count">{count}</span>
+    </div>
   );
 }

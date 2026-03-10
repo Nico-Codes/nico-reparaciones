@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+﻿import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 import { catalogAdminApi, type AdminProduct } from './api';
 
 declare global {
@@ -24,7 +25,7 @@ function loadJsBarcodeScript() {
       resolve();
       return;
     }
-    const existing = document.querySelector<HTMLScriptElement>(`script[data-jsbarcode="1"]`);
+    const existing = document.querySelector<HTMLScriptElement>('script[data-jsbarcode="1"]');
     if (existing) {
       existing.addEventListener('load', () => resolve(), { once: true });
       existing.addEventListener('error', () => reject(new Error('No se pudo cargar JsBarcode')), { once: true });
@@ -55,22 +56,25 @@ export function AdminProductLabelPage() {
 
   useEffect(() => {
     let active = true;
+
     async function load() {
       if (!id) return;
       setLoading(true);
       setError('');
       try {
-        const res = await catalogAdminApi.product(id);
+        const response = await catalogAdminApi.product(id);
         if (!active) return;
-        setItem(res.item);
-      } catch (err) {
+        setItem(response.item);
+      } catch (cause) {
         if (!active) return;
-        setError(err instanceof Error ? err.message : 'Error cargando etiqueta');
+        setError(cause instanceof Error ? cause.message : 'No se pudo cargar la etiqueta.');
       } finally {
         if (active) setLoading(false);
       }
     }
+
     void load();
+
     return () => {
       active = false;
     };
@@ -78,6 +82,7 @@ export function AdminProductLabelPage() {
 
   useEffect(() => {
     let active = true;
+
     async function renderBarcode() {
       if (!barcodeValue || !barcodeRef.current) return;
       try {
@@ -91,23 +96,25 @@ export function AdminProductLabelPage() {
           margin: 0,
         });
       } catch {
-        // Si falla la librería externa, mantenemos el valor textual.
+        // Si falla la librería externa, mantenemos el valor textual como fallback.
       }
     }
+
     void renderBarcode();
+
     return () => {
       active = false;
     };
   }, [barcodeValue]);
 
   if (loading) {
-    return <div className="mx-auto max-w-3xl px-6 py-8 text-sm text-zinc-600">Cargando etiqueta...</div>;
+    return <div className="mx-auto max-w-3xl px-6 py-8 text-sm text-zinc-600">Cargando etiqueta…</div>;
   }
 
   if (error || !item) {
     return (
       <div className="mx-auto max-w-3xl px-6 py-8">
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">{error || 'Producto no encontrado'}</div>
+        <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">{error || 'Producto no encontrado.'}</div>
       </div>
     );
   }
@@ -116,25 +123,25 @@ export function AdminProductLabelPage() {
     <div className="min-h-screen bg-zinc-50 px-4 py-6 print:bg-white print:p-0">
       <div className="mx-auto w-full max-w-[460px]">
         <div className="mb-3 flex items-center justify-end gap-2 print:hidden">
-          <button type="button" onClick={() => window.print()} className="btn-primary !h-10 !rounded-xl px-4 text-sm font-bold">
+          <Button type="button" size="sm" onClick={() => window.print()}>
             Imprimir
-          </button>
-          <Link to={`/admin/productos/${encodeURIComponent(item.id)}/editar`} className="btn-outline !h-10 !rounded-xl px-4 text-sm font-bold">
-            Volver
-          </Link>
-          <button type="button" onClick={() => window.close()} className="btn-outline !h-10 !rounded-xl px-4 text-sm font-bold">
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link to={`/admin/productos/${encodeURIComponent(item.id)}/editar`}>Volver</Link>
+          </Button>
+          <Button type="button" variant="outline" size="sm" onClick={() => window.close()}>
             Cerrar
-          </button>
+          </Button>
         </div>
 
         <section className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-[0_8px_30px_-18px_#0f172a47] print:rounded-none print:border-0 print:p-0 print:shadow-none">
           <div className="text-base font-black tracking-tight text-zinc-900">{item.name}</div>
           <div className="mt-2 text-xs text-zinc-600">SKU: {item.sku || '-'}</div>
-          <div className="mt-1 text-xs text-zinc-600">Barcode: {item.barcode || '-'}</div>
+          <div className="mt-1 text-xs text-zinc-600">Código de barras: {item.barcode || '-'}</div>
           <div className="mt-1 text-xs text-zinc-600">Precio: $ {Math.round(Number(item.price || 0)).toLocaleString('es-AR')}</div>
 
           <div className="my-3 flex justify-center rounded-xl border border-zinc-200 bg-zinc-50 p-2.5">
-            <svg ref={barcodeRef} aria-label="codigo de barras" />
+            <svg ref={barcodeRef} aria-label="Código de barras" />
           </div>
 
           <div className="text-center text-sm font-black tracking-tight text-zinc-900">{barcodeValue}</div>

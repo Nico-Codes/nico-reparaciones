@@ -1,67 +1,51 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { ArrowLeft, AlertTriangle, Clock3, ShieldCheck, Wrench } from 'lucide-react';
+import { Link, useParams } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 import { CustomSelect } from '@/components/ui/custom-select';
+import { EmptyState } from '@/components/ui/empty-state';
+import { LoadingBlock } from '@/components/ui/loading-block';
+import { PageHeader } from '@/components/ui/page-header';
+import { PageShell } from '@/components/ui/page-shell';
+import { ProgressSteps } from '@/components/ui/progress-steps';
+import { SectionCard } from '@/components/ui/section-card';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { TextField } from '@/components/ui/text-field';
+import { TextAreaField } from '@/components/ui/textarea-field';
 import { repairsApi } from './api';
+import {
+  formatDateTime,
+  money,
+  repairCode,
+  repairProgressSteps,
+  repairStatusLabel,
+  repairStatusSummary,
+  repairStatusTone,
+} from './repair-ui';
 import type { RepairItem, RepairTimelineEvent } from './types';
 
-const STATUS_LABELS: Record<string, string> = {
-  RECEIVED: 'Recibido',
-  DIAGNOSING: 'Diagnosticando',
-  WAITING_APPROVAL: 'Esperando aprobación',
-  REPAIRING: 'En reparación',
-  READY_PICKUP: 'Listo para retirar',
-  DELIVERED: 'Entregado',
-  CANCELLED: 'Cancelado',
-};
-
-const STATUS_BADGE_CLASS: Record<string, string> = {
-  RECEIVED: 'badge-sky',
-  DIAGNOSING: 'badge-indigo',
-  WAITING_APPROVAL: 'badge-amber',
-  REPAIRING: 'badge-indigo',
-  READY_PICKUP: 'badge-emerald',
-  DELIVERED: 'badge-zinc',
-  CANCELLED: 'badge-rose',
-};
-
-function statusLabel(status: string) {
-  return STATUS_LABELS[status] ?? status;
-}
-
-function statusBadgeClass(status: string) {
-  return STATUS_BADGE_CLASS[status] ?? 'badge-zinc';
-}
-
-function repairCodeLabel(id: string) {
-  return `R-${id.slice(0, 13)}`;
-}
+const STATUS_OPTIONS = ['RECEIVED', 'DIAGNOSING', 'WAITING_APPROVAL', 'REPAIRING', 'READY_PICKUP', 'DELIVERED', 'CANCELLED'].map((status) => ({
+  value: status,
+  label: repairStatusLabel(status),
+}));
 
 export function AdminRepairDetailPage() {
   const { id = '' } = useParams();
-  const navigate = useNavigate();
   const [item, setItem] = useState<RepairItem | null>(null);
   const [timeline, setTimeline] = useState<RepairTimelineEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const [status, setStatus] = useState('RECEIVED');
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [deviceBrand, setDeviceBrand] = useState('');
   const [deviceModel, setDeviceModel] = useState('');
   const [issueLabel, setIssueLabel] = useState('');
-  const [diagnosis, setDiagnosis] = useState('');
-  const [detail, setDetail] = useState('');
-  const [costPrice, setCostPrice] = useState('');
+  const [quotedPrice, setQuotedPrice] = useState('');
   const [finalPrice, setFinalPrice] = useState('');
-  const [paidAmount, setPaidAmount] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('TRANSFERENCIA');
-  const [warrantyDays, setWarrantyDays] = useState('100');
-  const [paymentNotes, setPaymentNotes] = useState('');
-  const [internalNotes, setInternalNotes] = useState('');
-  const [provider, setProvider] = useState('PUNTOCELL');
-  const [sparePart, setSparePart] = useState('');
-  const [purchaseRef, setPurchaseRef] = useState('');
+  const [notes, setNotes] = useState('');
 
   useEffect(() => {
     let mounted = true;
@@ -81,13 +65,12 @@ export function AdminRepairDetailPage() {
         setDeviceBrand(res.item.deviceBrand || '');
         setDeviceModel(res.item.deviceModel || '');
         setIssueLabel(res.item.issueLabel || '');
-        setDiagnosis(res.item.notes || '');
-        setDetail(res.item.notes || '');
-        setFinalPrice(res.item.finalPrice != null ? String(res.item.finalPrice) : res.item.quotedPrice != null ? String(res.item.quotedPrice) : '');
-        setPaidAmount(res.item.finalPrice != null ? String(res.item.finalPrice) : '');
+        setQuotedPrice(res.item.quotedPrice != null ? String(res.item.quotedPrice) : '');
+        setFinalPrice(res.item.finalPrice != null ? String(res.item.finalPrice) : '');
+        setNotes(res.item.notes || '');
       } catch (e) {
         if (!mounted) return;
-        setError(e instanceof Error ? e.message : 'Error cargando reparación');
+        setError(e instanceof Error ? e.message : 'No se pudo cargar la reparación.');
       } finally {
         if (mounted) setLoading(false);
       }
@@ -100,34 +83,20 @@ export function AdminRepairDetailPage() {
   }, [id]);
 
   const summary = useMemo(() => {
-    const final = Number(finalPrice || 0);
-    const paid = Number(paidAmount || 0);
+    const quoted = quotedPrice ? Number(quotedPrice) : null;
+    const final = finalPrice ? Number(finalPrice) : null;
     return {
+      quoted,
       final,
-      paid,
-      due: Math.max(0, final - paid),
+      timelineCount: timeline.length,
     };
-  }, [finalPrice, paidAmount]);
-
-  const statusOptions = useMemo(
-    () => Object.keys(STATUS_LABELS).map((statusKey) => ({ value: statusKey, label: statusLabel(statusKey) })),
-    [],
-  );
-  const issueOptions = issueLabel ? [{ value: issueLabel, label: issueLabel }] : [{ value: '', label: 'Seleccionar falla' }];
-  const providerOptions = [
-    { value: 'PUNTOCELL', label: 'Puntocell' },
-    { value: 'EVOPHONE', label: 'Evophone' },
-  ];
-  const paymentOptions = [
-    { value: 'TRANSFERENCIA', label: 'Transferencia' },
-    { value: 'EFECTIVO', label: 'Efectivo' },
-    { value: 'DEBITO', label: 'Débito' },
-  ];
+  }, [finalPrice, quotedPrice, timeline.length]);
 
   async function saveChanges() {
     if (!item) return;
     setSaving(true);
     setError('');
+    setNotice('');
     try {
       const res = await repairsApi.adminUpdate(item.id, {
         customerName,
@@ -136,240 +105,322 @@ export function AdminRepairDetailPage() {
         deviceModel: deviceModel || null,
         issueLabel: issueLabel || null,
         status,
-        quotedPrice: finalPrice ? Number(finalPrice) : null,
+        quotedPrice: quotedPrice ? Number(quotedPrice) : null,
         finalPrice: finalPrice ? Number(finalPrice) : null,
-        notes: [diagnosis, detail, internalNotes].filter(Boolean).join('\n\n') || null,
+        notes: notes.trim() || null,
       });
       setItem(res.item);
+      setStatus(res.item.status);
+      setNotice('Reparación actualizada correctamente.');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error guardando cambios');
+      setError(e instanceof Error ? e.message : 'No se pudieron guardar los cambios.');
     } finally {
       setSaving(false);
     }
   }
 
-  if (loading) return <div className="store-shell"><div className="card"><div className="card-body">Cargando reparación...</div></div></div>;
-  if (error || !item) return <div className="store-shell"><div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">{error || 'No se encontró la reparación'}</div></div>;
+  if (loading) {
+    return (
+      <PageShell context="admin">
+        <PageHeader
+          context="admin"
+          eyebrow="Reparaciones"
+          title="Cargando detalle"
+          subtitle="Estamos preparando la información completa del caso."
+          actions={<StatusBadge label="Cargando" tone="info" />}
+        />
+        <SectionCard>
+          <LoadingBlock label="Cargando reparación" lines={6} />
+        </SectionCard>
+      </PageShell>
+    );
+  }
+
+  if (error && !item) {
+    return (
+      <PageShell context="admin">
+        <PageHeader
+          context="admin"
+          eyebrow="Reparaciones"
+          title="Caso no disponible"
+          subtitle="No pudimos recuperar el detalle solicitado."
+          actions={
+            <Button asChild variant="outline" size="sm">
+              <Link to="/admin/repairs">
+                <ArrowLeft className="h-4 w-4" />
+                Volver a reparaciones
+              </Link>
+            </Button>
+          }
+        />
+        <SectionCard>
+          <EmptyState
+            icon={<Wrench className="h-5 w-5" />}
+            title={error}
+            description="Volvé al listado para revisar otro caso o reintentá la carga desde el panel."
+            actions={
+              <Button asChild>
+                <Link to="/admin/repairs">Ir al listado</Link>
+              </Button>
+            }
+          />
+        </SectionCard>
+      </PageShell>
+    );
+  }
+
+  if (!item) {
+    return (
+      <PageShell context="admin">
+        <PageHeader
+          context="admin"
+          eyebrow="Reparaciones"
+          title="Caso no encontrado"
+          subtitle="El registro solicitado no está disponible en este momento."
+          actions={
+            <Button asChild variant="outline" size="sm">
+              <Link to="/admin/repairs">Volver a reparaciones</Link>
+            </Button>
+          }
+        />
+        <SectionCard>
+          <EmptyState
+            icon={<AlertTriangle className="h-5 w-5" />}
+            title="No encontramos la reparación"
+            description="Revisá el listado completo y abrí otro caso desde la tabla principal."
+          />
+        </SectionCard>
+      </PageShell>
+    );
+  }
+
+  const statusLabel = repairStatusLabel(item.status);
+  const statusTone = repairStatusTone(item.status);
+  const statusSummary = repairStatusSummary(item.status);
+  const code = repairCode(item.id);
+  const deviceLabel = [deviceBrand, deviceModel].filter(Boolean).join(' ') || 'Equipo sin identificar';
 
   return (
-    <div className="store-shell space-y-4">
-      <section className="store-hero">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-2xl font-black tracking-tight text-zinc-900">{repairCodeLabel(item.id)}</h1>
-              <span className={statusBadgeClass(status)}>{statusLabel(status)}</span>
-              <span className="inline-flex h-8 items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 text-sm font-bold text-emerald-700">
-                Garantía vigente (24/05/2026)
-              </span>
-            </div>
-            <p className="mt-2 text-sm text-zinc-700">
-              <span className="font-black">{customerName}</span> · {customerPhone || 'Sin teléfono'} · {[deviceBrand, deviceModel].filter(Boolean).join(' ') || 'Sin equipo'}
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <button type="button" onClick={() => navigate('/admin/repairs')} className="btn-ghost !h-10 !rounded-xl px-4 text-sm font-bold">Volver</button>
-            <Link to={`/admin/garantias/crear?repairId=${encodeURIComponent(item.id)}`} className="btn-outline !h-10 !rounded-xl px-4 text-sm font-bold">Registrar garantía</Link>
-            <a href={`/admin/repairs/${encodeURIComponent(item.id)}/print`} target="_blank" rel="noreferrer" className="btn-outline !h-10 !rounded-xl px-4 text-sm font-bold">Imprimir</a>
-            <a href={`/admin/repairs/${encodeURIComponent(item.id)}/ticket`} target="_blank" rel="noreferrer" className="btn-outline !h-10 !rounded-xl px-4 text-sm font-bold">Ticket</a>
-            <button type="button" className="btn-primary !h-10 !rounded-xl px-4 text-sm font-bold">WhatsApp</button>
-          </div>
+    <PageShell context="admin" className="space-y-5">
+      <PageHeader
+        context="admin"
+        eyebrow="Reparaciones"
+        title={`Caso ${code}`}
+        subtitle={`${customerName || 'Cliente sin nombre'} · ${formatDateTime(item.createdAt)}`}
+        actions={
+          <>
+            <StatusBadge label={statusLabel} tone={statusTone} />
+            <Button asChild variant="outline" size="sm">
+              <Link to="/admin/repairs">
+                <ArrowLeft className="h-4 w-4" />
+                Volver
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="sm">
+              <Link to={`/admin/garantias/crear?repairId=${encodeURIComponent(item.id)}`}>Registrar garantía</Link>
+            </Button>
+            <Button asChild variant="outline" size="sm">
+              <a href={`/admin/repairs/${encodeURIComponent(item.id)}/print`} target="_blank" rel="noreferrer">Imprimir</a>
+            </Button>
+            <Button asChild variant="outline" size="sm">
+              <a href={`/admin/repairs/${encodeURIComponent(item.id)}/ticket`} target="_blank" rel="noreferrer">Ticket</a>
+            </Button>
+          </>
+        }
+      />
+
+      <div className="nr-stat-grid">
+        <div className="nr-stat-card">
+          <div className="nr-stat-card__label">Presupuesto</div>
+          <div className="nr-stat-card__value">{money(summary.quoted)}</div>
+          <div className="nr-stat-card__meta">Valor estimado informado al cliente.</div>
         </div>
-      </section>
-
-      {error ? <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">{error}</div> : null}
-
-      <div className="grid gap-4 xl:grid-cols-[360px_1fr]">
-        <div className="space-y-4">
-          <section className="card">
-            <div className="card-head flex items-center justify-between gap-2">
-              <div className="text-xl font-black tracking-tight text-zinc-900">Acciones rápidas</div>
-              <span className="badge-zinc">{repairCodeLabel(item.id)}</span>
-            </div>
-            <div className="card-body space-y-2">
-              <div className="grid grid-cols-2 gap-2">
-                <a href={`/admin/repairs/${encodeURIComponent(item.id)}/print`} target="_blank" rel="noreferrer" className="btn-outline !h-10 !rounded-xl justify-center">Imprimir</a>
-                <a href={`/admin/repairs/${encodeURIComponent(item.id)}/ticket`} target="_blank" rel="noreferrer" className="btn-outline !h-10 !rounded-xl justify-center">Ticket</a>
-              </div>
-              <button type="button" className="btn-outline !h-10 !w-full !rounded-xl justify-center">Abrir WhatsApp</button>
-              <div className="border-t border-zinc-100 pt-2">
-                <button type="button" className="btn-ghost !h-10 !w-full !rounded-xl justify-center font-bold">Ver acciones de estado</button>
-              </div>
-              <div className="border-t border-zinc-100 pt-2">
-                <button type="button" className="btn-ghost !h-10 !w-full !rounded-xl justify-center font-bold">Ver reembolso total</button>
-              </div>
-            </div>
-          </section>
-
-          <section className="card">
-            <div className="card-head flex items-center justify-between gap-2">
-              <div className="text-xl font-black tracking-tight text-zinc-900">Resumen</div>
-              <span className="badge-zinc">Código: {repairCodeLabel(item.id)}</span>
-            </div>
-            <div className="card-body space-y-2 text-sm">
-              <Row label="Recibido" value={`${new Date(item.createdAt).toLocaleDateString('es-AR')} ${new Date(item.createdAt).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}`} />
-              <Row label="Entregado" value={status === 'DELIVERED' ? new Date(item.updatedAt).toLocaleDateString('es-AR') + ' ' + new Date(item.updatedAt).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) : '-'} />
-              <Row label="Precio final" value={`$ ${summary.final.toLocaleString('es-AR')}`} strong />
-              <Row label="Pagado" value={`$ ${summary.paid.toLocaleString('es-AR')}`} strong />
-              <Row label="Debe" value={`$ ${summary.due.toLocaleString('es-AR')}`} strong valueClass={summary.due > 0 ? 'text-rose-700' : 'text-emerald-700'} />
-              <Row label="Reembolso total" value="No" strong />
-              <div className="border-t border-zinc-100 pt-2" />
-              <Row label="Usuario asociado" value="-" strong />
-            </div>
-          </section>
-
-          <section className="card">
-            <div className="card-head flex items-center justify-between gap-2">
-              <div className="text-xl font-black tracking-tight text-zinc-900">Cambiar estado</div>
-              <span className={statusBadgeClass(status)}>{statusLabel(status)}</span>
-            </div>
-            <div className="card-body space-y-3">
-              <label className="block">
-                <span className="mb-1 block text-sm font-bold text-zinc-700">Nuevo estado</span>
-                <CustomSelect value={status} onChange={setStatus} options={statusOptions} triggerClassName="min-h-10 rounded-xl" ariaLabel="Nuevo estado de reparación" />
-              </label>
-              <button type="button" onClick={() => void saveChanges()} disabled={saving} className="inline-flex h-11 w-full items-center justify-center rounded-2xl border border-zinc-300 bg-zinc-300 px-4 text-sm font-bold text-white disabled:opacity-80">
-                {saving ? 'Guardando...' : 'Guardar estado'}
-              </button>
-              <p className="text-sm text-zinc-500">Si marcas "Entregado", la garantía (si tiene días) se calcula desde la fecha de entrega.</p>
-            </div>
-          </section>
-
-          <section className="card">
-            <div className="card-head flex items-center justify-between gap-2">
-              <div className="text-xl font-black tracking-tight text-zinc-900">Historial</div>
-              <div className="flex items-center gap-2">
-                <span className="badge-zinc">{timeline.length} cambios</span>
-                <button type="button" className="btn-ghost !h-8 !rounded-xl px-2 text-sm font-bold">Ver historial</button>
-              </div>
-            </div>
-            <div className="card-body">
-              {timeline.length === 0 ? (
-                <div className="text-sm text-zinc-600">Sin eventos registrados.</div>
-              ) : (
-                <div className="space-y-2">
-                  {timeline.map((event) => (
-                    <div key={event.id} className="rounded-lg border border-zinc-200 bg-white px-3 py-2">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="text-xs font-black text-zinc-800">{event.eventType}</div>
-                        <div className="text-[11px] text-zinc-500">{new Date(event.createdAt).toLocaleString('es-AR')}</div>
-                      </div>
-                      {event.message ? <div className="mt-1 text-sm text-zinc-700">{event.message}</div> : null}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </section>
-
-          <section className="card">
-            <div className="card-head flex items-center justify-between gap-2">
-              <div className="text-xl font-black tracking-tight text-zinc-900">Logs WhatsApp</div>
-              <div className="flex items-center gap-2">
-                <span className="badge-zinc">0</span>
-                <button type="button" className="btn-ghost !h-8 !rounded-xl px-2 text-sm font-bold">Ver logs</button>
-              </div>
-            </div>
-          </section>
+        <div className="nr-stat-card">
+          <div className="nr-stat-card__label">Precio final</div>
+          <div className="nr-stat-card__value">{money(summary.final)}</div>
+          <div className="nr-stat-card__meta">Monto confirmado para el cierre.</div>
         </div>
-
-        <section className="card">
-          <div className="card-head flex items-center justify-between gap-2">
-            <div className="text-xl font-black tracking-tight text-zinc-900">Editar reparación</div>
-            <span className="badge-zinc">Se guarda en el momento</span>
-          </div>
-          <div className="card-body space-y-4">
-            <div className="grid gap-3 md:grid-cols-[1fr_1fr]">
-              <div className="space-y-2">
-                <label className="block">
-                  <span className="mb-1 block text-sm font-bold text-zinc-700">Falla principal *</span>
-                  <input value={issueLabel} onChange={(e) => setIssueLabel(e.target.value)} className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm" />
-                </label>
-                <CustomSelect value={issueLabel} onChange={setIssueLabel} options={issueOptions} triggerClassName="min-h-10 rounded-xl" ariaLabel="Falla principal" />
-                <button type="button" className="btn-outline !h-10 !rounded-xl px-4 text-sm font-bold">+ Agregar falla</button>
-              </div>
-              <label className="block">
-                <span className="mb-1 block text-sm font-bold text-zinc-700">Diagnóstico</span>
-                <textarea value={diagnosis} onChange={(e) => setDiagnosis(e.target.value)} rows={4} className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm" />
-              </label>
-            </div>
-
-            <label className="block">
-              <span className="mb-1 block text-sm font-bold text-zinc-700">Detalle (opcional)</span>
-              <textarea value={detail} onChange={(e) => setDetail(e.target.value)} rows={3} placeholder="Ej: no carga, se apaga, se calentó, etc." className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm" />
-            </label>
-
-            <div className="border-t border-zinc-200 pt-4" />
-
-            <div className="grid gap-3 md:grid-cols-2">
-              <label className="block"><span className="mb-1 block text-sm font-bold text-zinc-700">Nombre cliente</span><input value={customerName} onChange={(e) => setCustomerName(e.target.value)} className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm" /></label>
-              <label className="block"><span className="mb-1 block text-sm font-bold text-zinc-700">Teléfono cliente</span><input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm" /></label>
-            </div>
-
-            <label className="block">
-              <span className="mb-1 block text-sm font-bold text-zinc-700">Proveedor asociado</span>
-              <CustomSelect value={provider} onChange={setProvider} options={providerOptions} triggerClassName="min-h-10 rounded-xl" ariaLabel="Proveedor asociado" />
-            </label>
-
-            <div className="grid gap-3 md:grid-cols-2">
-              <label className="block"><span className="mb-1 block text-sm font-bold text-zinc-700">Repuesto elegido</span><input value={sparePart} onChange={(e) => setSparePart(e.target.value)} placeholder="Ej: módulo Samsung A30" className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm" /></label>
-              <label className="block"><span className="mb-1 block text-sm font-bold text-zinc-700">Referencia de compra</span><input value={purchaseRef} onChange={(e) => setPurchaseRef(e.target.value)} placeholder="URL o referencia" className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm" /></label>
-            </div>
-
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <div className="text-sm font-bold text-zinc-700">Equipo</div>
-                <div className="text-sm text-zinc-600">Celular · {[deviceBrand, deviceModel].filter(Boolean).join(' ') || 'Sin equipo'}</div>
-              </div>
-              <button type="button" className="btn-ghost !h-9 !rounded-xl px-3 text-sm font-bold">Ver equipo</button>
-            </div>
-
-            <div className="border-t border-zinc-200 pt-4" />
-
-            <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto]">
-              <label className="block"><span className="mb-1 block text-sm font-bold text-zinc-700">Costo repuesto</span><input value={costPrice} onChange={(e) => setCostPrice(e.target.value)} className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm" /></label>
-              <label className="block"><span className="mb-1 block text-sm font-bold text-zinc-700">Precio final</span><input value={finalPrice} onChange={(e) => setFinalPrice(e.target.value)} className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm" /></label>
-              <div className="flex items-end pb-2">
-                <label className="inline-flex items-center gap-2 text-sm font-bold text-zinc-700"><input type="checkbox" className="h-4 w-4 rounded border-zinc-300" defaultChecked /> Auto</label>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between gap-3">
-              <div className="text-sm font-black text-zinc-900">Pagos y notas</div>
-              <button type="button" className="btn-ghost !h-9 !rounded-xl px-3 text-sm font-bold">Ocultar pagos</button>
-            </div>
-
-            <div className="grid gap-3 md:grid-cols-3">
-              <label className="block"><span className="mb-1 block text-sm font-bold text-zinc-700">Pagado</span><input value={paidAmount} onChange={(e) => setPaidAmount(e.target.value)} className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm" /></label>
-              <label className="block"><span className="mb-1 block text-sm font-bold text-zinc-700">Método</span><CustomSelect value={paymentMethod} onChange={setPaymentMethod} options={paymentOptions} triggerClassName="min-h-10 rounded-xl" ariaLabel="Método de pago" /></label>
-              <label className="block"><span className="mb-1 block text-sm font-bold text-zinc-700">Garantía (días)</span><input value={warrantyDays} onChange={(e) => setWarrantyDays(e.target.value)} className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm" /></label>
-            </div>
-
-            <div className="grid gap-3 md:grid-cols-2">
-              <label className="block"><span className="mb-1 block text-sm font-bold text-zinc-700">Notas de pago</span><textarea value={paymentNotes} onChange={(e) => setPaymentNotes(e.target.value)} rows={3} className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm" /></label>
-              <label className="block"><span className="mb-1 block text-sm font-bold text-zinc-700">Notas internas</span><textarea value={internalNotes} onChange={(e) => setInternalNotes(e.target.value)} rows={3} className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm" /></label>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              <button type="button" onClick={() => void saveChanges()} disabled={saving} className="btn-primary !h-11 !rounded-2xl px-5 text-sm font-black">
-                {saving ? 'Guardando...' : 'Guardar cambios'}
-              </button>
-              <button type="button" onClick={() => navigate('/admin/repairs')} className="btn-outline !h-11 !rounded-2xl px-5 text-sm font-black">
-                Cancelar
-              </button>
-            </div>
-          </div>
-        </section>
+        <div className="nr-stat-card">
+          <div className="nr-stat-card__label">Seguimiento</div>
+          <div className="nr-stat-card__value">{summary.timelineCount}</div>
+          <div className="nr-stat-card__meta">Eventos registrados en el historial.</div>
+        </div>
       </div>
-    </div>
+
+      {error ? (
+        <div className="ui-alert ui-alert--danger" data-reveal>
+          <AlertTriangle className="mt-0.5 h-4 w-4 flex-none" />
+          <div>
+            <span className="ui-alert__title">No se pudo completar la acción</span>
+            <div className="ui-alert__text">{error}</div>
+          </div>
+        </div>
+      ) : null}
+
+      {notice ? (
+        <div className="ui-alert ui-alert--success" data-reveal>
+          <ShieldCheck className="mt-0.5 h-4 w-4 flex-none" />
+          <div>
+            <span className="ui-alert__title">Cambios guardados</span>
+            <div className="ui-alert__text">{notice}</div>
+          </div>
+        </div>
+      ) : null}
+
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(22rem,0.85fr)]">
+        <div className="space-y-5">
+          <SectionCard
+            title="Estado y seguimiento"
+            description="Visualizá el avance del caso y el próximo hito esperado para el cliente."
+            actions={<StatusBadge label={statusLabel} tone={statusTone} size="sm" />}
+          >
+            <div className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(16rem,0.85fr)]">
+              <ProgressSteps items={repairProgressSteps(item.status)} />
+
+              <div className="account-stack">
+                <div className="summary-box">
+                  <div className="summary-box__label">Equipo</div>
+                  <div className="mt-2 text-[1.35rem] font-black tracking-tight text-zinc-950">{deviceLabel}</div>
+                  <div className="summary-box__hint">{issueLabel || 'Falla pendiente de definición'}</div>
+                </div>
+
+                <div className={`ui-alert ${item.status === 'CANCELLED' ? 'ui-alert--danger' : item.status === 'READY_PICKUP' || item.status === 'DELIVERED' ? 'ui-alert--success' : item.status === 'WAITING_APPROVAL' ? 'ui-alert--warning' : 'ui-alert--info'}`}>
+                  <ShieldCheck className="mt-0.5 h-4 w-4 flex-none" />
+                  <div>
+                    <span className="ui-alert__title">{statusLabel}</span>
+                    <div className="ui-alert__text">{statusSummary}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </SectionCard>
+
+          <SectionCard
+            title="Editar reparación"
+            description="Actualizá los datos reales del caso: cliente, equipo, diagnóstico y precios."
+            actions={<StatusBadge label="Guardado manual" tone="neutral" size="sm" />}
+          >
+            <div className="grid gap-4 lg:grid-cols-2">
+              <TextField
+                label="Nombre del cliente"
+                value={customerName}
+                onChange={(event) => setCustomerName(event.target.value)}
+                placeholder="Ej: Nicolás Pérez"
+              />
+              <TextField
+                label="Teléfono"
+                value={customerPhone}
+                onChange={(event) => setCustomerPhone(event.target.value)}
+                placeholder="Ej: 11 5555-1234"
+              />
+              <TextField
+                label="Marca del equipo"
+                value={deviceBrand}
+                onChange={(event) => setDeviceBrand(event.target.value)}
+                placeholder="Ej: Samsung"
+              />
+              <TextField
+                label="Modelo del equipo"
+                value={deviceModel}
+                onChange={(event) => setDeviceModel(event.target.value)}
+                placeholder="Ej: A34"
+              />
+              <TextField
+                label="Falla principal"
+                value={issueLabel}
+                onChange={(event) => setIssueLabel(event.target.value)}
+                placeholder="Ej: Cambio de módulo"
+              />
+              <div>
+                <label className="mb-1 block text-sm font-bold text-zinc-700">Estado del caso</label>
+                <CustomSelect
+                  value={status}
+                  onChange={setStatus}
+                  options={STATUS_OPTIONS}
+                  triggerClassName="min-h-10 rounded-xl"
+                  ariaLabel="Estado de la reparación"
+                />
+              </div>
+              <TextField
+                label="Presupuesto"
+                type="number"
+                value={quotedPrice}
+                onChange={(event) => setQuotedPrice(event.target.value)}
+                placeholder="0"
+              />
+              <TextField
+                label="Precio final"
+                type="number"
+                value={finalPrice}
+                onChange={(event) => setFinalPrice(event.target.value)}
+                placeholder="0"
+              />
+            </div>
+
+            <TextAreaField
+              label="Notas y diagnóstico"
+              value={notes}
+              onChange={(event) => setNotes(event.target.value)}
+              placeholder="Detalle del diagnóstico, repuestos usados, observaciones y próximos pasos."
+              rows={6}
+              wrapperClassName="mt-4"
+            />
+
+            <div className="mt-4 flex flex-wrap gap-3">
+              <Button type="button" onClick={() => void saveChanges()} disabled={saving}>
+                {saving ? 'Guardando...' : 'Guardar cambios'}
+              </Button>
+              <Button asChild variant="outline">
+                <Link to="/admin/repairs">Cancelar</Link>
+              </Button>
+            </div>
+          </SectionCard>
+        </div>
+
+        <aside className="account-stack account-sticky">
+          <SectionCard title="Resumen del caso" description="Datos administrativos y comerciales relevantes para seguimiento.">
+            <div className="fact-list">
+              <FactRow label="Código" value={code} />
+              <FactRow label="Cliente" value={customerName || 'Sin nombre'} />
+              <FactRow label="Teléfono" value={customerPhone || 'No informado'} />
+              <FactRow label="Ingreso" value={formatDateTime(item.createdAt)} />
+              <FactRow label="Última actualización" value={formatDateTime(item.updatedAt)} />
+              <FactRow label="Estado" value={statusLabel} />
+            </div>
+          </SectionCard>
+
+          <SectionCard title="Historial" description="Eventos registrados para revisar la trazabilidad del caso.">
+            {timeline.length === 0 ? (
+              <EmptyState
+                icon={<Clock3 className="h-5 w-5" />}
+                title="Todavía no hay eventos"
+                description="El historial se completa automáticamente a medida que se registran cambios en la reparación."
+              />
+            ) : (
+              <div className="space-y-3">
+                {timeline.map((event) => (
+                  <div key={event.id} className="detail-panel">
+                    <div className="detail-panel__label">{event.eventType}</div>
+                    <div className="detail-panel__value">{event.message || 'Sin detalle adicional.'}</div>
+                    <div className="mt-2 text-xs font-semibold uppercase tracking-[0.08em] text-zinc-500">
+                      {formatDateTime(event.createdAt)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </SectionCard>
+        </aside>
+      </div>
+    </PageShell>
   );
 }
 
-function Row({ label, value, strong = false, valueClass = '' }: { label: string; value: string; strong?: boolean; valueClass?: string }) {
+function FactRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between gap-3">
-      <span className="text-zinc-500">{label}</span>
-      <span className={`${strong ? 'font-black' : 'font-bold'} text-zinc-900 ${valueClass}`}>{value}</span>
+    <div className="fact-row">
+      <div className="fact-label">{label}</div>
+      <div className="fact-value fact-value--text">{value}</div>
     </div>
   );
 }

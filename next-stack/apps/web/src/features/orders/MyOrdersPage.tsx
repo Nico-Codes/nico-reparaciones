@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { ClipboardList } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -8,25 +9,8 @@ import { PageShell } from '@/components/ui/page-shell';
 import { SectionCard } from '@/components/ui/section-card';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { ordersApi } from './api';
+import { formatDateTime, money, orderCode, orderStatusLabel, orderStatusSummary, orderStatusTone } from './order-ui';
 import type { OrderItem } from './types';
-
-const ORDER_STATUS_LABELS: Record<string, string> = {
-  PENDING: 'Pendiente',
-  CONFIRMED: 'Confirmado',
-  PREPARING: 'Preparando',
-  READY_PICKUP: 'Listo para retirar',
-  DELIVERED: 'Entregado',
-  CANCELLED: 'Cancelado',
-};
-
-const ORDER_STATUS_TONES: Record<string, 'neutral' | 'info' | 'accent' | 'success' | 'warning' | 'danger'> = {
-  PENDING: 'warning',
-  CONFIRMED: 'info',
-  PREPARING: 'accent',
-  READY_PICKUP: 'success',
-  DELIVERED: 'neutral',
-  CANCELLED: 'danger',
-};
 
 export function MyOrdersPage() {
   const [items, setItems] = useState<OrderItem[]>([]);
@@ -57,7 +41,7 @@ export function MyOrdersPage() {
         context="account"
         eyebrow="Pedidos"
         title="Seguimiento de compras"
-        subtitle="Consulta el historial de compras y el estado actual de cada pedido."
+        subtitle="Consultá el historial de compras y el estado actual de cada pedido desde tu cuenta."
         actions={
           <Button variant="outline" asChild>
             <Link to="/store">Ir a la tienda</Link>
@@ -72,16 +56,17 @@ export function MyOrdersPage() {
       ) : null}
 
       <SectionCard
-        title="Mis pedidos"
-        description="Listado cronológico con estado, fecha y total."
+        title="Historial de pedidos"
+        description="Listado cronológico con estado, fecha de compra y total del pedido."
         actions={items.length > 0 ? <StatusBadge tone="info" size="sm" label={`${items.length} registros`} /> : null}
       >
         {loading ? (
           <LoadingBlock lines={5} />
         ) : items.length === 0 ? (
           <EmptyState
+            icon={<ClipboardList className="h-5 w-5" />}
             title="Todavía no hiciste pedidos"
-            description="Cuando completes una compra, aparecerá aquí con su estado y total."
+            description="Cuando completes una compra, aparecerá acá con su estado, total y acceso al detalle."
             actions={
               <Button asChild>
                 <Link to="/store">Explorar productos</Link>
@@ -89,35 +74,52 @@ export function MyOrdersPage() {
             }
           />
         ) : (
-          <div className="grid gap-3">
+          <div className="account-list">
             {items.map((order) => (
-              <Link
-                key={order.id}
-                to={`/orders/${order.id}`}
-                className="rounded-2xl border border-zinc-100 bg-zinc-50 px-4 py-4 transition hover:-translate-y-0.5 hover:border-zinc-200 hover:bg-white hover:shadow-[0_16px_34px_-24px_rgba(15,23,42,0.35)]"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="space-y-1">
-                    <div className="text-sm font-extrabold text-zinc-950">
-                      Pedido #{order.id.slice(0, 8)}
+              <article key={order.id} className="account-record">
+                <div className="account-record__top">
+                  <div className="account-record__heading">
+                    <div className="account-record__title-row">
+                      <div className="account-record__title">Pedido {orderCode(order.id)}</div>
+                      <StatusBadge
+                        tone={orderStatusTone(order.status)}
+                        size="sm"
+                        label={orderStatusLabel(order.status)}
+                      />
+                      <StatusBadge
+                        tone={order.user ? 'info' : 'neutral'}
+                        size="sm"
+                        label={order.user ? 'Compra web' : 'Venta local'}
+                      />
                     </div>
-                    <div className="text-sm text-zinc-600">
-                      {new Date(order.createdAt).toLocaleString('es-AR')}
+                    <div className="account-record__meta">
+                      <span>{formatDateTime(order.createdAt)}</span>
+                      <span>{order.items.length} ítems</span>
+                    </div>
+                    <div className="account-record__description">
+                      {orderStatusSummary(order.status)}
                     </div>
                   </div>
 
-                  <div className="text-right">
-                    <StatusBadge
-                      tone={ORDER_STATUS_TONES[order.status] ?? 'neutral'}
-                      size="sm"
-                      label={ORDER_STATUS_LABELS[order.status] ?? order.status}
-                    />
-                    <div className="mt-2 text-lg font-black tracking-tight text-zinc-950">
-                      $ {order.total.toLocaleString('es-AR')}
-                    </div>
+                  <div className="account-record__aside">
+                    <span className="account-record__label">Total</span>
+                    <div className="account-record__value">{money(order.total)}</div>
                   </div>
                 </div>
-              </Link>
+
+                <div className="account-record__actions">
+                  <div className="account-record__actions-group">
+                    <StatusBadge
+                      tone={order.paymentMethod ? 'neutral' : 'warning'}
+                      size="sm"
+                      label={order.paymentMethod || 'Método a definir'}
+                    />
+                  </div>
+                  <Button asChild variant="outline" size="sm">
+                    <Link to={`/orders/${order.id}`}>Ver detalle</Link>
+                  </Button>
+                </div>
+              </article>
             ))}
           </div>
         )}

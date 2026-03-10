@@ -1,5 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
+import { AlertTriangle, RefreshCcw, Search, ShieldCheck, Wrench } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { CustomSelect } from '@/components/ui/custom-select';
+import { EmptyState } from '@/components/ui/empty-state';
+import { FilterBar } from '@/components/ui/filter-bar';
+import { LoadingBlock } from '@/components/ui/loading-block';
+import { PageHeader } from '@/components/ui/page-header';
+import { PageShell } from '@/components/ui/page-shell';
+import { SectionCard } from '@/components/ui/section-card';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { TextField } from '@/components/ui/text-field';
 import { repairsApi } from './api';
 import type { RepairItem } from './types';
 
@@ -13,26 +24,43 @@ const STATUS_LABELS: Record<string, string> = {
   CANCELLED: 'Cancelado',
 };
 
-const STATUS_BADGE_CLASS: Record<string, string> = {
-  RECEIVED: 'badge-sky',
-  DIAGNOSING: 'badge-indigo',
-  WAITING_APPROVAL: 'badge-amber',
-  REPAIRING: 'badge-indigo',
-  READY_PICKUP: 'badge-emerald',
-  DELIVERED: 'badge-zinc',
-  CANCELLED: 'badge-rose',
-};
+type BadgeTone = 'neutral' | 'info' | 'accent' | 'success' | 'warning' | 'danger';
 
 function statusLabel(status: string) {
   return STATUS_LABELS[status] ?? status;
 }
 
-function statusBadgeClass(status: string) {
-  return STATUS_BADGE_CLASS[status] ?? 'badge-zinc';
+function statusTone(status: string): BadgeTone {
+  switch (status) {
+    case 'RECEIVED':
+      return 'info';
+    case 'DIAGNOSING':
+    case 'REPAIRING':
+      return 'accent';
+    case 'WAITING_APPROVAL':
+      return 'warning';
+    case 'READY_PICKUP':
+      return 'success';
+    case 'CANCELLED':
+      return 'danger';
+    default:
+      return 'neutral';
+  }
 }
+
+const STATUS_FILTER_OPTIONS = [{ value: '', label: 'Todos los estados' }, ...Object.entries(STATUS_LABELS).map(([value, label]) => ({ value, label }))];
 
 function repairCode(id: string) {
   return `R-${id.slice(0, 13)}`;
+}
+
+function money(value: number | null) {
+  return value != null ? `$ ${value.toLocaleString('es-AR')}` : 'Sin definir';
+}
+
+function formatDateTime(dateIso: string) {
+  const date = new Date(dateIso);
+  return `${date.toLocaleDateString('es-AR')} ${date.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}`;
 }
 
 function timeAgo(dateIso: string) {
@@ -51,99 +79,213 @@ export function AdminRepairsListPage() {
   const [items, setItems] = useState<RepairItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [query, setQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+
+  async function load() {
+    setLoading(true);
+    setError('');
+    try {
+      const response = await repairsApi.adminList();
+      setItems(response.items);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Error cargando reparaciones');
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
-    let mounted = true;
-    async function load() {
-      setLoading(true);
-      setError('');
-      try {
-        const res = await repairsApi.adminList();
-        if (!mounted) return;
-        setItems(res.items);
-      } catch (e) {
-        if (!mounted) return;
-        setError(e instanceof Error ? e.message : 'Error cargando reparaciones');
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    }
     void load();
-    return () => {
-      mounted = false;
-    };
   }, []);
 
-  const visibleItems = useMemo(() => items.slice(0, 50), [items]);
+  const filteredItems = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    const base = items.filter((item) => {
+      if (statusFilter && item.status !== statusFilter) return false;
+      if (!normalizedQuery) return true;
+      return [
+        repairCode(item.id),
+        item.customerName,
+        item.customerPhone ?? '',
+        item.deviceBrand ?? '',
+        item.deviceModel ?? '',
+        item.issueLabel ?? '',
+        statusLabel(item.status),
+      ]
+        .join(' ')
+        .toLowerCase()
+        .includes(normalizedQuery);
+    });
+
+    return base.slice(0, 50);
+  }, [items, query, statusFilter]);
+
+  const stats = useMemo(() => ({
+    total: items.length,
+    waitingApproval: items.filter((item) => item.status === 'WAITING_APPROVAL').length,
+    readyPickup: items.filter((item) => item.status === 'READY_PICKUP').length,
+    completed: items.filter((item) => item.status === 'DELIVERED').length,
+  }), [items]);
+
+  const hasFilters = query.trim().length > 0 || statusFilter.length > 0;
 
   return (
-    <div className="store-shell" data-admin-repairs-page>
-      {error ? <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">{error}</div> : null}
+    <PageShell context="admin" className="space-y-6" data-admin-repairs-page>
+      <PageHeader
+        context="admin"
+        eyebrow="Servicio técnico"
+        title="Reparaciones"
+        subtitle="Vista operativa para seguimiento, atención al cliente y acceso rápido al detalle de cada caso."
+        actions={(
+          <>
+            <StatusBadge label={`${stats.total} ingresos`} tone="info" />
+            <Button type="button" variant="outline" size="sm" onClick={() => void load()}>
+              <RefreshCcw className="h-4 w-4" />
+              Actualizar
+            </Button>
+          </>
+        )}
+      />
 
-      <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-[0_8px_30px_-18px_#0f172a47]">
-        <div className="hidden grid-cols-[1.55fr_0.95fr_0.9fr_0.85fr_0.75fr_1.7fr] gap-4 bg-zinc-50 px-4 py-2.5 text-xs font-black uppercase tracking-wide text-zinc-500 lg:grid">
-          <div>CODIGO</div>
-          <div>CLIENTE</div>
-          <div>EQUIPO</div>
-          <div>ESTADO</div>
-          <div>FINAL</div>
-          <div className="text-right">ACCIONES</div>
+      <section className="nr-stat-grid" data-reveal>
+        <MetricCard label="Ingresos visibles" value={String(stats.total)} meta="Total cargado en el panel" />
+        <MetricCard label="Esperando aprobación" value={String(stats.waitingApproval)} meta="Casos listos para presupuesto" />
+        <MetricCard label="Listas para retirar" value={String(stats.readyPickup)} meta="Equipos terminados pendientes de entrega" />
+        <MetricCard label="Entregadas" value={String(stats.completed)} meta="Casos cerrados correctamente" />
+      </section>
+
+      <FilterBar
+        actions={(
+          <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:justify-end">
+            {hasFilters ? (
+              <Button type="button" variant="ghost" size="sm" onClick={() => { setQuery(''); setStatusFilter(''); }}>
+                Limpiar
+              </Button>
+            ) : null}
+            <Button type="button" variant="outline" size="sm" onClick={() => void load()}>
+              <RefreshCcw className="h-4 w-4" />
+              Recargar
+            </Button>
+          </div>
+        )}
+      >
+        <TextField
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          label="Buscar"
+          placeholder="Código, cliente, teléfono o equipo"
+          leadingIcon={<Search className="h-4 w-4" />}
+          wrapperClassName="min-w-0 sm:min-w-[18rem]"
+        />
+        <div className="ui-field min-w-0 sm:min-w-[14rem]">
+          <span className="ui-field__label">Estado</span>
+          <CustomSelect
+            value={statusFilter}
+            onChange={setStatusFilter}
+            options={STATUS_FILTER_OPTIONS}
+            className="w-full"
+            triggerClassName="min-h-11 rounded-[1rem]"
+            ariaLabel="Filtrar reparaciones por estado"
+          />
         </div>
+      </FilterBar>
 
-        {loading ? (
-          <div className="p-4 text-sm text-zinc-600">Cargando reparaciones...</div>
-        ) : visibleItems.length === 0 ? (
-          <div className="p-4 text-sm text-zinc-600">No hay reparaciones.</div>
-        ) : (
-          <div>
-            {visibleItems.map((r, idx) => (
-              <div key={r.id} className={`${idx > 0 ? 'border-t border-zinc-100' : ''} px-4 py-2.5`}>
-                <div className="grid gap-3 lg:grid-cols-[1.55fr_0.95fr_0.9fr_0.85fr_0.75fr_1.7fr] lg:items-center">
-                  <div className="min-w-0">
-                    <div className="text-[15px] font-black leading-tight tracking-tight text-zinc-900">{repairCode(r.id)}</div>
-                    <div className="mt-0.5 text-xs leading-tight text-zinc-600">
-                      Recibido: {new Date(r.createdAt).toLocaleDateString('es-AR')} {new Date(r.createdAt).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} ·{' '}
-                      <span className="font-bold text-zinc-800">{timeAgo(r.createdAt)}</span>
+      <SectionCard
+        title="Mesa operativa"
+        description="Listado compacto con contexto suficiente para decidir el siguiente paso sin cargar ruido visual innecesario."
+        actions={<StatusBadge label={statusFilter ? statusLabel(statusFilter) : 'Todos los estados'} tone={statusFilter ? statusTone(statusFilter) : 'neutral'} />}
+      >
+        {error ? (
+          <div className="ui-alert ui-alert--danger mb-4">
+            <AlertTriangle className="mt-0.5 h-4 w-4 flex-none" />
+            <div>
+              <span className="ui-alert__title">No se pudo cargar el listado.</span>
+              <div className="ui-alert__text">{error}</div>
+            </div>
+          </div>
+        ) : null}
+
+        <div className="admin-collection">
+          {loading ? (
+            <SectionCard tone="muted" bodyClassName="space-y-3">
+              <LoadingBlock label="Cargando reparaciones" lines={4} />
+            </SectionCard>
+          ) : filteredItems.length === 0 ? (
+            <EmptyState
+              title="No hay reparaciones para mostrar"
+              description={hasFilters ? 'Prueba otra búsqueda o vuelve a todos los estados.' : 'Todavía no hay reparaciones registradas en el panel.'}
+              actions={hasFilters ? <Button type="button" variant="outline" onClick={() => { setQuery(''); setStatusFilter(''); }}>Limpiar filtros</Button> : undefined}
+            />
+          ) : (
+            filteredItems.map((repair) => {
+              const displayPrice = repair.finalPrice ?? repair.quotedPrice;
+              const issueLabel = repair.issueLabel || 'Sin diagnóstico registrado';
+              const deviceLabel = [repair.deviceBrand, repair.deviceModel].filter(Boolean).join(' ') || 'Equipo sin identificar';
+              return (
+                <article key={repair.id} className="admin-entity-row">
+                  <div className="admin-entity-row__top">
+                    <div className="admin-entity-row__heading">
+                      <div className="admin-entity-row__title-row">
+                        <div className="admin-entity-row__title">{repairCode(repair.id)}</div>
+                        <StatusBadge label={statusLabel(repair.status)} tone={statusTone(repair.status)} />
+                        {repair.finalPrice != null ? <StatusBadge label="Precio final cargado" tone="success" /> : null}
+                      </div>
+                      <div className="admin-entity-row__meta">
+                        <span>{repair.customerName}</span>
+                        <span>{repair.customerPhone || 'Sin teléfono'}</span>
+                        <span>{formatDateTime(repair.createdAt)}</span>
+                        <span>{timeAgo(repair.createdAt)}</span>
+                      </div>
+                    </div>
+                    <div className="admin-entity-row__aside">
+                      <span className="admin-entity-row__eyebrow">Importe de referencia</span>
+                      <div className="admin-entity-row__value">{money(displayPrice)}</div>
                     </div>
                   </div>
 
-                  <div className="min-w-0">
-                    <div className="truncate text-[15px] font-black leading-tight tracking-tight text-zinc-900">{r.customerName}</div>
-                    <div className="truncate text-xs text-zinc-600">{r.customerPhone || 'Sin teléfono'}</div>
+                  <div className="mt-4 detail-grid">
+                    <div className="detail-stack">
+                      <div className="detail-panel">
+                        <div className="detail-panel__label">Equipo</div>
+                        <div className="detail-panel__value">{deviceLabel}</div>
+                      </div>
+                      <div className="detail-panel">
+                        <div className="detail-panel__label">Estado comercial</div>
+                        <div className="detail-panel__value">
+                          {repair.finalPrice != null ? 'Presupuesto final confirmado' : repair.quotedPrice != null ? 'Con presupuesto cargado' : 'Sin presupuesto cargado'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="detail-panel">
+                      <div className="detail-panel__label">Falla reportada</div>
+                      <div className="detail-panel__value">{issueLabel}</div>
+                    </div>
                   </div>
 
-                  <div className="min-w-0">
-                    <div className="truncate text-[15px] leading-tight text-zinc-900">{[r.deviceBrand, r.deviceModel].filter(Boolean).join(' ') || 'Sin equipo'}</div>
+                  <div className="admin-entity-row__actions">
+                    <StatusBadge label={repair.userId ? 'Cliente web' : 'Ingreso interno'} tone="neutral" />
+                    <Button asChild variant="outline" size="sm">
+                      <Link to={`/admin/repairs/${encodeURIComponent(repair.id)}`}>Ver detalle</Link>
+                    </Button>
                   </div>
+                </article>
+              );
+            })
+          )}
+        </div>
+      </SectionCard>
+    </PageShell>
+  );
+}
 
-                  <div>
-                    <span className={statusBadgeClass(r.status)}>{statusLabel(r.status)}</span>
-                  </div>
-
-                  <div className="text-[15px] font-black tracking-tight text-zinc-900">
-                    {r.finalPrice != null ? `$ ${r.finalPrice.toLocaleString('es-AR')}` : r.quotedPrice != null ? `$ ${r.quotedPrice.toLocaleString('es-AR')}` : '—'}
-                  </div>
-
-                  <div className="flex flex-nowrap items-center justify-start gap-2 lg:justify-end">
-                    <Link to={`/admin/repairs/${encodeURIComponent(r.id)}`} className="inline-flex h-8 items-center justify-center rounded-xl border border-zinc-200 bg-white px-4 text-sm font-bold text-zinc-900 shadow-sm hover:bg-zinc-50">
-                      Ver
-                    </Link>
-                    <button type="button" className="inline-flex h-8 items-center justify-center rounded-xl border border-emerald-200 bg-white px-4 text-sm font-bold text-emerald-700 hover:bg-emerald-50">
-                      WhatsApp
-                    </button>
-                    <button type="button" className="inline-flex h-8 items-center justify-center px-1 text-sm font-bold text-zinc-900 hover:text-zinc-700">
-                      Mas
-                    </button>
-                    <span className="inline-flex h-8 items-center whitespace-nowrap rounded-full border border-amber-300 bg-amber-50 px-4 text-sm font-bold text-amber-700">
-                      WA pendiente
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
+function MetricCard({ label, value, meta }: { label: string; value: string; meta: string }) {
+  return (
+    <article className="nr-stat-card">
+      <div className="nr-stat-card__label">{label}</div>
+      <div className="nr-stat-card__value">{value}</div>
+      <div className="nr-stat-card__meta">{meta}</div>
+    </article>
   );
 }

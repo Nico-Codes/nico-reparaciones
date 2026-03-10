@@ -19,6 +19,18 @@ function collectTargets(root: ParentNode = document) {
   return Array.from(root.querySelectorAll<HTMLElement>(TARGET_SELECTOR));
 }
 
+function sortTargetsByViewportPosition(targets: HTMLElement[]) {
+  return [...targets].sort((left, right) => {
+    const leftRect = left.getBoundingClientRect();
+    const rightRect = right.getBoundingClientRect();
+    const topDiff = Math.round(leftRect.top - rightRect.top);
+    if (topDiff !== 0) return topDiff;
+    const leftDiff = Math.round(leftRect.left - rightRect.left);
+    if (leftDiff !== 0) return leftDiff;
+    return 0;
+  });
+}
+
 export function GlobalVisualEnhancements() {
   const location = useLocation();
 
@@ -27,7 +39,6 @@ export function GlobalVisualEnhancements() {
     const main = document.querySelector('main');
     if (!main) return;
 
-    let sequence = 0;
     const seen = new WeakSet<HTMLElement>();
 
     const io =
@@ -47,26 +58,27 @@ export function GlobalVisualEnhancements() {
         : null;
 
     const animateTargets = (targets: HTMLElement[]) => {
-      if (targets.length === 0) return;
+      const deduped = Array.from(new Set(targets.filter(Boolean)));
+      if (deduped.length === 0) return;
 
-      targets.forEach((el) => {
+      const orderedTargets = sortTargetsByViewportPosition(deduped);
+
+      orderedTargets.forEach((el, index) => {
         if (!el.classList.contains('reveal-item')) {
           el.classList.add('reveal-item');
         }
 
-        // Re-arm only once per route/render cycle for each element
         if (seen.has(el)) return;
         seen.add(el);
 
         el.classList.remove('is-visible');
-        el.style.transitionDelay = `${Math.min(sequence * 34, 260)}ms`;
-        sequence += 1;
+        el.style.transitionDelay = `${Math.min(index * 34, 260)}ms`;
       });
 
       if (reducedMotion || !io) {
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
-            targets.forEach((el) => el.classList.add('is-visible'));
+            orderedTargets.forEach((el) => el.classList.add('is-visible'));
           });
         });
         return;
@@ -74,15 +86,13 @@ export function GlobalVisualEnhancements() {
 
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          targets.forEach((el) => io.observe(el));
+          orderedTargets.forEach((el) => io.observe(el));
         });
       });
     };
 
-    // Initial route paint
     animateTargets(collectTargets(main));
 
-    // Animate async-rendered cards/panels added after fetch completes
     const mo = new MutationObserver((mutations) => {
       const nextTargets: HTMLElement[] = [];
       for (const mutation of mutations) {
@@ -101,7 +111,7 @@ export function GlobalVisualEnhancements() {
       mo.disconnect();
       io?.disconnect();
     };
-  }, [location.pathname, location.search]);
+  }, [location.pathname]);
 
   return null;
 }

@@ -191,4 +191,51 @@ La primera fase real de implementación ya dejó esta base activa en:
 - `MyAccountPage`
 - `MyOrdersPage`
 
-La siguiente fase debe expandir este lenguaje a admin core, catálogo, carrito, checkout y seguimiento de reparaciones.
+La segunda fase de adopción ya la expandió a:
+- `AdminOrdersPage`
+- `AdminRepairsListPage`
+- `StoreProductDetailPage`
+- `CartPage`
+- `CheckoutPage`
+
+La tercera fase de adopción ya la expandió a:
+- `MyOrdersPage`
+- `MyRepairsPage`
+- `OrderDetailPage`
+- `RepairDetailPage`
+
+Patrones reforzados en esta fase:
+- listados admin con lectura por bloques, resumen y acciones limpias
+- filtros superiores con `FilterBar`, `TextField` y `CustomSelect`
+- `StatusBadge` como semántica única para estados operativos
+- layout comercial consistente entre producto, carrito y checkout
+- alertas, resúmenes y steppers de cantidad con lenguaje visual común
+- cuenta usuario con seguimiento claro, estados visibles y detalles agrupados
+- patrón reusable de progreso para pedidos y reparaciones
+- cards de cuenta con jerarquía intermedia entre tienda y admin
+
+La fase final de pulido ya la expandió a:
+- `AdminProductsPage`
+- `AdminProductCreatePage`
+- `AdminProductEditPage`
+- `AdminProductLabelPage`
+- `AdminBusinessSettingsPage`
+- `AdminAlertsPage`
+- `AdminCategoriesPage`
+- `AdminOrderDetailPage`
+- `AdminRepairDetailPage`
+- `OrderDetailPage`
+- `RepairDetailPage`
+
+Patrones reforzados en esta fase:
+- formularios administrativos agrupados por bloques lógicos
+- `TextAreaField` como extensión canónica de formularios
+- `choice-card` para toggles binarios con mejor claridad visual
+- limpieza de `btn-*`, `store-shell` y `store-hero` en módulos secundarios admin
+- mensajes, alerts y headers consistentes en configuración, alertas y catálogo
+- detalles admin con seguimiento, resúmenes laterales y edición limpia
+- barrido final de copy/encoding en detalles activos de pedidos y reparaciones
+
+Pendiente menor después de esta fase:
+- quick wins adicionales en módulos activos no críticos fuera del bloque principal
+- barrido fino residual de copy/encoding en vistas secundarias no intervenidas

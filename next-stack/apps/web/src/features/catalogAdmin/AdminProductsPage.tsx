@@ -1,8 +1,34 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
+import { Boxes, PackagePlus, RefreshCcw, Search, Tag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ActionDropdown } from '@/components/ui/action-dropdown';
+import { Button } from '@/components/ui/button';
 import { CustomSelect } from '@/components/ui/custom-select';
+import { EmptyState } from '@/components/ui/empty-state';
+import { FilterBar } from '@/components/ui/filter-bar';
+import { LoadingBlock } from '@/components/ui/loading-block';
+import { PageHeader } from '@/components/ui/page-header';
+import { PageShell } from '@/components/ui/page-shell';
+import { SectionCard } from '@/components/ui/section-card';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { TextField } from '@/components/ui/text-field';
 import { catalogAdminApi, type AdminCategory, type AdminProduct } from './api';
+
+function money(value: number) {
+  return `$ ${value.toLocaleString('es-AR')}`;
+}
+
+function marginTone(value: number): 'success' | 'warning' | 'danger' {
+  if (value > 0) return 'success';
+  if (value === 0) return 'warning';
+  return 'danger';
+}
+
+function stockTone(stock: number): 'success' | 'warning' | 'danger' {
+  if (stock <= 0) return 'danger';
+  if (stock <= 3) return 'warning';
+  return 'success';
+}
 
 export function AdminProductsPage() {
   const [categories, setCategories] = useState<AdminCategory[]>([]);
@@ -16,185 +42,278 @@ export function AdminProductsPage() {
   const [stockFilter, setStockFilter] = useState('');
 
   async function loadCategories() {
-    const res = await catalogAdminApi.categories();
-    setCategories(res.items);
+    const response = await catalogAdminApi.categories();
+    setCategories(response.items);
   }
 
   async function loadProducts() {
     setLoading(true);
     setError('');
     try {
-      const res = await catalogAdminApi.products({ q, categoryId: categoryId || undefined, active: activeFilter || undefined });
-      setProducts(res.items);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error cargando productos');
+      const response = await catalogAdminApi.products({ q, categoryId: categoryId || undefined, active: activeFilter || undefined });
+      setProducts(response.items);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No se pudieron cargar los productos.');
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => {
-    void loadCategories().catch((e) => setError(e instanceof Error ? e.message : 'Error cargando categorías'));
+    void loadCategories().catch((cause) => setError(cause instanceof Error ? cause.message : 'No se pudieron cargar las categorías.'));
   }, []);
 
   useEffect(() => {
     void loadProducts();
   }, [q, categoryId, activeFilter]);
 
-  const rows = useMemo(() => products.slice(0, 80), [products]);
-  const tableCols = '32px 2.5fr 0.85fr 0.9fr 1.05fr 0.65fr 0.95fr 0.95fr 1.05fr 1.9fr 1.1fr';
+  const filteredProducts = useMemo(
+    () =>
+      products
+        .filter((product) => {
+          if (featuredFilter === '1' && !product.featured) return false;
+          if (featuredFilter === '0' && product.featured) return false;
+          if (stockFilter === 'with' && product.stock <= 0) return false;
+          if (stockFilter === 'empty' && product.stock > 0) return false;
+          return true;
+        })
+        .slice(0, 80),
+    [products, featuredFilter, stockFilter],
+  );
+
+  const stats = useMemo(
+    () => ({
+      total: products.length,
+      active: products.filter((product) => product.active).length,
+      featured: products.filter((product) => product.featured).length,
+      lowStock: products.filter((product) => product.stock > 0 && product.stock <= 3).length,
+      noStock: products.filter((product) => product.stock <= 0).length,
+    }),
+    [products],
+  );
+
+  const hasFilters = Boolean(q.trim() || categoryId || activeFilter || featuredFilter || stockFilter);
+
   const categoryOptions = useMemo(
-    () => [{ value: '', label: 'Categoría: Todas' }, ...categories.map((category) => ({ value: category.id, label: category.name }))],
+    () => [{ value: '', label: 'Todas las categorías' }, ...categories.map((category) => ({ value: category.id, label: category.name }))],
     [categories],
   );
+
   const activeOptions = [
-    { value: '', label: 'Estado: Todos' },
-    { value: '1', label: 'Estado: Activos' },
-    { value: '0', label: 'Estado: Inactivos' },
+    { value: '', label: 'Todos los estados' },
+    { value: '1', label: 'Solo activos' },
+    { value: '0', label: 'Solo inactivos' },
   ];
+
   const featuredOptions = [
-    { value: '', label: 'Destacado: Todos' },
-    { value: '1', label: 'Destacado: Sí' },
-    { value: '0', label: 'Destacado: No' },
+    { value: '', label: 'Todo el catálogo' },
+    { value: '1', label: 'Solo destacados' },
+    { value: '0', label: 'Solo no destacados' },
   ];
+
   const stockOptions = [
-    { value: '', label: 'Stock: Todos' },
-    { value: 'with', label: 'Stock: Con stock' },
-    { value: 'empty', label: 'Stock: Sin stock' },
+    { value: '', label: 'Todo el stock' },
+    { value: 'with', label: 'Con stock' },
+    { value: 'empty', label: 'Sin stock' },
   ];
 
   async function patchProduct(id: string, patch: Record<string, unknown>) {
     try {
-      const res = await catalogAdminApi.updateProduct(id, patch);
-      setProducts((prev) => prev.map((product) => (product.id === id ? res.item : product)));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error actualizando producto');
+      const response = await catalogAdminApi.updateProduct(id, patch);
+      setProducts((current) => current.map((product) => (product.id === id ? response.item : product)));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No se pudo actualizar el producto.');
     }
   }
 
   return (
-    <div className="store-shell space-y-5">
-      <section className="store-hero">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-black tracking-tight text-zinc-900">Productos</h1>
-            <p className="mt-1 text-sm text-zinc-600">Administra catálogo con identificación por SKU y código de barras.</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Link to="/admin/categorias" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">Categorías</Link>
-            <Link to="/admin/productos/crear" className="btn-primary !h-10 !rounded-xl px-5 text-sm font-bold">+ Nuevo producto</Link>
-          </div>
-        </div>
+    <PageShell context="admin" className="space-y-6">
+      <PageHeader
+        context="admin"
+        eyebrow="Catálogo"
+        title="Productos"
+        subtitle="Administrá el catálogo, el stock y la información comercial con una sola vista operativa y sin ruido visual innecesario."
+        actions={
+          <>
+            <StatusBadge tone="info" label={`${products.length} en catálogo`} />
+            <Button asChild variant="outline" size="sm">
+              <Link to="/admin/categorias">Categorías</Link>
+            </Button>
+            <Button asChild size="sm">
+              <Link to="/admin/productos/crear">
+                <PackagePlus className="h-4 w-4" />
+                Nuevo producto
+              </Link>
+            </Button>
+          </>
+        }
+      />
+
+      <section className="nr-stat-grid" data-reveal>
+        <MetricCard label="Catálogo visible" value={String(stats.total)} meta="Productos cargados en esta vista operativa" />
+        <MetricCard label="Activos" value={String(stats.active)} meta="Items disponibles para publicar y vender" />
+        <MetricCard label="Destacados" value={String(stats.featured)} meta="Productos reforzados en la tienda" />
+        <MetricCard label="Stock crítico" value={String(stats.lowStock + stats.noStock)} meta="Items con poco stock o agotados" />
       </section>
 
-      {error ? <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">{error}</div> : null}
-
-      <section className="card">
-        <div className="card-body">
-          <div className="grid gap-3 xl:grid-cols-[1.3fr_1.05fr_0.9fr_0.95fr_0.9fr_auto]">
-            <input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Buscar por nombre, slug, SKU"
-              className="h-11 rounded-2xl border border-zinc-200 px-3 text-sm"
-            />
-            <CustomSelect value={categoryId} onChange={setCategoryId} options={categoryOptions} triggerClassName="min-h-11 rounded-2xl font-bold" ariaLabel="Filtrar por categoría" />
-            <CustomSelect value={activeFilter} onChange={setActiveFilter} options={activeOptions} triggerClassName="min-h-11 rounded-2xl font-bold" ariaLabel="Filtrar por estado" />
-            <CustomSelect value={featuredFilter} onChange={setFeaturedFilter} options={featuredOptions} triggerClassName="min-h-11 rounded-2xl font-bold" ariaLabel="Filtrar por destacado" />
-            <CustomSelect value={stockFilter} onChange={setStockFilter} options={stockOptions} triggerClassName="min-h-11 rounded-2xl font-bold" ariaLabel="Filtrar por stock" />
-            <button type="button" onClick={() => void loadProducts()} className="btn-outline !h-11 !rounded-xl px-5 text-sm font-bold">
-              Filtrar
-            </button>
+      <FilterBar
+        actions={
+          <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:justify-end">
+            {hasFilters ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setQ('');
+                  setCategoryId('');
+                  setActiveFilter('');
+                  setFeaturedFilter('');
+                  setStockFilter('');
+                }}
+              >
+                Limpiar
+              </Button>
+            ) : null}
+            <Button type="button" variant="outline" size="sm" onClick={() => void loadProducts()}>
+              <RefreshCcw className="h-4 w-4" />
+              Recargar
+            </Button>
           </div>
-        </div>
-      </section>
+        }
+      >
+        <TextField
+          value={q}
+          onChange={(event) => setQ(event.target.value)}
+          label="Buscar"
+          placeholder="Nombre, slug, SKU o código"
+          leadingIcon={<Search className="h-4 w-4" />}
+          wrapperClassName="min-w-0 sm:min-w-[18rem]"
+        />
+        <SelectField label="Categoría" value={categoryId} onChange={setCategoryId} options={categoryOptions} ariaLabel="Filtrar por categoría" />
+        <SelectField label="Estado" value={activeFilter} onChange={setActiveFilter} options={activeOptions} ariaLabel="Filtrar por estado" />
+        <SelectField label="Destacado" value={featuredFilter} onChange={setFeaturedFilter} options={featuredOptions} ariaLabel="Filtrar por destacado" />
+        <SelectField label="Stock" value={stockFilter} onChange={setStockFilter} options={stockOptions} ariaLabel="Filtrar por stock" />
+      </FilterBar>
 
-      <section className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-[0_8px_30px_-18px_#0f172a47]">
-        <div>
-          <div>
-            <div className="grid gap-0 bg-zinc-50 px-2 py-2 text-[11px] font-black uppercase tracking-wide text-zinc-500" style={{ gridTemplateColumns: tableCols }}>
-              <div><input type="checkbox" aria-label="Seleccionar todo" /></div>
-              <div>PRODUCTO</div>
-              <div>SKU</div>
-              <div>BARCODE</div>
-              <div>CATEGORÍA</div>
-              <div>PROV.</div>
-              <div className="text-right">COSTO</div>
-              <div className="text-right">VENTA</div>
-              <div>MARGEN</div>
-              <div>STOCK</div>
-              <div>ACCIONES</div>
+      <SectionCard
+        title="Catálogo operativo"
+        description="Listado resumido con precio, margen, stock y acciones de edición rápidas."
+        actions={<StatusBadge tone={hasFilters ? 'accent' : 'neutral'} size="sm" label={hasFilters ? `${filteredProducts.length} resultados` : 'Vista general'} />}
+      >
+        {error ? (
+          <div className="ui-alert ui-alert--danger mb-4">
+            <Boxes className="mt-0.5 h-4 w-4 flex-none" />
+            <div>
+              <span className="ui-alert__title">No se pudo actualizar el catálogo.</span>
+              <div className="ui-alert__text">{error}</div>
             </div>
+          </div>
+        ) : null}
 
-            {loading ? (
-              <div className="p-4 text-sm text-zinc-600">Cargando productos...</div>
-            ) : rows.length === 0 ? (
-              <div className="p-4 text-sm text-zinc-600">No hay productos.</div>
-            ) : (
-              rows.map((product, idx) => {
-                const cost = Number(product.costPrice ?? 0);
-                const sale = Number(product.price ?? 0);
-                const marginPct = cost > 0 ? Math.round(((sale - cost) / cost) * 100) : 0;
-                const marginVal = Math.max(0, sale - cost);
-                return (
-                  <div
-                    key={product.id}
-                    className={`grid items-center gap-0 px-2 py-2 ${idx ? 'border-t border-zinc-100' : ''}`}
-                    style={{ gridTemplateColumns: tableCols }}
+        <div className="admin-collection">
+          {loading ? (
+            <SectionCard tone="muted" bodyClassName="space-y-3">
+              <LoadingBlock label="Cargando productos" lines={4} />
+            </SectionCard>
+          ) : filteredProducts.length === 0 ? (
+            <EmptyState
+              icon={<Tag className="h-5 w-5" />}
+              title="No hay productos para mostrar"
+              description={hasFilters ? 'Probá con otra combinación de filtros o limpiá la búsqueda.' : 'Todavía no se cargaron productos en el catálogo.'}
+              actions={
+                hasFilters ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setQ('');
+                      setCategoryId('');
+                      setActiveFilter('');
+                      setFeaturedFilter('');
+                      setStockFilter('');
+                    }}
                   >
-                    <div><input type="checkbox" aria-label={`Seleccionar ${product.name}`} /></div>
-
-                    <div className="flex min-w-0 items-center gap-2">
-                      <div className="h-8 w-8 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50">
-                        {product.imageUrl ? <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover" loading="lazy" /> : null}
+                    Limpiar filtros
+                  </Button>
+                ) : (
+                  <Button asChild>
+                    <Link to="/admin/productos/crear">Crear producto</Link>
+                  </Button>
+                )
+              }
+            />
+          ) : (
+            filteredProducts.map((product) => {
+              const cost = Number(product.costPrice ?? 0);
+              const sale = Number(product.price ?? 0);
+              const marginValue = sale - cost;
+              const marginPercent = cost > 0 ? Math.round(((sale - cost) / cost) * 100) : 0;
+              return (
+                <article key={product.id} className="admin-entity-row">
+                  <div className="admin-entity-row__top">
+                    <div className="admin-entity-row__heading">
+                      <div className="admin-entity-row__title-row">
+                        <div className="admin-entity-row__title">{product.name}</div>
+                        <StatusBadge tone={product.active ? 'success' : 'neutral'} size="sm" label={product.active ? 'Activo' : 'Inactivo'} />
+                        {product.featured ? <StatusBadge tone="accent" size="sm" label="Destacado" /> : null}
+                        <StatusBadge tone={stockTone(product.stock)} size="sm" label={product.stock > 0 ? `Stock ${product.stock}` : 'Sin stock'} />
                       </div>
-                      <div className="min-w-0">
-                        <div className="truncate text-sm font-black tracking-tight text-zinc-900">{product.name}</div>
-                        <div className="text-xs text-zinc-500">ID: {product.id.slice(0, 4)}</div>
+                      <div className="admin-entity-row__meta">
+                        <span>{product.category?.name || 'Sin categoría'}</span>
+                        <span>{product.supplier?.name || 'Sin proveedor'}</span>
+                        <span>SKU: {product.sku || 'No informado'}</span>
+                        <span>Código: {product.barcode || 'No informado'}</span>
+                      </div>
+                    </div>
+                    <div className="admin-entity-row__aside">
+                      <span className="admin-entity-row__eyebrow">Venta</span>
+                      <div className="admin-entity-row__value">{money(sale)}</div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 detail-grid">
+                    <div className="detail-stack">
+                      <div className="detail-panel">
+                        <div className="detail-panel__label">Costo</div>
+                        <div className="detail-panel__value">{money(cost)}</div>
+                      </div>
+                      <div className="detail-panel">
+                        <div className="detail-panel__label">Margen</div>
+                        <div className="detail-panel__value">
+                          {marginPercent >= 0 ? '+' : ''}
+                          {marginPercent}% · {money(marginValue)}
+                        </div>
                       </div>
                     </div>
 
-                    <div className="truncate text-xs font-black leading-tight text-zinc-800">{product.sku || '-'}</div>
-                    <div className="truncate text-xs leading-tight text-zinc-800">{product.barcode || '-'}</div>
-                    <div className="truncate text-xs text-zinc-900">{product.category?.name || '-'}</div>
-                    <div className="truncate text-xs text-zinc-900">{product.supplier?.name || '-'}</div>
-
-                    <div className="text-right">
-                      <div className="text-xs font-black leading-tight text-zinc-900">$ {cost.toLocaleString('es-AR')}</div>
+                    <div className="detail-panel">
+                      <div className="detail-panel__label">Descripción comercial</div>
+                      <div className="detail-panel__value">{product.description?.trim() || 'Sin descripción cargada.'}</div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-xs font-black leading-tight text-zinc-900">$ {sale.toLocaleString('es-AR')}</div>
-                    </div>
+                  </div>
 
-                    <div>
-                      <div className="inline-flex min-h-[34px] w-full flex-col items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-1.5 py-1 text-center">
-                        <div className="text-[11px] font-black tracking-tight text-emerald-800">M: {marginPct >= 0 ? '+' : ''}{marginPct}%</div>
-                        <div className="text-[10px] font-black text-emerald-700">$ {marginVal.toLocaleString('es-AR')}</div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-1">
-                      <div className="inline-flex min-h-[34px] min-w-[42px] flex-col items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-1.5 py-1 text-center">
-                        <div className="text-[11px] font-black tracking-tight text-emerald-800">Stock</div>
-                        <div className="text-xs font-black text-emerald-700">{product.stock}</div>
-                      </div>
-                      <QuickStockCell value={product.stock} onSave={(nextValue) => void patchProduct(product.id, { stock: Math.max(0, Math.trunc(nextValue)) })} />
+                  <div className="admin-entity-row__actions">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <QuickStockEditor value={product.stock} onSave={(nextValue) => void patchProduct(product.id, { stock: Math.max(0, Math.trunc(nextValue)) })} />
+                      <StatusBadge tone={marginTone(marginValue)} size="sm" label={marginValue > 0 ? 'Margen positivo' : marginValue === 0 ? 'Sin margen' : 'Margen negativo'} />
                     </div>
 
                     <ActionDropdown
                       className="flex items-center justify-end"
                       renderTrigger={({ open, toggle, triggerRef, menuId }) => (
-                        <button
+                        <Button
                           ref={triggerRef}
                           type="button"
+                          variant="outline"
+                          size="sm"
                           onClick={toggle}
-                          className="btn-outline !h-8 !rounded-xl px-2.5 text-xs font-bold"
                           aria-haspopup="menu"
                           aria-controls={menuId}
                           aria-expanded={open ? 'true' : 'false'}
                         >
                           Acciones
-                        </button>
+                        </Button>
                       )}
                       menuClassName="min-w-[12rem]"
                     >
@@ -209,7 +328,7 @@ export function AdminProductsPage() {
                             className="dropdown-item flex items-center justify-between gap-2"
                           >
                             <span>Estado</span>
-                            <Pill tone={product.active ? 'emerald' : 'zinc'}>{product.active ? 'Activo' : 'Inactivo'}</Pill>
+                            <StatusBadge tone={product.active ? 'success' : 'neutral'} size="sm" label={product.active ? 'Activo' : 'Inactivo'} />
                           </button>
                           <button
                             type="button"
@@ -220,7 +339,7 @@ export function AdminProductsPage() {
                             className="dropdown-item flex items-center justify-between gap-2"
                           >
                             <span>Destacado</span>
-                            <Pill tone={product.featured ? 'amber' : 'zinc'}>{product.featured ? 'Sí' : 'No'}</Pill>
+                            <StatusBadge tone={product.featured ? 'accent' : 'neutral'} size="sm" label={product.featured ? 'Sí' : 'No'} />
                           </button>
                           <Link to={`/admin/productos/${encodeURIComponent(product.id)}/etiqueta`} onClick={close} className="dropdown-item">
                             Etiqueta
@@ -232,40 +351,71 @@ export function AdminProductsPage() {
                       )}
                     </ActionDropdown>
                   </div>
-                );
-              })
-            )}
-          </div>
+                </article>
+              );
+            })
+          )}
         </div>
-      </section>
+      </SectionCard>
+    </PageShell>
+  );
+}
+
+function MetricCard({ label, value, meta }: { label: string; value: string; meta: string }) {
+  return (
+    <article className="nr-stat-card">
+      <div className="nr-stat-card__label">{label}</div>
+      <div className="nr-stat-card__value">{value}</div>
+      <div className="nr-stat-card__meta">{meta}</div>
+    </article>
+  );
+}
+
+function SelectField({
+  label,
+  value,
+  onChange,
+  options,
+  ariaLabel,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: Array<{ value: string; label: string }>;
+  ariaLabel: string;
+}) {
+  return (
+    <div className="ui-field min-w-0 sm:min-w-[12rem]">
+      <span className="ui-field__label">{label}</span>
+      <CustomSelect
+        value={value}
+        onChange={onChange}
+        options={options}
+        className="w-full"
+        triggerClassName="min-h-11 rounded-[1rem]"
+        ariaLabel={ariaLabel}
+      />
     </div>
   );
 }
 
-function Pill({ children, tone = 'zinc' }: { children: React.ReactNode; tone?: 'zinc' | 'emerald' | 'amber' }) {
-  const tones = {
-    zinc: 'border-zinc-200 bg-zinc-50 text-zinc-800',
-    emerald: 'border-emerald-200 bg-emerald-50 text-emerald-800',
-    amber: 'border-amber-200 bg-amber-50 text-amber-800',
-  } as const;
-  return <span className={`inline-flex h-8 items-center rounded-full border px-3 text-sm font-bold ${tones[tone]}`}>{children}</span>;
-}
-
-function QuickStockCell({ value, onSave }: { value: number; onSave: (value: number) => void }) {
+function QuickStockEditor({ value, onSave }: { value: number; onSave: (value: number) => void }) {
   const [local, setLocal] = useState(String(value));
   useEffect(() => setLocal(String(value)), [value]);
+
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-2 rounded-[1rem] border border-zinc-200 bg-zinc-50 px-2 py-1.5">
       <input
         type="number"
         min="0"
         value={local}
-        onChange={(e) => setLocal(e.target.value)}
-        className="h-8 w-[68px] rounded-xl border border-zinc-200 px-2 text-center text-sm font-bold"
+        onChange={(event) => setLocal(event.target.value)}
+        className="h-8 w-[72px] rounded-xl border border-zinc-200 bg-white px-2 text-center text-sm font-bold"
+        aria-label="Stock rápido"
       />
-      <button type="button" onClick={() => onSave(Number(local || 0))} className="btn-outline !h-8 !rounded-xl px-2 text-xs font-bold">
-        OK
-      </button>
+      <Button type="button" variant="outline" size="sm" onClick={() => onSave(Number(local || 0))}>
+        Guardar
+      </Button>
     </div>
   );
 }
