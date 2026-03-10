@@ -82,6 +82,18 @@ Registrar decisiones tecnicas confirmadas para evitar dependencia de memoria ora
 - Validacion requerida: `env:check`, typecheck, build, smoke y revisión visual incremental en las vistas adoptadas.
 - Responsable: Codex + operador humano
 
+### [DL-0028]
+- Fecha: 2026-03-10
+- Estado: aceptada
+- Tema: code splitting por ruta para reducir el chunk inicial del frontend
+- Contexto: el build de `@nico/web` seguía mostrando el warning de chunk grande de Vite. La causa principal era que `next-stack/apps/web/src/App.tsx` importaba de forma eager la mayoría de las páginas del producto, incluyendo vistas admin y módulos secundarios que no deberían entrar en la carga inicial.
+- Decisión: convertir las páginas del router a carga diferida con `React.lazy` y `Suspense`, manteniendo eager solo el shell, guards y utilidades pequeñas realmente transversales.
+- Impacto: el chunk principal del frontend bajó de aproximadamente `769.29 kB` a `317.30 kB`, desapareció el warning de chunk grande en el build actual y el producto quedó dividido por ruta de forma más sana para seguir creciendo.
+- Alternativas consideradas: agregar `manualChunks` en Vite sin tocar el router o silenciar el warning; descartado por atacar el síntoma en vez de la causa principal.
+- Archivos / modulos afectados: `next-stack/apps/web/src/App.tsx`, `project-docs/FRONTEND_PERFORMANCE.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: typecheck, build, `smoke:web` y `qa:route-parity`.
+- Responsable: Codex + operador humano
+
 ### [DL-0022]
 - Fecha: 2026-03-09
 - Estado: aceptada

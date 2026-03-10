@@ -290,3 +290,23 @@
 - Riesgos / notas:
   - la fase cierra solo diagnostico, sistema visual y plan
   - la aplicacion visual real queda para una fase posterior con primitives y barrido por areas
+
+### 2026-03-10 - Codex
+- Alcance: optimizacion real de performance frontend en `@nico/web`.
+- Tipo de intervencion: reduccion de bundle inicial + code splitting por ruta.
+- Archivos tocados:
+  - `next-stack/apps/web/src/App.tsx`
+  - `project-docs/FRONTEND_PERFORMANCE.md`
+  - `project-docs/DECISIONS_LOG.md`
+- ¿Cambio comportamiento funcional?: No del producto. Sí del modo de carga: las vistas del router ahora se cargan de forma diferida y no inflan el chunk inicial.
+- Validaciones ejecutadas:
+  - `npm run typecheck --workspace @nico/api`
+  - `npm run typecheck --workspace @nico/web`
+  - `npm run build --workspace @nico/api`
+  - `npm run build --workspace @nico/web`
+  - `npm run smoke:web`
+  - `npm run qa:route-parity`
+- Riesgos / notas:
+  - el warning de chunk grande desaparecio en el build actual
+  - el chunk principal JS bajo de ~`769.29 kB` a ~`317.30 kB`
+  - no se agregaron `manualChunks`; el problema se resolvio atacando la causa principal del bundle inicial
