@@ -1,5 +1,10 @@
-import { useMemo, useState } from 'react';
+﻿import { useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/ui/page-header';
+import { PageShell } from '@/components/ui/page-shell';
+import { SectionCard } from '@/components/ui/section-card';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { authApi } from './api';
 import { authStorage } from './storage';
 
@@ -18,7 +23,7 @@ export function VerifyEmailPage() {
     setError('');
     try {
       const res = await authApi.requestVerifyEmail();
-      setMessage(res.previewToken ? `Correo reenviado. Token preview: ${res.previewToken}` : 'Correo de verificación reenviado.');
+      setMessage(res.previewToken ? `Correo reenviado. Token de vista previa: ${res.previewToken}` : 'Correo de verificación reenviado.');
     } catch (err) {
       setError((err as { message?: string })?.message ?? 'No se pudo reenviar el correo de verificación.');
     } finally {
@@ -35,7 +40,7 @@ export function VerifyEmailPage() {
       const res = await authApi.confirmVerifyEmail(tokenFromQuery);
       setMessage(res.message || 'Correo verificado correctamente.');
     } catch (err) {
-      setError((err as { message?: string })?.message ?? 'Error al verificar correo.');
+      setError((err as { message?: string })?.message ?? 'No se pudo verificar el correo.');
     } finally {
       setLoading(false);
     }
@@ -47,79 +52,67 @@ export function VerifyEmailPage() {
   }
 
   return (
-    <div className="store-shell">
-      <div className="mx-auto max-w-[760px] px-4 py-5 md:py-7">
-        <section className="store-hero mx-auto mb-4 max-w-[420px]">
-          <div className="space-y-2">
-            <h1 className="text-2xl font-black leading-tight tracking-tight text-zinc-900">
-              Verifica tu correo
-            </h1>
-            <p className="text-sm leading-relaxed text-zinc-700">
-              Es un paso rápido para proteger tu cuenta y confirmar pedidos.
-            </p>
-          </div>
-        </section>
+    <PageShell context="account" className="space-y-6">
+      <PageHeader
+        context="account"
+        eyebrow="Verificación"
+        title="Confirmá tu correo"
+        subtitle={tokenFromQuery ? 'Recibimos un enlace de verificación. Confirmá el correo con un toque.' : 'Te enviamos un enlace para confirmar tu cuenta y proteger los pedidos.'}
+        actions={
+          user?.email ? <StatusBadge tone="warning" label={user.email} /> : null
+        }
+      />
 
-        <section className="card mx-auto max-w-[420px]">
-          <div className="card-body space-y-4">
-            <div>
-              <div className="text-xs font-black uppercase tracking-wide text-sky-700">Verificación</div>
-              <h2 className="text-lg font-black tracking-tight text-zinc-900">Confirma tu email</h2>
-              <p className="mt-1 text-sm leading-relaxed text-zinc-700">
-                {tokenFromQuery
-                  ? 'Recibimos un enlace de verificación. Confirma el correo con un toque.'
-                  : (
-                    <>
-                      Te enviamos un enlace de verificación a{' '}
-                      <span className="font-black text-zinc-900">{user?.email ?? 'tu correo'}</span>.
-                    </>
-                  )}
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              {tokenFromQuery ? (
-                <button
-                  type="button"
-                  onClick={() => void handleConfirmToken()}
-                  disabled={loading}
-                  className="btn-primary flex h-11 w-full items-center justify-center rounded-2xl text-sm font-black disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {loading ? 'Verificando...' : 'Confirmar email'}
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => void handleResend()}
-                  disabled={loading}
-                  className="btn-primary flex h-11 w-full items-center justify-center rounded-2xl text-sm font-black disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {loading ? 'Enviando...' : 'Reenviar correo de verificación'}
-                </button>
+      <SectionCard title="Correo electrónico" description="Este paso confirma la titularidad de la cuenta y habilita un seguimiento más confiable.">
+        <div className="space-y-4">
+          <p className="text-sm leading-relaxed text-zinc-700">
+            {tokenFromQuery
+              ? 'Usá el botón principal para confirmar la dirección vinculada a tu cuenta.'
+              : (
+                <>
+                  Te enviamos un enlace de verificación a <span className="font-black text-zinc-900">{user?.email ?? 'tu correo'}</span>.
+                </>
               )}
+          </p>
 
-              <Link to="/orders" className="btn-outline flex h-11 w-full items-center justify-center rounded-2xl text-sm font-bold">
-                Cambiar email en mi cuenta
-              </Link>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {tokenFromQuery ? (
+              <Button type="button" onClick={() => void handleConfirmToken()} disabled={loading} className="w-full justify-center sm:col-span-2">
+                {loading ? 'Verificando...' : 'Confirmar correo'}
+              </Button>
+            ) : (
+              <Button type="button" onClick={() => void handleResend()} disabled={loading} className="w-full justify-center sm:col-span-2">
+                {loading ? 'Enviando...' : 'Reenviar correo de verificación'}
+              </Button>
+            )}
 
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="btn-ghost flex h-11 w-full items-center justify-center rounded-2xl text-sm font-bold text-zinc-900"
-              >
-                Cerrar sesión
-              </button>
-            </div>
+            <Button asChild variant="outline" className="w-full justify-center">
+              <Link to="/mi-cuenta">Cambiar email en mi cuenta</Link>
+            </Button>
 
-            {error ? (
-              <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>
-            ) : null}
-            {message ? (
-              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-800">{message}</div>
-            ) : null}
+            <Button type="button" variant="ghost" className="w-full justify-center" onClick={handleLogout}>
+              Cerrar sesión
+            </Button>
           </div>
-        </section>
-      </div>
-    </div>
+
+          {error ? (
+            <div className="ui-alert ui-alert--danger">
+              <div>
+                <span className="ui-alert__title">No pudimos completar la verificación.</span>
+                <div className="ui-alert__text">{error}</div>
+              </div>
+            </div>
+          ) : null}
+          {message ? (
+            <div className="ui-alert ui-alert--success">
+              <div>
+                <span className="ui-alert__title">Proceso actualizado</span>
+                <div className="ui-alert__text">{message}</div>
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </SectionCard>
+    </PageShell>
   );
 }

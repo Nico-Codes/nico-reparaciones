@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { ClipboardList } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,7 @@ import { PageShell } from '@/components/ui/page-shell';
 import { SectionCard } from '@/components/ui/section-card';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { ordersApi } from './api';
-import { formatDateTime, money, orderCode, orderStatusLabel, orderStatusSummary, orderStatusTone } from './order-ui';
+import { formatDateTime, money, orderCode, orderStatusLabel, orderStatusSummary, orderStatusTone, paymentMethodLabel } from './order-ui';
 import type { OrderItem } from './types';
 
 export function MyOrdersPage() {
@@ -36,7 +36,7 @@ export function MyOrdersPage() {
   }, []);
 
   return (
-    <PageShell context="account">
+    <PageShell context="account" data-my-orders-page>
       <PageHeader
         context="account"
         eyebrow="Pedidos"
@@ -112,7 +112,7 @@ export function MyOrdersPage() {
                     <StatusBadge
                       tone={order.paymentMethod ? 'neutral' : 'warning'}
                       size="sm"
-                      label={order.paymentMethod || 'Método a definir'}
+                      label={paymentMethodLabel(order.paymentMethod)}
                     />
                   </div>
                   <Button asChild variant="outline" size="sm">

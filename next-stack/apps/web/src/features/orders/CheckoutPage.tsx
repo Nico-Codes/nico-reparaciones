@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, CreditCard, ShieldCheck, ShoppingCart } from 'lucide-react';
+﻿import { useEffect, useMemo, useState } from 'react';
+import { AlertTriangle, CreditCard, ShieldCheck } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -16,7 +16,7 @@ import { ordersApi } from './api';
 
 const PAYMENT_OPTIONS = [
   { value: 'efectivo', title: 'Pago en el local', subtitle: 'Pagás al retirar.' },
-  { value: 'transferencia', title: 'Transferencia', subtitle: 'Te enviamos los datos luego de confirmar.' },
+  { value: 'transferencia', title: 'Transferencia', subtitle: 'Te enviamos los datos después de confirmar.' },
   { value: 'debito', title: 'Débito', subtitle: 'Pagás al retirar con tarjeta.' },
   { value: 'credito', title: 'Crédito', subtitle: 'Pagás al retirar con tarjeta.' },
 ] as const;
@@ -38,6 +38,7 @@ export function CheckoutPage() {
   const [message, setMessage] = useState('');
 
   const localItems = cartStorage.getItems();
+  const hasCartItems = localItems.length > 0;
   const user = authStorage.getUser();
 
   useEffect(() => {
@@ -49,6 +50,17 @@ export function CheckoutPage() {
       .then((response) => {
         if (!active) return;
         setQuote(response);
+
+        if (response.items.length) {
+          const normalized = response.items
+            .filter((item) => item.valid)
+            .map((item) => ({ productId: item.productId, quantity: item.quantity }));
+          const current = cartStorage.getItems();
+          const same =
+            normalized.length === current.length &&
+            normalized.every((item, index) => current[index]?.productId === item.productId && current[index]?.quantity === item.quantity);
+          if (!same) cartStorage.setItems(normalized);
+        }
       })
       .catch((cause) => {
         if (!active) return;
@@ -65,14 +77,21 @@ export function CheckoutPage() {
   }, []);
 
   const validItems = useMemo(() => quote?.items.filter((item) => item.valid) ?? [], [quote]);
+  const validCheckoutItems = useMemo(
+    () => validItems.map((item) => ({ productId: item.productId, quantity: item.quantity })),
+    [validItems],
+  );
+  const hasInvalidItems = useMemo(() => (quote?.items ?? []).some((item) => !item.valid), [quote]);
+  const canConfirm = !loading && !submitting && validCheckoutItems.length > 0;
   const selectedPayment = PAYMENT_OPTIONS.find((option) => option.value === paymentMethod) ?? PAYMENT_OPTIONS[0];
 
   async function confirmOrder() {
+    if (!canConfirm) return;
     setSubmitting(true);
     setMessage('');
     try {
       const order = await ordersApi.checkout({
-        items: cartStorage.getItems(),
+        items: validCheckoutItems,
         paymentMethod,
       });
       cartStorage.clear();
@@ -102,13 +121,18 @@ export function CheckoutPage() {
   }
 
   if (!validItems.length) {
+    const emptyTitle = hasCartItems ? 'Hay productos para revisar' : 'Tu carrito está vacío';
+    const emptyDescription = hasCartItems
+      ? 'Volvé al carrito para ajustar cantidades o quitar productos sin stock antes de confirmar la compra.'
+      : 'Necesitás productos válidos en el carrito para confirmar la compra.';
+
     return (
       <PageShell context="store" className="space-y-6">
         <PageHeader
           context="store"
           eyebrow="Compra"
           title="Checkout"
-          subtitle="Necesitás productos válidos en el carrito para confirmar la compra."
+          subtitle={hasCartItems ? 'Todavía no podemos confirmar el pedido con el stock actual.' : 'Necesitás productos válidos en el carrito para confirmar la compra.'}
         />
 
         {message ? (
@@ -121,17 +145,27 @@ export function CheckoutPage() {
           </div>
         ) : null}
 
+        {hasInvalidItems ? (
+          <div className="ui-alert ui-alert--warning">
+            <AlertTriangle className="mt-0.5 h-4 w-4 flex-none" />
+            <div>
+              <span className="ui-alert__title">Hay productos con cambios de stock o cantidad.</span>
+              <div className="ui-alert__text">Revisá el carrito antes de continuar para evitar un pedido incompleto.</div>
+            </div>
+          </div>
+        ) : null}
+
         <SectionCard>
           <EmptyState
-            title="Tu carrito está vacío"
-            description="Volvé a la tienda para agregar productos o revisá el carrito antes de continuar."
+            title={emptyTitle}
+            description={emptyDescription}
             actions={(
               <div className="flex flex-wrap gap-3">
                 <Button asChild>
-                  <Link to="/store">Ir a la tienda</Link>
+                  <Link to="/cart">Revisar carrito</Link>
                 </Button>
                 <Button asChild variant="outline">
-                  <Link to="/cart">Volver al carrito</Link>
+                  <Link to="/store">Ir a la tienda</Link>
                 </Button>
               </div>
             )}
@@ -179,6 +213,7 @@ export function CheckoutPage() {
                       value={option.value}
                       checked={active}
                       onChange={() => setPaymentMethod(option.value)}
+                      disabled={submitting}
                     />
                     <div className={`checkout-option ${active ? 'is-active' : ''}`}>
                       <div className="checkout-option__title">{option.title}</div>
@@ -214,7 +249,7 @@ export function CheckoutPage() {
           </SectionCard>
 
           <div className="grid gap-2 sm:flex sm:flex-row">
-            <Button type="button" className="w-full sm:w-auto" onClick={confirmOrder} disabled={submitting || !validItems.length}>
+            <Button type="button" className="w-full sm:w-auto" onClick={confirmOrder} disabled={!canConfirm}>
               <CreditCard className="h-4 w-4" />
               {submitting ? 'Procesando...' : 'Confirmar pedido'}
             </Button>

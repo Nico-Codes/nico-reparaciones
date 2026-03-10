@@ -1,5 +1,7 @@
-import { useState } from 'react';
+﻿import { useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { TextField } from '@/components/ui/text-field';
 import { AuthLayout } from './AuthLayout';
 import { authApi } from './api';
 import { authStorage } from './storage';
@@ -17,15 +19,34 @@ export function LoginPage() {
     ? ((location.state as { from?: string }).from ?? '')
     : '';
 
+  const normalizedEmail = useMemo(() => email.trim().toLowerCase(), [email]);
+  const normalizedPassword = useMemo(() => password.trim(), [password]);
+  const normalizedTwoFactorCode = useMemo(() => twoFactorCode.trim(), [twoFactorCode]);
+  const canSubmit = normalizedEmail.length > 0 && normalizedPassword.length > 0 && (!needsTwoFactor || normalizedTwoFactorCode.length > 0);
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
     setResult('');
+
+    if (!normalizedEmail || !normalizedPassword) {
+      setResult('Ingresá tu email y contraseña para continuar.');
+      return;
+    }
+
+    if (needsTwoFactor && !normalizedTwoFactorCode) {
+      setResult('Ingresá el código 2FA para completar el acceso.');
+      return;
+    }
+
+    setLoading(true);
     try {
-      const res = await authApi.login({ email, password, twoFactorCode: twoFactorCode || undefined });
+      const res = await authApi.login({
+        email: normalizedEmail,
+        password: normalizedPassword,
+        twoFactorCode: normalizedTwoFactorCode || undefined,
+      });
       authStorage.setSession(res.user, res.tokens);
       setNeedsTwoFactor(false);
-      setResult(`Login OK (${res.user.role})`);
       const fallback = res.user.role === 'ADMIN' ? '/admin' : '/store';
       const target =
         from &&
@@ -36,7 +57,7 @@ export function LoginPage() {
           : fallback;
       navigate(target, { replace: true });
     } catch (error) {
-      const message = (error as { message?: string })?.message ?? 'Error al iniciar sesión';
+      const message = (error as { message?: string })?.message ?? 'No pudimos iniciar sesión.';
       if (message.toLowerCase().includes('2fa')) setNeedsTwoFactor(true);
       setResult(message);
     } finally {
@@ -45,31 +66,44 @@ export function LoginPage() {
   }
 
   return (
-    <AuthLayout title="Ingresar" subtitle="Accede para ver tus pedidos y reparaciones.">
+    <AuthLayout title="Ingresar" subtitle="Accedé para ver tus pedidos y reparaciones.">
       <div className="mb-5">
         <div className="text-xs font-black uppercase tracking-wide text-sky-700">Cuenta</div>
-        <h2 className="text-lg font-black tracking-tight text-zinc-900">Inicia sesión</h2>
-        <p className="mt-1 text-sm text-zinc-600">Usa tu email y contraseña.</p>
+        <h2 className="text-lg font-black tracking-tight text-zinc-900">Iniciá sesión</h2>
+        <p className="mt-1 text-sm text-zinc-600">Usá tu email y contraseña.</p>
       </div>
 
       <form className="space-y-4" onSubmit={onSubmit}>
-        <Field label="Email" type="email" value={email} onChange={setEmail} placeholder="tu@email.com" />
-        <Field label="Contraseña" type="password" value={password} onChange={setPassword} placeholder="********" />
+        <TextField
+          label="Email"
+          type="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          placeholder="tu@email.com"
+          autoComplete="email"
+          required
+        />
+        <TextField
+          label="Contraseña"
+          type="password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          placeholder="********"
+          autoComplete="current-password"
+          required
+        />
         {needsTwoFactor ? (
-          <Field
+          <TextField
             label="Código 2FA"
             type="text"
             value={twoFactorCode}
-            onChange={setTwoFactorCode}
+            onChange={(event) => setTwoFactorCode(event.target.value)}
             placeholder="123456"
+            inputMode="numeric"
+            autoComplete="one-time-code"
             required
           />
         ) : null}
-
-        <label className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-700">
-          <input type="checkbox" className="h-4 w-4 rounded border-zinc-300" />
-          Recordarme
-        </label>
 
         <div className="text-right text-sm">
           <Link className="font-semibold text-sky-700 hover:text-sky-800" to="/auth/forgot-password">
@@ -77,53 +111,28 @@ export function LoginPage() {
           </Link>
         </div>
 
-        <button className="btn-primary h-11 w-full justify-center" disabled={loading}>
+        <Button type="submit" className="w-full justify-center" disabled={!canSubmit || loading}>
           {loading ? 'Ingresando...' : 'Ingresar'}
-        </button>
+        </Button>
       </form>
 
       <div className="mt-5 text-center text-sm text-zinc-600">
-        ¿No tienes cuenta?{' '}
+        ¿No tenés cuenta?{' '}
         <Link className="font-semibold text-sky-700 hover:text-sky-800" to="/auth/register">
           Crear cuenta
         </Link>
       </div>
 
-      {result ? <Notice text={result} /> : null}
+      {result ? <Notice text={result} tone="danger" /> : null}
     </AuthLayout>
   );
 }
 
-function Field({
-  label,
-  type,
-  value,
-  onChange,
-  placeholder,
-  required = true,
-}: {
-  label: string;
-  type: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  required?: boolean;
-}) {
-  return (
-    <label className="block">
-      <span className="text-xs font-black uppercase tracking-wide text-zinc-600">{label}</span>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="mt-1 h-11 w-full rounded-2xl border border-zinc-200 bg-white px-3 text-sm outline-none ring-0 focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
-        required={required}
-      />
-    </label>
-  );
-}
+function Notice({ text, tone = 'neutral' }: { text: string; tone?: 'neutral' | 'danger' }) {
+  const className =
+    tone === 'danger'
+      ? 'mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700'
+      : 'mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-800';
 
-function Notice({ text }: { text: string }) {
-  return <div className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-800">{text}</div>;
+  return <div className={className}>{text}</div>;
 }

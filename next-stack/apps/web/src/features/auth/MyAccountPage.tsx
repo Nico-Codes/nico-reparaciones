@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+﻿import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { LoadingBlock } from '@/components/ui/loading-block';
@@ -14,6 +14,7 @@ export function MyAccountPage() {
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [initialProfile, setInitialProfile] = useState({ name: '', email: '' });
   const [emailVerified, setEmailVerified] = useState(false);
 
   const [currentPassword, setCurrentPassword] = useState('');
@@ -22,27 +23,42 @@ export function MyAccountPage() {
 
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
-  const [error, setError] = useState('');
+  const [pageError, setPageError] = useState('');
+  const [profileError, setProfileError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
   const [profileNotice, setProfileNotice] = useState('');
   const [passwordNotice, setPasswordNotice] = useState('');
   const [previewToken, setPreviewToken] = useState('');
+
+  const trimmedName = useMemo(() => name.trim(), [name]);
+  const trimmedEmail = useMemo(() => email.trim().toLowerCase(), [email]);
+  const profileChanged = trimmedName !== initialProfile.name || trimmedEmail !== initialProfile.email;
+  const profileCanSave = trimmedName.length > 0 && trimmedEmail.length > 0 && profileChanged && !savingProfile;
+  const passwordCanSave =
+    currentPassword.trim().length > 0 &&
+    newPassword.trim().length >= 8 &&
+    confirmPassword.trim().length > 0 &&
+    !savingPassword;
 
   useEffect(() => {
     let mounted = true;
 
     async function loadAccount() {
       setLoading(true);
-      setError('');
+      setPageError('');
 
       try {
         const res = await authApi.account();
         if (!mounted) return;
-        setName(res.user.name ?? '');
-        setEmail(res.user.email ?? '');
+        const nextName = res.user.name ?? '';
+        const nextEmail = res.user.email ?? '';
+        setName(nextName);
+        setEmail(nextEmail);
+        setInitialProfile({ name: nextName.trim(), email: nextEmail.trim().toLowerCase() });
         setEmailVerified(Boolean(res.user.emailVerified));
       } catch (e) {
         if (!mounted) return;
-        setError(e instanceof Error ? e.message : 'No se pudieron cargar los datos de tu cuenta.');
+        setPageError(e instanceof Error ? e.message : 'No se pudieron cargar los datos de tu cuenta.');
       } finally {
         if (mounted) setLoading(false);
       }
@@ -57,14 +73,34 @@ export function MyAccountPage() {
 
   async function onSaveProfile(event: FormEvent) {
     event.preventDefault();
-    setSavingProfile(true);
-    setError('');
+    setProfileError('');
     setProfileNotice('');
     setPreviewToken('');
 
+    if (!trimmedName) {
+      setProfileError('Ingresá un nombre para guardar el perfil.');
+      return;
+    }
+
+    if (!trimmedEmail) {
+      setProfileError('Ingresá un correo válido para guardar el perfil.');
+      return;
+    }
+
+    if (!profileChanged) {
+      setProfileNotice('No hay cambios para guardar en el perfil.');
+      return;
+    }
+
+    setSavingProfile(true);
     try {
-      const res = await authApi.updateAccount({ name, email });
+      const res = await authApi.updateAccount({ name: trimmedName, email: trimmedEmail });
       authStorage.setUser(res.user);
+      const nextName = res.user.name ?? trimmedName;
+      const nextEmail = res.user.email ?? trimmedEmail;
+      setName(nextName);
+      setEmail(nextEmail);
+      setInitialProfile({ name: nextName.trim(), email: nextEmail.trim().toLowerCase() });
       setEmailVerified(Boolean(res.user.emailVerified));
       setProfileNotice(
         res.emailVerification?.required
@@ -75,7 +111,7 @@ export function MyAccountPage() {
         setPreviewToken(res.emailVerification.previewToken);
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo guardar el perfil.');
+      setProfileError(e instanceof Error ? e.message : 'No se pudo guardar el perfil.');
     } finally {
       setSavingProfile(false);
     }
@@ -83,33 +119,52 @@ export function MyAccountPage() {
 
   async function onSavePassword(event: FormEvent) {
     event.preventDefault();
-    setSavingPassword(true);
-    setError('');
+    setPasswordError('');
     setPasswordNotice('');
 
+    const normalizedCurrentPassword = currentPassword.trim();
+    const normalizedNewPassword = newPassword.trim();
+    const normalizedConfirmPassword = confirmPassword.trim();
+
+    if (!normalizedCurrentPassword || !normalizedNewPassword || !normalizedConfirmPassword) {
+      setPasswordError('Completá los tres campos para actualizar la contraseña.');
+      return;
+    }
+
+    if (normalizedNewPassword.length < 8) {
+      setPasswordError('La nueva contraseña debe tener al menos 8 caracteres.');
+      return;
+    }
+
+    if (normalizedNewPassword !== normalizedConfirmPassword) {
+      setPasswordError('La confirmación no coincide con la nueva contraseña.');
+      return;
+    }
+
+    setSavingPassword(true);
     try {
-      if (newPassword !== confirmPassword) {
-        throw new Error('La confirmación no coincide con la nueva contraseña.');
-      }
-      const res = await authApi.updateAccountPassword({ currentPassword, newPassword });
+      const res = await authApi.updateAccountPassword({
+        currentPassword: normalizedCurrentPassword,
+        newPassword: normalizedNewPassword,
+      });
       setPasswordNotice(res.message || 'Contraseña actualizada correctamente.');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo actualizar la contraseña.');
+      setPasswordError(e instanceof Error ? e.message : 'No se pudo actualizar la contraseña.');
     } finally {
       setSavingPassword(false);
     }
   }
 
   return (
-    <PageShell context="account">
+    <PageShell context="account" data-my-account-page>
       <PageHeader
         context="account"
         eyebrow="Mi cuenta"
         title="Perfil y seguridad"
-        subtitle="Gestiona tus datos personales y el acceso a tu cuenta."
+        subtitle="Gestioná tus datos personales y el acceso a tu cuenta."
         actions={
           <>
             <StatusBadge tone={emailVerified ? 'success' : 'warning'} label={emailVerified ? 'Correo verificado' : 'Correo pendiente'} />
@@ -120,9 +175,9 @@ export function MyAccountPage() {
         }
       />
 
-      {error ? (
+      {pageError ? (
         <SectionCard tone="info" className="border-rose-200 bg-rose-50">
-          <div className="text-sm font-semibold text-rose-700">{error}</div>
+          <div className="text-sm font-semibold text-rose-700">{pageError}</div>
         </SectionCard>
       ) : null}
 
@@ -156,7 +211,7 @@ export function MyAccountPage() {
                 required
               />
               <div className="md:col-span-2 flex flex-wrap gap-3">
-                <Button type="submit" disabled={savingProfile}>
+                <Button type="submit" disabled={!profileCanSave}>
                   {savingProfile ? 'Guardando perfil...' : 'Guardar perfil'}
                 </Button>
                 <Button variant="outline" asChild>
@@ -165,9 +220,21 @@ export function MyAccountPage() {
               </div>
             </form>
 
+            {profileError ? (
+              <div className="ui-alert ui-alert--danger mt-4">
+                <div>
+                  <span className="ui-alert__title">No pudimos guardar el perfil.</span>
+                  <div className="ui-alert__text">{profileError}</div>
+                </div>
+              </div>
+            ) : null}
+
             {profileNotice ? (
-              <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-                {profileNotice}
+              <div className="ui-alert ui-alert--success mt-4">
+                <div>
+                  <span className="ui-alert__title">Perfil actualizado</span>
+                  <div className="ui-alert__text">{profileNotice}</div>
+                </div>
               </div>
             ) : null}
 
@@ -181,7 +248,7 @@ export function MyAccountPage() {
 
           <SectionCard
             title="Contraseña"
-            description="Actualiza tu clave de acceso para mantener la cuenta protegida."
+            description="Actualizá tu clave de acceso para mantener la cuenta protegida."
           >
             <form className="grid gap-4 md:grid-cols-3" onSubmit={onSavePassword}>
               <TextField
@@ -200,6 +267,7 @@ export function MyAccountPage() {
                 onChange={(event) => setNewPassword(event.target.value)}
                 placeholder="********"
                 autoComplete="new-password"
+                hint="Usá al menos 8 caracteres."
                 required
               />
               <TextField
@@ -212,7 +280,7 @@ export function MyAccountPage() {
                 required
               />
               <div className="md:col-span-3 flex flex-wrap gap-3">
-                <Button type="submit" disabled={savingPassword}>
+                <Button type="submit" disabled={!passwordCanSave}>
                   {savingPassword ? 'Actualizando contraseña...' : 'Actualizar contraseña'}
                 </Button>
                 <Button variant="ghost" asChild>
@@ -221,9 +289,21 @@ export function MyAccountPage() {
               </div>
             </form>
 
+            {passwordError ? (
+              <div className="ui-alert ui-alert--danger mt-4">
+                <div>
+                  <span className="ui-alert__title">No pudimos actualizar la contraseña.</span>
+                  <div className="ui-alert__text">{passwordError}</div>
+                </div>
+              </div>
+            ) : null}
+
             {passwordNotice ? (
-              <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-                {passwordNotice}
+              <div className="ui-alert ui-alert--success mt-4">
+                <div>
+                  <span className="ui-alert__title">Contraseña actualizada</span>
+                  <div className="ui-alert__text">{passwordNotice}</div>
+                </div>
               </div>
             ) : null}
           </SectionCard>

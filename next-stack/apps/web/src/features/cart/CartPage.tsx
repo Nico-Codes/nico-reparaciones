@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, ShoppingBag, Trash2 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+﻿import { useEffect, useMemo, useState } from 'react';
+import { AlertTriangle, Trash2 } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { LoadingBlock } from '@/components/ui/loading-block';
@@ -23,6 +23,7 @@ function stockTone(valid: boolean, stockAvailable: number): BadgeTone {
 }
 
 export function CartPage() {
+  const navigate = useNavigate();
   const cart = useCartItems();
   const [quote, setQuote] = useState<CartQuoteResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -71,6 +72,7 @@ export function CartPage() {
     () => lines.some((item) => !item.valid || item.quantity > Math.max(0, item.stockAvailable)),
     [lines],
   );
+  const canCheckout = !loading && !hasStockIssue && validLines.length > 0;
 
   if (!cart.items.length) {
     return (
@@ -79,7 +81,7 @@ export function CartPage() {
           context="store"
           eyebrow="Compra"
           title="Carrito"
-          subtitle="Tu selección está lista para continuar cuando sumes productos."
+          subtitle="Tu selección queda lista para continuar cuando sumes productos."
           actions={(
             <Button asChild variant="outline" size="sm">
               <Link to="/store">Ir a la tienda</Link>
@@ -154,7 +156,11 @@ export function CartPage() {
                         {!line.valid && line.reason ? <StatusBadge label="Requiere ajuste" tone="danger" size="sm" /> : null}
                       </div>
                       <div className="line-item__meta">
-                        {line.slug ? <Link to={`/store/${line.slug}`} className="font-semibold text-sky-700 hover:text-sky-800">Ver producto</Link> : null}
+                        {line.slug ? (
+                          <Link to={`/store/${line.slug}`} className="font-semibold text-sky-700 hover:text-sky-800">
+                            Ver producto
+                          </Link>
+                        ) : null}
                         {line.slug ? ' · ' : ''}
                         Precio unitario {money(line.unitPrice)}
                       </div>
@@ -242,8 +248,13 @@ export function CartPage() {
           ) : null}
 
           <div className="mt-4 grid gap-2">
-            <Button asChild className={`w-full justify-center ${hasStockIssue || !validLines.length ? 'pointer-events-none opacity-50' : ''}`} aria-disabled={hasStockIssue || !validLines.length}>
-              <Link to="/checkout" tabIndex={hasStockIssue || !validLines.length ? -1 : 0}>Finalizar compra</Link>
+            <Button
+              type="button"
+              className="w-full justify-center"
+              disabled={!canCheckout}
+              onClick={() => navigate('/checkout')}
+            >
+              Finalizar compra
             </Button>
             <Button type="button" variant="outline" className="w-full justify-center" onClick={() => cart.clear()}>
               Vaciar carrito

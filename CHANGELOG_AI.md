@@ -12,6 +12,40 @@
 
 ---
 
+### 2026-03-10 - Codex
+- Alcance: fase de QA funcional profunda + hardening del frontend centrada en flujos core de store, cuenta, admin y auth.
+- Tipo de intervencion: corrección de bugs reales de UX/flujo + endurecimiento de estados de carga/error + validación E2E de páginas activas.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/cart/CartPage.tsx`
+  - `next-stack/apps/web/src/features/orders/CheckoutPage.tsx`
+  - `next-stack/apps/web/src/features/admin/AdminDashboardPage.tsx`
+  - `next-stack/apps/web/src/features/admin/AdminSettingsHubPage.tsx`
+  - `next-stack/apps/web/src/features/auth/AuthLayout.tsx`
+  - `next-stack/apps/web/src/features/auth/LoginPage.tsx`
+  - `next-stack/apps/web/src/features/auth/RegisterPage.tsx`
+  - `next-stack/apps/web/src/features/auth/ForgotPasswordPage.tsx`
+  - `next-stack/apps/web/src/features/auth/VerifyEmailPage.tsx`
+  - `next-stack/apps/web/src/features/auth/MyAccountPage.tsx`
+  - `next-stack/apps/web/src/features/orders/MyOrdersPage.tsx`
+  - `next-stack/apps/web/src/features/repairs/MyRepairsPage.tsx`
+  - `next-stack/apps/web/src/features/store/StorePage.tsx`
+  - `project-docs/FRONTEND_QA_HARDENING.md`
+  - `project-docs/DECISIONS_LOG.md`
+- ¿Cambio comportamiento funcional?: Si. Se corrigieron CTAs inválidas en checkout, payloads inconsistentes, mapeos de estado incorrectos, validaciones débiles y rutas/anchors de QA defectuosos.
+- Validaciones ejecutadas:
+  - `npm run typecheck --workspace @nico/api`
+  - `npm run typecheck --workspace @nico/web`
+  - `npm run build --workspace @nico/api`
+  - `npm run build --workspace @nico/web`
+  - `npm run smoke:backend`
+  - `npm run smoke:web`
+  - `npm run qa:route-parity`
+  - `npm run qa:frontend:e2e`
+- Riesgos / notas:
+  - el hardening se enfocó en flujos core; todavía puede quedar copy/encoding residual en pantallas secundarias no auditadas a fondo en esta fase.
+  - no se tocaron APIs ni arquitectura fuera de lo estrictamente necesario para mantener coherencia frontend.
+
+---
 ### 2026-03-09 - Codex
 - Alcance: fase final corta de polish visual centrada en quick wins activos, barrido final de copy/encoding y retiro de residuos legacy visibles.
 - Tipo de intervencion: consolidación visual final sobre vistas activas de detalle y catálogo + limpieza semántica/copy.
@@ -310,3 +344,5 @@
   - el warning de chunk grande desaparecio en el build actual
   - el chunk principal JS bajo de ~`769.29 kB` a ~`317.30 kB`
   - no se agregaron `manualChunks`; el problema se resolvio atacando la causa principal del bundle inicial
+
+

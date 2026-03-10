@@ -252,7 +252,7 @@ export function StorePage() {
       : null;
 
   return (
-    <PageShell context="store" className="page-shell--store-front">
+    <PageShell context="store" className="page-shell--store-front" data-store-shell>
       <div className="store-front-band store-front-band--flush" style={heroVisualVars}>
         <section className="store-front-hero">
           <picture className="store-front-hero__picture" aria-hidden="true">

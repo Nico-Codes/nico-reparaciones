@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+﻿import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -8,62 +8,24 @@ import { PageHeader } from '@/components/ui/page-header';
 import { PageShell } from '@/components/ui/page-shell';
 import { SectionCard } from '@/components/ui/section-card';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { orderStatusLabel, orderStatusTone, normalizeOrderStatus } from '@/features/orders/order-ui';
+import { repairStatusLabel, repairStatusTone } from '@/features/repairs/repair-ui';
 import { adminApi, type AdminDashboardResponse } from './api';
 
-type RangeKey = '7' | '30' | '90';
 type BadgeTone = 'neutral' | 'info' | 'accent' | 'success' | 'warning' | 'danger';
 
-const ORDER_STATUS_LABELS: Record<string, string> = {
-  PENDING: 'Pendiente',
-  CONFIRMED: 'Confirmado',
-  PREPARING: 'Preparando',
-  READY_PICKUP: 'Listo para retirar',
-  DELIVERED: 'Entregado',
-  CANCELLED: 'Cancelado',
-};
+const ORDER_STATUS_KEYS = ['PENDIENTE', 'CONFIRMADO', 'PREPARANDO', 'LISTO_RETIRO', 'ENTREGADO', 'CANCELADO'] as const;
+const REPAIR_STATUS_KEYS = ['RECEIVED', 'DIAGNOSING', 'WAITING_APPROVAL', 'REPAIRING', 'READY_PICKUP', 'DELIVERED', 'CANCELLED'] as const;
 
-const REPAIR_STATUS_LABELS: Record<string, string> = {
-  RECEIVED: 'Recibido',
-  DIAGNOSING: 'Diagnosticando',
-  WAITING_APPROVAL: 'Esperando aprobación',
-  REPAIRING: 'En reparación',
-  IN_REPAIR: 'En reparación',
-  READY_PICKUP: 'Listo para retirar',
-  DELIVERED: 'Entregado',
-  CANCELLED: 'Cancelado',
-};
-
-const ORDER_STATUS_TONES: Record<string, BadgeTone> = {
-  PENDING: 'warning',
-  CONFIRMED: 'info',
-  PREPARING: 'accent',
-  READY_PICKUP: 'success',
-  DELIVERED: 'neutral',
-  CANCELLED: 'danger',
-};
-
-const REPAIR_STATUS_TONES: Record<string, BadgeTone> = {
-  RECEIVED: 'warning',
-  DIAGNOSING: 'info',
-  WAITING_APPROVAL: 'accent',
-  REPAIRING: 'accent',
-  IN_REPAIR: 'accent',
-  READY_PICKUP: 'success',
-  DELIVERED: 'neutral',
-  CANCELLED: 'danger',
-};
-
-const RANGE_OPTIONS: Array<{ key: RangeKey; label: string }> = [
-  { key: '7', label: '7 días' },
-  { key: '30', label: '30 días' },
-  { key: '90', label: '90 días' },
-];
+function formatGeneratedAt(value: string) {
+  const date = new Date(value);
+  return date.toLocaleString('es-AR', { dateStyle: 'medium', timeStyle: 'short' });
+}
 
 export function AdminDashboardPage() {
   const [data, setData] = useState<AdminDashboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [range, setRange] = useState<RangeKey>('30');
 
   useEffect(() => {
     let mounted = true;
@@ -93,40 +55,23 @@ export function AdminDashboardPage() {
   const summary = useMemo(() => {
     if (!data) return null;
 
-    const deliveredOrders = data.recent.orders.filter((order) => order.status === 'DELIVERED');
+    const deliveredOrders = data.recent.orders.filter((order) => normalizeOrderStatus(order.status) === 'ENTREGADO');
     const deliveredRevenue = deliveredOrders.reduce((acc, order) => acc + order.total, 0);
     const ticketAverage = deliveredOrders.length ? deliveredRevenue / deliveredOrders.length : 0;
-    const orderStatusCounts: Record<string, number> = {
-      PENDING: 0,
-      CONFIRMED: 0,
-      PREPARING: 0,
-      READY_PICKUP: 0,
-      DELIVERED: 0,
-      CANCELLED: 0,
-    };
-
-    const repairStatusCounts: Record<string, number> = {
-      RECEIVED: 0,
-      DIAGNOSING: 0,
-      WAITING_APPROVAL: 0,
-      REPAIRING: 0,
-      READY_PICKUP: 0,
-      DELIVERED: 0,
-      CANCELLED: 0,
-    };
+    const orderStatusCounts = Object.fromEntries(ORDER_STATUS_KEYS.map((status) => [status, 0])) as Record<(typeof ORDER_STATUS_KEYS)[number], number>;
+    const repairStatusCounts = Object.fromEntries(REPAIR_STATUS_KEYS.map((status) => [status, 0])) as Record<(typeof REPAIR_STATUS_KEYS)[number], number>;
 
     for (const order of data.recent.orders) {
-      if (order.status in orderStatusCounts) orderStatusCounts[order.status] += 1;
+      const key = normalizeOrderStatus(order.status) as (typeof ORDER_STATUS_KEYS)[number];
+      if (key in orderStatusCounts) orderStatusCounts[key] += 1;
     }
 
     for (const repair of data.recent.repairs) {
-      const key = repair.status === 'IN_REPAIR' ? 'REPAIRING' : repair.status;
+      const key = (repair.status === 'IN_REPAIR' ? 'REPAIRING' : repair.status) as (typeof REPAIR_STATUS_KEYS)[number];
       if (key in repairStatusCounts) repairStatusCounts[key] += 1;
     }
 
-    const deliveredRepairs = data.recent.repairs.filter((repair) =>
-      repair.status === 'DELIVERED',
-    );
+    const deliveredRepairs = data.recent.repairs.filter((repair) => repair.status === 'DELIVERED');
 
     return {
       deliveredRevenue,
@@ -175,23 +120,15 @@ export function AdminDashboardPage() {
       >
         <div className="space-y-3">
           <div>
-            <div className="text-sm font-extrabold text-zinc-950">Rango de análisis</div>
+            <div className="text-sm font-extrabold text-zinc-950">Estado operativo</div>
             <p className="mt-1 text-sm text-zinc-600">
-              Ajusta el contexto de lectura para métricas y actividad reciente.
+              Resumen consolidado del backend para pedidos, reparaciones, stock y alertas activas.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            {RANGE_OPTIONS.map((option) => (
-              <Button
-                key={option.key}
-                type="button"
-                variant={range === option.key ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setRange(option.key)}
-              >
-                {option.label}
-              </Button>
-            ))}
+            <StatusBadge tone="info" label={data ? `Actualizado ${formatGeneratedAt(data.generatedAt)}` : 'Actualizando panel'} />
+            <StatusBadge tone="warning" label={`${summary?.pendingApprovals ?? 0} aprobaciones pendientes`} />
+            <StatusBadge tone="neutral" label={`${data?.metrics.orders.pendingFlow ?? 0} pedidos en flujo`} />
           </div>
         </div>
       </FilterBar>
@@ -214,17 +151,17 @@ export function AdminDashboardPage() {
             <MetricCard
               title="Pedidos creados"
               value={String(data.metrics.orders.createdToday)}
-              hint={`Rango activo: ${range} días`}
+              hint="Nuevos pedidos registrados en la jornada actual."
               details={[
                 `En flujo: ${data.metrics.orders.pendingFlow}`,
-                `Listos para retirar: ${summary.orderStatusCounts.READY_PICKUP}`,
+                `Listos para retirar: ${summary.orderStatusCounts.LISTO_RETIRO}`,
               ]}
               badge={<StatusBadge tone="info" label="Operación" />}
             />
             <MetricCard
               title="Ingresos entregados"
               value={`$ ${summary.deliveredRevenue.toLocaleString('es-AR')}`}
-              hint="Pedidos entregados dentro del rango."
+              hint="Pedidos entregados dentro del panel reciente."
               details={[
                 `Ticket promedio: $ ${Math.round(summary.ticketAverage).toLocaleString('es-AR')}`,
                 `WhatsApp pendientes: ${summary.whatsappPending}`,
@@ -234,7 +171,7 @@ export function AdminDashboardPage() {
             <MetricCard
               title="Reparaciones activas"
               value={String(data.metrics.repairs.open)}
-              hint="Equipos en curso y esperando definición."
+              hint="Equipos en curso o esperando definición del cliente."
               details={[
                 `Nuevas en el día: ${data.metrics.repairs.createdToday}`,
                 `Esperando aprobación: ${summary.pendingApprovals}`,
@@ -258,7 +195,7 @@ export function AdminDashboardPage() {
       <div className="grid gap-4 xl:grid-cols-2">
         <SectionCard
           title="Alertas operativas"
-          description="Monitorea pedidos y reparaciones que requieren seguimiento."
+          description="Monitoreá pedidos y reparaciones que requieren seguimiento."
           actions={
             <Button variant="outline" size="sm" asChild>
               <Link to="/admin/alertas">Ver alertas</Link>
@@ -276,7 +213,7 @@ export function AdminDashboardPage() {
                 >
                   <div>
                     <div className="text-sm font-bold text-zinc-950">{alert.title}</div>
-                    <div className="mt-1 text-sm text-zinc-600">Valor actual reportado por el backend.</div>
+                    <div className="mt-1 text-sm text-zinc-600">Valor actual informado por el backend.</div>
                   </div>
                   <StatusBadge
                     tone={alert.severity === 'high' ? 'danger' : alert.severity === 'medium' ? 'warning' : 'info'}
@@ -312,19 +249,19 @@ export function AdminDashboardPage() {
       <div className="grid gap-4 xl:grid-cols-3">
         <StatusSummaryCard
           title="Pedidos por estado"
-          items={Object.entries(summary?.orderStatusCounts ?? {}).map(([status, count]) => ({
-            label: ORDER_STATUS_LABELS[status] ?? status,
-            count,
-            tone: ORDER_STATUS_TONES[status] ?? 'neutral',
+          items={ORDER_STATUS_KEYS.map((status) => ({
+            label: orderStatusLabel(status),
+            count: summary?.orderStatusCounts[status] ?? 0,
+            tone: orderStatusTone(status),
           }))}
           actionTo="/admin/orders"
         />
         <StatusSummaryCard
           title="Reparaciones por estado"
-          items={Object.entries(summary?.repairStatusCounts ?? {}).map(([status, count]) => ({
-            label: REPAIR_STATUS_LABELS[status] ?? status,
-            count,
-            tone: REPAIR_STATUS_TONES[status] ?? 'neutral',
+          items={REPAIR_STATUS_KEYS.map((status) => ({
+            label: repairStatusLabel(status),
+            count: summary?.repairStatusCounts[status] ?? 0,
+            tone: repairStatusTone(status),
           }))}
           actionTo="/admin/repairs"
         />
@@ -342,28 +279,28 @@ export function AdminDashboardPage() {
           ) : data.recent.orders.length === 0 ? (
             <EmptyState
               title="Todavía no hay actividad de ventas"
-              description="Cuando entren pedidos, aquí aparecerá una lectura rápida de los productos más recientes."
+              description="Cuando entren pedidos, acá aparecerá una lectura rápida de los productos más recientes."
             />
           ) : (
             <div className="grid gap-3">
-              {data.recent.orders.slice(0, 3).map((order) => (
-                <div key={order.id} className="rounded-2xl border border-zinc-100 bg-zinc-50 px-4 py-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="space-y-1">
-                      <div className="text-sm font-bold text-zinc-950">
-                        {order.itemsPreview[0]?.name ?? 'Pedido sin ítems'}
+              {data.recent.orders.slice(0, 3).map((order) => {
+                const normalizedStatus = normalizeOrderStatus(order.status);
+                return (
+                  <div key={order.id} className="rounded-2xl border border-zinc-100 bg-zinc-50 px-4 py-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="space-y-1">
+                        <div className="text-sm font-bold text-zinc-950">
+                          {order.itemsPreview[0]?.name ?? 'Pedido sin ítems'}
+                        </div>
+                        <div className="text-sm text-zinc-600">
+                          Pedido {order.id.slice(0, 8)} · {new Date(order.createdAt).toLocaleDateString('es-AR')}
+                        </div>
                       </div>
-                      <div className="text-sm text-zinc-600">
-                        Pedido {order.id.slice(0, 8)} · {new Date(order.createdAt).toLocaleDateString('es-AR')}
-                      </div>
+                      <StatusBadge tone={orderStatusTone(normalizedStatus)} label={orderStatusLabel(normalizedStatus)} />
                     </div>
-                    <StatusBadge
-                      tone={ORDER_STATUS_TONES[order.status] ?? 'neutral'}
-                      label={ORDER_STATUS_LABELS[order.status] ?? order.status}
-                    />
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </SectionCard>
@@ -375,21 +312,24 @@ export function AdminDashboardPage() {
           description="Últimos pedidos registrados en el sistema."
           items={data?.recent.orders ?? []}
           emptyTitle="No hay pedidos recientes"
-          emptyDescription="Cuando se registren ventas, aparecerán aquí para seguimiento rápido."
-          renderItem={(order) => (
-            <div className="flex items-start justify-between gap-3 rounded-2xl border border-zinc-100 bg-zinc-50 px-4 py-3">
-              <div className="space-y-1">
-                <div className="text-sm font-bold text-zinc-950">Pedido {order.id.slice(0, 8)}</div>
-                <div className="text-sm text-zinc-600">
-                  {order.user?.name ?? 'Cliente sin cuenta'} · {new Date(order.createdAt).toLocaleString('es-AR')}
+          emptyDescription="Cuando se registren ventas, aparecerán acá para seguimiento rápido."
+          renderItem={(order) => {
+            const normalizedStatus = normalizeOrderStatus(order.status);
+            return (
+              <div className="flex items-start justify-between gap-3 rounded-2xl border border-zinc-100 bg-zinc-50 px-4 py-3">
+                <div className="space-y-1">
+                  <div className="text-sm font-bold text-zinc-950">Pedido {order.id.slice(0, 8)}</div>
+                  <div className="text-sm text-zinc-600">
+                    {order.user?.name ?? 'Cliente sin cuenta'} · {new Date(order.createdAt).toLocaleString('es-AR')}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <StatusBadge tone={orderStatusTone(normalizedStatus)} size="sm" label={orderStatusLabel(normalizedStatus)} />
+                  <div className="mt-2 text-sm font-bold text-zinc-950">$ {order.total.toLocaleString('es-AR')}</div>
                 </div>
               </div>
-              <div className="text-right">
-                <StatusBadge tone={ORDER_STATUS_TONES[order.status] ?? 'neutral'} size="sm" label={ORDER_STATUS_LABELS[order.status] ?? order.status} />
-                <div className="mt-2 text-sm font-bold text-zinc-950">$ {order.total.toLocaleString('es-AR')}</div>
-              </div>
-            </div>
-          )}
+            );
+          }}
           actionTo="/admin/orders"
         />
 
@@ -399,21 +339,24 @@ export function AdminDashboardPage() {
           items={data?.recent.repairs ?? []}
           emptyTitle="No hay reparaciones recientes"
           emptyDescription="Cuando entren reparaciones, el panel mostrará los movimientos más recientes."
-          renderItem={(repair) => (
-            <div className="flex items-start justify-between gap-3 rounded-2xl border border-zinc-100 bg-zinc-50 px-4 py-3">
-              <div className="space-y-1">
-                <div className="text-sm font-bold text-zinc-950">{repair.customerName}</div>
-                <div className="text-sm text-zinc-600">
-                  {[repair.deviceBrand, repair.deviceModel].filter(Boolean).join(' · ') || 'Equipo sin detalle'}
+          renderItem={(repair) => {
+            const normalizedStatus = repair.status === 'IN_REPAIR' ? 'REPAIRING' : repair.status;
+            return (
+              <div className="flex items-start justify-between gap-3 rounded-2xl border border-zinc-100 bg-zinc-50 px-4 py-3">
+                <div className="space-y-1">
+                  <div className="text-sm font-bold text-zinc-950">{repair.customerName}</div>
+                  <div className="text-sm text-zinc-600">
+                    {[repair.deviceBrand, repair.deviceModel].filter(Boolean).join(' · ') || 'Equipo sin detalle'}
+                  </div>
                 </div>
+                <StatusBadge
+                  tone={repairStatusTone(normalizedStatus)}
+                  size="sm"
+                  label={repairStatusLabel(normalizedStatus)}
+                />
               </div>
-              <StatusBadge
-                tone={REPAIR_STATUS_TONES[repair.status === 'IN_REPAIR' ? 'REPAIRING' : repair.status] ?? 'neutral'}
-                size="sm"
-                label={REPAIR_STATUS_LABELS[repair.status] ?? repair.status}
-              />
-            </div>
-          )}
+            );
+          }}
           actionTo="/admin/repairs"
         />
       </div>

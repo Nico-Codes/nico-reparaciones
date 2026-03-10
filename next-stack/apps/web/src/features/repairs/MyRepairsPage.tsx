@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Wrench } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -36,7 +36,7 @@ export function MyRepairsPage() {
   }, []);
 
   return (
-    <PageShell context="account">
+    <PageShell context="account" data-my-repairs-page>
       <PageHeader
         context="account"
         eyebrow="Servicio técnico"

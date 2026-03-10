@@ -20,7 +20,17 @@ Registrar decisiones tecnicas confirmadas para evitar dependencia de memoria ora
 
 ---
 
-## Entradas
+### [DL-0029]
+- Fecha: 2026-03-10
+- Estado: aceptada
+- Tema: hardening funcional del frontend sobre flujos críticos
+- Contexto: el frontend ya estaba visualmente consolidado, pero persistían bugs reales de UX/funcionamiento en store, auth, cuenta y admin: checkout usando líneas no normalizadas, dashboard con estados mal mapeados, CTAs que aparentaban deshabilitarse sin hacerlo de verdad, validaciones locales débiles y anclas de QA ausentes en páginas activas.
+- Decisión: corregir los flujos críticos sin rediseñar la UI, reforzando validación local, manejo de errores, deshabilitación real de acciones, consistencia entre resumen y payload, y reutilizando helpers compartidos de estados como fuente de verdad.
+- Impacto: reduce errores silenciosos en compra, elimina métricas engañosas en admin, mejora claridad de auth/cuenta y fortalece la automatización QA del frontend.
+- Alternativas consideradas: limitarse a cambios de copy o dejar el hardening para una fase posterior; descartado por mantener bugs reales en flujos del core del producto.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/cart/CartPage.tsx`, `next-stack/apps/web/src/features/orders/CheckoutPage.tsx`, `next-stack/apps/web/src/features/orders/MyOrdersPage.tsx`, `next-stack/apps/web/src/features/repairs/MyRepairsPage.tsx`, `next-stack/apps/web/src/features/auth/{AuthLayout,LoginPage,RegisterPage,ForgotPasswordPage,VerifyEmailPage,MyAccountPage}.tsx`, `next-stack/apps/web/src/features/admin/{AdminDashboardPage,AdminSettingsHubPage}.tsx`, `project-docs/FRONTEND_QA_HARDENING.md`.
+- Validacion requerida: typecheck/build de `@nico/api` y `@nico/web`, `smoke:backend`, `smoke:web`, `qa:route-parity` y `qa:frontend:e2e`.
+- Responsable: Codex + operador humano
 
 ### [DL-0027]
 - Fecha: 2026-03-09
@@ -153,3 +163,5 @@ Registrar decisiones tecnicas confirmadas para evitar dependencia de memoria ora
 - Archivos / modulos afectados: `project-docs/MIGRATION_CLOSURE.md`, `project-docs/MIGRATION_STATUS.md`, `README.md`, `AGENTS.md`, `CHANGELOG_AI.md`, historicos documentales retirados.
 - Validacion requerida: gate canonico del nuevo stack.
 - Responsable: Codex + operador humano
+
+
