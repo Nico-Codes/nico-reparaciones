@@ -20,6 +20,61 @@ Registrar decisiones tecnicas confirmadas para evitar dependencia de memoria ora
 
 ---
 
+### [DL-0033]
+- Fecha: 2026-03-11
+- Estado: aceptada
+- Tema: hardening adicional de modulos admin de negocio con foco en usuarios, venta rapida y catalogo operativo
+- Contexto: tras el endurecimiento del core, todavia quedaban riesgos reales en modulos admin activos: cambio de rol sobre la propia cuenta desde UI, venta rapida demasiado permisiva frente a coincidencias parciales/lineas invalidas y acciones menores de productos/categorias que seguian expuestas a submits redundantes.
+- Decision: reforzar estos modulos sin reabrir una fase grande, priorizando proteccion contra respuestas stale, mutaciones duplicadas, validacion previa a submit y feedback operativo claro por entidad o flujo.
+- Impacto: baja el riesgo de errores silenciosos en mostrador/operacion, evita UX enganosa en acciones sensibles y deja la automatizacion frontend menos fragil para futuras iteraciones.
+- Alternativas consideradas: dejar estos casos como backlog menor o confiar solo en validacion backend; descartado por seguir exponiendo errores evitables en la capa operativa diaria del admin.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/admin/AdminUsersPage.tsx`, `next-stack/apps/web/src/features/orders/AdminQuickSalesPage.tsx`, `next-stack/apps/web/src/features/catalogAdmin/AdminProductsPage.tsx`, `next-stack/apps/web/src/features/catalogAdmin/AdminCategoriesPage.tsx`, `project-docs/FRONTEND_QA_HARDENING.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: typecheck/build de `@nico/api` y `@nico/web`, `smoke:backend`, `smoke:web`, `qa:route-parity` y `qa:frontend:e2e`.
+- Responsable: Codex + operador humano
+
+---
+
+### [DL-0032]
+- Fecha: 2026-03-11
+- Estado: aceptada
+- Tema: alta de reparaciones expuesta de forma nativa en el admin frontend
+- Contexto: el backend ya soportaba `POST /repairs/admin` y el frontend tenía `repairsApi.adminCreate(...)`, pero no existían ni una ruta real, ni una pantalla de alta, ni un CTA visible para crear reparaciones desde el panel. El alias legacy `/admin/reparaciones/crear` además redirigía al listado, lo que dejaba el flujo incompleto.
+- Decision: agregar la ruta real protegida `/admin/repairs/create`, crear una pantalla admin de alta alineada al design system vigente, exponer el CTA `Nueva reparacion` en `AdminRepairsListPage` y corregir el alias `/admin/reparaciones/crear` para que redirija a la nueva ruta.
+- Impacto: el panel admin recupera un flujo operativo completo de ingreso de reparaciones sin depender de aliases ambiguos ni wiring pendiente, reutilizando la API real ya disponible y redirigiendo al detalle creado para continuar la gestion del caso.
+- Alternativas consideradas: dejar solo el alias legacy o exponer un formulario inline dentro del listado; descartado por ocultar el flujo real y por mezclar alta con seguimiento operativo en la misma vista.
+- Archivos / modulos afectados: `next-stack/apps/web/src/App.tsx`, `next-stack/apps/web/src/features/repairs/{api,AdminRepairsListPage,AdminRepairCreatePage,AdminRepairDetailPage}.tsx`, `next-stack/scripts/qa-frontend-e2e.mjs`, `CHANGELOG_AI.md`.
+- Validacion requerida: typecheck/build de `@nico/api` y `@nico/web`, `smoke:web`, `smoke:backend`, `qa:route-parity` y una validacion puntual del flujo frontend crear -> detalle.
+- Responsable: Codex + operador humano
+
+---
+
+### [DL-0031]
+- Fecha: 2026-03-11
+- Estado: aceptada
+- Tema: quick wins funcionales sobre públicas de reparación y módulos admin secundarios
+- Contexto: después del hardening del core seguían pendientes menores reales fuera del bloque principal: páginas públicas de reparación con mojibake y feedback ambiguo, usuarios admin sin protección contra respuestas stale/cambios duplicados, venta rápida con búsquedas viejas o CTAs demasiado permisivos y 2FA admin con copy roto y validación local floja.
+- Decision: resolver el backlog menor sin abrir una fase grande, priorizando correcciones de UX/estado reales sobre rediseño: normalizar copy, mover páginas públicas a primitives vigentes, agregar protección por `requestId` donde hacía falta y endurecer estados `disabled`/errores en módulos secundarios activos.
+- Decision complementaria: estabilizar la automatización de frontend en venta rápida usando selectores `data-qa` en vez de placeholders visibles, para que futuros ajustes de copy no rompan `qa:frontend:e2e`.
+- Impacto: baja ruido residual visible, reduce dobles acciones y mejora la claridad de flujos secundarios sin tocar backend ni reabrir deuda estructural del frontend.
+- Alternativas consideradas: dejar estos pendientes como deuda menor o abordarlos con otra fase visual más grande; descartado por el costo acumulado de bugs pequeños pero visibles en pantallas activas.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/repairs/{PublicRepairLookupPage,PublicRepairQuoteApprovalPage}.tsx`, `next-stack/apps/web/src/features/admin/AdminUsersPage.tsx`, `next-stack/apps/web/src/features/orders/AdminQuickSalesPage.tsx`, `next-stack/apps/web/src/features/admin/Admin2faSecurityPage.tsx`, `project-docs/FRONTEND_QA_HARDENING.md`.
+- Validacion requerida: typecheck/build de `@nico/api` y `@nico/web`, `smoke:web` y una validación adicional razonable sobre auth/admin secundarios si los cambios lo justifican.
+- Responsable: Codex + operador humano
+
+---
+
+### [DL-0030]
+- Fecha: 2026-03-10
+- Estado: aceptada
+- Tema: guards reactivos y protección contra respuestas/mutaciones obsoletas en admin frontend
+- Contexto: tras el primer hardening del frontend seguían existiendo casos borde reales: vistas protegidas que no reaccionaban a cambios de sesión ya iniciados, páginas de admin expuestas a resultados stale durante filtros rápidos y acciones por entidad que podían dispararse dos veces.
+- Decisión: endurecer el frontend sin rediseñar la UI, haciendo reactivos `RequireAuth` y `RequireAdmin`, separando el estado de verificación de email según contexto real y agregando protecciones por `requestId` / `pending*` en módulos admin donde el usuario puede cambiar filtros o mutar entidades con rapidez.
+- Impacto: reduce exposición a estados inconsistentes, evita acciones duplicadas y hace más robusta la navegación protegida sin tocar backend ni complejizar la arquitectura.
+- Alternativas consideradas: confiar en refresh manual o en el eventual estado del backend para corregir la UI; descartado por dejar bugs silenciosos en flujos reales de uso.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/auth/{RequireAuth,RequireAdmin,VerifyEmailPage}.tsx`, `next-stack/apps/web/src/features/orders/AdminOrdersPage.tsx`, `next-stack/apps/web/src/features/catalogAdmin/{AdminProductsPage,AdminCategoriesPage}.tsx`, `project-docs/FRONTEND_QA_HARDENING.md`.
+- Validacion requerida: typecheck/build de `@nico/api` y `@nico/web`, `smoke:backend`, `smoke:web`, `qa:route-parity` y `qa:frontend:e2e`.
+- Responsable: Codex + operador humano
+
 ### [DL-0029]
 - Fecha: 2026-03-10
 - Estado: aceptada
@@ -102,6 +157,18 @@ Registrar decisiones tecnicas confirmadas para evitar dependencia de memoria ora
 - Alternativas consideradas: agregar `manualChunks` en Vite sin tocar el router o silenciar el warning; descartado por atacar el síntoma en vez de la causa principal.
 - Archivos / modulos afectados: `next-stack/apps/web/src/App.tsx`, `project-docs/FRONTEND_PERFORMANCE.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: typecheck, build, `smoke:web` y `qa:route-parity`.
+- Responsable: Codex + operador humano
+
+### [DL-0029]
+- Fecha: 2026-03-11
+- Estado: aceptada
+- Tema: endurecer el flujo admin de alta y edicion de reparaciones
+- Contexto: el frontend admin ya tenia alta real de reparaciones, pero el create/detail seguian con validacion local floja, manejo de errores mezclado, posibilidad de submits redundantes y riesgo de respuestas stale al refrescar detalle o catalogo.
+- Decisión: fortalecer `AdminRepairCreatePage` y `AdminRepairDetailPage` con validaciones locales alineadas al backend real, separacion de errores de carga/guardado, proteccion contra doble submit, refresco consistente del detalle despues de guardar y fallback claro entre catalogo tecnico y carga manual.
+- Impacto: el modulo admin de reparaciones queda mas confiable para uso de mostrador/taller, evita UX engañosa y reduce riesgo de guardar datos parciales o dejar historial desactualizado en pantalla.
+- Alternativas consideradas: dejar el flujo actual y tratar los casos borde solo desde QA; descartado por seguir exponiendo errores silenciosos y estados inconsistentes en un modulo operativo.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/repairs/AdminRepairCreatePage.tsx`, `next-stack/apps/web/src/features/repairs/AdminRepairDetailPage.tsx`, `next-stack/apps/web/src/features/repairs/AdminRepairsListPage.tsx`, `next-stack/apps/web/src/features/repairs/api.ts`, `project-docs/FRONTEND_QA_HARDENING.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: typecheck, build, `smoke:backend`, `smoke:web`, `qa:route-parity`, `qa:frontend:e2e` y una prueba dirigida `listado -> crear -> detalle -> editar/guardar`.
 - Responsable: Codex + operador humano
 
 ### [DL-0022]

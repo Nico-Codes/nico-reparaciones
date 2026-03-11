@@ -1,5 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
+import { LoadingBlock } from '@/components/ui/loading-block';
+import { PageHeader } from '@/components/ui/page-header';
+import { PageShell } from '@/components/ui/page-shell';
+import { SectionCard } from '@/components/ui/section-card';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { TextAreaField } from '@/components/ui/textarea-field';
+import { TextField } from '@/components/ui/text-field';
 import { adminSecurityApi, type AdminTwoFactorStatus } from './adminSecurityApi';
 
 export function Admin2faSecurityPage() {
@@ -9,7 +18,8 @@ export function Admin2faSecurityPage() {
   const [code, setCode] = useState('');
   const [generatedSecret, setGeneratedSecret] = useState('');
   const [copiedOtpUrl, setCopiedOtpUrl] = useState(false);
-  const [result, setResult] = useState('');
+  const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
 
   useEffect(() => {
     void load();
@@ -17,11 +27,13 @@ export function Admin2faSecurityPage() {
 
   async function load() {
     setLoading(true);
+    setError('');
     try {
-      const res = await adminSecurityApi.twoFactorStatus();
-      setStatus(res);
-    } catch (e) {
-      setResult(e instanceof Error ? e.message : 'Error cargando 2FA');
+      const response = await adminSecurityApi.twoFactorStatus();
+      setStatus(response);
+    } catch (cause) {
+      setStatus(null);
+      setError(cause instanceof Error ? cause.message : 'No pudimos cargar el estado de 2FA.');
     } finally {
       setLoading(false);
     }
@@ -29,48 +41,59 @@ export function Admin2faSecurityPage() {
 
   async function generateSecret() {
     setSubmitting(true);
-    setResult('');
+    setError('');
+    setMessage('');
     try {
-      const res = await adminSecurityApi.twoFactorGenerate();
-      setGeneratedSecret(res.secret);
-      setResult('Secreto 2FA generado. Configúralo en tu app TOTP y valida con un código.');
+      const response = await adminSecurityApi.twoFactorGenerate();
+      setGeneratedSecret(response.secret);
+      setMessage('Se generó un secreto nuevo. Configuralo en tu app TOTP y validalo con un código actual.');
       await load();
-    } catch (e) {
-      setResult(e instanceof Error ? e.message : 'Error generando 2FA');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No pudimos generar el secreto 2FA.');
     } finally {
       setSubmitting(false);
     }
   }
 
   async function enable2fa() {
+    if (code.trim().length < 6) {
+      setError('Ingresá un código TOTP válido de 6 dígitos.');
+      return;
+    }
     setSubmitting(true);
-    setResult('');
+    setError('');
+    setMessage('');
     try {
       await adminSecurityApi.twoFactorEnable(code);
       setCode('');
       setGeneratedSecret('');
       setCopiedOtpUrl(false);
-      setResult('2FA activado correctamente');
+      setMessage('2FA activado correctamente.');
       await load();
-    } catch (e) {
-      setResult(e instanceof Error ? e.message : 'Error activando 2FA');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No pudimos activar 2FA.');
     } finally {
       setSubmitting(false);
     }
   }
 
   async function disable2fa() {
+    if (code.trim().length < 6) {
+      setError('Ingresá un código TOTP válido de 6 dígitos para desactivar 2FA.');
+      return;
+    }
     setSubmitting(true);
-    setResult('');
+    setError('');
+    setMessage('');
     try {
       await adminSecurityApi.twoFactorDisable(code);
       setCode('');
       setGeneratedSecret('');
       setCopiedOtpUrl(false);
-      setResult('2FA desactivado');
+      setMessage('2FA desactivado correctamente.');
       await load();
-    } catch (e) {
-      setResult(e instanceof Error ? e.message : 'Error desactivando 2FA');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No pudimos desactivar 2FA.');
     } finally {
       setSubmitting(false);
     }
@@ -87,134 +110,158 @@ export function Admin2faSecurityPage() {
     try {
       await navigator.clipboard.writeText(status.otpauthUrl);
       setCopiedOtpUrl(true);
+      setMessage('URL otpauth copiada al portapapeles.');
       setTimeout(() => setCopiedOtpUrl(false), 1500);
     } catch {
-      setResult('No se pudo copiar la URL otpauth');
+      setError('No pudimos copiar la URL otpauth.');
     }
   }
 
   return (
-    <div className="store-shell space-y-5">
-      <section className="store-hero">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+    <PageShell context="admin" className="space-y-6" data-admin-2fa-page>
+      <PageHeader
+        context="admin"
+        eyebrow="Seguridad"
+        title="Autenticación de dos factores"
+        subtitle="Activá verificación TOTP para reforzar el acceso al panel administrativo."
+        actions={
+          <>
+            <StatusBadge tone={enabled ? 'success' : 'warning'} label={enabled ? '2FA activo' : '2FA inactivo'} />
+            <Button asChild variant="outline" size="sm">
+              <Link to="/admin/configuraciones">Volver a configuración</Link>
+            </Button>
+          </>
+        }
+      />
+
+      {error ? (
+        <div className="ui-alert ui-alert--danger">
           <div>
-            <h1 className="text-2xl font-black tracking-tight text-zinc-900">Seguridad 2FA (Admin)</h1>
-            <p className="mt-1 text-sm text-zinc-600">
-              Activa verificación TOTP para reforzar el acceso al panel admin.
-            </p>
+            <span className="ui-alert__title">No pudimos completar la acción.</span>
+            <div className="ui-alert__text">{error}</div>
           </div>
-          <Link to="/admin/configuraciones" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">
-            Volver a configuración
-          </Link>
         </div>
-      </section>
+      ) : null}
+      {message ? (
+        <div className="ui-alert ui-alert--success">
+          <div>
+            <span className="ui-alert__title">Estado actualizado</span>
+            <div className="ui-alert__text">{message}</div>
+          </div>
+        </div>
+      ) : null}
 
-      {result ? <div className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-800">{result}</div> : null}
-
-      <section className="card overflow-hidden">
-        <div className="card-body !p-0">
-          <div className="flex flex-wrap items-start justify-between gap-3 border-b border-zinc-100 px-4 py-4 md:px-5">
-            <div>
-              <h2 className="text-xl font-black tracking-tight text-zinc-900">Estado actual</h2>
-              <p className="mt-1 text-sm text-zinc-500">Cuenta: {accountEmail}</p>
-            </div>
-            <span className="inline-flex h-7 items-center rounded-full border border-zinc-200 bg-zinc-50 px-3 text-sm font-black text-zinc-800">
-              {enabled ? 'Activo' : 'Inactivo'}
-            </span>
+      {loading ? (
+        <SectionCard title="Cargando seguridad" description="Traemos el estado actual del factor extra para esta cuenta.">
+          <LoadingBlock label="Cargando estado de 2FA" lines={4} />
+        </SectionCard>
+      ) : !status ? (
+        <EmptyState
+          title="No pudimos recuperar el estado de 2FA"
+          description="Probá actualizar la página o revisá la configuración de seguridad."
+          actions={
+            <Button type="button" onClick={() => void load()}>
+              Reintentar
+            </Button>
+          }
+        />
+      ) : (
+        <SectionCard
+          title="Estado actual"
+          description={`Cuenta administradora: ${accountEmail}`}
+          actions={<StatusBadge tone={enabled ? 'success' : 'warning'} label={enabled ? 'Protegida' : 'Pendiente'} />}
+        >
+          <div
+            className={`rounded-2xl px-4 py-4 text-sm ${
+              enabled ? 'border border-emerald-300 bg-emerald-50 text-emerald-900' : 'border border-amber-300 bg-amber-50 text-amber-900'
+            }`}
+          >
+            {enabled
+              ? 'El panel ya exige un código TOTP además de la contraseña al iniciar sesión.'
+              : 'Todavía no hay doble factor activo. Configuralo para sumar una capa real de seguridad.'}
           </div>
 
-          <div className="space-y-4 px-4 py-4 md:px-5 md:py-5">
-            <div className={`rounded-2xl px-4 py-4 text-sm ${enabled ? 'border border-emerald-300 bg-emerald-50 text-emerald-900' : 'border border-amber-300 bg-amber-50 text-amber-900'}`}>
-              {enabled
-                ? 'Tu panel admin tiene 2FA activo. Se pedirá código TOTP al iniciar sesión.'
-                : 'Tu panel admin aún no tiene doble factor. Actívalo para bloquear accesos aunque filtren tu contraseña.'}
-            </div>
+          {!enabled ? (
+            <div className="space-y-4">
+              <Button type="button" onClick={() => void generateSecret()} disabled={loading || submitting}>
+                {submitting ? 'Procesando...' : 'Generar secreto 2FA'}
+              </Button>
 
-            {!enabled ? (
-              <>
-                <button
-                  type="button"
-                  onClick={() => void generateSecret()}
-                  disabled={loading || submitting}
-                  className="btn-primary !h-11 w-full !rounded-2xl text-sm font-bold"
-                >
-                  {submitting ? 'Procesando...' : 'Generar secreto 2FA'}
-                </button>
+              {status.hasPendingSecret || generatedSecret ? (
+                <div className="space-y-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+                  <div>
+                    <div className="text-sm font-black text-zinc-900">Configurá tu app autenticadora</div>
+                    <div className="mt-1 text-sm text-zinc-600">Escaneá el QR o copiá la URL `otpauth://` en tu app TOTP preferida.</div>
+                  </div>
 
-                {(status?.hasPendingSecret || generatedSecret) ? (
-                  <div className="space-y-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-                    <div>
-                      <div className="text-sm font-black text-zinc-900">Configura tu app autenticadora</div>
-                      <div className="mt-1 text-sm text-zinc-600">Copia el secreto o usa la URL `otpauth://`.</div>
-                    </div>
-                    {qrUrl ? (
-                      <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
-                        <div className="rounded-2xl border border-zinc-200 bg-white p-2 shadow-sm">
-                          <img
-                            src={qrUrl}
-                            alt="QR 2FA"
-                            className="h-40 w-40 rounded-lg object-contain sm:h-44 sm:w-44"
-                          />
-                        </div>
-                        <div className="text-sm text-zinc-600">
-                          Escanea este QR con Google Authenticator, Authy u otra app TOTP compatible.
-                        </div>
+                  {qrUrl ? (
+                    <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+                      <div className="rounded-2xl border border-zinc-200 bg-white p-2 shadow-sm">
+                        <img src={qrUrl} alt="QR de autenticación 2FA" className="h-40 w-40 rounded-lg object-contain sm:h-44 sm:w-44" />
                       </div>
-                    ) : null}
-                    <div className="rounded-xl border border-zinc-200 bg-white px-3 py-2 font-mono text-sm text-zinc-900">
-                      {generatedSecret || status?.pendingSecretMasked || '(secreto oculto)'}
+                      <div className="text-sm text-zinc-600">Compatible con Google Authenticator, Authy y cualquier app TOTP estándar.</div>
                     </div>
-                    {status?.otpauthUrl ? (
-                      <div className="space-y-2">
-                        <textarea
-                          readOnly
-                          value={status.otpauthUrl}
-                          rows={3}
-                          className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-700"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => void copyOtpUrl()}
-                          className="btn-outline !h-10 !rounded-xl px-4 text-sm font-bold"
-                        >
-                          {copiedOtpUrl ? 'URL copiada' : 'Copiar URL otpauth'}
-                        </button>
-                      </div>
-                    ) : null}
-                    <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
-                      <input
-                        value={code}
-                        onChange={(e) => setCode(e.target.value)}
-                        placeholder="Código de 6 dígitos"
-                        className="h-11 rounded-2xl border border-zinc-200 px-3 text-sm"
+                  ) : null}
+
+                  <TextField
+                    label="Secreto generado"
+                    value={generatedSecret || status.pendingSecretMasked || '(secreto oculto)'}
+                    readOnly
+                  />
+
+                  {status.otpauthUrl ? (
+                    <div className="space-y-2">
+                      <TextAreaField
+                        label="URL otpauth"
+                        value={status.otpauthUrl}
+                        rows={3}
+                        readOnly
                       />
-                      <button type="button" onClick={() => void enable2fa()} disabled={submitting || code.trim().length < 6} className="btn-primary !h-11 !rounded-2xl px-4 text-sm font-bold">
+                      <Button type="button" variant="outline" onClick={() => void copyOtpUrl()}>
+                        {copiedOtpUrl ? 'URL copiada' : 'Copiar URL otpauth'}
+                      </Button>
+                    </div>
+                  ) : null}
+
+                  <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+                    <TextField
+                      label="Código TOTP"
+                      value={code}
+                      onChange={(event) => setCode(event.target.value)}
+                      placeholder="123456"
+                      inputMode="numeric"
+                    />
+                    <div className="sm:self-end">
+                      <Button type="button" onClick={() => void enable2fa()} disabled={submitting || code.trim().length < 6}>
                         Activar 2FA
-                      </button>
+                      </Button>
                     </div>
                   </div>
-                ) : null}
-              </>
-            ) : (
-              <div className="space-y-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-                <div className="text-sm font-black text-zinc-900">Desactivar 2FA</div>
-                <p className="text-sm text-zinc-600">Ingresa un código TOTP actual para confirmar la desactivación.</p>
-                <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
-                  <input
-                    value={code}
-                    onChange={(e) => setCode(e.target.value)}
-                    placeholder="Código de 6 dígitos"
-                    className="h-11 rounded-2xl border border-zinc-200 px-3 text-sm"
-                  />
-                  <button type="button" onClick={() => void disable2fa()} disabled={submitting || code.trim().length < 6} className="btn-outline !h-11 !rounded-2xl px-4 text-sm font-bold">
+                </div>
+              ) : null}
+            </div>
+          ) : (
+            <div className="space-y-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+              <div className="text-sm font-black text-zinc-900">Desactivar 2FA</div>
+              <p className="text-sm text-zinc-600">Ingresá un código TOTP actual para confirmar la desactivación.</p>
+              <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+                <TextField
+                  label="Código TOTP"
+                  value={code}
+                  onChange={(event) => setCode(event.target.value)}
+                  placeholder="123456"
+                  inputMode="numeric"
+                />
+                <div className="sm:self-end">
+                  <Button type="button" variant="outline" onClick={() => void disable2fa()} disabled={submitting || code.trim().length < 6}>
                     Desactivar 2FA
-                  </button>
+                  </Button>
                 </div>
               </div>
-            )}
-          </div>
-        </div>
-      </section>
-    </div>
+            </div>
+          )}
+        </SectionCard>
+      )}
+    </PageShell>
   );
 }

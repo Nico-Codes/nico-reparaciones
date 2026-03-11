@@ -1,6 +1,6 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, AlertTriangle, Clock3, ShieldCheck, Wrench } from 'lucide-react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { CustomSelect } from '@/components/ui/custom-select';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -29,14 +29,69 @@ const STATUS_OPTIONS = ['RECEIVED', 'DIAGNOSING', 'WAITING_APPROVAL', 'REPAIRING
   label: repairStatusLabel(status),
 }));
 
+type FormErrors = Partial<Record<'customerName' | 'customerPhone' | 'quotedPrice' | 'finalPrice', string>>;
+
+function normalizeNullable(value: string) {
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
+}
+
+function normalizePhone(value: string) {
+  return value.replace(/\D+/g, '');
+}
+
+function validatePhone(value: string) {
+  const digits = normalizePhone(value);
+  if (!digits) return '';
+  if (digits.length < 6) return 'Ingresa un telefono valido con al menos 6 digitos.';
+  if (digits.length > 20) return 'El telefono no puede superar los 20 digitos.';
+  return '';
+}
+
+function parseOptionalMoney(value: string, fieldLabel: string) {
+  const normalized = value.trim().replace(',', '.');
+  if (!normalized) return { value: null, error: '' };
+  const parsed = Number(normalized);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return { value: null, error: `Ingresa un ${fieldLabel.toLowerCase()} valido mayor o igual a 0.` };
+  }
+  return { value: parsed, error: '' };
+}
+
+function eventTypeLabel(eventType: string) {
+  switch (eventType) {
+    case 'CREATED':
+      return 'Alta del caso';
+    case 'UPDATED':
+      return 'Edicion manual';
+    case 'STATUS_CHANGED':
+      return 'Cambio de estado';
+    default:
+      return eventType;
+  }
+}
+
+function sameNullableString(left: string | null, right: string | null) {
+  return (left ?? null) === (right ?? null);
+}
+
 export function AdminRepairDetailPage() {
   const { id = '' } = useParams();
+  const location = useLocation();
+  const locationNotice =
+    typeof location.state === 'object' && location.state && 'notice' in location.state && typeof location.state.notice === 'string'
+      ? location.state.notice
+      : '';
+
+  const detailRequestIdRef = useRef(0);
   const [item, setItem] = useState<RepairItem | null>(null);
   const [timeline, setTimeline] = useState<RepairTimelineEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-  const [notice, setNotice] = useState('');
+  const [loadError, setLoadError] = useState('');
+  const [saveError, setSaveError] = useState('');
+  const [notice, setNotice] = useState(locationNotice);
+  const [fieldErrors, setFieldErrors] = useState<FormErrors>({});
   const [status, setStatus] = useState('RECEIVED');
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
@@ -47,73 +102,133 @@ export function AdminRepairDetailPage() {
   const [finalPrice, setFinalPrice] = useState('');
   const [notes, setNotes] = useState('');
 
-  useEffect(() => {
-    let mounted = true;
+  function hydrateForm(nextItem: RepairItem) {
+    setStatus(nextItem.status);
+    setCustomerName(nextItem.customerName || '');
+    setCustomerPhone(nextItem.customerPhone || '');
+    setDeviceBrand(nextItem.deviceBrand || '');
+    setDeviceModel(nextItem.deviceModel || '');
+    setIssueLabel(nextItem.issueLabel || '');
+    setQuotedPrice(nextItem.quotedPrice != null ? String(nextItem.quotedPrice) : '');
+    setFinalPrice(nextItem.finalPrice != null ? String(nextItem.finalPrice) : '');
+    setNotes(nextItem.notes || '');
+  }
 
-    async function load() {
-      if (!id) return;
-      setLoading(true);
-      setError('');
-      try {
-        const res = await repairsApi.adminDetail(id);
-        if (!mounted) return;
-        setItem(res.item);
-        setTimeline(res.timeline ?? []);
-        setStatus(res.item.status);
-        setCustomerName(res.item.customerName || '');
-        setCustomerPhone(res.item.customerPhone || '');
-        setDeviceBrand(res.item.deviceBrand || '');
-        setDeviceModel(res.item.deviceModel || '');
-        setIssueLabel(res.item.issueLabel || '');
-        setQuotedPrice(res.item.quotedPrice != null ? String(res.item.quotedPrice) : '');
-        setFinalPrice(res.item.finalPrice != null ? String(res.item.finalPrice) : '');
-        setNotes(res.item.notes || '');
-      } catch (e) {
-        if (!mounted) return;
-        setError(e instanceof Error ? e.message : 'No se pudo cargar la reparación.');
-      } finally {
-        if (mounted) setLoading(false);
-      }
+  async function loadDetail(repairId: string, options?: { showLoading?: boolean }) {
+    const requestId = ++detailRequestIdRef.current;
+    if (options?.showLoading !== false) setLoading(true);
+    setLoadError('');
+    try {
+      const res = await repairsApi.adminDetail(repairId);
+      if (requestId !== detailRequestIdRef.current) return;
+      setItem(res.item);
+      setTimeline(res.timeline ?? []);
+      hydrateForm(res.item);
+    } catch (cause) {
+      if (requestId !== detailRequestIdRef.current) return;
+      setLoadError(cause instanceof Error ? cause.message : 'No se pudo cargar la reparacion.');
+    } finally {
+      if (requestId !== detailRequestIdRef.current) return;
+      setLoading(false);
     }
+  }
 
-    void load();
-    return () => {
-      mounted = false;
-    };
+  useEffect(() => {
+    if (!id) return;
+    void loadDetail(id);
   }, [id]);
 
-  const summary = useMemo(() => {
-    const quoted = quotedPrice ? Number(quotedPrice) : null;
-    const final = finalPrice ? Number(finalPrice) : null;
-    return {
-      quoted,
-      final,
-      timelineCount: timeline.length,
-    };
-  }, [finalPrice, quotedPrice, timeline.length]);
+  const parsedQuotedPrice = useMemo(() => parseOptionalMoney(quotedPrice, 'presupuesto'), [quotedPrice]);
+  const parsedFinalPrice = useMemo(() => parseOptionalMoney(finalPrice, 'precio final'), [finalPrice]);
+
+  const summary = useMemo(() => ({
+    quoted: parsedQuotedPrice.value,
+    final: parsedFinalPrice.value,
+    timelineCount: timeline.length,
+  }), [parsedFinalPrice.value, parsedQuotedPrice.value, timeline.length]);
+
+  const normalizedDraft = useMemo(() => ({
+    customerName: customerName.trim(),
+    customerPhone: normalizeNullable(customerPhone),
+    deviceBrand: normalizeNullable(deviceBrand),
+    deviceModel: normalizeNullable(deviceModel),
+    issueLabel: normalizeNullable(issueLabel),
+    status,
+    quotedPrice: parsedQuotedPrice.value,
+    finalPrice: parsedFinalPrice.value,
+    notes: normalizeNullable(notes),
+  }), [customerName, customerPhone, deviceBrand, deviceModel, issueLabel, status, parsedQuotedPrice.value, parsedFinalPrice.value, notes]);
+
+  const hasChanges = useMemo(() => {
+    if (!item) return false;
+    return !(
+      item.customerName === normalizedDraft.customerName &&
+      sameNullableString(item.customerPhone, normalizedDraft.customerPhone) &&
+      sameNullableString(item.deviceBrand, normalizedDraft.deviceBrand) &&
+      sameNullableString(item.deviceModel, normalizedDraft.deviceModel) &&
+      sameNullableString(item.issueLabel, normalizedDraft.issueLabel) &&
+      item.status === normalizedDraft.status &&
+      item.quotedPrice === normalizedDraft.quotedPrice &&
+      item.finalPrice === normalizedDraft.finalPrice &&
+      sameNullableString(item.notes, normalizedDraft.notes)
+    );
+  }, [item, normalizedDraft]);
+
+  function validate() {
+    const nextErrors: FormErrors = {};
+
+    if (normalizedDraft.customerName.length < 2) {
+      nextErrors.customerName = 'Ingresa al menos 2 caracteres para identificar al cliente.';
+    }
+
+    const phoneError = validatePhone(customerPhone);
+    if (phoneError) {
+      nextErrors.customerPhone = phoneError;
+    }
+
+    if (parsedQuotedPrice.error) {
+      nextErrors.quotedPrice = parsedQuotedPrice.error;
+    }
+
+    if (parsedFinalPrice.error) {
+      nextErrors.finalPrice = parsedFinalPrice.error;
+    }
+
+    setFieldErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  }
 
   async function saveChanges() {
-    if (!item) return;
-    setSaving(true);
-    setError('');
+    if (!item || saving) return;
+    setSaveError('');
     setNotice('');
+
+    if (!validate()) return;
+
+    if (!hasChanges) {
+      setNotice('No hay cambios para guardar.');
+      return;
+    }
+
+    const patch: Parameters<typeof repairsApi.adminUpdate>[1] = {};
+
+    if (item.customerName !== normalizedDraft.customerName) patch.customerName = normalizedDraft.customerName;
+    if (!sameNullableString(item.customerPhone, normalizedDraft.customerPhone)) patch.customerPhone = normalizedDraft.customerPhone;
+    if (!sameNullableString(item.deviceBrand, normalizedDraft.deviceBrand)) patch.deviceBrand = normalizedDraft.deviceBrand;
+    if (!sameNullableString(item.deviceModel, normalizedDraft.deviceModel)) patch.deviceModel = normalizedDraft.deviceModel;
+    if (!sameNullableString(item.issueLabel, normalizedDraft.issueLabel)) patch.issueLabel = normalizedDraft.issueLabel;
+    if (item.status !== normalizedDraft.status) patch.status = normalizedDraft.status;
+    if (item.quotedPrice !== normalizedDraft.quotedPrice) patch.quotedPrice = normalizedDraft.quotedPrice;
+    if (item.finalPrice !== normalizedDraft.finalPrice) patch.finalPrice = normalizedDraft.finalPrice;
+    if (!sameNullableString(item.notes, normalizedDraft.notes)) patch.notes = normalizedDraft.notes;
+
+    setSaving(true);
     try {
-      const res = await repairsApi.adminUpdate(item.id, {
-        customerName,
-        customerPhone: customerPhone || null,
-        deviceBrand: deviceBrand || null,
-        deviceModel: deviceModel || null,
-        issueLabel: issueLabel || null,
-        status,
-        quotedPrice: quotedPrice ? Number(quotedPrice) : null,
-        finalPrice: finalPrice ? Number(finalPrice) : null,
-        notes: notes.trim() || null,
-      });
-      setItem(res.item);
-      setStatus(res.item.status);
-      setNotice('Reparación actualizada correctamente.');
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudieron guardar los cambios.');
+      await repairsApi.adminUpdate(item.id, patch);
+      await loadDetail(item.id, { showLoading: false });
+      setNotice('Reparacion actualizada correctamente.');
+    } catch (cause) {
+      setSaveError(cause instanceof Error ? cause.message : 'No se pudieron guardar los cambios.');
     } finally {
       setSaving(false);
     }
@@ -126,17 +241,17 @@ export function AdminRepairDetailPage() {
           context="admin"
           eyebrow="Reparaciones"
           title="Cargando detalle"
-          subtitle="Estamos preparando la información completa del caso."
+          subtitle="Estamos preparando la informacion completa del caso."
           actions={<StatusBadge label="Cargando" tone="info" />}
         />
         <SectionCard>
-          <LoadingBlock label="Cargando reparación" lines={6} />
+          <LoadingBlock label="Cargando reparacion" lines={6} />
         </SectionCard>
       </PageShell>
     );
   }
 
-  if (error && !item) {
+  if (loadError && !item) {
     return (
       <PageShell context="admin">
         <PageHeader
@@ -156,12 +271,17 @@ export function AdminRepairDetailPage() {
         <SectionCard>
           <EmptyState
             icon={<Wrench className="h-5 w-5" />}
-            title={error}
-            description="Volvé al listado para revisar otro caso o reintentá la carga desde el panel."
+            title={loadError}
+            description="Vuelve al listado para revisar otro caso o reintenta la carga desde el panel."
             actions={
-              <Button asChild>
-                <Link to="/admin/repairs">Ir al listado</Link>
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" variant="outline" onClick={() => void loadDetail(id)}>
+                  Reintentar
+                </Button>
+                <Button asChild>
+                  <Link to="/admin/repairs">Ir al listado</Link>
+                </Button>
+              </div>
             }
           />
         </SectionCard>
@@ -176,7 +296,7 @@ export function AdminRepairDetailPage() {
           context="admin"
           eyebrow="Reparaciones"
           title="Caso no encontrado"
-          subtitle="El registro solicitado no está disponible en este momento."
+          subtitle="El registro solicitado no esta disponible en este momento."
           actions={
             <Button asChild variant="outline" size="sm">
               <Link to="/admin/repairs">Volver a reparaciones</Link>
@@ -186,8 +306,8 @@ export function AdminRepairDetailPage() {
         <SectionCard>
           <EmptyState
             icon={<AlertTriangle className="h-5 w-5" />}
-            title="No encontramos la reparación"
-            description="Revisá el listado completo y abrí otro caso desde la tabla principal."
+            title="No encontramos la reparacion"
+            description="Revisa el listado completo y abre otro caso desde la tabla principal."
           />
         </SectionCard>
       </PageShell>
@@ -201,15 +321,16 @@ export function AdminRepairDetailPage() {
   const deviceLabel = [deviceBrand, deviceModel].filter(Boolean).join(' ') || 'Equipo sin identificar';
 
   return (
-    <PageShell context="admin" className="space-y-5">
+    <PageShell context="admin" className="space-y-5" data-admin-repair-detail-page>
       <PageHeader
         context="admin"
         eyebrow="Reparaciones"
         title={`Caso ${code}`}
-        subtitle={`${customerName || 'Cliente sin nombre'} · ${formatDateTime(item.createdAt)}`}
+        subtitle={`${item.customerName || 'Cliente sin nombre'} · ${formatDateTime(item.createdAt)}`}
         actions={
           <>
             <StatusBadge label={statusLabel} tone={statusTone} />
+            {hasChanges ? <StatusBadge label="Cambios pendientes" tone="warning" /> : null}
             <Button asChild variant="outline" size="sm">
               <Link to="/admin/repairs">
                 <ArrowLeft className="h-4 w-4" />
@@ -217,7 +338,7 @@ export function AdminRepairDetailPage() {
               </Link>
             </Button>
             <Button asChild variant="outline" size="sm">
-              <Link to={`/admin/garantias/crear?repairId=${encodeURIComponent(item.id)}`}>Registrar garantía</Link>
+              <Link to={`/admin/garantias/crear?repairId=${encodeURIComponent(item.id)}`}>Registrar garantia</Link>
             </Button>
             <Button asChild variant="outline" size="sm">
               <a href={`/admin/repairs/${encodeURIComponent(item.id)}/print`} target="_blank" rel="noreferrer">Imprimir</a>
@@ -247,12 +368,25 @@ export function AdminRepairDetailPage() {
         </div>
       </div>
 
-      {error ? (
+      {loadError ? (
+        <div className="ui-alert ui-alert--warning" data-reveal>
+          <AlertTriangle className="mt-0.5 h-4 w-4 flex-none" />
+          <div>
+            <span className="ui-alert__title">No pudimos refrescar el caso</span>
+            <div className="ui-alert__text">{loadError}</div>
+          </div>
+          <Button type="button" size="sm" variant="ghost" className="ml-auto self-start" onClick={() => void loadDetail(item.id, { showLoading: false })}>
+            Reintentar
+          </Button>
+        </div>
+      ) : null}
+
+      {saveError ? (
         <div className="ui-alert ui-alert--danger" data-reveal>
           <AlertTriangle className="mt-0.5 h-4 w-4 flex-none" />
           <div>
-            <span className="ui-alert__title">No se pudo completar la acción</span>
-            <div className="ui-alert__text">{error}</div>
+            <span className="ui-alert__title">No se pudo completar la accion</span>
+            <div className="ui-alert__text">{saveError}</div>
           </div>
         </div>
       ) : null}
@@ -271,7 +405,7 @@ export function AdminRepairDetailPage() {
         <div className="space-y-5">
           <SectionCard
             title="Estado y seguimiento"
-            description="Visualizá el avance del caso y el próximo hito esperado para el cliente."
+            description="Visualiza el avance del caso y el proximo hito esperado para el cliente."
             actions={<StatusBadge label={statusLabel} tone={statusTone} size="sm" />}
           >
             <div className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(16rem,0.85fr)]">
@@ -281,7 +415,7 @@ export function AdminRepairDetailPage() {
                 <div className="summary-box">
                   <div className="summary-box__label">Equipo</div>
                   <div className="mt-2 text-[1.35rem] font-black tracking-tight text-zinc-950">{deviceLabel}</div>
-                  <div className="summary-box__hint">{issueLabel || 'Falla pendiente de definición'}</div>
+                  <div className="summary-box__hint">{issueLabel || 'Falla pendiente de definicion'}</div>
                 </div>
 
                 <div className={`ui-alert ${item.status === 'CANCELLED' ? 'ui-alert--danger' : item.status === 'READY_PICKUP' || item.status === 'DELIVERED' ? 'ui-alert--success' : item.status === 'WAITING_APPROVAL' ? 'ui-alert--warning' : 'ui-alert--info'}`}>
@@ -296,40 +430,53 @@ export function AdminRepairDetailPage() {
           </SectionCard>
 
           <SectionCard
-            title="Editar reparación"
-            description="Actualizá los datos reales del caso: cliente, equipo, diagnóstico y precios."
-            actions={<StatusBadge label="Guardado manual" tone="neutral" size="sm" />}
+            title="Editar reparacion"
+            description="Actualiza solo datos que realmente persisten en el caso: cliente, equipo, diagnostico, estado y precios."
+            actions={<StatusBadge label={hasChanges ? 'Cambios pendientes' : 'Sin cambios'} tone={hasChanges ? 'warning' : 'neutral'} size="sm" />}
           >
             <div className="grid gap-4 lg:grid-cols-2">
               <TextField
                 label="Nombre del cliente"
                 value={customerName}
                 onChange={(event) => setCustomerName(event.target.value)}
-                placeholder="Ej: Nicolás Pérez"
+                placeholder="Ej: Nicolas Perez"
+                maxLength={190}
+                error={fieldErrors.customerName}
+                disabled={saving}
               />
               <TextField
-                label="Teléfono"
+                label="Telefono"
                 value={customerPhone}
                 onChange={(event) => setCustomerPhone(event.target.value)}
                 placeholder="Ej: 11 5555-1234"
+                maxLength={60}
+                inputMode="tel"
+                error={fieldErrors.customerPhone}
+                disabled={saving}
               />
               <TextField
                 label="Marca del equipo"
                 value={deviceBrand}
                 onChange={(event) => setDeviceBrand(event.target.value)}
                 placeholder="Ej: Samsung"
+                maxLength={120}
+                disabled={saving}
               />
               <TextField
                 label="Modelo del equipo"
                 value={deviceModel}
                 onChange={(event) => setDeviceModel(event.target.value)}
                 placeholder="Ej: A34"
+                maxLength={120}
+                disabled={saving}
               />
               <TextField
                 label="Falla principal"
                 value={issueLabel}
                 onChange={(event) => setIssueLabel(event.target.value)}
-                placeholder="Ej: Cambio de módulo"
+                placeholder="Ej: Cambio de modulo"
+                maxLength={190}
+                disabled={saving}
               />
               <div>
                 <label className="mb-1 block text-sm font-bold text-zinc-700">Estado del caso</label>
@@ -337,40 +484,47 @@ export function AdminRepairDetailPage() {
                   value={status}
                   onChange={setStatus}
                   options={STATUS_OPTIONS}
+                  disabled={saving}
                   triggerClassName="min-h-10 rounded-xl"
-                  ariaLabel="Estado de la reparación"
+                  ariaLabel="Estado de la reparacion"
                 />
               </div>
               <TextField
                 label="Presupuesto"
-                type="number"
+                inputMode="decimal"
                 value={quotedPrice}
                 onChange={(event) => setQuotedPrice(event.target.value)}
                 placeholder="0"
+                error={fieldErrors.quotedPrice}
+                disabled={saving}
               />
               <TextField
                 label="Precio final"
-                type="number"
+                inputMode="decimal"
                 value={finalPrice}
                 onChange={(event) => setFinalPrice(event.target.value)}
                 placeholder="0"
+                error={fieldErrors.finalPrice}
+                disabled={saving}
               />
             </div>
 
             <TextAreaField
-              label="Notas y diagnóstico"
+              label="Notas y diagnostico"
               value={notes}
               onChange={(event) => setNotes(event.target.value)}
-              placeholder="Detalle del diagnóstico, repuestos usados, observaciones y próximos pasos."
+              placeholder="Detalle del diagnostico, repuestos usados, observaciones y proximos pasos."
               rows={6}
+              maxLength={2000}
               wrapperClassName="mt-4"
+              disabled={saving}
             />
 
             <div className="mt-4 flex flex-wrap gap-3">
-              <Button type="button" onClick={() => void saveChanges()} disabled={saving}>
-                {saving ? 'Guardando...' : 'Guardar cambios'}
+              <Button type="button" onClick={() => void saveChanges()} disabled={saving || !hasChanges} data-admin-repair-detail-save>
+                {saving ? 'Guardando...' : hasChanges ? 'Guardar cambios' : 'Sin cambios'}
               </Button>
-              <Button asChild variant="outline">
+              <Button asChild variant="outline" disabled={saving}>
                 <Link to="/admin/repairs">Cancelar</Link>
               </Button>
             </div>
@@ -380,11 +534,11 @@ export function AdminRepairDetailPage() {
         <aside className="account-stack account-sticky">
           <SectionCard title="Resumen del caso" description="Datos administrativos y comerciales relevantes para seguimiento.">
             <div className="fact-list">
-              <FactRow label="Código" value={code} />
-              <FactRow label="Cliente" value={customerName || 'Sin nombre'} />
-              <FactRow label="Teléfono" value={customerPhone || 'No informado'} />
+              <FactRow label="Codigo" value={code} />
+              <FactRow label="Cliente" value={item.customerName || 'Sin nombre'} />
+              <FactRow label="Telefono" value={item.customerPhone || 'No informado'} />
               <FactRow label="Ingreso" value={formatDateTime(item.createdAt)} />
-              <FactRow label="Última actualización" value={formatDateTime(item.updatedAt)} />
+              <FactRow label="Ultima actualizacion" value={formatDateTime(item.updatedAt)} />
               <FactRow label="Estado" value={statusLabel} />
             </div>
           </SectionCard>
@@ -393,14 +547,14 @@ export function AdminRepairDetailPage() {
             {timeline.length === 0 ? (
               <EmptyState
                 icon={<Clock3 className="h-5 w-5" />}
-                title="Todavía no hay eventos"
-                description="El historial se completa automáticamente a medida que se registran cambios en la reparación."
+                title="Todavia no hay eventos"
+                description="El historial se completa automaticamente a medida que se registran cambios en la reparacion."
               />
             ) : (
               <div className="space-y-3">
                 {timeline.map((event) => (
                   <div key={event.id} className="detail-panel">
-                    <div className="detail-panel__label">{event.eventType}</div>
+                    <div className="detail-panel__label">{eventTypeLabel(event.eventType)}</div>
                     <div className="detail-panel__value">{event.message || 'Sin detalle adicional.'}</div>
                     <div className="mt-2 text-xs font-semibold uppercase tracking-[0.08em] text-zinc-500">
                       {formatDateTime(event.createdAt)}

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AlertTriangle, ClipboardList, MessageSquareMore, PackageCheck, RefreshCcw, Search, Truck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ActionDropdown } from '@/components/ui/action-dropdown';
@@ -93,20 +93,27 @@ export function AdminOrdersPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<OrderItem | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
+  const listRequestIdRef = useRef(0);
+  const detailRequestIdRef = useRef(0);
 
   async function load() {
+    const requestId = ++listRequestIdRef.current;
     setLoading(true);
     setError('');
     try {
       const res = await ordersApi.adminOrders({ q, status: statusFilter || undefined });
+      if (requestId !== listRequestIdRef.current) return;
       setItems(res.items);
       if (selectedId && !res.items.some((item) => item.id === selectedId)) {
         setSelectedId(null);
         setDetail(null);
       }
     } catch (cause) {
+      if (requestId !== listRequestIdRef.current) return;
       setError(cause instanceof Error ? cause.message : 'Error cargando pedidos');
     } finally {
+      if (requestId !== listRequestIdRef.current) return;
       setLoading(false);
     }
   }
@@ -117,21 +124,36 @@ export function AdminOrdersPage() {
 
   useEffect(() => {
     if (!selectedId) return;
+    const requestId = ++detailRequestIdRef.current;
     setLoadingDetail(true);
+    setDetail(null);
     void ordersApi
       .adminOrder(selectedId)
-      .then((response) => setDetail(response.item))
-      .catch((cause) => setError(cause instanceof Error ? cause.message : 'Error cargando el detalle'))
-      .finally(() => setLoadingDetail(false));
+      .then((response) => {
+        if (requestId !== detailRequestIdRef.current) return;
+        setDetail(response.item);
+      })
+      .catch((cause) => {
+        if (requestId !== detailRequestIdRef.current) return;
+        setError(cause instanceof Error ? cause.message : 'Error cargando el detalle');
+      })
+      .finally(() => {
+        if (requestId !== detailRequestIdRef.current) return;
+        setLoadingDetail(false);
+      });
   }, [selectedId]);
 
   async function changeStatus(orderId: string, status: string) {
+    if (updatingOrderId === orderId) return;
     try {
+      setUpdatingOrderId(orderId);
       const response = await ordersApi.adminUpdateStatus(orderId, status);
       setItems((current) => current.map((order) => (order.id === orderId ? response.item : order)));
       setDetail((current) => (current?.id === orderId ? response.item : current));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Error actualizando el pedido');
+    } finally {
+      setUpdatingOrderId((current) => (current === orderId ? null : current));
     }
   }
 
@@ -350,6 +372,7 @@ export function AdminOrdersPage() {
                           type="button"
                           variant="ghost"
                           size="sm"
+                          disabled={updatingOrderId === order.id}
                           aria-haspopup="menu"
                           aria-controls={menuId}
                           aria-expanded={open ? 'true' : 'false'}
@@ -378,12 +401,13 @@ export function AdminOrdersPage() {
                           type="button"
                           variant="default"
                           size="sm"
+                          disabled={updatingOrderId === order.id}
                           aria-haspopup="menu"
                           aria-controls={menuId}
                           aria-expanded={open ? 'true' : 'false'}
                           onClick={toggle}
                         >
-                          Estado
+                          {updatingOrderId === order.id ? 'Guardando...' : 'Estado'}
                         </Button>
                       )}
                       menuClassName="min-w-[13rem]"
@@ -399,8 +423,8 @@ export function AdminOrdersPage() {
                                 void changeStatus(order.id, option.value);
                                 close();
                               }}
-                              aria-disabled={order.status === option.value ? 'true' : 'false'}
-                              disabled={order.status === option.value}
+                              aria-disabled={order.status === option.value || updatingOrderId === order.id ? 'true' : 'false'}
+                              disabled={order.status === option.value || updatingOrderId === order.id}
                             >
                               {option.label}
                             </button>

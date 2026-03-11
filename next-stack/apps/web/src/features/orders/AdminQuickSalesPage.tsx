@@ -1,6 +1,11 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 import { CustomSelect } from '@/components/ui/custom-select';
+import { EmptyState } from '@/components/ui/empty-state';
+import { LoadingBlock } from '@/components/ui/loading-block';
+import { TextAreaField } from '@/components/ui/textarea-field';
+import { TextField } from '@/components/ui/text-field';
 import { catalogAdminApi, type AdminProduct } from '@/features/catalogAdmin/api';
 import { ordersApi } from './api';
 
@@ -20,6 +25,18 @@ function clampQty(value: number) {
   return Math.max(1, Math.min(999, Math.trunc(value)));
 }
 
+function normalizePhone(value: string) {
+  return value.replace(/\D+/g, '');
+}
+
+function validatePhone(value: string) {
+  if (!value.trim()) return '';
+  const digits = normalizePhone(value);
+  if (digits.length < 6) return 'Ingresa un telefono valido con al menos 6 digitos.';
+  if (digits.length > 20) return 'El telefono no puede superar los 20 digitos.';
+  return '';
+}
+
 export function AdminQuickSalesPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -27,6 +44,7 @@ export function AdminQuickSalesPage() {
   const [cart, setCart] = useState<CartLine[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [savingSale, setSavingSale] = useState(false);
+  const [addingByCode, setAddingByCode] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [q, setQ] = useState('');
@@ -36,18 +54,34 @@ export function AdminQuickSalesPage() {
   const [customerPhone, setCustomerPhone] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('local');
   const [notes, setNotes] = useState('');
+  const productsRequestIdRef = useRef(0);
+  const addByCodeRequestIdRef = useRef(0);
+
+  const normalizedScanCode = scanCode.trim();
+  const phoneError = validatePhone(customerPhone);
+  const hasInvalidCartLine = cart.some(
+    (line) => !line.product.active || line.product.stock <= 0 || line.quantity <= 0 || line.quantity > line.product.stock,
+  );
+  const canSearchProducts = !loadingProducts && !savingSale && !addingByCode;
+  const canAddByCode = normalizedScanCode.length > 0 && !savingSale && !addingByCode;
+  const canConfirmSale = cart.length > 0 && !savingSale && !addingByCode && !phoneError && !hasInvalidCartLine;
 
   async function loadProducts(query: string) {
+    const requestId = ++productsRequestIdRef.current;
     setLoadingProducts(true);
+    setError('');
     try {
-      const res = await catalogAdminApi.products({
+      const response = await catalogAdminApi.products({
         q: query.trim() || undefined,
         active: '1',
       });
-      setProducts(res.items.filter((product) => product.active && product.stock > 0).slice(0, 50));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error cargando productos');
+      if (requestId !== productsRequestIdRef.current) return;
+      setProducts(response.items.filter((product) => product.active && product.stock > 0).slice(0, 50));
+    } catch (cause) {
+      if (requestId !== productsRequestIdRef.current) return;
+      setError(cause instanceof Error ? cause.message : 'No pudimos cargar los productos.');
     } finally {
+      if (requestId !== productsRequestIdRef.current) return;
       setLoadingProducts(false);
     }
   }
@@ -56,54 +90,74 @@ export function AdminQuickSalesPage() {
     void loadProducts('');
   }, []);
 
-  async function addByCode() {
-    const code = scanCode.trim();
-    if (!code) return;
-    setError('');
-    setSuccess('');
-    try {
-      const res = await catalogAdminApi.products({ q: code, active: '1' });
-      const exact = res.items.find((product) => {
-        const sku = (product.sku ?? '').trim().toLowerCase();
-        const barcode = (product.barcode ?? '').trim().toLowerCase();
-        const cmp = code.toLowerCase();
-        return sku === cmp || barcode === cmp;
-      });
-      const candidate = exact ?? res.items[0];
-      if (!candidate) {
-        setError('Producto no encontrado por SKU o barcode');
-        return;
-      }
-      addToCart(candidate, scanQty);
-      setScanCode('');
-      setScanQty(1);
-      setSuccess('Producto agregado');
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo agregar por código');
-    }
-  }
-
   function addToCart(product: AdminProduct, quantityRaw = 1) {
     const quantity = clampQty(quantityRaw);
     if (!product.active || product.stock <= 0) {
-      setError('El producto está inactivo o sin stock');
-      return;
+      return { ok: false as const, message: 'El producto esta inactivo o no tiene stock disponible.' };
     }
-    setCart((prev) => {
-      const found = prev.find((line) => line.product.id === product.id);
-      if (!found) return [...prev, { product, quantity: Math.min(quantity, product.stock) }];
-      return prev.map((line) =>
+    const currentLine = cart.find((line) => line.product.id === product.id);
+    if (currentLine && currentLine.quantity >= product.stock) {
+      return { ok: false as const, message: 'Ya alcanzaste el stock disponible para este producto.' };
+    }
+
+    setError('');
+    setCart((current) => {
+      const found = current.find((line) => line.product.id === product.id);
+      if (!found) return [...current, { product, quantity: Math.min(quantity, product.stock) }];
+      return current.map((line) =>
         line.product.id === product.id
           ? { ...line, quantity: Math.min(product.stock, line.quantity + quantity) }
           : line,
       );
     });
+    return { ok: true as const };
+  }
+
+  async function addByCode() {
+    const code = normalizedScanCode;
+    if (!code || savingSale || addingByCode) return;
+
+    const requestId = ++addByCodeRequestIdRef.current;
+    setAddingByCode(true);
+    setError('');
+    setSuccess('');
+    try {
+      const response = await catalogAdminApi.products({ q: code, active: '1' });
+      if (requestId !== addByCodeRequestIdRef.current) return;
+      const exact = response.items.find((product) => {
+        const sku = (product.sku ?? '').trim().toLowerCase();
+        const barcode = (product.barcode ?? '').trim().toLowerCase();
+        const candidate = code.toLowerCase();
+        return sku === candidate || barcode === candidate;
+      });
+
+      if (!exact) {
+        setError('No encontramos un producto con ese SKU o codigo de barras.');
+        return;
+      }
+
+      const result = addToCart(exact, scanQty);
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+
+      setScanCode('');
+      setScanQty(1);
+      setSuccess(`Producto agregado: ${exact.name}.`);
+    } catch (cause) {
+      if (requestId !== addByCodeRequestIdRef.current) return;
+      setError(cause instanceof Error ? cause.message : 'No se pudo agregar el producto por codigo.');
+    } finally {
+      if (requestId !== addByCodeRequestIdRef.current) return;
+      setAddingByCode(false);
+    }
   }
 
   function updateCartQty(productId: string, value: number) {
     const next = Math.max(0, Math.min(999, Math.trunc(value)));
-    setCart((prev) =>
-      prev
+    setCart((current) =>
+      current
         .map((line) =>
           line.product.id === productId
             ? { ...line, quantity: Math.min(line.product.stock, next) }
@@ -114,7 +168,7 @@ export function AdminQuickSalesPage() {
   }
 
   function removeFromCart(productId: string) {
-    setCart((prev) => prev.filter((line) => line.product.id !== productId));
+    setCart((current) => current.filter((line) => line.product.id !== productId));
   }
 
   const totals = useMemo(() => {
@@ -129,26 +183,37 @@ export function AdminQuickSalesPage() {
   );
 
   async function confirmSale(afterAction: 'view' | 'print_ticket' | 'print_a4') {
+    if (savingSale) return;
     if (!cart.length) {
-      setError('No hay productos en la venta rápida');
+      setError('No hay productos cargados en la venta rapida.');
       return;
     }
+    if (phoneError) {
+      setError(phoneError);
+      return;
+    }
+    if (hasInvalidCartLine) {
+      setError('Hay lineas invalidas en el ticket. Revisa stock y cantidades antes de confirmar.');
+      return;
+    }
+
     setSavingSale(true);
     setError('');
     setSuccess('');
     try {
-      const res = await ordersApi.adminQuickSaleConfirm({
+      const response = await ordersApi.adminQuickSaleConfirm({
         items: cart.map((line) => ({ productId: line.product.id, quantity: line.quantity })),
         paymentMethod,
         customerName: customerName.trim() || undefined,
         customerPhone: customerPhone.trim() || undefined,
         notes: notes.trim() || undefined,
       });
-      const orderId = res.item.id;
+      const orderId = response.item.id;
       setCart([]);
       setCustomerPhone('');
       setNotes('');
-      setSuccess(`Venta rápida confirmada. Pedido #${orderId.slice(0, 8)}`);
+      setSuccess(`Venta rapida confirmada. Pedido #${orderId.slice(0, 8)}.`);
+
       if (afterAction === 'print_ticket') {
         window.open(`/admin/orders/${encodeURIComponent(orderId)}/ticket`, '_blank', 'noopener,noreferrer');
       } else if (afterAction === 'print_a4') {
@@ -156,25 +221,31 @@ export function AdminQuickSalesPage() {
       } else {
         navigate(`/admin/orders/${encodeURIComponent(orderId)}`);
       }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo confirmar la venta rápida');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No se pudo confirmar la venta rapida.');
     } finally {
       setSavingSale(false);
     }
   }
 
   return (
-    <div className="store-shell space-y-5">
+    <div className="store-shell space-y-5" data-admin-quick-sales-page>
       <section className="store-hero">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-black tracking-tight text-zinc-900">Venta rápida</h1>
-            <p className="mt-1 text-sm text-zinc-600">Escanea SKU/barcode, arma ticket y confirma en segundos.</p>
+            <h1 className="text-2xl font-black tracking-tight text-zinc-900">Venta rapida</h1>
+            <p className="mt-1 text-sm text-zinc-600">Escanea un SKU o codigo de barras, arma el ticket y confirmalo en segundos.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Link to="/admin/ventas-rapidas/historial" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">Historial</Link>
-            <Link to="/admin/orders" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">Ver pedidos</Link>
-            <Link to="/admin/productos" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">Productos</Link>
+            <Button asChild variant="outline" size="sm">
+              <Link to="/admin/ventas-rapidas/historial">Historial</Link>
+            </Button>
+            <Button asChild variant="outline" size="sm">
+              <Link to="/admin/orders">Ver pedidos</Link>
+            </Button>
+            <Button asChild variant="outline" size="sm">
+              <Link to="/admin/productos">Productos</Link>
+            </Button>
           </div>
         </div>
       </section>
@@ -187,64 +258,76 @@ export function AdminQuickSalesPage() {
           <section className="card">
             <div className="card-head">
               <div>
-                <div className="font-black">Escáner / carga rápida</div>
-                <div className="text-xs text-zinc-500">Puedes escanear o escribir SKU/barcode y presionar Enter.</div>
+                <div className="font-black">Escaner / carga rapida</div>
+                <div className="text-xs text-zinc-500">Podes escanear o escribir SKU/codigo de barras y confirmar con Enter.</div>
               </div>
             </div>
             <div className="card-body">
               <form
                 className="grid gap-2 sm:grid-cols-[1fr_140px_auto]"
-                onSubmit={(e) => {
-                  e.preventDefault();
+                onSubmit={(event) => {
+                  event.preventDefault();
                   void addByCode();
                 }}
               >
-                <input
+                <TextField
                   value={scanCode}
-                  onChange={(e) => setScanCode(e.target.value)}
-                  className="h-11 rounded-2xl border border-zinc-200 px-3 text-sm"
-                  placeholder="SKU o barcode"
+                  onChange={(event) => setScanCode(event.target.value)}
+                  placeholder="SKU o codigo de barras"
+                  aria-label="Escanear SKU o codigo de barras"
+                  data-qa="quick-sale-scan-code"
                   autoFocus={location.pathname === '/admin/ventas-rapidas'}
+                  disabled={savingSale || addingByCode}
+                  wrapperClassName="sm:col-span-1"
                 />
                 <input
                   type="number"
                   min={1}
                   max={999}
                   value={scanQty}
-                  onChange={(e) => setScanQty(clampQty(Number(e.target.value || '1')))}
+                  onChange={(event) => setScanQty(clampQty(Number(event.target.value || '1')))}
+                  disabled={savingSale || addingByCode}
                   className="h-11 rounded-2xl border border-zinc-200 px-3 text-right text-sm font-bold"
                 />
-                <button type="submit" className="btn-primary !h-11 !rounded-xl px-5 text-sm font-bold">Agregar</button>
+                <Button type="submit" disabled={!canAddByCode}>
+                  {addingByCode ? 'Agregando...' : 'Agregar'}
+                </Button>
               </form>
             </div>
           </section>
 
           <section className="card">
             <div className="card-head flex items-center justify-between gap-2">
-              <div className="font-black">Búsqueda manual</div>
+              <div className="font-black">Busqueda manual</div>
               <span className="badge-zinc">{products.length} resultados</span>
             </div>
             <div className="card-body space-y-3">
               <form
                 className="grid gap-2 sm:grid-cols-[1fr_auto]"
-                onSubmit={(e) => {
-                  e.preventDefault();
+                onSubmit={(event) => {
+                  event.preventDefault();
                   void loadProducts(q);
                 }}
               >
-                <input
+                <TextField
                   value={q}
-                  onChange={(e) => setQ(e.target.value)}
-                  className="h-11 rounded-2xl border border-zinc-200 px-3 text-sm"
-                  placeholder="Buscar por nombre, SKU o barcode"
+                  onChange={(event) => setQ(event.target.value)}
+                  placeholder="Buscar por nombre, SKU o codigo de barras"
+                  disabled={savingSale || addingByCode}
+                  wrapperClassName="sm:col-span-1"
                 />
-                <button type="submit" className="btn-outline !h-11 !rounded-xl px-5 text-sm font-bold">Buscar</button>
+                <Button type="submit" variant="outline" disabled={!canSearchProducts}>
+                  {loadingProducts ? 'Buscando...' : 'Buscar'}
+                </Button>
               </form>
 
               {loadingProducts ? (
-                <div className="text-sm text-zinc-600">Cargando productos...</div>
+                <LoadingBlock label="Cargando productos" lines={3} />
               ) : products.length === 0 ? (
-                <div className="text-sm text-zinc-600">Sin resultados para mostrar.</div>
+                <EmptyState
+                  title="No hay productos para mostrar"
+                  description="Proba con otro termino de busqueda o verifica si siguen teniendo stock."
+                />
               ) : (
                 <div className="grid gap-2">
                   {products.map((product) => (
@@ -253,14 +336,26 @@ export function AdminQuickSalesPage() {
                         <div className="min-w-0">
                           <div className="truncate text-sm font-black text-zinc-900">{product.name}</div>
                           <div className="text-xs text-zinc-500">
-                            SKU: {product.sku || '-'} | Barcode: {product.barcode || '-'} | Stock: {product.stock}
+                            SKU: {product.sku || '-'} | Codigo: {product.barcode || '-'} | Stock: {product.stock}
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
                           <div className="text-sm font-black text-zinc-900">$ {Number(product.price).toLocaleString('es-AR')}</div>
-                          <button type="button" onClick={() => addToCart(product, 1)} className="btn-outline !h-9 !rounded-xl px-4 text-sm font-bold">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSuccess('');
+                              const result = addToCart(product, 1);
+                              if (!result.ok) {
+                                setError(result.message);
+                              }
+                            }}
+                            disabled={savingSale || addingByCode}
+                          >
                             Agregar
-                          </button>
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -278,9 +373,21 @@ export function AdminQuickSalesPage() {
           </div>
           <div className="card-body space-y-3">
             {cart.length === 0 ? (
-              <div className="text-sm text-zinc-600">No hay productos en la venta rápida.</div>
+              <EmptyState
+                title="Todavia no agregaste productos"
+                description="Escanea un codigo o busca manualmente para armar el ticket."
+              />
             ) : (
               <>
+                {hasInvalidCartLine ? (
+                  <div className="ui-alert ui-alert--warning">
+                    <div>
+                      <span className="ui-alert__title">Hay lineas para revisar</span>
+                      <div className="ui-alert__text">Ajusta cantidades o quita los productos sin stock antes de confirmar la venta.</div>
+                    </div>
+                  </div>
+                ) : null}
+
                 <div className="grid gap-2">
                   {cart.map((line) => (
                     <div key={line.product.id} className="rounded-2xl border border-zinc-200 bg-zinc-50 p-2">
@@ -292,12 +399,19 @@ export function AdminQuickSalesPage() {
                           min={0}
                           max={Math.max(0, line.product.stock)}
                           value={line.quantity}
-                          onChange={(e) => updateCartQty(line.product.id, Number(e.target.value || '0'))}
+                          onChange={(event) => updateCartQty(line.product.id, Number(event.target.value || '0'))}
+                          disabled={savingSale}
                           className="h-9 w-20 rounded-xl border border-zinc-200 px-2 text-right text-sm font-bold"
                         />
-                        <button type="button" onClick={() => removeFromCart(line.product.id)} className="btn-ghost !h-9 !rounded-xl px-3 text-xs font-bold">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeFromCart(line.product.id)}
+                          disabled={savingSale}
+                        >
                           Quitar
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   ))}
@@ -311,68 +425,50 @@ export function AdminQuickSalesPage() {
                 </div>
 
                 <div className="grid gap-2">
+                  <TextField
+                    label="Nombre del cliente (opcional)"
+                    value={customerName}
+                    onChange={(event) => setCustomerName(event.target.value)}
+                    disabled={savingSale}
+                  />
+                  <TextField
+                    label="Telefono (opcional)"
+                    value={customerPhone}
+                    onChange={(event) => setCustomerPhone(event.target.value)}
+                    disabled={savingSale}
+                    error={phoneError || undefined}
+                    hint="Si lo completas, usamos entre 6 y 20 digitos para asociar la venta."
+                  />
                   <div className="grid gap-1">
-                    <label className="text-sm font-bold text-zinc-700">Nombre cliente (opcional)</label>
-                    <input
-                      value={customerName}
-                      onChange={(e) => setCustomerName(e.target.value)}
-                      className="h-11 rounded-2xl border border-zinc-200 px-3 text-sm"
-                    />
-                  </div>
-                  <div className="grid gap-1">
-                    <label className="text-sm font-bold text-zinc-700">Teléfono (opcional)</label>
-                    <input
-                      value={customerPhone}
-                      onChange={(e) => setCustomerPhone(e.target.value)}
-                      className="h-11 rounded-2xl border border-zinc-200 px-3 text-sm"
-                    />
-                  </div>
-                  <div className="grid gap-1">
-                    <label className="text-sm font-bold text-zinc-700">Método de pago</label>
+                    <label className="text-sm font-bold text-zinc-700">Metodo de pago</label>
                     <CustomSelect
                       value={paymentMethod}
                       onChange={setPaymentMethod}
                       options={paymentMethodOptions}
+                      disabled={savingSale}
                       triggerClassName="min-h-11 rounded-2xl font-bold"
-                      ariaLabel="Seleccionar método de pago"
+                      ariaLabel="Seleccionar metodo de pago"
                     />
                   </div>
-                  <div className="grid gap-1">
-                    <label className="text-sm font-bold text-zinc-700">Notas (opcional)</label>
-                    <textarea
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      rows={3}
-                      className="rounded-2xl border border-zinc-200 px-3 py-2 text-sm"
-                    />
-                  </div>
+                  <TextAreaField
+                    label="Notas (opcional)"
+                    value={notes}
+                    onChange={(event) => setNotes(event.target.value)}
+                    rows={3}
+                    disabled={savingSale}
+                  />
                 </div>
 
                 <div className="grid gap-2">
-                  <button
-                    type="button"
-                    onClick={() => void confirmSale('view')}
-                    disabled={savingSale}
-                    className="btn-primary !h-11 !rounded-xl px-5 text-sm font-bold"
-                  >
+                  <Button type="button" onClick={() => void confirmSale('view')} disabled={!canConfirmSale}>
                     {savingSale ? 'Confirmando...' : 'Confirmar venta'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void confirmSale('print_ticket')}
-                    disabled={savingSale}
-                    className="btn-outline !h-11 !rounded-xl px-5 text-sm font-bold"
-                  >
+                  </Button>
+                  <Button type="button" variant="outline" onClick={() => void confirmSale('print_ticket')} disabled={!canConfirmSale}>
                     Confirmar e imprimir ticket
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCart([])}
-                    disabled={savingSale}
-                    className="btn-outline !h-11 !rounded-xl px-5 text-sm font-bold"
-                  >
+                  </Button>
+                  <Button type="button" variant="outline" onClick={() => setCart([])} disabled={savingSale || cart.length === 0}>
                     Limpiar ticket
-                  </button>
+                  </Button>
                 </div>
               </>
             )}

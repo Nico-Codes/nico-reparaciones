@@ -1,6 +1,16 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+﻿import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { RefreshCcw, Search, ShieldCheck, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 import { CustomSelect } from '@/components/ui/custom-select';
+import { EmptyState } from '@/components/ui/empty-state';
+import { FilterBar } from '@/components/ui/filter-bar';
+import { LoadingBlock } from '@/components/ui/loading-block';
+import { PageHeader } from '@/components/ui/page-header';
+import { PageShell } from '@/components/ui/page-shell';
+import { SectionCard } from '@/components/ui/section-card';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { TextField } from '@/components/ui/text-field';
 import { authStorage } from '@/features/auth/storage';
 import { adminUsersApi, type AdminUserRow } from './usersApi';
 
@@ -9,142 +19,245 @@ export function AdminUsersPage() {
   const [items, setItems] = useState<AdminUserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
   const [q, setQ] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
+  const [pendingUserIds, setPendingUserIds] = useState<string[]>([]);
+  const requestIdRef = useRef(0);
 
   async function load() {
+    const requestId = ++requestIdRef.current;
     setLoading(true);
     setError('');
     try {
-      const res = await adminUsersApi.list({ q, role: roleFilter || undefined });
-      setItems(res.items);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error cargando usuarios');
+      const response = await adminUsersApi.list({ q, role: roleFilter || undefined });
+      if (requestId !== requestIdRef.current) return;
+      setItems(response.items);
+    } catch (cause) {
+      if (requestId !== requestIdRef.current) return;
+      setError(cause instanceof Error ? cause.message : 'No pudimos cargar los usuarios.');
     } finally {
+      if (requestId !== requestIdRef.current) return;
       setLoading(false);
     }
   }
 
   useEffect(() => {
+    setMessage('');
     void load();
   }, [q, roleFilter]);
 
   async function changeRole(userId: string, role: 'USER' | 'ADMIN') {
+    if (pendingUserIds.includes(userId)) return;
+    if (currentUser?.id === userId) {
+      setError('No podes cambiar tu propio rol desde esta pantalla.');
+      return;
+    }
+
+    setError('');
+    setMessage('');
     try {
-      const res = await adminUsersApi.updateRole(userId, role);
-      if (res.message && !res.item) {
-        setError(res.message);
+      setPendingUserIds((current) => [...current, userId]);
+      const response = await adminUsersApi.updateRole(userId, role);
+      if (response.message && !response.item) {
+        setError(response.message);
         return;
       }
-      if (res.item) {
-        setItems((prev) => prev.map((user) => (user.id === userId ? res.item! : user)));
+      if (response.item) {
+        setItems((current) => current.map((user) => (user.id === userId ? response.item! : user)));
+        setMessage(`Rol actualizado para ${response.item.name}.`);
       }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error actualizando rol');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No pudimos actualizar el rol.');
+    } finally {
+      setPendingUserIds((current) => current.filter((currentId) => currentId !== userId));
     }
   }
 
-  const stats = useMemo(() => ({
-    total: items.length,
-    admins: items.filter((user) => user.role === 'ADMIN').length,
-    verified: items.filter((user) => user.emailVerified).length,
-  }), [items]);
+  const stats = useMemo(
+    () => ({
+      total: items.length,
+      admins: items.filter((user) => user.role === 'ADMIN').length,
+      verified: items.filter((user) => user.emailVerified).length,
+    }),
+    [items],
+  );
 
   const roleOptions = [
     { value: '', label: 'Todos los roles' },
-    { value: 'ADMIN', label: 'ADMIN' },
-    { value: 'USER', label: 'USER' },
+    { value: 'ADMIN', label: 'Administradores' },
+    { value: 'USER', label: 'Usuarios' },
   ];
   const rowRoleOptions = [
-    { value: 'USER', label: 'USER' },
-    { value: 'ADMIN', label: 'ADMIN' },
+    { value: 'USER', label: 'Usuario' },
+    { value: 'ADMIN', label: 'Administrador' },
   ];
 
   return (
-    <div className="store-shell">
-      <div className="page-head store-hero">
-        <div>
-          <div className="page-title">Usuarios</div>
-          <div className="page-subtitle">Listado de usuarios y cambio de roles (USER/ADMIN).</div>
+    <PageShell context="admin" className="space-y-6" data-admin-users-page>
+      <PageHeader
+        context="admin"
+        eyebrow="Accesos"
+        title="Usuarios"
+        subtitle="Gestiona roles, verificacion de correo y accesos al panel desde una unica vista operativa."
+        actions={
+          <>
+            <StatusBadge tone="info" label={`${stats.total} listados`} />
+            <Button asChild variant="outline" size="sm">
+              <Link to="/admin">Volver al panel</Link>
+            </Button>
+          </>
+        }
+      />
+
+      <section className="nr-stat-grid" data-reveal>
+        <MetricCard label="Usuarios" value={String(stats.total)} meta="Cuentas visibles en la busqueda actual" icon={<Users className="h-4 w-4" />} />
+        <MetricCard label="Admins" value={String(stats.admins)} meta="Cuentas con permisos de administracion" icon={<ShieldCheck className="h-4 w-4" />} />
+        <MetricCard label="Correos verificados" value={String(stats.verified)} meta="Usuarios con email confirmado" icon={<RefreshCcw className="h-4 w-4" />} />
+      </section>
+
+      <FilterBar
+        actions={
+          <Button type="button" variant="outline" size="sm" onClick={() => void load()} disabled={loading}>
+            <RefreshCcw className="h-4 w-4" />
+            Actualizar
+          </Button>
+        }
+      >
+        <TextField
+          value={q}
+          onChange={(event) => setQ(event.target.value)}
+          label="Buscar"
+          placeholder="Nombre o email"
+          leadingIcon={<Search className="h-4 w-4" />}
+          wrapperClassName="min-w-0 sm:min-w-[20rem]"
+        />
+        <div className="ui-field min-w-0 sm:min-w-[12rem]">
+          <span className="ui-field__label">Rol</span>
+          <CustomSelect
+            value={roleFilter}
+            onChange={setRoleFilter}
+            options={roleOptions}
+            triggerClassName="min-h-11 rounded-[1rem]"
+            ariaLabel="Filtrar por rol"
+          />
         </div>
-        <Link to="/admin" className="btn-outline h-11 w-full justify-center sm:w-auto">Volver a admin</Link>
-      </div>
+      </FilterBar>
 
-      {error ? <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">{error}</div> : null}
-
-      <div className="mt-4 grid gap-4 md:grid-cols-3">
-        <Stat label="Usuarios listados" value={String(stats.total)} />
-        <Stat label="Admins" value={String(stats.admins)} />
-        <Stat label="Emails verificados" value={String(stats.verified)} />
-      </div>
-
-      <section className="mt-4 card">
-        <div className="card-body p-4">
-          <div className="mb-3 grid gap-2 md:grid-cols-[1fr_180px_auto]">
-            <input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Buscar por nombre o email..."
-              className="h-10 rounded-xl border border-zinc-200 px-3 text-sm"
-            />
-            <CustomSelect
-              value={roleFilter}
-              onChange={setRoleFilter}
-              options={roleOptions}
-              triggerClassName="min-h-10 rounded-xl"
-              ariaLabel="Filtrar por rol"
-            />
-            <button className="btn-outline h-10 justify-center px-4" type="button" onClick={() => void load()}>Actualizar</button>
+      <SectionCard
+        title="Accesos del panel"
+        description="Revisa el estado de verificacion y actualiza roles sin perder el contexto de busqueda."
+        actions={<StatusBadge tone={loading ? 'warning' : 'neutral'} size="sm" label={loading ? 'Actualizando' : 'Sincronizado'} />}
+      >
+        {error ? (
+          <div className="ui-alert ui-alert--danger mb-4">
+            <div>
+              <span className="ui-alert__title">No pudimos actualizar la lista.</span>
+              <div className="ui-alert__text">{error}</div>
+            </div>
           </div>
+        ) : null}
 
-          {loading ? (
-            <div className="rounded-xl border border-zinc-200 p-3 text-sm">Cargando usuarios...</div>
-          ) : items.length === 0 ? (
-            <div className="rounded-xl border border-zinc-200 p-3 text-sm">No hay usuarios.</div>
-          ) : (
-            <div className="space-y-2">
-              {items.map((user) => {
-                const isSelf = currentUser?.id === user.id;
-                return (
-                  <div key={user.id} className="rounded-xl border border-zinc-200 p-3">
-                    <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-center">
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <div className="truncate text-sm font-black text-zinc-900">{user.name}</div>
-                          {isSelf ? <span className="rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-xs font-bold text-sky-700">Vos</span> : null}
-                          <span className={`rounded-full border px-2 py-0.5 text-xs font-bold ${user.emailVerified ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-amber-200 bg-amber-50 text-amber-700'}`}>
-                            {user.emailVerified ? 'Verificado' : 'Sin verificar'}
-                          </span>
-                        </div>
-                        <div className="truncate text-sm text-zinc-600">{user.email}</div>
-                        <div className="mt-1 text-xs text-zinc-500">Alta: {new Date(user.createdAt).toLocaleString('es-AR')}</div>
+        {message ? (
+          <div className="ui-alert ui-alert--success mb-4">
+            <div>
+              <span className="ui-alert__title">Cambio aplicado</span>
+              <div className="ui-alert__text">{message}</div>
+            </div>
+          </div>
+        ) : null}
+
+        {loading ? (
+          <LoadingBlock label="Cargando usuarios" lines={4} />
+        ) : items.length === 0 ? (
+          <EmptyState
+            title="No hay usuarios para mostrar"
+            description="Proba con otro termino de busqueda o quita el filtro de rol."
+            actions={
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setQ('');
+                  setRoleFilter('');
+                }}
+              >
+                Limpiar filtros
+              </Button>
+            }
+          />
+        ) : (
+          <div className="admin-collection">
+            {items.map((user) => {
+              const isSelf = currentUser?.id === user.id;
+              const isPending = pendingUserIds.includes(user.id);
+              return (
+                <article key={user.id} className="admin-entity-row">
+                  <div className="admin-entity-row__top">
+                    <div className="admin-entity-row__heading">
+                      <div className="admin-entity-row__title-row">
+                        <div className="admin-entity-row__title">{user.name}</div>
+                        {isSelf ? <StatusBadge tone="accent" size="sm" label="Tu cuenta" /> : null}
+                        <StatusBadge
+                          tone={user.emailVerified ? 'success' : 'warning'}
+                          size="sm"
+                          label={user.emailVerified ? 'Verificado' : 'Pendiente de verificacion'}
+                        />
+                        <StatusBadge tone={user.role === 'ADMIN' ? 'info' : 'neutral'} size="sm" label={user.role === 'ADMIN' ? 'Administrador' : 'Usuario'} />
                       </div>
-                      <div className="flex items-center gap-2 min-w-[140px]">
+                      <div className="admin-entity-row__meta">
+                        <span>{user.email}</span>
+                        <span>Alta: {new Date(user.createdAt).toLocaleDateString('es-AR')}</span>
+                        <span>Ultima actualizacion: {new Date(user.updatedAt).toLocaleDateString('es-AR')}</span>
+                        {isSelf ? <span>No podes cambiar tu propio rol desde esta pantalla.</span> : null}
+                      </div>
+                    </div>
+                    <div className="admin-entity-row__aside">
+                      <span className="admin-entity-row__eyebrow">Rol</span>
+                      <div className="min-w-[12rem]" title={isSelf ? 'No podes cambiar tu propio rol desde esta pantalla.' : undefined}>
                         <CustomSelect
                           value={user.role}
                           onChange={(nextRole) => void changeRole(user.id, nextRole as 'USER' | 'ADMIN')}
                           options={rowRoleOptions}
+                          disabled={isPending || isSelf}
                           triggerClassName="min-h-10 rounded-xl"
                           ariaLabel={`Rol de ${user.name}`}
                         />
                       </div>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </section>
-    </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </SectionCard>
+    </PageShell>
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function MetricCard({
+  label,
+  value,
+  meta,
+  icon,
+}: {
+  label: string;
+  value: string;
+  meta: string;
+  icon: ReactNode;
+}) {
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-      <div className="text-xs font-bold uppercase tracking-wide text-zinc-500">{label}</div>
-      <div className="mt-1 text-xl font-black text-zinc-900">{value}</div>
-    </div>
+    <article className="nr-stat-card">
+      <div className="nr-stat-card__label flex items-center gap-2">
+        {icon}
+        <span>{label}</span>
+      </div>
+      <div className="nr-stat-card__value">{value}</div>
+      <div className="nr-stat-card__meta">{meta}</div>
+    </article>
   );
 }
+
+
+

@@ -12,6 +12,105 @@
 
 ---
 
+### 2026-03-11 - Codex
+- Alcance: hardening funcional adicional sobre modulos admin de negocio.
+- Tipo de intervencion: proteccion contra stale responses + bloqueo de mutaciones duplicadas + validacion operativa mas estricta.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/admin/AdminUsersPage.tsx`
+  - `next-stack/apps/web/src/features/orders/AdminQuickSalesPage.tsx`
+  - `next-stack/apps/web/src/features/catalogAdmin/AdminProductsPage.tsx`
+  - `next-stack/apps/web/src/features/catalogAdmin/AdminCategoriesPage.tsx`
+  - `project-docs/FRONTEND_QA_HARDENING.md`
+  - `project-docs/DECISIONS_LOG.md`
+- ¿Cambio comportamiento funcional?: Si. El admin ahora bloquea mejor cambios de rol invalidos o repetidos, endurece venta rapida frente a coincidencias parciales/lineas invalidas y evita acciones redundantes en productos y categorias.
+- Validaciones ejecutadas:
+  - `npm run typecheck --workspace @nico/api`
+  - `npm run typecheck --workspace @nico/web`
+  - `npm run build --workspace @nico/api`
+  - `npm run build --workspace @nico/web`
+  - `npm run smoke:backend`
+  - `npm run smoke:web`
+  - `npm run qa:route-parity`
+  - `npm run qa:frontend:e2e`
+- Riesgos / notas:
+  - el alcance se mantuvo acotado a debilidades funcionales reales en modulos admin activos; no se abrio una fase nueva de rediseño ni de backend.
+  - `AdminQuickSalesPage` ahora exige coincidencia exacta por SKU/codigo de barras al agregar por codigo y no informa exito si la linea no puede agregarse.
+
+---
+
+### 2026-03-11 - Codex
+- Alcance: implementación del flujo completo de alta de reparaciones en el frontend admin.
+- Tipo de intervencion: nueva ruta protegida + nueva pantalla/formulario + CTA en listado + corrección de alias legacy.
+- Archivos tocados:
+  - `next-stack/apps/web/src/App.tsx`
+  - `next-stack/apps/web/src/features/repairs/api.ts`
+  - `next-stack/apps/web/src/features/repairs/AdminRepairsListPage.tsx`
+  - `next-stack/apps/web/src/features/repairs/AdminRepairCreatePage.tsx`
+  - `next-stack/apps/web/src/features/repairs/AdminRepairDetailPage.tsx`
+  - `next-stack/scripts/qa-frontend-e2e.mjs`
+  - `project-docs/DECISIONS_LOG.md`
+- ¿Cambio comportamiento funcional?: Si. El admin ahora puede crear reparaciones desde una ruta real (`/admin/repairs/create`), con formulario conectado a `repairsApi.adminCreate(...)`, CTA visible en el listado y redireccion al detalle creado.
+- Validaciones ejecutadas:
+  - `npm run typecheck --workspace @nico/api`
+  - `npm run typecheck --workspace @nico/web`
+  - `npm run build --workspace @nico/api`
+  - `npm run build --workspace @nico/web`
+  - `npm run smoke:web`
+  - `npm run smoke:backend`
+  - `npm run qa:route-parity`
+  - `npm run qa:frontend:e2e`
+- Riesgos / notas:
+  - la pantalla usa solo campos soportados por el contrato real del backend y envia tambien las etiquetas visibles de catalogo para no perder contexto en listados/detalle.
+  - ademas del gate normal, se valido el flujo real `listado -> crear -> detalle` contra la API levantada en local, incluyendo submit exitoso y redireccion al detalle generado.
+
+---
+
+### 2026-03-11 - Codex
+- Alcance: backlog menor / polish funcional sobre públicas de reparación y módulos admin secundarios.
+- Tipo de intervencion: quick wins funcionales + limpieza de copy/encoding + endurecimiento de estados secundarios.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/repairs/PublicRepairLookupPage.tsx`
+  - `next-stack/apps/web/src/features/repairs/PublicRepairQuoteApprovalPage.tsx`
+  - `next-stack/apps/web/src/features/admin/AdminUsersPage.tsx`
+  - `next-stack/apps/web/src/features/orders/AdminQuickSalesPage.tsx`
+  - `next-stack/apps/web/src/features/admin/Admin2faSecurityPage.tsx`
+  - `project-docs/FRONTEND_QA_HARDENING.md`
+  - `project-docs/DECISIONS_LOG.md`
+- ¿Cambio comportamiento funcional?: Si. Las páginas públicas de reparación ahora resuelven mejor estados inválidos/no encontrados, usuarios admin evita respuestas stale y cambios de rol duplicados, venta rápida bloquea acciones inválidas y 2FA admin valida mejor y comunica errores/éxitos de forma separada.
+- Validaciones ejecutadas:
+  - `npm run typecheck --workspace @nico/web`
+- Riesgos / notas:
+  - el foco estuvo en quick wins con impacto real; siguen quedando módulos secundarios menos usados que no justificaban otra reescritura en esta fase corta.
+  - se agregó `data-qa="quick-sale-scan-code"` y se actualizó `qa:frontend:e2e` para dejar de depender del placeholder visible de venta rápida.
+  - se agregó `data-admin-2fa-page` y se actualizó `qa:frontend:e2e` para no depender del título visible en la pantalla de 2FA admin.
+
+---
+
+### 2026-03-10 - Codex
+- Alcance: fase adicional de QA funcional profunda sobre guards, verificación de email y módulos admin con riesgo de respuestas o acciones obsoletas.
+- Tipo de intervencion: corrección de bugs reales de navegación protegida + hardening de concurrencia frontend + consolidación documental.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/auth/RequireAuth.tsx`
+  - `next-stack/apps/web/src/features/auth/RequireAdmin.tsx`
+  - `next-stack/apps/web/src/features/auth/VerifyEmailPage.tsx`
+  - `next-stack/apps/web/src/features/orders/AdminOrdersPage.tsx`
+  - `next-stack/apps/web/src/features/catalogAdmin/AdminProductsPage.tsx`
+  - `next-stack/apps/web/src/features/catalogAdmin/AdminCategoriesPage.tsx`
+  - `project-docs/FRONTEND_QA_HARDENING.md`
+  - `project-docs/DECISIONS_LOG.md`
+- ¿Cambio comportamiento funcional?: Si. Las vistas protegidas ahora reaccionan a cambios de sesión, la verificación de email ya no ofrece acciones inválidas sin contexto y los módulos admin endurecidos bloquean respuestas stale y mutaciones duplicadas.
+- Validaciones ejecutadas:
+  - `npm run typecheck --workspace @nico/api`
+  - `npm run typecheck --workspace @nico/web`
+  - `npm run build --workspace @nico/api`
+  - `npm run build --workspace @nico/web`
+  - `npm run smoke:backend`
+  - `npm run smoke:web`
+  - `npm run qa:route-parity`
+  - `npm run qa:frontend:e2e`
+- Riesgos / notas:
+  - el hardening se concentró en bugs confirmados de sesión, verify email y admin concurrente; lo pendiente ya queda acotado a módulos secundarios no auditados a fondo.
+
 ### 2026-03-10 - Codex
 - Alcance: fase de QA funcional profunda + hardening del frontend centrada en flujos core de store, cuenta, admin y auth.
 - Tipo de intervencion: corrección de bugs reales de UX/flujo + endurecimiento de estados de carga/error + validación E2E de páginas activas.
@@ -344,5 +443,29 @@
   - el warning de chunk grande desaparecio en el build actual
   - el chunk principal JS bajo de ~`769.29 kB` a ~`317.30 kB`
   - no se agregaron `manualChunks`; el problema se resolvio atacando la causa principal del bundle inicial
+
+### 2026-03-11 - Codex
+- Alcance: hardening del modulo admin de reparaciones, sobre create + detalle/edicion, y ajuste del gate `smoke:backend` para no fallar con productos visibles pero no comprables en demo local.
+- Tipo de intervencion: mejora funcional real + robustez de validacion + fix de automatizacion local.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/repairs/AdminRepairCreatePage.tsx`
+  - `next-stack/apps/web/src/features/repairs/AdminRepairDetailPage.tsx`
+  - `next-stack/scripts/smoke-backend.mjs`
+  - `project-docs/FRONTEND_QA_HARDENING.md`
+  - `project-docs/DECISIONS_LOG.md`
+- ¿Cambio comportamiento funcional?: Si. El alta admin valida mejor telefono/importes, maneja mejor fallas parciales del catalogo y evita doble submit. El detalle admin solo guarda cambios reales, separa errores de carga/guardado y refresca timeline/datos luego del PATCH. El smoke backend ahora degrada a `skipped` cuando el dataset local no tiene productos realmente comprables.
+- Validaciones ejecutadas:
+  - `npm run typecheck --workspace @nico/api`
+  - `npm run typecheck --workspace @nico/web`
+  - `npm run build --workspace @nico/api`
+  - `npm run build --workspace @nico/web`
+  - `npm run smoke:backend`
+  - `npm run smoke:web`
+  - `npm run qa:route-parity`
+  - `npm run qa:frontend:e2e`
+  - prueba dirigida `listado -> crear -> detalle -> editar/guardar`
+- Riesgos / notas:
+  - el contrato backend no soporta mas campos que los ya usados; no se inventaron payloads nuevos
+  - `smoke:backend` mantiene cobertura general, pero no fuerza checkout/quick sale cuando el demo local no ofrece productos validos para compra
 
 

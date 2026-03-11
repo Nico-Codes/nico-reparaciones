@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useRef, useState } from 'react';
 import { FolderTree, Layers3, Tag } from 'lucide-react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -37,9 +37,11 @@ export function AdminCategoriesPage() {
   const [items, setItems] = useState<AdminCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [pendingActionId, setPendingActionId] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [query, setQuery] = useState('');
+  const requestIdRef = useRef(0);
 
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
@@ -47,14 +49,18 @@ export function AdminCategoriesPage() {
   const [slugAuto, setSlugAuto] = useState(true);
 
   async function loadCategories() {
+    const requestId = ++requestIdRef.current;
     setLoading(true);
     setError('');
     try {
       const res = await catalogAdminApi.categories();
+      if (requestId !== requestIdRef.current) return;
       setItems(res.items);
     } catch (e) {
+      if (requestId !== requestIdRef.current) return;
       setError(e instanceof Error ? e.message : 'No se pudieron cargar las categorías.');
     } finally {
+      if (requestId !== requestIdRef.current) return;
       setLoading(false);
     }
   }
@@ -82,6 +88,13 @@ export function AdminCategoriesPage() {
     }),
     [items],
   );
+  const normalizedName = name.trim();
+  const normalizedSlug = (slug.trim() || slugify(normalizedName)).slice(0, 120);
+  const hasChanges =
+    !editingItem ||
+    editingItem.name !== normalizedName ||
+    editingItem.slug !== normalizedSlug ||
+    editingItem.active !== active;
 
   useEffect(() => {
     if (editingItem) {
@@ -111,18 +124,35 @@ export function AdminCategoriesPage() {
 
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
-    setSaving(true);
     setError('');
     setNotice('');
 
+    const trimmedName = normalizedName;
+
+    if (!trimmedName) {
+      setError('Ingresá un nombre antes de guardar la categoría.');
+      return;
+    }
+
+    if (!normalizedSlug) {
+      setError('No pudimos generar un slug válido para la categoría.');
+      return;
+    }
+
+    setSaving(true);
+
     try {
       const payload = {
-        name: name.trim(),
-        slug: (slug.trim() || slugify(name.trim())).slice(0, 120),
+        name: trimmedName,
+        slug: normalizedSlug,
         active,
       };
 
       if (editId && editingItem) {
+        if (!hasChanges) {
+          setNotice('No hay cambios para guardar.');
+          return;
+        }
         await catalogAdminApi.updateCategory(editId, payload);
         setNotice('Categoría actualizada correctamente.');
         await loadCategories();
@@ -140,23 +170,29 @@ export function AdminCategoriesPage() {
   }
 
   async function toggleActive(item: AdminCategory) {
+    if (pendingActionId === item.id) return;
     setError('');
     setNotice('');
     try {
+      setPendingActionId(item.id);
       await catalogAdminApi.updateCategory(item.id, { active: !item.active });
       setNotice(`Categoría ${item.active ? 'desactivada' : 'activada'} correctamente.`);
       await loadCategories();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo actualizar el estado.');
+    } finally {
+      setPendingActionId((current) => (current === item.id ? null : current));
     }
   }
 
   async function removeCategory(item: AdminCategory) {
     if (!window.confirm(`¿Eliminar la categoría "${item.name}"?`)) return;
+    if (pendingActionId === item.id) return;
 
     setError('');
     setNotice('');
     try {
+      setPendingActionId(item.id);
       await catalogAdminApi.deleteCategory(item.id);
       if (editId === item.id) {
         navigate('/admin/categorias', { replace: true });
@@ -165,6 +201,8 @@ export function AdminCategoriesPage() {
       await loadCategories();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo eliminar la categoría.');
+    } finally {
+      setPendingActionId((current) => (current === item.id ? null : current));
     }
   }
 
@@ -295,18 +333,18 @@ export function AdminCategoriesPage() {
                       <Button asChild variant="outline" size="sm">
                         <Link to={`/admin/categorias/${encodeURIComponent(item.id)}/editar`}>Editar</Link>
                       </Button>
-                      <Button type="button" variant="secondary" size="sm" onClick={() => void toggleActive(item)}>
-                        {item.active ? 'Desactivar' : 'Activar'}
+                      <Button type="button" variant="secondary" size="sm" onClick={() => void toggleActive(item)} disabled={pendingActionId === item.id}>
+                        {pendingActionId === item.id ? 'Guardando...' : item.active ? 'Desactivar' : 'Activar'}
                       </Button>
                       <Button
                         type="button"
                         variant="danger"
                         size="sm"
                         onClick={() => void removeCategory(item)}
-                        disabled={item.productsCount > 0}
+                        disabled={item.productsCount > 0 || pendingActionId === item.id}
                         title={item.productsCount > 0 ? 'No se puede eliminar mientras tenga productos asociados.' : 'Eliminar categoría'}
                       >
-                        Eliminar
+                        {pendingActionId === item.id ? 'Procesando...' : 'Eliminar'}
                       </Button>
                     </div>
                   </article>
@@ -367,6 +405,7 @@ export function AdminCategoriesPage() {
                     type="button"
                     className={cn('choice-card', active && 'is-active')}
                     onClick={() => setActive(true)}
+                    disabled={saving}
                   >
                     <div className="choice-card__title">Activa</div>
                     <div className="choice-card__hint">Disponible para productos visibles en tienda.</div>
@@ -375,6 +414,7 @@ export function AdminCategoriesPage() {
                     type="button"
                     className={cn('choice-card', !active && 'is-active')}
                     onClick={() => setActive(false)}
+                    disabled={saving}
                   >
                     <div className="choice-card__title">Inactiva</div>
                     <div className="choice-card__hint">Se conserva en el catálogo, pero deja de ofrecerse.</div>
@@ -383,12 +423,13 @@ export function AdminCategoriesPage() {
               </div>
 
               <div className="flex flex-wrap items-center gap-3 pt-2">
-                <Button type="submit" disabled={saving}>
+                <Button type="submit" disabled={saving || (Boolean(editId && editingItem) && !hasChanges)}>
                   {saving ? 'Guardando...' : editId && editingItem ? 'Guardar cambios' : 'Crear categoría'}
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
+                  disabled={saving}
                   onClick={() => {
                     setName('');
                     setSlug('');

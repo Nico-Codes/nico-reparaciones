@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useRef, useState } from 'react';
 import { Boxes, PackagePlus, RefreshCcw, Search, Tag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ActionDropdown } from '@/components/ui/action-dropdown';
@@ -40,6 +40,8 @@ export function AdminProductsPage() {
   const [activeFilter, setActiveFilter] = useState('');
   const [featuredFilter, setFeaturedFilter] = useState('');
   const [stockFilter, setStockFilter] = useState('');
+  const [pendingProductIds, setPendingProductIds] = useState<string[]>([]);
+  const productsRequestIdRef = useRef(0);
 
   async function loadCategories() {
     const response = await catalogAdminApi.categories();
@@ -47,14 +49,18 @@ export function AdminProductsPage() {
   }
 
   async function loadProducts() {
+    const requestId = ++productsRequestIdRef.current;
     setLoading(true);
     setError('');
     try {
       const response = await catalogAdminApi.products({ q, categoryId: categoryId || undefined, active: activeFilter || undefined });
+      if (requestId !== productsRequestIdRef.current) return;
       setProducts(response.items);
     } catch (cause) {
+      if (requestId !== productsRequestIdRef.current) return;
       setError(cause instanceof Error ? cause.message : 'No se pudieron cargar los productos.');
     } finally {
+      if (requestId !== productsRequestIdRef.current) return;
       setLoading(false);
     }
   }
@@ -118,11 +124,15 @@ export function AdminProductsPage() {
   ];
 
   async function patchProduct(id: string, patch: Record<string, unknown>) {
+    if (pendingProductIds.includes(id)) return;
     try {
+      setPendingProductIds((current) => [...current, id]);
       const response = await catalogAdminApi.updateProduct(id, patch);
       setProducts((current) => current.map((product) => (product.id === id ? response.item : product)));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'No se pudo actualizar el producto.');
+    } finally {
+      setPendingProductIds((current) => current.filter((productId) => productId !== id));
     }
   }
 
@@ -175,7 +185,7 @@ export function AdminProductsPage() {
                 Limpiar
               </Button>
             ) : null}
-            <Button type="button" variant="outline" size="sm" onClick={() => void loadProducts()}>
+            <Button type="button" variant="outline" size="sm" onClick={() => void loadProducts()} disabled={loading}>
               <RefreshCcw className="h-4 w-4" />
               Recargar
             </Button>
@@ -295,7 +305,7 @@ export function AdminProductsPage() {
 
                   <div className="admin-entity-row__actions">
                     <div className="flex flex-wrap items-center gap-2">
-                      <QuickStockEditor value={product.stock} onSave={(nextValue) => void patchProduct(product.id, { stock: Math.max(0, Math.trunc(nextValue)) })} />
+                      <QuickStockEditor disabled={pendingProductIds.includes(product.id)} value={product.stock} onSave={(nextValue) => void patchProduct(product.id, { stock: Math.max(0, Math.trunc(nextValue)) })} />
                       <StatusBadge tone={marginTone(marginValue)} size="sm" label={marginValue > 0 ? 'Margen positivo' : marginValue === 0 ? 'Sin margen' : 'Margen negativo'} />
                     </div>
 
@@ -307,6 +317,7 @@ export function AdminProductsPage() {
                           type="button"
                           variant="outline"
                           size="sm"
+                          disabled={pendingProductIds.includes(product.id)}
                           onClick={toggle}
                           aria-haspopup="menu"
                           aria-controls={menuId}
@@ -325,7 +336,8 @@ export function AdminProductsPage() {
                               void patchProduct(product.id, { active: !product.active });
                               close();
                             }}
-                            className="dropdown-item flex items-center justify-between gap-2"
+                            disabled={pendingProductIds.includes(product.id)}
+                            className="dropdown-item flex items-center justify-between gap-2 disabled:pointer-events-none disabled:opacity-60"
                           >
                             <span>Estado</span>
                             <StatusBadge tone={product.active ? 'success' : 'neutral'} size="sm" label={product.active ? 'Activo' : 'Inactivo'} />
@@ -336,7 +348,8 @@ export function AdminProductsPage() {
                               void patchProduct(product.id, { featured: !product.featured });
                               close();
                             }}
-                            className="dropdown-item flex items-center justify-between gap-2"
+                            disabled={pendingProductIds.includes(product.id)}
+                            className="dropdown-item flex items-center justify-between gap-2 disabled:pointer-events-none disabled:opacity-60"
                           >
                             <span>Destacado</span>
                             <StatusBadge tone={product.featured ? 'accent' : 'neutral'} size="sm" label={product.featured ? 'Sí' : 'No'} />
@@ -399,9 +412,11 @@ function SelectField({
   );
 }
 
-function QuickStockEditor({ value, onSave }: { value: number; onSave: (value: number) => void }) {
+function QuickStockEditor({ value, onSave, disabled = false }: { value: number; onSave: (value: number) => void; disabled?: boolean }) {
   const [local, setLocal] = useState(String(value));
   useEffect(() => setLocal(String(value)), [value]);
+  const nextValue = Number(local || 0);
+  const canSave = !disabled && Number.isFinite(nextValue) && Math.max(0, Math.trunc(nextValue)) !== value;
 
   return (
     <div className="flex items-center gap-2 rounded-[1rem] border border-zinc-200 bg-zinc-50 px-2 py-1.5">
@@ -410,10 +425,11 @@ function QuickStockEditor({ value, onSave }: { value: number; onSave: (value: nu
         min="0"
         value={local}
         onChange={(event) => setLocal(event.target.value)}
+        disabled={disabled}
         className="h-8 w-[72px] rounded-xl border border-zinc-200 bg-white px-2 text-center text-sm font-bold"
         aria-label="Stock rápido"
       />
-      <Button type="button" variant="outline" size="sm" onClick={() => onSave(Number(local || 0))}>
+      <Button type="button" variant="outline" size="sm" onClick={() => onSave(Number(local || 0))} disabled={!canSave}>
         Guardar
       </Button>
     </div>

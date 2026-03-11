@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
+import { LoadingBlock } from '@/components/ui/loading-block';
+import { PageHeader } from '@/components/ui/page-header';
+import { PageShell } from '@/components/ui/page-shell';
+import { SectionCard } from '@/components/ui/section-card';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { repairsApi } from './api';
+import { formatDateTime, money, repairStatusSummary, repairStatusTone } from './repair-ui';
 import type { PublicRepairQuoteApprovalItem } from './types';
-
-function money(v: number | null) {
-  if (v == null) return 'A confirmar';
-  return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(v);
-}
 
 export function PublicRepairQuoteApprovalPage() {
   const { id = '' } = useParams();
@@ -26,19 +29,19 @@ export function PublicRepairQuoteApprovalPage() {
     async function load() {
       if (!id.trim() || !token) {
         if (!active) return;
-        setError('Enlace invalido o incompleto.');
+        setError('El enlace de aprobación es inválido o está incompleto.');
         setLoading(false);
         return;
       }
 
       try {
-        const res = await repairsApi.publicQuoteApproval(id, token);
+        const response = await repairsApi.publicQuoteApproval(id, token);
         if (!active) return;
-        setItem(res.item);
-        setCanDecide(res.canDecide);
-      } catch (err) {
+        setItem(response.item);
+        setCanDecide(response.canDecide);
+      } catch (cause) {
         if (!active) return;
-        setError(err instanceof Error ? err.message : 'No se pudo abrir el enlace.');
+        setError(cause instanceof Error ? cause.message : 'No pudimos abrir el enlace de aprobación.');
       } finally {
         if (active) setLoading(false);
       }
@@ -56,125 +59,139 @@ export function PublicRepairQuoteApprovalPage() {
     setError(null);
     setMessage(null);
     try {
-      const res =
+      const response =
         action === 'approve'
           ? await repairsApi.publicQuoteApprove(id, token)
           : await repairsApi.publicQuoteReject(id, token);
-      setItem(res.item);
-      setCanDecide(res.canDecide);
-      setMessage(res.message);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo guardar la decision.');
+      setItem(response.item);
+      setCanDecide(response.canDecide);
+      setMessage(response.message);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No pudimos guardar tu decisión.');
     } finally {
       setActionLoading(null);
     }
   }
 
   return (
-    <div className="store-shell">
-      <div className="mx-auto max-w-[920px] px-4 py-4 md:py-5">
-        <section className="store-hero mb-4">
-          <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-center">
-            <div>
-              <h1 className="text-xl font-black leading-tight tracking-tight text-zinc-900 md:text-[1.7rem]">
-                Presupuesto de reparacion
-              </h1>
-              <p className="mt-1 text-sm text-zinc-700">Codigo {id || '-'}</p>
-            </div>
-            <Link to="/reparacion" className="btn-outline inline-flex h-10 items-center justify-center rounded-xl px-4 text-sm font-bold">
-              Volver a reparacion
-            </Link>
-          </div>
-        </section>
+    <PageShell context="store" className="px-4 py-4 md:py-5">
+      <div className="mx-auto max-w-5xl space-y-6">
+        <PageHeader
+          context="store"
+          eyebrow="Aprobación remota"
+          title="Presupuesto de reparación"
+          subtitle={`Revisá el detalle del caso ${id || '-'} y definí si querés continuar con el trabajo.`}
+          actions={
+            <Button asChild variant="outline" size="sm">
+              <Link to="/reparacion">Volver a reparación</Link>
+            </Button>
+          }
+        />
 
         {loading ? (
-          <section className="card">
-            <div className="card-body text-sm font-medium text-zinc-700">Cargando presupuesto...</div>
-          </section>
+          <SectionCard title="Cargando presupuesto" description="Traemos la última versión del caso y el estado de aprobación.">
+            <LoadingBlock label="Cargando presupuesto de reparación" lines={4} />
+          </SectionCard>
         ) : null}
 
         {!loading && error ? (
-          <section className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">{error}</section>
+          <EmptyState
+            title="No pudimos abrir este enlace"
+            description={error}
+            actions={
+              <div className="flex flex-wrap gap-3">
+                <Button asChild>
+                  <Link to="/reparacion">Consultar reparación</Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link to="/store">Volver a la tienda</Link>
+                </Button>
+              </div>
+            }
+          />
         ) : null}
 
         {!loading && !error && item ? (
           <>
-            <section className="card">
-              <div className="card-head flex flex-wrap items-center justify-between gap-3">
-                <div className="text-base font-black text-zinc-900">Detalle</div>
-                <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-bold text-sky-700">
-                  {item.statusLabel}
-                </span>
+            <SectionCard
+              title="Detalle del caso"
+              description={repairStatusSummary(item.status)}
+              actions={<StatusBadge tone={repairStatusTone(item.status)} label={item.statusLabel} />}
+            >
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Info label="Cliente" value={item.customerName} />
+                <Info label="Teléfono" value={item.customerPhoneMasked ?? 'No informado'} />
+                <Info label="Equipo" value={[item.deviceBrand, item.deviceModel].filter(Boolean).join(' ') || 'No informado'} />
+                <Info label="Falla reportada" value={item.issueLabel || 'No informada'} />
+                <Info label="Presupuesto" value={item.finalPrice != null ? money(item.finalPrice) : money(item.quotedPrice)} />
+                <Info label="Última actualización" value={formatDateTime(item.updatedAt)} />
               </div>
-              <div className="card-body">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Info label="Cliente" value={item.customerName} />
-                  <Info label="Telefono" value={item.customerPhoneMasked ?? 'No informado'} />
-                  <Info label="Equipo" value={[item.deviceBrand, item.deviceModel].filter(Boolean).join(' ') || 'No informado'} />
-                  <Info label="Falla" value={item.issueLabel || 'No informada'} />
-                  <Info label="Presupuesto" value={item.finalPrice != null ? money(item.finalPrice) : money(item.quotedPrice)} />
-                  <Info label="Actualizado" value={new Date(item.updatedAt).toLocaleString('es-AR')} />
-                </div>
 
-                {item.notes ? (
-                  <div className="mt-3 rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5">
-                    <div className="text-[11px] font-bold uppercase tracking-wide text-zinc-500">Detalle tecnico</div>
-                    <div className="mt-1 whitespace-pre-wrap text-sm font-medium text-zinc-700">{item.notes}</div>
-                  </div>
-                ) : null}
-              </div>
-            </section>
+              {item.notes ? (
+                <div className="mt-4 rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-3">
+                  <div className="text-[11px] font-bold uppercase tracking-wide text-zinc-500">Detalle técnico</div>
+                  <div className="mt-1 whitespace-pre-wrap text-sm font-medium text-zinc-700">{item.notes}</div>
+                </div>
+              ) : null}
+            </SectionCard>
 
             {message ? (
-              <section className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
-                {message}
-              </section>
+              <div className="ui-alert ui-alert--success">
+                <div>
+                  <span className="ui-alert__title">Decisión registrada</span>
+                  <div className="ui-alert__text">{message}</div>
+                </div>
+              </div>
             ) : null}
 
             {canDecide ? (
-              <section className="mt-4 card">
-                <div className="card-body space-y-3">
-                  <div className="text-base font-black text-zinc-900">Como queres continuar?</div>
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    <button
-                      type="button"
-                      onClick={() => onDecision('approve')}
-                      disabled={actionLoading !== null}
-                      className="btn-primary h-11 w-full justify-center rounded-xl text-sm font-black disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {actionLoading === 'approve' ? 'Guardando...' : 'Aprobar presupuesto'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onDecision('reject')}
-                      disabled={actionLoading !== null}
-                      className="btn-outline h-11 w-full justify-center rounded-xl text-sm font-black disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {actionLoading === 'reject' ? 'Guardando...' : 'Rechazar presupuesto'}
-                    </button>
-                  </div>
-                  <p className="text-xs text-zinc-500">
-                    Si aprobas, el estado pasa a "En reparacion". Si rechazas, la reparacion queda cancelada.
-                  </p>
+              <SectionCard
+                title="¿Cómo querés continuar?"
+                description="Podés aprobar el presupuesto para avanzar con la reparación o rechazarlo si no querés seguir."
+              >
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Button
+                    type="button"
+                    onClick={() => void onDecision('approve')}
+                    disabled={actionLoading !== null}
+                    className="w-full justify-center"
+                  >
+                    {actionLoading === 'approve' ? 'Guardando...' : 'Aprobar presupuesto'}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => void onDecision('reject')}
+                    disabled={actionLoading !== null}
+                    className="w-full justify-center"
+                  >
+                    {actionLoading === 'reject' ? 'Guardando...' : 'Rechazar presupuesto'}
+                  </Button>
                 </div>
-              </section>
+                <p className="text-sm text-zinc-500">
+                  Si aprobás, el caso pasa a reparación. Si rechazás, lo cerramos sin avanzar con el trabajo.
+                </p>
+              </SectionCard>
             ) : (
-              <section className="mt-4 card">
-                <div className="card-body text-sm font-semibold text-zinc-700">
-                  Esta reparacion ya no esta esperando aprobacion.
+              <SectionCard title="Estado de la aprobación" description="Este presupuesto ya no espera una nueva decisión desde este enlace.">
+                <div className="ui-alert ui-alert--info">
+                  <div>
+                    <span className="ui-alert__title">Sin acciones pendientes</span>
+                    <div className="ui-alert__text">La reparación ya fue aprobada, rechazada o cerrada por otra vía.</div>
+                  </div>
                 </div>
-              </section>
+              </SectionCard>
             )}
           </>
         ) : null}
       </div>
-    </div>
+    </PageShell>
   );
 }
 
 function Info({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-zinc-200 bg-zinc-50/80 px-3 py-2">
+    <div className="rounded-xl border border-zinc-200 bg-zinc-50/80 px-3 py-2.5">
       <div className="text-[11px] font-bold uppercase tracking-wide text-zinc-500">{label}</div>
       <div className="mt-1 text-sm font-semibold text-zinc-800">{value}</div>
     </div>

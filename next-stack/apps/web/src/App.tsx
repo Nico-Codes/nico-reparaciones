@@ -69,6 +69,7 @@ const AdminQuickSalesHistoryPage = lazyPage(() => import('@/features/orders/Admi
 const MyOrdersPage = lazyPage(() => import('@/features/orders/MyOrdersPage'), 'MyOrdersPage');
 const OrderDetailPage = lazyPage(() => import('@/features/orders/OrderDetailPage'), 'OrderDetailPage');
 const AdminRepairsListPage = lazyPage(() => import('@/features/repairs/AdminRepairsListPage'), 'AdminRepairsListPage');
+const AdminRepairCreatePage = lazyPage(() => import('@/features/repairs/AdminRepairCreatePage'), 'AdminRepairCreatePage');
 const AdminRepairDetailPage = lazyPage(() => import('@/features/repairs/AdminRepairDetailPage'), 'AdminRepairDetailPage');
 const AdminRepairPrintPage = lazyPage(() => import('@/features/repairs/AdminRepairPrintPage'), 'AdminRepairPrintPage');
 const AdminRepairTicketPage = lazyPage(() => import('@/features/repairs/AdminRepairTicketPage'), 'AdminRepairTicketPage');
@@ -170,6 +171,10 @@ function LegacyAdminOrderTicketAliasRedirect() {
 function LegacyAdminRepairsAliasRedirect() {
   const { id = '' } = useParams();
   return <Navigate to={id ? `/admin/repairs/${encodeURIComponent(id)}` : '/admin/repairs'} replace />;
+}
+
+function LegacyAdminRepairCreateAliasRedirect() {
+  return <Navigate to="/admin/repairs/create" replace />;
 }
 
 function LegacyAdminRepairPrintAliasRedirect() {
@@ -316,11 +321,12 @@ export default function App() {
         <Route path="/admin/whatsapp-pedidos" element={<RequireAdmin><Navigate to="/admin/whatsapppedidos" replace /></RequireAdmin>} />
         <Route path="/admin/help" element={<RequireAdmin>{withShellSuspense(<AdminHelpFaqPage />)}</RequireAdmin>} />
         <Route path="/admin/repairs" element={<RequireAdmin>{withShellSuspense(<AdminRepairsListPage />)}</RequireAdmin>} />
+        <Route path="/admin/repairs/create" element={<RequireAdmin>{withShellSuspense(<AdminRepairCreatePage />)}</RequireAdmin>} />
         <Route path="/admin/repairs/:id" element={<RequireAdmin>{withShellSuspense(<AdminRepairDetailPage />)}</RequireAdmin>} />
         <Route path="/admin/repairs/:id/print" element={<RequireAdmin>{withSuspense(<AdminRepairPrintPage />)}</RequireAdmin>} />
         <Route path="/admin/repairs/:id/ticket" element={<RequireAdmin>{withSuspense(<AdminRepairTicketPage />)}</RequireAdmin>} />
         <Route path="/admin/reparaciones" element={<RequireAdmin><LegacyAdminRepairsAliasRedirect /></RequireAdmin>} />
-        <Route path="/admin/reparaciones/crear" element={<RequireAdmin><LegacyAdminRepairsAliasRedirect /></RequireAdmin>} />
+        <Route path="/admin/reparaciones/crear" element={<RequireAdmin><LegacyAdminRepairCreateAliasRedirect /></RequireAdmin>} />
         <Route path="/admin/reparaciones/:id" element={<RequireAdmin><LegacyAdminRepairsAliasRedirect /></RequireAdmin>} />
         <Route path="/admin/reparaciones/:id/imprimir" element={<RequireAdmin><LegacyAdminRepairPrintAliasRedirect /></RequireAdmin>} />
         <Route path="/admin/reparaciones/:id/ticket" element={<RequireAdmin><LegacyAdminRepairTicketAliasRedirect /></RequireAdmin>} />

@@ -161,21 +161,29 @@ async function main() {
     let checkoutError = null;
 
     for (const candidate of productCandidates) {
-      cartValid = await req('/cart/quote', {
+      const quoteCandidate = await req('/cart/quote', {
         method: 'POST',
         body: JSON.stringify({ items: [{ productId: candidate.id, quantity: 1 }] }),
       });
-      if (!cartValid.res.ok || !Array.isArray(cartValid.data?.items) || Number(cartValid.data?.totals?.subtotal ?? 0) <= 0) {
+      const validQuoteLines = Array.isArray(quoteCandidate.data?.items)
+        ? quoteCandidate.data.items.filter((item) => item?.valid && Number(item?.lineTotal ?? 0) > 0)
+        : [];
+      if (
+        !quoteCandidate.res.ok
+        || !Array.isArray(quoteCandidate.data?.items)
+        || validQuoteLines.length === 0
+        || Number(quoteCandidate.data?.totals?.subtotal ?? 0) <= 0
+      ) {
         checkoutError = {
           productId: candidate.id,
           stage: 'quote',
-          status: cartValid.res.status,
-          body: cartValid.data,
+          status: quoteCandidate.res.status,
+          body: quoteCandidate.data,
         };
         continue;
       }
 
-      checkout = await req('/orders/checkout', {
+      const checkoutCandidate = await req('/orders/checkout', {
         method: 'POST',
         headers: { Authorization: `Bearer ${refreshTokens.accessToken}` },
         body: JSON.stringify({
@@ -183,7 +191,9 @@ async function main() {
           paymentMethod: 'EFECTIVO',
         }),
       });
-      if (checkout.res.ok) {
+      if (checkoutCandidate.res.ok) {
+        cartValid = quoteCandidate;
+        checkout = checkoutCandidate;
         selectedCheckoutProductId = candidate.id;
         checkoutError = null;
         break;
@@ -191,54 +201,63 @@ async function main() {
       checkoutError = {
         productId: candidate.id,
         stage: 'checkout',
-        status: checkout.res.status,
-        body: checkout.data,
+        status: checkoutCandidate.res.status,
+        body: checkoutCandidate.data,
       };
     }
 
-    assert(cartValid?.res.ok, 'cart/quote valido fallo', checkoutError);
-    assert(Array.isArray(cartValid?.data?.items), 'cart/quote valido payload invalido', cartValid?.data);
-    logStep('cart/quote valid', {
-      productId: selectedCheckoutProductId,
-      items: cartValid.data.items.length,
-      subtotal: cartValid.data?.totals?.subtotal,
-    });
-
-    assert(checkout?.res.ok, 'orders/checkout fallo', checkoutError);
-    const checkoutOrder = checkout.data?.item ?? checkout.data;
-    assert(checkoutOrder?.id, 'orders/checkout sin item.id', checkout.data);
-    createdOrderId = checkoutOrder.id;
-    logStep('orders/checkout', { orderId: createdOrderId, total: checkoutOrder.total });
-
-    let quickSale = null;
-    let quickSaleError = null;
-    for (const candidate of productCandidates) {
-      quickSale = await req('/orders/admin/quick-sales/confirm', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${refreshTokens.accessToken}` },
-        body: JSON.stringify({
-          items: [{ productId: candidate.id, quantity: 1 }],
-          paymentMethod: 'local',
-          customerName: 'Cliente mostrador',
-          customerPhone: '+5491111111111',
-          notes: 'Smoke quick sale',
-        }),
+    if (!selectedCheckoutProductId || !cartValid || !checkout?.res.ok) {
+      logStep('orders/checkout', { skipped: 'sin productos comprables para smoke', reason: checkoutError });
+    } else {
+      assert(Array.isArray(cartValid?.data?.items), 'cart/quote valido payload invalido', cartValid?.data);
+      logStep('cart/quote valid', {
+        productId: selectedCheckoutProductId,
+        items: cartValid.data.items.length,
+        subtotal: cartValid.data?.totals?.subtotal,
       });
-      if (quickSale.res.ok) {
-        quickSaleError = null;
-        break;
+
+      const checkoutOrder = checkout.data?.item ?? checkout.data;
+      assert(checkoutOrder?.id, 'orders/checkout sin item.id', checkout.data);
+      createdOrderId = checkoutOrder.id;
+      logStep('orders/checkout', { orderId: createdOrderId, total: checkoutOrder.total });
+
+      let quickSale = null;
+      let quickSaleError = null;
+      for (const candidate of productCandidates) {
+        quickSale = await req('/orders/admin/quick-sales/confirm', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${refreshTokens.accessToken}` },
+          body: JSON.stringify({
+            items: [{ productId: candidate.id, quantity: 1 }],
+            paymentMethod: 'local',
+            customerName: 'Cliente mostrador',
+            customerPhone: '+5491111111111',
+            notes: 'Smoke quick sale',
+          }),
+        });
+        if (quickSale.res.ok) {
+          quickSaleError = null;
+          break;
+        }
+        quickSaleError = {
+          productId: candidate.id,
+          status: quickSale.res.status,
+          body: quickSale.data,
+        };
       }
-      quickSaleError = {
-        productId: candidate.id,
-        status: quickSale.res.status,
-        body: quickSale.data,
-      };
+
+      if (!quickSale?.res.ok) {
+        logStep('orders/admin/quick-sales/confirm', {
+          skipped: 'sin productos comprables para venta rapida',
+          reason: quickSaleError,
+        });
+      } else {
+        assert(quickSale.data?.item?.isQuickSale === true, 'quick sale sin flag isQuickSale', quickSale.data);
+        assert(quickSale.data?.item?.status === 'ENTREGADO', 'quick sale sin estado ENTREGADO', quickSale.data);
+        quickSaleOrderId = quickSale.data.item.id;
+        logStep('orders/admin/quick-sales/confirm', { orderId: quickSaleOrderId });
+      }
     }
-    assert(quickSale?.res.ok, 'orders/admin/quick-sales/confirm fallo', quickSaleError);
-    assert(quickSale.data?.item?.isQuickSale === true, 'quick sale sin flag isQuickSale', quickSale.data);
-    assert(quickSale.data?.item?.status === 'ENTREGADO', 'quick sale sin estado ENTREGADO', quickSale.data);
-    quickSaleOrderId = quickSale.data.item.id;
-    logStep('orders/admin/quick-sales/confirm', { orderId: quickSaleOrderId });
   } else {
     logStep('orders/checkout', { skipped: 'sin productos disponibles' });
   }

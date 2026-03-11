@@ -389,11 +389,12 @@ async function main() {
       { path: '/admin', selectors: ['text=/Panel Admin/i'] },
       { path: '/admin/orders', selectors: ['[data-admin-orders-page]'] },
       { path: '/admin/repairs', selectors: ['[data-admin-repairs-page]'] },
+      { path: '/admin/repairs/create', selectors: ['[data-admin-repair-create-page]'] },
       { path: '/admin/categorias', selectors: ['text=/Categor/i', 'input[placeholder*="Ej: Fundas"]'] },
       { path: '/admin/categorias/crear', selectors: ['text=/Categor/i', 'input[placeholder*="Ej: Fundas"]'] },
       { path: '/admin/productos', selectors: ['text=/Productos/i'] },
       { path: '/admin/productos/crear', selectors: ['text=/Cargando formulario|Datos del producto|Nuevo/i'] },
-      { path: '/admin/ventas-rapidas', selectors: ['text=/Venta r.pida/i', 'input[placeholder*="SKU o barcode"]'] },
+      { path: '/admin/ventas-rapidas', selectors: ['text=/Venta r.pida/i', '[data-qa="quick-sale-scan-code"]'] },
       { path: '/admin/ventas-rapidas/historial', selectors: ['text=/Historial de ventas/i'] },
       { path: '/admin/alertas', selectors: ['text=/Centro de alertas/i'] },
       { path: '/admin/proveedores', selectors: ['text=/Proveedores/i'] },
@@ -417,7 +418,7 @@ async function main() {
       { path: '/admin/device-catalog', selectors: ['text=/Cat/i', 'text=Marcas'] },
       { path: '/admin/mail-templates', selectors: ['text=/Plantillas de correo/i'] },
       { path: '/admin/help', selectors: ['text=/Ayuda editable/i'] },
-      { path: '/admin/seguridad/2fa', selectors: ['text=/Seguridad 2FA/i'] },
+      { path: '/admin/seguridad/2fa', selectors: ['[data-admin-2fa-page]'] },
       { path: '/admin/whatsapp', selectors: ['text=/Plantillas WhatsApp/i'] },
       { path: '/admin/whatsapppedidos', selectors: ['text=/Plantillas WhatsApp - Pedidos/i'] },
       { path: '/admin/users', selectors: ['text=/Usuarios/i'] },
@@ -450,6 +451,7 @@ async function main() {
       { from: '/admin/accounting', to: '/admin/contabilidad', selectors: ['text=/Contabilidad/i'] },
       { from: '/admin/pedidos', to: '/admin/orders', selectors: ['[data-admin-orders-page]'] },
       { from: '/admin/reparaciones', to: '/admin/repairs', selectors: ['[data-admin-repairs-page]'] },
+      { from: '/admin/reparaciones/crear', to: '/admin/repairs/create', selectors: ['[data-admin-repair-create-page]'] },
     ];
 
     for (const alias of adminAliases) {
@@ -459,6 +461,14 @@ async function main() {
         selectors: alias.selectors,
       });
     }
+
+    await gotoAndCheck(page, `${WEB_URL}/admin/repairs`, {
+      label: '/admin/repairs create CTA',
+      selectors: ['[data-admin-repairs-page]', '[data-admin-repair-create-cta]'],
+    });
+    await page.click('[data-admin-repair-create-cta]');
+    await page.waitForURL((url) => url.pathname === '/admin/repairs/create', { timeout: 10000 });
+    await page.waitForSelector('[data-admin-repair-create-page]', { timeout: 15000 });
 
     // Real customer session
     const userSession = await createUserSession();

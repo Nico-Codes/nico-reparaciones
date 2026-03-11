@@ -1,6 +1,22 @@
 import { authJsonRequest, publicJsonRequest } from '@/features/auth/http';
 import type { PublicRepairLookupItem, PublicRepairQuoteApprovalItem, RepairItem, RepairTimelineEvent } from './types';
 
+export type AdminRepairCreateInput = {
+  customerName: string;
+  customerPhone?: string | null;
+  deviceTypeId?: string | null;
+  deviceBrandId?: string | null;
+  deviceModelId?: string | null;
+  deviceIssueTypeId?: string | null;
+  deviceBrand?: string | null;
+  deviceModel?: string | null;
+  issueLabel?: string | null;
+  notes?: string | null;
+  quotedPrice?: number | null;
+  finalPrice?: number | null;
+  userId?: string | null;
+};
+
 export const repairsApi = {
   publicLookup(input: { repairId: string; customerPhone: string }) {
     return publicJsonRequest<{ ok: boolean; found: boolean; message?: string; item?: PublicRepairLookupItem }>('/repairs/lookup', {
@@ -52,7 +68,7 @@ export const repairsApi = {
   adminDetail(id: string) {
     return authJsonRequest<{ item: RepairItem; timeline?: RepairTimelineEvent[] }>(`/repairs/admin/${encodeURIComponent(id)}`);
   },
-  adminCreate(input: Partial<RepairItem> & { customerName: string }) {
+  adminCreate(input: AdminRepairCreateInput) {
     return authJsonRequest<RepairItem>('/repairs/admin', {
       method: 'POST',
       body: JSON.stringify(input),
