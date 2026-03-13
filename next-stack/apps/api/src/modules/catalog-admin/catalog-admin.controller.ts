@@ -47,6 +47,13 @@ const productPricingRuleSchema = z.object({
 });
 const productPricingRulePatchSchema = productPricingRuleSchema.partial();
 
+function zodBadRequest(parsed: z.SafeParseError<unknown>) {
+  return new BadRequestException({
+    message: 'Validacion invalida',
+    errors: parsed.error.issues.map((issue) => ({ path: issue.path.join('.'), message: issue.message })),
+  });
+}
+
 @Controller('catalog-admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('ADMIN')
@@ -61,14 +68,14 @@ export class CatalogAdminController {
   @Post('categories')
   createCategory(@Body() body: unknown) {
     const parsed = categoryCreateSchema.safeParse(body);
-    if (!parsed.success) return { message: 'Validacion invalida', errors: parsed.error.issues };
+    if (!parsed.success) throw zodBadRequest(parsed);
     return this.service.createCategory(parsed.data);
   }
 
   @Patch('categories/:id')
   updateCategory(@Param('id') id: string, @Body() body: unknown) {
     const parsed = categoryPatchSchema.safeParse(body);
-    if (!parsed.success) return { message: 'Validacion invalida', errors: parsed.error.issues };
+    if (!parsed.success) throw zodBadRequest(parsed);
     return this.service.updateCategory(id, parsed.data);
   }
 
@@ -90,14 +97,14 @@ export class CatalogAdminController {
   @Post('products')
   createProduct(@Body() body: unknown) {
     const parsed = productCreateSchema.safeParse(body);
-    if (!parsed.success) return { message: 'Validacion invalida', errors: parsed.error.issues };
+    if (!parsed.success) throw zodBadRequest(parsed);
     return this.service.createProduct(parsed.data);
   }
 
   @Patch('products/:id')
   updateProduct(@Param('id') id: string, @Body() body: unknown) {
     const parsed = productPatchSchema.safeParse(body);
-    if (!parsed.success) return { message: 'Validacion invalida', errors: parsed.error.issues };
+    if (!parsed.success) throw zodBadRequest(parsed);
     return this.service.updateProduct(id, parsed.data);
   }
 
@@ -124,7 +131,7 @@ export class CatalogAdminController {
   @Patch('product-pricing/settings')
   updateProductPricingSettings(@Body() body: unknown) {
     const parsed = productPricingSettingsSchema.safeParse(body);
-    if (!parsed.success) return { message: 'Validacion invalida', errors: parsed.error.issues };
+    if (!parsed.success) throw zodBadRequest(parsed);
     return this.service.updateProductPricingSettings(parsed.data);
   }
 
@@ -136,14 +143,14 @@ export class CatalogAdminController {
   @Post('product-pricing/rules')
   createProductPricingRule(@Body() body: unknown) {
     const parsed = productPricingRuleSchema.safeParse(body);
-    if (!parsed.success) return { message: 'Validacion invalida', errors: parsed.error.issues };
+    if (!parsed.success) throw zodBadRequest(parsed);
     return this.service.createProductPricingRule(parsed.data);
   }
 
   @Patch('product-pricing/rules/:id')
   updateProductPricingRule(@Param('id') id: string, @Body() body: unknown) {
     const parsed = productPricingRulePatchSchema.safeParse(body);
-    if (!parsed.success) return { message: 'Validacion invalida', errors: parsed.error.issues };
+    if (!parsed.success) throw zodBadRequest(parsed);
     return this.service.updateProductPricingRule(id, parsed.data);
   }
 
@@ -159,7 +166,7 @@ export class CatalogAdminController {
       costPrice: z.coerce.number().int().min(0),
       productId: z.string().trim().max(191).optional().nullable(),
     }).safeParse({ categoryId, costPrice, productId });
-    if (!parsed.success) return { message: 'Validacion invalida', errors: parsed.error.issues };
+    if (!parsed.success) throw zodBadRequest(parsed);
     return this.service.resolveRecommendedProductPrice(parsed.data);
   }
 }

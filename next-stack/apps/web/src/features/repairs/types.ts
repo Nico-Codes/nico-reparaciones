@@ -1,3 +1,45 @@
+export type RepairPricingSnapshotItem = {
+  id: string;
+  repairId: string;
+  pricingRuleId: string | null;
+  source: 'RULE_ONLY' | 'SUPPLIER_PART' | 'MANUAL_OVERRIDE';
+  status: 'DRAFT' | 'APPLIED' | 'SUPERSEDED' | 'DISCARDED';
+  supplierId: string | null;
+  supplierNameSnapshot: string | null;
+  supplierSearchQuery: string | null;
+  supplierEndpointSnapshot: string | null;
+  externalPartId: string | null;
+  partSkuSnapshot: string | null;
+  partNameSnapshot: string;
+  partBrandSnapshot: string | null;
+  partUrlSnapshot: string | null;
+  partAvailabilitySnapshot: string | null;
+  quantity: number;
+  deviceTypeIdSnapshot: string | null;
+  deviceBrandIdSnapshot: string | null;
+  deviceModelGroupIdSnapshot: string | null;
+  deviceModelIdSnapshot: string | null;
+  deviceIssueTypeIdSnapshot: string | null;
+  deviceBrandSnapshot: string | null;
+  deviceModelSnapshot: string | null;
+  issueLabelSnapshot: string | null;
+  baseCost: number;
+  extraCost: number | null;
+  shippingCost: number | null;
+  pricingRuleNameSnapshot: string | null;
+  calcModeSnapshot: 'BASE_PLUS_MARGIN' | 'FIXED_TOTAL' | null;
+  marginPercentSnapshot: number | null;
+  minProfitSnapshot: number | null;
+  minFinalPriceSnapshot: number | null;
+  shippingFeeSnapshot: number | null;
+  suggestedQuotedPrice: number | null;
+  appliedQuotedPrice: number | null;
+  manualOverridePrice: number | null;
+  createdAt: string;
+  updatedAt: string;
+  appliedAt: string | null;
+};
+
 export type RepairItem = {
   id: string;
   userId: string | null;
@@ -5,6 +47,8 @@ export type RepairItem = {
   deviceBrandId?: string | null;
   deviceModelId?: string | null;
   deviceIssueTypeId?: string | null;
+  activePricingSnapshotId?: string | null;
+  activePricingSnapshot?: RepairPricingSnapshotItem | null;
   customerName: string;
   customerPhone: string | null;
   deviceBrand: string | null;

@@ -1,4 +1,4 @@
-﻿import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { BadGatewayException, BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, type AppSetting, type HelpFaqItem, type UserRole, type WhatsAppLog } from '@prisma/client';
 import { mkdir, unlink, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
@@ -60,6 +60,47 @@ type AccountingEntryRow = {
   amount: number;
 };
 
+type SupplierPartSearchInput = {
+  q: string;
+  limit?: number;
+};
+
+type SupplierPartAggregateSearchInput = {
+  q: string;
+  supplierId?: string | null;
+  limitPerSupplier?: number;
+  totalLimit?: number;
+};
+
+type NormalizedSupplierPart = {
+  externalPartId: string;
+  name: string;
+  sku: string | null;
+  brand: string | null;
+  price: number | null;
+  availability: 'in_stock' | 'out_of_stock' | 'unknown';
+  url: string | null;
+  rawLabel: string | null;
+};
+
+type NormalizedSupplierPartWithProvider = NormalizedSupplierPart & {
+  supplier: {
+    id: string;
+    name: string;
+    priority: number;
+    endpoint: string | null;
+    mode: 'json' | 'html';
+  };
+};
+
+type ProviderPartSearchOutcome = {
+  supplier: SupplierRegistryRow;
+  query: string;
+  url: string;
+  items: NormalizedSupplierPart[];
+  error: string | null;
+};
+
 const DEFAULT_SUPPLIER_CATALOG: Array<
   Pick<
     SupplierRegistryRow,
@@ -80,18 +121,18 @@ const DEFAULT_SUPPLIER_CATALOG: Array<
     searchPriority: 20,
     searchMode: 'html',
     searchEnabled: true,
-    searchEndpoint: 'https://www.evophone.com.ar/?s={query}&post_type=product',
+    searchEndpoint: 'https://www.evophone.com.ar/?s={query}&post_type=product&dgwt_wcas=1',
     searchConfigJson:
-      '{"candidate_paths":["/producto/"],"exclude_paths":["/categoria-producto/","add-to-cart="],"context_window":12000}',
+      '{"profile":"woodmart","candidate_paths":["/producto/"],"exclude_paths":["/categoria-producto/","add-to-cart=","yoast.com/product/"],"context_window":2200}',
   },
   {
-    name: 'CeluPhone',
+    name: 'Celuphone',
     searchPriority: 30,
     searchMode: 'html',
     searchEnabled: true,
-    searchEndpoint: 'https://celuphone.com.ar/?s={query}&post_type=product',
+    searchEndpoint: 'https://celuphone.com.ar/?s={query}&post_type=product&dgwt_wcas=1',
     searchConfigJson:
-      '{"candidate_paths":["/producto/"],"exclude_paths":["/categoria-producto/","add-to-cart="],"context_window":12000}',
+      '{"profile":"shoptimizer","candidate_paths":["/producto/"],"exclude_paths":["/categoria-producto/","add-to-cart="],"context_window":2200}',
   },
   {
     name: 'Okey Rosario',
@@ -100,7 +141,16 @@ const DEFAULT_SUPPLIER_CATALOG: Array<
     searchEnabled: true,
     searchEndpoint: 'https://okeyrosario.com.ar/?s={query}&post_type=product',
     searchConfigJson:
-      '{"candidate_paths":["/producto/"],"exclude_paths":["/categoria-producto/","add-to-cart="],"context_window":12000}',
+      '{"profile":"flatsome","candidate_paths":["/producto/"],"exclude_paths":["/categoria-producto/","add-to-cart=","yoast.com/product/"],"context_window":1800}',
+  },
+  {
+    name: 'Novocell',
+    searchPriority: 45,
+    searchMode: 'html',
+    searchEnabled: true,
+    searchEndpoint: 'https://www.novocell.com.ar/search?q={query}',
+    searchConfigJson:
+      '{"profile":"wix","candidate_paths":["/product-page/"],"exclude_paths":[],"context_window":2400}',
   },
   {
     name: 'Electrostore',
@@ -109,7 +159,7 @@ const DEFAULT_SUPPLIER_CATALOG: Array<
     searchEnabled: true,
     searchEndpoint: 'https://electrostore.com.ar/?s={query}&post_type=product',
     searchConfigJson:
-      '{"candidate_paths":["/producto/"],"exclude_paths":["/categoria-producto/","add-to-cart="],"context_window":12000}',
+      '{"profile":"flatsome","candidate_paths":["/producto/"],"exclude_paths":["/categoria-producto/","add-to-cart=","yoast.com/product/"],"context_window":1800}',
   },
   {
     name: 'El Reparador de PC',
@@ -213,7 +263,7 @@ export class AdminService {
     if (outOfStockProducts > 0) alerts.push({ id: 'stock-out', severity: 'high', title: 'Productos sin stock', value: outOfStockProducts });
     if (lowStockProducts > 0) alerts.push({ id: 'stock-low', severity: 'medium', title: 'Productos con stock bajo', value: lowStockProducts });
     if (repairsReadyPickup > 0) alerts.push({ id: 'repairs-ready', severity: 'low', title: 'Reparaciones listas para entregar', value: repairsReadyPickup });
-    if (ordersPending > 0) alerts.push({ id: 'orders-pending', severity: 'medium', title: 'Pedidos pendientes/preparación', value: ordersPending });
+    if (ordersPending > 0) alerts.push({ id: 'orders-pending', severity: 'medium', title: 'Pedidos pendientes/preparacion', value: ordersPending });
 
     return {
       metrics: {
@@ -300,11 +350,11 @@ export class AdminService {
   async updateUserRole(targetUserId: string, roleRaw: string, actorUserId?: string | null) {
     const role = this.parseUserRole(roleRaw);
     if (!role) {
-      return { message: 'Rol inválido' };
+      return { message: 'Rol invalido' };
     }
 
     if (actorUserId && actorUserId === targetUserId && role !== 'ADMIN') {
-      return { message: 'No podés quitarte el rol admin a vos mismo' };
+      return { message: 'No podes quitarte el rol admin a vos mismo' };
     }
 
     const user = await this.prisma.user.update({
@@ -332,16 +382,16 @@ export class AdminService {
 
     const defaults = [
       { key: 'business_name', group: 'business', label: 'Nombre del negocio', type: 'text', value: 'NicoReparaciones' },
-      { key: 'shop_phone', group: 'business', label: 'Teléfono WhatsApp', type: 'text', value: '' },
+      { key: 'shop_phone', group: 'business', label: 'Telefono WhatsApp', type: 'text', value: '' },
       { key: 'shop_email', group: 'business', label: 'Email del local', type: 'email', value: '' },
-      { key: 'store_hero_title', group: 'branding', label: 'Título portada tienda', type: 'text', value: '' },
-      { key: 'store_hero_subtitle', group: 'branding', label: 'SubTítulo portada tienda', type: 'textarea', value: '' },
+      { key: 'store_hero_title', group: 'branding', label: 'Titulo portada tienda', type: 'text', value: '' },
+      { key: 'store_hero_subtitle', group: 'branding', label: 'SubTitulo portada tienda', type: 'textarea', value: '' },
       { key: 'store_hero_image_desktop', group: 'branding', label: 'Imagen portada tienda (desktop)', type: 'text', value: '' },
       { key: 'store_hero_image_mobile', group: 'branding', label: 'Imagen portada tienda (mobile)', type: 'text', value: '' },
       { key: 'store_hero_fade_rgb_desktop', group: 'branding', label: 'Fade portada desktop (RGB)', type: 'text', value: '14, 165, 233' },
       { key: 'store_hero_fade_rgb_mobile', group: 'branding', label: 'Fade portada mobile (RGB)', type: 'text', value: '14, 165, 233' },
       { key: 'store_hero_fade_intensity', group: 'branding', label: 'Fade intensidad', type: 'number', value: '42' },
-      { key: 'store_hero_fade_size', group: 'branding', label: 'Fade tamaño px', type: 'number', value: '96' },
+      { key: 'store_hero_fade_size', group: 'branding', label: 'Fade tamano px', type: 'number', value: '96' },
       { key: 'store_hero_fade_hold', group: 'branding', label: 'Fade hold %', type: 'number', value: '12' },
       { key: 'store_hero_fade_mid_alpha', group: 'branding', label: 'Fade alpha medio', type: 'text', value: '0.58' },
       { key: 'mail_from_name', group: 'email', label: 'Nombre remitente email', type: 'text', value: 'NicoReparaciones' },
@@ -450,7 +500,7 @@ export class AdminService {
     const text = [
       `Reporte semanal dashboard ${businessName}`,
       `Fecha: ${now.toISOString()}`,
-      `Rango: últimos ${rangeDays} días`,
+      `Rango: ultimos ${rangeDays} dias`,
       '',
       'KPIs',
       `Productos totales: ${dashboard.metrics.products.total}`,
@@ -586,7 +636,7 @@ export class AdminService {
       text: [
         `Prueba SMTP de ${businessName}`,
         '',
-        'Si recibiste este correo, la configuración de mail del sistema responde correctamente.',
+        'Si recibiste este correo, la configuracion de mail del sistema responde correctamente.',
         `Fecha: ${new Date().toISOString()}`,
         `Estado actual SMTP: ${smtpHealth.label}`,
       ].join('\n'),
@@ -709,7 +759,7 @@ export class AdminService {
     const groupId = (input.deviceModelGroupId ?? '').trim() || null;
     if (groupId) {
       const group = await this.prisma.deviceModelGroup.findUnique({ where: { id: groupId } });
-      if (!group || group.deviceBrandId !== input.deviceBrandId) throw new BadRequestException('Grupo inválido para esta marca');
+      if (!group || group.deviceBrandId !== input.deviceBrandId) throw new BadRequestException('Grupo invalido para esta marca');
     }
     await this.prisma.deviceModel.update({
       where: { id: modelId },
@@ -967,7 +1017,7 @@ export class AdminService {
     const index = items.findIndex((i) => i.id === id);
     if (index < 0) throw new BadRequestException('Proveedor no encontrado');
     const row = items[index];
-    const q = (queryRaw ?? '').trim() || 'módulo a30';
+    const q = (queryRaw ?? '').trim() || 'modulo a30';
     const now = new Date().toISOString();
 
     if (!row.searchEndpoint) {
@@ -1000,7 +1050,11 @@ export class AdminService {
       const res = await fetch(url, {
         method: 'GET',
         signal: ctrl.signal,
-        headers: { Accept: 'application/json,text/html,*/*' },
+        headers: {
+          Accept: 'application/json,text/html,*/*',
+          'Accept-Language': 'es-AR,es;q=0.9,en;q=0.7',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0 Safari/537.36 NicoReparaciones/1.0',
+        },
       });
       const count = await this.estimateProbeResultCount(res, row.searchMode, row.searchConfigJson);
       const status: SupplierRegistryRow['lastProbeStatus'] = count > 0 ? 'ok' : 'none';
@@ -1042,6 +1096,196 @@ export class AdminService {
     } finally {
       clearTimeout(timeout);
     }
+  }
+
+  async searchProviderParts(id: string, input: SupplierPartSearchInput) {
+    const items = await this.readSuppliersRegistry();
+    const index = items.findIndex((i) => i.id === id);
+    if (index < 0) throw new NotFoundException('Proveedor no encontrado');
+
+    const row = items[index];
+    if (!row.searchEnabled) throw new BadRequestException('El proveedor no tiene habilitada la busqueda de repuestos');
+    if (!row.searchEndpoint) throw new BadRequestException('El proveedor no tiene endpoint de busqueda configurado');
+
+    const q = input.q.trim();
+    const limit = this.clampInt(input.limit ?? 8, 1, 30);
+    const now = new Date().toISOString();
+    const url = this.buildProviderSearchUrl(row, q);
+    const ctrl = new AbortController();
+    const timeout = setTimeout(() => ctrl.abort(), 12_000);
+
+    try {
+      const res = await fetch(url, {
+        method: 'GET',
+        signal: ctrl.signal,
+        headers: {
+          Accept: 'application/json,text/html,*/*',
+          'Accept-Language': 'es-AR,es;q=0.9,en;q=0.7',
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
+        },
+      });
+      if (!res.ok) {
+        throw new BadGatewayException(`El proveedor respondio HTTP ${res.status}`);
+      }
+
+      const body = await res.text();
+      const normalized = row.searchMode === 'json'
+        ? this.extractNormalizedPartsFromJsonPayload(body, row, limit)
+        : this.extractNormalizedPartsFromHtml(body, row, url, limit);
+
+      items[index] = {
+        ...row,
+        lastProbeStatus: normalized.length > 0 ? 'ok' : 'none',
+        lastProbeQuery: q,
+        lastProbeCount: normalized.length,
+        lastProbeError: null,
+        lastProbeAt: now,
+        updatedAt: now,
+      };
+      await this.writeSuppliersRegistry(items);
+
+      const incidents = await this.readWarrantyIncidentsRegistry();
+      const stats = this.buildProviderStats(incidents);
+      const productCount = await this.countProductsForSupplier(items[index].id);
+
+      return {
+        supplier: this.serializeProvider(items[index], stats.get(items[index].id), productCount),
+        query: q,
+        total: normalized.length,
+        url,
+        items: normalized,
+      };
+    } catch (error) {
+      const message = error instanceof BadGatewayException
+        ? error.message
+        : error instanceof Error
+          ? error.message
+          : 'Error de conexion';
+
+      items[index] = {
+        ...row,
+        lastProbeStatus: 'none',
+        lastProbeQuery: q,
+        lastProbeCount: 0,
+        lastProbeError: message,
+        lastProbeAt: now,
+        updatedAt: now,
+      };
+      await this.writeSuppliersRegistry(items);
+
+      if (error instanceof BadRequestException || error instanceof NotFoundException || error instanceof BadGatewayException) {
+        throw error;
+      }
+      throw new BadGatewayException('No se pudo consultar el proveedor');
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  async searchPartsAcrossProviders(input: SupplierPartAggregateSearchInput) {
+    const registry = await this.readSuppliersRegistry();
+    const q = input.q.trim();
+    const limitPerSupplier = this.clampInt(input.limitPerSupplier ?? 6, 1, 20);
+    const totalLimit = this.clampInt(input.totalLimit ?? 24, 1, 80);
+    const supplierId = this.cleanNullable(input.supplierId);
+    const queryProfile = this.buildPartSearchQueryProfile(q);
+
+    const selectedSupplier = supplierId ? registry.find((item) => item.id === supplierId) ?? null : null;
+    if (supplierId && !selectedSupplier) throw new NotFoundException('Proveedor no encontrado');
+    if (selectedSupplier && (!selectedSupplier.active || !selectedSupplier.searchEnabled || !selectedSupplier.searchEndpoint)) {
+      throw new BadRequestException('El proveedor seleccionado no esta disponible para busqueda de repuestos');
+    }
+
+    const candidates = (selectedSupplier ? [selectedSupplier] : registry)
+      .filter((item) => item.active && item.searchEnabled && !!item.searchEndpoint)
+      .sort((left, right) => {
+        if (left.searchPriority !== right.searchPriority) return left.searchPriority - right.searchPriority;
+        return left.name.localeCompare(right.name, 'es');
+      });
+
+    if (candidates.length === 0) {
+      throw new BadRequestException('No hay proveedores activos con busqueda habilitada');
+    }
+
+    const outcomes = await Promise.all(candidates.map((supplier) => this.runProviderPartsSearch(supplier, { q, limit: limitPerSupplier })));
+    const now = new Date().toISOString();
+    const outcomeBySupplier = new Map(outcomes.map((outcome) => [outcome.supplier.id, outcome]));
+    let registryChanged = false;
+    const nextRegistry: SupplierRegistryRow[] = registry.map((row) => {
+      const outcome = outcomeBySupplier.get(row.id);
+      if (!outcome) return row;
+      registryChanged = true;
+      return {
+        ...row,
+        lastProbeStatus: (outcome.error ? 'none' : outcome.items.length > 0 ? 'ok' : 'none') as 'ok' | 'none',
+        lastProbeQuery: outcome.query,
+        lastProbeCount: outcome.items.length,
+        lastProbeError: outcome.error,
+        lastProbeAt: now,
+        updatedAt: now,
+      };
+    });
+    if (registryChanged) {
+      await this.writeSuppliersRegistry(nextRegistry);
+    }
+
+    const suppliers = outcomes.map((outcome) => ({
+      supplier: {
+        id: outcome.supplier.id,
+        name: outcome.supplier.name,
+        priority: outcome.supplier.searchPriority,
+        endpoint: outcome.supplier.searchEndpoint ?? null,
+        mode: outcome.supplier.searchMode,
+      },
+      status: outcome.error ? 'error' : outcome.items.length > 0 ? 'ok' : 'empty',
+      total: outcome.items.length,
+      error: outcome.error,
+      url: outcome.url,
+    }));
+
+    const items = outcomes
+      .flatMap((outcome) =>
+        outcome.items.map((item) => ({
+          ...item,
+          supplier: {
+            id: outcome.supplier.id,
+            name: outcome.supplier.name,
+            priority: outcome.supplier.searchPriority,
+            endpoint: outcome.supplier.searchEndpoint ?? null,
+            mode: outcome.supplier.searchMode,
+          },
+        })),
+      )
+      .map((item) => ({ item, rank: this.rankSupplierPart(item, queryProfile) }))
+      .filter(({ rank }) => rank >= 0)
+      .sort((left, right) => {
+        if (left.rank !== right.rank) return right.rank - left.rank;
+
+        const availabilityDiff = this.availabilityOrder(left.item.availability) - this.availabilityOrder(right.item.availability);
+        if (availabilityDiff !== 0) return availabilityDiff;
+
+        const leftPrice = left.item.price == null ? Number.POSITIVE_INFINITY : left.item.price;
+        const rightPrice = right.item.price == null ? Number.POSITIVE_INFINITY : right.item.price;
+        if (leftPrice !== rightPrice) return leftPrice - rightPrice;
+
+        if (left.item.supplier.priority !== right.item.supplier.priority) return left.item.supplier.priority - right.item.supplier.priority;
+        return left.item.name.localeCompare(right.item.name, 'es');
+      })
+      .map(({ item }) => item satisfies NormalizedSupplierPartWithProvider)
+      .slice(0, totalLimit);
+
+    return {
+      query: q,
+      items,
+      suppliers,
+      summary: {
+        searchedSuppliers: suppliers.length,
+        suppliersWithResults: suppliers.filter((item) => item.status === 'ok').length,
+        failedSuppliers: suppliers.filter((item) => item.status === 'error').length,
+        totalResults: items.length,
+      },
+    };
   }
 
   async warranties(params?: { q?: string; sourceType?: string; status?: string; from?: string; to?: string }) {
@@ -1100,10 +1344,10 @@ export class AdminService {
       })
       .sort((a, b) => new Date(b.happenedAt).getTime() - new Date(a.happenedAt).getTime());
 
-    const sourceLabelMap = { repair: 'Reparación', product: 'Producto' } as const;
+    const sourceLabelMap = { repair: 'Reparacion', product: 'Producto' } as const;
     const costOriginLabelMap = {
       manual: 'Manual',
-      repair: 'Reparación',
+      repair: 'Reparacion',
       product: 'Producto',
     } as const;
 
@@ -1189,7 +1433,7 @@ export class AdminService {
     const sourceType = input.sourceType;
     const repairId = this.cleanNullable(input.repairId);
     const productId = this.cleanNullable(input.productId);
-    if (sourceType === 'repair' && !repairId) throw new BadRequestException('Selecciona la reparación asociada');
+    if (sourceType === 'repair' && !repairId) throw new BadRequestException('Selecciona la reparacion asociada');
     if (sourceType === 'product' && !productId) throw new BadRequestException('Selecciona el producto asociado');
 
     const [repair, product] = await Promise.all([
@@ -1206,7 +1450,7 @@ export class AdminService {
           })
         : Promise.resolve(null),
     ]);
-    if (repairId && !repair) throw new BadRequestException('Reparación no encontrada');
+    if (repairId && !repair) throw new BadRequestException('Reparacion no encontrada');
     if (productId && !product) throw new BadRequestException('Producto no encontrado');
 
     let unitCost = Number(input.unitCost ?? 0);
@@ -1220,7 +1464,7 @@ export class AdminService {
       unitCost = Number(product.costPrice ?? 0);
       if (unitCost > 0) costOrigin = 'product';
     }
-    if (unitCost <= 0) throw new BadRequestException('No se pudo resolver costo unitario. Cárgalo manualmente.');
+    if (unitCost <= 0) throw new BadRequestException('No se pudo resolver costo unitario. Cargalo manualmente.');
 
     if (costOrigin === 'repair' && sourceType !== 'repair') costOrigin = 'manual';
     if (costOrigin === 'product' && sourceType !== 'product') costOrigin = 'manual';
@@ -1315,7 +1559,7 @@ export class AdminService {
           happenedAt: inc.happenedAt,
           direction: 'outflow',
           category: 'warranty_loss',
-          description: `Garantía: ${inc.title}`,
+          description: `Garantia: ${inc.title}`,
           source: `WarrantyIncident ${inc.id}`,
           amount: inc.lossAmount,
         });
@@ -1326,7 +1570,7 @@ export class AdminService {
           happenedAt: inc.happenedAt,
           direction: 'inflow',
           category: 'warranty_recovery',
-          description: `Recupero garantía: ${inc.title}`,
+          description: `Recupero garantia: ${inc.title}`,
           source: `WarrantyIncident ${inc.id}`,
           amount: inc.recoveredAmount,
         });
@@ -1404,24 +1648,24 @@ export class AdminService {
     const templates = [
       {
         templateKey: 'verify_email',
-        label: 'Verificación de correo',
-        description: 'Se envía al crear cuenta para verificar email.',
+        label: 'Verificacion de correo',
+        description: 'Se envia al crear cuenta para verificar email.',
         subjectDefault: 'Verifica tu correo en {{business_name}}',
         bodyDefault:
           'Hola {{user_name}},\n\nUsa este enlace para verificar tu correo:\n{{verify_url}}\n\nSi no creaste esta cuenta, ignora este mensaje.',
       },
       {
         templateKey: 'reset_password',
-        label: 'Recuperación de contraseña',
-        description: 'Se envía cuando el usuario solicita restablecer contraseña.',
-        subjectDefault: 'Recuperar contraseña en {{business_name}}',
+        label: 'Recuperacion de contrasena',
+        description: 'Se envia cuando el usuario solicita restablecer contrasena.',
+        subjectDefault: 'Recuperar contrasena en {{business_name}}',
         bodyDefault:
-          'Hola {{user_name}},\n\nRecibimos una solicitud para restablecer tu contraseña.\nUsa este enlace:\n{{reset_url}}\n\nSi no fuiste vos, ignora este mensaje.',
+          'Hola {{user_name}},\n\nRecibimos una solicitud para restablecer tu contrasena.\nUsa este enlace:\n{{reset_url}}\n\nSi no fuiste vos, ignora este mensaje.',
       },
       {
         templateKey: 'order_created',
         label: 'Compra confirmada',
-        description: 'Se envía al finalizar una compra.',
+        description: 'Se envia al finalizar una compra.',
         subjectDefault: 'Recibimos tu pedido {{order_id}}',
         bodyDefault:
           'Hola {{user_name}},\n\nTu pedido {{order_id}} fue recibido correctamente.\nTotal: {{order_total}}\n\nGracias por tu compra.',
@@ -1514,17 +1758,17 @@ export class AdminService {
     const templates = [
       {
         templateKey: 'repair_status_update',
-        label: 'Actualización de reparación',
+        label: 'Actualizacion de reparacion',
         description: 'Mensaje para avisar cambios de estado en reparaciones.',
         bodyDefault:
-          'Hola {{customer_name}}, tu reparación {{repair_id}} ahora está en estado: {{repair_status}}. {{extra_message}}',
+          'Hola {{customer_name}}, tu reparacion {{repair_id}} ahora esta en estado: {{repair_status}}. {{extra_message}}',
       },
       {
         templateKey: 'order_status_update',
-        label: 'Actualización de pedido',
+        label: 'Actualizacion de pedido',
         description: 'Mensaje para avisar cambios de estado en pedidos.',
         bodyDefault:
-          'Hola {{customer_name}}, tu pedido {{order_id}} ahora está: {{order_status}}. Total: {{order_total}}',
+          'Hola {{customer_name}}, tu pedido {{order_id}} ahora esta: {{order_status}}. Total: {{order_total}}',
       },
     ];
 
@@ -1792,8 +2036,8 @@ export class AdminService {
     if (!ext || !allowedExts.includes(ext)) {
       throw new BadRequestException(`Formato no permitido. Permitidos: ${allowedExts.join(', ')}`);
     }
-    if (!file.buffer || !Buffer.isBuffer(file.buffer)) throw new BadRequestException('Archivo inválido');
-    if (file.size > spec.maxKb * 1024) throw new BadRequestException(`Archivo supera el máximo (${spec.maxKb} KB)`);
+    if (!file.buffer || !Buffer.isBuffer(file.buffer)) throw new BadRequestException('Archivo invalido');
+    if (file.size > spec.maxKb * 1024) throw new BadRequestException(`Archivo supera el maximo (${spec.maxKb} KB)`);
 
     const publicRoot = this.resolveWebPublicDir();
     const relPath = `brand-assets/identity/${spec.fileBase}.${ext}`;
@@ -1869,19 +2113,19 @@ export class AdminService {
   private whatsappTemplateDefs(channel: 'repairs' | 'orders') {
     if (channel === 'repairs') {
       return [
-        { templateKey: 'received', label: 'Recibido', description: 'Mensaje para reparación recibida.' },
-        { templateKey: 'diagnosing', label: 'Diagnosticando', description: 'Mensaje para reparación en diagnóstico.' },
-        { templateKey: 'waiting_approval', label: 'Esperando aprobación', description: 'Mensaje para solicitar aprobación.' },
-        { templateKey: 'repairing', label: 'En reparación', description: 'Mensaje para reparación en curso.' },
-        { templateKey: 'ready_pickup', label: 'Listo para retirar', description: 'Mensaje para reparación lista para retiro.' },
-        { templateKey: 'delivered', label: 'Entregado', description: 'Mensaje para reparación entregada.' },
-        { templateKey: 'cancelled', label: 'Cancelado', description: 'Mensaje para reparación cancelada.' },
+        { templateKey: 'received', label: 'Recibido', description: 'Mensaje para reparacion recibida.' },
+        { templateKey: 'diagnosing', label: 'Diagnosticando', description: 'Mensaje para reparacion en diagnostico.' },
+        { templateKey: 'waiting_approval', label: 'Esperando aprobacion', description: 'Mensaje para solicitar aprobacion.' },
+        { templateKey: 'repairing', label: 'En reparacion', description: 'Mensaje para reparacion en curso.' },
+        { templateKey: 'ready_pickup', label: 'Listo para retirar', description: 'Mensaje para reparacion lista para retiro.' },
+        { templateKey: 'delivered', label: 'Entregado', description: 'Mensaje para reparacion entregada.' },
+        { templateKey: 'cancelled', label: 'Cancelado', description: 'Mensaje para reparacion cancelada.' },
       ] as const;
     }
     return [
       { templateKey: 'pendiente', label: 'Pendiente', description: 'Mensaje para pedido pendiente.' },
       { templateKey: 'confirmado', label: 'Confirmado', description: 'Mensaje para pedido confirmado.' },
-      { templateKey: 'preparando', label: 'Preparando', description: 'Mensaje para pedido en preparación.' },
+      { templateKey: 'preparando', label: 'Preparando', description: 'Mensaje para pedido en preparacion.' },
       { templateKey: 'listo_retirar', label: 'Listo para retirar', description: 'Mensaje para pedido listo para retiro.' },
       { templateKey: 'entregado', label: 'Entregado', description: 'Mensaje para pedido entregado.' },
       { templateKey: 'cancelado', label: 'Cancelado', description: 'Mensaje para pedido cancelado.' },
@@ -1893,12 +2137,12 @@ export class AdminService {
       if (templateKey === 'waiting_approval') {
         return [
           'Hola {customer_name}',
-          'Tu reparación ({code}) está en estado: *{status_label}*.',
-          'Necesitamos tu aprobación para continuar.',
-          'Aprobá o rechazá acá: {approval_url}',
+          'Tu reparacion ({code}) esta en estado: *{status_label}*.',
+          'Necesitamos tu aprobacion para continuar.',
+          'Aproba o rechaza aca: {approval_url}',
           '',
-          'Podés consultar el estado en: {lookup_url}',
-          'Código: {code}',
+          'Podes consultar el estado en: {lookup_url}',
+          'Codigo: {code}',
           'Equipo: {device}',
           'NicoReparaciones',
         ].join('\n');
@@ -1906,14 +2150,14 @@ export class AdminService {
       if (templateKey === 'ready_pickup') {
         return [
           'Hola {customer_name}',
-          'Tu reparación ({code}) está en estado: *{status_label}*.',
-          'Ya está lista para retirar.',
+          'Tu reparacion ({code}) esta en estado: *{status_label}*.',
+          'Ya esta lista para retirar.',
           '',
-          'Dirección: {shop_address}',
+          'Direccion: {shop_address}',
           'Horarios: {shop_hours}',
           '',
-          'Podés consultar el estado en: {lookup_url}',
-          'Código: {code}',
+          'Podes consultar el estado en: {lookup_url}',
+          'Codigo: {code}',
           'Equipo: {device}',
           'NicoReparaciones',
         ].join('\n');
@@ -1921,21 +2165,21 @@ export class AdminService {
       if (templateKey === 'delivered') {
         return [
           'Hola {customer_name}',
-          'Tu reparación ({code}) está en estado: *{status_label}*.',
+          'Tu reparacion ({code}) esta en estado: *{status_label}*.',
           'Gracias por tu visita.',
           '',
-          'Podés consultar el estado en: {lookup_url}',
-          'Código: {code}',
+          'Podes consultar el estado en: {lookup_url}',
+          'Codigo: {code}',
           'Equipo: {device}',
           'NicoReparaciones',
         ].join('\n');
       }
       return [
         'Hola {customer_name}',
-        'Tu reparación ({code}) está en estado: *{status_label}*.',
+        'Tu reparacion ({code}) esta en estado: *{status_label}*.',
         '',
-        'Podés consultar el estado en: {lookup_url}',
-        'Código: {code}',
+        'Podes consultar el estado en: {lookup_url}',
+        'Codigo: {code}',
         'Equipo: {device}',
         'NicoReparaciones',
       ].join('\n');
@@ -1943,7 +2187,7 @@ export class AdminService {
 
     const base = [
       'Hola {customer_name}',
-      'Tu pedido *#{order_id}* está en estado: *{status_label}*.',
+      'Tu pedido *#{order_id}* esta en estado: *{status_label}*.',
       'Total: {total}',
       'Items: {items_count}',
       '',
@@ -1953,7 +2197,7 @@ export class AdminService {
       'Tienda: {store_url}',
     ];
     if (templateKey === 'listo_retirar') {
-      base.push('', 'Dirección: {shop_address}', 'Horarios: {shop_hours}', 'Teléfono: {shop_phone}');
+      base.push('', 'Direccion: {shop_address}', 'Horarios: {shop_hours}', 'Telefono: {shop_phone}');
     }
     if (templateKey === 'entregado') {
       base.push('', 'Gracias por tu compra.');
@@ -2317,6 +2561,63 @@ export class AdminService {
     };
   }
 
+  private async runProviderPartsSearch(
+    row: SupplierRegistryRow,
+    input: SupplierPartSearchInput,
+  ): Promise<ProviderPartSearchOutcome> {
+    const q = input.q.trim();
+    const limit = this.clampInt(input.limit ?? 8, 1, 30);
+    const url = this.buildProviderSearchUrl(row, q);
+    const ctrl = new AbortController();
+    const timeout = setTimeout(() => ctrl.abort(), 12_000);
+
+    try {
+      const res = await fetch(url, {
+        method: 'GET',
+        signal: ctrl.signal,
+        headers: {
+          Accept: 'application/json,text/html,*/*',
+          'Accept-Language': 'es-AR,es;q=0.9,en;q=0.7',
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
+        },
+      });
+      if (!res.ok) {
+        return {
+          supplier: row,
+          query: q,
+          url,
+          items: [],
+          error: `El proveedor respondio HTTP ${res.status}`,
+        };
+      }
+
+      const body = await res.text();
+      const items =
+        row.searchMode === 'json'
+          ? this.extractNormalizedPartsFromJsonPayload(body, row, limit)
+          : this.extractNormalizedPartsFromHtml(body, row, url, limit);
+
+      return {
+        supplier: row,
+        query: q,
+        url,
+        items,
+        error: null,
+      };
+    } catch (error) {
+      return {
+        supplier: row,
+        query: q,
+        url,
+        items: [],
+        error: error instanceof Error ? error.message : 'No se pudo consultar el proveedor',
+      };
+    } finally {
+        clearTimeout(timeout);
+    }
+  }
+
   private normalizeJsonString(value?: string | null) {
     const raw = this.cleanNullable(value);
     if (!raw) return null;
@@ -2327,6 +2628,673 @@ export class AdminService {
     } catch {
       return raw;
     }
+  }
+
+  private buildProviderSearchUrl(row: SupplierRegistryRow, query: string) {
+    if (!row.searchEndpoint) throw new BadRequestException('El proveedor no tiene endpoint de busqueda configurado');
+    return row.searchEndpoint.includes('{query}')
+      ? row.searchEndpoint.replaceAll('{query}', encodeURIComponent(query))
+      : `${row.searchEndpoint}${row.searchEndpoint.includes('?') ? '&' : '?'}q=${encodeURIComponent(query)}`;
+  }
+
+  private extractNormalizedPartsFromJsonPayload(
+    rawBody: string,
+    row: SupplierRegistryRow,
+    limit: number,
+  ): NormalizedSupplierPart[] {
+    let payload: unknown;
+    try {
+      payload = JSON.parse(rawBody);
+    } catch {
+      throw new BadGatewayException('El proveedor configurado como JSON devolvio una respuesta invalida');
+    }
+
+    const cfg = (this.parseJson(row.searchConfigJson) ?? {}) as Record<string, unknown>;
+    const items = this.extractJsonItems(payload, cfg);
+    if (items.length === 0) return [];
+
+    const normalized = items
+      .map((item, index) => this.normalizeJsonPart(item, cfg, row, index))
+      .filter((item): item is NormalizedSupplierPart => !!item)
+      .slice(0, limit);
+
+    return this.dedupeNormalizedParts(normalized, limit);
+  }
+
+  private extractJsonItems(payload: unknown, cfg: Record<string, unknown>) {
+    const itemsPath = typeof cfg.items_path === 'string' ? cfg.items_path.trim() : '';
+    if (itemsPath) {
+      const resolved = this.readObjectPath(payload, itemsPath);
+      if (Array.isArray(resolved)) return resolved;
+    }
+    if (Array.isArray(payload)) return payload;
+    if (!payload || typeof payload !== 'object') return [];
+
+    const record = payload as Record<string, unknown>;
+    if (Array.isArray(record.items)) return record.items;
+    if (Array.isArray(record.results)) return record.results;
+    if (Array.isArray(record.data)) return record.data;
+    const firstArray = Object.values(record).find((value) => Array.isArray(value));
+    return Array.isArray(firstArray) ? firstArray : [];
+  }
+
+  private normalizeJsonPart(
+    item: unknown,
+    cfg: Record<string, unknown>,
+    row: SupplierRegistryRow,
+    index: number,
+  ): NormalizedSupplierPart | null {
+    if (!item || typeof item !== 'object') return null;
+
+    const externalId = this.findJsonString(item, cfg, ['externalPartId', 'external_id_path', 'id_path'], ['id', 'productId', 'product_id', 'sku']);
+    const name = this.findJsonString(item, cfg, ['name_path', 'title_path'], ['name', 'title', 'label', 'description', 'productName']);
+    const sku = this.findJsonString(item, cfg, ['sku_path'], ['sku', 'code', 'barcode', 'partNumber', 'part_number']);
+    const brand = this.findJsonString(item, cfg, ['brand_path'], ['brand', 'manufacturer']);
+    const price = this.findJsonNumber(item, cfg, ['price_path'], ['price', 'salePrice', 'amount', 'finalPrice', 'unitPrice']);
+    const availabilityRaw = this.findJsonValue(item, cfg, ['availability_path'], ['availability', 'stockStatus', 'stock_status', 'stock', 'available']);
+    const url = this.normalizeUrl(
+      this.findJsonString(item, cfg, ['url_path'], ['url', 'link', 'href']),
+      row.searchEndpoint,
+    );
+
+    const normalizedName = this.cleanLabel(name);
+    if (!normalizedName) return null;
+
+    return {
+      externalPartId: externalId || url || `${row.id}:${index}:${normalizedName.toLowerCase()}`,
+      name: normalizedName,
+      sku: this.cleanLabel(sku),
+      brand: this.cleanLabel(brand),
+      price,
+      availability: this.normalizeAvailability(availabilityRaw),
+      url,
+      rawLabel: null,
+    };
+  }
+
+  private extractNormalizedPartsFromHtml(
+    html: string,
+    row: SupplierRegistryRow,
+    requestUrl: string,
+    limit: number,
+  ): NormalizedSupplierPart[] {
+    const cfg = (this.parseJson(row.searchConfigJson) ?? {}) as Record<string, unknown>;
+    const profile = this.resolveHtmlSearchProfile(row, requestUrl, cfg);
+    const providerSpecific = this.extractHtmlPartsFromKnownProviderHtml(html, cfg, row, requestUrl, limit, profile);
+    if (providerSpecific.length > 0) {
+      return this.dedupeNormalizedParts(providerSpecific, limit);
+    }
+
+    const parsedFromBlocks = this.extractHtmlPartsFromBlocks(html, cfg, row, requestUrl, limit, profile);
+    if (parsedFromBlocks.length > 0) {
+      return this.dedupeNormalizedParts(parsedFromBlocks, limit);
+    }
+
+    const parsedFromAnchors = this.extractHtmlPartsFromAnchors(html, cfg, row, requestUrl, limit, profile);
+    return this.dedupeNormalizedParts(parsedFromAnchors, limit);
+  }
+
+  private resolveHtmlSearchProfile(row: SupplierRegistryRow, requestUrl: string, cfg: Record<string, unknown>) {
+    const explicitProfile = typeof cfg.profile === 'string' ? cfg.profile.trim().toLowerCase() : '';
+    if (explicitProfile) return explicitProfile;
+
+    const host = this.safeHostname(requestUrl) || this.safeHostname(row.searchEndpoint);
+    if (!host) return 'generic';
+    if (host.includes('novocell.com.ar')) return 'wix';
+    if (host.includes('evophone.com.ar')) return 'woodmart';
+    if (host.includes('celuphone.com.ar')) return 'shoptimizer';
+    if (host.includes('okeyrosario.com.ar') || host.includes('electrostore.com.ar')) return 'flatsome';
+    return 'generic';
+  }
+
+  private extractHtmlPartsFromKnownProviderHtml(
+    html: string,
+    cfg: Record<string, unknown>,
+    row: SupplierRegistryRow,
+    requestUrl: string,
+    limit: number,
+    profile: string,
+  ) {
+    const blockRegexes: Record<string, RegExp[]> = {
+      woodmart: [/<div class="[^"]*\bwd-product\b[^"]*\bproduct-grid-item\b[\s\S]*?<\/div>\s*<\/div>\s*<\/div>/gi],
+      flatsome: [/<div class="product-small col has-hover product[\s\S]*?<\/div>\s*<\/div>\s*<\/div>/gi],
+      shoptimizer: [/<li class="product type-product[\s\S]*?<\/li>/gi],
+      wix: [/<li data-hook="product-list-grid-item">[\s\S]*?<\/li>/gi],
+    };
+    const regexes = blockRegexes[profile] ?? [];
+    if (regexes.length === 0) return [];
+
+    const items: NormalizedSupplierPart[] = [];
+    for (const regex of regexes) {
+      for (const match of html.matchAll(regex)) {
+        if (items.length >= limit) break;
+        const normalized = this.normalizeHtmlPartFromSnippet(match[0] ?? '', cfg, row, requestUrl, items.length, profile);
+        if (!normalized) continue;
+        items.push(normalized);
+      }
+      if (items.length >= limit) break;
+    }
+    return items;
+  }
+
+  private extractHtmlPartsFromBlocks(
+    html: string,
+    cfg: Record<string, unknown>,
+    row: SupplierRegistryRow,
+    requestUrl: string,
+    limit: number,
+    profile: string,
+  ) {
+    const itemRegexSource = typeof cfg.item_regex === 'string' ? cfg.item_regex : '';
+    if (!itemRegexSource) return [];
+
+    let itemRegex: RegExp;
+    try {
+      itemRegex = new RegExp(itemRegexSource, 'gi');
+    } catch {
+      return [];
+    }
+
+    const nameRegex = this.compileOptionalRegex(cfg.name_regex);
+    const priceRegex = this.compileOptionalRegex(cfg.price_regex);
+    const urlRegex = this.compileOptionalRegex(cfg.url_regex);
+    const raw: NormalizedSupplierPart[] = [];
+
+    for (const match of html.matchAll(itemRegex)) {
+      if (raw.length >= limit) break;
+      const block = match[0] ?? '';
+      const rawName = nameRegex ? this.firstCapture(block, nameRegex) : '';
+      const rawPrice = priceRegex ? this.firstCapture(block, priceRegex) : '';
+      const rawUrl = urlRegex ? this.firstCapture(block, urlRegex) : '';
+      const url = this.normalizeUrl(rawUrl, requestUrl);
+      const normalized = this.normalizeHtmlPartFromSnippet(block, cfg, row, requestUrl, raw.length, profile, {
+        url,
+        name: this.cleanLabel(this.stripHtml(rawName || block)),
+        price: this.parseMoneyValue(rawPrice || block),
+      });
+      if (!normalized) continue;
+
+      raw.push(normalized);
+    }
+
+    return raw;
+  }
+
+  private extractHtmlPartsFromAnchors(
+    html: string,
+    cfg: Record<string, unknown>,
+    row: SupplierRegistryRow,
+    requestUrl: string,
+    limit: number,
+    profile: string,
+  ) {
+    const candidatePaths = Array.isArray(cfg.candidate_paths) ? cfg.candidate_paths.filter((value): value is string => typeof value === 'string') : [];
+    const excludePaths = Array.isArray(cfg.exclude_paths) ? cfg.exclude_paths.filter((value): value is string => typeof value === 'string') : [];
+    const contextWindow = this.clampInt(typeof cfg.context_window === 'number' ? cfg.context_window : 1000, 240, 12000);
+    const candidateUrlRegex = this.compileOptionalRegex(cfg.candidate_url_regex);
+    const priceRegex = this.compileOptionalRegex(cfg.price_regex);
+    const anchorRegex = /<a\b[^>]*href=(["'])(.*?)\1[^>]*>([\s\S]*?)<\/a>/gi;
+    const out: NormalizedSupplierPart[] = [];
+
+    for (const match of html.matchAll(anchorRegex)) {
+      if (out.length >= limit) break;
+      const href = (match[2] ?? '').trim();
+      if (!href) continue;
+      const absoluteUrl = this.normalizeUrl(href, requestUrl);
+      if (!absoluteUrl) continue;
+      if (!this.isLikelyProductUrl(absoluteUrl, requestUrl, candidatePaths, excludePaths, candidateUrlRegex)) continue;
+
+      const startIndex = match.index ?? 0;
+      const contextStart = Math.max(0, startIndex - Math.round(contextWindow * 0.45));
+      const contextEnd = Math.min(html.length, startIndex + contextWindow);
+      const snippet = html.slice(contextStart, contextEnd);
+      const normalized = this.normalizeHtmlPartFromSnippet(snippet, cfg, row, requestUrl, out.length, profile, {
+        url: absoluteUrl,
+        rawLabel: this.cleanLabel(this.stripHtml(match[3] ?? '')),
+        price: this.parseMoneyValue(priceRegex ? this.firstCapture(snippet, priceRegex) : snippet),
+      });
+      if (!normalized) continue;
+      out.push(normalized);
+    }
+
+    return out;
+  }
+
+  private normalizeHtmlPartFromSnippet(
+    snippet: string,
+    cfg: Record<string, unknown>,
+    row: SupplierRegistryRow,
+    requestUrl: string,
+    index: number,
+    profile: string,
+    preferred?: {
+      url?: string | null;
+      name?: string | null;
+      price?: number | null;
+      rawLabel?: string | null;
+    },
+  ): NormalizedSupplierPart | null {
+    const url =
+      preferred?.url ??
+      this.normalizeUrl(
+        this.firstCapture(snippet, /href=(["'])([^"']*(?:\/producto\/|\/product-page\/)[^"']*)\1/i),
+        requestUrl,
+      );
+    const name =
+      this.cleanLabel(preferred?.name) ??
+      this.extractHtmlPartName(snippet, preferred?.rawLabel ?? null, url, profile) ??
+      this.extractProductNameFromContext(snippet);
+    if (!this.isMeaningfulPartName(name, row.name)) return null;
+
+    const brand = this.extractHtmlPartBrand(snippet, name, profile);
+    const price = preferred?.price ?? this.extractHtmlPartPrice(snippet, profile);
+
+    return {
+      externalPartId: this.cleanLabel(this.firstCapture(snippet, /data-product_id=(["'])([^"']+)\1/i)) || url || `${row.id}:${index}:${name!.toLowerCase()}`,
+      name: name!,
+      sku: this.extractSku(snippet),
+      brand,
+      price,
+      availability: this.extractHtmlPartAvailability(snippet),
+      url,
+      rawLabel: this.cleanLabel(preferred?.rawLabel ?? null) ?? name!,
+    };
+  }
+
+  private dedupeNormalizedParts(items: NormalizedSupplierPart[], limit: number) {
+    const seen = new Set<string>();
+    const result: NormalizedSupplierPart[] = [];
+    for (const item of items) {
+      const key = `${item.externalPartId}::${this.normalizeSearchText(item.name)}::${item.price ?? 'na'}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      result.push(item);
+      if (result.length >= limit) break;
+    }
+    return result;
+  }
+
+  private isLikelyProductUrl(
+    absoluteUrl: string,
+    requestUrl: string,
+    candidatePaths: string[],
+    excludePaths: string[],
+    candidateUrlRegex: RegExp | null,
+  ) {
+    if (excludePaths.some((pathChunk) => absoluteUrl.includes(pathChunk))) return false;
+    if (candidateUrlRegex && !candidateUrlRegex.test(absoluteUrl)) return false;
+    if (candidatePaths.length > 0 && !candidatePaths.some((pathChunk) => absoluteUrl.includes(pathChunk))) return false;
+
+    const requestHost = this.safeHostname(requestUrl);
+    const candidateHost = this.safeHostname(absoluteUrl);
+    if (requestHost && candidateHost && requestHost !== candidateHost) return false;
+
+    const pathname = this.safePathname(absoluteUrl);
+    if (!pathname) return false;
+    if (/\/(?:categoria-producto|product-category|search|tienda|shop)\/?$/i.test(pathname)) return false;
+    if (/\/(?:producto|product-page)\//i.test(pathname)) return true;
+    return candidatePaths.length > 0;
+  }
+
+  private readObjectPath(value: unknown, rawPath: string) {
+    const parts = rawPath.split('.').map((part) => part.trim()).filter(Boolean);
+    let cursor: unknown = value;
+    for (const part of parts) {
+      if (cursor == null) return null;
+      if (Array.isArray(cursor)) {
+        const index = Number(part);
+        if (!Number.isInteger(index) || index < 0 || index >= cursor.length) return null;
+        cursor = cursor[index];
+        continue;
+      }
+      if (typeof cursor !== 'object') return null;
+      cursor = (cursor as Record<string, unknown>)[part];
+    }
+    return cursor ?? null;
+  }
+
+  private findJsonValue(item: unknown, cfg: Record<string, unknown>, configPaths: string[], fallbackKeys: string[]) {
+    for (const configKey of configPaths) {
+      const path = typeof cfg[configKey] === 'string' ? String(cfg[configKey]).trim() : '';
+      if (!path) continue;
+      const value = this.readObjectPath(item, path);
+      if (value !== undefined && value !== null && value !== '') return value;
+    }
+    if (!item || typeof item !== 'object') return null;
+    const record = item as Record<string, unknown>;
+    for (const key of fallbackKeys) {
+      const value = record[key];
+      if (value !== undefined && value !== null && value !== '') return value;
+    }
+    return null;
+  }
+
+  private findJsonString(item: unknown, cfg: Record<string, unknown>, configPaths: string[], fallbackKeys: string[]) {
+    const value = this.findJsonValue(item, cfg, configPaths, fallbackKeys);
+    if (value == null) return null;
+    if (typeof value === 'string') return value.trim() || null;
+    if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+    return null;
+  }
+
+  private findJsonNumber(item: unknown, cfg: Record<string, unknown>, configPaths: string[], fallbackKeys: string[]) {
+    const value = this.findJsonValue(item, cfg, configPaths, fallbackKeys);
+    if (value == null) return null;
+    if (typeof value === 'number' && Number.isFinite(value)) return Math.round(value * 100) / 100;
+    if (typeof value === 'string') return this.parseMoneyValue(value);
+    return null;
+  }
+
+  private compileOptionalRegex(raw: unknown) {
+    if (typeof raw !== 'string' || !raw.trim()) return null;
+    try {
+      return new RegExp(raw, 'i');
+    } catch {
+      return null;
+    }
+  }
+
+  private firstCapture(value: string, regex: RegExp) {
+    const match = value.match(regex);
+    if (!match) return '';
+    return (match[2] ?? match[1] ?? match[0] ?? '').trim();
+  }
+
+  private stripHtml(value: string) {
+    return this.decodeHtmlEntities(value)
+      .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/gi, ' ')
+      .replace(/&amp;/gi, '&')
+      .replace(/&quot;/gi, '"')
+      .replace(/&#39;/gi, "'")
+      .replace(/&lt;/gi, '<')
+      .replace(/&gt;/gi, '>')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  private decodeHtmlEntities(value: string) {
+    return value
+      .replace(/&#(\d+);/g, (_match, digits) => {
+        const code = Number(digits);
+        return Number.isInteger(code) ? String.fromCharCode(code) : '';
+      })
+      .replace(/&#x([0-9a-f]+);/gi, (_match, hex) => {
+        const code = Number.parseInt(hex, 16);
+        return Number.isInteger(code) ? String.fromCharCode(code) : '';
+      });
+  }
+
+  private cleanLabel(value?: string | null) {
+    const stripped = this.stripHtml(value ?? '');
+    return stripped || null;
+  }
+
+  private normalizeUrl(rawUrl?: string | null, requestUrl?: string | null) {
+    const value = (rawUrl ?? '').trim();
+    if (!value) return null;
+    try {
+      return new URL(value, requestUrl ?? undefined).toString();
+    } catch {
+      return null;
+    }
+  }
+
+  private parseMoneyValue(value?: string | null) {
+    const raw = this.decodeHtmlEntities((value ?? '').trim());
+    if (!raw) return null;
+    const cleaned = raw
+      .replace(/\s+/g, ' ')
+      .replace(/\bprecio\b/gi, ' ')
+      .replace(/\bars\b/gi, '$');
+    const match = cleaned.match(/(?:\$|ars|usd)?\s*([0-9][0-9.,\s]*)/i);
+    const amount = match?.[1] ?? cleaned;
+    let normalized = amount
+      .replace(/\s/g, '')
+      .replace(/[^0-9.,]/g, '');
+    if (!normalized) return null;
+
+    const hasDot = normalized.includes('.');
+    const hasComma = normalized.includes(',');
+    if (hasDot && hasComma) {
+      const lastDot = normalized.lastIndexOf('.');
+      const lastComma = normalized.lastIndexOf(',');
+      const decimalSeparator = lastDot > lastComma ? '.' : ',';
+      const thousandsSeparator = decimalSeparator === '.' ? ',' : '.';
+      const decimalSuffix = normalized.slice(normalized.lastIndexOf(decimalSeparator) + 1);
+      if (/^\d{2}$/.test(decimalSuffix)) {
+        normalized = normalized.replace(new RegExp(`\\${thousandsSeparator}`, 'g'), '');
+        if (decimalSeparator === ',') normalized = normalized.replace(',', '.');
+      } else {
+        normalized = normalized.replace(/[.,]/g, '');
+      }
+    } else if (hasComma) {
+      if (/^\d{1,3}(,\d{3})+$/.test(normalized)) normalized = normalized.replace(/,/g, '');
+      else if (/,\d{2}$/.test(normalized)) normalized = normalized.replace(',', '.');
+      else normalized = normalized.replace(/,/g, '');
+    } else if (hasDot) {
+      if (/^\d{1,3}(\.\d{3})+$/.test(normalized)) normalized = normalized.replace(/\./g, '');
+      else if (!/\.\d{2}$/.test(normalized)) normalized = normalized.replace(/\./g, '');
+    }
+
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) ? Math.round(parsed * 100) / 100 : null;
+  }
+
+  private extractSku(value?: string | null) {
+    const raw = (value ?? '').trim();
+    if (!raw) return null;
+    const match = raw.match(/(?:sku|data-product_sku|c[oo]d(?:igo)?|part(?: number)?)[^A-Z0-9]{0,16}([A-Z0-9._\-]{4,})/i);
+    const candidate = match?.[1]?.trim() ?? null;
+    if (!candidate) return null;
+    if (/^(bg_img|img|jpg|jpeg|png|webp|svg|gif|image|thumbnail)$/i.test(candidate)) return null;
+    return candidate;
+  }
+
+  private normalizeAvailability(value: unknown): 'in_stock' | 'out_of_stock' | 'unknown' {
+    if (typeof value === 'boolean') return value ? 'in_stock' : 'out_of_stock';
+    if (typeof value === 'number') return value > 0 ? 'in_stock' : 'out_of_stock';
+    const raw = typeof value === 'string' ? value.toLowerCase() : '';
+    if (!raw) return 'unknown';
+    if (/(sin stock|agotado|out of stock|outofstock|no disponible|no stock)/i.test(raw)) return 'out_of_stock';
+    if (/(en stock|stock disponible|disponible|available|hay stock|instock)/i.test(raw)) return 'in_stock';
+    return 'unknown';
+  }
+
+  private extractProductNameFromContext(snippet: string) {
+    const headingMatch = snippet.match(/<(?:h1|h2|h3|h4)[^>]*>([\s\S]*?)<\/(?:h1|h2|h3|h4)>/i);
+    if (headingMatch) return this.cleanLabel(headingMatch[1]);
+    const titleMatch = snippet.match(/title=(["'])(.*?)\1/i);
+    if (titleMatch) return this.cleanLabel(titleMatch[2]);
+    return null;
+  }
+
+  private extractHtmlPartName(snippet: string, rawLabel: string | null, url: string | null, profile: string) {
+    const ariaLabel = this.cleanLabel(this.firstCapture(snippet, /aria-label=([\"'])(.*?)\1/i));
+    const safeRawLabel = this.stripPartActionLabel(rawLabel);
+    const safeAriaLabel = this.stripPartActionLabel(ariaLabel);
+    const candidateNames = [
+      this.cleanLabel(this.firstCapture(snippet, /class=([\"'])[^\"']*\bwd-entities-title\b[^\"']*\1[^>]*>\s*<a[^>]*>([\s\S]*?)<\/a>/i)),
+      this.cleanLabel(this.firstCapture(snippet, /woocommerce-loop-product__title[^>]*>\s*<a[^>]*>([\s\S]*?)<\/a>/i)),
+      this.cleanLabel(this.firstCapture(snippet, /class=([\"'])[^\"']*\bproduct-title\b[^\"']*\1[^>]*>\s*<a[^>]*>([\s\S]*?)<\/a>/i)),
+      this.cleanLabel(this.firstCapture(snippet, /class=([\"'])[^\"']*\bwoocommerce-LoopProduct-link\b[^\"']*\1[^>]*>([\s\S]*?)<\/a>/i)),
+      this.cleanLabel(this.firstCapture(snippet, /class=([\"'])[^\"']*\bproduct__categories\b[^\"']*\1[\s\S]*?<\/p>\s*<div[^>]*woocommerce-loop-product__title[^>]*>\s*<a[^>]*>([\s\S]*?)<\/a>/i)),
+      this.cleanLabel(this.firstCapture(snippet, /data-hook=([\"'])product-item-root\1[^>]*aria-label=([\"'])(.*?)\2/i)),
+      safeRawLabel,
+      safeAriaLabel?.replace(/^galer[ií]a de\s+/i, '').trim() || null,
+      this.extractProductNameFromContext(snippet),
+      this.cleanLabel(this.slugToLabel(url)),
+    ];
+    const meaningful = candidateNames.find((value) => this.isMeaningfulPartName(value, null));
+    if (!meaningful) return null;
+    if (profile === 'wix') {
+      return meaningful.replace(/^galer[ií]a de\s+/i, '').trim();
+    }
+    return meaningful;
+  }
+
+  private extractHtmlPartBrand(snippet: string, name: string | null, profile: string) {
+    const categories = [...snippet.matchAll(/rel=(["'])tag\1[^>]*>([^<]+)</gi)].map((match) => this.cleanLabel(match[2])).filter(Boolean);
+    const lastCategory = categories.at(-1) ?? null;
+    if (lastCategory && !/(modulo|modulos|repuesto|repuestos|pantalla|display)/i.test(lastCategory)) {
+      return lastCategory;
+    }
+
+    const categoryLabel = this.cleanLabel(this.firstCapture(snippet, /class=(["'])[^"']*\bproduct-cat\b[^"']*\1[^>]*>([\s\S]*?)<\/p>/i));
+    if (categoryLabel && !/(modulo|modulos|repuesto|repuestos)/i.test(categoryLabel)) {
+      return categoryLabel;
+    }
+
+    if (!name) return null;
+    const brands = ['samsung', 'motorola', 'xiaomi', 'iphone', 'apple', 'lg', 'tcl', 'zte', 'realme', 'tecno', 'infinix', 'nokia', 'alcatel', 'huawei', 'oppo', 'vivo'];
+    const normalized = this.normalizeSearchText(name);
+    const found = brands.find((brand) => normalized.includes(brand));
+    if (!found) return null;
+    return found === 'apple' ? 'Apple' : found.charAt(0).toUpperCase() + found.slice(1);
+  }
+
+  private extractHtmlPartPrice(snippet: string, profile: string) {
+    const candidates: string[] = [];
+    if (profile === 'wix') {
+      candidates.push(...[...snippet.matchAll(/data-wix-price=(["'])(.*?)\1/gi)].map((match) => match[2] ?? ''));
+    }
+    candidates.push(
+      ...[...snippet.matchAll(/<span class="price">[\s\S]*?<\/span>/gi)].map((match) => this.stripHtml(match[0] ?? '')),
+      ...[...snippet.matchAll(/woocommerce-Price-amount[^>]*>[\s\S]*?<span[^>]*woocommerce-Price-currencySymbol[^>]*>[\s\S]*?<\/span>\s*([^<]+)/gi)].map(
+        (match) => match[1] ?? '',
+      ),
+      ...[...snippet.matchAll(/(?:\$|&#36;)\s*(?:&nbsp;|\s)*[0-9][0-9.,]*/gi)].map((match) => match[0] ?? ''),
+      ...[...snippet.matchAll(/(?:\$|&#36;)\s*[0-9][0-9.,]*/gi)].map((match) => match[0] ?? ''),
+    );
+    const parsedValues = candidates
+      .map((candidate) => this.parseMoneyValue(candidate))
+      .filter((value): value is number => value != null);
+    const realistic = parsedValues.find((value) => value >= 100 && value !== 0);
+    if (realistic != null) return realistic;
+    return null;
+  }
+
+  private extractHtmlPartAvailability(snippet: string) {
+    if (/\binstock\b/i.test(snippet)) return 'in_stock' as const;
+    if (/\boutofstock\b/i.test(snippet)) return 'out_of_stock' as const;
+    return this.normalizeAvailability(snippet);
+  }
+
+  private safeHostname(value?: string | null) {
+    try {
+      return value ? new URL(value).hostname.toLowerCase().replace(/^www\./, '') : '';
+    } catch {
+      return '';
+    }
+  }
+
+  private safePathname(value?: string | null) {
+    try {
+      return value ? new URL(value).pathname.toLowerCase() : '';
+    } catch {
+      return '';
+    }
+  }
+
+  private slugToLabel(url?: string | null) {
+    const pathname = this.safePathname(url);
+    const slug = pathname.split('/').filter(Boolean).pop();
+    if (!slug) return null;
+    return slug.replace(/[-_]+/g, ' ').trim();
+  }
+
+  private isMeaningfulPartName(value?: string | null, supplierName?: string | null) {
+    const label = this.cleanLabel(value);
+    if (!label) return false;
+    const normalized = this.normalizeSearchText(label);
+    if (!normalized || normalized.length < 4) return false;
+    if (supplierName && normalized === this.normalizeSearchText(supplierName)) return false;
+    if (/^(modulos?|repuestos?|samsung|apple|motorola|xiaomi|lg|nokia)$/.test(normalized)) return false;
+    return /[a-z]/i.test(label);
+  }
+
+  private normalizeSearchText(value?: string | null) {
+    return (value ?? '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  private buildPartSearchQueryProfile(query: string) {
+    const genericTokens = new Set(['modulo', 'modulos', 'pantalla', 'display', 'touch', 'lcd', 'oled', 'incell', 'repuesto', 'repuestos', 'parte', 'partes', 'con', 'sin', 'marco', 'negro', 'blanco', 'original', 'premium']);
+    const tokens = [...new Set(this.normalizeSearchText(query).split(' ').filter((token) => token.length >= 2))];
+    const specificTokens = tokens.filter((token) => !genericTokens.has(token));
+    return {
+      normalized: this.normalizeSearchText(query),
+      tokens,
+      specificTokens,
+      genericTokens,
+    };
+  }
+
+  private availabilityOrder(value: 'in_stock' | 'out_of_stock' | 'unknown') {
+    return value === 'in_stock' ? 0 : value === 'unknown' ? 1 : 2;
+  }
+
+  private rankSupplierPart(item: NormalizedSupplierPartWithProvider, profile: ReturnType<AdminService['buildPartSearchQueryProfile']>) {
+    const nameTokens = this.normalizeSearchText(item.name).split(' ').filter(Boolean);
+    const brandTokens = this.normalizeSearchText(item.brand).split(' ').filter(Boolean);
+    const skuTokens = this.normalizeSearchText(item.sku).split(' ').filter(Boolean);
+    const rawLabelTokens = this.normalizeSearchText(item.rawLabel).split(' ').filter(Boolean);
+    const urlTokens = this.normalizeSearchText(this.slugToLabel(item.url)).split(' ').filter(Boolean);
+    const haystack = [...nameTokens, ...brandTokens, ...skuTokens, ...rawLabelTokens, ...urlTokens].join(' ');
+    const exactTokens = new Set(haystack.split(' ').filter(Boolean));
+    let score = 0;
+    let specificHits = 0;
+    let totalHits = 0;
+    if (profile.normalized && this.normalizeSearchText(item.name).includes(profile.normalized)) {
+      score += 70;
+    }
+    for (const token of profile.tokens) {
+      const exact = exactTokens.has(token);
+      const partial = !exact && haystack.includes(token);
+      if (!exact && !partial) continue;
+      totalHits += 1;
+      if (profile.specificTokens.includes(token)) {
+        specificHits += 1;
+        score += exact ? 22 : 9;
+      } else {
+        score += exact ? 5 : 2;
+      }
+    }
+    if (item.price != null) score += 14;
+    else score -= 8;
+    if (item.price != null && item.price < 100) score -= 55;
+    if (item.availability === 'in_stock') score += 12;
+    else if (item.availability === 'out_of_stock') score -= 6;
+    if (item.sku) score += 4;
+    if (item.brand) score += 3;
+    if (item.url && /\/(?:producto|product-page)\//i.test(item.url)) score += 6;
+    if (item.name.length <= 64) score += 4;
+    if (profile.specificTokens.length > 0 && specificHits === 0) score -= 45;
+    if (profile.tokens.length >= 2 && totalHits < 2) score -= 18;
+    if (item.price === 0) score -= 40;
+    return score;
+  }
+  private stripPartActionLabel(value?: string | null) {
+    const label = this.cleanLabel(value);
+    if (!label) return null;
+
+    const normalized = this.normalizeSearchText(label);
+    if (normalized.startsWith('anadir al carrito')) {
+      const quoted = label.match(/[:«“"]\s*(.+?)\s*[»”"]?$/);
+      return quoted?.[1] ? this.cleanLabel(quoted[1]) : null;
+    }
+    if (normalized.startsWith('add to cart')) {
+      const quoted = label.match(/[:«“"]\s*(.+?)\s*[»”"]?$/);
+      return quoted?.[1] ? this.cleanLabel(quoted[1]) : null;
+    }
+    return label;
   }
 
   private async estimateProbeResultCount(
@@ -2525,5 +3493,7 @@ export class AdminService {
     };
   }
 }
+
+
 
 

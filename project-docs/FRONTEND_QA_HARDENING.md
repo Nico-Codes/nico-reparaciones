@@ -146,6 +146,15 @@ Auditoría funcional profunda del frontend para corregir bugs reales de flujo, e
 - Revisión funcional más profunda de módulos secundarios admin si aparecen bugs nuevos en uso real.
 - Eventual consolidación de más formularios auth/cuenta sobre primitives reutilizables si se expanden los flujos.
 
+## Relacion con hardening backend
+- Los flujos frontend endurecidos de checkout, reparaciones admin y catalogo ahora descansan sobre validaciones backend mas estrictas:
+  - estados de pedido y reparacion invalidos ya no se normalizan silenciosamente
+  - create/update de reparaciones valida coherencia de referencias de catalogo
+  - create/update de productos valida categoria real
+  - checkout y quick sales usan decremento atomico de stock
+- Documentacion detallada del lado servidor:
+  - `project-docs/BACKEND_BUSINESS_RULES_HARDENING.md`
+
 ## Reparaciones admin: alta y detalle
 
 ### Hallazgos reales
@@ -297,3 +306,105 @@ Auditoría funcional profunda del frontend para corregir bugs reales de flujo, e
 - Resultado:
   - no quedaron mutaciones dobles en usuarios, venta rapida, productos o categorias
   - la automatizacion de frontend siguio verde despues del hardening
+
+## Reparaciones con proveedor + repuesto + snapshot
+
+### Alcance endurecido
+- `AdminRepairCreatePage`
+- `AdminRepairDetailPage`
+- `RepairProviderPartPricingSection`
+
+### Riesgos reales que habia que cubrir
+1. Preview vieja mostrada como vigente despues de cambiar proveedor, repuesto o contexto tecnico.
+2. Snapshot aplicado sin quotedPrice consistente.
+3. Requests concurrentes de:
+   - carga de proveedores
+   - busqueda de repuestos
+   - preview proveedor + repuesto + regla
+4. UX enganosa entre:
+   - preview
+   - snapshot activo
+   - override manual de `quotedPrice`
+
+### Endurecimiento aplicado
+- `requestId` separados para:
+  - proveedores
+  - busqueda de repuestos
+  - preview de pricing
+- invalidacion del preview cuando cambia:
+  - proveedor
+  - repuesto
+  - cantidad
+  - extra/envio
+  - contexto tecnico
+- `pendingPricingSnapshotDraft` separado del snapshot activo persistido
+- `Usar sugerido` y `Aplicar snapshot` siguen siendo acciones explicitas; no hay autoescritura silenciosa
+- create/detail validan que no se guarde un snapshot aplicado sin `quotedPrice`
+- el detalle refresca el caso luego del guardado y rehidrata el snapshot activo real
+
+### Validacion funcional dirigida
+- Probe backend:
+  - proveedor temporal con busqueda real
+  - repuesto normalizado
+  - preview proveedor + repuesto + regla
+  - create con `pricingSnapshotDraft`
+  - detail con snapshot activo
+  - update con snapshot nuevo y activacion correcta
+- Resultado:
+  - `providerSearchTotal: 5`
+  - `previewMatched: true`
+  - `activeSnapshotAfterCreate: true`
+  - `snapshotChanged: true`
+
+### Estado resultante
+- el flujo proveedor + repuesto + calculo real ya no es solo infraestructura backend
+- create/detail admin ya lo usan de forma real
+- lo que queda pendiente es profundidad de UX e historial, no el wiring principal
+
+## Reparaciones: UX de snapshot activo e historial
+
+### Hallazgos reales
+1. El detalle admin ya tenia snapshot activo y preview nuevo, pero la semantica operativa seguia siendo ambigua.
+- Riesgos:
+  - el operador no podia distinguir con claridad entre:
+    - sugerido del snapshot
+    - precio aplicado al snapshot
+    - presupuesto actual del caso
+  - el historial de snapshots persistidos no estaba visible
+  - si se editaba `quotedPrice` despues de aplicar un snapshot, faltaba una senal clara de override posterior
+
+### Correcciones aplicadas
+- backend:
+  - `adminDetail` ahora devuelve `pricingSnapshots` historicos del caso
+  - timeline registra de forma mas precisa:
+    - snapshot aplicado segun calculo
+    - snapshot aplicado con override manual
+    - presupuesto modificado manualmente sobre el snapshot activo
+- frontend:
+  - `RepairProviderPartPricingSection` ahora muestra mejor el snapshot activo:
+    - proveedor
+    - repuesto
+    - costo base
+    - regla
+    - sugerido
+    - aplicado
+    - presupuesto actual
+    - fecha de aplicacion
+  - `AdminRepairDetailPage` muestra historial basico de snapshots persistidos
+  - la UI diferencia de forma explicita:
+    - snapshot activo
+    - snapshots reemplazados
+    - precio aplicado segun calculo
+    - snapshot aplicado con override manual
+    - presupuesto actual ya desacoplado del snapshot activo
+
+### Validacion funcional dirigida
+- Probe backend:
+  - create con snapshot
+  - update con snapshot nuevo
+  - update manual posterior del presupuesto
+- Resultado:
+  - `pricingSnapshotsCount: 2`
+  - `hasSupersededSnapshot: true`
+  - `currentQuotedDiffersFromApplied: true`
+  - `hasManualOverrideEvent: true`

@@ -12,6 +12,182 @@
 
 ---
 
+### 2026-03-12 - Codex
+- Alcance: mejora corta de calidad sobre la búsqueda multi-proveedor de repuestos con proveedores reales.
+- Tipo de intervencion: hardening de extracción HTML/normalización/ranking sin cambiar el flujo create/detail/snapshot.
+- Archivos tocados:
+  - `next-stack/apps/api/src/modules/admin/admin.service.ts`
+  - `project-docs/REPAIR_PROVIDER_PART_PRICING_PLAN.md`
+  - `project-docs/DECISIONS_LOG.md`
+- ¿Cambio comportamiento funcional?: Si. La búsqueda agregada ahora extrae mejor nombre/precio/disponibilidad para `Evophone`, `Okey Rosario`, `Celuphone`, `Novocell` y `Electrostore`, evita labels de “Añadir al carrito”, parsea mejor formatos de precio WooCommerce/Wix y ordena resultados con más peso en coincidencia exacta, precio real y stock útil.
+- Validaciones ejecutadas:
+  - `npm run typecheck --workspace @nico/api`
+  - probe dirigido `modulo samsung a10` sobre `POST /api/admin/providers/search-parts`
+  - gates finales de typecheck/build/smoke/route-parity/frontend-e2e
+- Riesgos / notas:
+  - el ajuste no introduce scraping masivo ni catálogo local; sigue siendo búsqueda remota normalizada
+  - se mantuvo la búsqueda puntual por proveedor como fallback, pero el beneficio principal está en la búsqueda agregada con proveedores reales
+
+### 2026-03-12 - Codex
+- Alcance: cierre fino de `Nueva reparación` con copy visible corregido y decisión operativa sobre catálogo exacto.
+- Tipo de intervencion: ajuste UX acotado, sin tocar backend ni el flujo create/preview/snapshot.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/repairs/AdminRepairCreatePage.tsx`
+  - `next-stack/apps/web/src/features/repairs/RepairProviderPartPricingSection.tsx`
+  - `project-docs/DECISIONS_LOG.md`
+- ¿Cambio comportamiento funcional?: Si, menor. `Marca exacta del catálogo` y `Modelo exacto del catálogo` pasan a estar visibles en `Datos básicos` porque hoy sí impactan el cálculo y la búsqueda de repuestos; el disclosure secundario queda solo para `Notas internas`.
+- Validaciones ejecutadas:
+  - `npm run typecheck --workspace @nico/web`
+  - `npm run build --workspace @nico/web`
+  - `npm run smoke:web`
+  - verificación real `Nueva reparación -> revisar copy -> crear reparación`
+- Riesgos / notas:
+  - no se tocó la lógica de create, preview ni snapshot
+  - el objetivo fue hacer visible solo lo que hoy aporta valor real al flujo operativo
+
+### 2026-03-12 - Codex
+- Alcance: reorganización operativa del dashboard admin principal.
+- Tipo de intervencion: UX funcional acotada sobre `AdminDashboardPage`, sin rediseño general del admin.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/admin/AdminDashboardPage.tsx`
+  - `next-stack/apps/web/src/styles.css`
+  - `project-docs/DECISIONS_LOG.md`
+- ¿Cambio comportamiento funcional?: Sí, menor. El dashboard deja de ser un mapa general y pasa a priorizar acciones rápidas, bandeja de trabajo y módulos de uso diario. La administración avanzada queda compacta y colapsable.
+- Validaciones ejecutadas:
+  - `npm run typecheck --workspace @nico/web`
+  - `npm run build --workspace @nico/web`
+  - `npm run smoke:web`
+  - verificación real del dashboard admin con quick actions y navegación
+- Riesgos / notas:
+  - no se tocaron rutas ni contratos del backend
+  - la métrica y actividad siguen presentes, pero con menor jerarquía que las acciones operativas
+
+### 2026-03-12 - Codex
+- Alcance: Fase 3 corta de UX/historial para reparaciones con proveedor + repuesto + calculo real.
+- Tipo de intervencion: hardening puntual de backend + mejora operativa del detalle admin.
+- Archivos tocados:
+  - `next-stack/apps/api/src/modules/repairs/repairs.service.ts`
+  - `next-stack/apps/web/src/features/repairs/api.ts`
+  - `next-stack/apps/web/src/features/repairs/RepairProviderPartPricingSection.tsx`
+  - `next-stack/apps/web/src/features/repairs/AdminRepairDetailPage.tsx`
+  - `project-docs/REPAIR_PROVIDER_PART_PRICING_PLAN.md`
+  - `project-docs/FRONTEND_QA_HARDENING.md`
+  - `project-docs/DECISIONS_LOG.md`
+- ¿Cambio comportamiento funcional?: Si. El detalle admin ahora expone historial basico de snapshots, deja mucho mas clara la diferencia entre snapshot activo, sugerido, aplicado y presupuesto actual, y agrega trazabilidad explicita cuando el presupuesto se modifica manualmente despues del calculo.
+- Validaciones ejecutadas:
+  - `npm run typecheck --workspace @nico/api`
+  - `npm run typecheck --workspace @nico/web`
+  - `npm run build --workspace @nico/api`
+  - `npm run build --workspace @nico/web`
+  - `npm run smoke:backend`
+  - `npm run smoke:web`
+  - `npm run qa:route-parity`
+  - `npm run qa:frontend:e2e`
+  - probe dirigido `create con snapshot -> update con snapshot nuevo -> override manual -> detail con historial`
+- Riesgos / notas:
+  - esta fase no agrega comparacion multiple entre proveedores ni operaciones avanzadas sobre snapshots historicos
+  - el objetivo fue hacer el flujo actual mucho mas claro para el operador sin abrir una nueva fase grande
+
+### 2026-03-11 - Codex
+- Alcance: Implementacion Fase 2 de reparaciones con proveedor + repuesto + calculo real.
+- Tipo de intervencion: integracion funcional real frontend + backend existente + persistencia/activacion de snapshot.
+- Archivos tocados:
+  - `next-stack/apps/api/src/modules/repairs/repairs.controller.ts`
+  - `next-stack/apps/api/src/modules/repairs/repairs.service.ts`
+  - `next-stack/apps/web/src/features/admin/api.ts`
+  - `next-stack/apps/web/src/features/repairs/api.ts`
+  - `next-stack/apps/web/src/features/repairs/types.ts`
+  - `next-stack/apps/web/src/features/repairs/repair-pricing.ts`
+  - `next-stack/apps/web/src/features/repairs/RepairProviderPartPricingSection.tsx`
+  - `next-stack/apps/web/src/features/repairs/AdminRepairCreatePage.tsx`
+  - `next-stack/apps/web/src/features/repairs/AdminRepairDetailPage.tsx`
+  - `project-docs/REPAIR_PROVIDER_PART_PRICING_PLAN.md`
+  - `project-docs/FRONTEND_QA_HARDENING.md`
+  - `project-docs/DECISIONS_LOG.md`
+- ¿Cambio comportamiento funcional?: Si. El admin ahora puede elegir proveedor, buscar repuesto, pedir preview proveedor + repuesto + regla, usar el sugerido y persistir un `RepairPricingSnapshot` aplicado al crear o actualizar una reparacion. El detalle tambien muestra el snapshot activo y permite reemplazarlo explicitamente al guardar.
+- Validaciones ejecutadas:
+  - `npm run typecheck --workspace @nico/api`
+  - `npm run typecheck --workspace @nico/web`
+  - `npm run build --workspace @nico/api`
+  - `npm run build --workspace @nico/web`
+  - `npm run smoke:backend`
+  - `npm run smoke:web`
+  - `npm run qa:route-parity`
+  - `npm run qa:frontend:e2e`
+  - probe dirigido backend `proveedor -> repuesto -> preview -> create con snapshot -> update con snapshot nuevo`
+  - verificacion UI minima de presencia de la seccion `Proveedor y repuesto` en create/detail
+- Riesgos / notas:
+  - la fase no introduce todavia historial visible de snapshots ni comparacion multiple entre proveedores
+  - la verificacion UI minima sobre preview local mostro fallos de fetch ajenos a la seccion por configuracion del host de API en ese contexto, pero la presencia del bloque y el flujo real quedaron validados por codigo + gates + probe de negocio
+
+### 2026-03-11 - Codex
+- Alcance: implementación de la Fase 1 para reparaciones con proveedor + repuesto + cálculo real.
+- Tipo de intervencion: schema Prisma + endpoints backend nuevos + wrappers tipados para la siguiente fase de frontend.
+- Archivos tocados:
+  - `next-stack/apps/api/prisma/schema.prisma`
+  - `next-stack/apps/api/prisma/migrations/20260311170000_add_repair_pricing_snapshots_phase1/migration.sql`
+  - `next-stack/apps/api/src/modules/admin/admin.controller.ts`
+  - `next-stack/apps/api/src/modules/admin/admin.service.ts`
+  - `next-stack/apps/api/src/modules/pricing/pricing.controller.ts`
+  - `next-stack/apps/api/src/modules/pricing/pricing.service.ts`
+  - `next-stack/apps/web/src/features/admin/api.ts`
+  - `next-stack/apps/web/src/features/repairs/api.ts`
+  - `project-docs/REPAIR_PROVIDER_PART_PRICING_PLAN.md`
+  - `project-docs/BACKEND_BUSINESS_RULES_HARDENING.md`
+  - `project-docs/DECISIONS_LOG.md`
+- ¿Cambio comportamiento funcional?: Sí. El backend ahora puede devolver repuestos normalizados por proveedor y calcular un preview real de presupuesto usando proveedor + repuesto + regla, además de persistir snapshots de pricing de reparación en schema.
+- Validaciones ejecutadas:
+  - `npm run db:generate --workspace @nico/api`
+  - `npm run db:migrate:deploy --workspace @nico/api`
+  - `npm run typecheck --workspace @nico/api`
+  - `npm run typecheck --workspace @nico/web`
+  - probes dirigidos de search-parts y provider-part-preview
+- Riesgos / notas:
+  - la Fase 1 no integra todavía la UX completa en create/detail; deja la base lista y contratos tipados para la Fase 2.
+  - `pricingResolve` se mantiene intacto; el nuevo preview usa endpoint propio para no mezclar cálculo abstracto con costo real de proveedor.
+
+### 2026-03-11 - Codex
+- Alcance: auditoria y diseno tecnico para migrar la feature completa de reparaciones basada en proveedor + repuesto + calculo real.
+- Tipo de intervencion: documentacion tecnica y decision de arquitectura.
+- Archivos tocados:
+  - `project-docs/REPAIR_PROVIDER_PART_PRICING_PLAN.md`
+  - `project-docs/DECISIONS_LOG.md`
+- ¿Cambio comportamiento funcional?: No. Esta fase no implementa la feature; deja definido el modelo recomendado, los endpoints necesarios, la UX objetivo y la estrategia de migracion por fases.
+- Validaciones ejecutadas:
+  - inspeccion dirigida de `schema.prisma`, `pricing.service.ts`, `repairs.service.ts`, `admin.service.ts`, `AdminRepairCreatePage.tsx`, `AdminRepairDetailPage.tsx`, `AdminProvidersPage.tsx` y `AdminWarrantyCreatePage.tsx`
+- Riesgos / notas:
+  - el runtime legacy ya no existe en el repo, por lo que parte de la reconstruccion de la feature original queda marcada como pendiente de validacion humana
+  - la recomendacion explicita es no implementar esta feature con campos sueltos en `Repair`, sino con snapshots historicos y fases controladas
+
+### 2026-03-11 - Codex
+- Alcance: hardening backend de reglas de negocio en pedidos, reparaciones y catalogo admin.
+- Tipo de intervencion: validacion/negocio + control de transiciones + proteccion contra payloads permisivos y carreras de stock.
+- Archivos tocados:
+  - `next-stack/apps/api/src/modules/cart/cart.service.ts`
+  - `next-stack/apps/api/src/modules/orders/orders.controller.ts`
+  - `next-stack/apps/api/src/modules/orders/orders.service.ts`
+  - `next-stack/apps/api/src/modules/repairs/repairs.service.ts`
+  - `next-stack/apps/api/src/modules/catalog-admin/catalog-admin.controller.ts`
+  - `next-stack/apps/api/src/modules/catalog-admin/catalog-admin.service.ts`
+  - `project-docs/BACKEND_BUSINESS_RULES_HARDENING.md`
+  - `project-docs/DECISIONS_LOG.md`
+- ¿Cambio comportamiento funcional?: Si. La API ahora rechaza estados invalidos en pedidos y reparaciones, protege transiciones de estado, valida referencias de catalogo en productos/reparaciones, deja de responder `200` en payloads invalidos y usa decremento atomico de stock al confirmar compras o ventas rapidas.
+- Validaciones ejecutadas:
+  - `npm run typecheck --workspace @nico/api`
+  - `npm run typecheck --workspace @nico/web`
+  - `npm run build --workspace @nico/api`
+  - `npm run build --workspace @nico/web`
+  - `npm run smoke:backend`
+  - `npm run smoke:web`
+  - `npm run qa:route-parity`
+  - `npm run qa:frontend:e2e`
+  - probe dirigido sobre rechazo de estado invalido y categoria inexistente
+- Riesgos / notas:
+  - checkout mantiene compatibilidad actual con el `paymentMethod` enviado desde frontend; endurecer ese enum requerira alinear antes el contrato de UI.
+  - el hardening se concentro en negocio critico; auth/guards fue auditado y no requirio cambios estructurales en esta fase.
+
+---
+
 ### 2026-03-11 - Codex
 - Alcance: hardening funcional adicional sobre modulos admin de negocio.
 - Tipo de intervencion: proteccion contra stale responses + bloqueo de mutaciones duplicadas + validacion operativa mas estricta.
@@ -468,4 +644,111 @@
   - el contrato backend no soporta mas campos que los ya usados; no se inventaron payloads nuevos
   - `smoke:backend` mantiene cobertura general, pero no fuerza checkout/quick sale cuando el demo local no ofrece productos validos para compra
 
+### 2026-03-11 - Codex
+- Alcance: pasada corta final de hardening backend sobre checkout normal y filtros admin ambiguos.
+- Tipo de intervencion: cierre puntual de reglas de negocio + validacion de contratos.
+- Archivos tocados:
+  - `next-stack/apps/api/src/modules/orders/orders.service.ts`
+  - `next-stack/apps/api/src/modules/repairs/repairs.service.ts`
+  - `project-docs/BACKEND_BUSINESS_RULES_HARDENING.md`
+  - `project-docs/DECISIONS_LOG.md`
+- ¿Cambio comportamiento funcional?: Si. Checkout normal ya no acepta `paymentMethod` arbitrario; lo normaliza a una enum explicita o falla con `400`. Los filtros invalidos en `orders/admin`, `orders/admin/quick-sales` y `repairs/admin` dejan de degradarse silenciosamente a "sin filtro" y ahora responden `400`.
+- Validaciones ejecutadas:
+  - `npm run typecheck --workspace @nico/api`
+  - `npm run typecheck --workspace @nico/web`
+  - `npm run build --workspace @nico/api`
+  - `npm run build --workspace @nico/web`
+  - `npm run smoke:backend`
+  - `npm run smoke:web`
+  - `npm run qa:route-parity`
+  - `npm run qa:frontend:e2e`
+- Riesgos / notas:
+  - el probe directo de checkout con `paymentMethod` invalido quedo limitado por el dataset demo actual: no habia un producto realmente comprable para ejecutar compra completa
+  - el contrato quedo igualmente cubierto por codigo y por el gate general en verde
 
+
+
+### 2026-03-11 - Codex
+- Alcance: integracion minima y util del calculo automatico de presupuesto en reparaciones admin.
+- Tipo de intervencion: conexion frontend a backend de pricing ya migrado + hardening de UX/estado en create y detail.
+- Archivos tocados:
+  - next-stack/apps/web/src/features/repairs/api.ts
+  - next-stack/apps/web/src/features/repairs/repair-pricing.ts
+  - next-stack/apps/web/src/features/repairs/AdminRepairCreatePage.tsx
+  - next-stack/apps/web/src/features/repairs/AdminRepairDetailPage.tsx
+  - project-docs/FRONTEND_QA_HARDENING.md
+  - project-docs/DECISIONS_LOG.md
+- ¿Cambio comportamiento funcional?: Si. El admin ahora puede calcular una sugerencia automatica de presupuesto desde reglas activas de pricing, usarla explicitamente en el alta y en el detalle de reparaciones, y recalcularla sin mezclar ese flujo con el submit principal.
+- Validaciones ejecutadas:
+  - npm run typecheck --workspace @nico/api
+  - npm run typecheck --workspace @nico/web
+  - npm run build --workspace @nico/api
+  - npm run build --workspace @nico/web
+  - npm run smoke:backend
+  - npm run smoke:web
+  - npm run qa:route-parity
+  - npm run qa:frontend:e2e
+  - verificacion dirigida del endpoint pricing/repairs/resolve con una regla activa del dataset local
+- Riesgos / notas:
+  - esta fase no migra proveedor ni repuesto dentro de Repair; solo expone y endurece la sugerencia automatica basada en reglas ya migradas.
+  - el probe UI completo con Playwright quedo limitado por la interaccion con CustomSelect portalizado, pero la integracion real quedo comprobada por codigo, gates y llamada dirigida al endpoint de pricing.
+
+### 2026-03-12 - Codex
+- Alcance: recuperacion de la UX legacy de busqueda agregada multi-proveedor en reparaciones admin.
+- Tipo de intervencion: integracion backend+frontend acotada, reutilizando preview proveedor + repuesto + regla ya existente.
+- Archivos tocados:
+  - `next-stack/apps/api/src/modules/admin/admin.controller.ts`
+  - `next-stack/apps/api/src/modules/admin/admin.service.ts`
+  - `next-stack/apps/web/src/features/admin/api.ts`
+  - `next-stack/apps/web/src/features/repairs/RepairProviderPartPricingSection.tsx`
+  - `project-docs/REPAIR_PROVIDER_PART_PRICING_PLAN.md`
+  - `project-docs/DECISIONS_LOG.md`
+- ¿Cambio comportamiento funcional?: Si. Create y detail de reparaciones ahora permiten escribir un repuesto una sola vez, consultar todos los proveedores activos con busqueda habilitada, seleccionar una opcion agregada y continuar con preview/snapshot. La busqueda puntual por proveedor queda como fallback mediante un filtro opcional.
+- Validaciones ejecutadas:
+  - `npm run typecheck --workspace @nico/api`
+  - `npm run typecheck --workspace @nico/web`
+  - `npm run build --workspace @nico/api`
+  - `npm run build --workspace @nico/web`
+  - `npm run smoke:backend`
+  - `npm run smoke:web`
+  - `npm run qa:route-parity`
+  - `npm run qa:frontend:e2e`
+  - probe dirigido `busqueda unica -> resultados multi-proveedor -> preview -> snapshot`
+- Riesgos / notas:
+  - el flujo principal ya recupera la UX agregada, pero todavia no existe comparacion multiple avanzada entre resultados seleccionados
+  - la robustez frente a fallos parciales descansa en el agregado por proveedor con `status = ok | empty | error`, sin romper el conjunto de resultados
+
+### 2026-03-12 - Codex
+- Alcance: simplificacion operativa de `Nueva reparacion` en el frontend admin.
+- Tipo de intervencion: reorganizacion UX acotada sobre la vista de create, sin tocar backend ni romper preview/snapshot.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/repairs/AdminRepairCreatePage.tsx`
+  - `next-stack/apps/web/src/features/repairs/RepairProviderPartPricingSection.tsx`
+  - `next-stack/apps/web/src/components/ui/section-card.tsx`
+  - `next-stack/apps/web/src/styles.css`
+  - `project-docs/DECISIONS_LOG.md`
+- ¿Cambio comportamiento funcional?: Si. La pantalla de alta ahora expone solo tres bloques principales (`Datos basicos`, `Diagnostico rapido`, `Proveedor y repuesto`) y mueve catalogo exacto, notas y ajustes finos de calculo a disclosures cerrados por defecto. El flujo de create, preview y snapshot se mantiene.
+- Validaciones ejecutadas:
+  - `npm run typecheck --workspace @nico/web`
+  - `npm run build --workspace @nico/web`
+  - `npm run smoke:web`
+  - probe real `Nueva reparacion -> verificar bloques visibles -> crear reparacion`
+- Riesgos / notas:
+  - no se modifico el dominio de reparaciones ni el contrato del snapshot; el cambio es estrictamente de UX/flujo operativo en la pantalla de alta.
+
+### 2026-03-13 - Codex
+- Alcance: ajuste fino del dashboard admin principal para priorizar accesos de gestion.
+- Tipo de intervencion: reordenamiento del dashboard, sin rediseño estructural ni cambios de comportamiento en navegacion.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/admin/AdminDashboardPage.tsx`
+  - `project-docs/DECISIONS_LOG.md`
+- ¿Cambio comportamiento funcional?: Si. `Gestion principal` pasa a ser la segunda seccion del dashboard, inmediatamente despues de `Acciones rapidas`, antes de `Resumen operativo`.
+- Validaciones ejecutadas:
+  - `npm run typecheck --workspace @nico/web`
+  - `npm run build --workspace @nico/web`
+  - `npm run smoke:web`
+  - probe real `/admin` con sesion admin verificando orden de secciones, colapso de `Administracion avanzada` y navegacion a `Nueva reparacion`
+- Riesgos / notas:
+  - no se tocaron estilos globales ni se abrio una nueva reorganizacion del dashboard; solo se ajusto la jerarquia de secciones.
+
+---

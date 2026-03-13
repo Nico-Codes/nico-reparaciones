@@ -118,6 +118,16 @@ const providerReorderSchema = z.object({
 const providerProbeSchema = z.object({
   q: z.string().trim().min(2).max(120).optional(),
 });
+const providerSearchPartsSchema = z.object({
+  q: z.string().trim().min(2).max(160),
+  limit: z.number().int().min(1).max(30).optional(),
+});
+const providerAggregateSearchPartsSchema = z.object({
+  q: z.string().trim().min(2).max(160),
+  supplierId: z.string().trim().min(1).max(191).optional().nullable(),
+  limitPerSupplier: z.number().int().min(1).max(20).optional(),
+  totalLimit: z.number().int().min(1).max(80).optional(),
+});
 const createWarrantyIncidentSchema = z.object({
   sourceType: z.enum(['repair', 'product']),
   title: z.string().trim().min(3).max(120),
@@ -255,6 +265,30 @@ export class AdminController {
     const parsed = providerProbeSchema.safeParse(body ?? {});
     if (!parsed.success) return { message: 'Validacion invalida', errors: parsed.error.issues };
     return this.adminService.probeProvider(id, parsed.data.q ?? '');
+  }
+
+  @Post('providers/:id/search-parts')
+  searchProviderParts(@Param('id') id: string, @Body() body: unknown) {
+    const parsed = providerSearchPartsSchema.safeParse(body ?? {});
+    if (!parsed.success) {
+      throw new BadRequestException({
+        message: 'Validación inválida',
+        errors: parsed.error.issues.map((issue) => ({ path: issue.path.join('.'), message: issue.message })),
+      });
+    }
+    return this.adminService.searchProviderParts(id, parsed.data);
+  }
+
+  @Post('providers/search-parts')
+  searchPartsAcrossProviders(@Body() body: unknown) {
+    const parsed = providerAggregateSearchPartsSchema.safeParse(body ?? {});
+    if (!parsed.success) {
+      throw new BadRequestException({
+        message: 'Validación inválida',
+        errors: parsed.error.issues.map((issue) => ({ path: issue.path.join('.'), message: issue.message })),
+      });
+    }
+    return this.adminService.searchPartsAcrossProviders(parsed.data);
   }
 
   @Get('warranties')

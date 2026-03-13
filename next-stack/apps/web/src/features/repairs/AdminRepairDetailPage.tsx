@@ -1,5 +1,5 @@
 ﻿import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, AlertTriangle, Clock3, ShieldCheck, Wrench } from 'lucide-react';
+import { ArrowLeft, AlertTriangle, Calculator, Clock3, ShieldCheck, Wrench } from 'lucide-react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { CustomSelect } from '@/components/ui/custom-select';
@@ -13,6 +13,8 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { TextField } from '@/components/ui/text-field';
 import { TextAreaField } from '@/components/ui/textarea-field';
 import { repairsApi } from './api';
+import { buildRepairPricingInput, formatSuggestedPriceInput, pricingRuleModeLabel } from './repair-pricing';
+import { RepairProviderPartPricingSection } from './RepairProviderPartPricingSection';
 import {
   formatDateTime,
   money,
@@ -22,7 +24,7 @@ import {
   repairStatusSummary,
   repairStatusTone,
 } from './repair-ui';
-import type { RepairItem, RepairTimelineEvent } from './types';
+import type { RepairItem, RepairPricingSnapshotItem, RepairTimelineEvent } from './types';
 
 const STATUS_OPTIONS = ['RECEIVED', 'DIAGNOSING', 'WAITING_APPROVAL', 'REPAIRING', 'READY_PICKUP', 'DELIVERED', 'CANCELLED'].map((status) => ({
   value: status,
@@ -84,14 +86,24 @@ export function AdminRepairDetailPage() {
       : '';
 
   const detailRequestIdRef = useRef(0);
+  const pricingRequestIdRef = useRef(0);
   const [item, setItem] = useState<RepairItem | null>(null);
   const [timeline, setTimeline] = useState<RepairTimelineEvent[]>([]);
+  const [pricingSnapshots, setPricingSnapshots] = useState<RepairPricingSnapshotItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [loadError, setLoadError] = useState('');
   const [saveError, setSaveError] = useState('');
+  const [pricingError, setPricingError] = useState('');
+  const [pricingLoading, setPricingLoading] = useState(false);
+  const [pricingResult, setPricingResult] = useState<Awaited<ReturnType<typeof repairsApi.pricingResolve>> | null>(null);
+  const [pricingResolvedKey, setPricingResolvedKey] = useState('');
+  const [pricingTouched, setPricingTouched] = useState(false);
   const [notice, setNotice] = useState(locationNotice);
   const [fieldErrors, setFieldErrors] = useState<FormErrors>({});
+  const [pendingPricingSnapshotDraft, setPendingPricingSnapshotDraft] = useState<Parameters<typeof repairsApi.adminUpdate>[1]['pricingSnapshotDraft']>(
+    null,
+  );
   const [status, setStatus] = useState('RECEIVED');
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
@@ -103,6 +115,13 @@ export function AdminRepairDetailPage() {
   const [notes, setNotes] = useState('');
 
   function hydrateForm(nextItem: RepairItem) {
+    pricingRequestIdRef.current += 1;
+    setPricingError('');
+    setPricingLoading(false);
+    setPricingResult(null);
+    setPricingResolvedKey('');
+    setPricingTouched(false);
+    setPendingPricingSnapshotDraft(null);
     setStatus(nextItem.status);
     setCustomerName(nextItem.customerName || '');
     setCustomerPhone(nextItem.customerPhone || '');
@@ -123,6 +142,7 @@ export function AdminRepairDetailPage() {
       if (requestId !== detailRequestIdRef.current) return;
       setItem(res.item);
       setTimeline(res.timeline ?? []);
+      setPricingSnapshots(res.pricingSnapshots ?? []);
       hydrateForm(res.item);
     } catch (cause) {
       if (requestId !== detailRequestIdRef.current) return;
@@ -158,6 +178,35 @@ export function AdminRepairDetailPage() {
     finalPrice: parsedFinalPrice.value,
     notes: normalizeNullable(notes),
   }), [customerName, customerPhone, deviceBrand, deviceModel, issueLabel, status, parsedQuotedPrice.value, parsedFinalPrice.value, notes]);
+  const pricingInput = useMemo(
+    () =>
+      buildRepairPricingInput({
+        deviceTypeId: item?.deviceTypeId ?? null,
+        deviceBrandId: item?.deviceBrandId ?? null,
+        deviceModelId: item?.deviceModelId ?? null,
+        deviceIssueTypeId: item?.deviceIssueTypeId ?? null,
+        deviceBrand: normalizedDraft.deviceBrand,
+        deviceModel: normalizedDraft.deviceModel,
+        issueLabel: normalizedDraft.issueLabel,
+      }),
+    [item?.deviceTypeId, item?.deviceBrandId, item?.deviceModelId, item?.deviceIssueTypeId, normalizedDraft.deviceBrand, normalizedDraft.deviceModel, normalizedDraft.issueLabel],
+  );
+  const pricingResultIsCurrent = pricingResolvedKey === pricingInput.key;
+  const activePricingResult = pricingResultIsCurrent ? pricingResult : null;
+  const activePricingError = pricingResultIsCurrent ? pricingError : '';
+  const pricingNeedsRefresh = pricingTouched && !!pricingResolvedKey && pricingResolvedKey !== pricingInput.key;
+  const suggestedTotal = activePricingResult?.matched ? activePricingResult.suggestion?.suggestedTotal ?? null : null;
+  const canUseSuggested = suggestedTotal != null && suggestedTotal !== parsedQuotedPrice.value;
+
+  const pricingBadge = useMemo(() => {
+    if (!pricingInput.canResolve) return { label: 'Datos insuficientes', tone: 'neutral' as const };
+    if (pricingLoading) return { label: 'Calculando', tone: 'info' as const };
+    if (activePricingError) return { label: 'Error', tone: 'danger' as const };
+    if (pricingNeedsRefresh) return { label: 'Recalcular', tone: 'warning' as const };
+    if (activePricingResult?.matched && activePricingResult.suggestion) return { label: 'Sugerencia lista', tone: 'success' as const };
+    if (activePricingResult && !activePricingResult.matched) return { label: 'Sin regla', tone: 'warning' as const };
+    return { label: 'Pendiente', tone: 'neutral' as const };
+  }, [activePricingError, activePricingResult, pricingInput.canResolve, pricingLoading, pricingNeedsRefresh]);
 
   const hasChanges = useMemo(() => {
     if (!item) return false;
@@ -170,9 +219,10 @@ export function AdminRepairDetailPage() {
       item.status === normalizedDraft.status &&
       item.quotedPrice === normalizedDraft.quotedPrice &&
       item.finalPrice === normalizedDraft.finalPrice &&
-      sameNullableString(item.notes, normalizedDraft.notes)
+      sameNullableString(item.notes, normalizedDraft.notes) &&
+      !pendingPricingSnapshotDraft
     );
-  }, [item, normalizedDraft]);
+  }, [item, normalizedDraft, pendingPricingSnapshotDraft]);
 
   function validate() {
     const nextErrors: FormErrors = {};
@@ -194,8 +244,43 @@ export function AdminRepairDetailPage() {
       nextErrors.finalPrice = parsedFinalPrice.error;
     }
 
+    if (pendingPricingSnapshotDraft && parsedQuotedPrice.value == null) {
+      nextErrors.quotedPrice = 'Define un presupuesto antes de guardar un snapshot aplicado.';
+    }
+
     setFieldErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
+  }
+
+  async function recalculateSuggestedPrice() {
+    if (!item || !pricingInput.canResolve || pricingLoading || saving) return;
+
+    const requestId = pricingRequestIdRef.current + 1;
+    pricingRequestIdRef.current = requestId;
+    setPricingTouched(true);
+    setPricingLoading(true);
+    setPricingError('');
+
+    try {
+      const response = await repairsApi.pricingResolve(pricingInput.input);
+      if (requestId !== pricingRequestIdRef.current) return;
+      setPricingResult(response);
+      setPricingResolvedKey(pricingInput.key);
+    } catch (cause) {
+      if (requestId !== pricingRequestIdRef.current) return;
+      setPricingResult(null);
+      setPricingResolvedKey(pricingInput.key);
+      setPricingError(cause instanceof Error ? cause.message : 'No pudimos calcular una sugerencia automática.');
+    } finally {
+      if (requestId === pricingRequestIdRef.current) setPricingLoading(false);
+    }
+  }
+
+  function useSuggestedPrice() {
+    if (suggestedTotal == null) return;
+    setQuotedPrice(formatSuggestedPriceInput(suggestedTotal));
+    setFieldErrors((current) => ({ ...current, quotedPrice: undefined }));
+    setNotice('');
   }
 
   async function saveChanges() {
@@ -221,6 +306,7 @@ export function AdminRepairDetailPage() {
     if (item.quotedPrice !== normalizedDraft.quotedPrice) patch.quotedPrice = normalizedDraft.quotedPrice;
     if (item.finalPrice !== normalizedDraft.finalPrice) patch.finalPrice = normalizedDraft.finalPrice;
     if (!sameNullableString(item.notes, normalizedDraft.notes)) patch.notes = normalizedDraft.notes;
+    if (pendingPricingSnapshotDraft) patch.pricingSnapshotDraft = pendingPricingSnapshotDraft;
 
     setSaving(true);
     try {
@@ -521,7 +607,7 @@ export function AdminRepairDetailPage() {
             />
 
             <div className="mt-4 flex flex-wrap gap-3">
-              <Button type="button" onClick={() => void saveChanges()} disabled={saving || !hasChanges} data-admin-repair-detail-save>
+              <Button type="button" onClick={() => void saveChanges()} disabled={saving || pricingLoading || !hasChanges} data-admin-repair-detail-save>
                 {saving ? 'Guardando...' : hasChanges ? 'Guardar cambios' : 'Sin cambios'}
               </Button>
               <Button asChild variant="outline" disabled={saving}>
@@ -529,6 +615,139 @@ export function AdminRepairDetailPage() {
               </Button>
             </div>
           </SectionCard>
+
+          <SectionCard
+            title="Presupuesto sugerido"
+            description="Consulta las reglas activas para comparar el presupuesto cargado con una sugerencia calculada."
+            actions={<StatusBadge label={pricingBadge.label} tone={pricingBadge.tone} size="sm" />}
+          >
+            {!pricingInput.canResolve ? (
+              <div className="ui-alert ui-alert--info">
+                <Calculator className="mt-0.5 h-4 w-4 flex-none" />
+                <div>
+                  <span className="ui-alert__title">Datos insuficientes para calcular</span>
+                  <div className="ui-alert__text">{pricingInput.reason}</div>
+                </div>
+              </div>
+            ) : pricingLoading ? (
+              <LoadingBlock label="Calculando presupuesto sugerido" lines={4} />
+            ) : activePricingError ? (
+              <div className="ui-alert ui-alert--danger">
+                <AlertTriangle className="mt-0.5 h-4 w-4 flex-none" />
+                <div>
+                  <span className="ui-alert__title">No pudimos resolver una sugerencia</span>
+                  <div className="ui-alert__text">{activePricingError}</div>
+                </div>
+              </div>
+            ) : pricingNeedsRefresh ? (
+              <div className="ui-alert ui-alert--warning">
+                <Calculator className="mt-0.5 h-4 w-4 flex-none" />
+                <div>
+                  <span className="ui-alert__title">Los datos cambiaron</span>
+                  <div className="ui-alert__text">Recalcula la sugerencia para comparar el presupuesto con las reglas activas actuales.</div>
+                </div>
+              </div>
+            ) : activePricingResult?.matched && activePricingResult.suggestion ? (
+              <div className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="summary-box">
+                    <div className="summary-box__label">Presupuesto cargado</div>
+                    <div className="summary-box__value">{money(parsedQuotedPrice.value, 'Sin definir')}</div>
+                    <div className="summary-box__hint">Es el valor editable del caso antes de guardar cambios.</div>
+                  </div>
+                  <div className="summary-box">
+                    <div className="summary-box__label">Sugerido por reglas</div>
+                    <div className="summary-box__value">{money(activePricingResult.suggestion.suggestedTotal, 'Sin sugerencia')}</div>
+                    <div className="summary-box__hint">
+                      {activePricingResult.rule?.name ?? 'Regla activa'} · {pricingRuleModeLabel(activePricingResult)}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="fact-list">
+                  <div className="fact-row">
+                    <div className="fact-label">Base</div>
+                    <div className="fact-value">{money(activePricingResult.suggestion.basePrice, 'Sin base')}</div>
+                  </div>
+                  <div className="fact-row">
+                    <div className="fact-label">Margen / total</div>
+                    <div className="fact-value fact-value--text">
+                      {activePricingResult.suggestion.calcMode === 'FIXED_TOTAL'
+                        ? 'Total fijo definido por regla'
+                        : `${activePricingResult.suggestion.profitPercent}%${activePricingResult.suggestion.minProfit != null ? ` · mínimo $ ${activePricingResult.suggestion.minProfit.toLocaleString('es-AR')}` : ''}`}
+                    </div>
+                  </div>
+                  <div className="fact-row">
+                    <div className="fact-label">Piso / envío</div>
+                    <div className="fact-value fact-value--text">
+                      {activePricingResult.suggestion.minFinalPrice != null ? `Piso $ ${activePricingResult.suggestion.minFinalPrice.toLocaleString('es-AR')}` : 'Sin piso'}
+                      {activePricingResult.suggestion.shippingFee != null ? ` · Envío $ ${activePricingResult.suggestion.shippingFee.toLocaleString('es-AR')}` : ''}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : activePricingResult ? (
+              <div className="ui-alert ui-alert--warning">
+                <AlertTriangle className="mt-0.5 h-4 w-4 flex-none" />
+                <div>
+                  <span className="ui-alert__title">No hay una regla aplicable</span>
+                  <div className="ui-alert__text">Puedes seguir con presupuesto manual o ajustar la información del caso y volver a calcular.</div>
+                </div>
+              </div>
+            ) : (
+              <div className="ui-alert ui-alert--info">
+                <Calculator className="mt-0.5 h-4 w-4 flex-none" />
+                <div>
+                  <span className="ui-alert__title">Listo para calcular</span>
+                  <div className="ui-alert__text">Usa la información actual del caso para comparar tu presupuesto con las reglas activas.</div>
+                </div>
+              </div>
+            )}
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => void recalculateSuggestedPrice()}
+                disabled={!pricingInput.canResolve || pricingLoading || saving}
+                data-admin-repair-detail-calc
+              >
+                {pricingLoading ? 'Calculando...' : activePricingResult || pricingNeedsRefresh ? 'Recalcular' : 'Calcular sugerido'}
+              </Button>
+              <Button type="button" variant="secondary" onClick={useSuggestedPrice} disabled={!canUseSuggested || pricingLoading || saving} data-admin-repair-detail-use-suggested>
+                Usar sugerido
+              </Button>
+            </div>
+          </SectionCard>
+
+          <RepairProviderPartPricingSection
+            mode="detail"
+            hydrateKey={`${item.id}:${item.activePricingSnapshotId ?? 'none'}`}
+            technicalContext={{
+              deviceTypeId: item.deviceTypeId ?? null,
+              deviceBrandId: item.deviceBrandId ?? null,
+              deviceModelId: item.deviceModelId ?? null,
+              deviceIssueTypeId: item.deviceIssueTypeId ?? null,
+              deviceBrand: normalizedDraft.deviceBrand,
+              deviceModel: normalizedDraft.deviceModel,
+              issueLabel: normalizedDraft.issueLabel,
+            }}
+            quotedPriceValue={parsedQuotedPrice.value}
+            disabled={saving || pricingLoading}
+            activeSnapshot={item.activePricingSnapshot ?? null}
+            snapshotHistory={pricingSnapshots}
+            pendingSnapshotDraft={pendingPricingSnapshotDraft ?? null}
+            onPendingSnapshotDraftChange={(draft) => {
+              setPendingPricingSnapshotDraft(draft);
+              setFieldErrors((current) => ({ ...current, quotedPrice: undefined }));
+            }}
+            onUseSuggestedPrice={(value) => {
+              setQuotedPrice(formatSuggestedPriceInput(value));
+              setFieldErrors((current) => ({ ...current, quotedPrice: undefined }));
+              setNotice('');
+            }}
+            onStatusMessage={setNotice}
+          />
         </div>
 
         <aside className="account-stack account-sticky">

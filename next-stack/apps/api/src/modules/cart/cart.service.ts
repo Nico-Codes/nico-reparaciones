@@ -20,7 +20,16 @@ export class CartService {
         productId: String(i.productId ?? '').trim(),
         quantity: Math.max(1, Math.min(999, Number(i.quantity) || 1)),
       }))
-      .filter((i) => i.productId);
+      .filter((i) => i.productId)
+      .reduce<Array<{ productId: string; quantity: number }>>((accumulator, item) => {
+        const existing = accumulator.find((entry) => entry.productId === item.productId);
+        if (existing) {
+          existing.quantity = Math.min(999, existing.quantity + item.quantity);
+          return accumulator;
+        }
+        accumulator.push({ ...item });
+        return accumulator;
+      }, []);
 
     const ids = [...new Set(normalized.map((i) => i.productId))];
     const products = await this.prisma.product.findMany({

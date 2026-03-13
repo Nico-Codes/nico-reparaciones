@@ -67,6 +67,49 @@ export type AdminProviderItem = {
   notes: string;
 };
 
+export type AdminProviderPartSearchItem = {
+  externalPartId: string;
+  name: string;
+  sku: string | null;
+  brand: string | null;
+  price: number | null;
+  availability: 'in_stock' | 'out_of_stock' | 'unknown';
+  url: string | null;
+  rawLabel: string | null;
+};
+
+export type AdminProviderPartSupplierMeta = {
+  id: string;
+  name: string;
+  priority: number;
+  endpoint: string | null;
+  mode: 'json' | 'html';
+};
+
+export type AdminProviderAggregatePartSearchItem = AdminProviderPartSearchItem & {
+  supplier: AdminProviderPartSupplierMeta;
+};
+
+export type AdminProviderAggregateSearchSupplierItem = {
+  supplier: AdminProviderPartSupplierMeta;
+  status: 'ok' | 'empty' | 'error';
+  total: number;
+  error: string | null;
+  url: string;
+};
+
+export type AdminProviderAggregatePartSearchResult = {
+  query: string;
+  items: AdminProviderAggregatePartSearchItem[];
+  suppliers: AdminProviderAggregateSearchSupplierItem[];
+  summary: {
+    searchedSuppliers: number;
+    suppliersWithResults: number;
+    failedSuppliers: number;
+    totalResults: number;
+  };
+};
+
 export type AdminWarrantyItem = {
   id: string;
   sourceType: 'repair' | 'product';
@@ -251,6 +294,24 @@ export const adminApi = {
         body: JSON.stringify(q ? { q } : {}),
       },
     );
+  },
+  searchProviderParts(id: string, input: { q: string; limit?: number }) {
+    return authRequest<{
+      supplier: AdminProviderItem;
+      query: string;
+      total: number;
+      url: string;
+      items: AdminProviderPartSearchItem[];
+    }>(`/admin/providers/${encodeURIComponent(id)}/search-parts`, {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  },
+  searchPartsAcrossProviders(input: { q: string; supplierId?: string | null; limitPerSupplier?: number; totalLimit?: number }) {
+    return authRequest<AdminProviderAggregatePartSearchResult>('/admin/providers/search-parts', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
   },
   warranties(params?: { q?: string; sourceType?: 'repair' | 'product' | ''; status?: 'open' | 'closed' | ''; from?: string; to?: string }) {
     const qs = new URLSearchParams();

@@ -1,4 +1,4 @@
-﻿import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { Prisma, type RepairPricingRule } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 
@@ -11,6 +11,34 @@ type ResolveInput = {
   deviceBrand?: string | null;
   deviceModel?: string | null;
   issueLabel?: string | null;
+};
+
+type SupplierPartPreviewInput = ResolveInput & {
+  supplierId: string;
+  supplierSearchQuery?: string | null;
+  quantity?: number;
+  extraCost?: number | null;
+  shippingCost?: number | null;
+  part: {
+    externalPartId?: string | null;
+    name: string;
+    sku?: string | null;
+    brand?: string | null;
+    price: number;
+    availability?: 'in_stock' | 'out_of_stock' | 'unknown' | null;
+    url?: string | null;
+  };
+};
+
+type ResolvedRepairContext = {
+  typeId: string | null;
+  brandId: string | null;
+  modelGroupId: string | null;
+  modelId: string | null;
+  issueTypeId: string | null;
+  brand: string;
+  model: string;
+  issue: string;
 };
 
 type CreateOrUpdateRuleInput = {
@@ -147,6 +175,169 @@ export class PricingService {
   }
 
   async resolveRepairPrice(input: ResolveInput) {
+    const context = await this.resolvePricingContext(input);
+    const best = await this.findBestRule(context);
+
+    if (!best) {
+      return {
+        matched: false,
+        input: this.serializeResolvedContext(context),
+        suggestion: null,
+      };
+    }
+
+    const suggestion = this.buildRuleOnlySuggestion(best);
+
+    return {
+      matched: true,
+      input: this.serializeResolvedContext(context),
+      rule: this.serializeRule(best),
+      suggestion,
+    };
+  }
+
+  async previewRepairProviderPartPricing(input: SupplierPartPreviewInput) {
+    const supplierId = this.nullableId(input.supplierId);
+    if (!supplierId) throw new BadRequestException('supplierId es requerido');
+
+    const quantity = Math.max(1, Math.min(999, Math.round(Number(input.quantity ?? 1))));
+    const extraCost = this.toMoney(input.extraCost ?? 0);
+    const shippingCost = this.toMoney(input.shippingCost ?? 0);
+    const partName = this.nullable(input.part.name);
+    if (!partName || partName.length < 2) throw new BadRequestException('Selecciona un repuesto válido');
+    const partPrice = this.toMoney(input.part.price);
+    if (partPrice < 0) throw new BadRequestException('El costo del repuesto no puede ser negativo');
+
+    const supplier = await this.prisma.supplier.findUnique({
+      where: { id: supplierId },
+      select: { id: true, name: true, active: true, searchEnabled: true, searchEndpoint: true },
+    });
+    if (!supplier) throw new BadRequestException('Proveedor no encontrado');
+
+    await this.assertScopeConsistency({
+      deviceTypeId: input.deviceTypeId ?? null,
+      deviceBrandId: input.deviceBrandId ?? null,
+      deviceModelGroupId: input.deviceModelGroupId ?? null,
+      deviceModelId: input.deviceModelId ?? null,
+      deviceIssueTypeId: input.deviceIssueTypeId ?? null,
+    });
+
+    const context = await this.resolvePricingContext(input);
+    this.assertProviderPartPreviewContext(context);
+
+    const rule = await this.findBestRule(context);
+    const baseCost = this.roundMoney(partPrice * quantity);
+    const costSubtotal = this.roundMoney(baseCost + extraCost);
+
+    if (!rule) {
+      return {
+        matched: false,
+        input: this.serializeResolvedContext(context),
+        supplier: {
+          id: supplier.id,
+          name: supplier.name,
+          active: supplier.active,
+          searchEnabled: supplier.searchEnabled,
+          endpoint: supplier.searchEndpoint ?? null,
+          searchQuery: this.nullable(input.supplierSearchQuery),
+        },
+        part: {
+          externalPartId: this.nullableId(input.part.externalPartId),
+          name: partName,
+          sku: this.nullable(input.part.sku),
+          brand: this.nullable(input.part.brand),
+          price: partPrice,
+          availability: input.part.availability ?? 'unknown',
+          url: this.nullable(input.part.url),
+          quantity,
+        },
+        calculation: {
+          unitCost: partPrice,
+          quantity,
+          baseCost,
+          extraCost,
+          shippingCost,
+          costSubtotal,
+          marginAmount: null,
+          appliedShippingFee: null,
+          suggestedQuotedPrice: null,
+          coversBaseCost: null,
+        },
+        rule: null,
+        snapshotDraft: null,
+      };
+    }
+
+    const pricing = this.buildProviderPartSuggestion(rule, {
+      unitCost: partPrice,
+      quantity,
+      extraCost,
+      shippingCost,
+    });
+
+    return {
+      matched: true,
+      input: this.serializeResolvedContext(context),
+      supplier: {
+        id: supplier.id,
+        name: supplier.name,
+        active: supplier.active,
+        searchEnabled: supplier.searchEnabled,
+        endpoint: supplier.searchEndpoint ?? null,
+        searchQuery: this.nullable(input.supplierSearchQuery),
+      },
+      part: {
+        externalPartId: this.nullableId(input.part.externalPartId),
+        name: partName,
+        sku: this.nullable(input.part.sku),
+        brand: this.nullable(input.part.brand),
+        price: partPrice,
+        availability: input.part.availability ?? 'unknown',
+        url: this.nullable(input.part.url),
+        quantity,
+      },
+      rule: this.serializeRule(rule),
+      calculation: pricing,
+      snapshotDraft: {
+        source: 'SUPPLIER_PART',
+        status: 'DRAFT',
+        supplierId: supplier.id,
+        supplierNameSnapshot: supplier.name,
+        supplierSearchQuery: this.nullable(input.supplierSearchQuery),
+        supplierEndpointSnapshot: supplier.searchEndpoint ?? null,
+        externalPartId: this.nullableId(input.part.externalPartId),
+        partSkuSnapshot: this.nullable(input.part.sku),
+        partNameSnapshot: partName,
+        partBrandSnapshot: this.nullable(input.part.brand),
+        partUrlSnapshot: this.nullable(input.part.url),
+        partAvailabilitySnapshot: input.part.availability ?? 'unknown',
+        quantity,
+        deviceTypeIdSnapshot: context.typeId,
+        deviceBrandIdSnapshot: context.brandId,
+        deviceModelGroupIdSnapshot: context.modelGroupId,
+        deviceModelIdSnapshot: context.modelId,
+        deviceIssueTypeIdSnapshot: context.issueTypeId,
+        deviceBrandSnapshot: context.brand || null,
+        deviceModelSnapshot: context.model || null,
+        issueLabelSnapshot: context.issue || null,
+        baseCost,
+        extraCost,
+        shippingCost,
+        pricingRuleId: rule.id,
+        pricingRuleNameSnapshot: rule.name,
+        calcModeSnapshot: rule.calcMode === 'FIXED_TOTAL' ? 'FIXED_TOTAL' : 'BASE_PLUS_MARGIN',
+        marginPercentSnapshot: Number(rule.profitPercent),
+        minProfitSnapshot: rule.minProfit != null ? Number(rule.minProfit) : null,
+        minFinalPriceSnapshot: rule.minFinalPrice != null ? Number(rule.minFinalPrice) : null,
+        shippingFeeSnapshot: rule.shippingFee != null ? Number(rule.shippingFee) : null,
+        suggestedQuotedPrice: pricing.suggestedQuotedPrice,
+        appliedQuotedPrice: null,
+        manualOverridePrice: null,
+      },
+    };
+  }
+
+  private async resolvePricingContext(input: ResolveInput): Promise<ResolvedRepairContext> {
     let typeId = this.nullableId(input.deviceTypeId);
     const brandId = this.nullableId(input.deviceBrandId);
     let modelGroupId = this.nullableId(input.deviceModelGroupId);
@@ -165,6 +356,10 @@ export class PricingService {
       modelGroupId = modelRow?.deviceModelGroupId ?? null;
     }
 
+    return { typeId, brandId, modelGroupId, modelId, issueTypeId, brand, model, issue };
+  }
+
+  private async findBestRule(context: ResolvedRepairContext) {
     const activeRules = await this.prisma.repairPricingRule.findMany({
       where: { active: true },
       orderBy: [{ priority: 'desc' }, { createdAt: 'desc' }],
@@ -173,34 +368,41 @@ export class PricingService {
 
     const scored = activeRules
       .map((rule) => {
-        const score = this.matchRuleScore(rule, { typeId, brandId, modelGroupId, modelId, issueTypeId, brand, model, issue });
+        const score = this.matchRuleScore(rule, context);
         return { rule, score };
       })
       .filter((x) => x.score > 0)
       .sort((a, b) => b.score - a.score || b.rule.priority - a.rule.priority);
 
-    const best = scored[0]?.rule ?? null;
+    return scored[0]?.rule ?? null;
+  }
 
-    if (!best) {
-      return {
-        matched: false,
-        input: { deviceTypeId: typeId, deviceBrandId: brandId, deviceModelGroupId: modelGroupId, deviceModelId: modelId, deviceIssueTypeId: issueTypeId, deviceBrand: brand, deviceModel: model, issueLabel: issue },
-        suggestion: null,
-      };
-    }
+  private serializeResolvedContext(context: ResolvedRepairContext) {
+    return {
+      deviceTypeId: context.typeId,
+      deviceBrandId: context.brandId,
+      deviceModelGroupId: context.modelGroupId,
+      deviceModelId: context.modelId,
+      deviceIssueTypeId: context.issueTypeId,
+      deviceBrand: context.brand,
+      deviceModel: context.model,
+      issueLabel: context.issue,
+    };
+  }
 
-    const basePrice = Number(best.basePrice);
-    const profitPercent = Number(best.profitPercent);
-    const calcMode = best.calcMode === 'FIXED_TOTAL' ? 'FIXED_TOTAL' : 'BASE_PLUS_MARGIN';
-    const minProfit = best.minProfit != null ? Number(best.minProfit) : null;
-    const minFinalPrice = best.minFinalPrice != null ? Number(best.minFinalPrice) : null;
-    const shippingFee = best.shippingFee != null ? Number(best.shippingFee) : null;
+  private buildRuleOnlySuggestion(rule: RepairPricingRuleWithCatalogIds) {
+    const basePrice = Number(rule.basePrice);
+    const profitPercent = Number(rule.profitPercent);
+    const calcMode = rule.calcMode === 'FIXED_TOTAL' ? 'FIXED_TOTAL' : 'BASE_PLUS_MARGIN';
+    const minProfit = rule.minProfit != null ? Number(rule.minProfit) : null;
+    const minFinalPrice = rule.minFinalPrice != null ? Number(rule.minFinalPrice) : null;
+    const shippingFee = rule.shippingFee != null ? Number(rule.shippingFee) : null;
 
     let suggestedTotal = basePrice;
     let calculatedProfit = 0;
 
     if (calcMode === 'BASE_PLUS_MARGIN') {
-      calculatedProfit = Math.round((basePrice * (profitPercent / 100)) * 100) / 100;
+      calculatedProfit = this.roundMoney(basePrice * (profitPercent / 100));
       if (minProfit != null && calculatedProfit < minProfit) {
         calculatedProfit = minProfit;
       }
@@ -209,27 +411,86 @@ export class PricingService {
 
     if (shippingFee != null && shippingFee > 0) suggestedTotal += shippingFee;
     if (minFinalPrice != null && suggestedTotal < minFinalPrice) suggestedTotal = minFinalPrice;
-    suggestedTotal = Math.round(suggestedTotal * 100) / 100;
+    suggestedTotal = this.roundMoney(suggestedTotal);
 
     return {
-      matched: true,
-      input: { deviceTypeId: typeId, deviceBrandId: brandId, deviceModelGroupId: modelGroupId, deviceModelId: modelId, deviceIssueTypeId: issueTypeId, deviceBrand: brand, deviceModel: model, issueLabel: issue },
-      rule: this.serializeRule(best),
-      suggestion: {
-        basePrice,
-        profitPercent,
-        calcMode,
-        minProfit,
-        minFinalPrice,
-        shippingFee,
-        suggestedTotal,
-        mode: calcMode === 'FIXED_TOTAL' ? 'fixed' : 'margin',
-        multiplier: calcMode === 'BASE_PLUS_MARGIN' ? Math.round((profitPercent / 100) * 10000) / 10000 : null,
-        min_profit: calcMode === 'BASE_PLUS_MARGIN' ? minProfit : null,
-        fixed_total: calcMode === 'FIXED_TOTAL' ? basePrice : null,
-        shipping_default: shippingFee ?? 0,
-      },
+      basePrice,
+      profitPercent,
+      calcMode,
+      minProfit,
+      minFinalPrice,
+      shippingFee,
+      suggestedTotal,
+      mode: calcMode === 'FIXED_TOTAL' ? 'fixed' : 'margin',
+      multiplier: calcMode === 'BASE_PLUS_MARGIN' ? Math.round((profitPercent / 100) * 10000) / 10000 : null,
+      min_profit: calcMode === 'BASE_PLUS_MARGIN' ? minProfit : null,
+      fixed_total: calcMode === 'FIXED_TOTAL' ? basePrice : null,
+      shipping_default: shippingFee ?? 0,
     };
+  }
+
+  private buildProviderPartSuggestion(
+    rule: RepairPricingRuleWithCatalogIds,
+    input: {
+      unitCost: number;
+      quantity: number;
+      extraCost: number;
+      shippingCost: number;
+    },
+  ) {
+    const calcMode = rule.calcMode === 'FIXED_TOTAL' ? 'FIXED_TOTAL' : 'BASE_PLUS_MARGIN';
+    const marginPercent = Number(rule.profitPercent);
+    const minProfit = rule.minProfit != null ? Number(rule.minProfit) : null;
+    const minFinalPrice = rule.minFinalPrice != null ? Number(rule.minFinalPrice) : null;
+    const shippingFee = rule.shippingFee != null ? Number(rule.shippingFee) : null;
+    const baseCost = this.roundMoney(input.unitCost * input.quantity);
+    const extraCost = this.toMoney(input.extraCost);
+    const shippingCost = this.toMoney(input.shippingCost);
+    const costSubtotal = this.roundMoney(baseCost + extraCost);
+    const appliedShippingFee = shippingFee != null && shippingFee > 0 ? shippingFee : 0;
+
+    let marginAmount = 0;
+    let suggestedQuotedPrice = Number(rule.basePrice);
+
+    if (calcMode === 'BASE_PLUS_MARGIN') {
+      marginAmount = this.roundMoney(costSubtotal * (marginPercent / 100));
+      if (minProfit != null && marginAmount < minProfit) {
+        marginAmount = minProfit;
+      }
+      suggestedQuotedPrice = costSubtotal + marginAmount;
+    }
+
+    suggestedQuotedPrice += appliedShippingFee + shippingCost;
+    if (minFinalPrice != null && suggestedQuotedPrice < minFinalPrice) {
+      suggestedQuotedPrice = minFinalPrice;
+    }
+    suggestedQuotedPrice = this.roundMoney(suggestedQuotedPrice);
+
+    return {
+      calcMode,
+      unitCost: input.unitCost,
+      quantity: input.quantity,
+      baseCost,
+      extraCost,
+      shippingCost,
+      costSubtotal,
+      marginPercent,
+      marginAmount: calcMode === 'BASE_PLUS_MARGIN' ? marginAmount : null,
+      minProfit,
+      minFinalPrice,
+      appliedShippingFee,
+      fixedRuleTotal: calcMode === 'FIXED_TOTAL' ? Number(rule.basePrice) : null,
+      suggestedQuotedPrice,
+      coversBaseCost: suggestedQuotedPrice >= costSubtotal + shippingCost,
+    };
+  }
+
+  private assertProviderPartPreviewContext(context: ResolvedRepairContext) {
+    const hasIssue = !!(context.issueTypeId || context.issue);
+    const hasDeviceContext = !!(context.typeId || context.brandId || context.modelGroupId || context.modelId || context.brand || context.model);
+    if (!hasIssue || !hasDeviceContext) {
+      throw new BadRequestException('Faltan datos técnicos para calcular el presupuesto con repuesto');
+    }
   }
 
   private matchRuleScore(
@@ -517,6 +778,16 @@ export class PricingService {
   private nullable(value?: string | null) {
     const v = (value ?? '').trim();
     return v || null;
+  }
+
+  private toMoney(value?: number | null) {
+    const parsed = Number(value ?? 0);
+    if (!Number.isFinite(parsed)) return 0;
+    return this.roundMoney(parsed);
+  }
+
+  private roundMoney(value: number) {
+    return Math.round(value * 100) / 100;
   }
 
   private nullableId(value?: string | null) {

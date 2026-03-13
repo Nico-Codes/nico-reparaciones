@@ -20,60 +20,108 @@ Registrar decisiones tecnicas confirmadas para evitar dependencia de memoria ora
 
 ---
 
-### [DL-0033]
-- Fecha: 2026-03-11
+### [DL-0040]
+- Fecha: 2026-03-12
 - Estado: aceptada
-- Tema: hardening adicional de modulos admin de negocio con foco en usuarios, venta rapida y catalogo operativo
-- Contexto: tras el endurecimiento del core, todavia quedaban riesgos reales en modulos admin activos: cambio de rol sobre la propia cuenta desde UI, venta rapida demasiado permisiva frente a coincidencias parciales/lineas invalidas y acciones menores de productos/categorias que seguian expuestas a submits redundantes.
-- Decision: reforzar estos modulos sin reabrir una fase grande, priorizando proteccion contra respuestas stale, mutaciones duplicadas, validacion previa a submit y feedback operativo claro por entidad o flujo.
-- Impacto: baja el riesgo de errores silenciosos en mostrador/operacion, evita UX enganosa en acciones sensibles y deja la automatizacion frontend menos fragil para futuras iteraciones.
-- Alternativas consideradas: dejar estos casos como backlog menor o confiar solo en validacion backend; descartado por seguir exponiendo errores evitables en la capa operativa diaria del admin.
-- Archivos / modulos afectados: `next-stack/apps/web/src/features/admin/AdminUsersPage.tsx`, `next-stack/apps/web/src/features/orders/AdminQuickSalesPage.tsx`, `next-stack/apps/web/src/features/catalogAdmin/AdminProductsPage.tsx`, `next-stack/apps/web/src/features/catalogAdmin/AdminCategoriesPage.tsx`, `project-docs/FRONTEND_QA_HARDENING.md`, `CHANGELOG_AI.md`.
-- Validacion requerida: typecheck/build de `@nico/api` y `@nico/web`, `smoke:backend`, `smoke:web`, `qa:route-parity` y `qa:frontend:e2e`.
+- Tema: ajustar extraccion y ranking de busqueda multi-proveedor usando proveedores reales
+- Contexto: la busqueda agregada ya estaba integrada en reparaciones, pero los resultados reales seguian teniendo ruido operativo: labels contaminados por CTAs de WooCommerce, precios mal parseados en algunos sitios y ranking que todavia dejaba colarse opciones poco utiles frente a proveedores reales del taller.
+- Decision: endurecer `AdminService` con perfiles HTML concretos para `Evophone`, `Okey Rosario`, `Celuphone`, `Novocell` y `Electrostore`, mejorar el parser monetario para formatos reales de WooCommerce/Wix, limpiar labels tipo `Añadir al carrito` y rankear mejor por coincidencia exacta, precio real y disponibilidad.
+- Impacto: la busqueda agregada devuelve resultados mucho mas utiles para consultas reales de repuestos, reduce falsos positivos y deja el flujo proveedor + repuesto + snapshot mas confiable sin reabrir la arquitectura ni romper create/detail.
+- Alternativas consideradas: dejar el ranking tal como estaba o seguir corrigiendo solo con `z-index`/UI en frontend; descartado por atacar sintomas y no la calidad real de la extraccion.
+- Archivos / modulos afectados: `next-stack/apps/api/src/modules/admin/admin.service.ts`, `project-docs/REPAIR_PROVIDER_PART_PRICING_PLAN.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: typecheck/build de `@nico/api` y `@nico/web`, `smoke:backend`, `smoke:web`, `qa:route-parity`, `qa:frontend:e2e` y probe dirigido con query real `modulo samsung a10`.
 - Responsable: Codex + operador humano
-
 ---
 
-### [DL-0032]
-- Fecha: 2026-03-11
+### [DL-0041]
+- Fecha: 2026-03-12
 - Estado: aceptada
-- Tema: alta de reparaciones expuesta de forma nativa en el admin frontend
-- Contexto: el backend ya soportaba `POST /repairs/admin` y el frontend tenía `repairsApi.adminCreate(...)`, pero no existían ni una ruta real, ni una pantalla de alta, ni un CTA visible para crear reparaciones desde el panel. El alias legacy `/admin/reparaciones/crear` además redirigía al listado, lo que dejaba el flujo incompleto.
-- Decision: agregar la ruta real protegida `/admin/repairs/create`, crear una pantalla admin de alta alineada al design system vigente, exponer el CTA `Nueva reparacion` en `AdminRepairsListPage` y corregir el alias `/admin/reparaciones/crear` para que redirija a la nueva ruta.
-- Impacto: el panel admin recupera un flujo operativo completo de ingreso de reparaciones sin depender de aliases ambiguos ni wiring pendiente, reutilizando la API real ya disponible y redirigiendo al detalle creado para continuar la gestion del caso.
-- Alternativas consideradas: dejar solo el alias legacy o exponer un formulario inline dentro del listado; descartado por ocultar el flujo real y por mezclar alta con seguimiento operativo en la misma vista.
-- Archivos / modulos afectados: `next-stack/apps/web/src/App.tsx`, `next-stack/apps/web/src/features/repairs/{api,AdminRepairsListPage,AdminRepairCreatePage,AdminRepairDetailPage}.tsx`, `next-stack/scripts/qa-frontend-e2e.mjs`, `CHANGELOG_AI.md`.
-- Validacion requerida: typecheck/build de `@nico/api` y `@nico/web`, `smoke:web`, `smoke:backend`, `qa:route-parity` y una validacion puntual del flujo frontend crear -> detalle.
+- Tema: dejar visibles la marca y el modelo exactos del catálogo en `Nueva reparación`
+- Contexto: la vista de alta ya había quedado simplificada en tres bloques, pero `Marca exacta del catálogo` y `Modelo exacto del catálogo` seguían ocultos en un disclosure secundario. En el flujo actual esos campos sí impactan el cálculo y la búsqueda de repuestos porque alimentan `pricingResolve` y el preview proveedor + repuesto + regla.
+- Decision: mover ambos campos al bloque visible `Datos básicos` y dejar colapsadas solo las `Notas internas`. También se corrige el copy visible del alta y de la sección `Proveedor y repuesto` para cerrar acentos y labels operativos.
+- Impacto: el operador ve desde el inicio los campos que realmente mejoran el cálculo y la búsqueda de repuestos, sin volver a expandir un bloque secundario dentro del flujo principal del alta.
+- Alternativas consideradas: mantener marca/modelo exactos ocultos para conservar la pantalla aun más mínima; descartado porque hoy esos campos sí aportan valor práctico y quedaban demasiado escondidos para el flujo real.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/repairs/AdminRepairCreatePage.tsx`, `next-stack/apps/web/src/features/repairs/RepairProviderPartPricingSection.tsx`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck`, `build`, `smoke:web` y verificación real de `Nueva reparación -> create`.
 - Responsable: Codex + operador humano
 
+### [DL-0042]
+- Fecha: 2026-03-12
+- Estado: aceptada
+- Tema: convertir el dashboard admin en panel de trabajo diario y no en mapa general del sistema
+- Contexto: el dashboard administrativo mostraba métricas, alertas, accesos frecuentes y actividad reciente con peso visual parecido. Eso lo hacía útil como resumen general, pero pobre como panel operativo para mostrador/taller, donde lo más valioso es abrir reparaciones, ventas, stock y atender cola de trabajo.
+- Decision: reorganizar `AdminDashboardPage` en cinco capas: `Acciones rápidas` arriba y grandes, `Resumen operativo` con indicadores clickeables, `Bandeja de trabajo` para urgencias, `Gestión principal` para módulos usados a diario y `Administración avanzada` compacta/colapsable para lo secundario. Las métricas quedan visibles pero con menor jerarquía.
+- Impacto: lo más usado (`Nueva reparación`, `Nueva venta`, `Ingresar stock`, reparaciones activas, pedidos activos y stock bajo) queda arriba y con mayor peso. Configuración, seguridad, FAQ, reportes, contabilidad y módulos menos frecuentes bajan a una sección avanzada y compacta.
+- Alternativas consideradas: mantener el dashboard actual con solo cambios cosméticos o esconder más módulos en el menú lateral; descartado porque no resolvía la jerarquía operativa del panel principal.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/admin/AdminDashboardPage.tsx`, `next-stack/apps/web/src/styles.css`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck`, `build`, `smoke:web` y verificación real del dashboard admin con foco en jerarquía, visibilidad de quick actions y navegación.
+- Responsable: Codex + operador humano
 ---
 
-### [DL-0031]
-- Fecha: 2026-03-11
+### [DL-0039]
+- Fecha: 2026-03-12
 - Estado: aceptada
-- Tema: quick wins funcionales sobre públicas de reparación y módulos admin secundarios
-- Contexto: después del hardening del core seguían pendientes menores reales fuera del bloque principal: páginas públicas de reparación con mojibake y feedback ambiguo, usuarios admin sin protección contra respuestas stale/cambios duplicados, venta rápida con búsquedas viejas o CTAs demasiado permisivos y 2FA admin con copy roto y validación local floja.
-- Decision: resolver el backlog menor sin abrir una fase grande, priorizando correcciones de UX/estado reales sobre rediseño: normalizar copy, mover páginas públicas a primitives vigentes, agregar protección por `requestId` donde hacía falta y endurecer estados `disabled`/errores en módulos secundarios activos.
-- Decision complementaria: estabilizar la automatización de frontend en venta rápida usando selectores `data-qa` en vez de placeholders visibles, para que futuros ajustes de copy no rompan `qa:frontend:e2e`.
-- Impacto: baja ruido residual visible, reduce dobles acciones y mejora la claridad de flujos secundarios sin tocar backend ni reabrir deuda estructural del frontend.
-- Alternativas consideradas: dejar estos pendientes como deuda menor o abordarlos con otra fase visual más grande; descartado por el costo acumulado de bugs pequeños pero visibles en pantallas activas.
-- Archivos / modulos afectados: `next-stack/apps/web/src/features/repairs/{PublicRepairLookupPage,PublicRepairQuoteApprovalPage}.tsx`, `next-stack/apps/web/src/features/admin/AdminUsersPage.tsx`, `next-stack/apps/web/src/features/orders/AdminQuickSalesPage.tsx`, `next-stack/apps/web/src/features/admin/Admin2faSecurityPage.tsx`, `project-docs/FRONTEND_QA_HARDENING.md`.
-- Validacion requerida: typecheck/build de `@nico/api` y `@nico/web`, `smoke:web` y una validación adicional razonable sobre auth/admin secundarios si los cambios lo justifican.
+- Tema: exponer historial basico de snapshots y clarificar la semantica operativa del pricing aplicado en reparaciones
+- Contexto: la Fase 2 ya habia dejado create/detail conectados a proveedor + repuesto + preview + snapshot activo, pero el operador todavia no podia leer con suficiente claridad la diferencia entre snapshot activo, preview nuevo, precio sugerido, precio aplicado y presupuesto actual del caso.
+- Decision: mantener la persistencia actual y sumar una Fase 3 corta de UX/historial. `adminDetail` ahora expone `pricingSnapshots` historicos y el detalle admin muestra snapshot activo, historial basico y mensajes operativos claros para distinguir calculo aplicado, override manual y modificaciones posteriores del presupuesto.
+- Impacto: mejora trazabilidad real sin abrir comparacion multiple ni una nueva fase grande de dominio, y deja mucho mas claro para el operador de donde sale cada monto en el caso.
+- Alternativas consideradas: dejar el snapshot activo como unica referencia visible o esperar a una futura comparacion avanzada; descartado por mantener ambiguedad operativa innecesaria en un modulo ya en uso real.
+- Archivos / modulos afectados: `next-stack/apps/api/src/modules/repairs/repairs.service.ts`, `next-stack/apps/web/src/features/repairs/{api.ts,RepairProviderPartPricingSection.tsx,AdminRepairDetailPage.tsx}`, `project-docs/REPAIR_PROVIDER_PART_PRICING_PLAN.md`, `project-docs/FRONTEND_QA_HARDENING.md`.
+- Validacion requerida: typecheck/build de `@nico/api` y `@nico/web`, `smoke:backend`, `smoke:web`, `qa:route-parity`, `qa:frontend:e2e` y probe dirigido con create/update/manual override para verificar historial y timeline.
 - Responsable: Codex + operador humano
-
 ---
 
-### [DL-0030]
-- Fecha: 2026-03-10
+### [DL-0038]
+- Fecha: 2026-03-11
 - Estado: aceptada
-- Tema: guards reactivos y protección contra respuestas/mutaciones obsoletas en admin frontend
-- Contexto: tras el primer hardening del frontend seguían existiendo casos borde reales: vistas protegidas que no reaccionaban a cambios de sesión ya iniciados, páginas de admin expuestas a resultados stale durante filtros rápidos y acciones por entidad que podían dispararse dos veces.
-- Decisión: endurecer el frontend sin rediseñar la UI, haciendo reactivos `RequireAuth` y `RequireAdmin`, separando el estado de verificación de email según contexto real y agregando protecciones por `requestId` / `pending*` en módulos admin donde el usuario puede cambiar filtros o mutar entidades con rapidez.
-- Impacto: reduce exposición a estados inconsistentes, evita acciones duplicadas y hace más robusta la navegación protegida sin tocar backend ni complejizar la arquitectura.
-- Alternativas consideradas: confiar en refresh manual o en el eventual estado del backend para corregir la UI; descartado por dejar bugs silenciosos en flujos reales de uso.
-- Archivos / modulos afectados: `next-stack/apps/web/src/features/auth/{RequireAuth,RequireAdmin,VerifyEmailPage}.tsx`, `next-stack/apps/web/src/features/orders/AdminOrdersPage.tsx`, `next-stack/apps/web/src/features/catalogAdmin/{AdminProductsPage,AdminCategoriesPage}.tsx`, `project-docs/FRONTEND_QA_HARDENING.md`.
-- Validacion requerida: typecheck/build de `@nico/api` y `@nico/web`, `smoke:backend`, `smoke:web`, `qa:route-parity` y `qa:frontend:e2e`.
+- Tema: integrar proveedor + repuesto + snapshot de pricing dentro del flujo admin de reparaciones
+- Contexto: la Fase 1 ya habia dejado lista la base tecnica con `RepairPricingSnapshot`, busqueda normalizada de repuestos por proveedor y preview backend proveedor + repuesto + regla. Faltaba conectar esa base a create/detail sin abrir todavia una UX gigante ni un catalogo local permanente de repuestos.
+- Decision: integrar la seleccion de proveedor, busqueda de repuesto, preview real y aplicacion explicita de snapshot dentro de `AdminRepairCreatePage` y `AdminRepairDetailPage`, persistiendo el snapshot solo cuando el operador lo aplica como parte del create/update del caso. El `quotedPrice` sigue siendo editable y nunca se sobrescribe automaticamente.
+- Impacto: la feature deja de ser solo infraestructura backend y pasa a ser operativa en el admin, con snapshot historico util, sin romper el flujo minimo existente de `pricingResolve` y sin extender aun el dominio Repair a proveedor/repuesto permanentes fuera del snapshot.
+- Alternativas consideradas: dejar la Fase 1 sin UI hasta una fase posterior o persistir previews automaticamente; descartado por desaprovechar la inversion hecha y por generar snapshots basura o UX enganosa.
+- Archivos / modulos afectados: `next-stack/apps/api/src/modules/repairs/{repairs.controller.ts,repairs.service.ts}`, `next-stack/apps/web/src/features/repairs/{api.ts,types.ts,repair-pricing.ts,RepairProviderPartPricingSection.tsx,AdminRepairCreatePage.tsx,AdminRepairDetailPage.tsx}`, `project-docs/REPAIR_PROVIDER_PART_PRICING_PLAN.md`, `project-docs/FRONTEND_QA_HARDENING.md`.
+- Validacion requerida: typecheck/build de `@nico/api` y `@nico/web`, `smoke:backend`, `smoke:web`, `qa:route-parity`, `qa:frontend:e2e` y probe dirigido `provider -> part -> preview -> create/update con snapshot`.
 - Responsable: Codex + operador humano
+---
+
+### [DL-0037]
+- Fecha: 2026-03-11
+- Estado: aceptada
+- Tema: implementar la Fase 1 de reparaciones con proveedor + repuesto + calculo real sin abrir todavia la UX completa
+- Contexto: la auditoria previa ya habia definido el modelo de snapshots, la necesidad de una busqueda normalizada de repuestos por proveedor y la conveniencia de no sobrecargar `pricingResolve`. Faltaba aterrizar una base tecnica real para que la siguiente fase de UI no dependa de supuestos.
+- Decision: implementar en backend y schema solo tres piezas: `RepairPricingSnapshot` + `Repair.activePricingSnapshotId`, un endpoint de busqueda normalizada de repuestos por proveedor (`POST /api/admin/providers/:id/search-parts`) y un endpoint separado de preview de pricing proveedor + repuesto + regla (`POST /api/pricing/repairs/provider-part-preview`). La UI final de create/detail queda explicitamente fuera de esta fase.
+- Impacto: deja lista una base persistible y ejecutable para la feature completa sin romper `pricingResolve`, sin inventar un catalogo local de repuestos y sin abrir todavia una fase gigante de frontend.
+- Alternativas consideradas: implementar toda la UX de una vez, agregar solo tablas sin endpoints o sobrecargar `pricingResolve`; descartado por riesgo alto, wiring incompleto o mezcla indebida de responsabilidades.
+- Archivos / modulos afectados: `next-stack/apps/api/prisma/schema.prisma`, migracion `20260311170000_add_repair_pricing_snapshots_phase1`, `next-stack/apps/api/src/modules/admin/admin.{controller,service}.ts`, `next-stack/apps/api/src/modules/pricing/{pricing.controller.ts,pricing.service.ts}`, `next-stack/apps/web/src/features/admin/api.ts`, `next-stack/apps/web/src/features/repairs/api.ts`, `project-docs/REPAIR_PROVIDER_PART_PRICING_PLAN.md`, `project-docs/BACKEND_BUSINESS_RULES_HARDENING.md`.
+- Validacion requerida: generate + migrate Prisma, typecheck/build de `@nico/api` y `@nico/web`, smoke backend/web, route parity, frontend e2e y probes dirigidos de busqueda por proveedor + preview de calculo.
+- Responsable: Codex + operador humano
+---
+
+### [DL-0036]
+- Fecha: 2026-03-11
+- Estado: aceptada
+- Tema: migrar la feature completa de reparaciones con proveedor + repuesto + calculo real por fases y con snapshots historicos
+- Contexto: el stack nuevo ya tiene modulo de proveedores, reglas de pricing y `pricingResolve` conectado a reparaciones admin, pero todavia no une proveedor, repuesto y costo real dentro del dominio `Repair`. El runtime legacy ya no existe en el repo, asi que la feature vieja solo puede reconstruirse parcialmente desde evidencia sobreviviente.
+- Decision: no extender `Repair` con campos sueltos de proveedor/repuesto ni sobrecargar `pricingResolve`. La migracion correcta debe partir de un modelo `RepairPricingSnapshot` con snapshots historicos del proveedor, repuesto, costo base, regla aplicada y presupuesto sugerido/aplicado, mas una referencia opcional al snapshot activo en `Repair`. La implementacion recomendada es por fases: modelo + busqueda real de repuestos, luego preview de calculo, luego integracion create/detail.
+- Impacto: evita una implementacion incompleta o enganosa, protege la trazabilidad historica del presupuesto y deja una base clara para recuperar la feature legacy completa sin depender de datos vivos del proveedor ni de reglas mutables.
+- Alternativas consideradas: agregar solo `supplierId` a `Repair`, persistir solo el monto final o reutilizar `pricingResolve` tal como esta; descartado por no preservar contexto del calculo, por mezclar concerns y por dejar al caso expuesto a drift historico.
+- Archivos / modulos afectados: `project-docs/REPAIR_PROVIDER_PART_PRICING_PLAN.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: auditoria de schema, repairs, pricing, providers y warranties; contraste con documentacion viva y validacion humana posterior del comportamiento legacy exacto si aparece evidencia externa al repo.
+- Responsable: Codex + operador humano
+---
+
+### [DL-0035]
+- Fecha: 2026-03-11
+- Estado: aceptada
+- Tema: integracion minima y util de pricingResolve en reparaciones admin
+- Contexto: el stack nuevo ya tenia backend real de reglas de pricing para reparacion y un endpoint operativo de resolucion automatica, pero el alta y el detalle admin de reparaciones seguian trabajando solo con presupuesto manual. Eso dejaba una capacidad ya migrada sin uso real en la operacion diaria del taller.
+- Decision: integrar pricingResolve en AdminRepairCreatePage y AdminRepairDetailPage sin extender todavia el dominio Repair con proveedor o repuesto. La sugerencia se calcula a demanda, queda separada del submit principal, se protege contra respuestas stale y solo impacta el quotedPrice cuando el operador decide usarla explicitamente.
+- Impacto: el admin recupera una capacidad util de pricing automatico con alcance controlado, mejora consistencia operativa en presupuestos y aprovecha reglas ya migradas sin abrir aun la fase mas grande de proveedor + repuesto + calculo legacy completo.
+- Alternativas consideradas: dejar la feature sin exponer hasta migrar la logica legacy completa o autoescribir el presupuesto al detectar datos suficientes; descartado por desperdiciar una capacidad ya disponible en backend y por generar UX enganosa si el valor sugerido se impusiera sin accion explicita.
+- Archivos / modulos afectados: next-stack/apps/web/src/features/repairs/api.ts, next-stack/apps/web/src/features/repairs/repair-pricing.ts, next-stack/apps/web/src/features/repairs/AdminRepairCreatePage.tsx, next-stack/apps/web/src/features/repairs/AdminRepairDetailPage.tsx, project-docs/FRONTEND_QA_HARDENING.md y CHANGELOG_AI.md.
+- Validacion requerida: typecheck/build de @nico/api y @nico/web, smoke:backend, smoke:web, qa:route-parity, qa:frontend:e2e y una verificacion dirigida del flujo create/detail -> calcular -> usar sugerido.
+- Responsable: Codex + operador humano
+---
 
 ### [DL-0029]
 - Fecha: 2026-03-10
@@ -230,5 +278,42 @@ Registrar decisiones tecnicas confirmadas para evitar dependencia de memoria ora
 - Archivos / modulos afectados: `project-docs/MIGRATION_CLOSURE.md`, `project-docs/MIGRATION_STATUS.md`, `README.md`, `AGENTS.md`, `CHANGELOG_AI.md`, historicos documentales retirados.
 - Validacion requerida: gate canonico del nuevo stack.
 - Responsable: Codex + operador humano
+
+### [DL-0022]
+- Fecha: 2026-03-12
+- Estado: aceptada
+- Tema: busqueda agregada multi-proveedor como flujo principal en reparaciones
+- Contexto: la Fase 2 de proveedor + repuesto ya habia integrado preview y snapshot activo, pero la UX seguia empezando por "elegir proveedor" y no recuperaba la experiencia legacy real de buscar una vez y comparar opciones entre proveedores.
+- Decision: mantener `searchProviderParts` como fallback puntual, pero pasar el flujo principal de `RepairProviderPartPricingSection` a `searchPartsAcrossProviders`, con un query unico, resultados agregados comparables y un filtro opcional de proveedor como modo secundario.
+- Impacto: create y detail de reparaciones ya permiten buscar una sola vez en todos los proveedores activos, elegir una opcion y continuar con preview + snapshot sin perder compatibilidad con la base construida en fases anteriores.
+- Alternativas consideradas: seguir con busqueda por proveedor individual como flujo principal; descartado por no recuperar la UX legacy deseada y por obligar al operador a iterar proveedor por proveedor.
+- Archivos / modulos afectados: `next-stack/apps/api/src/modules/admin/admin.controller.ts`, `next-stack/apps/api/src/modules/admin/admin.service.ts`, `next-stack/apps/web/src/features/admin/api.ts`, `next-stack/apps/web/src/features/repairs/RepairProviderPartPricingSection.tsx`, `project-docs/REPAIR_PROVIDER_PART_PRICING_PLAN.md`
+- Validacion requerida: typecheck/build/smokes/route parity/e2e mas probe dirigido `busqueda unica -> resultados multi-proveedor -> preview -> snapshot`.
+- Responsable: Codex + operador humano
+
+### [DL-0023]
+- Fecha: 2026-03-12
+- Estado: aceptada
+- Tema: alta de reparacion simplificada en tres bloques visibles
+- Contexto: `AdminRepairCreatePage` habia acumulado demasiados bloques visibles (`cliente/equipo`, catalogo tecnico, sugerencia por reglas, proveedor/repuesto, observaciones, resumen y accion), lo que hacia mas lenta la apertura de un caso de mostrador/taller.
+- Decision: reorganizar la vista alrededor de tres bloques principales visibles (`Datos basicos`, `Diagnostico rapido`, `Proveedor y repuesto`) y mover lo secundario a disclosures cerrados por defecto, manteniendo create + preview + snapshot sin cambios de dominio.
+- Impacto: la pantalla de alta queda mas rapida de leer y operar, sin perder catalogo exacto, notas, ajustes avanzados ni detalle fino del calculo.
+- Alternativas consideradas: mantener la distribucion en sidebar o esconder menos bloques; descartado por no reducir suficientemente el ruido operativo del alta.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/repairs/AdminRepairCreatePage.tsx`, `next-stack/apps/web/src/features/repairs/RepairProviderPartPricingSection.tsx`, `next-stack/apps/web/src/components/ui/section-card.tsx`, `next-stack/apps/web/src/styles.css`.
+- Validacion requerida: typecheck/build/smoke web mas probe real `Nueva reparacion -> create`.
+- Responsable: Codex + operador humano
+
+### [DL-0024]
+- Fecha: 2026-03-13
+- Estado: aceptada
+- Tema: dashboard admin priorizado para accesos de gestion
+- Contexto: el dashboard principal ya habia pasado de mapa general a panel operativo, pero `Gestion principal` seguia demasiado abajo respecto de la frecuencia real de uso.
+- Decision: reordenar el dashboard para que `Gestion principal` quede inmediatamente despues de `Acciones rapidas`, antes de `Resumen operativo`, manteniendo `Administracion avanzada` colapsada y sin cambiar la semantica de navegacion.
+- Impacto: los accesos diarios a reparaciones, pedidos, productos, categorias, proveedores y pricing quedan mas a mano y dejan de competir con bloques metricos o de seguimiento.
+- Alternativas consideradas: mantener `Resumen operativo` como segunda seccion; descartado por menor utilidad directa para el trabajo cotidiano.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/admin/AdminDashboardPage.tsx`
+- Validacion requerida: `typecheck`, `build`, `smoke:web` y probe real del dashboard admin.
+- Responsable: Codex + operador humano
+
 
 

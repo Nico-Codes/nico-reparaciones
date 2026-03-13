@@ -53,11 +53,25 @@ type SerializableOrder = OrderWithItems & {
 @Injectable()
 export class OrdersService {
   private static readonly WALKIN_EMAIL = 'walkin@nico.local';
+  private static readonly CHECKOUT_PAYMENT_METHODS = {
+    efectivo: 'Pago en el local',
+    transferencia: 'Transferencia',
+    debito: 'Debito',
+    credito: 'Credito',
+  } as const;
   private static readonly PAYMENT_METHODS = {
     local: 'Pago en el local',
     mercado_pago: 'Mercado Pago',
     transferencia: 'Transferencia',
   } as const;
+  private static readonly STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
+    PENDIENTE: ['CONFIRMADO', 'CANCELADO'],
+    CONFIRMADO: ['PREPARANDO', 'CANCELADO'],
+    PREPARANDO: ['LISTO_RETIRO', 'CANCELADO'],
+    LISTO_RETIRO: ['ENTREGADO', 'CANCELADO'],
+    ENTREGADO: [],
+    CANCELADO: [],
+  };
 
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
@@ -68,6 +82,11 @@ export class OrdersService {
   async checkout(input: CheckoutInput) {
     const quote = await this.cartService.quote(input.items);
     const validLines = quote.items.filter((i) => i.valid);
+    const normalizedPaymentMethod = this.normalizeCheckoutPaymentMethod(input.paymentMethod);
+
+    if (input.paymentMethod !== undefined && input.paymentMethod !== null && !normalizedPaymentMethod) {
+      throw new BadRequestException('Metodo de pago invalido para checkout');
+    }
 
     if (!validLines.length) {
       throw new BadRequestException('No hay items válidos para generar pedido');
@@ -108,7 +127,7 @@ export class OrdersService {
           userId: input.userId,
           status: 'PENDIENTE',
           total: new Prisma.Decimal(total),
-          paymentMethod: (input.paymentMethod ?? '').trim() || 'efectivo',
+          paymentMethod: normalizedPaymentMethod ?? 'efectivo',
           items: {
             create: validLines.map((line) => ({
               productId: line.productId,
@@ -126,12 +145,7 @@ export class OrdersService {
       });
 
       for (const line of validLines) {
-        await tx.product.update({
-          where: { id: line.productId },
-          data: {
-            stock: { decrement: line.quantity },
-          },
-        });
+        await this.decrementProductStockOrThrow(tx, line);
       }
 
       return created;
@@ -182,6 +196,9 @@ export class OrdersService {
   async adminOrders(params?: AdminListInput) {
     const q = (params?.q ?? '').trim();
     const status = this.normalizeStatus(params?.status);
+    if ((params?.status ?? '').trim() && !status) {
+      throw new BadRequestException('Estado de pedido invalido');
+    }
     const orders = await this.prisma.order.findMany({
       where: {
         ...(status ? { status } : {}),
@@ -220,7 +237,24 @@ export class OrdersService {
   }
 
   async adminUpdateStatus(orderId: string, statusRaw: string) {
-    const status = this.normalizeStatus(statusRaw) ?? 'PENDIENTE';
+    const current = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+        items: { orderBy: { createdAt: 'asc' } },
+      },
+    });
+    if (!current) throw new NotFoundException('Pedido no encontrado');
+
+    const status = this.normalizeStatus(statusRaw);
+    if (!status) {
+      throw new BadRequestException('Estado de pedido invalido');
+    }
+    this.assertValidStatusTransition(current.status, status);
+    if (current.status === status) {
+      return { item: this.serializeOrder(current) };
+    }
+
     const order = await this.prisma.order.update({
       where: { id: orderId },
       data: { status },
@@ -258,6 +292,9 @@ export class OrdersService {
 
     const walkin = await this.getOrCreateWalkinUser();
     const normalizedPayment = this.normalizePaymentMethod(input.paymentMethod);
+    if (!normalizedPayment) {
+      throw new BadRequestException('Metodo de pago invalido para la venta rapida');
+    }
     const total = validLines.reduce((acc, line) => acc + line.lineTotal, 0);
 
     const order = await this.prisma.$transaction(async (tx) => {
@@ -303,12 +340,7 @@ export class OrdersService {
       });
 
       for (const line of validLines) {
-        await tx.product.update({
-          where: { id: line.productId },
-          data: {
-            stock: { decrement: line.quantity },
-          },
-        });
+        await this.decrementProductStockOrThrow(tx, line);
       }
 
       return created;
@@ -328,6 +360,9 @@ export class OrdersService {
   async adminQuickSales(params?: QuickSalesHistoryInput) {
     const range = this.resolveQuickSalesRange(params?.from, params?.to);
     const payment = this.normalizePaymentFilter(params?.payment);
+    if ((params?.payment ?? '').trim() && !payment) {
+      throw new BadRequestException('Metodo de pago invalido');
+    }
     const adminId = (params?.adminId ?? '').trim();
 
     const where: Prisma.OrderWhereInput = {
@@ -413,6 +448,14 @@ export class OrdersService {
     return allowed.has(value as OrderStatus) ? (value as OrderStatus) : null;
   }
 
+  private assertValidStatusTransition(current: OrderStatus, next: OrderStatus) {
+    if (current === next) return;
+    const allowed = OrdersService.STATUS_TRANSITIONS[current] ?? [];
+    if (!allowed.includes(next)) {
+      throw new BadRequestException(`No se puede cambiar un pedido de ${current} a ${next}`);
+    }
+  }
+
   private serializeOrder(order: SerializableOrder) {
     return {
       id: order.id,
@@ -445,9 +488,27 @@ export class OrdersService {
     return Object.entries(OrdersService.PAYMENT_METHODS).map(([key, label]) => ({ key, label }));
   }
 
+  private normalizeCheckoutPaymentMethod(raw?: string | null) {
+    const value = (raw ?? '').trim().toLowerCase();
+    if (!value) return null;
+    const aliases: Record<string, keyof typeof OrdersService.CHECKOUT_PAYMENT_METHODS> = {
+      efectivo: 'efectivo',
+      cash: 'efectivo',
+      local: 'efectivo',
+      transferencia: 'transferencia',
+      transfer: 'transferencia',
+      debito: 'debito',
+      debit: 'debito',
+      credito: 'credito',
+      credit: 'credito',
+    };
+    const normalized = aliases[value];
+    return normalized && normalized in OrdersService.CHECKOUT_PAYMENT_METHODS ? normalized : null;
+  }
+
   private normalizePaymentMethod(raw?: string | null) {
     const value = (raw ?? '').trim().toLowerCase();
-    return value in OrdersService.PAYMENT_METHODS ? value : 'local';
+    return value in OrdersService.PAYMENT_METHODS ? value : null;
   }
 
   private normalizePaymentFilter(raw?: string) {
@@ -491,6 +552,25 @@ export class OrdersService {
       },
       select: { id: true, name: true, email: true },
     });
+  }
+
+  private async decrementProductStockOrThrow(
+    tx: Prisma.TransactionClient,
+    input: { productId: string; quantity: number; name: string },
+  ) {
+    const updated = await tx.product.updateMany({
+      where: {
+        id: input.productId,
+        active: true,
+        stock: { gte: input.quantity },
+      },
+      data: {
+        stock: { decrement: input.quantity },
+      },
+    });
+    if (updated.count !== 1) {
+      throw new BadRequestException(`Stock insuficiente para ${input.name}`);
+    }
   }
 
   private async assertQuickSaleMarginGuard(lines: Array<{ productId: string }>) {

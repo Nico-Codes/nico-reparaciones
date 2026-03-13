@@ -32,6 +32,19 @@ enum RepairStatus {
   CANCELLED
 }
 
+enum RepairPricingSnapshotSource {
+  RULE_ONLY
+  SUPPLIER_PART
+  MANUAL_OVERRIDE
+}
+
+enum RepairPricingSnapshotStatus {
+  DRAFT
+  APPLIED
+  SUPERSEDED
+  DISCARDED
+}
+
 model User {
   id                      String                   @id @default(cuid())
   name                    String
@@ -180,6 +193,7 @@ model Repair {
   deviceBrandId     String?
   deviceModelId     String?
   deviceIssueTypeId String?
+  activePricingSnapshotId String?          @unique
   customerName      String
   customerPhone     String?
   deviceBrand       String?
@@ -194,11 +208,14 @@ model Repair {
   user              User?            @relation(fields: [userId], references: [id])
   deviceType        DeviceType?      @relation(fields: [deviceTypeId], references: [id])
   events            RepairEventLog[]
+  activePricingSnapshot RepairPricingSnapshot? @relation("RepairActivePricingSnapshot", fields: [activePricingSnapshotId], references: [id], onDelete: SetNull)
+  pricingSnapshots  RepairPricingSnapshot[] @relation("RepairPricingSnapshots")
 
   @@index([deviceTypeId])
   @@index([deviceBrandId])
   @@index([deviceModelId])
   @@index([deviceIssueTypeId])
+  @@index([activePricingSnapshotId])
 }
 
 model RepairEventLog {
@@ -238,6 +255,7 @@ model RepairPricingRule {
   updatedAt          DateTime          @updatedAt
   deviceType         DeviceType?       @relation(fields: [deviceTypeId], references: [id])
   modelGroup         DeviceModelGroup? @relation(fields: [deviceModelGroupId], references: [id])
+  pricingSnapshots   RepairPricingSnapshot[]
 
   @@index([active, priority])
   @@index([deviceTypeId])
@@ -245,6 +263,58 @@ model RepairPricingRule {
   @@index([deviceModelGroupId])
   @@index([deviceModelId])
   @@index([deviceIssueTypeId])
+}
+
+model RepairPricingSnapshot {
+  id                        String                      @id @default(cuid())
+  repairId                  String
+  pricingRuleId             String?
+  source                    RepairPricingSnapshotSource @default(SUPPLIER_PART)
+  status                    RepairPricingSnapshotStatus @default(DRAFT)
+  supplierId                String?
+  supplierNameSnapshot      String?
+  supplierSearchQuery       String?
+  supplierEndpointSnapshot  String?
+  externalPartId            String?
+  partSkuSnapshot           String?
+  partNameSnapshot          String
+  partBrandSnapshot         String?
+  partUrlSnapshot           String?
+  partAvailabilitySnapshot  String?
+  quantity                  Int                         @default(1)
+  deviceTypeIdSnapshot      String?
+  deviceBrandIdSnapshot     String?
+  deviceModelGroupIdSnapshot String?
+  deviceModelIdSnapshot     String?
+  deviceIssueTypeIdSnapshot String?
+  deviceBrandSnapshot       String?
+  deviceModelSnapshot       String?
+  issueLabelSnapshot        String?
+  baseCost                  Decimal                     @db.Decimal(12, 2)
+  extraCost                 Decimal?                    @db.Decimal(12, 2)
+  shippingCost              Decimal?                    @db.Decimal(12, 2)
+  pricingRuleNameSnapshot   String?
+  calcModeSnapshot          String?
+  marginPercentSnapshot     Decimal?                    @db.Decimal(7, 2)
+  minProfitSnapshot         Decimal?                    @db.Decimal(12, 2)
+  minFinalPriceSnapshot     Decimal?                    @db.Decimal(12, 2)
+  shippingFeeSnapshot       Decimal?                    @db.Decimal(12, 2)
+  suggestedQuotedPrice      Decimal?                    @db.Decimal(12, 2)
+  appliedQuotedPrice        Decimal?                    @db.Decimal(12, 2)
+  manualOverridePrice       Decimal?                    @db.Decimal(12, 2)
+  createdAt                 DateTime                    @default(now())
+  updatedAt                 DateTime                    @updatedAt
+  appliedAt                 DateTime?
+  repair                    Repair                      @relation("RepairPricingSnapshots", fields: [repairId], references: [id], onDelete: Cascade)
+  pricingRule               RepairPricingRule?          @relation(fields: [pricingRuleId], references: [id], onDelete: SetNull)
+  supplier                  Supplier?                   @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  activeForRepair           Repair?                     @relation("RepairActivePricingSnapshot")
+
+  @@index([repairId, createdAt])
+  @@index([status])
+  @@index([source])
+  @@index([supplierId])
+  @@index([pricingRuleId])
 }
 
 model DeviceBrand {
@@ -344,6 +414,7 @@ model Supplier {
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
   products         Product[]
+  repairPricingSnapshots RepairPricingSnapshot[]
   incidents        WarrantyIncident[]
 
   @@index([active, searchPriority])

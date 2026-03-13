@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { HTMLAttributes, ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
 export function SectionCard({
@@ -10,6 +10,7 @@ export function SectionCard({
   bodyClassName,
   headerClassName,
   tone = 'default',
+  ...props
 }: {
   title?: ReactNode;
   description?: ReactNode;
@@ -19,9 +20,9 @@ export function SectionCard({
   bodyClassName?: string;
   headerClassName?: string;
   tone?: 'default' | 'muted' | 'info';
-}) {
+} & HTMLAttributes<HTMLElement>) {
   return (
-    <section className={cn('section-card', `section-card--${tone}`, className)} data-reveal>
+    <section className={cn('section-card', `section-card--${tone}`, className)} data-reveal {...props}>
       {title || description || actions ? (
         <div className={cn('section-card__header', headerClassName)}>
           <div className="section-card__heading">

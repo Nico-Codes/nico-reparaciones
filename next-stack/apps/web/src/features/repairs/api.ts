@@ -1,5 +1,11 @@
 import { authJsonRequest, publicJsonRequest } from '@/features/auth/http';
-import type { PublicRepairLookupItem, PublicRepairQuoteApprovalItem, RepairItem, RepairTimelineEvent } from './types';
+import type {
+  PublicRepairLookupItem,
+  PublicRepairQuoteApprovalItem,
+  RepairItem,
+  RepairPricingSnapshotItem,
+  RepairTimelineEvent,
+} from './types';
 
 export type AdminRepairCreateInput = {
   customerName: string;
@@ -15,6 +21,167 @@ export type AdminRepairCreateInput = {
   quotedPrice?: number | null;
   finalPrice?: number | null;
   userId?: string | null;
+  pricingSnapshotDraft?: RepairPricingSnapshotDraft | null;
+};
+
+export type RepairPricingResolveInput = {
+  deviceTypeId?: string;
+  deviceBrandId?: string;
+  deviceModelGroupId?: string;
+  deviceModelId?: string;
+  deviceIssueTypeId?: string;
+  deviceBrand?: string;
+  deviceModel?: string;
+  issueLabel?: string;
+};
+
+export type RepairPricingResolveResult = {
+  matched: boolean;
+  rule?: {
+    id: string;
+    name: string;
+    basePrice: number;
+    profitPercent: number;
+    priority: number;
+    calcMode?: 'BASE_PLUS_MARGIN' | 'FIXED_TOTAL';
+    minProfit?: number | null;
+    minFinalPrice?: number | null;
+    shippingFee?: number | null;
+    deviceTypeId?: string | null;
+    deviceBrandId?: string | null;
+    deviceModelGroupId?: string | null;
+    deviceModelId?: string | null;
+    deviceIssueTypeId?: string | null;
+  };
+  suggestion?: {
+    basePrice: number;
+    profitPercent: number;
+    calcMode?: 'BASE_PLUS_MARGIN' | 'FIXED_TOTAL';
+    minProfit?: number | null;
+    minFinalPrice?: number | null;
+    shippingFee?: number | null;
+    suggestedTotal: number;
+  } | null;
+  input: {
+    deviceTypeId?: string | null;
+    deviceBrandId?: string | null;
+    deviceModelGroupId?: string | null;
+    deviceModelId?: string | null;
+    deviceIssueTypeId?: string | null;
+    deviceBrand: string;
+    deviceModel: string;
+    issueLabel: string;
+  };
+};
+
+export type RepairProviderPartPricingPreviewInput = {
+  supplierId: string;
+  supplierSearchQuery?: string | null;
+  quantity?: number;
+  extraCost?: number | null;
+  shippingCost?: number | null;
+  deviceTypeId?: string | null;
+  deviceBrandId?: string | null;
+  deviceModelGroupId?: string | null;
+  deviceModelId?: string | null;
+  deviceIssueTypeId?: string | null;
+  deviceBrand?: string | null;
+  deviceModel?: string | null;
+  issueLabel?: string | null;
+  part: {
+    externalPartId?: string | null;
+    name: string;
+    sku?: string | null;
+    brand?: string | null;
+    price: number;
+    availability?: 'in_stock' | 'out_of_stock' | 'unknown' | null;
+    url?: string | null;
+  };
+};
+
+export type RepairPricingSnapshotDraft = {
+  source: 'SUPPLIER_PART';
+  status: 'DRAFT';
+  supplierId: string;
+  supplierNameSnapshot: string;
+  supplierSearchQuery: string | null;
+  supplierEndpointSnapshot: string | null;
+  externalPartId: string | null;
+  partSkuSnapshot: string | null;
+  partNameSnapshot: string;
+  partBrandSnapshot: string | null;
+  partUrlSnapshot: string | null;
+  partAvailabilitySnapshot: string | null;
+  quantity: number;
+  deviceTypeIdSnapshot: string | null;
+  deviceBrandIdSnapshot: string | null;
+  deviceModelGroupIdSnapshot: string | null;
+  deviceModelIdSnapshot: string | null;
+  deviceIssueTypeIdSnapshot: string | null;
+  deviceBrandSnapshot: string | null;
+  deviceModelSnapshot: string | null;
+  issueLabelSnapshot: string | null;
+  baseCost: number;
+  extraCost: number;
+  shippingCost: number;
+  pricingRuleId: string;
+  pricingRuleNameSnapshot: string;
+  calcModeSnapshot: 'BASE_PLUS_MARGIN' | 'FIXED_TOTAL';
+  marginPercentSnapshot: number;
+  minProfitSnapshot: number | null;
+  minFinalPriceSnapshot: number | null;
+  shippingFeeSnapshot: number | null;
+  suggestedQuotedPrice: number | null;
+  appliedQuotedPrice: number | null;
+  manualOverridePrice: number | null;
+};
+
+export type RepairProviderPartPricingPreviewResult = {
+  matched: boolean;
+  input: RepairPricingResolveResult['input'];
+  supplier: {
+    id: string;
+    name: string;
+    active: boolean;
+    searchEnabled: boolean;
+    endpoint: string | null;
+    searchQuery: string | null;
+  };
+  part: {
+    externalPartId: string | null;
+    name: string;
+    sku: string | null;
+    brand: string | null;
+    price: number;
+    availability: 'in_stock' | 'out_of_stock' | 'unknown';
+    url: string | null;
+    quantity: number;
+  };
+  rule: RepairPricingResolveResult['rule'] | null;
+  calculation: {
+    calcMode?: 'BASE_PLUS_MARGIN' | 'FIXED_TOTAL';
+    unitCost: number;
+    quantity: number;
+    baseCost: number;
+    extraCost: number;
+    shippingCost: number;
+    costSubtotal: number;
+    marginPercent: number | null;
+    marginAmount: number | null;
+    minProfit?: number | null;
+    minFinalPrice?: number | null;
+    appliedShippingFee: number | null;
+    fixedRuleTotal: number | null;
+    suggestedQuotedPrice: number | null;
+    coversBaseCost: boolean | null;
+  };
+  snapshotDraft: RepairPricingSnapshotDraft | null;
+};
+
+export type AdminRepairDetailResponse = {
+  item: RepairItem;
+  timeline?: RepairTimelineEvent[];
+  pricingSnapshots?: RepairPricingSnapshotItem[];
 };
 
 export const repairsApi = {
@@ -66,7 +233,7 @@ export const repairsApi = {
     return authJsonRequest<{ total: number; readyPickup: number; deliveredToday: number; byStatus: Record<string, number> }>('/repairs/admin/stats');
   },
   adminDetail(id: string) {
-    return authJsonRequest<{ item: RepairItem; timeline?: RepairTimelineEvent[] }>(`/repairs/admin/${encodeURIComponent(id)}`);
+    return authJsonRequest<AdminRepairDetailResponse>(`/repairs/admin/${encodeURIComponent(id)}`);
   },
   adminCreate(input: AdminRepairCreateInput) {
     return authJsonRequest<RepairItem>('/repairs/admin', {
@@ -76,7 +243,24 @@ export const repairsApi = {
   },
   adminUpdate(
     id: string,
-    input: Partial<Pick<RepairItem, 'customerName' | 'customerPhone' | 'deviceTypeId' | 'deviceBrandId' | 'deviceModelId' | 'deviceIssueTypeId' | 'deviceBrand' | 'deviceModel' | 'issueLabel' | 'quotedPrice' | 'finalPrice' | 'notes' | 'status'>>,
+    input: Partial<
+      Pick<
+        RepairItem,
+        | 'customerName'
+        | 'customerPhone'
+        | 'deviceTypeId'
+        | 'deviceBrandId'
+        | 'deviceModelId'
+        | 'deviceIssueTypeId'
+        | 'deviceBrand'
+        | 'deviceModel'
+        | 'issueLabel'
+        | 'quotedPrice'
+        | 'finalPrice'
+        | 'notes'
+        | 'status'
+      >
+    > & { pricingSnapshotDraft?: RepairPricingSnapshotDraft | null },
   ) {
     return authJsonRequest<{ item: RepairItem }>(`/repairs/admin/${encodeURIComponent(id)}`, {
       method: 'PATCH',
@@ -89,7 +273,7 @@ export const repairsApi = {
       body: JSON.stringify(input),
     });
   },
-  pricingResolve(input: { deviceTypeId?: string; deviceBrandId?: string; deviceModelGroupId?: string; deviceModelId?: string; deviceIssueTypeId?: string; deviceBrand?: string; deviceModel?: string; issueLabel?: string }) {
+  pricingResolve(input: RepairPricingResolveInput) {
     const qs = new URLSearchParams();
     if (input.deviceTypeId) qs.set('deviceTypeId', input.deviceTypeId);
     if (input.deviceBrandId) qs.set('deviceBrandId', input.deviceBrandId);
@@ -99,12 +283,13 @@ export const repairsApi = {
     if (input.deviceBrand) qs.set('deviceBrand', input.deviceBrand);
     if (input.deviceModel) qs.set('deviceModel', input.deviceModel);
     if (input.issueLabel) qs.set('issueLabel', input.issueLabel);
-    return authJsonRequest<{
-      matched: boolean;
-      rule?: { id: string; name: string; basePrice: number; profitPercent: number; priority: number; calcMode?: 'BASE_PLUS_MARGIN' | 'FIXED_TOTAL'; minProfit?: number | null; minFinalPrice?: number | null; shippingFee?: number | null; deviceTypeId?: string | null; deviceBrandId?: string | null; deviceModelGroupId?: string | null; deviceModelId?: string | null; deviceIssueTypeId?: string | null };
-      suggestion?: { basePrice: number; profitPercent: number; calcMode?: 'BASE_PLUS_MARGIN' | 'FIXED_TOTAL'; minProfit?: number | null; minFinalPrice?: number | null; shippingFee?: number | null; suggestedTotal: number };
-      input: { deviceTypeId?: string | null; deviceBrandId?: string | null; deviceModelGroupId?: string | null; deviceModelId?: string | null; deviceIssueTypeId?: string | null; deviceBrand: string; deviceModel: string; issueLabel: string };
-    }>(`/pricing/repairs/resolve${qs.size ? `?${qs.toString()}` : ''}`);
+    return authJsonRequest<RepairPricingResolveResult>(`/pricing/repairs/resolve${qs.size ? `?${qs.toString()}` : ''}`);
+  },
+  pricingProviderPartPreview(input: RepairProviderPartPricingPreviewInput) {
+    return authJsonRequest<RepairProviderPartPricingPreviewResult>('/pricing/repairs/provider-part-preview', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
   },
   pricingRulesList() {
     return authJsonRequest<{ items: Array<{

@@ -1,8 +1,8 @@
-﻿import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { AlertTriangle, BadgeDollarSign, Boxes, ClipboardList, PackagePlus, ShoppingCart, Wrench } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
-import { FilterBar } from '@/components/ui/filter-bar';
 import { LoadingBlock } from '@/components/ui/loading-block';
 import { PageHeader } from '@/components/ui/page-header';
 import { PageShell } from '@/components/ui/page-shell';
@@ -81,359 +81,387 @@ export function AdminDashboardPage() {
         : 0,
       lowStockProducts: data.metrics.products.lowStock,
       pendingApprovals: repairStatusCounts.WAITING_APPROVAL,
+      repairDiagnosis: repairStatusCounts.DIAGNOSING,
+      repairReadyPickup: repairStatusCounts.READY_PICKUP,
+      ordersPending: orderStatusCounts.PENDIENTE,
       whatsappPending: data.alerts.find((alert) => alert.id === 'pending-flow-orders')?.value ?? 0,
       orderStatusCounts,
       repairStatusCounts,
     };
   }, [data]);
 
+  const workQueue = useMemo(() => {
+    if (!summary || !data) return [];
+
+    return [
+      {
+        id: 'repair-diagnosis',
+        title: 'Revisar ingresos en diagnóstico',
+        description: 'Casos recién ingresados que todavía no tienen presupuesto aprobado ni avance técnico.',
+        value: summary.repairDiagnosis,
+        to: '/admin/repairs',
+        tone: 'info' as const,
+      },
+      {
+        id: 'repair-approval',
+        title: 'Pedir o seguir aprobaciones',
+        description: 'Equipos esperando respuesta del cliente para avanzar o cerrar el trabajo.',
+        value: summary.pendingApprovals,
+        to: '/admin/repairs',
+        tone: 'warning' as const,
+      },
+      {
+        id: 'repair-ready',
+        title: 'Coordinar entregas del taller',
+        description: 'Reparaciones listas para retiro y seguimiento inmediato con el cliente.',
+        value: summary.repairReadyPickup,
+        to: '/admin/repairs',
+        tone: 'success' as const,
+      },
+      {
+        id: 'orders-pending',
+        title: 'Destrabar pedidos activos',
+        description: 'Pedidos pendientes o confirmados que requieren preparación, retiro o comunicación.',
+        value: data.metrics.orders.pendingFlow,
+        to: '/admin/orders',
+        tone: 'accent' as const,
+      },
+      {
+        id: 'stock-low',
+        title: 'Reponer stock crítico',
+        description: 'Productos con stock bajo o agotado que conviene revisar antes de la próxima venta.',
+        value: summary.lowStockProducts,
+        to: '/admin/productos',
+        tone: 'danger' as const,
+      },
+    ].sort((a, b) => b.value - a.value);
+  }, [data, summary]);
+
+  const primaryModules = [
+    { title: 'Reparaciones', description: 'Ingresos, seguimiento, tickets y taller.', to: '/admin/repairs', icon: Wrench },
+    { title: 'Pedidos', description: 'Checkout, estados, entrega y control de ventas.', to: '/admin/orders', icon: ShoppingCart },
+    { title: 'Productos', description: 'Alta, stock, publicación y etiquetas.', to: '/admin/productos', icon: Boxes },
+    { title: 'Categorías', description: 'Ordená y mantené el catálogo visible.', to: '/admin/categorias', icon: ClipboardList },
+    { title: 'Proveedores', description: 'Búsqueda, probing y costo real de repuestos.', to: '/admin/proveedores', icon: PackagePlus },
+    { title: 'Pricing', description: 'Reglas automáticas para reparaciones y márgenes.', to: '/admin/precios', icon: BadgeDollarSign },
+  ];
+
+  const advancedModules = [
+    { title: 'Usuarios', to: '/admin/users' },
+    { title: 'Seguridad / 2FA', to: '/admin/seguridad/2fa' },
+    { title: 'Configuración', to: '/admin/configuraciones' },
+    { title: 'FAQ / ayuda', to: '/admin/help' },
+    { title: 'Reportes', to: '/admin/configuracion/reportes' },
+    { title: 'Contabilidad', to: '/admin/contabilidad' },
+    { title: 'Garantías', to: '/admin/garantias' },
+    { title: 'Historial ventas rápidas', to: '/admin/ventas-rapidas/historial' },
+  ];
+
   return (
-    <PageShell context="admin">
+    <PageShell context="admin" className="space-y-6" data-admin-dashboard-page>
       <PageHeader
         context="admin"
         eyebrow="Panel operativo"
-        title="Dashboard administrativo"
-        subtitle="Métricas de pedidos, reparaciones y operación del negocio en una sola vista."
-        actions={
-          <>
-            <Button variant="outline" asChild>
-              <Link to="/admin/orders">Ver pedidos</Link>
-            </Button>
-            <Button asChild>
-              <Link to="/admin/ventas-rapidas">Nueva venta</Link>
-            </Button>
-          </>
-        }
+        title="Centro de trabajo"
+        subtitle="Lo urgente primero: creá, seguí y resolvé reparaciones, pedidos y stock desde una sola vista."
+        actions={summary ? <StatusBadge tone="info" label={`Actualizado ${formatGeneratedAt(data!.generatedAt)}`} /> : undefined}
       />
 
-      <FilterBar
-        actions={
-          <>
-            <Button variant="outline" asChild>
-              <Link to="/admin/repairs">Reparaciones</Link>
-            </Button>
-            <Button variant="ghost" asChild>
-              <Link to="/admin/configuraciones">Configuración</Link>
-            </Button>
-          </>
-        }
-      >
-        <div className="space-y-3">
+      {error ? (
+        <div className="ui-alert ui-alert--danger" data-reveal>
+          <AlertTriangle className="mt-0.5 h-4 w-4 flex-none" />
           <div>
-            <div className="text-sm font-extrabold text-zinc-950">Estado operativo</div>
-            <p className="mt-1 text-sm text-zinc-600">
-              Resumen consolidado del backend para pedidos, reparaciones, stock y alertas activas.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <StatusBadge tone="info" label={data ? `Actualizado ${formatGeneratedAt(data.generatedAt)}` : 'Actualizando panel'} />
-            <StatusBadge tone="warning" label={`${summary?.pendingApprovals ?? 0} aprobaciones pendientes`} />
-            <StatusBadge tone="neutral" label={`${data?.metrics.orders.pendingFlow ?? 0} pedidos en flujo`} />
+            <span className="ui-alert__title">No se pudo cargar el dashboard</span>
+            <div className="ui-alert__text">{error}</div>
           </div>
         </div>
-      </FilterBar>
-
-      {error ? (
-        <SectionCard tone="info" className="border-rose-200 bg-rose-50">
-          <div className="text-sm font-semibold text-rose-700">{error}</div>
-        </SectionCard>
       ) : null}
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {loading || !data || !summary ? (
-          Array.from({ length: 4 }).map((_, index) => (
-            <SectionCard key={index} title="Cargando métricas" description="Preparando resumen operativo.">
-              <LoadingBlock lines={4} />
-            </SectionCard>
-          ))
-        ) : (
-          <>
-            <MetricCard
-              title="Pedidos creados"
-              value={String(data.metrics.orders.createdToday)}
-              hint="Nuevos pedidos registrados en la jornada actual."
-              details={[
-                `En flujo: ${data.metrics.orders.pendingFlow}`,
-                `Listos para retirar: ${summary.orderStatusCounts.LISTO_RETIRO}`,
-              ]}
-              badge={<StatusBadge tone="info" label="Operación" />}
-            />
-            <MetricCard
-              title="Ingresos entregados"
-              value={`$ ${summary.deliveredRevenue.toLocaleString('es-AR')}`}
-              hint="Pedidos entregados dentro del panel reciente."
-              details={[
-                `Ticket promedio: $ ${Math.round(summary.ticketAverage).toLocaleString('es-AR')}`,
-                `WhatsApp pendientes: ${summary.whatsappPending}`,
-              ]}
-              badge={<StatusBadge tone="success" label="Ventas" />}
-            />
-            <MetricCard
-              title="Reparaciones activas"
-              value={String(data.metrics.repairs.open)}
-              hint="Equipos en curso o esperando definición del cliente."
-              details={[
-                `Nuevas en el día: ${data.metrics.repairs.createdToday}`,
-                `Esperando aprobación: ${summary.pendingApprovals}`,
-              ]}
-              badge={<StatusBadge tone="accent" label="Taller" />}
-            />
-            <MetricCard
-              title="Productos con bajo stock"
-              value={String(summary.lowStockProducts)}
-              hint={`Catálogo total: ${data.metrics.products.total} productos`}
-              details={[
-                `Sin stock: ${data.metrics.products.outOfStock}`,
-                `Promedio reparación entregada: $ ${Math.round(summary.avgRepairValue).toLocaleString('es-AR')}`,
-              ]}
-              badge={<StatusBadge tone="warning" label="Stock" />}
-            />
-          </>
-        )}
-      </div>
+      <SectionCard
+        title="Acciones rápidas"
+        description="Los atajos que más usás en el día a día del mostrador y del taller."
+        className="admin-dashboard-section"
+        data-admin-dashboard-quick-actions
+      >
+        <div className="admin-dashboard-quick-grid">
+          <QuickActionCard
+            title="Nueva reparación"
+            description="Abrí un caso y seguí el diagnóstico desde el primer minuto."
+            to="/admin/repairs/create"
+            icon={<Wrench className="h-5 w-5" />}
+            tone="accent"
+          />
+          <QuickActionCard
+            title="Nueva venta"
+            description="Registrá una venta rápida con ticket y control de stock."
+            to="/admin/ventas-rapidas"
+            icon={<ShoppingCart className="h-5 w-5" />}
+            tone="success"
+          />
+          <QuickActionCard
+            title="Ingresar stock"
+            description="Sumá producto o reposición cuando necesitás actualizar el catálogo."
+            to="/admin/productos/crear"
+            icon={<PackagePlus className="h-5 w-5" />}
+            tone="warning"
+          />
+        </div>
+      </SectionCard>
 
-      <div className="grid gap-4 xl:grid-cols-2">
+      <SectionCard
+        title="Gestión principal"
+        description="Accesos directos a los módulos que sí usás seguido, sin mezclar configuración avanzada."
+        className="admin-dashboard-section"
+      >
+        <div className="admin-dashboard-module-grid">
+          {primaryModules.map((module) => (
+            <Link key={module.title} to={module.to} className="admin-dashboard-module-card">
+              <div className="admin-dashboard-module-card__icon">
+                <module.icon className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="admin-dashboard-module-card__title">{module.title}</div>
+                <p className="admin-dashboard-module-card__description">{module.description}</p>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </SectionCard>
+
+      <SectionCard
+        title="Resumen operativo"
+        description="Indicadores grandes y clickeables para entrar rápido al módulo correcto."
+        className="admin-dashboard-section"
+      >
+        {loading || !summary || !data ? (
+          <LoadingBlock label="Armando el resumen operativo" lines={4} />
+        ) : (
+          <div className="admin-dashboard-summary-grid">
+            <SummaryLinkCard
+              title="En diagnóstico"
+              value={summary.repairDiagnosis}
+              description="Reparaciones que requieren revisión técnica inicial."
+              to="/admin/repairs"
+              tone="info"
+            />
+            <SummaryLinkCard
+              title="Esperando aprobación"
+              value={summary.pendingApprovals}
+              description="Casos frenados hasta definir presupuesto con el cliente."
+              to="/admin/repairs"
+              tone="warning"
+            />
+            <SummaryLinkCard
+              title="Listas para entregar"
+              value={summary.repairReadyPickup}
+              description="Equipos listos para retiro y coordinación final."
+              to="/admin/repairs"
+              tone="success"
+            />
+            <SummaryLinkCard
+              title="Pedidos pendientes"
+              value={data.metrics.orders.pendingFlow}
+              description="Pedidos todavía activos dentro del flujo comercial."
+              to="/admin/orders"
+              tone="accent"
+            />
+            <SummaryLinkCard
+              title="Stock bajo"
+              value={summary.lowStockProducts}
+              description="Productos que necesitan reposición o revisión urgente."
+              to="/admin/productos"
+              tone="danger"
+            />
+          </div>
+        )}
+      </SectionCard>
+
+      <div className="grid gap-4 xl:grid-cols-[1.5fr,1fr]">
         <SectionCard
-          title="Alertas operativas"
-          description="Monitoreá pedidos y reparaciones que requieren seguimiento."
-          actions={
-            <Button variant="outline" size="sm" asChild>
-              <Link to="/admin/alertas">Ver alertas</Link>
-            </Button>
-          }
+          title="Bandeja de trabajo"
+          description="Lo que conviene atender ahora, ordenado por urgencia operativa."
+          className="admin-dashboard-section"
         >
-          {loading || !data ? (
-            <LoadingBlock lines={3} />
+          {loading || !summary || !data ? (
+            <LoadingBlock label="Preparando bandeja de trabajo" lines={4} />
           ) : (
-            <div className="grid gap-3">
-              {data.alerts.map((alert) => (
-                <div
-                  key={alert.id}
-                  className="flex items-center justify-between rounded-2xl border border-zinc-100 bg-zinc-50 px-4 py-3"
-                >
-                  <div>
-                    <div className="text-sm font-bold text-zinc-950">{alert.title}</div>
-                    <div className="mt-1 text-sm text-zinc-600">Valor actual informado por el backend.</div>
+            <div className="admin-dashboard-queue">
+              {workQueue.map((item) => (
+                <Link key={item.id} to={item.to} className="admin-dashboard-queue-item">
+                  <div className="admin-dashboard-queue-item__copy">
+                    <div className="admin-dashboard-queue-item__title-row">
+                      <h3 className="admin-dashboard-queue-item__title">{item.title}</h3>
+                      <StatusBadge tone={item.tone} label={String(item.value)} size="sm" />
+                    </div>
+                    <p className="admin-dashboard-queue-item__description">{item.description}</p>
                   </div>
-                  <StatusBadge
-                    tone={alert.severity === 'high' ? 'danger' : alert.severity === 'medium' ? 'warning' : 'info'}
-                    label={String(alert.value)}
-                  />
-                </div>
+                  <span className="admin-dashboard-queue-item__cta">Abrir módulo</span>
+                </Link>
               ))}
             </div>
           )}
         </SectionCard>
 
         <SectionCard
-          title="Accesos frecuentes"
-          description="Atajos para acciones comunes del panel."
+          title="Métricas útiles"
+          description="Datos de operación que sirven para tomar decisiones, sin robar protagonismo."
+          className="admin-dashboard-section"
         >
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Button variant="secondary" asChild>
-              <Link to="/admin/productos">Productos</Link>
-            </Button>
-            <Button variant="secondary" asChild>
-              <Link to="/admin/proveedores">Proveedores</Link>
-            </Button>
-            <Button variant="outline" asChild>
-              <Link to="/admin/garantias">Garantías</Link>
-            </Button>
-            <Button variant="outline" asChild>
-              <Link to="/admin/contabilidad">Contabilidad</Link>
-            </Button>
-          </div>
-        </SectionCard>
-      </div>
-
-      <div className="grid gap-4 xl:grid-cols-3">
-        <StatusSummaryCard
-          title="Pedidos por estado"
-          items={ORDER_STATUS_KEYS.map((status) => ({
-            label: orderStatusLabel(status),
-            count: summary?.orderStatusCounts[status] ?? 0,
-            tone: orderStatusTone(status),
-          }))}
-          actionTo="/admin/orders"
-        />
-        <StatusSummaryCard
-          title="Reparaciones por estado"
-          items={REPAIR_STATUS_KEYS.map((status) => ({
-            label: repairStatusLabel(status),
-            count: summary?.repairStatusCounts[status] ?? 0,
-            tone: repairStatusTone(status),
-          }))}
-          actionTo="/admin/repairs"
-        />
-        <SectionCard
-          title="Productos destacados"
-          description="Lectura rápida del catálogo y movimientos recientes."
-          actions={
-            <Button variant="outline" size="sm" asChild>
-              <Link to="/admin/productos">Ver catálogo</Link>
-            </Button>
-          }
-        >
-          {loading || !data ? (
-            <LoadingBlock lines={4} />
-          ) : data.recent.orders.length === 0 ? (
-            <EmptyState
-              title="Todavía no hay actividad de ventas"
-              description="Cuando entren pedidos, acá aparecerá una lectura rápida de los productos más recientes."
-            />
+          {loading || !summary || !data ? (
+            <LoadingBlock label="Cargando métricas útiles" lines={3} />
           ) : (
-            <div className="grid gap-3">
-              {data.recent.orders.slice(0, 3).map((order) => {
-                const normalizedStatus = normalizeOrderStatus(order.status);
-                return (
-                  <div key={order.id} className="rounded-2xl border border-zinc-100 bg-zinc-50 px-4 py-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="space-y-1">
-                        <div className="text-sm font-bold text-zinc-950">
-                          {order.itemsPreview[0]?.name ?? 'Pedido sin ítems'}
-                        </div>
-                        <div className="text-sm text-zinc-600">
-                          Pedido {order.id.slice(0, 8)} · {new Date(order.createdAt).toLocaleDateString('es-AR')}
-                        </div>
-                      </div>
-                      <StatusBadge tone={orderStatusTone(normalizedStatus)} label={orderStatusLabel(normalizedStatus)} />
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="admin-dashboard-metrics">
+              <CompactMetric label="Ingresos entregados" value={`$ ${summary.deliveredRevenue.toLocaleString('es-AR')}`} />
+              <CompactMetric label="Ticket promedio" value={`$ ${Math.round(summary.ticketAverage).toLocaleString('es-AR')}`} />
+              <CompactMetric label="Promedio reparación entregada" value={`$ ${Math.round(summary.avgRepairValue).toLocaleString('es-AR')}`} />
+              <CompactMetric label="WhatsApp pendientes" value={String(summary.whatsappPending)} />
             </div>
           )}
         </SectionCard>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-2">
-        <ActivityCard
-          title="Pedidos recientes"
-          description="Últimos pedidos registrados en el sistema."
-          items={data?.recent.orders ?? []}
-          emptyTitle="No hay pedidos recientes"
-          emptyDescription="Cuando se registren ventas, aparecerán acá para seguimiento rápido."
-          renderItem={(order) => {
-            const normalizedStatus = normalizeOrderStatus(order.status);
-            return (
-              <div className="flex items-start justify-between gap-3 rounded-2xl border border-zinc-100 bg-zinc-50 px-4 py-3">
-                <div className="space-y-1">
-                  <div className="text-sm font-bold text-zinc-950">Pedido {order.id.slice(0, 8)}</div>
-                  <div className="text-sm text-zinc-600">
-                    {order.user?.name ?? 'Cliente sin cuenta'} · {new Date(order.createdAt).toLocaleString('es-AR')}
+      <SectionCard
+        title="Actividad reciente"
+        description="Últimos movimientos para seguir trabajando sin abrir un mapa gigante del sistema."
+        className="admin-dashboard-section"
+      >
+        <div className="grid gap-4 xl:grid-cols-2">
+          <ActivityCard
+            title="Pedidos recientes"
+            items={data?.recent.orders ?? []}
+            emptyTitle="No hay pedidos recientes"
+            emptyDescription="Cuando entren ventas, aparecerán acá para seguimiento rápido."
+            renderItem={(order) => {
+              const normalizedStatus = normalizeOrderStatus(order.status);
+              return (
+                <div className="admin-dashboard-activity-item">
+                  <div className="space-y-1">
+                    <div className="text-sm font-bold text-zinc-950">Pedido {order.id.slice(0, 8)}</div>
+                    <div className="text-sm text-zinc-600">
+                      {order.user?.name ?? 'Cliente sin cuenta'} · {new Date(order.createdAt).toLocaleString('es-AR')}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <StatusBadge tone={orderStatusTone(normalizedStatus)} size="sm" label={orderStatusLabel(normalizedStatus)} />
+                    <div className="mt-2 text-sm font-bold text-zinc-950">$ {order.total.toLocaleString('es-AR')}</div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <StatusBadge tone={orderStatusTone(normalizedStatus)} size="sm" label={orderStatusLabel(normalizedStatus)} />
-                  <div className="mt-2 text-sm font-bold text-zinc-950">$ {order.total.toLocaleString('es-AR')}</div>
-                </div>
-              </div>
-            );
-          }}
-          actionTo="/admin/orders"
-        />
+              );
+            }}
+            actionTo="/admin/orders"
+          />
 
-        <ActivityCard
-          title="Reparaciones recientes"
-          description="Últimos ingresos del taller."
-          items={data?.recent.repairs ?? []}
-          emptyTitle="No hay reparaciones recientes"
-          emptyDescription="Cuando entren reparaciones, el panel mostrará los movimientos más recientes."
-          renderItem={(repair) => {
-            const normalizedStatus = repair.status === 'IN_REPAIR' ? 'REPAIRING' : repair.status;
-            return (
-              <div className="flex items-start justify-between gap-3 rounded-2xl border border-zinc-100 bg-zinc-50 px-4 py-3">
-                <div className="space-y-1">
-                  <div className="text-sm font-bold text-zinc-950">{repair.customerName}</div>
-                  <div className="text-sm text-zinc-600">
-                    {[repair.deviceBrand, repair.deviceModel].filter(Boolean).join(' · ') || 'Equipo sin detalle'}
+          <ActivityCard
+            title="Reparaciones recientes"
+            items={data?.recent.repairs ?? []}
+            emptyTitle="No hay reparaciones recientes"
+            emptyDescription="Cuando entren reparaciones, verás acá los últimos ingresos del taller."
+            renderItem={(repair) => {
+              const normalizedStatus = repair.status === 'IN_REPAIR' ? 'REPAIRING' : repair.status;
+              return (
+                <div className="admin-dashboard-activity-item">
+                  <div className="space-y-1">
+                    <div className="text-sm font-bold text-zinc-950">{repair.customerName}</div>
+                    <div className="text-sm text-zinc-600">
+                      {[repair.deviceBrand, repair.deviceModel].filter(Boolean).join(' · ') || 'Equipo sin detalle'}
+                    </div>
                   </div>
+                  <StatusBadge tone={repairStatusTone(normalizedStatus)} size="sm" label={repairStatusLabel(normalizedStatus)} />
                 </div>
-                <StatusBadge
-                  tone={repairStatusTone(normalizedStatus)}
-                  size="sm"
-                  label={repairStatusLabel(normalizedStatus)}
-                />
-              </div>
-            );
-          }}
-          actionTo="/admin/repairs"
-        />
-      </div>
+              );
+            }}
+            actionTo="/admin/repairs"
+          />
+        </div>
+      </SectionCard>
+
+      <details className="admin-dashboard-advanced" data-admin-dashboard-advanced>
+        <summary className="admin-dashboard-advanced__summary">
+          <div>
+            <div className="admin-dashboard-advanced__eyebrow">Administración avanzada</div>
+            <div className="admin-dashboard-advanced__title">Configuración, seguridad y herramientas menos usadas</div>
+          </div>
+          <Button type="button" variant="ghost" size="sm" className="pointer-events-none">
+            Expandir
+          </Button>
+        </summary>
+        <div className="admin-dashboard-advanced__content">
+          <div className="admin-dashboard-advanced__grid">
+            {advancedModules.map((module) => (
+              <Button key={module.title} variant="outline" asChild>
+                <Link to={module.to}>{module.title}</Link>
+              </Button>
+            ))}
+          </div>
+        </div>
+      </details>
     </PageShell>
   );
 }
 
-function MetricCard({
+function QuickActionCard({
   title,
-  value,
-  hint,
-  details,
-  badge,
+  description,
+  to,
+  icon,
+  tone,
 }: {
   title: string;
-  value: string;
-  hint: string;
-  details: string[];
-  badge?: ReactNode;
+  description: string;
+  to: string;
+  icon: ReactNode;
+  tone: BadgeTone;
 }) {
   return (
-    <SectionCard className="h-full" bodyClassName="flex h-full flex-col gap-4">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="text-sm font-bold text-zinc-600">{title}</div>
-          <div className="mt-2 text-3xl font-black tracking-tight text-zinc-950">{value}</div>
+    <Link to={to} className="admin-dashboard-quick-card" data-tone={tone}>
+      <div className="admin-dashboard-quick-card__icon">{icon}</div>
+      <div className="space-y-2">
+        <div className="admin-dashboard-quick-card__title-row">
+          <h3 className="admin-dashboard-quick-card__title">{title}</h3>
+          <StatusBadge tone={tone} label="Abrir" size="sm" />
         </div>
-        {badge}
+        <p className="admin-dashboard-quick-card__description">{description}</p>
       </div>
-      <div className="text-sm text-zinc-600">{hint}</div>
-      <div className="grid gap-2">
-        {details.map((detail) => (
-          <div key={detail} className="rounded-2xl border border-zinc-100 bg-zinc-50 px-3 py-2 text-sm text-zinc-700">
-            {detail}
-          </div>
-        ))}
-      </div>
-    </SectionCard>
+    </Link>
   );
 }
 
-function StatusSummaryCard({
+function SummaryLinkCard({
   title,
-  items,
-  actionTo,
+  value,
+  description,
+  to,
+  tone,
 }: {
   title: string;
-  items: Array<{ label: string; count: number; tone: BadgeTone }>;
-  actionTo: string;
+  value: number;
+  description: string;
+  to: string;
+  tone: BadgeTone;
 }) {
   return (
-    <SectionCard
-      title={title}
-      actions={
-        <Button variant="outline" size="sm" asChild>
-          <Link to={actionTo}>Ver detalle</Link>
-        </Button>
-      }
-    >
-      <div className="grid gap-3">
-        {items.map((item) => (
-          <div
-            key={item.label}
-            className="flex items-center justify-between rounded-2xl border border-zinc-100 bg-zinc-50 px-4 py-3"
-          >
-            <span className="text-sm font-semibold text-zinc-900">{item.label}</span>
-            <StatusBadge tone={item.tone} label={String(item.count)} />
-          </div>
-        ))}
+    <Link to={to} className="admin-dashboard-summary-card">
+      <div className="admin-dashboard-summary-card__header">
+        <div className="admin-dashboard-summary-card__title">{title}</div>
+        <StatusBadge tone={tone} label="Ver" size="sm" />
       </div>
-    </SectionCard>
+      <div className="admin-dashboard-summary-card__value">{value}</div>
+      <p className="admin-dashboard-summary-card__description">{description}</p>
+    </Link>
+  );
+}
+
+function CompactMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="admin-dashboard-metric">
+      <div className="admin-dashboard-metric__label">{label}</div>
+      <div className="admin-dashboard-metric__value">{value}</div>
+    </div>
   );
 }
 
 function ActivityCard<T>({
   title,
-  description,
   items,
   renderItem,
   emptyTitle,
@@ -441,7 +469,6 @@ function ActivityCard<T>({
   actionTo,
 }: {
   title: string;
-  description: string;
   items: T[];
   renderItem: (item: T) => ReactNode;
   emptyTitle: string;
@@ -451,12 +478,11 @@ function ActivityCard<T>({
   return (
     <SectionCard
       title={title}
-      description={description}
-      actions={
+      actions={(
         <Button variant="outline" size="sm" asChild>
           <Link to={actionTo}>Abrir módulo</Link>
         </Button>
-      }
+      )}
     >
       {items.length === 0 ? (
         <EmptyState title={emptyTitle} description={emptyDescription} />

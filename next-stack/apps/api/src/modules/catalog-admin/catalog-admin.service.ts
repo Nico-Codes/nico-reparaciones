@@ -61,26 +61,34 @@ export class CatalogAdminService {
   }
 
   async createCategory(input: { name: string; slug: string; active?: boolean }) {
-    const item = await this.prisma.category.create({
-      data: {
-        name: input.name.trim(),
-        slug: input.slug.trim(),
-        active: input.active ?? true,
-      },
-    });
-    return { item };
+    try {
+      const item = await this.prisma.category.create({
+        data: {
+          name: input.name.trim(),
+          slug: input.slug.trim(),
+          active: input.active ?? true,
+        },
+      });
+      return { item };
+    } catch (error) {
+      this.rethrowCategoryWriteError(error);
+    }
   }
 
   async updateCategory(id: string, input: { name?: string; slug?: string; active?: boolean }) {
-    const item = await this.prisma.category.update({
-      where: { id },
-      data: {
-        ...(input.name !== undefined ? { name: input.name.trim() } : {}),
-        ...(input.slug !== undefined ? { slug: input.slug.trim() } : {}),
-        ...(input.active !== undefined ? { active: input.active } : {}),
-      },
-    });
-    return { item };
+    try {
+      const item = await this.prisma.category.update({
+        where: { id },
+        data: {
+          ...(input.name !== undefined ? { name: input.name.trim() } : {}),
+          ...(input.slug !== undefined ? { slug: input.slug.trim() } : {}),
+          ...(input.active !== undefined ? { active: input.active } : {}),
+        },
+      });
+      return { item };
+    } catch (error) {
+      this.rethrowCategoryWriteError(error);
+    }
   }
 
   async deleteCategory(id: string) {
@@ -155,7 +163,7 @@ export class CatalogAdminService {
     supplierId?: string | null;
     categoryId?: string | null;
   }) {
-    const categoryId = this.nullable(input.categoryId);
+    const categoryId = await this.validateCategoryId(input.categoryId);
     const supplierId = await this.validateSupplierId(input.supplierId);
     const costPrice = input.costPrice == null ? null : Math.max(0, Number(input.costPrice));
     let salePrice = input.price == null ? null : Math.max(0, Number(input.price));
@@ -192,14 +200,18 @@ export class CatalogAdminService {
       categoryId,
       supplierId,
     };
-    const item = await this.prisma.product.create({
-      data,
-      include: {
-        category: { select: { id: true, name: true, slug: true } },
-        supplier: { select: { id: true, name: true } },
-      },
-    });
-    return { item: this.serializeProduct(item) };
+    try {
+      const item = await this.prisma.product.create({
+        data,
+        include: {
+          category: { select: { id: true, name: true, slug: true } },
+          supplier: { select: { id: true, name: true } },
+        },
+      });
+      return { item: this.serializeProduct(item) };
+    } catch (error) {
+      this.rethrowProductWriteError(error);
+    }
   }
 
   async updateProduct(
@@ -226,7 +238,7 @@ export class CatalogAdminService {
     });
     if (!existing) throw new NotFoundException('Producto no encontrado');
 
-    const nextCategoryId = input.categoryId !== undefined ? this.nullable(input.categoryId) : existing.categoryId;
+    const nextCategoryId = input.categoryId !== undefined ? await this.validateCategoryId(input.categoryId) : existing.categoryId;
     const nextSupplierId = input.supplierId !== undefined ? await this.validateSupplierId(input.supplierId) : existing.supplierId;
     const nextCostPrice =
       input.costPrice !== undefined
@@ -276,15 +288,19 @@ export class CatalogAdminService {
     if (input.supplierId !== undefined) data.supplierId = nextSupplierId;
     if (input.categoryId !== undefined) data.categoryId = nextCategoryId;
 
-    const item = await this.prisma.product.update({
-      where: { id },
-      data,
-      include: {
-        category: { select: { id: true, name: true, slug: true } },
-        supplier: { select: { id: true, name: true } },
-      },
-    });
-    return { item: this.serializeProduct(item) };
+    try {
+      const item = await this.prisma.product.update({
+        where: { id },
+        data,
+        include: {
+          category: { select: { id: true, name: true, slug: true } },
+          supplier: { select: { id: true, name: true } },
+        },
+      });
+      return { item: this.serializeProduct(item) };
+    } catch (error) {
+      this.rethrowProductWriteError(error);
+    }
   }
 
   async uploadProductImage(
@@ -490,7 +506,7 @@ export class CatalogAdminService {
   }
 
   async resolveRecommendedProductPrice(input: ResolveProductPricingInput) {
-    const categoryId = this.nullable(input.categoryId);
+    const categoryId = await this.validateCategoryId(input.categoryId);
     if (!categoryId) throw new BadRequestException('Categoria requerida');
     const costPrice = Math.max(0, Math.trunc(Number(input.costPrice ?? 0)));
     const productId = this.nullable(input.productId);
@@ -618,9 +634,60 @@ export class CatalogAdminService {
     return supplier.id;
   }
 
+  private async validateCategoryId(categoryIdRaw?: string | null) {
+    const categoryId = this.nullable(categoryIdRaw);
+    if (!categoryId) return null;
+    const category = await this.prisma.category.findUnique({
+      where: { id: categoryId },
+      select: { id: true },
+    });
+    if (!category) {
+      throw new BadRequestException('Categoria invalida');
+    }
+    return category.id;
+  }
+
   private nullable(v?: string | null) {
     const x = (v ?? '').trim();
     return x || null;
+  }
+
+  private rethrowCategoryWriteError(error: unknown): never {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === 'P2002') {
+        const targets = Array.isArray(error.meta?.target) ? error.meta.target.map(String) : [];
+        if (targets.includes('slug')) {
+          throw new BadRequestException('Ya existe una categoria con ese slug');
+        }
+        throw new BadRequestException('Ya existe una categoria con esos datos');
+      }
+      if (error.code === 'P2025') {
+        throw new NotFoundException('Categoria no encontrada');
+      }
+    }
+    throw error;
+  }
+
+  private rethrowProductWriteError(error: unknown): never {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === 'P2002') {
+        const targets = Array.isArray(error.meta?.target) ? error.meta.target.map(String) : [];
+        if (targets.includes('slug')) {
+          throw new BadRequestException('Ya existe un producto con ese slug');
+        }
+        if (targets.includes('sku')) {
+          throw new BadRequestException('Ya existe un producto con ese SKU');
+        }
+        if (targets.includes('barcode')) {
+          throw new BadRequestException('Ya existe un producto con ese codigo de barras');
+        }
+        throw new BadRequestException('Ya existe un producto con esos datos');
+      }
+      if (error.code === 'P2025') {
+        throw new NotFoundException('Producto no encontrado');
+      }
+    }
+    throw error;
   }
 
   private detectFileExt(filename: string) {

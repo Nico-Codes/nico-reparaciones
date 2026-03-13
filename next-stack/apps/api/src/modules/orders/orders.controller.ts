@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Inject, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Inject, Param, Patch, Post, Query, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { z } from 'zod';
 import { CurrentUser } from '../auth/current-user.decorator.js';
 import type { AuthenticatedUser } from '../auth/auth.types.js';
@@ -34,6 +34,13 @@ const adminQuickSaleConfirmSchema = z.object({
   notes: z.string().trim().max(1000).optional(),
 });
 
+function zodBadRequest(parsed: z.SafeParseError<unknown>) {
+  return new BadRequestException({
+    message: 'Validacion invalida',
+    errors: parsed.error.issues.map((issue) => ({ path: issue.path.join('.'), message: issue.message })),
+  });
+}
+
 @Controller('orders')
 @UseGuards(JwtAuthGuard)
 export class OrdersController {
@@ -42,15 +49,8 @@ export class OrdersController {
   @Post('checkout')
   async checkout(@CurrentUser() user: AuthenticatedUser | null, @Body() body: unknown) {
     const parsed = checkoutSchema.safeParse(body);
-    if (!user) {
-      return { message: 'Usuario no autenticado' };
-    }
-    if (!parsed.success) {
-      return {
-        message: 'Validación inválida',
-        errors: parsed.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })),
-      };
-    }
+    if (!user) throw new UnauthorizedException('Usuario no autenticado');
+    if (!parsed.success) throw zodBadRequest(parsed);
 
     return this.ordersService.checkout({
       userId: user.id,
@@ -61,13 +61,13 @@ export class OrdersController {
 
   @Get('my')
   async my(@CurrentUser() user: AuthenticatedUser | null) {
-    if (!user) return { items: [] };
+    if (!user) throw new UnauthorizedException('Usuario no autenticado');
     return this.ordersService.myOrders(user.id);
   }
 
   @Get('my/:id')
   async myDetail(@CurrentUser() user: AuthenticatedUser | null, @Param('id') id: string) {
-    if (!user) return { item: null };
+    if (!user) throw new UnauthorizedException('Usuario no autenticado');
     return this.ordersService.myOrderDetail(user.id, id);
   }
 
@@ -94,14 +94,9 @@ export class OrdersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   adminQuickSaleConfirm(@CurrentUser() user: AuthenticatedUser | null, @Body() body: unknown) {
-    if (!user) return { message: 'Usuario no autenticado' };
+    if (!user) throw new UnauthorizedException('Usuario no autenticado');
     const parsed = adminQuickSaleConfirmSchema.safeParse(body);
-    if (!parsed.success) {
-      return {
-        message: 'Validacion invalida',
-        errors: parsed.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })),
-      };
-    }
+    if (!parsed.success) throw zodBadRequest(parsed);
     return this.ordersService.adminConfirmQuickSale({
       adminUserId: user.id,
       ...parsed.data,
@@ -120,12 +115,7 @@ export class OrdersController {
   @Roles('ADMIN')
   adminUpdateStatus(@Param('id') id: string, @Body() body: unknown) {
     const parsed = adminUpdateStatusSchema.safeParse(body);
-    if (!parsed.success) {
-      return {
-        message: 'Validación inválida',
-        errors: parsed.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })),
-      };
-    }
+    if (!parsed.success) throw zodBadRequest(parsed);
     return this.ordersService.adminUpdateStatus(id, parsed.data.status);
   }
 }
