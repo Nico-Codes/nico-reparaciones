@@ -1,6 +1,8 @@
 ﻿import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { SectionCard } from '@/components/ui/section-card';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { TextField } from '@/components/ui/text-field';
 import { AuthLayout } from './AuthLayout';
 import { authApi } from './api';
@@ -11,7 +13,7 @@ export function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState('');
+  const [feedback, setFeedback] = useState<{ text: string; tone: 'success' | 'danger' } | null>(null);
   const [previewToken, setPreviewToken] = useState('');
 
   const normalizedName = useMemo(() => name.trim(), [name]);
@@ -20,21 +22,21 @@ export function RegisterPage() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setResult('');
+    setFeedback(null);
     setPreviewToken('');
 
     if (!normalizedName) {
-      setResult('Ingresá tu nombre para crear la cuenta.');
+      setFeedback({ text: 'Ingresá tu nombre para crear la cuenta.', tone: 'danger' });
       return;
     }
 
     if (!normalizedEmail) {
-      setResult('Ingresá un email válido para continuar.');
+      setFeedback({ text: 'Ingresá un email válido para continuar.', tone: 'danger' });
       return;
     }
 
     if (password.trim().length < 8) {
-      setResult('La contraseña debe tener al menos 8 caracteres.');
+      setFeedback({ text: 'La contraseña debe tener al menos 8 caracteres.', tone: 'danger' });
       return;
     }
 
@@ -43,58 +45,89 @@ export function RegisterPage() {
       const res = await authApi.register({ name: normalizedName, email: normalizedEmail, password: password.trim() });
       authStorage.setSession(res.user, res.tokens);
       setPreviewToken(res.emailVerification?.previewToken ?? '');
-      setResult('Cuenta creada correctamente. Revisá tu correo para verificar la dirección si hace falta.');
+      setFeedback({
+        text: 'Cuenta creada correctamente. Revisá tu correo para verificar la dirección si hace falta.',
+        tone: 'success',
+      });
     } catch (error) {
-      setResult((error as { message?: string })?.message ?? 'No pudimos crear la cuenta.');
+      setFeedback({
+        text: (error as { message?: string })?.message ?? 'No pudimos crear la cuenta.',
+        tone: 'danger',
+      });
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <AuthLayout title="Crear cuenta" subtitle="Registrate para comprar y seguir tus pedidos.">
-      <div className="mb-5">
-        <div className="text-xs font-black uppercase tracking-wide text-sky-700">Nueva cuenta</div>
-        <h2 className="text-lg font-black tracking-tight text-zinc-900">Comencemos</h2>
-        <p className="mt-1 text-sm text-zinc-600">Completá tus datos para continuar.</p>
-      </div>
+    <AuthLayout
+      title="Crear cuenta"
+      subtitle="Registrate para comprar, seguir pedidos y consultar reparaciones."
+      eyebrow="Nueva cuenta"
+      statusLabel="Registro"
+    >
+      <SectionCard
+        title="Completá tus datos"
+        description="Vas a poder usar la misma cuenta para compras, seguimiento y verificación por email."
+        actions={<StatusBadge tone="info" size="sm" label="Alta web" />}
+      >
+        <form className="space-y-4" onSubmit={onSubmit}>
+          <TextField
+            label="Nombre"
+            type="text"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            placeholder="Juan Pérez"
+            autoComplete="name"
+            required
+          />
+          <TextField
+            label="Email"
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder="tu@email.com"
+            autoComplete="email"
+            required
+          />
+          <TextField
+            label="Contraseña"
+            type="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            placeholder="********"
+            hint="Mínimo 8 caracteres."
+            autoComplete="new-password"
+            required
+          />
 
-      <form className="space-y-4" onSubmit={onSubmit}>
-        <TextField label="Nombre" type="text" value={name} onChange={(event) => setName(event.target.value)} placeholder="Juan Pérez" required />
-        <TextField label="Email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="tu@email.com" required />
-        <TextField
-          label="Contraseña"
-          type="password"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          placeholder="********"
-          hint="Mínimo 8 caracteres."
-          required
-        />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Button asChild variant="outline" className="w-full justify-center">
+              <Link to="/auth/login">Ya tengo cuenta</Link>
+            </Button>
+            <Button type="submit" className="w-full justify-center" disabled={!canSubmit || loading}>
+              {loading ? 'Creando...' : 'Crear cuenta'}
+            </Button>
+          </div>
+        </form>
 
-        <Button type="submit" className="w-full justify-center" disabled={!canSubmit || loading}>
-          {loading ? 'Creando...' : 'Crear cuenta'}
-        </Button>
-      </form>
-
-      <div className="mt-5 text-center text-sm text-zinc-600">
-        ¿Ya tenés cuenta?{' '}
-        <Link className="font-semibold text-sky-700 hover:text-sky-800" to="/auth/login">
-          Ingresar
-        </Link>
-      </div>
-
-      {result ? <Notice text={result} /> : null}
-      {previewToken ? (
-        <div className="mt-3 break-all rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
-          <div className="font-bold">Token de vista previa para verificación (desarrollo)</div>
-          {previewToken}
-        </div>
-      ) : null}
+        {feedback ? (
+          <div className={`ui-alert mt-4 ${feedback.tone === 'success' ? 'ui-alert--success' : 'ui-alert--danger'}`}>
+            <div>
+              <span className="ui-alert__title">
+                {feedback.tone === 'success' ? 'Cuenta creada' : 'No pudimos crear la cuenta.'}
+              </span>
+              <div className="ui-alert__text">{feedback.text}</div>
+            </div>
+          </div>
+        ) : null}
+        {previewToken ? (
+          <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
+            <div className="font-bold">Token de vista previa para verificación (desarrollo)</div>
+            <div className="mt-1 break-all">{previewToken}</div>
+          </div>
+        ) : null}
+      </SectionCard>
     </AuthLayout>
   );
-}
-
-function Notice({ text }: { text: string }) {
-  return <div className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-800">{text}</div>;
 }

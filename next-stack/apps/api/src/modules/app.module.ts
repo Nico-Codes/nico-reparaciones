@@ -16,6 +16,7 @@ import { PricingModule } from './pricing/pricing.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { RepairsModule } from './repairs/repairs.module.js';
 import { StoreModule } from './store/store.module.js';
+import { WhatsappModule } from './whatsapp/whatsapp.module.js';
 
 loadCanonicalEnv();
 
@@ -47,6 +48,7 @@ const throttleLimit = Number(process.env.THROTTLE_LIMIT ?? 120);
     PricingModule,
     RepairsModule,
     StoreModule,
+    WhatsappModule,
   ],
   providers: [
     {

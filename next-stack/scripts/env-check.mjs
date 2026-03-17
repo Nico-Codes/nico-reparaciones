@@ -85,6 +85,17 @@ if (get('API_URL') && get('VITE_API_URL') && get('API_URL') !== get('VITE_API_UR
   warnings.push('API_URL y VITE_API_URL no coinciden (puede ser intencional, pero revisalo)');
 }
 
+const whatsappEnabled = get('WHATSAPP_CLOUD_ENABLED') === '1';
+if (whatsappEnabled) {
+  requireVar('WHATSAPP_CLOUD_ACCESS_TOKEN');
+  requireVar('WHATSAPP_CLOUD_PHONE_NUMBER_ID', (v) => /^\d+$/.test(v), 'debe ser numérico');
+  requireVar('WHATSAPP_CLOUD_VERIFY_TOKEN', (v) => v.length >= 8, 'muy corto (mínimo recomendado: 8)');
+  const whatsappBaseUrl = get('WHATSAPP_CLOUD_BASE_URL');
+  if (whatsappBaseUrl && !isUrl(whatsappBaseUrl)) {
+    errors.push('WHATSAPP_CLOUD_BASE_URL: URL inválida');
+  }
+}
+
 console.log('[env:check] Archivo leído:', fs.existsSync(rootEnv) ? rootEnv : '(no existe .env en next-stack)');
 
 if (info.length) {

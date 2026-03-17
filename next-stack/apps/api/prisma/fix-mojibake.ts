@@ -79,6 +79,22 @@ function maybeFixMojibake(input: string): string {
   return current;
 }
 
+function repairKnownReplacementCharPhrases(input: string): string {
+  if (!input.includes('\uFFFD')) return input;
+
+  return input
+    .replaceAll('est�', 'está')
+    .replaceAll('�tems', 'Ítems')
+    .replaceAll('r�pida', 'rápida')
+    .replaceAll('Direcci�n', 'Dirección')
+    .replaceAll('Tel�fono', 'Teléfono')
+    .replaceAll('quer�s', 'querés')
+    .replaceAll('reparaci�n', 'reparación')
+    .replaceAll('aprobaci�n', 'aprobación')
+    .replaceAll('diagn�stico', 'diagnóstico')
+    .replaceAll('est�', 'está');
+}
+
 async function processModel(
   prisma: PrismaClient,
   spec: ModelSpec,
@@ -106,7 +122,7 @@ async function processModel(
     for (const field of spec.fields) {
       const current = row[field];
       if (typeof current !== 'string') continue;
-      const fixed = maybeFixMojibake(current);
+      const fixed = repairKnownReplacementCharPhrases(maybeFixMojibake(current));
       if (fixed !== current) {
         patch[field] = fixed;
         fieldsChanged += 1;
@@ -148,6 +164,11 @@ async function main() {
       model: 'repairPricingRule',
       label: 'RepairPricingRule',
       fields: ['name', 'deviceBrand', 'deviceModel', 'issueLabel', 'notes'],
+    },
+    {
+      model: 'whatsAppLog',
+      label: 'WhatsAppLog',
+      fields: ['recipient', 'message', 'errorMessage', 'providerStatus'],
     },
     { model: 'supplier', label: 'Supplier', fields: ['name', 'notes'] },
     { model: 'warrantyIncident', label: 'WarrantyIncident', fields: ['title', 'reason', 'notes'] },

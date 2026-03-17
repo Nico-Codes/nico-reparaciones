@@ -1,11 +1,12 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module.js';
 import { MailModule } from '../mail/mail.module.js';
+import { WhatsappModule } from '../whatsapp/whatsapp.module.js';
 import { AdminController } from './admin.controller.js';
 import { AdminService } from './admin.service.js';
 
 @Module({
-  imports: [AuthModule, MailModule],
+  imports: [AuthModule, MailModule, WhatsappModule],
   controllers: [AdminController],
   providers: [AdminService],
 })

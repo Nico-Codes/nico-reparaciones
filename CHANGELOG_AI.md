@@ -12,6 +12,54 @@
 
 ---
 
+### 2026-03-13 - Codex
+- Alcance: activacion de envio real de WhatsApp por Meta Cloud API reutilizando templates, logs y triggers existentes.
+- Tipo de intervencion: backend real de integracion + schema/logs + webhook minimo + ajuste menor de UI admin para estados reales.
+- Archivos tocados:
+  - 
+ext-stack/apps/api/prisma/schema.prisma
+  - 
+ext-stack/apps/api/prisma/migrations/20260313130000_add_whatsapp_cloud_api_fields/migration.sql
+  - 
+ext-stack/apps/api/src/modules/whatsapp/{whatsapp.module.ts,whatsapp.controller.ts,whatsapp.service.ts}
+  - 
+ext-stack/apps/api/src/modules/{app,admin,orders,repairs}/*
+  - 
+ext-stack/.env.example
+  - 
+ext-stack/.env.production.example
+  - 
+ext-stack/scripts/env-check.mjs
+  - 
+ext-stack/apps/web/src/features/admin/{whatsappApi.ts,AdminWhatsappPage.tsx,AdminWhatsappOrdersPage.tsx,whatsapp-ui.ts}
+  - project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md
+  - project-docs/DECISIONS_LOG.md
+- ¿Cambio comportamiento funcional?: Si. Los triggers de pedidos, reparaciones y ventas rapidas ahora disparan envio real por Meta Cloud API cuando la configuracion existe; WhatsAppLog ya refleja PENDING, SENT o FAILED con emoteMessageId, providerStatus, errorMessage, intentos y timestamps.
+- Validaciones ejecutadas:
+  - 
+pm run db:generate --workspace @nico/api
+  - 
+pm run db:migrate:deploy --workspace @nico/api
+  - 
+pm run typecheck --workspace @nico/api
+  - 
+pm run typecheck --workspace @nico/web
+  - 
+pm run build --workspace @nico/api
+  - 
+pm run build --workspace @nico/web
+  - 
+pm run smoke:backend
+  - 
+pm run smoke:web
+  - 
+pm run qa:route-parity
+  - 
+pm run qa:frontend:e2e
+  - probe dirigido con mock local de Meta para exito, fallo y webhook
+- Riesgos / notas:
+  - la integracion actual reutiliza templates de texto libre; fuera de la ventana de 24h Meta puede rechazar mensajes hasta migrar a templates aprobados
+  - pedidos normales siguen sin telefono persistido, por lo que esos logs pueden terminar en FAILED por missing_or_invalid_phone
 ### 2026-03-12 - Codex
 - Alcance: mejora corta de calidad sobre la búsqueda multi-proveedor de repuestos con proveedores reales.
 - Tipo de intervencion: hardening de extracción HTML/normalización/ranking sin cambiar el flujo create/detail/snapshot.
@@ -188,6 +236,54 @@
 
 ---
 
+### 2026-03-13 - Codex
+- Alcance: activacion de envio real de WhatsApp por Meta Cloud API reutilizando templates, logs y triggers existentes.
+- Tipo de intervencion: backend real de integracion + schema/logs + webhook minimo + ajuste menor de UI admin para estados reales.
+- Archivos tocados:
+  - 
+ext-stack/apps/api/prisma/schema.prisma
+  - 
+ext-stack/apps/api/prisma/migrations/20260313130000_add_whatsapp_cloud_api_fields/migration.sql
+  - 
+ext-stack/apps/api/src/modules/whatsapp/{whatsapp.module.ts,whatsapp.controller.ts,whatsapp.service.ts}
+  - 
+ext-stack/apps/api/src/modules/{app,admin,orders,repairs}/*
+  - 
+ext-stack/.env.example
+  - 
+ext-stack/.env.production.example
+  - 
+ext-stack/scripts/env-check.mjs
+  - 
+ext-stack/apps/web/src/features/admin/{whatsappApi.ts,AdminWhatsappPage.tsx,AdminWhatsappOrdersPage.tsx,whatsapp-ui.ts}
+  - project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md
+  - project-docs/DECISIONS_LOG.md
+- ¿Cambio comportamiento funcional?: Si. Los triggers de pedidos, reparaciones y ventas rapidas ahora disparan envio real por Meta Cloud API cuando la configuracion existe; WhatsAppLog ya refleja PENDING, SENT o FAILED con emoteMessageId, providerStatus, errorMessage, intentos y timestamps.
+- Validaciones ejecutadas:
+  - 
+pm run db:generate --workspace @nico/api
+  - 
+pm run db:migrate:deploy --workspace @nico/api
+  - 
+pm run typecheck --workspace @nico/api
+  - 
+pm run typecheck --workspace @nico/web
+  - 
+pm run build --workspace @nico/api
+  - 
+pm run build --workspace @nico/web
+  - 
+pm run smoke:backend
+  - 
+pm run smoke:web
+  - 
+pm run qa:route-parity
+  - 
+pm run qa:frontend:e2e
+  - probe dirigido con mock local de Meta para exito, fallo y webhook
+- Riesgos / notas:
+  - la integracion actual reutiliza templates de texto libre; fuera de la ventana de 24h Meta puede rechazar mensajes hasta migrar a templates aprobados
+  - pedidos normales siguen sin telefono persistido, por lo que esos logs pueden terminar en FAILED por missing_or_invalid_phone
 ### 2026-03-11 - Codex
 - Alcance: hardening funcional adicional sobre modulos admin de negocio.
 - Tipo de intervencion: proteccion contra stale responses + bloqueo de mutaciones duplicadas + validacion operativa mas estricta.
@@ -214,6 +310,54 @@
 
 ---
 
+### 2026-03-13 - Codex
+- Alcance: activacion de envio real de WhatsApp por Meta Cloud API reutilizando templates, logs y triggers existentes.
+- Tipo de intervencion: backend real de integracion + schema/logs + webhook minimo + ajuste menor de UI admin para estados reales.
+- Archivos tocados:
+  - 
+ext-stack/apps/api/prisma/schema.prisma
+  - 
+ext-stack/apps/api/prisma/migrations/20260313130000_add_whatsapp_cloud_api_fields/migration.sql
+  - 
+ext-stack/apps/api/src/modules/whatsapp/{whatsapp.module.ts,whatsapp.controller.ts,whatsapp.service.ts}
+  - 
+ext-stack/apps/api/src/modules/{app,admin,orders,repairs}/*
+  - 
+ext-stack/.env.example
+  - 
+ext-stack/.env.production.example
+  - 
+ext-stack/scripts/env-check.mjs
+  - 
+ext-stack/apps/web/src/features/admin/{whatsappApi.ts,AdminWhatsappPage.tsx,AdminWhatsappOrdersPage.tsx,whatsapp-ui.ts}
+  - project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md
+  - project-docs/DECISIONS_LOG.md
+- ¿Cambio comportamiento funcional?: Si. Los triggers de pedidos, reparaciones y ventas rapidas ahora disparan envio real por Meta Cloud API cuando la configuracion existe; WhatsAppLog ya refleja PENDING, SENT o FAILED con emoteMessageId, providerStatus, errorMessage, intentos y timestamps.
+- Validaciones ejecutadas:
+  - 
+pm run db:generate --workspace @nico/api
+  - 
+pm run db:migrate:deploy --workspace @nico/api
+  - 
+pm run typecheck --workspace @nico/api
+  - 
+pm run typecheck --workspace @nico/web
+  - 
+pm run build --workspace @nico/api
+  - 
+pm run build --workspace @nico/web
+  - 
+pm run smoke:backend
+  - 
+pm run smoke:web
+  - 
+pm run qa:route-parity
+  - 
+pm run qa:frontend:e2e
+  - probe dirigido con mock local de Meta para exito, fallo y webhook
+- Riesgos / notas:
+  - la integracion actual reutiliza templates de texto libre; fuera de la ventana de 24h Meta puede rechazar mensajes hasta migrar a templates aprobados
+  - pedidos normales siguen sin telefono persistido, por lo que esos logs pueden terminar en FAILED por missing_or_invalid_phone
 ### 2026-03-11 - Codex
 - Alcance: implementación del flujo completo de alta de reparaciones en el frontend admin.
 - Tipo de intervencion: nueva ruta protegida + nueva pantalla/formulario + CTA en listado + corrección de alias legacy.
@@ -241,6 +385,54 @@
 
 ---
 
+### 2026-03-13 - Codex
+- Alcance: activacion de envio real de WhatsApp por Meta Cloud API reutilizando templates, logs y triggers existentes.
+- Tipo de intervencion: backend real de integracion + schema/logs + webhook minimo + ajuste menor de UI admin para estados reales.
+- Archivos tocados:
+  - 
+ext-stack/apps/api/prisma/schema.prisma
+  - 
+ext-stack/apps/api/prisma/migrations/20260313130000_add_whatsapp_cloud_api_fields/migration.sql
+  - 
+ext-stack/apps/api/src/modules/whatsapp/{whatsapp.module.ts,whatsapp.controller.ts,whatsapp.service.ts}
+  - 
+ext-stack/apps/api/src/modules/{app,admin,orders,repairs}/*
+  - 
+ext-stack/.env.example
+  - 
+ext-stack/.env.production.example
+  - 
+ext-stack/scripts/env-check.mjs
+  - 
+ext-stack/apps/web/src/features/admin/{whatsappApi.ts,AdminWhatsappPage.tsx,AdminWhatsappOrdersPage.tsx,whatsapp-ui.ts}
+  - project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md
+  - project-docs/DECISIONS_LOG.md
+- ¿Cambio comportamiento funcional?: Si. Los triggers de pedidos, reparaciones y ventas rapidas ahora disparan envio real por Meta Cloud API cuando la configuracion existe; WhatsAppLog ya refleja PENDING, SENT o FAILED con emoteMessageId, providerStatus, errorMessage, intentos y timestamps.
+- Validaciones ejecutadas:
+  - 
+pm run db:generate --workspace @nico/api
+  - 
+pm run db:migrate:deploy --workspace @nico/api
+  - 
+pm run typecheck --workspace @nico/api
+  - 
+pm run typecheck --workspace @nico/web
+  - 
+pm run build --workspace @nico/api
+  - 
+pm run build --workspace @nico/web
+  - 
+pm run smoke:backend
+  - 
+pm run smoke:web
+  - 
+pm run qa:route-parity
+  - 
+pm run qa:frontend:e2e
+  - probe dirigido con mock local de Meta para exito, fallo y webhook
+- Riesgos / notas:
+  - la integracion actual reutiliza templates de texto libre; fuera de la ventana de 24h Meta puede rechazar mensajes hasta migrar a templates aprobados
+  - pedidos normales siguen sin telefono persistido, por lo que esos logs pueden terminar en FAILED por missing_or_invalid_phone
 ### 2026-03-11 - Codex
 - Alcance: backlog menor / polish funcional sobre públicas de reparación y módulos admin secundarios.
 - Tipo de intervencion: quick wins funcionales + limpieza de copy/encoding + endurecimiento de estados secundarios.
@@ -262,6 +454,54 @@
 
 ---
 
+### 2026-03-13 - Codex
+- Alcance: activacion de envio real de WhatsApp por Meta Cloud API reutilizando templates, logs y triggers existentes.
+- Tipo de intervencion: backend real de integracion + schema/logs + webhook minimo + ajuste menor de UI admin para estados reales.
+- Archivos tocados:
+  - 
+ext-stack/apps/api/prisma/schema.prisma
+  - 
+ext-stack/apps/api/prisma/migrations/20260313130000_add_whatsapp_cloud_api_fields/migration.sql
+  - 
+ext-stack/apps/api/src/modules/whatsapp/{whatsapp.module.ts,whatsapp.controller.ts,whatsapp.service.ts}
+  - 
+ext-stack/apps/api/src/modules/{app,admin,orders,repairs}/*
+  - 
+ext-stack/.env.example
+  - 
+ext-stack/.env.production.example
+  - 
+ext-stack/scripts/env-check.mjs
+  - 
+ext-stack/apps/web/src/features/admin/{whatsappApi.ts,AdminWhatsappPage.tsx,AdminWhatsappOrdersPage.tsx,whatsapp-ui.ts}
+  - project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md
+  - project-docs/DECISIONS_LOG.md
+- ¿Cambio comportamiento funcional?: Si. Los triggers de pedidos, reparaciones y ventas rapidas ahora disparan envio real por Meta Cloud API cuando la configuracion existe; WhatsAppLog ya refleja PENDING, SENT o FAILED con emoteMessageId, providerStatus, errorMessage, intentos y timestamps.
+- Validaciones ejecutadas:
+  - 
+pm run db:generate --workspace @nico/api
+  - 
+pm run db:migrate:deploy --workspace @nico/api
+  - 
+pm run typecheck --workspace @nico/api
+  - 
+pm run typecheck --workspace @nico/web
+  - 
+pm run build --workspace @nico/api
+  - 
+pm run build --workspace @nico/web
+  - 
+pm run smoke:backend
+  - 
+pm run smoke:web
+  - 
+pm run qa:route-parity
+  - 
+pm run qa:frontend:e2e
+  - probe dirigido con mock local de Meta para exito, fallo y webhook
+- Riesgos / notas:
+  - la integracion actual reutiliza templates de texto libre; fuera de la ventana de 24h Meta puede rechazar mensajes hasta migrar a templates aprobados
+  - pedidos normales siguen sin telefono persistido, por lo que esos logs pueden terminar en FAILED por missing_or_invalid_phone
 ### 2026-03-10 - Codex
 - Alcance: fase adicional de QA funcional profunda sobre guards, verificación de email y módulos admin con riesgo de respuestas o acciones obsoletas.
 - Tipo de intervencion: corrección de bugs reales de navegación protegida + hardening de concurrencia frontend + consolidación documental.
@@ -751,4 +991,44 @@
 - Riesgos / notas:
   - no se tocaron estilos globales ni se abrio una nueva reorganizacion del dashboard; solo se ajusto la jerarquia de secciones.
 
+### 2026-03-13 - Codex
+- Alcance: validacion operativa de la integracion WhatsApp Cloud API ya implementada.
+- Tipo de intervencion: validacion de entorno, saneo de datos historicos de `WhatsAppLog` y actualizacion documental del estado real.
+- Archivos tocados:
+  - `project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md`
+  - `project-docs/DECISIONS_LOG.md`
+- ¿Cambio comportamiento funcional?: No en codigo de la integracion. Si hubo saneo operativo de datos historicos ejecutando `db:fix-mojibake`, que corrigio 5 campos en `WhatsAppLog` para que `smoke:backend` volviera a pasar.
+- Validaciones ejecutadas:
+  - `npm run typecheck --workspace @nico/api`
+  - `npm run typecheck --workspace @nico/web`
+  - `npm run build --workspace @nico/api`
+  - `npm run build --workspace @nico/web`
+  - `npm run smoke:backend`
+  - `npm run smoke:web`
+  - `npm run qa:route-parity`
+  - `npm run qa:frontend:e2e`
+- Riesgos / notas:
+  - la validacion real contra Meta quedo bloqueada porque el entorno local no tiene cargadas variables `WHATSAPP_CLOUD_*`
+  - el sistema esta listo tecnicamente, pero no puede declararse validado contra Meta real hasta cargar credenciales reales y un webhook publico
+
 ---
+
+### 2026-03-16 - Codex
+- Alcance: automatizacion del tunel publico del frontend dentro de `nico-dev.bat`.
+- Tipo de intervencion: ajuste operativo del script raiz de desarrollo, sin cambios de dominio ni de backend.
+- Archivos tocados:
+  - `nico-dev.bat`
+  - `README.md`
+  - `project-docs/DECISIONS_LOG.md`
+- ¿Cambio comportamiento funcional?: Si. `nico-dev.bat start` ahora intenta levantar `ngrok` para el frontend en `5174`, muestra la URL publica si el agente responde y `nico-dev.bat stop` cierra tambien ese tunel.
+- Validaciones ejecutadas:
+  - `nico-dev.bat start`
+  - `npm --prefix next-stack run typecheck --workspace @nico/web`
+  - verificacion de `http://127.0.0.1:4040/api/tunnels`
+  - `nico-dev.bat stop`
+- Riesgos / notas:
+  - el tunel solo arranca si el entorno local tiene `ngrok` configurado por `%LOCALAPPDATA%\ngrok\ngrok.yml` o `NGROK_AUTHTOKEN`
+  - el script mata cualquier tunel `ngrok http 5174` previo antes de arrancar uno nuevo para evitar sesiones duplicadas
+
+---
+

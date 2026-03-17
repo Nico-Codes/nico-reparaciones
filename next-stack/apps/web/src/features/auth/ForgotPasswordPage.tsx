@@ -1,6 +1,8 @@
 ﻿import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { SectionCard } from '@/components/ui/section-card';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { TextField } from '@/components/ui/text-field';
 import { AuthLayout } from './AuthLayout';
 import { authApi } from './api';
@@ -8,74 +10,86 @@ import { authApi } from './api';
 export function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
+  const [feedback, setFeedback] = useState<{ text: string; tone: 'success' | 'danger' } | null>(null);
   const [previewToken, setPreviewToken] = useState('');
 
   const normalizedEmail = useMemo(() => email.trim().toLowerCase(), [email]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setMessage('');
+    setFeedback(null);
     setPreviewToken('');
 
     if (!normalizedEmail) {
-      setMessage('Ingresá un email válido para recibir el enlace.');
+      setFeedback({ text: 'Ingresá un email válido para recibir el enlace.', tone: 'danger' });
       return;
     }
 
     setLoading(true);
     try {
       const res = await authApi.forgotPassword(normalizedEmail);
-      setMessage(res.message);
+      setFeedback({ text: res.message, tone: 'success' });
       setPreviewToken(res.previewToken ?? '');
     } catch (error) {
-      setMessage((error as { message?: string })?.message ?? 'No pudimos enviar el enlace de recuperación.');
+      setFeedback({
+        text: (error as { message?: string })?.message ?? 'No pudimos enviar el enlace de recuperación.',
+        tone: 'danger',
+      });
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <AuthLayout title="Recuperar contraseña" subtitle="Te enviaremos un enlace seguro para restablecerla.">
-      <div className="mb-5">
-        <div className="text-xs font-black uppercase tracking-wide text-sky-700">Acceso</div>
-        <h2 className="text-lg font-black tracking-tight text-zinc-900">Restablecer por email</h2>
-        <p className="mt-1 text-sm text-zinc-600">Ingresá tu correo para continuar.</p>
-      </div>
+    <AuthLayout
+      title="Recuperar contraseña"
+      subtitle="Te enviaremos un enlace seguro para restablecer el acceso a tu cuenta."
+      eyebrow="Acceso"
+      statusLabel="Recuperación"
+    >
+      <SectionCard
+        title="Restablecer por email"
+        description="Ingresá el correo asociado a tu cuenta y te mandamos un enlace para continuar."
+        actions={<StatusBadge tone="warning" size="sm" label="Enlace seguro" />}
+      >
+        <form className="space-y-4" onSubmit={onSubmit}>
+          <TextField
+            label="Email"
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder="tu@email.com"
+            autoComplete="email"
+            required
+          />
 
-      <form className="space-y-4" onSubmit={onSubmit}>
-        <TextField
-          label="Email"
-          type="email"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          placeholder="tu@email.com"
-          autoComplete="email"
-          required
-        />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Button asChild variant="outline" className="w-full justify-center">
+              <Link to="/auth/login">Volver a ingresar</Link>
+            </Button>
+            <Button type="submit" className="w-full justify-center" disabled={!normalizedEmail || loading}>
+              {loading ? 'Enviando...' : 'Enviar enlace'}
+            </Button>
+          </div>
+        </form>
 
-        <Button type="submit" className="w-full justify-center" disabled={!normalizedEmail || loading}>
-          {loading ? 'Enviando...' : 'Enviar enlace'}
-        </Button>
-      </form>
-
-      <div className="mt-5 text-center text-sm text-zinc-600">
-        <Link className="font-semibold text-sky-700 hover:text-sky-800" to="/auth/login">
-          Volver a ingresar
-        </Link>
-      </div>
-
-      {message ? <Notice text={message} /> : null}
-      {previewToken ? (
-        <div className="mt-3 break-all rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
-          <div className="font-bold">Token de vista previa para restablecer (desarrollo)</div>
-          {previewToken}
-        </div>
-      ) : null}
+        {feedback ? (
+          <div className={`ui-alert mt-4 ${feedback.tone === 'success' ? 'ui-alert--success' : 'ui-alert--danger'}`}>
+            <div>
+              <span className="ui-alert__title">
+                {feedback.tone === 'success' ? 'Enlace enviado' : 'No pudimos enviar el enlace.'}
+              </span>
+              <div className="ui-alert__text">{feedback.text}</div>
+            </div>
+          </div>
+        ) : null}
+        {previewToken ? (
+          <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
+            <div className="font-bold">Token de vista previa para restablecer (desarrollo)</div>
+            <div className="mt-1 break-all">{previewToken}</div>
+          </div>
+        ) : null}
+      </SectionCard>
     </AuthLayout>
   );
-}
-
-function Notice({ text }: { text: string }) {
-  return <div className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-800">{text}</div>;
 }

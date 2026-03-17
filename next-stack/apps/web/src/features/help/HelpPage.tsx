@@ -1,6 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
+import { ChevronDown, Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { ChevronDown } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
+import { LoadingBlock } from '@/components/ui/loading-block';
+import { PageHeader } from '@/components/ui/page-header';
+import { PageShell } from '@/components/ui/page-shell';
+import { SectionCard } from '@/components/ui/section-card';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { TextField } from '@/components/ui/text-field';
 import { fetchHelpFaq, type HelpFaqPublicItem } from './api';
 
 export function HelpPage() {
@@ -16,8 +24,8 @@ export function HelpPage() {
       .then((res) => {
         if (!cancelled) setItems(res.items);
       })
-      .catch((e) => {
-        if (!cancelled) setError(e instanceof Error ? e.message : 'Error cargando ayuda');
+      .catch((cause) => {
+        if (!cancelled) setError(cause instanceof Error ? cause.message : 'No pudimos cargar la ayuda.');
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -30,66 +38,121 @@ export function HelpPage() {
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
     if (!term) return items;
-    return items.filter((i) => `${i.question} ${i.answer} ${i.category}`.toLowerCase().includes(term));
+    return items.filter((item) => `${item.question} ${item.answer} ${item.category}`.toLowerCase().includes(term));
   }, [items, q]);
 
+  const resultLabel = `${filtered.length} ${filtered.length === 1 ? 'resultado' : 'resultados'}`;
+
   return (
-    <div className="min-h-screen bg-zinc-50">
-      <div className="mx-auto max-w-4xl px-4 py-8">
-        <div className="flex items-end justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-black tracking-tight">Ayuda</h1>
-            <p className="mt-1 text-sm text-zinc-600">Preguntas frecuentes y soluciones rápidas.</p>
-          </div>
-          <Link to="/" className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50">
-            Volver
-          </Link>
-        </div>
+    <PageShell context="store" className="px-4 py-4 md:py-5">
+      <div className="mx-auto max-w-4xl space-y-6">
+        <PageHeader
+          context="store"
+          eyebrow="Ayuda"
+          title="Centro de ayuda"
+          subtitle="Preguntas frecuentes y soluciones rápidas para compras, pedidos y reparaciones."
+          actions={(
+            <>
+              <StatusBadge tone="info" label={loading ? 'Cargando FAQ' : 'FAQ pública'} />
+              <Button asChild variant="outline" size="sm">
+                <Link to="/store">Volver a la tienda</Link>
+              </Button>
+            </>
+          )}
+        />
 
-        <div className="mt-4 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-          <input
+        <SectionCard
+          title="Buscá una respuesta"
+          description="Filtrá por pregunta, respuesta o categoría para encontrar la ayuda más rápido."
+          tone="info"
+        >
+          <TextField
+            label="Buscar en ayuda"
             value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Buscar problema o respuesta..."
-            className="h-11 w-full rounded-xl border border-zinc-200 px-3 text-sm"
+            onChange={(event) => setQ(event.target.value)}
+            placeholder="Ej: retiro, pago, reparación"
+            leadingIcon={<Search className="h-4 w-4" />}
           />
-        </div>
+        </SectionCard>
 
-        {error ? <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">{error}</div> : null}
+        {error ? (
+          <div className="ui-alert ui-alert--danger">
+            <div>
+              <span className="ui-alert__title">No pudimos cargar la ayuda.</span>
+              <div className="ui-alert__text">{error}</div>
+            </div>
+          </div>
+        ) : null}
 
-        <div className="mt-4 space-y-3">
-          {loading ? (
-            <div className="rounded-2xl border border-zinc-200 bg-white p-4 text-sm">Cargando ayuda...</div>
-          ) : filtered.length === 0 ? (
-            <div className="rounded-2xl border border-zinc-200 bg-white p-4 text-sm">No hay resultados.</div>
-          ) : (
-            filtered.map((item) => {
+        {loading ? (
+          <SectionCard title="Cargando ayuda" description="Estamos preparando las preguntas frecuentes publicadas.">
+            <LoadingBlock label="Cargando ayuda" lines={4} />
+          </SectionCard>
+        ) : null}
+
+        {!loading && !error && filtered.length === 0 ? (
+          <SectionCard>
+            <EmptyState
+              title="No encontramos resultados"
+              description={
+                q.trim()
+                  ? 'Probá con otra palabra clave o revisá las categorías disponibles.'
+                  : 'Todavía no hay preguntas frecuentes publicadas.'
+              }
+              actions={
+                q.trim() ? (
+                  <Button type="button" variant="outline" onClick={() => setQ('')}>
+                    Limpiar búsqueda
+                  </Button>
+                ) : undefined
+              }
+            />
+          </SectionCard>
+        ) : null}
+
+        {!loading && !error && filtered.length > 0 ? (
+          <SectionCard
+            title="Preguntas frecuentes"
+            description="Abrí cada respuesta para ver el detalle completo."
+            actions={<StatusBadge tone="neutral" size="sm" label={resultLabel} />}
+            bodyClassName="space-y-3"
+          >
+            {filtered.map((item) => {
               const open = openId === item.id;
               return (
                 <div key={item.id} className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
                   <button
                     type="button"
                     onClick={() => setOpenId((prev) => (prev === item.id ? null : item.id))}
-                    className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left"
+                    className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left hover:bg-zinc-50"
                   >
-                    <div>
+                    <div className="min-w-0">
                       <div className="text-base font-black text-zinc-900">{item.question}</div>
-                      <div className="mt-1 text-xs font-semibold uppercase tracking-wide text-zinc-500">{item.category}</div>
+                      <div className="mt-2">
+                        <StatusBadge tone="neutral" size="sm" label={item.category || 'General'} />
+                      </div>
                     </div>
-                    <ChevronDown className={`h-5 w-5 shrink-0 text-zinc-500 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+                    <ChevronDown
+                      className={`h-5 w-5 shrink-0 text-zinc-500 transition-transform duration-200 ${
+                        open ? 'rotate-180' : ''
+                      }`}
+                    />
                   </button>
-                  <div className={`grid transition-[grid-template-rows,opacity] duration-250 ease-out ${open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+                  <div
+                    className={`grid transition-[grid-template-rows,opacity] duration-250 ease-out ${
+                      open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+                    }`}
+                  >
                     <div className="min-h-0">
                       <div className="px-4 pb-4 text-sm leading-6 text-zinc-700">{item.answer}</div>
                     </div>
                   </div>
                 </div>
               );
-            })
-          )}
-        </div>
+            })}
+          </SectionCard>
+        ) : null}
       </div>
-    </div>
+    </PageShell>
   );
 }
-

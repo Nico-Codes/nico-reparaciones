@@ -20,6 +20,25 @@ Registrar decisiones tecnicas confirmadas para evitar dependencia de memoria ora
 
 ---
 
+### [DL-0043]
+- Fecha: 2026-03-13
+- Estado: aceptada
+- Tema: activar envio real de WhatsApp con Meta Cloud API reutilizando templates/logs/triggers existentes
+- Contexto: el proyecto ya tenia templates, logs y triggers automaticos para pedidos, reparaciones y ventas rapidas, pero todo quedaba en estado PENDING sin proveedor real ni actualizacion de entrega. El objetivo de esta fase fue habilitar envio real sin abrir una arquitectura grande nueva.
+- Decision: agregar un modulo backend WhatsappModule con WhatsappService para envio inline por Meta Cloud API, extender WhatsAppLog con metadata real de proveedor y entrega, reutilizar el sistema actual de templates como mensaje libre (	ype: text), y exponer un webhook minimo para verificacion y actualizacion de estados salientes. La UI admin de logs pasa a mostrar PENDING, SENT, FAILED, providerStatus, emoteMessageId y errorMessage.
+- Impacto: pedidos, reparaciones y ventas rapidas ya no generan solo intencion de envio; ahora disparan envio real cuando hay configuracion valida. El sistema sigue siendo compatible con templates/logs existentes y deja documentada la limitacion actual de Meta para mensajes libres fuera de la ventana de 24 horas.
+- Alternativas consideradas: dejar solo logs pendientes o saltar directo a templates aprobados por Meta y una cola/worker dedicada; descartado por no activar envio real ahora o por abrir una fase demasiado grande.
+- Archivos / modulos afectados: 
+ext-stack/apps/api/prisma/schema.prisma, migracion 20260313130000_add_whatsapp_cloud_api_fields, 
+ext-stack/apps/api/src/modules/whatsapp/*, 
+ext-stack/apps/api/src/modules/{app,admin,orders,repairs}/*, 
+ext-stack/apps/web/src/features/admin/{whatsappApi.ts,AdminWhatsappPage.tsx,AdminWhatsappOrdersPage.tsx,whatsapp-ui.ts}, 
+ext-stack/.env.example, 
+ext-stack/.env.production.example, 
+ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
+- Validacion requerida: generate + migrate Prisma, typecheck/build de @nico/api y @nico/web, smoke:backend, smoke:web, qa:route-parity, qa:frontend:e2e y probe dirigido con mock local de Meta para SENT, FAILED y webhook.
+- Responsable: Codex + operador humano
+---
 ### [DL-0040]
 - Fecha: 2026-03-12
 - Estado: aceptada
@@ -33,6 +52,25 @@ Registrar decisiones tecnicas confirmadas para evitar dependencia de memoria ora
 - Responsable: Codex + operador humano
 ---
 
+### [DL-0043]
+- Fecha: 2026-03-13
+- Estado: aceptada
+- Tema: activar envio real de WhatsApp con Meta Cloud API reutilizando templates/logs/triggers existentes
+- Contexto: el proyecto ya tenia templates, logs y triggers automaticos para pedidos, reparaciones y ventas rapidas, pero todo quedaba en estado PENDING sin proveedor real ni actualizacion de entrega. El objetivo de esta fase fue habilitar envio real sin abrir una arquitectura grande nueva.
+- Decision: agregar un modulo backend WhatsappModule con WhatsappService para envio inline por Meta Cloud API, extender WhatsAppLog con metadata real de proveedor y entrega, reutilizar el sistema actual de templates como mensaje libre (	ype: text), y exponer un webhook minimo para verificacion y actualizacion de estados salientes. La UI admin de logs pasa a mostrar PENDING, SENT, FAILED, providerStatus, emoteMessageId y errorMessage.
+- Impacto: pedidos, reparaciones y ventas rapidas ya no generan solo intencion de envio; ahora disparan envio real cuando hay configuracion valida. El sistema sigue siendo compatible con templates/logs existentes y deja documentada la limitacion actual de Meta para mensajes libres fuera de la ventana de 24 horas.
+- Alternativas consideradas: dejar solo logs pendientes o saltar directo a templates aprobados por Meta y una cola/worker dedicada; descartado por no activar envio real ahora o por abrir una fase demasiado grande.
+- Archivos / modulos afectados: 
+ext-stack/apps/api/prisma/schema.prisma, migracion 20260313130000_add_whatsapp_cloud_api_fields, 
+ext-stack/apps/api/src/modules/whatsapp/*, 
+ext-stack/apps/api/src/modules/{app,admin,orders,repairs}/*, 
+ext-stack/apps/web/src/features/admin/{whatsappApi.ts,AdminWhatsappPage.tsx,AdminWhatsappOrdersPage.tsx,whatsapp-ui.ts}, 
+ext-stack/.env.example, 
+ext-stack/.env.production.example, 
+ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
+- Validacion requerida: generate + migrate Prisma, typecheck/build de @nico/api y @nico/web, smoke:backend, smoke:web, qa:route-parity, qa:frontend:e2e y probe dirigido con mock local de Meta para SENT, FAILED y webhook.
+- Responsable: Codex + operador humano
+---
 ### [DL-0041]
 - Fecha: 2026-03-12
 - Estado: aceptada
@@ -58,6 +96,25 @@ Registrar decisiones tecnicas confirmadas para evitar dependencia de memoria ora
 - Responsable: Codex + operador humano
 ---
 
+### [DL-0043]
+- Fecha: 2026-03-13
+- Estado: aceptada
+- Tema: activar envio real de WhatsApp con Meta Cloud API reutilizando templates/logs/triggers existentes
+- Contexto: el proyecto ya tenia templates, logs y triggers automaticos para pedidos, reparaciones y ventas rapidas, pero todo quedaba en estado PENDING sin proveedor real ni actualizacion de entrega. El objetivo de esta fase fue habilitar envio real sin abrir una arquitectura grande nueva.
+- Decision: agregar un modulo backend WhatsappModule con WhatsappService para envio inline por Meta Cloud API, extender WhatsAppLog con metadata real de proveedor y entrega, reutilizar el sistema actual de templates como mensaje libre (	ype: text), y exponer un webhook minimo para verificacion y actualizacion de estados salientes. La UI admin de logs pasa a mostrar PENDING, SENT, FAILED, providerStatus, emoteMessageId y errorMessage.
+- Impacto: pedidos, reparaciones y ventas rapidas ya no generan solo intencion de envio; ahora disparan envio real cuando hay configuracion valida. El sistema sigue siendo compatible con templates/logs existentes y deja documentada la limitacion actual de Meta para mensajes libres fuera de la ventana de 24 horas.
+- Alternativas consideradas: dejar solo logs pendientes o saltar directo a templates aprobados por Meta y una cola/worker dedicada; descartado por no activar envio real ahora o por abrir una fase demasiado grande.
+- Archivos / modulos afectados: 
+ext-stack/apps/api/prisma/schema.prisma, migracion 20260313130000_add_whatsapp_cloud_api_fields, 
+ext-stack/apps/api/src/modules/whatsapp/*, 
+ext-stack/apps/api/src/modules/{app,admin,orders,repairs}/*, 
+ext-stack/apps/web/src/features/admin/{whatsappApi.ts,AdminWhatsappPage.tsx,AdminWhatsappOrdersPage.tsx,whatsapp-ui.ts}, 
+ext-stack/.env.example, 
+ext-stack/.env.production.example, 
+ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
+- Validacion requerida: generate + migrate Prisma, typecheck/build de @nico/api y @nico/web, smoke:backend, smoke:web, qa:route-parity, qa:frontend:e2e y probe dirigido con mock local de Meta para SENT, FAILED y webhook.
+- Responsable: Codex + operador humano
+---
 ### [DL-0039]
 - Fecha: 2026-03-12
 - Estado: aceptada
@@ -71,6 +128,25 @@ Registrar decisiones tecnicas confirmadas para evitar dependencia de memoria ora
 - Responsable: Codex + operador humano
 ---
 
+### [DL-0043]
+- Fecha: 2026-03-13
+- Estado: aceptada
+- Tema: activar envio real de WhatsApp con Meta Cloud API reutilizando templates/logs/triggers existentes
+- Contexto: el proyecto ya tenia templates, logs y triggers automaticos para pedidos, reparaciones y ventas rapidas, pero todo quedaba en estado PENDING sin proveedor real ni actualizacion de entrega. El objetivo de esta fase fue habilitar envio real sin abrir una arquitectura grande nueva.
+- Decision: agregar un modulo backend WhatsappModule con WhatsappService para envio inline por Meta Cloud API, extender WhatsAppLog con metadata real de proveedor y entrega, reutilizar el sistema actual de templates como mensaje libre (	ype: text), y exponer un webhook minimo para verificacion y actualizacion de estados salientes. La UI admin de logs pasa a mostrar PENDING, SENT, FAILED, providerStatus, emoteMessageId y errorMessage.
+- Impacto: pedidos, reparaciones y ventas rapidas ya no generan solo intencion de envio; ahora disparan envio real cuando hay configuracion valida. El sistema sigue siendo compatible con templates/logs existentes y deja documentada la limitacion actual de Meta para mensajes libres fuera de la ventana de 24 horas.
+- Alternativas consideradas: dejar solo logs pendientes o saltar directo a templates aprobados por Meta y una cola/worker dedicada; descartado por no activar envio real ahora o por abrir una fase demasiado grande.
+- Archivos / modulos afectados: 
+ext-stack/apps/api/prisma/schema.prisma, migracion 20260313130000_add_whatsapp_cloud_api_fields, 
+ext-stack/apps/api/src/modules/whatsapp/*, 
+ext-stack/apps/api/src/modules/{app,admin,orders,repairs}/*, 
+ext-stack/apps/web/src/features/admin/{whatsappApi.ts,AdminWhatsappPage.tsx,AdminWhatsappOrdersPage.tsx,whatsapp-ui.ts}, 
+ext-stack/.env.example, 
+ext-stack/.env.production.example, 
+ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
+- Validacion requerida: generate + migrate Prisma, typecheck/build de @nico/api y @nico/web, smoke:backend, smoke:web, qa:route-parity, qa:frontend:e2e y probe dirigido con mock local de Meta para SENT, FAILED y webhook.
+- Responsable: Codex + operador humano
+---
 ### [DL-0038]
 - Fecha: 2026-03-11
 - Estado: aceptada
@@ -84,6 +160,25 @@ Registrar decisiones tecnicas confirmadas para evitar dependencia de memoria ora
 - Responsable: Codex + operador humano
 ---
 
+### [DL-0043]
+- Fecha: 2026-03-13
+- Estado: aceptada
+- Tema: activar envio real de WhatsApp con Meta Cloud API reutilizando templates/logs/triggers existentes
+- Contexto: el proyecto ya tenia templates, logs y triggers automaticos para pedidos, reparaciones y ventas rapidas, pero todo quedaba en estado PENDING sin proveedor real ni actualizacion de entrega. El objetivo de esta fase fue habilitar envio real sin abrir una arquitectura grande nueva.
+- Decision: agregar un modulo backend WhatsappModule con WhatsappService para envio inline por Meta Cloud API, extender WhatsAppLog con metadata real de proveedor y entrega, reutilizar el sistema actual de templates como mensaje libre (	ype: text), y exponer un webhook minimo para verificacion y actualizacion de estados salientes. La UI admin de logs pasa a mostrar PENDING, SENT, FAILED, providerStatus, emoteMessageId y errorMessage.
+- Impacto: pedidos, reparaciones y ventas rapidas ya no generan solo intencion de envio; ahora disparan envio real cuando hay configuracion valida. El sistema sigue siendo compatible con templates/logs existentes y deja documentada la limitacion actual de Meta para mensajes libres fuera de la ventana de 24 horas.
+- Alternativas consideradas: dejar solo logs pendientes o saltar directo a templates aprobados por Meta y una cola/worker dedicada; descartado por no activar envio real ahora o por abrir una fase demasiado grande.
+- Archivos / modulos afectados: 
+ext-stack/apps/api/prisma/schema.prisma, migracion 20260313130000_add_whatsapp_cloud_api_fields, 
+ext-stack/apps/api/src/modules/whatsapp/*, 
+ext-stack/apps/api/src/modules/{app,admin,orders,repairs}/*, 
+ext-stack/apps/web/src/features/admin/{whatsappApi.ts,AdminWhatsappPage.tsx,AdminWhatsappOrdersPage.tsx,whatsapp-ui.ts}, 
+ext-stack/.env.example, 
+ext-stack/.env.production.example, 
+ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
+- Validacion requerida: generate + migrate Prisma, typecheck/build de @nico/api y @nico/web, smoke:backend, smoke:web, qa:route-parity, qa:frontend:e2e y probe dirigido con mock local de Meta para SENT, FAILED y webhook.
+- Responsable: Codex + operador humano
+---
 ### [DL-0037]
 - Fecha: 2026-03-11
 - Estado: aceptada
@@ -97,6 +192,25 @@ Registrar decisiones tecnicas confirmadas para evitar dependencia de memoria ora
 - Responsable: Codex + operador humano
 ---
 
+### [DL-0043]
+- Fecha: 2026-03-13
+- Estado: aceptada
+- Tema: activar envio real de WhatsApp con Meta Cloud API reutilizando templates/logs/triggers existentes
+- Contexto: el proyecto ya tenia templates, logs y triggers automaticos para pedidos, reparaciones y ventas rapidas, pero todo quedaba en estado PENDING sin proveedor real ni actualizacion de entrega. El objetivo de esta fase fue habilitar envio real sin abrir una arquitectura grande nueva.
+- Decision: agregar un modulo backend WhatsappModule con WhatsappService para envio inline por Meta Cloud API, extender WhatsAppLog con metadata real de proveedor y entrega, reutilizar el sistema actual de templates como mensaje libre (	ype: text), y exponer un webhook minimo para verificacion y actualizacion de estados salientes. La UI admin de logs pasa a mostrar PENDING, SENT, FAILED, providerStatus, emoteMessageId y errorMessage.
+- Impacto: pedidos, reparaciones y ventas rapidas ya no generan solo intencion de envio; ahora disparan envio real cuando hay configuracion valida. El sistema sigue siendo compatible con templates/logs existentes y deja documentada la limitacion actual de Meta para mensajes libres fuera de la ventana de 24 horas.
+- Alternativas consideradas: dejar solo logs pendientes o saltar directo a templates aprobados por Meta y una cola/worker dedicada; descartado por no activar envio real ahora o por abrir una fase demasiado grande.
+- Archivos / modulos afectados: 
+ext-stack/apps/api/prisma/schema.prisma, migracion 20260313130000_add_whatsapp_cloud_api_fields, 
+ext-stack/apps/api/src/modules/whatsapp/*, 
+ext-stack/apps/api/src/modules/{app,admin,orders,repairs}/*, 
+ext-stack/apps/web/src/features/admin/{whatsappApi.ts,AdminWhatsappPage.tsx,AdminWhatsappOrdersPage.tsx,whatsapp-ui.ts}, 
+ext-stack/.env.example, 
+ext-stack/.env.production.example, 
+ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
+- Validacion requerida: generate + migrate Prisma, typecheck/build de @nico/api y @nico/web, smoke:backend, smoke:web, qa:route-parity, qa:frontend:e2e y probe dirigido con mock local de Meta para SENT, FAILED y webhook.
+- Responsable: Codex + operador humano
+---
 ### [DL-0036]
 - Fecha: 2026-03-11
 - Estado: aceptada
@@ -110,6 +224,25 @@ Registrar decisiones tecnicas confirmadas para evitar dependencia de memoria ora
 - Responsable: Codex + operador humano
 ---
 
+### [DL-0043]
+- Fecha: 2026-03-13
+- Estado: aceptada
+- Tema: activar envio real de WhatsApp con Meta Cloud API reutilizando templates/logs/triggers existentes
+- Contexto: el proyecto ya tenia templates, logs y triggers automaticos para pedidos, reparaciones y ventas rapidas, pero todo quedaba en estado PENDING sin proveedor real ni actualizacion de entrega. El objetivo de esta fase fue habilitar envio real sin abrir una arquitectura grande nueva.
+- Decision: agregar un modulo backend WhatsappModule con WhatsappService para envio inline por Meta Cloud API, extender WhatsAppLog con metadata real de proveedor y entrega, reutilizar el sistema actual de templates como mensaje libre (	ype: text), y exponer un webhook minimo para verificacion y actualizacion de estados salientes. La UI admin de logs pasa a mostrar PENDING, SENT, FAILED, providerStatus, emoteMessageId y errorMessage.
+- Impacto: pedidos, reparaciones y ventas rapidas ya no generan solo intencion de envio; ahora disparan envio real cuando hay configuracion valida. El sistema sigue siendo compatible con templates/logs existentes y deja documentada la limitacion actual de Meta para mensajes libres fuera de la ventana de 24 horas.
+- Alternativas consideradas: dejar solo logs pendientes o saltar directo a templates aprobados por Meta y una cola/worker dedicada; descartado por no activar envio real ahora o por abrir una fase demasiado grande.
+- Archivos / modulos afectados: 
+ext-stack/apps/api/prisma/schema.prisma, migracion 20260313130000_add_whatsapp_cloud_api_fields, 
+ext-stack/apps/api/src/modules/whatsapp/*, 
+ext-stack/apps/api/src/modules/{app,admin,orders,repairs}/*, 
+ext-stack/apps/web/src/features/admin/{whatsappApi.ts,AdminWhatsappPage.tsx,AdminWhatsappOrdersPage.tsx,whatsapp-ui.ts}, 
+ext-stack/.env.example, 
+ext-stack/.env.production.example, 
+ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
+- Validacion requerida: generate + migrate Prisma, typecheck/build de @nico/api y @nico/web, smoke:backend, smoke:web, qa:route-parity, qa:frontend:e2e y probe dirigido con mock local de Meta para SENT, FAILED y webhook.
+- Responsable: Codex + operador humano
+---
 ### [DL-0035]
 - Fecha: 2026-03-11
 - Estado: aceptada
@@ -123,6 +256,25 @@ Registrar decisiones tecnicas confirmadas para evitar dependencia de memoria ora
 - Responsable: Codex + operador humano
 ---
 
+### [DL-0043]
+- Fecha: 2026-03-13
+- Estado: aceptada
+- Tema: activar envio real de WhatsApp con Meta Cloud API reutilizando templates/logs/triggers existentes
+- Contexto: el proyecto ya tenia templates, logs y triggers automaticos para pedidos, reparaciones y ventas rapidas, pero todo quedaba en estado PENDING sin proveedor real ni actualizacion de entrega. El objetivo de esta fase fue habilitar envio real sin abrir una arquitectura grande nueva.
+- Decision: agregar un modulo backend WhatsappModule con WhatsappService para envio inline por Meta Cloud API, extender WhatsAppLog con metadata real de proveedor y entrega, reutilizar el sistema actual de templates como mensaje libre (	ype: text), y exponer un webhook minimo para verificacion y actualizacion de estados salientes. La UI admin de logs pasa a mostrar PENDING, SENT, FAILED, providerStatus, emoteMessageId y errorMessage.
+- Impacto: pedidos, reparaciones y ventas rapidas ya no generan solo intencion de envio; ahora disparan envio real cuando hay configuracion valida. El sistema sigue siendo compatible con templates/logs existentes y deja documentada la limitacion actual de Meta para mensajes libres fuera de la ventana de 24 horas.
+- Alternativas consideradas: dejar solo logs pendientes o saltar directo a templates aprobados por Meta y una cola/worker dedicada; descartado por no activar envio real ahora o por abrir una fase demasiado grande.
+- Archivos / modulos afectados: 
+ext-stack/apps/api/prisma/schema.prisma, migracion 20260313130000_add_whatsapp_cloud_api_fields, 
+ext-stack/apps/api/src/modules/whatsapp/*, 
+ext-stack/apps/api/src/modules/{app,admin,orders,repairs}/*, 
+ext-stack/apps/web/src/features/admin/{whatsappApi.ts,AdminWhatsappPage.tsx,AdminWhatsappOrdersPage.tsx,whatsapp-ui.ts}, 
+ext-stack/.env.example, 
+ext-stack/.env.production.example, 
+ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
+- Validacion requerida: generate + migrate Prisma, typecheck/build de @nico/api y @nico/web, smoke:backend, smoke:web, qa:route-parity, qa:frontend:e2e y probe dirigido con mock local de Meta para SENT, FAILED y webhook.
+- Responsable: Codex + operador humano
+---
 ### [DL-0029]
 - Fecha: 2026-03-10
 - Estado: aceptada
@@ -314,6 +466,32 @@ Registrar decisiones tecnicas confirmadas para evitar dependencia de memoria ora
 - Archivos / modulos afectados: `next-stack/apps/web/src/features/admin/AdminDashboardPage.tsx`
 - Validacion requerida: `typecheck`, `build`, `smoke:web` y probe real del dashboard admin.
 - Responsable: Codex + operador humano
+
+### [DL-0025]
+- Fecha: 2026-03-13
+- Estado: aceptada
+- Tema: validacion real de WhatsApp Cloud API bloqueada por entorno sin credenciales
+- Contexto: la integracion real con Meta Cloud API ya quedo implementada, pero la fase de validacion real encontro que el entorno local no tiene cargadas variables `WHATSAPP_CLOUD_*` ni un webhook publico alcanzable por Meta.
+- Decision: no simular una validacion real inexistente; dejar documentado que el sistema esta listo tecnicamente, mantener el gate del proyecto en verde y exigir como siguiente paso operativo cargar credenciales reales + URL publica antes de declarar la integracion validada contra Meta.
+- Impacto: evita una falsa sensacion de cierre. La implementacion sigue usable y estable, pero la validacion end-to-end contra Meta real queda explicitamente pendiente de entorno y no de codigo.
+- Alternativas consideradas: intentar forzar pruebas con mocks o credenciales inexistentes; descartado por no cumplir el criterio de validacion real solicitado.
+- Archivos / modulos afectados: `project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`
+- Validacion requerida: `typecheck`, `build`, `smoke:backend`, `smoke:web`, `qa:route-parity`, `qa:frontend:e2e`.
+- Responsable: Codex + operador humano
+
+### [DL-0026]
+- Fecha: 2026-03-16
+- Estado: aceptada
+- Tema: `nico-dev.bat start/stop` gestiona tambien el tunel ngrok del frontend
+- Contexto: se necesita abrir rapidamente la web de desarrollo en un celular sin repetir arranque manual de `ngrok` ni recordar el comando correcto sobre Vite `5174`.
+- Decision: extender `nico-dev.bat` para que `start` levante API + Web + un tunel `ngrok` al puerto `5174` cuando exista `ngrok` configurado por archivo local o `NGROK_AUTHTOKEN`, imprima la URL publica y deje `stop` encargado de cerrar tambien ese tunel.
+- Impacto: el flujo operativo de desarrollo desde la raiz queda mas corto y consistente para pruebas en dispositivos moviles, sin tocar backend ni el runtime del frontend.
+- Alternativas consideradas: mantener `ngrok` como paso manual separado; descartado por friccion operativa y por repeticion innecesaria en el ciclo diario.
+- Archivos / modulos afectados: `nico-dev.bat`, `README.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: ejecutar `nico-dev.bat start`, verificar health de API/Web, verificar `ngrok` en `http://127.0.0.1:4040/api/tunnels` y luego `nico-dev.bat stop`.
+- Responsable: Codex + operador humano
+
+
 
 
 

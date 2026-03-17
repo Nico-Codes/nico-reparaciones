@@ -1,6 +1,8 @@
 ﻿import { useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { SectionCard } from '@/components/ui/section-card';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { TextField } from '@/components/ui/text-field';
 import { AuthLayout } from './AuthLayout';
 import { authApi } from './api';
@@ -66,73 +68,75 @@ export function LoginPage() {
   }
 
   return (
-    <AuthLayout title="Ingresar" subtitle="Accedé para ver tus pedidos y reparaciones.">
-      <div className="mb-5">
-        <div className="text-xs font-black uppercase tracking-wide text-sky-700">Cuenta</div>
-        <h2 className="text-lg font-black tracking-tight text-zinc-900">Iniciá sesión</h2>
-        <p className="mt-1 text-sm text-zinc-600">Usá tu email y contraseña.</p>
-      </div>
-
-      <form className="space-y-4" onSubmit={onSubmit}>
-        <TextField
-          label="Email"
-          type="email"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          placeholder="tu@email.com"
-          autoComplete="email"
-          required
-        />
-        <TextField
-          label="Contraseña"
-          type="password"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          placeholder="********"
-          autoComplete="current-password"
-          required
-        />
-        {needsTwoFactor ? (
+    <AuthLayout
+      title="Ingresar"
+      subtitle="Accedé para seguir tus pedidos, reparaciones y gestiones desde la cuenta actual."
+      eyebrow="Cuenta"
+      statusLabel={needsTwoFactor ? '2FA requerida' : 'Acceso'}
+    >
+      <SectionCard
+        title="Iniciá sesión"
+        description="Usá tu email y contraseña para entrar al sistema."
+        actions={needsTwoFactor ? <StatusBadge tone="warning" size="sm" label="Código 2FA" /> : undefined}
+      >
+        <form className="space-y-4" onSubmit={onSubmit}>
           <TextField
-            label="Código 2FA"
-            type="text"
-            value={twoFactorCode}
-            onChange={(event) => setTwoFactorCode(event.target.value)}
-            placeholder="123456"
-            inputMode="numeric"
-            autoComplete="one-time-code"
+            label="Email"
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder="tu@email.com"
+            autoComplete="email"
             required
           />
-        ) : null}
+          <TextField
+            label="Contraseña"
+            type="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            placeholder="********"
+            autoComplete="current-password"
+            required
+          />
+          {needsTwoFactor ? (
+            <TextField
+              label="Código 2FA"
+              type="text"
+              value={twoFactorCode}
+              onChange={(event) => setTwoFactorCode(event.target.value)}
+              placeholder="123456"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              required
+            />
+          ) : null}
 
-        <div className="text-right text-sm">
-          <Link className="font-semibold text-sky-700 hover:text-sky-800" to="/auth/forgot-password">
-            Olvidé mi contraseña
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Button asChild variant="outline" className="w-full justify-center">
+              <Link to="/auth/forgot-password">Olvidé mi contraseña</Link>
+            </Button>
+            <Button type="submit" className="w-full justify-center" disabled={!canSubmit || loading}>
+              {loading ? 'Ingresando...' : 'Ingresar'}
+            </Button>
+          </div>
+        </form>
+
+        <div className="mt-4 border-t border-zinc-200 pt-4 text-sm text-zinc-600">
+          ¿No tenés cuenta?{' '}
+          <Link className="font-semibold text-sky-700 hover:text-sky-800" to="/auth/register">
+            Crear cuenta
           </Link>
         </div>
 
-        <Button type="submit" className="w-full justify-center" disabled={!canSubmit || loading}>
-          {loading ? 'Ingresando...' : 'Ingresar'}
-        </Button>
-      </form>
-
-      <div className="mt-5 text-center text-sm text-zinc-600">
-        ¿No tenés cuenta?{' '}
-        <Link className="font-semibold text-sky-700 hover:text-sky-800" to="/auth/register">
-          Crear cuenta
-        </Link>
-      </div>
-
-      {result ? <Notice text={result} tone="danger" /> : null}
+        {result ? (
+          <div className="ui-alert ui-alert--danger mt-4">
+            <div>
+              <span className="ui-alert__title">No pudimos iniciar sesión.</span>
+              <div className="ui-alert__text">{result}</div>
+            </div>
+          </div>
+        ) : null}
+      </SectionCard>
     </AuthLayout>
   );
-}
-
-function Notice({ text, tone = 'neutral' }: { text: string; tone?: 'neutral' | 'danger' }) {
-  const className =
-    tone === 'danger'
-      ? 'mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700'
-      : 'mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-800';
-
-  return <div className={className}>{text}</div>;
 }

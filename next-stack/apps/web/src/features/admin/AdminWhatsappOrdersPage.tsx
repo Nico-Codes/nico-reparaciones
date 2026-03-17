@@ -1,6 +1,14 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { whatsappApi, type WhatsappLogItem } from './whatsappApi';
+import {
+  cleanWhatsappDisplayText,
+  sanitizeWhatsappLog,
+  whatsappAttemptLabel,
+  whatsappProviderStatusLabel,
+  whatsappStatusClassName,
+  whatsappStatusLabel,
+} from './whatsapp-ui';
 
 type VariableInfo = {
   key: string;
@@ -96,7 +104,9 @@ export function AdminWhatsappOrdersPage() {
     setError('');
     try {
       const res = await whatsappApi.templates({ channel: 'orders' });
-      const byTemplateKey = new Map(res.items.map((item) => [item.templateKey, item.body]));
+      const byTemplateKey = new Map(
+        res.items.map((item) => [item.templateKey, cleanWhatsappDisplayText(item.body)]),
+      );
       setTemplates(
         Object.fromEntries(
           ORDER_TEMPLATES.map((t) => [
@@ -117,7 +127,7 @@ export function AdminWhatsappOrdersPage() {
     setLogsLoading(true);
     try {
       const res = await whatsappApi.logs({ channel: 'orders' });
-      setLogs(res.items.slice(0, 12));
+      setLogs(res.items.slice(0, 12).map(sanitizeWhatsappLog));
     } catch {
       setLogs([]);
     } finally {
@@ -251,8 +261,17 @@ export function AdminWhatsappOrdersPage() {
                         {log.targetType || 'order'} · {log.targetId || '-'} · {new Date(log.createdAt).toLocaleString('es-AR')}
                       </div>
                     </div>
-                    <span className="rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-xs font-bold text-zinc-700">{log.status}</span>
+                    <span className={whatsappStatusClassName(log.status)}>{whatsappStatusLabel(log.status)}</span>
                   </div>
+                  <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-zinc-500">
+                    <span>{whatsappAttemptLabel(log)}</span>
+                    {whatsappProviderStatusLabel(log) ? <span>{whatsappProviderStatusLabel(log)}</span> : null}
+                    {log.remoteMessageId ? <span>ID remoto: {log.remoteMessageId}</span> : null}
+                    {log.phone ? <span>Destino: {log.phone}</span> : null}
+                  </div>
+                  {log.errorMessage ? (
+                    <div className="mt-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{log.errorMessage}</div>
+                  ) : null}
                   {log.message ? (
                     <pre className="mt-2 whitespace-pre-wrap rounded-xl border border-zinc-100 bg-zinc-50 p-3 text-xs text-zinc-700">
                       {log.message}
@@ -267,3 +286,4 @@ export function AdminWhatsappOrdersPage() {
     </div>
   );
 }
+

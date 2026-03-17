@@ -5,6 +5,7 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { MailService } from '../mail/mail.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { WhatsappService } from '../whatsapp/whatsapp.service.js';
 
 type SupplierRegistryRow = {
   id: string;
@@ -186,6 +187,7 @@ export class AdminService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(MailService) private readonly mailService: MailService,
+    @Inject(WhatsappService) private readonly whatsappService: WhatsappService,
   ) {}
   private readonly openRepairStatuses = ['RECEIVED', 'DIAGNOSING', 'WAITING_APPROVAL', 'REPAIRING', 'READY_PICKUP'] as const;
   private readonly pendingOrderStatuses = ['PENDIENTE', 'CONFIRMADO', 'PREPARANDO'] as const;
@@ -1892,6 +1894,8 @@ export class AdminService {
                 { templateKey: { contains: q, mode: 'insensitive' } },
                 { targetId: { contains: q, mode: 'insensitive' } },
                 { message: { contains: q, mode: 'insensitive' } },
+                { remoteMessageId: { contains: q, mode: 'insensitive' } },
+                { errorMessage: { contains: q, mode: 'insensitive' } },
               ],
             }
           : {}),
@@ -1909,10 +1913,18 @@ export class AdminService {
         targetId: r.targetId,
         phone: r.phone,
         recipient: r.recipient,
+        provider: r.provider,
+        remoteMessageId: r.remoteMessageId,
+        providerStatus: r.providerStatus,
+        errorMessage: r.errorMessage,
         status: r.status,
         message: r.message,
         meta: this.parseJson(r.metaJson),
         createdAt: r.createdAt.toISOString(),
+        updatedAt: r.updatedAt.toISOString(),
+        lastAttemptAt: r.lastAttemptAt?.toISOString() ?? null,
+        sentAt: r.sentAt?.toISOString() ?? null,
+        failedAt: r.failedAt?.toISOString() ?? null,
       })),
     };
   }
@@ -1928,34 +1940,16 @@ export class AdminService {
     message?: string | null;
     meta?: Record<string, unknown> | null;
   }) {
-    const row = await this.prisma.whatsAppLog.create({
-      data: {
-        channel: (input.channel ?? '').trim() || 'general',
-        templateKey: this.cleanNullable(input.templateKey),
-        targetType: this.cleanNullable(input.targetType),
-        targetId: this.cleanNullable(input.targetId),
-        phone: this.cleanNullable(input.phone),
-        recipient: this.cleanNullable(input.recipient),
-        status: (input.status ?? '').trim() || 'SENT',
-        message: this.cleanNullable(input.message),
-        metaJson: input.meta ? JSON.stringify(input.meta) : null,
-      },
+    return this.whatsappService.createAndDispatchLog({
+      channel: input.channel,
+      templateKey: input.templateKey,
+      targetType: input.targetType,
+      targetId: input.targetId,
+      phone: input.phone,
+      recipient: input.recipient,
+      message: input.message,
+      meta: input.meta,
     });
-    return {
-      item: {
-        id: row.id,
-        channel: row.channel,
-        templateKey: row.templateKey,
-        targetType: row.targetType,
-        targetId: row.targetId,
-        phone: row.phone,
-        recipient: row.recipient,
-        status: row.status,
-        message: row.message,
-        meta: this.parseJson(row.metaJson),
-        createdAt: row.createdAt.toISOString(),
-      },
-    };
   }
 
   async helpFaqList(params?: { q?: string; active?: string; category?: string }) {
@@ -2113,19 +2107,19 @@ export class AdminService {
   private whatsappTemplateDefs(channel: 'repairs' | 'orders') {
     if (channel === 'repairs') {
       return [
-        { templateKey: 'received', label: 'Recibido', description: 'Mensaje para reparacion recibida.' },
-        { templateKey: 'diagnosing', label: 'Diagnosticando', description: 'Mensaje para reparacion en diagnostico.' },
-        { templateKey: 'waiting_approval', label: 'Esperando aprobacion', description: 'Mensaje para solicitar aprobacion.' },
-        { templateKey: 'repairing', label: 'En reparacion', description: 'Mensaje para reparacion en curso.' },
-        { templateKey: 'ready_pickup', label: 'Listo para retirar', description: 'Mensaje para reparacion lista para retiro.' },
-        { templateKey: 'delivered', label: 'Entregado', description: 'Mensaje para reparacion entregada.' },
-        { templateKey: 'cancelled', label: 'Cancelado', description: 'Mensaje para reparacion cancelada.' },
+        { templateKey: 'received', label: 'Recibido', description: 'Mensaje para reparación recibida.' },
+        { templateKey: 'diagnosing', label: 'Diagnosticando', description: 'Mensaje para reparación en diagnóstico.' },
+        { templateKey: 'waiting_approval', label: 'Esperando aprobación', description: 'Mensaje para solicitar aprobación.' },
+        { templateKey: 'repairing', label: 'En reparación', description: 'Mensaje para reparación en curso.' },
+        { templateKey: 'ready_pickup', label: 'Listo para retirar', description: 'Mensaje para reparación lista para retiro.' },
+        { templateKey: 'delivered', label: 'Entregado', description: 'Mensaje para reparación entregada.' },
+        { templateKey: 'cancelled', label: 'Cancelado', description: 'Mensaje para reparación cancelada.' },
       ] as const;
     }
     return [
       { templateKey: 'pendiente', label: 'Pendiente', description: 'Mensaje para pedido pendiente.' },
       { templateKey: 'confirmado', label: 'Confirmado', description: 'Mensaje para pedido confirmado.' },
-      { templateKey: 'preparando', label: 'Preparando', description: 'Mensaje para pedido en preparacion.' },
+      { templateKey: 'preparando', label: 'Preparando', description: 'Mensaje para pedido en preparación.' },
       { templateKey: 'listo_retirar', label: 'Listo para retirar', description: 'Mensaje para pedido listo para retiro.' },
       { templateKey: 'entregado', label: 'Entregado', description: 'Mensaje para pedido entregado.' },
       { templateKey: 'cancelado', label: 'Cancelado', description: 'Mensaje para pedido cancelado.' },
@@ -2137,12 +2131,12 @@ export class AdminService {
       if (templateKey === 'waiting_approval') {
         return [
           'Hola {customer_name}',
-          'Tu reparacion ({code}) esta en estado: *{status_label}*.',
-          'Necesitamos tu aprobacion para continuar.',
-          'Aproba o rechaza aca: {approval_url}',
+          'Tu reparación ({code}) está en estado: *{status_label}*.',
+          'Necesitamos tu aprobación para continuar.',
+          'Aprobá o rechazá acá: {approval_url}',
           '',
-          'Podes consultar el estado en: {lookup_url}',
-          'Codigo: {code}',
+          'Podés consultar el estado en: {lookup_url}',
+          'Código: {code}',
           'Equipo: {device}',
           'NicoReparaciones',
         ].join('\n');
@@ -2150,14 +2144,14 @@ export class AdminService {
       if (templateKey === 'ready_pickup') {
         return [
           'Hola {customer_name}',
-          'Tu reparacion ({code}) esta en estado: *{status_label}*.',
-          'Ya esta lista para retirar.',
+          'Tu reparación ({code}) está en estado: *{status_label}*.',
+          'Ya está lista para retirar.',
           '',
-          'Direccion: {shop_address}',
+          'Dirección: {shop_address}',
           'Horarios: {shop_hours}',
           '',
-          'Podes consultar el estado en: {lookup_url}',
-          'Codigo: {code}',
+          'Podés consultar el estado en: {lookup_url}',
+          'Código: {code}',
           'Equipo: {device}',
           'NicoReparaciones',
         ].join('\n');
@@ -2165,21 +2159,21 @@ export class AdminService {
       if (templateKey === 'delivered') {
         return [
           'Hola {customer_name}',
-          'Tu reparacion ({code}) esta en estado: *{status_label}*.',
+          'Tu reparación ({code}) está en estado: *{status_label}*.',
           'Gracias por tu visita.',
           '',
-          'Podes consultar el estado en: {lookup_url}',
-          'Codigo: {code}',
+          'Podés consultar el estado en: {lookup_url}',
+          'Código: {code}',
           'Equipo: {device}',
           'NicoReparaciones',
         ].join('\n');
       }
       return [
         'Hola {customer_name}',
-        'Tu reparacion ({code}) esta en estado: *{status_label}*.',
+        'Tu reparación ({code}) está en estado: *{status_label}*.',
         '',
-        'Podes consultar el estado en: {lookup_url}',
-        'Codigo: {code}',
+        'Podés consultar el estado en: {lookup_url}',
+        'Código: {code}',
         'Equipo: {device}',
         'NicoReparaciones',
       ].join('\n');
@@ -2187,9 +2181,9 @@ export class AdminService {
 
     const base = [
       'Hola {customer_name}',
-      'Tu pedido *#{order_id}* esta en estado: *{status_label}*.',
+      'Tu pedido *#{order_id}* está en estado: *{status_label}*.',
       'Total: {total}',
-      'Items: {items_count}',
+      'Ítems: {items_count}',
       '',
       '{items_summary}',
       '',
@@ -2197,13 +2191,13 @@ export class AdminService {
       'Tienda: {store_url}',
     ];
     if (templateKey === 'listo_retirar') {
-      base.push('', 'Direccion: {shop_address}', 'Horarios: {shop_hours}', 'Telefono: {shop_phone}');
+      base.push('', 'Dirección: {shop_address}', 'Horarios: {shop_hours}', 'Teléfono: {shop_phone}');
     }
     if (templateKey === 'entregado') {
       base.push('', 'Gracias por tu compra.');
     }
     if (templateKey === 'cancelado') {
-      base.push('', 'Si queres, lo revisamos por WhatsApp.');
+      base.push('', 'Si querés, lo revisamos por WhatsApp.');
     }
     return base.join('\n');
   }

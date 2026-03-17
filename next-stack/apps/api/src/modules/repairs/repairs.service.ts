@@ -1,7 +1,8 @@
-import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+﻿import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Prisma, type Repair, type RepairPricingSnapshot } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { WhatsappService } from '../whatsapp/whatsapp.service.js';
 
 type RepairPricingSnapshotDraftInput = {
   source: 'SUPPLIER_PART';
@@ -88,6 +89,7 @@ export class RepairsService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(JwtService) private readonly jwtService: JwtService,
+    @Inject(WhatsappService) private readonly whatsappService: WhatsappService,
   ) {}
 
   async publicLookup(repairIdRaw: string, customerPhoneRaw?: string | null) {
@@ -96,14 +98,14 @@ export class RepairsService {
     const repair = await this.prisma.repair.findUnique({ where: { id: repairId } });
 
     if (!repair) {
-      return { ok: false, found: false, message: 'Reparación no encontrada' };
+      return { ok: false, found: false, message: 'ReparaciÃ³n no encontrada' };
     }
 
     if (customerPhone) {
       const inputPhoneNorm = this.normalizePhone(customerPhone);
       const repairPhoneNorm = this.normalizePhone(repair.customerPhone);
       if (!inputPhoneNorm || !repairPhoneNorm || inputPhoneNorm !== repairPhoneNorm) {
-        return { ok: false, found: false, message: 'No coincide el teléfono de la reparación' };
+        return { ok: false, found: false, message: 'No coincide el telÃ©fono de la reparaciÃ³n' };
       }
     }
 
@@ -1109,21 +1111,18 @@ export class RepairsService {
         shop_hours: (map.get('shop_hours') || '').trim(),
       };
       const message = this.applyTemplateVars(template, vars);
-      await this.prisma.whatsAppLog.create({
-        data: {
-          channel: 'repairs',
-          templateKey: `repairs.${statusKey}`,
-          targetType: 'repair',
-          targetId: repair.id,
-          phone: repair.customerPhone ?? null,
-          recipient: repair.customerName ?? null,
-          status: 'PENDING',
-          message,
-          metaJson: JSON.stringify({
-            source: 'admin_status_change',
-            repairId: repair.id,
-            status: repair.status,
-          }),
+      await this.whatsappService.createAndDispatchLog({
+        channel: 'repairs',
+        templateKey: `repairs.${statusKey}`,
+        targetType: 'repair',
+        targetId: repair.id,
+        phone: repair.customerPhone ?? null,
+        recipient: repair.customerName ?? null,
+        message,
+        meta: {
+          source: 'admin_status_change',
+          repairId: repair.id,
+          status: repair.status,
         },
       });
     } catch {
@@ -1226,3 +1225,4 @@ export class RepairsService {
     return (((process.env.WEB_URL ?? '').trim() || 'http://localhost:5174')).replace(/\/+$/, '');
   }
 }
+

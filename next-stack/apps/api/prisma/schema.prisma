@@ -473,14 +473,24 @@ model WhatsAppLog {
   targetId    String?
   phone       String?
   recipient   String?
-  status      String   @default("SENT")
+  provider    String?
+  remoteMessageId String? @unique
+  providerStatus String?
+  errorMessage String?
+  status      String   @default("PENDING")
   message     String?
   metaJson    String?
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  lastAttemptAt DateTime?
+  sentAt      DateTime?
+  failedAt    DateTime?
 
   @@index([channel, createdAt])
   @@index([templateKey])
   @@index([targetType, targetId])
+  @@index([status, createdAt])
+  @@index([providerStatus, createdAt])
 }
 
 model HelpFaqItem {

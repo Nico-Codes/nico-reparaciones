@@ -31,6 +31,8 @@ NicoReparaciones es una plataforma web para un negocio de reparacion de disposit
 - `nico-dev.bat setup`
 - `nico-dev.bat start`
 
+`nico-dev.bat start` levanta API + Web y tambien intenta abrir un tunel `ngrok` hacia el frontend en `5174` si el entorno local tiene `ngrok` configurado via `%LOCALAPPDATA%\ngrok\ngrok.yml` o `NGROK_AUTHTOKEN`.
+
 ### Directo sobre el stack canonico
 ```bash
 npm --prefix next-stack install

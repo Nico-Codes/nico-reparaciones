@@ -18,10 +18,18 @@ export type WhatsappLogItem = {
   targetId: string | null;
   phone: string | null;
   recipient: string | null;
+  provider: string | null;
+  remoteMessageId: string | null;
+  providerStatus: string | null;
+  errorMessage: string | null;
   status: string;
   message: string | null;
   meta: Record<string, unknown> | null;
   createdAt: string;
+  updatedAt: string;
+  lastAttemptAt: string | null;
+  sentAt: string | null;
+  failedAt: string | null;
 };
 
 export const whatsappApi = {
