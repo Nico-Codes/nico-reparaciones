@@ -17,3 +17,10 @@ La unica fuente canonica de assets visuales es:
 - agregar, editar o reemplazar assets solo en `next-stack/apps/web/public`
 - no recrear capas de sync o mirrors fuera del canon
 - si se necesita snapshot historico puntual, usar control de versiones o backups externos
+
+## Encapsulacion operativa actual
+
+- aunque el destino sigue siendo `next-stack/apps/web/public`, la escritura ya no debe resolverse manualmente desde cada servicio
+- la capa canonica para uploads/borrado/urls locales es `next-stack/apps/api/src/common/storage/public-asset-storage.service.ts`
+- `AdminBrandAssetsService` usa esa capa para branding y `CatalogAdminService` para imagenes de producto
+- esto permite mantener el storage local actual sin seguir mezclando logica de paths y validacion de archivos dentro de servicios de dominio

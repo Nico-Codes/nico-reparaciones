@@ -1,12 +1,12 @@
 import { BadGatewayException, BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, type AppSetting, type HelpFaqItem, type UserRole, type WhatsAppLog } from '@prisma/client';
-import { mkdir, unlink, writeFile } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
-import path from 'node:path';
+import { Prisma, type HelpFaqItem, type UserRole, type WhatsAppLog } from '@prisma/client';
 import { MailService } from '../mail/mail.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { WhatsappService } from '../whatsapp/whatsapp.service.js';
-import { APP_SETTING_DEFINITIONS, BRAND_ASSET_SLOTS, getAppSettingDefinition } from './app-settings.registry.js';
+import { AdminBrandAssetsService } from './admin-brand-assets.service.js';
+import { OPEN_REPAIR_STATUSES, PENDING_ORDER_STATUSES } from './admin.constants.js';
+import { AdminDashboardService } from './admin-dashboard.service.js';
+import { AdminSettingsService } from './admin-settings.service.js';
 
 type SupplierRegistryRow = {
   id: string;
@@ -189,114 +189,15 @@ export class AdminService {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(MailService) private readonly mailService: MailService,
     @Inject(WhatsappService) private readonly whatsappService: WhatsappService,
+    @Inject(AdminDashboardService) private readonly adminDashboardService: AdminDashboardService,
+    @Inject(AdminSettingsService) private readonly adminSettingsService: AdminSettingsService,
+    @Inject(AdminBrandAssetsService) private readonly adminBrandAssetsService: AdminBrandAssetsService,
   ) {}
-  private readonly openRepairStatuses = ['RECEIVED', 'DIAGNOSING', 'WAITING_APPROVAL', 'REPAIRING', 'READY_PICKUP'] as const;
-  private readonly pendingOrderStatuses = ['PENDIENTE', 'CONFIRMADO', 'PREPARANDO'] as const;
+  private readonly openRepairStatuses = OPEN_REPAIR_STATUSES;
+  private readonly pendingOrderStatuses = PENDING_ORDER_STATUSES;
 
   async dashboard() {
-    const now = new Date();
-    const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const startMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-
-    const [
-      totalProducts,
-      activeProducts,
-      lowStockProducts,
-      outOfStockProducts,
-      totalRepairsOpen,
-      repairsReadyPickup,
-      repairsToday,
-      ordersPending,
-      ordersToday,
-      ordersMonthAgg,
-      recentOrders,
-      recentRepairs,
-    ] = await Promise.all([
-      this.prisma.product.count(),
-      this.prisma.product.count({ where: { active: true } }),
-      this.prisma.product.count({ where: { active: true, stock: { gt: 0, lte: 5 } } }),
-      this.prisma.product.count({ where: { active: true, stock: { lte: 0 } } }),
-      this.prisma.repair.count({
-        where: { status: { in: [...this.openRepairStatuses] } },
-      }),
-      this.prisma.repair.count({ where: { status: 'READY_PICKUP' } }),
-      this.prisma.repair.count({ where: { createdAt: { gte: startToday } } }),
-      this.prisma.order.count({ where: { status: { in: [...this.pendingOrderStatuses] } } }),
-      this.prisma.order.count({ where: { createdAt: { gte: startToday } } }),
-      this.prisma.order.aggregate({
-        _sum: { total: true },
-        where: { createdAt: { gte: startMonth } },
-      }),
-      this.prisma.order.findMany({
-        include: {
-          user: { select: { id: true, name: true, email: true } },
-          items: { select: { id: true, nameSnapshot: true, quantity: true, lineTotal: true }, take: 3 },
-        },
-        orderBy: { createdAt: 'desc' },
-        take: 6,
-      }),
-      this.prisma.repair.findMany({
-        orderBy: { createdAt: 'desc' },
-        take: 6,
-      }),
-    ]);
-
-    const monthRevenue = Number(ordersMonthAgg._sum.total ?? 0);
-
-    const alerts = [];
-    if (outOfStockProducts > 0) alerts.push({ id: 'stock-out', severity: 'high', title: 'Productos sin stock', value: outOfStockProducts });
-    if (lowStockProducts > 0) alerts.push({ id: 'stock-low', severity: 'medium', title: 'Productos con stock bajo', value: lowStockProducts });
-    if (repairsReadyPickup > 0) alerts.push({ id: 'repairs-ready', severity: 'low', title: 'Reparaciones listas para entregar', value: repairsReadyPickup });
-    if (ordersPending > 0) alerts.push({ id: 'orders-pending', severity: 'medium', title: 'Pedidos pendientes/preparacion', value: ordersPending });
-
-    return {
-      metrics: {
-        products: {
-          total: totalProducts,
-          active: activeProducts,
-          lowStock: lowStockProducts,
-          outOfStock: outOfStockProducts,
-        },
-        repairs: {
-          open: totalRepairsOpen,
-          readyPickup: repairsReadyPickup,
-          createdToday: repairsToday,
-        },
-        orders: {
-          pendingFlow: ordersPending,
-          createdToday: ordersToday,
-          revenueMonth: monthRevenue,
-        },
-      },
-      alerts,
-      recent: {
-        orders: recentOrders.map((o: any) => ({
-          id: o.id,
-          status: o.status,
-          total: Number(o.total),
-          createdAt: o.createdAt.toISOString(),
-          user: o.user ? { id: o.user.id, name: o.user.name, email: o.user.email } : null,
-          itemsPreview: (o.items ?? []).map((i: any) => ({
-            id: i.id,
-            name: i.nameSnapshot,
-            quantity: i.quantity,
-            lineTotal: Number(i.lineTotal),
-          })),
-        })),
-        repairs: recentRepairs.map((r: any) => ({
-          id: r.id,
-          status: r.status,
-          customerName: r.customerName,
-          deviceBrand: r.deviceBrand,
-          deviceModel: r.deviceModel,
-          issueLabel: r.issueLabel,
-          quotedPrice: r.quotedPrice != null ? Number(r.quotedPrice) : null,
-          finalPrice: r.finalPrice != null ? Number(r.finalPrice) : null,
-          createdAt: r.createdAt.toISOString(),
-        })),
-      },
-      generatedAt: now.toISOString(),
-    };
+    return this.adminDashboardService.dashboard();
   }
 
   async users(params?: { q?: string; role?: string }) {
@@ -360,102 +261,11 @@ export class AdminService {
   }
 
   async settings() {
-    const existing = await this.prisma.appSetting.findMany({
-      orderBy: [{ group: 'asc' }, { key: 'asc' }],
-    });
-
-    const byKey = new Map<string, AppSetting>(existing.map((s) => [s.key, s]));
-    const merged = APP_SETTING_DEFINITIONS.map((definition) => {
-      const found = byKey.get(definition.key);
-      return found
-        ? {
-            id: found.id,
-            key: found.key,
-            value: found.value ?? '',
-            group: found.group,
-            label: found.label ?? definition.label,
-            type: found.type ?? definition.type,
-            createdAt: found.createdAt.toISOString(),
-            updatedAt: found.updatedAt.toISOString(),
-          }
-        : {
-            id: null,
-            key: definition.key,
-            value: definition.defaultValue,
-            group: definition.group,
-            label: definition.label,
-            type: definition.type,
-            createdAt: null,
-            updatedAt: null,
-          };
-    });
-
-    const extra = existing
-      .filter((s) => !getAppSettingDefinition(s.key))
-      .map((s) => ({
-        id: s.id,
-        key: s.key,
-        value: s.value ?? '',
-        group: s.group,
-        label: s.label ?? s.key,
-        type: s.type ?? 'text',
-        createdAt: s.createdAt.toISOString(),
-        updatedAt: s.updatedAt.toISOString(),
-      }));
-
-    return { items: [...merged, ...extra] };
+    return this.adminSettingsService.settings();
   }
 
   async upsertSettings(input: Array<{ key: string; value?: string | null; group?: string; label?: string | null; type?: string | null }>) {
-    const cleaned = input
-      .map((i) => {
-        const key = (i.key ?? '').trim();
-        const definition = getAppSettingDefinition(key);
-        const fallbackGroup = (i.group ?? 'general').trim() || 'general';
-        const fallbackLabel = i.label == null ? null : String(i.label).trim() || null;
-        const fallbackType = i.type == null ? 'text' : String(i.type).trim() || 'text';
-        return {
-          key,
-          value: i.value == null ? null : String(i.value),
-          group: definition?.group ?? fallbackGroup,
-          label: fallbackLabel ?? definition?.label ?? null,
-          type: definition?.type ?? fallbackType,
-        };
-      })
-      .filter((i) => i.key.length > 0);
-
-    const results = [];
-    for (const item of cleaned) {
-      const createData: Prisma.AppSettingCreateInput = {
-        key: item.key,
-        value: item.value,
-        group: item.group,
-        label: item.label,
-        type: item.type,
-      };
-      const updateData: Prisma.AppSettingUpdateInput = {
-        value: item.value,
-        group: item.group,
-        label: item.label,
-        type: item.type,
-      };
-      const saved = await this.prisma.appSetting.upsert({
-        where: { key: item.key },
-        create: createData,
-        update: updateData,
-      });
-      results.push({
-        id: saved.id,
-        key: saved.key,
-        value: saved.value ?? '',
-        group: saved.group,
-        label: saved.label,
-        type: saved.type,
-        createdAt: saved.createdAt.toISOString(),
-        updatedAt: saved.updatedAt.toISOString(),
-      });
-    }
-    return { items: results };
+    return this.adminSettingsService.upsertSettings(input);
   }
 
   async sendWeeklyDashboardReportNow(rangeDaysRaw?: number | null) {
@@ -1656,7 +1466,7 @@ export class AdminService {
       orderBy: { key: 'asc' },
     });
 
-    const map = new Map<string, AppSetting>(existing.map((s) => [s.key, s]));
+    const map = new Map(existing.map((s) => [s.key, s]));
     return {
       items: templates.map((t) => {
         const subjectKey = `mail_template.${t.templateKey}.subject`;
@@ -1883,14 +1693,14 @@ export class AdminService {
         targetType: r.targetType,
         targetId: r.targetId,
         phone: r.phone,
-        recipient: r.recipient,
+        recipient: this.repairMojibakeText(r.recipient),
         provider: r.provider,
         remoteMessageId: r.remoteMessageId,
         providerStatus: r.providerStatus,
-        errorMessage: r.errorMessage,
+        errorMessage: this.repairMojibakeText(r.errorMessage),
         status: r.status,
-        message: r.message,
-        meta: this.parseJson(r.metaJson),
+        message: this.repairMojibakeText(r.message),
+        meta: this.repairMojibakeValue(this.parseJson(r.metaJson)),
         createdAt: r.createdAt.toISOString(),
         updatedAt: r.updatedAt.toISOString(),
         lastAttemptAt: r.lastAttemptAt?.toISOString() ?? null,
@@ -1994,56 +1804,11 @@ export class AdminService {
     slot: string,
     file: { originalname: string; mimetype: string; size: number; buffer?: Buffer | Uint8Array },
   ) {
-    const spec = BRAND_ASSET_SLOTS[slot as keyof typeof BRAND_ASSET_SLOTS];
-    if (!spec) throw new BadRequestException('Slot de asset no soportado');
-    const ext = this.detectFileExt(file.originalname);
-    const allowedExts = spec.allowedExts as readonly string[];
-    if (!ext || !allowedExts.includes(ext)) {
-      throw new BadRequestException(`Formato no permitido. Permitidos: ${allowedExts.join(', ')}`);
-    }
-    if (!file.buffer || !Buffer.isBuffer(file.buffer)) throw new BadRequestException('Archivo invalido');
-    if (file.size > spec.maxKb * 1024) throw new BadRequestException(`Archivo supera el maximo (${spec.maxKb} KB)`);
-
-    const publicRoot = this.resolveWebPublicDir();
-    const relPath = `brand-assets/identity/${spec.fileBase}.${ext}`;
-    const absPath = path.join(publicRoot, ...relPath.split('/'));
-    await mkdir(path.dirname(absPath), { recursive: true });
-    await writeFile(absPath, file.buffer);
-    await this.upsertSingleSetting(spec.settingKey, relPath, 'branding_assets', spec.settingKey, 'text');
-
-    return {
-      ok: true,
-      slot,
-      settingKey: spec.settingKey,
-      path: relPath,
-      url: this.toAbsoluteAssetUrl(relPath),
-      file: { originalName: file.originalname, mimeType: file.mimetype, size: file.size },
-    };
+    return this.adminBrandAssetsService.uploadBrandAsset(slot, file);
   }
 
   async resetBrandAsset(slot: string) {
-    const spec = BRAND_ASSET_SLOTS[slot as keyof typeof BRAND_ASSET_SLOTS];
-    if (!spec) throw new BadRequestException('Slot de asset no soportado');
-
-    const publicRoot = this.resolveWebPublicDir();
-    const identityDir = path.join(publicRoot, 'brand-assets', 'identity');
-    for (const ext of spec.allowedExts as readonly string[]) {
-      try {
-        await unlink(path.join(identityDir, `${spec.fileBase}.${ext}`));
-      } catch {
-        // ignore
-      }
-    }
-
-    await this.upsertSingleSetting(spec.settingKey, spec.defaultPath || '', 'branding_assets', spec.settingKey, 'text');
-    return {
-      ok: true,
-      slot,
-      settingKey: spec.settingKey,
-      path: spec.defaultPath || '',
-      url: spec.defaultPath ? this.toAbsoluteAssetUrl(spec.defaultPath) : null,
-      resetToDefault: true,
-    };
+    return this.adminBrandAssetsService.resetBrandAsset(slot);
   }
 
   private async whatsappTemplatesByChannel(channel: 'repairs' | 'orders') {
@@ -2225,39 +1990,11 @@ export class AdminService {
   }
 
   private async upsertSingleSetting(key: string, value: string, group: string, label: string, type: string) {
-    await this.prisma.appSetting.upsert({
-      where: { key },
-      create: { key, value, group, label, type },
-      update: { value, group, label, type },
-    });
-  }
-
-  private detectFileExt(filename: string) {
-    const ext = path.extname(filename || '').replace('.', '').trim().toLowerCase();
-    return ext || null;
-  }
-
-  private resolveWebPublicDir() {
-    const cwd = process.cwd();
-    const candidates = [
-      path.resolve(cwd, 'apps/web/public'),
-      path.resolve(cwd, '../web/public'),
-      path.resolve(cwd, '../../apps/web/public'),
-    ];
-    const found = candidates.find((p) => existsSync(p));
-    if (!found) throw new Error('No se pudo resolver apps/web/public');
-    return found;
-  }
-
-  private toAbsoluteAssetUrl(rawPath: string) {
-    const normalized = `/${rawPath.replace(/^\/+/, '')}`;
-    const base = ((process.env.API_URL ?? '').trim() || 'http://127.0.0.1:3001').replace(/\/+$/, '');
-    return `${base}${normalized}`;
+    await this.adminSettingsService.upsertSingleSetting(key, value, group, label, type);
   }
 
   private async getAppSettingValue(key: string, fallback = '') {
-    const row = await this.prisma.appSetting.findUnique({ where: { key } });
-    return row?.value ?? fallback;
+    return this.adminSettingsService.getAppSettingValue(key, fallback);
   }
 
   private async readSuppliersRegistry() {
@@ -3438,6 +3175,43 @@ export class AdminService {
   private cleanNullable(value?: string | null) {
     const v = (value ?? '').trim();
     return v || null;
+  }
+
+  private repairMojibakeText(value?: string | null) {
+    if (value == null || !/[ÃÂâ�]/u.test(value)) return value ?? null;
+    try {
+      const decoded = Buffer.from(value, 'latin1').toString('utf8');
+      return this.normalizeBrokenSpanishText(decoded);
+    } catch {
+      return this.normalizeBrokenSpanishText(value);
+    }
+  }
+
+  private repairMojibakeValue(value: unknown): unknown {
+    if (typeof value === 'string') return this.repairMojibakeText(value);
+    if (Array.isArray(value)) return value.map((item) => this.repairMojibakeValue(item));
+    if (!value || typeof value !== 'object') return value;
+    return Object.fromEntries(
+      Object.entries(value).map(([key, entry]) => [key, this.repairMojibakeValue(entry)]),
+    );
+  }
+
+  private normalizeBrokenSpanishText(value: string) {
+    return value
+      .replace(/Direcci�n/gi, 'Dirección')
+      .replace(/Tel�fono/gi, 'Teléfono')
+      .replace(/Hor�rios/gi, 'Horarios')
+      .replace(/est�/gi, 'está')
+      .replace(/�tems/gi, 'Ítems')
+      .replace(/informaci�n/gi, 'información')
+      .replace(/confirmaci�n/gi, 'confirmación')
+      .replace(/preparaci�n/gi, 'preparación')
+      .replace(/reparaci�n/gi, 'reparación')
+      .replace(/cotizaci�n/gi, 'cotización')
+      .replace(/direcci�n/gi, 'dirección')
+      .replace(/tel�fono/gi, 'teléfono')
+      .replace(/ci�n/gi, 'ción')
+      .replace(/�/g, '');
   }
 
   private parseUserRole(value?: string | null): UserRole | null {

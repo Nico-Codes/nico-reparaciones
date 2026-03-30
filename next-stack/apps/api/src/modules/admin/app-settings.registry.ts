@@ -1,3 +1,5 @@
+import type { AppSetting } from '@prisma/client';
+
 export type AppSettingOwner = 'business' | 'branding' | 'email' | 'operations';
 export type AppSettingValueType = 'text' | 'email' | 'number' | 'textarea' | 'json';
 
@@ -45,6 +47,61 @@ export const APP_SETTING_DEFINITIONS_BY_KEY = new Map<string, AppSettingDefiniti
 
 export function getAppSettingDefinition(key: string) {
   return APP_SETTING_DEFINITIONS_BY_KEY.get(key) ?? null;
+}
+
+export type AppSettingListItem = {
+  id: string | null;
+  key: string;
+  value: string;
+  group: string;
+  label: string;
+  type: string;
+  createdAt: string | null;
+  updatedAt: string | null;
+};
+
+export function mergeDefinedAndStoredAppSettings(existing: readonly AppSetting[]): AppSettingListItem[] {
+  const byKey = new Map<string, AppSetting>(existing.map((item) => [item.key, item]));
+
+  const merged = APP_SETTING_DEFINITIONS.map((definition) => {
+    const found = byKey.get(definition.key);
+    return found
+      ? {
+          id: found.id,
+          key: found.key,
+          value: found.value ?? definition.defaultValue,
+          group: found.group,
+          label: found.label ?? definition.label,
+          type: found.type ?? definition.type,
+          createdAt: found.createdAt.toISOString(),
+          updatedAt: found.updatedAt.toISOString(),
+        }
+      : {
+          id: null,
+          key: definition.key,
+          value: definition.defaultValue,
+          group: definition.group,
+          label: definition.label,
+          type: definition.type,
+          createdAt: null,
+          updatedAt: null,
+        };
+  });
+
+  const extras = existing
+    .filter((item) => !APP_SETTING_DEFINITIONS_BY_KEY.has(item.key))
+    .map((item) => ({
+      id: item.id,
+      key: item.key,
+      value: item.value ?? '',
+      group: item.group,
+      label: item.label ?? item.key,
+      type: item.type ?? 'text',
+      createdAt: item.createdAt.toISOString(),
+      updatedAt: item.updatedAt.toISOString(),
+    }));
+
+  return [...merged, ...extras];
 }
 
 export type BrandAssetSlotSpec = {

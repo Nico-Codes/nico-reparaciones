@@ -10,6 +10,7 @@
     "start": "node dist/main.js",
     "start:prod": "node dist/main.js",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run --config vitest.config.ts",
     "db:generate": "dotenv -e ../../.env -- prisma generate",
     "db:check": "dotenv -e ../../.env -- tsx prisma/db-check.ts",
     "db:migrate": "dotenv -e ../../.env -- prisma migrate deploy",
@@ -43,11 +44,13 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@types/supertest": "^6.0.3",
     "@types/bcryptjs": "^3.0.0",
     "@types/node": "^24.3.0",
     "@types/nodemailer": "^7.0.11",
     "dotenv-cli": "^7.4.4",
     "prisma": "^6.16.2",
+    "supertest": "^7.1.4",
     "tsx": "^4.20.5",
     "typescript": "^5.9.2"
   }

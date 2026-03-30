@@ -1,8 +1,6 @@
 import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, type ProductPricingRule } from '@prisma/client';
-import { existsSync } from 'node:fs';
-import { mkdir, unlink, writeFile } from 'node:fs/promises';
-import path from 'node:path';
+import { PublicAssetStorageService } from '../../common/storage/public-asset-storage.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 type ProductListParams = {
@@ -36,7 +34,10 @@ export class CatalogAdminService {
   private readonly productImageAllowedExts = ['jpg', 'jpeg', 'png', 'webp'] as const;
   private readonly productImageMaxKb = 4096;
 
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(PublicAssetStorageService) private readonly assetStorage: PublicAssetStorageService,
+  ) {}
 
   async categories() {
     const items = await this.prisma.category.findMany({
@@ -307,29 +308,18 @@ export class CatalogAdminService {
     id: string,
     file: { originalname: string; mimetype: string; size: number; buffer?: Buffer | Uint8Array },
   ) {
-    const ext = this.detectFileExt(file.originalname);
-    if (!ext || !this.productImageAllowedExts.includes(ext as (typeof this.productImageAllowedExts)[number])) {
-      throw new BadRequestException(`Formato no permitido. Permitidos: ${this.productImageAllowedExts.join(', ')}`);
-    }
-    if (!file.buffer || !Buffer.isBuffer(file.buffer)) throw new BadRequestException('Archivo invalido');
-    if (file.size > this.productImageMaxKb * 1024) {
-      throw new BadRequestException(`Archivo supera el máximo (${this.productImageMaxKb} KB)`);
-    }
-
     const current = await this.prisma.product.findUnique({
       where: { id },
       select: { id: true, imagePath: true },
     });
     if (!current) throw new NotFoundException('Producto no encontrado');
 
-    const publicRoot = this.resolveWebPublicDir();
-    const relPath = `products/${id}-${Date.now().toString(36)}.${ext}`;
-    const absPath = path.join(publicRoot, 'storage', ...relPath.split('/'));
-    await mkdir(path.dirname(absPath), { recursive: true });
-    await writeFile(absPath, file.buffer);
+    const { ext, buffer } = this.assetStorage.validateUpload(file, this.productImageAllowedExts, this.productImageMaxKb);
+    const relPath = this.assetStorage.buildTimestampedProductImagePath(id, ext);
+    await this.assetStorage.writeStorageAsset(relPath, buffer);
 
     if (current.imagePath) {
-      await this.deleteLocalProductImage(publicRoot, current.imagePath);
+      await this.assetStorage.deleteStorageAsset(current.imagePath);
     }
 
     const item = await this.prisma.product.update({
@@ -345,7 +335,7 @@ export class CatalogAdminService {
       item: this.serializeProduct(item),
       upload: {
         path: relPath,
-        url: this.resolveProductImageUrl(relPath),
+        url: this.assetStorage.toStorageUrl(relPath),
       },
     };
   }
@@ -360,9 +350,8 @@ export class CatalogAdminService {
     });
     if (!current) throw new NotFoundException('Producto no encontrado');
 
-    const publicRoot = this.resolveWebPublicDir();
     if (current.imagePath) {
-      await this.deleteLocalProductImage(publicRoot, current.imagePath);
+      await this.assetStorage.deleteStorageAsset(current.imagePath);
     }
 
     const item = await this.prisma.product.update({
@@ -690,56 +679,6 @@ export class CatalogAdminService {
     throw error;
   }
 
-  private detectFileExt(filename: string) {
-    const ext = path.extname(filename || '').replace('.', '').trim().toLowerCase();
-    return ext || null;
-  }
-
-  private resolveWebPublicDir() {
-    const cwd = process.cwd();
-    const candidates = [
-      path.resolve(cwd, 'apps/web/public'),
-      path.resolve(cwd, '../web/public'),
-      path.resolve(cwd, '../../apps/web/public'),
-    ];
-    const found = candidates.find((p) => existsSync(p));
-    if (!found) throw new Error('No se pudo resolver apps/web/public');
-    return found;
-  }
-
-  private normalizeLocalProductPath(rawPath?: string | null) {
-    const raw = (rawPath ?? '').trim();
-    if (!raw || /^https?:\/\//i.test(raw)) return null;
-
-    let normalized = raw;
-    if (normalized.startsWith('/')) normalized = normalized.replace(/^\/+/, '');
-    if (normalized.startsWith('storage/')) normalized = normalized.slice('storage/'.length);
-    if (normalized.startsWith('products/')) normalized = normalized.slice('products/'.length);
-
-    if (!normalized || normalized.includes('..')) return null;
-    return `products/${normalized}`;
-  }
-
-  private async deleteLocalProductImage(publicRoot: string, rawPath?: string | null) {
-    const localPath = this.normalizeLocalProductPath(rawPath);
-    if (!localPath) return;
-    const absPath = path.join(publicRoot, 'storage', ...localPath.split('/'));
-    try {
-      await unlink(absPath);
-    } catch {
-      // ignore
-    }
-  }
-
-  private resolveProductImageUrl(rawPath?: string | null) {
-    const raw = (rawPath ?? '').trim();
-    if (!raw) return null;
-    if (/^https?:\/\//i.test(raw)) return raw;
-    if (raw.startsWith('/')) return raw;
-    if (raw.startsWith('storage/')) return `/${raw}`;
-    return `/storage/${raw.replace(/^\/+/, '')}`;
-  }
-
   private serializeProduct(p: ProductWithRelations) {
     return {
       id: p.id,
@@ -748,7 +687,7 @@ export class CatalogAdminService {
       description: p.description ?? null,
       purchaseReference: p.purchaseReference ?? null,
       imagePath: p.imagePath ?? null,
-      imageUrl: this.resolveProductImageUrl(p.imagePath ?? p.imageLegacy ?? null),
+      imageUrl: this.assetStorage.toStorageUrl(p.imagePath ?? p.imageLegacy ?? null),
       price: Number(p.price),
       costPrice: p.costPrice != null ? Number(p.costPrice) : null,
       stock: p.stock,

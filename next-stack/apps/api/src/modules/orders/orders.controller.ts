@@ -1,45 +1,23 @@
-import { BadRequestException, Body, Controller, Get, Inject, Param, Patch, Post, Query, UnauthorizedException, UseGuards } from '@nestjs/common';
-import { z } from 'zod';
+import {
+  Body,
+  Controller,
+  Get,
+  Inject,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UnauthorizedException,
+  UseGuards,
+} from '@nestjs/common';
+import { zodBadRequest } from '../../common/http/zod-bad-request.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
 import type { AuthenticatedUser } from '../auth/auth.types.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { Roles } from '../auth/roles.decorator.js';
 import { RolesGuard } from '../auth/roles.guard.js';
+import { adminQuickSaleConfirmSchema, adminUpdateStatusSchema, checkoutSchema } from './orders.schemas.js';
 import { OrdersService } from './orders.service.js';
-
-const checkoutSchema = z.object({
-  items: z.array(
-    z.object({
-      productId: z.string().min(1),
-      quantity: z.number().int().min(1).max(999),
-    }),
-  ).min(1).max(200),
-  paymentMethod: z.string().trim().min(1).max(60).optional(),
-});
-
-const adminUpdateStatusSchema = z.object({
-  status: z.string().trim().min(1),
-});
-
-const adminQuickSaleConfirmSchema = z.object({
-  items: z.array(
-    z.object({
-      productId: z.string().min(1),
-      quantity: z.number().int().min(1).max(999),
-    }),
-  ).min(1).max(200),
-  paymentMethod: z.string().trim().min(1).max(60),
-  customerName: z.string().trim().max(120).optional(),
-  customerPhone: z.string().trim().max(40).optional(),
-  notes: z.string().trim().max(1000).optional(),
-});
-
-function zodBadRequest(parsed: z.SafeParseError<unknown>) {
-  return new BadRequestException({
-    message: 'Validacion invalida',
-    errors: parsed.error.issues.map((issue) => ({ path: issue.path.join('.'), message: issue.message })),
-  });
-}
 
 @Controller('orders')
 @UseGuards(JwtAuthGuard)

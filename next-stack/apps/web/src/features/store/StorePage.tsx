@@ -352,8 +352,8 @@ export function StorePage() {
       </FilterBar>
 
       {categories.length > 0 ? (
-        <SectionCard className="store-categories" title="Categorías" description="Filtrá el catálogo sin perder el contexto de compra.">
-          <div className="flex gap-2 overflow-x-auto overscroll-x-contain pb-1 md:flex-wrap md:overflow-visible">
+        <SectionCard className="store-categories" bodyClassName="store-categories__body">
+          <div className="store-categories__rail" aria-label="Categorías del catálogo">
             <button
               type="button"
               onClick={() => applyQuery({ category: null })}

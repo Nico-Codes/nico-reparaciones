@@ -527,4 +527,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Validacion requerida: revisar consistencia entre `AGENTS.md`, `WORKFLOW_AI.md` e `INDEX.md`, y verificar que la politica declarada para `nico-dev.bat` coincida con su uso operativo actual.
 - Responsable: Codex + operador humano
 
+### [DL-0044]
+- Fecha: 2026-03-30
+- Estado: aceptada
+- Tema: primera ola de hardening estructural con test harness comun, controllers mas finos y storage encapsulado
+- Contexto: el stack actual era correcto, pero seguia demasiado apoyado en archivos grandes, validacion inline en controllers y escritura local de assets repartida entre servicios de dominio. Eso hacia mas riesgosa cualquier limpieza posterior.
+- Decision: agregar Vitest como runner comun del monorepo, extraer schemas Zod de `admin`, `orders`, `repairs` y `pricing` a archivos `*.schemas.ts`, introducir `zod-bad-request` como helper comun, encapsular assets locales en `PublicAssetStorageService`, mover branding/settings/dashboard a subservicios admin y dejar `AdminService` como facade parcial. Tambien se decide sanear texto roto al serializar `whatsapp-logs` para que el backend no siga propagando mojibake historico.
+- Impacto: la validacion deja de depender solo de build/smoke, los controllers quedan mas simples, los assets dejan de duplicar logica de path/extension y el backend gana una primera particion interna sin cambiar endpoints ni variables de entorno.
+- Alternativas consideradas: seguir limpiando solo por archivos grandes o saltar directo a partir `repairs.service.ts` y `orders.service.ts`; descartado por falta de red de seguridad suficiente y por mezclar demasiados riesgos en una sola ola.
+- Archivos / modulos afectados: `.github/workflows/ci.yml`, `next-stack/package.json`, `next-stack/apps/{api,web}/package.json`, `next-stack/packages/contracts/package.json`, `next-stack/apps/api/src/common/{http,storage}/*`, `next-stack/apps/api/src/modules/admin/*`, `next-stack/apps/api/src/modules/catalog-admin/*`, `next-stack/apps/api/src/modules/{orders,pricing,repairs}/*controller.ts`, `next-stack/apps/web/src/features/repairs/repair-pricing.test.ts`, `next-stack/packages/contracts/src/index.test.ts`, `project-docs/architecture/{ARCHITECTURE.md,ASSET_STRATEGY.md}`.
+- Validacion requerida: `env:check`, `typecheck` API/Web, `build` API/Web, `test` monorepo, `qa:route-parity`, `qa:legacy:detach`, `smoke:backend`, `smoke:web`.
+- Responsable: Codex + operador humano
 

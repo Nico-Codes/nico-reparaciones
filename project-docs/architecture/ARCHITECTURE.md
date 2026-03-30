@@ -184,7 +184,23 @@ Confirmado por codigo:
 - `BrandingHeadSync` sincroniza parte del head del sitio
 - `AdminVisualIdentityPage` y `AdminStoreHeroSettingsPage` gestionan assets y hero
 - `main.ts` del API sirve assets estaticos desde `apps/web/public` si la carpeta existe
-- `admin.service.ts` y `catalog-admin.service.ts` resuelven `apps/web/public` para uploads/brand assets
+- la escritura local de assets ahora pasa por `PublicAssetStorageService`
+- `AdminService` delega branding/settings/dashboard a subservicios especificos en vez de concentrar todo en un solo archivo
+
+## Orden interno reforzado
+
+Desde la ola de simplificacion de 2026-03-30 quedaron formalizados estos limites:
+
+- validacion Zod reusable en controllers: `*.schemas.ts`
+- helper comun para errores de parseo: `src/common/http/zod-bad-request.ts`
+- storage local encapsulado: `src/common/storage/public-asset-storage.service.ts`
+- subservicios admin iniciales:
+  - `admin-dashboard.service.ts`
+  - `admin-settings.service.ts`
+  - `admin-brand-assets.service.ts`
+- harness de tests del monorepo con Vitest por workspace
+
+Esto no cambia rutas ni contratos publicos, pero reduce acople interno y hace mas segura la limpieza futura.
 
 ## Validacion y seguridad
 

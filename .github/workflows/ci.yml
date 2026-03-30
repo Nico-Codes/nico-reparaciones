@@ -55,6 +55,10 @@ jobs:
         working-directory: next-stack
         run: npm run build --workspace @nico/web
 
+      - name: Tests
+        working-directory: next-stack
+        run: npm run test
+
       - name: Smoke backend
         working-directory: next-stack
         run: npm run smoke:backend

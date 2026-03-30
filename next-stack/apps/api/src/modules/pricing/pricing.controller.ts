@@ -1,73 +1,10 @@
-import { BadRequestException, Body, Controller, Delete, Get, Inject, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
-import { z } from 'zod';
+import { Body, Controller, Delete, Get, Inject, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { zodBadRequest, zodErrorBody } from '../../common/http/zod-bad-request.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { Roles } from '../auth/roles.decorator.js';
 import { RolesGuard } from '../auth/roles.guard.js';
 import { PricingService } from './pricing.service.js';
-
-const repairRuleSchema = z.object({
-  name: z.string().trim().min(2).max(190),
-  active: z.boolean().optional(),
-  priority: z.number().int().min(-9999).max(9999).optional(),
-  deviceTypeId: z.string().trim().max(191).optional().nullable(),
-  device_type_id: z.string().trim().max(191).optional().nullable(),
-  deviceBrandId: z.string().trim().max(191).optional().nullable(),
-  device_brand_id: z.string().trim().max(191).optional().nullable(),
-  deviceModelGroupId: z.string().trim().max(191).optional().nullable(),
-  device_model_group_id: z.string().trim().max(191).optional().nullable(),
-  deviceModelId: z.string().trim().max(191).optional().nullable(),
-  device_model_id: z.string().trim().max(191).optional().nullable(),
-  deviceIssueTypeId: z.string().trim().max(191).optional().nullable(),
-  device_issue_type_id: z.string().trim().max(191).optional().nullable(),
-  repair_type_id: z.string().trim().max(191).optional().nullable(),
-  deviceBrand: z.string().trim().max(120).optional().nullable(),
-  deviceModel: z.string().trim().max(120).optional().nullable(),
-  issueLabel: z.string().trim().max(190).optional().nullable(),
-  basePrice: z.number().nonnegative().optional(),
-  profitPercent: z.number().min(0).max(1000).optional(),
-  calcMode: z.enum(['BASE_PLUS_MARGIN', 'FIXED_TOTAL']).optional(),
-  mode: z.enum(['margin', 'fixed']).optional(),
-  multiplier: z.number().min(0).optional().nullable(),
-  min_profit: z.number().min(0).optional().nullable(),
-  fixed_total: z.number().min(0).optional().nullable(),
-  shipping_default: z.number().min(0).optional().nullable(),
-  minProfit: z.number().min(0).optional().nullable(),
-  minFinalPrice: z.number().nonnegative().optional().nullable(),
-  shippingFee: z.number().min(0).optional().nullable(),
-  notes: z.string().trim().max(2000).optional().nullable(),
-});
-
-const repairRulePatchSchema = repairRuleSchema.partial();
-const repairProviderPartPreviewSchema = z.object({
-  supplierId: z.string().trim().min(1).max(191),
-  supplierSearchQuery: z.string().trim().max(160).optional().nullable(),
-  quantity: z.number().int().min(1).max(999).optional(),
-  extraCost: z.number().min(0).optional().nullable(),
-  shippingCost: z.number().min(0).optional().nullable(),
-  deviceTypeId: z.string().trim().max(191).optional().nullable(),
-  device_type_id: z.string().trim().max(191).optional().nullable(),
-  deviceBrandId: z.string().trim().max(191).optional().nullable(),
-  device_brand_id: z.string().trim().max(191).optional().nullable(),
-  deviceModelGroupId: z.string().trim().max(191).optional().nullable(),
-  device_model_group_id: z.string().trim().max(191).optional().nullable(),
-  deviceModelId: z.string().trim().max(191).optional().nullable(),
-  device_model_id: z.string().trim().max(191).optional().nullable(),
-  deviceIssueTypeId: z.string().trim().max(191).optional().nullable(),
-  device_issue_type_id: z.string().trim().max(191).optional().nullable(),
-  repair_type_id: z.string().trim().max(191).optional().nullable(),
-  deviceBrand: z.string().trim().max(120).optional().nullable(),
-  deviceModel: z.string().trim().max(120).optional().nullable(),
-  issueLabel: z.string().trim().max(190).optional().nullable(),
-  part: z.object({
-    externalPartId: z.string().trim().max(191).optional().nullable(),
-    name: z.string().trim().min(2).max(300),
-    sku: z.string().trim().max(120).optional().nullable(),
-    brand: z.string().trim().max(120).optional().nullable(),
-    price: z.number().nonnegative(),
-    availability: z.enum(['in_stock', 'out_of_stock', 'unknown']).optional().nullable(),
-    url: z.string().trim().max(1000).optional().nullable(),
-  }),
-});
+import { repairProviderPartPreviewSchema, repairRulePatchSchema, repairRuleSchema } from './pricing.schemas.js';
 
 @Controller('pricing')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -83,18 +20,14 @@ export class PricingController {
   @Post('repairs/rules')
   createRepairRule(@Body() body: unknown) {
     const parsed = repairRuleSchema.safeParse(body);
-    if (!parsed.success) {
-      return { message: 'Validación inválida', errors: parsed.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })) };
-    }
+    if (!parsed.success) return zodErrorBody(parsed);
     return this.pricingService.createRepairRule(parsed.data);
   }
 
   @Patch('repairs/rules/:id')
   updateRepairRule(@Param('id') id: string, @Body() body: unknown) {
     const parsed = repairRulePatchSchema.safeParse(body);
-    if (!parsed.success) {
-      return { message: 'Validación inválida', errors: parsed.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })) };
-    }
+    if (!parsed.success) return zodErrorBody(parsed);
     return this.pricingService.updateRepairRule(id, parsed.data);
   }
 
@@ -135,12 +68,7 @@ export class PricingController {
   @Post('repairs/provider-part-preview')
   previewRepairProviderPartPricing(@Body() body: unknown) {
     const parsed = repairProviderPartPreviewSchema.safeParse(body);
-    if (!parsed.success) {
-      throw new BadRequestException({
-        message: 'Validación inválida',
-        errors: parsed.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })),
-      });
-    }
+    if (!parsed.success) throw zodBadRequest(parsed);
 
     return this.pricingService.previewRepairProviderPartPricing({
       supplierId: parsed.data.supplierId,

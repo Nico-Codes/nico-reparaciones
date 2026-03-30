@@ -1108,3 +1108,45 @@ pm run qa:frontend:e2e
   - no se tocaron los cambios preexistentes del usuario en `next-stack/apps/web/src/features/store/StorePage.tsx` ni `next-stack/apps/web/src/styles.css`
 
 ---
+
+### 2026-03-30 - Codex
+- Alcance: primera ola de hardening estructural real sobre backend/admin/assets y base de tests del monorepo.
+- Tipo de intervencion: refactor interno seguro + harness de validacion + saneo operativo de texto historico.
+- Archivos tocados:
+  - `.github/workflows/ci.yml`
+  - `next-stack/package.json`
+  - `next-stack/package-lock.json`
+  - `next-stack/apps/api/package.json`
+  - `next-stack/apps/web/package.json`
+  - `next-stack/packages/contracts/package.json`
+  - `next-stack/apps/api/vitest.config.ts`
+  - `next-stack/apps/web/vitest.config.ts`
+  - `next-stack/packages/contracts/vitest.config.ts`
+  - `next-stack/apps/api/src/common/http/zod-bad-request.ts`
+  - `next-stack/apps/api/src/common/storage/public-asset-storage.service.ts`
+  - `next-stack/apps/api/src/modules/admin/{admin.module.ts,admin.controller.ts,admin.service.ts,admin.constants.ts,admin.schemas.ts,admin-settings.service.ts,admin-dashboard.service.ts,admin-brand-assets.service.ts,app-settings.registry.ts}`
+  - `next-stack/apps/api/src/modules/catalog-admin/{catalog-admin.module.ts,catalog-admin.service.ts}`
+  - `next-stack/apps/api/src/modules/{orders,pricing,repairs}/*controller.ts`
+  - `next-stack/apps/api/src/modules/{orders,pricing,repairs}/*.schemas.ts`
+  - tests nuevos en `next-stack/apps/api/src/**`, `next-stack/apps/web/src/features/repairs/repair-pricing.test.ts` y `next-stack/packages/contracts/src/index.test.ts`
+  - `project-docs/architecture/{ARCHITECTURE.md,ASSET_STRATEGY.md}`
+  - `project-docs/DECISIONS_LOG.md`
+- ¿Cambio comportamiento funcional?: No deliberado en contratos publicos. Si hubo mejora operativa real: `admin/whatsapp-logs` ahora sanea mojibake historico antes de devolverlo al admin y al smoke.
+- Validaciones ejecutadas:
+  - `cmd /c npm run env:check`
+  - `cmd /c npm run typecheck --workspace @nico/api`
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/api`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run test`
+  - `cmd /c npm run qa:route-parity`
+  - `cmd /c npm run qa:legacy:detach`
+  - `cmd /c npm run smoke:backend`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - esta ola no parte todavia `repairs.service.ts` ni `orders.service.ts`; deja la base lista para hacerlo con menos riesgo
+  - el storage sigue siendo local sobre `apps/web/public`, pero ahora detras de una interfaz unica
+  - los cambios abiertos del usuario en `next-stack/apps/web/src/features/store/StorePage.tsx` y `next-stack/apps/web/src/styles.css` quedaron convivientes en el worktree durante la validacion y no bloquearon `build` ni `smoke:web`
+
+---
