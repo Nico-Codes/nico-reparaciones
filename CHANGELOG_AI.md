@@ -561,6 +561,23 @@ pm run qa:frontend:e2e
   - no se tocaron APIs ni arquitectura fuera de lo estrictamente necesario para mantener coherencia frontend.
 
 ---
+
+### 2026-03-30 - Codex
+- Alcance: reforzar la regla de cierre parcial para que toda tarea incompleta termine con un siguiente paso recomendado explicito.
+- Tipo de intervencion: gobernanza operativa y metodologia documental; sin cambios de runtime, APIs ni comportamiento funcional de la aplicacion.
+- Archivos tocados:
+  - `AGENTS.md`
+  - `project-docs/WORKFLOW_AI.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- Cambio comportamiento funcional: No en la aplicacion. Si en el flujo de trabajo de Codex: cuando una tarea quede parcial, el cierre debe incluir el siguiente paso concreto o la recomendacion prioritaria para completarla.
+- Validaciones ejecutadas:
+  - revision de consistencia entre `AGENTS.md` y `project-docs/WORKFLOW_AI.md`
+  - `git diff --check`
+- Riesgos / notas:
+  - no cambia criterios de validacion ni versionado; solo endurece la forma de cerrar entregas parciales
+
+---
 ### 2026-03-09 - Codex
 - Alcance: fase final corta de polish visual centrada en quick wins activos, barrido final de copy/encoding y retiro de residuos legacy visibles.
 - Tipo de intervencion: consolidación visual final sobre vistas activas de detalle y catálogo + limpieza semántica/copy.

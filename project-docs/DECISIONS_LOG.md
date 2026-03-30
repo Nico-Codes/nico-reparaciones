@@ -539,3 +539,14 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Validacion requerida: `env:check`, `typecheck` API/Web, `build` API/Web, `test` monorepo, `qa:route-parity`, `qa:legacy:detach`, `smoke:backend`, `smoke:web`.
 - Responsable: Codex + operador humano
 
+### [DL-0045]
+- Fecha: 2026-03-30
+- Estado: aceptada
+- Tema: cierre parcial de tareas siempre con siguiente paso recomendado
+- Contexto: aun con una metodologia mas ordenada, algunas tareas pueden cerrarse sin quedar completas en su totalidad. Eso deja al operador sin una continuidad explicita y hace mas facil que el trabajo quede en estado ambiguo.
+- Decision: incorporar como regla permanente que, cuando una tarea no quede terminada por completo, Codex debe cerrar la respuesta con el siguiente paso concreto o la recomendacion prioritaria para finalizarla.
+- Impacto: mejora la continuidad operativa entre turnos, reduce cierres abiertos y deja mas claro que queda pendiente despues de cada entrega parcial.
+- Alternativas consideradas: dejar la recomendacion como buena practica informal; descartado por inconsistencia y porque depende demasiado del criterio del turno.
+- Archivos / modulos afectados: `AGENTS.md`, `project-docs/WORKFLOW_AI.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: revisar consistencia entre reglas del repo y metodologia detallada, y verificar diff limpio.
+- Responsable: Codex + operador humano

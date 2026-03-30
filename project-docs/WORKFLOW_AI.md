@@ -99,6 +99,7 @@ Definir una metodologia unica y repetible para que Codex trabaje sobre el repo c
 - Dejar validaciones ejecutadas o validaciones omitidas con motivo.
 - Registrar decisiones y trazabilidad cuando corresponda.
 - Cerrar tareas de codigo con la skill `repo-ship`, salvo que el usuario indique no commitear o no pushear.
+- Si la tarea queda parcial o con una fase pendiente, cerrar siempre con el siguiente paso recomendado para completarla y evitar cierres ambiguos.
 
 ## Uso recomendado de herramientas
 
