@@ -6,6 +6,7 @@ import { WhatsappModule } from '../whatsapp/whatsapp.module.js';
 import { AdminBrandAssetsService } from './admin-brand-assets.service.js';
 import { AdminController } from './admin.controller.js';
 import { AdminDashboardService } from './admin-dashboard.service.js';
+import { AdminProvidersService } from './admin-providers.service.js';
 import { AdminSettingsService } from './admin-settings.service.js';
 import { AdminService } from './admin.service.js';
 
@@ -17,6 +18,7 @@ import { AdminService } from './admin.service.js';
     AdminDashboardService,
     AdminSettingsService,
     AdminBrandAssetsService,
+    AdminProvidersService,
     AdminService,
   ],
 })

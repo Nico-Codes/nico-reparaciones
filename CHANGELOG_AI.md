@@ -563,6 +563,31 @@ pm run qa:frontend:e2e
 ---
 
 ### 2026-03-30 - Codex
+- Alcance: seguir la particion del backend sobre `AdminModule`, extrayendo el subdominio de proveedores sin tocar rutas admin ni payloads publicos.
+- Tipo de intervencion: refactor interno seguro del backend + actualizacion de documentacion viva.
+- Archivos tocados:
+  - `next-stack/apps/api/src/modules/admin/admin.module.ts`
+  - `next-stack/apps/api/src/modules/admin/admin.service.ts`
+  - `next-stack/apps/api/src/modules/admin/admin-providers.service.ts`
+  - `project-docs/architecture/ARCHITECTURE.md`
+  - `project-docs/backend/BACKEND_MAP.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No deliberado. Se mantienen estables los endpoints `/admin/providers*`, pero la implementacion interna ahora vive en `admin-providers.service.ts` y `admin.service.ts` queda como fachada delgada.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/api`
+  - `cmd /c npm run test --workspace @nico/api`
+  - `cmd /c npm run build --workspace @nico/api`
+  - `cmd /c npm run smoke:backend`
+  - `cmd /c npm run qa:route-parity`
+  - `git diff --check`
+- Riesgos / notas:
+  - esta ola no parte todavia communications/templates/logs ni warranties/accounting dentro de `AdminModule`
+  - `admin-providers.service.ts` hereda parte del parsing HTML/JSON existente; el siguiente cleanup razonable es extraer esos helpers a una capa mas chica y testeable
+
+---
+
+### 2026-03-30 - Codex
 - Alcance: partir `OrdersModule` en subservicios internos manteniendo controller, rutas y comportamiento externo estables.
 - Tipo de intervencion: refactor estructural interno del backend + test unitario puntual + actualizacion de documentacion viva.
 - Archivos tocados:

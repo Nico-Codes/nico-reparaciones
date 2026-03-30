@@ -25,7 +25,7 @@ Ubicacion:
 
 - `AdminModule`
   - facade principal en `admin.service.ts`
-  - subservicios activos para dashboard, settings y brand assets
+  - subservicios activos para dashboard, settings, brand assets y providers
 - `RepairsModule`
   - facade principal en `repairs.service.ts`
   - subservicios activos para flujo admin, flujo publico, pricing snapshots, timeline, notificaciones y soporte/serializacion

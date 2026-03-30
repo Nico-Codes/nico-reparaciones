@@ -185,7 +185,7 @@ Confirmado por codigo:
 - `AdminVisualIdentityPage` y `AdminStoreHeroSettingsPage` gestionan assets y hero
 - `main.ts` del API sirve assets estaticos desde `apps/web/public` si la carpeta existe
 - la escritura local de assets ahora pasa por `PublicAssetStorageService`
-- `AdminService` delega branding/settings/dashboard a subservicios especificos en vez de concentrar todo en un solo archivo
+- `AdminService` delega branding, settings, dashboard y providers a subservicios especificos en vez de concentrar todo en un solo archivo
 
 ## Orden interno reforzado
 
@@ -198,6 +198,7 @@ Desde la ola de simplificacion de 2026-03-30 quedaron formalizados estos limites
   - `admin-dashboard.service.ts`
   - `admin-settings.service.ts`
   - `admin-brand-assets.service.ts`
+  - `admin-providers.service.ts`
 - `RepairsModule` ahora usa facade + subservicios por responsabilidad:
   - `repairs-admin.service.ts`
   - `repairs-public.service.ts`

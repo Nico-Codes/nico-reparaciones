@@ -598,3 +598,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/api/src/modules/orders/*`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/backend/BACKEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `typecheck --workspace @nico/api`, `test --workspace @nico/api`, `build --workspace @nico/api`, `smoke:backend`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0050]
+- Fecha: 2026-03-30
+- Estado: aceptada
+- Tema: `AdminModule` empieza a separarse por subdominios internos, empezando por `providers`
+- Contexto: despues de partir `RepairsModule` y `OrdersModule`, el hotspot mas grande que quedaba en backend era `admin.service.ts`. Ese archivo seguia mezclando dashboard, settings, branding, proveedores, warranties, accounting, templates y logs en una sola clase, lo que hacia que cualquier cambio admin tuviera demasiado alcance colateral.
+- Decision: mantener `AdminController` y las rutas estables, pero extraer el subdominio de proveedores a `admin-providers.service.ts`, dejando `admin.service.ts` como fachada para los endpoints `/admin/providers*`. La logica de CRUD, probe y busqueda de repuestos queda encapsulada en el nuevo subservicio y el modulo registra explicitamente esta dependencia.
+- Impacto: `AdminService` baja de tamaño real y deja de concentrar scraping/parsing HTML/JSON, stats de proveedores y persistencia del registro de suppliers. El siguiente corte sobre comunicaciones/templates o warranties/accounting queda mas claro y menos riesgoso. No hay cambios deliberados en endpoints, payloads ni variables de entorno.
+- Alternativas consideradas: partir primero warranties/accounting o hacer una limpieza cosmetica dentro del mismo `admin.service.ts`; descartado porque `providers` era el bloque mas cohesivo y grande dentro del modulo, y moverlo primero da la mayor reduccion de complejidad con menor riesgo.
+- Archivos / modulos afectados: `next-stack/apps/api/src/modules/admin/{admin.module.ts,admin.service.ts,admin-providers.service.ts}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/backend/BACKEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/api`, `test --workspace @nico/api`, `build --workspace @nico/api`, `smoke:backend`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano
