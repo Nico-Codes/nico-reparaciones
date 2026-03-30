@@ -1089,3 +1089,22 @@ pm run qa:frontend:e2e
   - no se tocaron los cambios preexistentes del usuario en `next-stack/apps/web/src/features/store/StorePage.tsx` ni `next-stack/apps/web/src/styles.css`
 
 ---
+
+### 2026-03-30 - Codex
+- Alcance: reorganizar la gobernanza documental y operativa de Codex para separar reglas cortas, metodologia detallada y router documental.
+- Tipo de intervencion: documentacion viva y contrato operativo del repo; sin cambios de runtime, APIs ni comportamiento funcional de la aplicacion.
+- Archivos tocados:
+  - `AGENTS.md`
+  - `project-docs/WORKFLOW_AI.md`
+  - `project-docs/INDEX.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- Cambio comportamiento funcional: No en la aplicacion. Si en la metodologia esperada para Codex dentro del repo: ahora `AGENTS.md` queda corto y normativo, `WORKFLOW_AI.md` concentra el detalle operativo y `INDEX.md` se define como router documental unico.
+- Validaciones ejecutadas:
+  - revision de consistencia entre `AGENTS.md`, `project-docs/WORKFLOW_AI.md` y `project-docs/INDEX.md`
+  - verificacion manual de que la politica declarada para `nico-dev.bat` coincide con su uso como entrypoint de validacion manual o visual
+  - `git diff --check`
+- Riesgos / notas:
+  - no se tocaron los cambios preexistentes del usuario en `next-stack/apps/web/src/features/store/StorePage.tsx` ni `next-stack/apps/web/src/styles.css`
+
+---

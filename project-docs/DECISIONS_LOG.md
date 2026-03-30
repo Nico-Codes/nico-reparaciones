@@ -515,5 +515,16 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Validacion requerida: crear la skill con `init_skill.py` y validar con `quick_validate.py`.
 - Responsable: Codex + operador humano
 
+### [DL-0029]
+- Fecha: 2026-03-30
+- Estado: aceptada
+- Tema: separar reglas cortas de Codex, metodologia operativa y router documental
+- Contexto: `AGENTS.md` ya era la regla persistente del repo, pero necesitaba ser mas corto, estable y normativo. La metodologia detallada y la politica documental no debian seguir mezcladas ni implicitas.
+- Decision: mantener `AGENTS.md` como contrato operativo breve, mover el detalle metodologico a `project-docs/WORKFLOW_AI.md` y endurecer `project-docs/INDEX.md` como router documental unico. Se adopta como metodologia por defecto: explorar primero, preguntar solo ante ambiguedad material, exponer tradeoffs antes de cambios relevantes, refactorizar el subdominio afectado cuando mejore claridad, validar segun impacto y usar `nico-dev.bat` solo cuando aporte validacion real.
+- Impacto: Codex gana un flujo de trabajo mas consistente y predecible, y la documentacion del repo queda mas ordenada y menos dispersa. Tambien se reduce el riesgo de usar `AGENTS.md` como documento enciclopedico.
+- Alternativas consideradas: concentrar todo en `AGENTS.md`; descartado por volverlo demasiado largo y menos mantenible.
+- Archivos / modulos afectados: `AGENTS.md`, `project-docs/WORKFLOW_AI.md`, `project-docs/INDEX.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: revisar consistencia entre `AGENTS.md`, `WORKFLOW_AI.md` e `INDEX.md`, y verificar que la politica declarada para `nico-dev.bat` coincida con su uso operativo actual.
+- Responsable: Codex + operador humano
 
 
