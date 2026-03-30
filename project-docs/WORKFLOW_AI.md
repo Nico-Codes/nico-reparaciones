@@ -39,6 +39,7 @@ Definir una metodologia unica y repetible para que Codex trabaje sobre el repo c
   - ventajas de la solucion propuesta
   - desventajas o costos
   - criterio para elegir ese enfoque sobre alternativas
+- Si hay varias opciones razonables, dejar una recomendacion priorizada por defecto y justificarla con un criterio corto y operativo.
 
 ### 5. Ordenar antes o junto con la implementacion
 
@@ -101,6 +102,7 @@ Definir una metodologia unica y repetible para que Codex trabaje sobre el repo c
 - Cerrar tareas de codigo con la skill `repo-ship`, salvo que el usuario indique no commitear o no pushear.
 - Si la tarea queda parcial o con una fase pendiente, cerrar siempre con el siguiente paso recomendado para completarla y evitar cierres ambiguos.
 - Si la tarea queda bloqueada por riesgo, falta de contexto o una decision pendiente del usuario, dejar explicitado cual es el bloqueo real y cual es la decision minima que falta para continuar.
+- Si quedan varias rutas posibles para seguir, recomendar una como opcion prioritaria y resumir por que es la mejor siguiente accion.
 
 ## Uso recomendado de herramientas
 

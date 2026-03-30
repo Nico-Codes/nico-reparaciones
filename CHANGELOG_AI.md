@@ -563,6 +563,23 @@ pm run qa:frontend:e2e
 ---
 
 ### 2026-03-30 - Codex
+- Alcance: reforzar la metodologia para que, cuando haya varias opciones razonables, Codex deje una recomendacion priorizada por defecto.
+- Tipo de intervencion: gobernanza operativa y metodologia documental; sin cambios de runtime, APIs ni comportamiento funcional de la aplicacion.
+- Archivos tocados:
+  - `AGENTS.md`
+  - `project-docs/WORKFLOW_AI.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- Cambio comportamiento funcional: No en la aplicacion. Si en el flujo de trabajo de Codex: ante multiples rutas razonables, el cierre y las recomendaciones deben priorizar una opcion concreta con criterio corto.
+- Validaciones ejecutadas:
+  - revision de consistencia entre `AGENTS.md` y `project-docs/WORKFLOW_AI.md`
+  - `git diff --check`
+- Riesgos / notas:
+  - complementa las reglas de cierre parcial y bloqueo explicito; no modifica validaciones ni versionado
+
+---
+
+### 2026-03-30 - Codex
 - Alcance: reforzar el cierre de tareas bloqueadas para que siempre expongan el bloqueo real y la decision minima necesaria para continuar.
 - Tipo de intervencion: gobernanza operativa y metodologia documental; sin cambios de runtime, APIs ni comportamiento funcional de la aplicacion.
 - Archivos tocados:

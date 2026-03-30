@@ -562,3 +562,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `AGENTS.md`, `project-docs/WORKFLOW_AI.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: revisar consistencia entre contrato operativo y metodologia detallada, y verificar diff limpio.
 - Responsable: Codex + operador humano
+
+### [DL-0047]
+- Fecha: 2026-03-30
+- Estado: aceptada
+- Tema: multiples opciones deben cerrar con recomendacion priorizada
+- Contexto: en tareas de analisis, bloqueos o entregas parciales puede haber varias alternativas razonables para seguir. Si solo se enumeran opciones sin priorizarlas, el usuario queda con mas trabajo de decision y el flujo pierde consistencia.
+- Decision: incorporar como regla permanente que, cuando existan varias opciones razonables, Codex debe recomendar una como opcion prioritaria y justificarla con un criterio breve y operativo.
+- Impacto: reduce ambiguedad, acelera la toma de decisiones y mantiene una metodologia mas consistente entre turnos y entregas parciales.
+- Alternativas consideradas: listar opciones sin priorizacion; descartado porque delega demasiado criterio al usuario incluso cuando hay una recomendacion tecnica defendible.
+- Archivos / modulos afectados: `AGENTS.md`, `project-docs/WORKFLOW_AI.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: revisar consistencia entre contrato operativo y metodologia detallada, y verificar diff limpio.
+- Responsable: Codex + operador humano

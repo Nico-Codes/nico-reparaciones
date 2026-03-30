@@ -17,6 +17,7 @@
 - Explorar codigo y documentacion relevante antes de decidir.
 - Preguntar solo cuando exista ambiguedad material de alcance, UX, datos, arquitectura o riesgo.
 - Exponer riesgos, ventajas, desventajas y enfoque recomendado antes de cambios relevantes.
+- Si existen varias opciones razonables, priorizar una recomendacion concreta y explicar en corto por que conviene mas que las alternativas.
 - Priorizar simplificar, ordenar o reestructurar el subdominio afectado si eso mejora claridad o evita deuda inmediata.
 - Validar con checks relevantes al impacto; no asumir QA maxima siempre.
 - Usar `nico-dev.bat` solo cuando aporte validacion visual o manual real, especialmente sobre flujos web.
