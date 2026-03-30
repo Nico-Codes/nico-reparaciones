@@ -503,6 +503,17 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Validacion requerida: `env:check`, `typecheck` API/Web, `build` API/Web, `qa:route-parity`, `qa:legacy:detach`, `smoke:web`.
 - Responsable: Codex + operador humano
 
+### [DL-0028]
+- Fecha: 2026-03-30
+- Estado: aceptada
+- Tema: automatizar el cierre de tareas con una skill global en lugar de tooling dentro del repo
+- Contexto: se quiere que Codex repita el flujo de commit versionado + push en este proyecto sin ensuciar el repositorio con comandos locales, scripts operativos o batchs adicionales.
+- Decision: crear la skill global `repo-ship` en `$CODEX_HOME/skills` y declarar en `AGENTS.md` que, al cerrar tareas con cambios de codigo, Codex debe usar esa skill para hacer stage/commit/push con formato `V1.xxx-DetalleCorto`, siempre separando cambios ajenos y respetando las validaciones de la tarea. Se descarta la automatizacion basada en scripts dentro del repo.
+- Impacto: el comportamiento queda persistente para futuras sesiones de Codex en este repo, sin agregar ruido al arbol de codigo ni introducir tooling operativo extra dentro del proyecto.
+- Alternativas consideradas: `nico-dev.bat ship` + `scripts/git-ship.ps1`; descartado por mezclar automatizacion de Codex con archivos propios del repositorio.
+- Archivos / modulos afectados: `AGENTS.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`, skill global `C:\Users\nicol\.codex\skills\repo-ship\`.
+- Validacion requerida: crear la skill con `init_skill.py` y validar con `quick_validate.py`.
+- Responsable: Codex + operador humano
 
 
 

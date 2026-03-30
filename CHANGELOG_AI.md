@@ -1070,3 +1070,22 @@ pm run qa:frontend:e2e
   - `project-docs/overview/REPO_MAP.md` y `project-docs/overview/CANONICAL_SOURCES.md` quedaron movidos pero no rehechos en esta pasada porque venian con encoding no UTF-8; el nuevo punto de entrada documental es `project-docs/INDEX.md`
 
 ---
+
+### 2026-03-30 - Codex
+- Alcance: dejar persistente el flujo de commit versionado + push para este repo a traves de una skill global y reglas del repositorio.
+- Tipo de intervencion: gobernanza operativa de Codex; sin cambios en runtime, API ni frontend/backend del producto.
+- Archivos tocados:
+  - `AGENTS.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+  - `C:\Users\nicol\.codex\skills\repo-ship\SKILL.md`
+  - `C:\Users\nicol\.codex\skills\repo-ship\agents\openai.yaml`
+- Cambio comportamiento funcional: No sobre la aplicacion. Si sobre el flujo de trabajo de Codex en este repo: al cerrar tareas de codigo, la pauta pasa a ser usar la skill `repo-ship` con formato `V1.xxx-DetalleCorto`, sin introducir tooling local dentro del proyecto.
+- Validaciones ejecutadas:
+  - `python C:\Users\nicol\.codex\skills\.system\skill-creator\scripts\init_skill.py repo-ship --path C:\Users\nicol\.codex\skills ...`
+  - `python C:\Users\nicol\.codex\skills\.system\skill-creator\scripts\quick_validate.py C:\Users\nicol\.codex\skills\repo-ship`
+- Riesgos / notas:
+  - se limpio el intento anterior basado en `nico-dev.bat ship` y `scripts/git-ship.ps1`; esos cambios no quedan en el repo
+  - no se tocaron los cambios preexistentes del usuario en `next-stack/apps/web/src/features/store/StorePage.tsx` ni `next-stack/apps/web/src/styles.css`
+
+---
