@@ -634,3 +634,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/api/src/modules/admin/{admin.module.ts,admin.service.ts,admin-providers.service.ts,admin-finance.service.ts,admin-finance.service.test.ts,admin-warranty-registry.service.ts,admin-warranty-registry.service.test.ts,admin-warranty-registry.types.ts}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/backend/BACKEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `env:check`, `typecheck --workspace @nico/api`, `test --workspace @nico/api`, `build --workspace @nico/api`, `smoke:backend`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0053]
+- Fecha: 2026-03-30
+- Estado: aceptada
+- Tema: el subdominio `providers` pasa a `facade + registry + search`
+- Contexto: despues de centralizar warranties/accounting, el siguiente hotspot claro del backend era `admin-providers.service.ts`. Mezclaba CRUD del registro de proveedores, stats, reorder, import de seeds, probe HTTP, scraping HTML/JSON, normalizacion de partes y ranking de resultados en un solo archivo.
+- Decision: mantener `AdminProvidersService` como fachada publica de `/admin/providers*`, mover CRUD/registro/stats a `admin-provider-registry.service.ts`, mover probe/busqueda/scraping/ranking a `admin-provider-search.service.ts` y compartir tipos del subdominio en `admin-providers.types.ts`.
+- Impacto: el archivo publico `admin-providers.service.ts` baja a una fachada muy chica, el modulo gana limites mas claros y la limpieza futura puede atacar el hotspot real de scraping sin mezclarlo con el registro de proveedores. No hay cambios deliberados en endpoints, payloads ni variables de entorno.
+- Alternativas consideradas: seguir agregando helpers dentro del mismo archivo o partir primero frontend; descartado porque `providers` seguia siendo el hotspot backend mas grande y el corte por capas da mejor relacion riesgo/beneficio.
+- Archivos / modulos afectados: `next-stack/apps/api/src/modules/admin/{admin.module.ts,admin-providers.service.ts,admin-provider-registry.service.ts,admin-provider-search.service.ts,admin-providers.types.ts,admin-provider-registry.service.test.ts,admin-provider-search.service.test.ts}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/backend/BACKEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `env:check`, `typecheck --workspace @nico/api`, `test --workspace @nico/api`, `build --workspace @nico/api`, `smoke:backend`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano

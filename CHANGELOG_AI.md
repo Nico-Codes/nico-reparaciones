@@ -1333,3 +1333,33 @@ pm run qa:frontend:e2e
   - la lectura del registro de incidentes de garantia queda unificada en un solo servicio y eso baja riesgo de drift entre stats de providers y listados financieros
 
 ---
+
+### 2026-03-30 - Codex
+- Alcance: partir el subdominio `providers` en registro y busqueda, dejando una fachada publica chica.
+- Tipo de intervencion: refactor interno seguro del backend admin + seccionado por responsabilidad dentro del modulo de proveedores.
+- Archivos tocados:
+  - `next-stack/apps/api/src/modules/admin/admin.module.ts`
+  - `next-stack/apps/api/src/modules/admin/admin-providers.service.ts`
+  - `next-stack/apps/api/src/modules/admin/admin-provider-registry.service.ts`
+  - `next-stack/apps/api/src/modules/admin/admin-provider-search.service.ts`
+  - `next-stack/apps/api/src/modules/admin/admin-providers.types.ts`
+  - `next-stack/apps/api/src/modules/admin/admin-provider-registry.service.test.ts`
+  - `next-stack/apps/api/src/modules/admin/admin-provider-search.service.test.ts`
+  - `project-docs/architecture/ARCHITECTURE.md`
+  - `project-docs/backend/BACKEND_MAP.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No deliberado en rutas ni payloads. Los endpoints `/admin/providers*` siguen estables; cambia solo la separacion interna entre registro, stats y scraping/busqueda.
+- Validaciones ejecutadas:
+  - `cmd /c npm run env:check`
+  - `cmd /c npm run typecheck --workspace @nico/api`
+  - `cmd /c npm run test --workspace @nico/api`
+  - `cmd /c npm run build --workspace @nico/api`
+  - `cmd /c npm run smoke:backend`
+  - `cmd /c npm run qa:route-parity`
+  - `git diff --check`
+- Riesgos / notas:
+  - `admin-provider-search.service.ts` sigue siendo un archivo grande porque concentra parsing HTML/JSON y heuristicas de ranking; ahora ese hotspot ya quedo aislado y puede partirse sin tocar el registro de proveedores
+  - `admin-providers.service.ts` bajo a una fachada de 73 lineas, mientras que el nuevo split deja mas claro que el siguiente corte natural del backend esta dentro de search/parsers
+
+---

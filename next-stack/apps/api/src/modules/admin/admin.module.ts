@@ -8,6 +8,8 @@ import { AdminCommunicationsService } from './admin-communications.service.js';
 import { AdminController } from './admin.controller.js';
 import { AdminDashboardService } from './admin-dashboard.service.js';
 import { AdminFinanceService } from './admin-finance.service.js';
+import { AdminProviderRegistryService } from './admin-provider-registry.service.js';
+import { AdminProviderSearchService } from './admin-provider-search.service.js';
 import { AdminProvidersService } from './admin-providers.service.js';
 import { AdminSettingsService } from './admin-settings.service.js';
 import { AdminService } from './admin.service.js';
@@ -24,6 +26,8 @@ import { AdminWarrantyRegistryService } from './admin-warranty-registry.service.
     AdminCommunicationsService,
     AdminWarrantyRegistryService,
     AdminFinanceService,
+    AdminProviderRegistryService,
+    AdminProviderSearchService,
     AdminProvidersService,
     AdminService,
   ],
