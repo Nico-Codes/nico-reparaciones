@@ -1363,3 +1363,30 @@ pm run qa:frontend:e2e
   - `admin-providers.service.ts` bajo a una fachada de 73 lineas, mientras que el nuevo split deja mas claro que el siguiente corte natural del backend esta dentro de search/parsers
 
 ---
+
+### 2026-03-30 - Codex
+- Alcance: partir `admin-provider-search` en orquestacion, parsing, ranking y text utils sin tocar endpoints.
+- Tipo de intervencion: refactor interno seguro del backend admin + corte del hotspot de scraping de proveedores.
+- Archivos tocados:
+  - `next-stack/apps/api/src/modules/admin/admin-provider-search.service.ts`
+  - `next-stack/apps/api/src/modules/admin/admin-provider-search.parsers.ts`
+  - `next-stack/apps/api/src/modules/admin/admin-provider-search-ranking.ts`
+  - `next-stack/apps/api/src/modules/admin/admin-provider-search.text.ts`
+  - `next-stack/apps/api/src/modules/admin/admin-provider-search.service.test.ts`
+  - `project-docs/architecture/ARCHITECTURE.md`
+  - `project-docs/backend/BACKEND_MAP.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No deliberado en rutas ni payloads. Los endpoints de probe y busqueda de repuestos siguen estables; cambia solo la separacion interna entre fetch/orquestacion, parsing y ranking.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/api`
+  - `cmd /c npm run test --workspace @nico/api`
+  - `cmd /c npm run build --workspace @nico/api`
+  - `cmd /c npm run smoke:backend`
+  - `cmd /c npm run qa:route-parity`
+  - `git diff --check`
+- Riesgos / notas:
+  - el hotspot ya no esta en el servicio publico sino en helpers puros mas acotados, lo que baja riesgo de tocar el contrato del subdominio
+  - el siguiente servicio backend grande vuelve a ser `catalog-admin.service.ts`; a nivel repo, el hotspot mayor sigue en `RepairProviderPartPricingSection.tsx`
+
+---

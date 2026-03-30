@@ -203,6 +203,9 @@ Desde la ola de simplificacion de 2026-03-30 quedaron formalizados estos limites
   - `admin-finance.service.ts`
   - `admin-provider-registry.service.ts`
   - `admin-provider-search.service.ts`
+  - `admin-provider-search.parsers.ts`
+  - `admin-provider-search-ranking.ts`
+  - `admin-provider-search.text.ts`
   - `admin-providers.service.ts` como facade publica del subdominio
 - `RepairsModule` ahora usa facade + subservicios por responsabilidad:
   - `repairs-admin.service.ts`

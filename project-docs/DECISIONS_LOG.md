@@ -646,3 +646,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/api/src/modules/admin/{admin.module.ts,admin-providers.service.ts,admin-provider-registry.service.ts,admin-provider-search.service.ts,admin-providers.types.ts,admin-provider-registry.service.test.ts,admin-provider-search.service.test.ts}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/backend/BACKEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `env:check`, `typecheck --workspace @nico/api`, `test --workspace @nico/api`, `build --workspace @nico/api`, `smoke:backend`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0054]
+- Fecha: 2026-03-30
+- Estado: aceptada
+- Tema: `admin-provider-search` pasa de servicio hotspot a orquestador con helpers puros
+- Contexto: despues de separar `providers` en facade + registry + search, el nuevo hotspot claro quedo concentrado dentro de `admin-provider-search.service.ts`. Ese archivo seguia mezclando fetch HTTP, parsing HTML/JSON, heuristicas de nombres/availability, normalizacion de precios y ranking de resultados.
+- Decision: mantener `AdminProviderSearchService` como orquestador del flujo de busqueda y persistencia del probe, pero mover la logica pura a `admin-provider-search.parsers.ts`, `admin-provider-search-ranking.ts` y `admin-provider-search.text.ts`. Los endpoints `/admin/providers/:id/probe`, `/admin/providers/:id/search-parts` y `/admin/providers/search-parts` se mantienen estables.
+- Impacto: el servicio baja a unas 330 lineas, el parsing queda seccionado por responsabilidad y la siguiente limpieza puede apuntar a hotspots reales como `catalog-admin.service.ts` o frontend sin volver a tocar el contrato del subdominio de proveedores.
+- Alternativas consideradas: dejar helpers privados dentro del mismo archivo o seguir partiendo `providers` sin extraer ranking/text utils; descartado porque no resolvia el problema de lectura ni hacia mas testeable la logica pura.
+- Archivos / modulos afectados: `next-stack/apps/api/src/modules/admin/{admin-provider-search.service.ts,admin-provider-search.parsers.ts,admin-provider-search-ranking.ts,admin-provider-search.text.ts,admin-provider-search.service.test.ts}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/backend/BACKEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/api`, `test --workspace @nico/api`, `build --workspace @nico/api`, `smoke:backend`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano

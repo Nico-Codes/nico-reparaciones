@@ -26,7 +26,7 @@ Ubicacion:
 - `AdminModule`
   - facade principal en `admin.service.ts`
   - subservicios activos para dashboard, settings, brand assets, communications, finance, warranty registry y providers
-  - `providers` ahora se organiza como facade + registry + search/scraping
+  - `providers` ahora se organiza como facade + registry + search orchestration + helpers de parsing/ranking
 - `RepairsModule`
   - facade principal en `repairs.service.ts`
   - subservicios activos para flujo admin, flujo publico, pricing snapshots, timeline, notificaciones y soporte/serializacion
@@ -47,6 +47,7 @@ No existe ya backend legacy dentro del repo. Todo comportamiento servidor activo
 
 ## Hotspot actual recomendado
 
-- `admin.service.ts` ya bajo a una fachada razonablemente chica.
-- El hotspot backend mas grande del repo paso a ser `admin-provider-search.service.ts`, porque concentra scraping HTML/JSON, normalizacion, ranking y heuristicas de proveedores.
-- El siguiente corte recomendado es separar `admin-provider-search.service.ts` en parser/extractor/ranking helpers, antes de pasar a hotspots grandes del frontend como `RepairProviderPartPricingSection.tsx`.
+- `admin-provider-search.service.ts` ya bajo a una fachada chica y la complejidad de scraping quedo seccionada en helpers especificos.
+- El siguiente hotspot backend por servicio vuelve a ser `catalog-admin.service.ts`, porque sigue mezclando catalogo comercial, assets y operaciones admin en un solo archivo.
+- El hotspot mas grande del repo completo sigue estando en frontend: `RepairProviderPartPricingSection.tsx`.
+- Recomendacion prioritaria: si seguimos bajando complejidad del backend, conviene partir `catalog-admin.service.ts` antes de abrir otra ola transversal.

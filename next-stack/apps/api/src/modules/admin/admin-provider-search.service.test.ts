@@ -1,23 +1,51 @@
 import { describe, expect, it } from 'vitest';
-import { AdminProviderSearchService } from './admin-provider-search.service.js';
+import { buildPartSearchQueryProfile, rankSupplierPart } from './admin-provider-search-ranking.js';
+import { normalizeAvailability, parseMoneyValue } from './admin-provider-search.text.js';
+import type { NormalizedSupplierPartWithProvider } from './admin-providers.types.js';
 
-function createService() {
-  return new AdminProviderSearchService({} as never);
-}
-
-describe('AdminProviderSearchService', () => {
+describe('admin-provider-search helpers', () => {
   it('parses mixed locale prices consistently', () => {
-    const service = createService();
-
-    expect((service as any).parseMoneyValue('$ 12.345,67')).toBe(12345.67);
-    expect((service as any).parseMoneyValue('ARS 8999')).toBe(8999);
+    expect(parseMoneyValue('$ 12.345,67')).toBe(12345.67);
+    expect(parseMoneyValue('ARS 8999')).toBe(8999);
   });
 
   it('normalizes availability labels from supplier text', () => {
-    const service = createService();
+    expect(normalizeAvailability('Sin stock')).toBe('out_of_stock');
+    expect(normalizeAvailability('Disponible')).toBe('in_stock');
+    expect(normalizeAvailability('')).toBe('unknown');
+  });
 
-    expect((service as any).normalizeAvailability('Sin stock')).toBe('out_of_stock');
-    expect((service as any).normalizeAvailability('Disponible')).toBe('in_stock');
-    expect((service as any).normalizeAvailability('')).toBe('unknown');
+  it('prioritizes closer supplier matches in ranking', () => {
+    const profile = buildPartSearchQueryProfile('modulo a30 samsung');
+    const strongMatch: NormalizedSupplierPartWithProvider = {
+      externalPartId: 'p1',
+      name: 'Modulo Samsung A30 original',
+      sku: 'A30-ORI',
+      brand: 'Samsung',
+      price: 15000,
+      availability: 'in_stock',
+      url: 'https://supplier.test/producto/modulo-samsung-a30',
+      rawLabel: 'Modulo Samsung A30 original',
+      supplier: {
+        id: 'sup-1',
+        name: 'Proveedor 1',
+        priority: 10,
+        endpoint: 'https://supplier.test',
+        mode: 'html',
+      },
+    };
+    const weakMatch: NormalizedSupplierPartWithProvider = {
+      ...strongMatch,
+      externalPartId: 'p2',
+      name: 'Pantalla generica',
+      sku: null,
+      brand: null,
+      price: 50,
+      availability: 'unknown',
+      url: 'https://supplier.test/shop',
+      rawLabel: 'Pantalla generica',
+    };
+
+    expect(rankSupplierPart(strongMatch, profile)).toBeGreaterThan(rankSupplierPart(weakMatch, profile));
   });
 });
