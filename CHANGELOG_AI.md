@@ -1276,3 +1276,29 @@ pm run qa:frontend:e2e
   - los cambios abiertos del usuario en `next-stack/apps/web/src/features/store/StorePage.tsx` y `next-stack/apps/web/src/styles.css` quedaron convivientes en el worktree durante la validacion y no bloquearon `build` ni `smoke:web`
 
 ---
+
+### 2026-03-30 - Codex
+- Alcance: seguir partiendo `AdminModule`, extrayendo comunicaciones/reportes/templates a un subservicio dedicado.
+- Tipo de intervencion: refactor interno seguro del backend admin + test unitario especifico del subdominio de comunicaciones.
+- Archivos tocados:
+  - `next-stack/apps/api/src/modules/admin/admin.module.ts`
+  - `next-stack/apps/api/src/modules/admin/admin.service.ts`
+  - `next-stack/apps/api/src/modules/admin/admin-communications.service.ts`
+  - `next-stack/apps/api/src/modules/admin/admin-communications.service.test.ts`
+  - `project-docs/architecture/ARCHITECTURE.md`
+  - `project-docs/backend/BACKEND_MAP.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No deliberado en rutas ni payloads. Los endpoints `/admin/smtp*`, `/admin/mail-templates*` y `/admin/whatsapp-*` siguen estables; cambia solo la separacion interna del modulo admin.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/api`
+  - `cmd /c npm run test --workspace @nico/api`
+  - `cmd /c npm run build --workspace @nico/api`
+  - `cmd /c npm run smoke:backend`
+  - `cmd /c npm run qa:route-parity`
+  - `git diff --check`
+- Riesgos / notas:
+  - durante la extraccion hubo que restaurar `slugify` y `cleanNullable` en `admin.service.ts` porque siguen siendo helpers compartidos por device types, warranties/help FAQ y otras areas no ligadas a comunicaciones
+  - el siguiente hotspot coherente dentro de `AdminModule` pasa a ser `warranties` + `accounting`
+
+---

@@ -4,6 +4,7 @@ import { AuthModule } from '../auth/auth.module.js';
 import { MailModule } from '../mail/mail.module.js';
 import { WhatsappModule } from '../whatsapp/whatsapp.module.js';
 import { AdminBrandAssetsService } from './admin-brand-assets.service.js';
+import { AdminCommunicationsService } from './admin-communications.service.js';
 import { AdminController } from './admin.controller.js';
 import { AdminDashboardService } from './admin-dashboard.service.js';
 import { AdminProvidersService } from './admin-providers.service.js';
@@ -18,6 +19,7 @@ import { AdminService } from './admin.service.js';
     AdminDashboardService,
     AdminSettingsService,
     AdminBrandAssetsService,
+    AdminCommunicationsService,
     AdminProvidersService,
     AdminService,
   ],

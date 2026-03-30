@@ -198,6 +198,7 @@ Desde la ola de simplificacion de 2026-03-30 quedaron formalizados estos limites
   - `admin-dashboard.service.ts`
   - `admin-settings.service.ts`
   - `admin-brand-assets.service.ts`
+  - `admin-communications.service.ts`
   - `admin-providers.service.ts`
 - `RepairsModule` ahora usa facade + subservicios por responsabilidad:
   - `repairs-admin.service.ts`

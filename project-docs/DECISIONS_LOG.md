@@ -610,3 +610,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/api/src/modules/admin/{admin.module.ts,admin.service.ts,admin-providers.service.ts}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/backend/BACKEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `typecheck --workspace @nico/api`, `test --workspace @nico/api`, `build --workspace @nico/api`, `smoke:backend`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0051]
+- Fecha: 2026-03-30
+- Estado: aceptada
+- Tema: `AdminModule` extrae comunicaciones, templates y reportes a un subservicio dedicado
+- Contexto: despues de separar `providers`, `admin.service.ts` seguia mezclando reportes operativos, estado SMTP, templates de mail, templates/logs de WhatsApp y saneo de texto historico con el resto del backoffice. Ese bloque era cohesivo, transversal y seguia haciendo crecer la fachada admin mas de lo necesario.
+- Decision: mantener `AdminController` y las rutas estables, pero mover reportes, SMTP, templates de mail, templates/logs de WhatsApp y helpers asociados a `admin-communications.service.ts`, dejando `admin.service.ts` como fachada para esos endpoints. Tambien se agrega test unitario para saneo de mojibake y defaults de templates WhatsApp.
+- Impacto: `AdminService` baja otra porcion importante de complejidad y el dominio de comunicaciones queda mas testeable y aislado del resto del admin. No hay cambios deliberados en endpoints, payloads ni variables de entorno.
+- Alternativas consideradas: partir primero `warranties`/`accounting` o hacer solo una limpieza cosmetica dentro del mismo archivo; descartado porque comunicaciones era el bloque mas cohesivo y facil de validar sin tocar contratos.
+- Archivos / modulos afectados: `next-stack/apps/api/src/modules/admin/{admin.module.ts,admin.service.ts,admin-communications.service.ts,admin-communications.service.test.ts}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/backend/BACKEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/api`, `test --workspace @nico/api`, `build --workspace @nico/api`, `smoke:backend`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano
