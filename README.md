@@ -7,8 +7,8 @@ NicoReparaciones es una plataforma web para un negocio de reparacion de disposit
 - migracion al nuevo stack: completada
 - stack operativo unico: `next-stack/`
 - root Laravel legacy: retirado del repositorio operativo
-- documentacion viva: `project-docs/`
-- runbooks tecnicos del stack actual: `next-stack/docs/`
+- documentacion viva: `project-docs/INDEX.md`
+- runbooks tecnicos del stack actual: `next-stack/docs/INDEX.md`
 
 ## Stack actual
 
@@ -22,8 +22,8 @@ NicoReparaciones es una plataforma web para un negocio de reparacion de disposit
 - `next-stack/apps/web`: frontend React
 - `next-stack/apps/api`: backend NestJS
 - `next-stack/packages/contracts`: contratos compartidos
-- `project-docs/`: contexto, arquitectura, reglas y decisiones
-- `next-stack/docs/`: runbooks tecnicos del stack actual
+- `project-docs/INDEX.md`: mapa documental del repo
+- `next-stack/docs/INDEX.md`: mapa de runbooks operativos
 
 ## Primer arranque
 

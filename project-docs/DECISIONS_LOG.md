@@ -491,6 +491,17 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Validacion requerida: ejecutar `nico-dev.bat start`, verificar health de API/Web, verificar `ngrok` en `http://127.0.0.1:4040/api/tunnels` y luego `nico-dev.bat stop`.
 - Responsable: Codex + operador humano
 
+### [DL-0027]
+- Fecha: 2026-03-30
+- Estado: aceptada
+- Tema: primera ola de cleanup estructural sin renombrar `next-stack/`
+- Contexto: el repo ya tenia un stack canonico claro, pero la documentacion viva, los runbooks y los scripts seguian demasiado planos, y habia ruido transitorio visible en superficie. Ademas, `App.tsx` y `admin.service.ts` concentraban definiciones estructurales que convenia separar sin tocar contratos publicos.
+- Decision: ejecutar una primera ola de limpieza conservadora: mover `project-docs/` a una taxonomia por dominios, mover `next-stack/docs/` a una taxonomia de runbooks, separar `next-stack/scripts/` por proposito manteniendo los scripts npm publicos, reforzar ignores para logs temporales, extraer el routing auxiliar de `App.tsx` y formalizar un registro tipado de `AppSetting`. Se decide no renombrar `next-stack/` en esta fase.
+- Impacto: el repo queda mas legible y mas simple de navegar, sin cambios deliberados en rutas publicas, endpoints ni nombres de variables de entorno. La limpieza futura gana una base mas segura porque ya existen limites fisicos y semanticos mas claros.
+- Alternativas consideradas: renombrar `next-stack/` en la misma ola; descartado por blast radius alto sobre CI, README, scripts y documentacion.
+- Archivos / modulos afectados: `project-docs/INDEX.md`, `project-docs/plans/REPO_CLEANUP_POLICY.md`, `next-stack/docs/INDEX.md`, `next-stack/package.json`, `next-stack/apps/web/src/App.tsx`, `next-stack/apps/web/src/layouts/AppShell.tsx`, `next-stack/apps/api/src/modules/admin/admin.service.ts`, `next-stack/apps/api/src/modules/admin/app-settings.registry.ts`, `next-stack/packages/contracts/src/index.ts`.
+- Validacion requerida: `env:check`, `typecheck` API/Web, `build` API/Web, `qa:route-parity`, `qa:legacy:detach`, `smoke:web`.
+- Responsable: Codex + operador humano
 
 
 

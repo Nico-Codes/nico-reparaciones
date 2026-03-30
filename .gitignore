@@ -1,6 +1,7 @@
 *.log
 .DS_Store
 Thumbs.db
+/tmp-*.log
 
 /.idea/
 /.vscode/
@@ -20,6 +21,9 @@ Thumbs.db
 /next-stack/apps/web/dist/
 /next-stack/.dev-logs/
 /next-stack/artifacts/
+/next-stack/.api-restart*.log
+/next-stack/.tmp-api-restart*.log
+/next-stack/tmp-api-*.log
 /playwright-report/
 /test-results/
 /blob-report/

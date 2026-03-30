@@ -6,6 +6,7 @@ import path from 'node:path';
 import { MailService } from '../mail/mail.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { WhatsappService } from '../whatsapp/whatsapp.service.js';
+import { APP_SETTING_DEFINITIONS, BRAND_ASSET_SLOTS, getAppSettingDefinition } from './app-settings.registry.js';
 
 type SupplierRegistryRow = {
   id: string;
@@ -191,25 +192,6 @@ export class AdminService {
   ) {}
   private readonly openRepairStatuses = ['RECEIVED', 'DIAGNOSING', 'WAITING_APPROVAL', 'REPAIRING', 'READY_PICKUP'] as const;
   private readonly pendingOrderStatuses = ['PENDIENTE', 'CONFIRMADO', 'PREPARANDO'] as const;
-  private readonly brandAssetSlots = {
-    favicon_ico: { settingKey: 'brand_asset.favicon_ico.path', defaultPath: 'favicon.ico', fileBase: 'favicon-ico', maxKb: 1024, allowedExts: ['ico'] },
-    favicon_16: { settingKey: 'brand_asset.favicon_16.path', defaultPath: 'favicon-16x16.png', fileBase: 'favicon-16x16', maxKb: 1024, allowedExts: ['png', 'ico', 'webp'] },
-    favicon_32: { settingKey: 'brand_asset.favicon_32.path', defaultPath: 'favicon-32x32.png', fileBase: 'favicon-32x32', maxKb: 1024, allowedExts: ['png', 'ico', 'webp'] },
-    android_192: { settingKey: 'brand_asset.android_192.path', defaultPath: 'android-chrome-192x192.png', fileBase: 'android-192', maxKb: 2048, allowedExts: ['png', 'jpg', 'jpeg', 'webp'] },
-    android_512: { settingKey: 'brand_asset.android_512.path', defaultPath: 'android-chrome-512x512.png', fileBase: 'android-512', maxKb: 4096, allowedExts: ['png', 'jpg', 'jpeg', 'webp'] },
-    apple_touch: { settingKey: 'brand_asset.apple_touch.path', defaultPath: 'apple-touch-icon.png', fileBase: 'apple-touch', maxKb: 2048, allowedExts: ['png', 'jpg', 'jpeg', 'webp'] },
-    store_hero_desktop: { settingKey: 'store_hero_image_desktop', defaultPath: '', fileBase: 'store-hero-desktop', maxKb: 6144, allowedExts: ['png', 'jpg', 'jpeg', 'webp'] },
-    store_hero_mobile: { settingKey: 'store_hero_image_mobile', defaultPath: '', fileBase: 'store-hero-mobile', maxKb: 4096, allowedExts: ['png', 'jpg', 'jpeg', 'webp'] },
-    icon_settings: { settingKey: 'brand_asset.icon_settings.path', defaultPath: 'icons/settings.svg', fileBase: 'icon-settings', maxKb: 2048, allowedExts: ['svg', 'png', 'jpg', 'jpeg', 'webp'] },
-    icon_carrito: { settingKey: 'brand_asset.icon_carrito.path', defaultPath: 'icons/carrito.svg', fileBase: 'icon-carrito', maxKb: 2048, allowedExts: ['svg', 'png', 'jpg', 'jpeg', 'webp'] },
-    icon_logout: { settingKey: 'brand_asset.icon_logout.path', defaultPath: 'icons/logout.svg', fileBase: 'icon-logout', maxKb: 2048, allowedExts: ['svg', 'png', 'jpg', 'jpeg', 'webp'] },
-    icon_consultar_reparacion: { settingKey: 'brand_asset.icon_consultar_reparacion.path', defaultPath: 'icons/consultar-reparacion.svg', fileBase: 'icon-consultar-reparacion', maxKb: 2048, allowedExts: ['svg', 'png', 'jpg', 'jpeg', 'webp'] },
-    icon_mis_pedidos: { settingKey: 'brand_asset.icon_mis_pedidos.path', defaultPath: 'icons/mis-pedidos.svg', fileBase: 'icon-mis-pedidos', maxKb: 2048, allowedExts: ['svg', 'png', 'jpg', 'jpeg', 'webp'] },
-    icon_mis_reparaciones: { settingKey: 'brand_asset.icon_mis_reparaciones.path', defaultPath: 'icons/mis-reparaciones.svg', fileBase: 'icon-mis-reparaciones', maxKb: 2048, allowedExts: ['svg', 'png', 'jpg', 'jpeg', 'webp'] },
-    icon_dashboard: { settingKey: 'brand_asset.icon_dashboard.path', defaultPath: 'icons/dashboard.svg', fileBase: 'icon-dashboard', maxKb: 2048, allowedExts: ['svg', 'png', 'jpg', 'jpeg', 'webp'] },
-    icon_tienda: { settingKey: 'brand_asset.icon_tienda.path', defaultPath: 'icons/tienda.svg', fileBase: 'icon-tienda', maxKb: 2048, allowedExts: ['svg', 'png', 'jpg', 'jpeg', 'webp'] },
-    logo_principal: { settingKey: 'brand_asset.logo_principal.path', defaultPath: 'brand/logo.png', fileBase: 'logo-principal', maxKb: 4096, allowedExts: ['png', 'jpg', 'jpeg', 'webp', 'svg'] },
-  } as const;
 
   async dashboard() {
     const now = new Date();
@@ -382,52 +364,34 @@ export class AdminService {
       orderBy: [{ group: 'asc' }, { key: 'asc' }],
     });
 
-    const defaults = [
-      { key: 'business_name', group: 'business', label: 'Nombre del negocio', type: 'text', value: 'NicoReparaciones' },
-      { key: 'shop_phone', group: 'business', label: 'Telefono WhatsApp', type: 'text', value: '' },
-      { key: 'shop_email', group: 'business', label: 'Email del local', type: 'email', value: '' },
-      { key: 'store_hero_title', group: 'branding', label: 'Titulo portada tienda', type: 'text', value: '' },
-      { key: 'store_hero_subtitle', group: 'branding', label: 'SubTitulo portada tienda', type: 'textarea', value: '' },
-      { key: 'store_hero_image_desktop', group: 'branding', label: 'Imagen portada tienda (desktop)', type: 'text', value: '' },
-      { key: 'store_hero_image_mobile', group: 'branding', label: 'Imagen portada tienda (mobile)', type: 'text', value: '' },
-      { key: 'store_hero_fade_rgb_desktop', group: 'branding', label: 'Fade portada desktop (RGB)', type: 'text', value: '14, 165, 233' },
-      { key: 'store_hero_fade_rgb_mobile', group: 'branding', label: 'Fade portada mobile (RGB)', type: 'text', value: '14, 165, 233' },
-      { key: 'store_hero_fade_intensity', group: 'branding', label: 'Fade intensidad', type: 'number', value: '42' },
-      { key: 'store_hero_fade_size', group: 'branding', label: 'Fade tamano px', type: 'number', value: '96' },
-      { key: 'store_hero_fade_hold', group: 'branding', label: 'Fade hold %', type: 'number', value: '12' },
-      { key: 'store_hero_fade_mid_alpha', group: 'branding', label: 'Fade alpha medio', type: 'text', value: '0.58' },
-      { key: 'mail_from_name', group: 'email', label: 'Nombre remitente email', type: 'text', value: 'NicoReparaciones' },
-      { key: 'mail_from_address', group: 'email', label: 'Email remitente', type: 'email', value: '' },
-    ];
-
     const byKey = new Map<string, AppSetting>(existing.map((s) => [s.key, s]));
-    const merged = defaults.map((d) => {
-      const found = byKey.get(d.key);
+    const merged = APP_SETTING_DEFINITIONS.map((definition) => {
+      const found = byKey.get(definition.key);
       return found
         ? {
             id: found.id,
             key: found.key,
             value: found.value ?? '',
             group: found.group,
-            label: found.label ?? d.label,
-            type: found.type ?? d.type,
+            label: found.label ?? definition.label,
+            type: found.type ?? definition.type,
             createdAt: found.createdAt.toISOString(),
             updatedAt: found.updatedAt.toISOString(),
           }
         : {
             id: null,
-            key: d.key,
-            value: d.value,
-            group: d.group,
-            label: d.label,
-            type: d.type,
+            key: definition.key,
+            value: definition.defaultValue,
+            group: definition.group,
+            label: definition.label,
+            type: definition.type,
             createdAt: null,
             updatedAt: null,
           };
     });
 
     const extra = existing
-      .filter((s) => !defaults.some((d) => d.key === s.key))
+      .filter((s) => !getAppSettingDefinition(s.key))
       .map((s) => ({
         id: s.id,
         key: s.key,
@@ -444,13 +408,20 @@ export class AdminService {
 
   async upsertSettings(input: Array<{ key: string; value?: string | null; group?: string; label?: string | null; type?: string | null }>) {
     const cleaned = input
-      .map((i) => ({
-        key: (i.key ?? '').trim(),
-        value: i.value == null ? null : String(i.value),
-        group: (i.group ?? 'general').trim() || 'general',
-        label: i.label == null ? null : String(i.label).trim() || null,
-        type: i.type == null ? 'text' : String(i.type).trim() || 'text',
-      }))
+      .map((i) => {
+        const key = (i.key ?? '').trim();
+        const definition = getAppSettingDefinition(key);
+        const fallbackGroup = (i.group ?? 'general').trim() || 'general';
+        const fallbackLabel = i.label == null ? null : String(i.label).trim() || null;
+        const fallbackType = i.type == null ? 'text' : String(i.type).trim() || 'text';
+        return {
+          key,
+          value: i.value == null ? null : String(i.value),
+          group: definition?.group ?? fallbackGroup,
+          label: fallbackLabel ?? definition?.label ?? null,
+          type: definition?.type ?? fallbackType,
+        };
+      })
       .filter((i) => i.key.length > 0);
 
     const results = [];
@@ -2023,7 +1994,7 @@ export class AdminService {
     slot: string,
     file: { originalname: string; mimetype: string; size: number; buffer?: Buffer | Uint8Array },
   ) {
-    const spec = this.brandAssetSlots[slot as keyof typeof this.brandAssetSlots];
+    const spec = BRAND_ASSET_SLOTS[slot as keyof typeof BRAND_ASSET_SLOTS];
     if (!spec) throw new BadRequestException('Slot de asset no soportado');
     const ext = this.detectFileExt(file.originalname);
     const allowedExts = spec.allowedExts as readonly string[];
@@ -2051,7 +2022,7 @@ export class AdminService {
   }
 
   async resetBrandAsset(slot: string) {
-    const spec = this.brandAssetSlots[slot as keyof typeof this.brandAssetSlots];
+    const spec = BRAND_ASSET_SLOTS[slot as keyof typeof BRAND_ASSET_SLOTS];
     if (!spec) throw new BadRequestException('Slot de asset no soportado');
 
     const publicRoot = this.resolveWebPublicDir();

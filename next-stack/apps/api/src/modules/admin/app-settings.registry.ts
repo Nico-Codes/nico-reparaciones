@@ -1,0 +1,76 @@
+export type AppSettingOwner = 'business' | 'branding' | 'email' | 'operations';
+export type AppSettingValueType = 'text' | 'email' | 'number' | 'textarea' | 'json';
+
+export type AppSettingDefinition = {
+  key: string;
+  group: string;
+  label: string;
+  type: AppSettingValueType;
+  defaultValue: string;
+  owner: AppSettingOwner;
+};
+
+export const APP_SETTING_DEFINITIONS = [
+  { key: 'business_name', group: 'business', label: 'Nombre del negocio', type: 'text', defaultValue: 'NicoReparaciones', owner: 'business' },
+  { key: 'shop_phone', group: 'business', label: 'Telefono WhatsApp', type: 'text', defaultValue: '', owner: 'business' },
+  { key: 'shop_email', group: 'business', label: 'Email del local', type: 'email', defaultValue: '', owner: 'business' },
+  { key: 'store_hero_title', group: 'branding', label: 'Titulo portada tienda', type: 'text', defaultValue: '', owner: 'branding' },
+  { key: 'store_hero_subtitle', group: 'branding', label: 'SubTitulo portada tienda', type: 'textarea', defaultValue: '', owner: 'branding' },
+  { key: 'store_hero_image_desktop', group: 'branding', label: 'Imagen portada tienda (desktop)', type: 'text', defaultValue: '', owner: 'branding' },
+  { key: 'store_hero_image_mobile', group: 'branding', label: 'Imagen portada tienda (mobile)', type: 'text', defaultValue: '', owner: 'branding' },
+  { key: 'store_hero_fade_rgb_desktop', group: 'branding', label: 'Fade portada desktop (RGB)', type: 'text', defaultValue: '14, 165, 233', owner: 'branding' },
+  { key: 'store_hero_fade_rgb_mobile', group: 'branding', label: 'Fade portada mobile (RGB)', type: 'text', defaultValue: '14, 165, 233', owner: 'branding' },
+  { key: 'store_hero_fade_intensity', group: 'branding', label: 'Fade intensidad', type: 'number', defaultValue: '42', owner: 'branding' },
+  { key: 'store_hero_fade_size', group: 'branding', label: 'Fade tamano px', type: 'number', defaultValue: '96', owner: 'branding' },
+  { key: 'store_hero_fade_hold', group: 'branding', label: 'Fade hold %', type: 'number', defaultValue: '12', owner: 'branding' },
+  { key: 'store_hero_fade_mid_alpha', group: 'branding', label: 'Fade alpha medio', type: 'text', defaultValue: '0.58', owner: 'branding' },
+  { key: 'mail_from_name', group: 'email', label: 'Nombre remitente email', type: 'text', defaultValue: 'NicoReparaciones', owner: 'email' },
+  { key: 'mail_from_address', group: 'email', label: 'Email remitente', type: 'email', defaultValue: '', owner: 'email' },
+  { key: 'ops_weekly_report_range_days', group: 'ops_reports', label: 'Dias de reporte semanal', type: 'number', defaultValue: '30', owner: 'operations' },
+  { key: 'ops_weekly_report_emails', group: 'ops_reports', label: 'Emails reporte semanal', type: 'text', defaultValue: '', owner: 'operations' },
+  { key: 'ops_alert_orders_stale_hours', group: 'ops_reports', label: 'Horas para alerta de pedidos', type: 'number', defaultValue: '24', owner: 'operations' },
+  { key: 'ops_alert_repairs_stale_days', group: 'ops_reports', label: 'Dias para alerta de reparaciones', type: 'number', defaultValue: '7', owner: 'operations' },
+  { key: 'ops_operational_alerts_dedupe_minutes', group: 'ops_reports', label: 'Minutos de dedupe para alertas operativas', type: 'number', defaultValue: '60', owner: 'operations' },
+  { key: 'ops_operational_alerts_emails', group: 'ops_reports', label: 'Emails alertas operativas', type: 'text', defaultValue: '', owner: 'operations' },
+  { key: 'ops_operational_alerts_last_status', group: 'ops_reports', label: 'Operational alerts last status', type: 'text', defaultValue: '', owner: 'operations' },
+  { key: 'ops_operational_alerts_last_run_at', group: 'ops_reports', label: 'Operational alerts last run at', type: 'text', defaultValue: '', owner: 'operations' },
+  { key: 'ops_operational_alerts_last_recipients', group: 'ops_reports', label: 'Operational alerts last recipients', type: 'text', defaultValue: '', owner: 'operations' },
+  { key: 'ops_operational_alerts_last_summary', group: 'ops_reports', label: 'Operational alerts last summary', type: 'json', defaultValue: '{}', owner: 'operations' },
+  { key: 'ops_operational_alerts_last_error', group: 'ops_reports', label: 'Operational alerts last error', type: 'text', defaultValue: '', owner: 'operations' },
+] as const satisfies readonly AppSettingDefinition[];
+
+export const APP_SETTING_DEFINITIONS_BY_KEY = new Map<string, AppSettingDefinition>(
+  APP_SETTING_DEFINITIONS.map((item) => [item.key, item]),
+);
+
+export function getAppSettingDefinition(key: string) {
+  return APP_SETTING_DEFINITIONS_BY_KEY.get(key) ?? null;
+}
+
+export type BrandAssetSlotSpec = {
+  settingKey: string;
+  defaultPath: string;
+  fileBase: string;
+  maxKb: number;
+  allowedExts: readonly string[];
+};
+
+export const BRAND_ASSET_SLOTS = {
+  favicon_ico: { settingKey: 'brand_asset.favicon_ico.path', defaultPath: 'favicon.ico', fileBase: 'favicon-ico', maxKb: 1024, allowedExts: ['ico'] },
+  favicon_16: { settingKey: 'brand_asset.favicon_16.path', defaultPath: 'favicon-16x16.png', fileBase: 'favicon-16x16', maxKb: 1024, allowedExts: ['png', 'ico', 'webp'] },
+  favicon_32: { settingKey: 'brand_asset.favicon_32.path', defaultPath: 'favicon-32x32.png', fileBase: 'favicon-32x32', maxKb: 1024, allowedExts: ['png', 'ico', 'webp'] },
+  android_192: { settingKey: 'brand_asset.android_192.path', defaultPath: 'android-chrome-192x192.png', fileBase: 'android-192', maxKb: 2048, allowedExts: ['png', 'jpg', 'jpeg', 'webp'] },
+  android_512: { settingKey: 'brand_asset.android_512.path', defaultPath: 'android-chrome-512x512.png', fileBase: 'android-512', maxKb: 4096, allowedExts: ['png', 'jpg', 'jpeg', 'webp'] },
+  apple_touch: { settingKey: 'brand_asset.apple_touch.path', defaultPath: 'apple-touch-icon.png', fileBase: 'apple-touch', maxKb: 2048, allowedExts: ['png', 'jpg', 'jpeg', 'webp'] },
+  store_hero_desktop: { settingKey: 'store_hero_image_desktop', defaultPath: '', fileBase: 'store-hero-desktop', maxKb: 6144, allowedExts: ['png', 'jpg', 'jpeg', 'webp'] },
+  store_hero_mobile: { settingKey: 'store_hero_image_mobile', defaultPath: '', fileBase: 'store-hero-mobile', maxKb: 4096, allowedExts: ['png', 'jpg', 'jpeg', 'webp'] },
+  icon_settings: { settingKey: 'brand_asset.icon_settings.path', defaultPath: 'icons/settings.svg', fileBase: 'icon-settings', maxKb: 2048, allowedExts: ['svg', 'png', 'jpg', 'jpeg', 'webp'] },
+  icon_carrito: { settingKey: 'brand_asset.icon_carrito.path', defaultPath: 'icons/carrito.svg', fileBase: 'icon-carrito', maxKb: 2048, allowedExts: ['svg', 'png', 'jpg', 'jpeg', 'webp'] },
+  icon_logout: { settingKey: 'brand_asset.icon_logout.path', defaultPath: 'icons/logout.svg', fileBase: 'icon-logout', maxKb: 2048, allowedExts: ['svg', 'png', 'jpg', 'jpeg', 'webp'] },
+  icon_consultar_reparacion: { settingKey: 'brand_asset.icon_consultar_reparacion.path', defaultPath: 'icons/consultar-reparacion.svg', fileBase: 'icon-consultar-reparacion', maxKb: 2048, allowedExts: ['svg', 'png', 'jpg', 'jpeg', 'webp'] },
+  icon_mis_pedidos: { settingKey: 'brand_asset.icon_mis_pedidos.path', defaultPath: 'icons/mis-pedidos.svg', fileBase: 'icon-mis-pedidos', maxKb: 2048, allowedExts: ['svg', 'png', 'jpg', 'jpeg', 'webp'] },
+  icon_mis_reparaciones: { settingKey: 'brand_asset.icon_mis_reparaciones.path', defaultPath: 'icons/mis-reparaciones.svg', fileBase: 'icon-mis-reparaciones', maxKb: 2048, allowedExts: ['svg', 'png', 'jpg', 'jpeg', 'webp'] },
+  icon_dashboard: { settingKey: 'brand_asset.icon_dashboard.path', defaultPath: 'icons/dashboard.svg', fileBase: 'icon-dashboard', maxKb: 2048, allowedExts: ['svg', 'png', 'jpg', 'jpeg', 'webp'] },
+  icon_tienda: { settingKey: 'brand_asset.icon_tienda.path', defaultPath: 'icons/tienda.svg', fileBase: 'icon-tienda', maxKb: 2048, allowedExts: ['svg', 'png', 'jpg', 'jpeg', 'webp'] },
+  logo_principal: { settingKey: 'brand_asset.logo_principal.path', defaultPath: 'brand/logo.png', fileBase: 'logo-principal', maxKb: 4096, allowedExts: ['png', 'jpg', 'jpeg', 'webp', 'svg'] },
+} as const satisfies Record<string, BrandAssetSlotSpec>;

@@ -1032,3 +1032,41 @@ pm run qa:frontend:e2e
 
 ---
 
+### 2026-03-30 - Codex
+- Alcance: primera ola de limpieza profunda y orden del repo canonico.
+- Tipo de intervencion: reorganizacion fisica de docs/runbooks/scripts, endurecimiento de ignores, refactor interno seguro del frontend y formalizacion tipada de settings admin.
+- Archivos tocados:
+  - `.gitignore`
+  - `README.md`
+  - `next-stack/.gitignore`
+  - `next-stack/package.json`
+  - `project-docs/INDEX.md`
+  - `project-docs/plans/REPO_CLEANUP_POLICY.md`
+  - `next-stack/docs/INDEX.md`
+  - `next-stack/apps/web/src/App.tsx`
+  - `next-stack/apps/web/src/app/routing/route-pages.tsx`
+  - `next-stack/apps/web/src/app/routing/route-shell.tsx`
+  - `next-stack/apps/web/src/app/routing/route-aliases.tsx`
+  - `next-stack/apps/web/src/layouts/AppShell.tsx`
+  - `next-stack/apps/web/src/layouts/app-shell/types.ts`
+  - `next-stack/apps/web/src/layouts/app-shell/utils.ts`
+  - `next-stack/apps/web/src/layouts/app-shell/primitives.tsx`
+  - `next-stack/apps/api/src/modules/admin/admin.service.ts`
+  - `next-stack/apps/api/src/modules/admin/app-settings.registry.ts`
+  - `next-stack/packages/contracts/src/index.ts`
+  - movimientos fisicos dentro de `project-docs/`, `next-stack/docs/` y `next-stack/scripts/`
+- ¿Cambio comportamiento funcional?: No deliberado en interfaces publicas. Se mantuvieron rutas, endpoints y comandos npm publicos; los cambios son de orden, encapsulacion y gobernanza interna.
+- Validaciones ejecutadas:
+  - `npm run env:check`
+  - `npm run typecheck --workspace @nico/api`
+  - `npm run typecheck --workspace @nico/web`
+  - `npm run build --workspace @nico/api`
+  - `npm run build --workspace @nico/web`
+  - `npm run qa:route-parity`
+  - `npm run qa:legacy:detach`
+  - `npm run smoke:web`
+- Riesgos / notas:
+  - no se tocaron los cambios preexistentes del usuario en `next-stack/apps/web/src/features/store/StorePage.tsx` ni `next-stack/apps/web/src/styles.css`
+  - `project-docs/overview/REPO_MAP.md` y `project-docs/overview/CANONICAL_SOURCES.md` quedaron movidos pero no rehechos en esta pasada porque venian con encoding no UTF-8; el nuevo punto de entrada documental es `project-docs/INDEX.md`
+
+---

@@ -71,3 +71,55 @@ export const accountPasswordUpdateSchema = z.object({
 });
 
 export type AccountPasswordUpdateInput = z.infer<typeof accountPasswordUpdateSchema>;
+
+export const orderStatusSchema = z.enum([
+  'PENDIENTE',
+  'CONFIRMADO',
+  'PREPARANDO',
+  'LISTO_RETIRO',
+  'ENTREGADO',
+  'CANCELADO',
+]);
+
+export type OrderStatus = z.infer<typeof orderStatusSchema>;
+
+export const repairStatusSchema = z.enum([
+  'RECEIVED',
+  'DIAGNOSING',
+  'WAITING_APPROVAL',
+  'REPAIRING',
+  'READY_PICKUP',
+  'DELIVERED',
+  'CANCELLED',
+]);
+
+export type RepairStatus = z.infer<typeof repairStatusSchema>;
+
+export const appSettingItemSchema = z.object({
+  id: z.string().nullable(),
+  key: z.string().min(1),
+  value: z.string(),
+  group: z.string().min(1),
+  label: z.string(),
+  type: z.string().min(1),
+  createdAt: z.string().nullable(),
+  updatedAt: z.string().nullable(),
+});
+
+export type AppSettingItem = z.infer<typeof appSettingItemSchema>;
+
+export const appSettingsResponseSchema = z.object({
+  items: z.array(appSettingItemSchema),
+});
+
+export type AppSettingsResponse = z.infer<typeof appSettingsResponseSchema>;
+
+export const appSettingUpsertSchema = z.object({
+  key: z.string().trim().min(1),
+  value: z.string().nullable().optional(),
+  group: z.string().trim().min(1).optional(),
+  label: z.string().trim().min(1).nullable().optional(),
+  type: z.string().trim().min(1).nullable().optional(),
+});
+
+export type AppSettingUpsertInput = z.infer<typeof appSettingUpsertSchema>;
