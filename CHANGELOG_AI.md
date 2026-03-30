@@ -1302,3 +1302,34 @@ pm run qa:frontend:e2e
   - el siguiente hotspot coherente dentro de `AdminModule` pasa a ser `warranties` + `accounting`
 
 ---
+
+### 2026-03-30 - Codex
+- Alcance: seguir partiendo `AdminModule`, extrayendo `warranties` + `accounting` y centralizando la lectura del registro de incidentes.
+- Tipo de intervencion: refactor interno seguro del backend admin + eliminacion de duplicacion compartida entre `finance` y `providers`.
+- Archivos tocados:
+  - `next-stack/apps/api/src/modules/admin/admin.module.ts`
+  - `next-stack/apps/api/src/modules/admin/admin.service.ts`
+  - `next-stack/apps/api/src/modules/admin/admin-providers.service.ts`
+  - `next-stack/apps/api/src/modules/admin/admin-finance.service.ts`
+  - `next-stack/apps/api/src/modules/admin/admin-finance.service.test.ts`
+  - `next-stack/apps/api/src/modules/admin/admin-warranty-registry.service.ts`
+  - `next-stack/apps/api/src/modules/admin/admin-warranty-registry.service.test.ts`
+  - `next-stack/apps/api/src/modules/admin/admin-warranty-registry.types.ts`
+  - `project-docs/architecture/ARCHITECTURE.md`
+  - `project-docs/backend/BACKEND_MAP.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No deliberado en rutas ni payloads. Los endpoints `/admin/warranties*` y `/admin/accounting` siguen estables; cambia la separacion interna y la forma en que `providers` reutiliza el registro de incidentes.
+- Validaciones ejecutadas:
+  - `cmd /c npm run env:check`
+  - `cmd /c npm run typecheck --workspace @nico/api`
+  - `cmd /c npm run test --workspace @nico/api`
+  - `cmd /c npm run build --workspace @nico/api`
+  - `cmd /c npm run smoke:backend`
+  - `cmd /c npm run qa:route-parity`
+  - `git diff --check`
+- Riesgos / notas:
+  - `AdminService` sigue teniendo bloques menores como `security` y `help/content`, pero ya no concentra providers, communications ni finance
+  - la lectura del registro de incidentes de garantia queda unificada en un solo servicio y eso baja riesgo de drift entre stats de providers y listados financieros
+
+---

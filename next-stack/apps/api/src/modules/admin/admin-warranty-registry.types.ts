@@ -1,0 +1,23 @@
+export type WarrantyIncidentRegistryRow = {
+  id: string;
+  sourceType: 'repair' | 'product';
+  status: 'open' | 'closed';
+  title: string;
+  reason: string | null;
+  repairId: string | null;
+  productId: string | null;
+  orderId: string | null;
+  supplierId: string | null;
+  quantity: number;
+  unitCost: number;
+  costOrigin: 'manual' | 'repair' | 'product';
+  extraCost: number;
+  recoveredAmount: number;
+  lossAmount: number;
+  happenedAt: string;
+  resolvedAt: string | null;
+  notes: string | null;
+  createdBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+};

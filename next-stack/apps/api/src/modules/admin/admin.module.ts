@@ -7,9 +7,11 @@ import { AdminBrandAssetsService } from './admin-brand-assets.service.js';
 import { AdminCommunicationsService } from './admin-communications.service.js';
 import { AdminController } from './admin.controller.js';
 import { AdminDashboardService } from './admin-dashboard.service.js';
+import { AdminFinanceService } from './admin-finance.service.js';
 import { AdminProvidersService } from './admin-providers.service.js';
 import { AdminSettingsService } from './admin-settings.service.js';
 import { AdminService } from './admin.service.js';
+import { AdminWarrantyRegistryService } from './admin-warranty-registry.service.js';
 
 @Module({
   imports: [AuthModule, MailModule, WhatsappModule],
@@ -20,6 +22,8 @@ import { AdminService } from './admin.service.js';
     AdminSettingsService,
     AdminBrandAssetsService,
     AdminCommunicationsService,
+    AdminWarrantyRegistryService,
+    AdminFinanceService,
     AdminProvidersService,
     AdminService,
   ],

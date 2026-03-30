@@ -25,7 +25,7 @@ Ubicacion:
 
 - `AdminModule`
   - facade principal en `admin.service.ts`
-  - subservicios activos para dashboard, settings, brand assets, communications y providers
+  - subservicios activos para dashboard, settings, brand assets, communications, finance, warranty registry y providers
 - `RepairsModule`
   - facade principal en `repairs.service.ts`
   - subservicios activos para flujo admin, flujo publico, pricing snapshots, timeline, notificaciones y soporte/serializacion
@@ -46,5 +46,5 @@ No existe ya backend legacy dentro del repo. Todo comportamiento servidor activo
 
 ## Hotspot actual recomendado
 
-- `AdminModule` sigue siendo el punto backend mas grande despues de las particiones previas.
-- El siguiente corte recomendado dentro de `admin.service.ts` es `warranties` + `accounting`, porque comparten reglas de costos, estados y lectura/escritura de registros.
+- `AdminModule` sigue siendo el punto backend mas grande despues de las particiones previas, pero ya sin providers, communications ni finance mezclados en la fachada.
+- El siguiente corte recomendado dentro de `admin.service.ts` es `security` + `help/content`, porque ahora quedan como bloques chicos pero todavia transversales dentro del admin.

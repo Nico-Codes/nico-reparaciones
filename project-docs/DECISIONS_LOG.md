@@ -622,3 +622,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/api/src/modules/admin/{admin.module.ts,admin.service.ts,admin-communications.service.ts,admin-communications.service.test.ts}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/backend/BACKEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `typecheck --workspace @nico/api`, `test --workspace @nico/api`, `build --workspace @nico/api`, `smoke:backend`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0052]
+- Fecha: 2026-03-30
+- Estado: aceptada
+- Tema: `AdminModule` extrae warranties/accounting y centraliza la lectura del registro de incidentes
+- Contexto: despues de separar `providers` y `communications`, `admin.service.ts` seguia mezclando warranties, accounting, filtros de fechas y lectura del registro de incidentes. Al mismo tiempo, `admin-providers.service.ts` habia quedado con una duplicacion de la misma lectura de `warrantyIncident`, lo que seguia esparciendo logica comun dentro del modulo admin.
+- Decision: crear `admin-warranty-registry.service.ts` como punto unico para leer y normalizar incidentes de garantia, mover `warranties`, `createWarranty`, `closeWarranty` y `accounting` a `admin-finance.service.ts`, y hacer que `admin-providers.service.ts` consuma el registro compartido en lugar de reimplementar esa lectura.
+- Impacto: `AdminService` baja otra porcion grande de complejidad, providers deja de duplicar acceso al registro de incidentes y el dominio de warranties/accounting queda mejor aislado para futuras pruebas o cortes internos. No hay cambios deliberados en endpoints, payloads ni variables de entorno.
+- Alternativas consideradas: partir `warranties` y `accounting` por separado o moverlos sin centralizar el registro; descartado porque dejaba acople artificial entre servicios y mantenia duplicacion innecesaria en providers.
+- Archivos / modulos afectados: `next-stack/apps/api/src/modules/admin/{admin.module.ts,admin.service.ts,admin-providers.service.ts,admin-finance.service.ts,admin-finance.service.test.ts,admin-warranty-registry.service.ts,admin-warranty-registry.service.test.ts,admin-warranty-registry.types.ts}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/backend/BACKEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `env:check`, `typecheck --workspace @nico/api`, `test --workspace @nico/api`, `build --workspace @nico/api`, `smoke:backend`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano

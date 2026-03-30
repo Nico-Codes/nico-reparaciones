@@ -1,5 +1,7 @@
-﻿import { BadGatewayException, BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadGatewayException, BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { AdminWarrantyRegistryService } from './admin-warranty-registry.service.js';
+import type { WarrantyIncidentRegistryRow } from './admin-warranty-registry.types.js';
 
 type SupplierRegistryRow = {
   id: string;
@@ -19,40 +21,6 @@ type SupplierRegistryRow = {
   lastProbeAt: string | null;
   createdAt: string;
   updatedAt: string;
-};
-
-type WarrantyIncidentRegistryRow = {
-  id: string;
-  sourceType: 'repair' | 'product';
-  status: 'open' | 'closed';
-  title: string;
-  reason: string | null;
-  repairId: string | null;
-  productId: string | null;
-  orderId: string | null;
-  supplierId: string | null;
-  quantity: number;
-  unitCost: number;
-  costOrigin: 'manual' | 'repair' | 'product';
-  extraCost: number;
-  recoveredAmount: number;
-  lossAmount: number;
-  happenedAt: string;
-  resolvedAt: string | null;
-  notes: string | null;
-  createdBy: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
-
-type AccountingEntryRow = {
-  id: string;
-  happenedAt: string;
-  direction: 'inflow' | 'outflow';
-  category: string;
-  description: string;
-  source: string;
-  amount: number;
 };
 
 type SupplierPartSearchInput = {
@@ -177,12 +145,16 @@ const DEFAULT_SUPPLIER_CATALOG: Array<
 ];
 @Injectable()
 export class AdminProvidersService {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(AdminWarrantyRegistryService)
+    private readonly adminWarrantyRegistryService: AdminWarrantyRegistryService,
+  ) {}
   async providers(params?: { q?: string; active?: string }) {
     const q = (params?.q ?? '').trim().toLowerCase();
     const activeRaw = (params?.active ?? '').trim().toLowerCase();
     const suppliers = await this.readSuppliersRegistry();
-    const incidents = await this.readWarrantyIncidentsRegistry();
+    const incidents = await this.adminWarrantyRegistryService.readIncidents();
     const statsByProvider = this.buildProviderStats(incidents);
 
     const filtered = suppliers
@@ -309,7 +281,7 @@ export class AdminProvidersService {
     items[index] = updated;
     await this.writeSuppliersRegistry(items);
 
-    const incidents = await this.readWarrantyIncidentsRegistry();
+    const incidents = await this.adminWarrantyRegistryService.readIncidents();
     const stats = this.buildProviderStats(incidents).get(updated.id);
     const productCount = await this.countProductsForSupplier(updated.id);
     return { item: this.serializeProvider(updated, stats, productCount) };
@@ -325,7 +297,7 @@ export class AdminProvidersService {
       updatedAt: new Date().toISOString(),
     };
     await this.writeSuppliersRegistry(items);
-    const incidents = await this.readWarrantyIncidentsRegistry();
+    const incidents = await this.adminWarrantyRegistryService.readIncidents();
     const stats = this.buildProviderStats(incidents).get(items[index].id);
     const productCount = await this.countProductsForSupplier(items[index].id);
     return { item: this.serializeProvider(items[index], stats, productCount) };
@@ -374,7 +346,7 @@ export class AdminProvidersService {
       }
     }
     await this.writeSuppliersRegistry(items);
-    const incidents = await this.readWarrantyIncidentsRegistry();
+    const incidents = await this.adminWarrantyRegistryService.readIncidents();
     const stats = this.buildProviderStats(incidents);
     const productCounts = await this.countProductsBySupplierIds(items.map((row) => row.id));
     return {
@@ -411,7 +383,7 @@ export class AdminProvidersService {
     }
 
     await this.writeSuppliersRegistry(items);
-    const incidents = await this.readWarrantyIncidentsRegistry();
+    const incidents = await this.adminWarrantyRegistryService.readIncidents();
     const stats = this.buildProviderStats(incidents);
     const productCounts = await this.countProductsBySupplierIds(items.map((row) => row.id));
     return {
@@ -441,7 +413,7 @@ export class AdminProvidersService {
         updatedAt: now,
       };
       await this.writeSuppliersRegistry(items);
-      const incidents = await this.readWarrantyIncidentsRegistry();
+      const incidents = await this.adminWarrantyRegistryService.readIncidents();
       const stats = this.buildProviderStats(incidents);
       const productCount = await this.countProductsForSupplier(items[index].id);
       return {
@@ -478,7 +450,7 @@ export class AdminProvidersService {
         updatedAt: now,
       };
       await this.writeSuppliersRegistry(items);
-      const incidents = await this.readWarrantyIncidentsRegistry();
+      const incidents = await this.adminWarrantyRegistryService.readIncidents();
       const stats = this.buildProviderStats(incidents);
       const productCount = await this.countProductsForSupplier(items[index].id);
       return {
@@ -496,7 +468,7 @@ export class AdminProvidersService {
         updatedAt: now,
       };
       await this.writeSuppliersRegistry(items);
-      const incidents = await this.readWarrantyIncidentsRegistry();
+      const incidents = await this.adminWarrantyRegistryService.readIncidents();
       const stats = this.buildProviderStats(incidents);
       const productCount = await this.countProductsForSupplier(items[index].id);
       return {
@@ -555,7 +527,7 @@ export class AdminProvidersService {
       };
       await this.writeSuppliersRegistry(items);
 
-      const incidents = await this.readWarrantyIncidentsRegistry();
+      const incidents = await this.adminWarrantyRegistryService.readIncidents();
       const stats = this.buildProviderStats(incidents);
       const productCount = await this.countProductsForSupplier(items[index].id);
 
@@ -775,101 +747,6 @@ export class AdminProvidersService {
         });
       } else {
         await tx.supplier.deleteMany({});
-      }
-    });
-  }
-
-  private async readWarrantyIncidentsRegistry() {
-    const rows = await this.prisma.warrantyIncident.findMany({
-      orderBy: [{ happenedAt: 'desc' }, { createdAt: 'desc' }],
-    });
-
-    return rows.map((row) => ({
-      id: row.id,
-      sourceType: row.sourceType === 'product' ? 'product' : 'repair',
-      status: row.status === 'closed' ? 'closed' : 'open',
-      title: row.title.trim(),
-      reason: this.cleanNullable(row.reason ?? null),
-      repairId: this.cleanNullable(row.repairId ?? null),
-      productId: this.cleanNullable(row.productId ?? null),
-      orderId: this.cleanNullable(row.orderId ?? null),
-      supplierId: this.cleanNullable(row.supplierId ?? null),
-      quantity: this.clampInt(row.quantity, 1, 999),
-      unitCost: Number(row.unitCost),
-      costOrigin: row.costOrigin === 'repair' || row.costOrigin === 'product' ? row.costOrigin : 'manual',
-      extraCost: Number(row.extraCost),
-      recoveredAmount: Number(row.recoveredAmount),
-      lossAmount: Number(row.lossAmount),
-      happenedAt: row.happenedAt.toISOString(),
-      resolvedAt: row.resolvedAt?.toISOString() ?? null,
-      notes: this.cleanNullable(row.notes ?? null),
-      createdBy: this.cleanNullable(row.createdBy ?? null),
-      createdAt: row.createdAt.toISOString(),
-      updatedAt: row.updatedAt.toISOString(),
-    } satisfies WarrantyIncidentRegistryRow));
-  }
-
-  private async writeWarrantyIncidentsRegistry(items: WarrantyIncidentRegistryRow[]) {
-    const incidentIds = items.map((i) => i.id);
-    const suppliers = await this.prisma.supplier.findMany({ select: { id: true } });
-    const supplierSet = new Set(suppliers.map((s) => s.id));
-
-    await this.prisma.$transaction(async (tx) => {
-      for (const row of items) {
-        await tx.warrantyIncident.upsert({
-          where: { id: row.id },
-          create: {
-            id: row.id,
-            sourceType: row.sourceType,
-            status: row.status,
-            title: row.title,
-            reason: row.reason,
-            repairId: row.repairId,
-            productId: row.productId,
-            orderId: row.orderId,
-            supplierId: row.supplierId && supplierSet.has(row.supplierId) ? row.supplierId : null,
-            quantity: row.quantity,
-            unitCost: row.unitCost,
-            costOrigin: row.costOrigin,
-            extraCost: row.extraCost,
-            recoveredAmount: row.recoveredAmount,
-            lossAmount: row.lossAmount,
-            happenedAt: new Date(row.happenedAt),
-            resolvedAt: row.resolvedAt ? new Date(row.resolvedAt) : null,
-            notes: row.notes,
-            createdBy: row.createdBy,
-            createdAt: new Date(row.createdAt),
-            updatedAt: new Date(row.updatedAt),
-          },
-          update: {
-            sourceType: row.sourceType,
-            status: row.status,
-            title: row.title,
-            reason: row.reason,
-            repairId: row.repairId,
-            productId: row.productId,
-            orderId: row.orderId,
-            supplierId: row.supplierId && supplierSet.has(row.supplierId) ? row.supplierId : null,
-            quantity: row.quantity,
-            unitCost: row.unitCost,
-            costOrigin: row.costOrigin,
-            extraCost: row.extraCost,
-            recoveredAmount: row.recoveredAmount,
-            lossAmount: row.lossAmount,
-            happenedAt: new Date(row.happenedAt),
-            resolvedAt: row.resolvedAt ? new Date(row.resolvedAt) : null,
-            notes: row.notes,
-            createdBy: row.createdBy,
-            updatedAt: new Date(row.updatedAt),
-          },
-        });
-      }
-      if (incidentIds.length > 0) {
-        await tx.warrantyIncident.deleteMany({
-          where: { id: { notIn: incidentIds } },
-        });
-      } else {
-        await tx.warrantyIncident.deleteMany({});
       }
     });
   }
@@ -1527,14 +1404,14 @@ export class AdminProvidersService {
       this.cleanLabel(this.firstCapture(snippet, /class=([\"'])[^\"']*\bproduct__categories\b[^\"']*\1[\s\S]*?<\/p>\s*<div[^>]*woocommerce-loop-product__title[^>]*>\s*<a[^>]*>([\s\S]*?)<\/a>/i)),
       this.cleanLabel(this.firstCapture(snippet, /data-hook=([\"'])product-item-root\1[^>]*aria-label=([\"'])(.*?)\2/i)),
       safeRawLabel,
-      safeAriaLabel?.replace(/^galer[iÃ­]a de\s+/i, '').trim() || null,
+      safeAriaLabel?.replace(/^galer[ií]a de\s+/i, '').trim() || null,
       this.extractProductNameFromContext(snippet),
       this.cleanLabel(this.slugToLabel(url)),
     ];
     const meaningful = candidateNames.find((value) => this.isMeaningfulPartName(value, null));
     if (!meaningful) return null;
     if (profile === 'wix') {
-      return meaningful.replace(/^galer[iÃ­]a de\s+/i, '').trim();
+      return meaningful.replace(/^galer[ií]a de\s+/i, '').trim();
     }
     return meaningful;
   }
@@ -1691,11 +1568,11 @@ export class AdminProvidersService {
 
     const normalized = this.normalizeSearchText(label);
     if (normalized.startsWith('anadir al carrito')) {
-      const quoted = label.match(/[:Â«â€œ"]\s*(.+?)\s*[Â»â€"]?$/);
+      const quoted = label.match(/[:«“"]\s*(.+?)\s*[»”"]?$/);
       return quoted?.[1] ? this.cleanLabel(quoted[1]) : null;
     }
     if (normalized.startsWith('add to cart')) {
-      const quoted = label.match(/[:Â«â€œ"]\s*(.+?)\s*[Â»â€"]?$/);
+      const quoted = label.match(/[:«“"]\s*(.+?)\s*[»”"]?$/);
       return quoted?.[1] ? this.cleanLabel(quoted[1]) : null;
     }
     return label;
