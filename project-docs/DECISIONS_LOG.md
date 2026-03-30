@@ -586,3 +586,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/api/src/modules/repairs/*`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/backend/BACKEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `typecheck --workspace @nico/api`, `test --workspace @nico/api`, `build --workspace @nico/api`, `smoke:backend`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0049]
+- Fecha: 2026-03-30
+- Estado: aceptada
+- Tema: `OrdersModule` pasa de servicio monolitico a facade con subservicios internos
+- Contexto: una vez partido `RepairsModule`, `orders.service.ts` quedo como el siguiente hotspot claro del backend. Mezclaba checkout, mis pedidos, admin, ventas rapidas, reglas de estado, stock, serializacion y logs de WhatsApp en un solo archivo.
+- Decision: mantener `OrdersController` y las rutas estables, pero dividir la implementacion interna en una facade chica (`orders.service.ts`) y subservicios por responsabilidad: `orders-checkout.service.ts`, `orders-admin.service.ts`, `orders-quick-sales.service.ts`, `orders-notifications.service.ts` y `orders-support.service.ts`. Tambien se extraen tipos y helpers compartidos, y se agrega test unitario para helpers del dominio.
+- Impacto: el hotspot principal baja de mas de 700 lineas a una facade de 46 lineas, el backend gana separacion mas clara entre flujo cliente, admin y venta rapida, y la siguiente ola sobre contracts/frontend queda menos riesgosa. No hay cambios deliberados en endpoints ni payloads publicos.
+- Alternativas consideradas: saltar directo a contracts o frontend; descartado porque `orders` seguia siendo un hotspot estructural del backend y convenia resolverlo antes de expandir fronteras compartidas.
+- Archivos / modulos afectados: `next-stack/apps/api/src/modules/orders/*`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/backend/BACKEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/api`, `test --workspace @nico/api`, `build --workspace @nico/api`, `smoke:backend`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano

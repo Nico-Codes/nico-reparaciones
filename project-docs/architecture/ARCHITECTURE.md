@@ -205,6 +205,12 @@ Desde la ola de simplificacion de 2026-03-30 quedaron formalizados estos limites
   - `repairs-notifications.service.ts`
   - `repairs-support.service.ts`
   - `repairs-timeline.service.ts`
+- `OrdersModule` ahora usa facade + subservicios por responsabilidad:
+  - `orders-checkout.service.ts`
+  - `orders-admin.service.ts`
+  - `orders-quick-sales.service.ts`
+  - `orders-notifications.service.ts`
+  - `orders-support.service.ts`
 - harness de tests del monorepo con Vitest por workspace
 
 Esto no cambia rutas ni contratos publicos, pero reduce acople interno y hace mas segura la limpieza futura.
@@ -233,7 +239,6 @@ Seguridad confirmada:
 - `App.tsx` concentra gran parte del mapa de rutas y aliases legacy
 - `AppShell.tsx` concentra navegacion, cuenta, navbar y comportamiento responsive
 - `admin.service.ts` es el servicio mas grande y transversal del backend
-- `orders.service.ts` sigue siendo un hotspot pendiente de partir
 - `styles.css` del frontend sigue siendo un punto global demasiado grande
 - `catalog-admin.service.ts` y `admin.service.ts` escriben en `apps/web/public`
 - scripts de migracion y visual parity todavia dependen del repo root legacy

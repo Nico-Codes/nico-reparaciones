@@ -563,6 +563,31 @@ pm run qa:frontend:e2e
 ---
 
 ### 2026-03-30 - Codex
+- Alcance: partir `OrdersModule` en subservicios internos manteniendo controller, rutas y comportamiento externo estables.
+- Tipo de intervencion: refactor estructural interno del backend + test unitario puntual + actualizacion de documentacion viva.
+- Archivos tocados:
+  - `next-stack/apps/api/src/modules/orders/orders.service.ts`
+  - `next-stack/apps/api/src/modules/orders/orders.module.ts`
+  - `next-stack/apps/api/src/modules/orders/{orders-checkout.service.ts,orders-admin.service.ts,orders-quick-sales.service.ts,orders-notifications.service.ts,orders-support.service.ts,orders.helpers.ts,orders.types.ts,orders.helpers.test.ts}`
+  - `project-docs/architecture/ARCHITECTURE.md`
+  - `project-docs/backend/BACKEND_MAP.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- Cambio comportamiento funcional: No deliberado en endpoints ni payloads. Si mejora estructural real del backend: `OrdersService` queda como facade y el dominio se separa por responsabilidad interna.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/api`
+  - `cmd /c npm run test --workspace @nico/api`
+  - `cmd /c npm run build --workspace @nico/api`
+  - `cmd /c npm run smoke:backend`
+  - `cmd /c npm run qa:route-parity`
+  - `git diff --check`
+- Riesgos / notas:
+  - `admin.service.ts` sigue siendo el hotspot principal del backend
+  - no se tocaron contracts compartidos ni frontend en esta ola
+
+---
+
+### 2026-03-30 - Codex
 - Alcance: partir `RepairsModule` en subservicios internos manteniendo controller, rutas y comportamiento externo estables.
 - Tipo de intervencion: refactor estructural interno del backend + test unitario puntual + actualizacion de documentacion viva.
 - Archivos tocados:

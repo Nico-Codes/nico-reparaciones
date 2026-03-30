@@ -29,6 +29,9 @@ Ubicacion:
 - `RepairsModule`
   - facade principal en `repairs.service.ts`
   - subservicios activos para flujo admin, flujo publico, pricing snapshots, timeline, notificaciones y soporte/serializacion
+- `OrdersModule`
+  - facade principal en `orders.service.ts`
+  - subservicios activos para checkout/mis pedidos, flujo admin, ventas rapidas, notificaciones y soporte/serializacion
 
 ## Seguridad
 
