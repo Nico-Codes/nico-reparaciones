@@ -35,3 +35,4 @@
 - Antes de commitear, separar siempre cambios de la tarea actual de cambios previos o ajenos; si hay mezcla o ambiguedad, frenar y consultarlo.
 - No agregar scripts, batchs ni comandos dentro del repo solo para automatizar commit/push, salvo pedido expreso del usuario.
 - Si una tarea no queda cerrada en su totalidad, terminar la respuesta con el siguiente paso concreto o la recomendacion prioritaria para completarla.
+- Si una tarea queda bloqueada o depende de una definicion del usuario, explicitar el bloqueo real y la decision minima necesaria para destrabarla.

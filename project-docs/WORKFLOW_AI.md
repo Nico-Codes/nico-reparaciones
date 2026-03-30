@@ -100,6 +100,7 @@ Definir una metodologia unica y repetible para que Codex trabaje sobre el repo c
 - Registrar decisiones y trazabilidad cuando corresponda.
 - Cerrar tareas de codigo con la skill `repo-ship`, salvo que el usuario indique no commitear o no pushear.
 - Si la tarea queda parcial o con una fase pendiente, cerrar siempre con el siguiente paso recomendado para completarla y evitar cierres ambiguos.
+- Si la tarea queda bloqueada por riesgo, falta de contexto o una decision pendiente del usuario, dejar explicitado cual es el bloqueo real y cual es la decision minima que falta para continuar.
 
 ## Uso recomendado de herramientas
 

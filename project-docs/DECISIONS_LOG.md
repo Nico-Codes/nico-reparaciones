@@ -550,3 +550,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `AGENTS.md`, `project-docs/WORKFLOW_AI.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: revisar consistencia entre reglas del repo y metodologia detallada, y verificar diff limpio.
 - Responsable: Codex + operador humano
+
+### [DL-0046]
+- Fecha: 2026-03-30
+- Estado: aceptada
+- Tema: tareas bloqueadas deben cerrar con bloqueo explicito y decision minima pendiente
+- Contexto: incluso cuando una tarea no puede completarse por ambiguedad, riesgo o falta de definicion del usuario, el cierre no debe quedar difuso. Sin una explicacion concreta del bloqueo, el siguiente turno arranca con perdida de contexto y mas friccion.
+- Decision: incorporar como regla permanente que, si una tarea queda bloqueada o depende de una definicion externa, Codex debe explicitar el bloqueo real y la decision minima necesaria para destrabarla.
+- Impacto: mejora la continuidad entre turnos, evita cierres vagos y hace mas claro cuando el repo ya no es el problema y falta una definicion operativa o de producto.
+- Alternativas consideradas: tratarlo como extension informal de la regla de cierre parcial; descartado porque el tipo de bloqueo merece una salida mas precisa que un simple "siguiente paso".
+- Archivos / modulos afectados: `AGENTS.md`, `project-docs/WORKFLOW_AI.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: revisar consistencia entre contrato operativo y metodologia detallada, y verificar diff limpio.
+- Responsable: Codex + operador humano

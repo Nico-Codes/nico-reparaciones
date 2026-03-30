@@ -563,6 +563,23 @@ pm run qa:frontend:e2e
 ---
 
 ### 2026-03-30 - Codex
+- Alcance: reforzar el cierre de tareas bloqueadas para que siempre expongan el bloqueo real y la decision minima necesaria para continuar.
+- Tipo de intervencion: gobernanza operativa y metodologia documental; sin cambios de runtime, APIs ni comportamiento funcional de la aplicacion.
+- Archivos tocados:
+  - `AGENTS.md`
+  - `project-docs/WORKFLOW_AI.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- Cambio comportamiento funcional: No en la aplicacion. Si en el flujo de trabajo de Codex: cuando una tarea quede bloqueada o dependa de una definicion externa, el cierre debe explicitar el bloqueo y la decision minima pendiente.
+- Validaciones ejecutadas:
+  - revision de consistencia entre `AGENTS.md` y `project-docs/WORKFLOW_AI.md`
+  - `git diff --check`
+- Riesgos / notas:
+  - complementa la regla de cierre parcial ya adoptada; no altera versionado ni criterios de validacion
+
+---
+
+### 2026-03-30 - Codex
 - Alcance: reforzar la regla de cierre parcial para que toda tarea incompleta termine con un siguiente paso recomendado explicito.
 - Tipo de intervencion: gobernanza operativa y metodologia documental; sin cambios de runtime, APIs ni comportamiento funcional de la aplicacion.
 - Archivos tocados:
