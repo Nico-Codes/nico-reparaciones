@@ -574,3 +574,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `AGENTS.md`, `project-docs/WORKFLOW_AI.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: revisar consistencia entre contrato operativo y metodologia detallada, y verificar diff limpio.
 - Responsable: Codex + operador humano
+
+### [DL-0048]
+- Fecha: 2026-03-30
+- Estado: aceptada
+- Tema: `RepairsModule` pasa de servicio monolitico a facade con subservicios internos
+- Contexto: despues de la primera ola de hardening, `repairs.service.ts` seguia siendo uno de los hotspots mas grandes del backend y mezclaba flujo publico, flujo admin, snapshots de pricing, timeline, serializacion y notificaciones. Eso hacia mas riesgoso seguir limpiando backend o expandir contratos.
+- Decision: mantener `RepairsController` y las rutas estables, pero partir la implementacion interna en una facade chica (`repairs.service.ts`) y subservicios por responsabilidad: `repairs-admin.service.ts`, `repairs-public.service.ts`, `repairs-pricing.service.ts`, `repairs-notifications.service.ts`, `repairs-support.service.ts` y `repairs-timeline.service.ts`. Tambien se extraen tipos y helpers compartidos, y se agrega test unitario para helpers del dominio.
+- Impacto: el hotspot principal baja de mas de 1200 lineas a una facade de 60 lineas, el modulo gana limites mas claros y la siguiente ola sobre `orders.service.ts`, contracts y frontend queda menos riesgosa. No hay cambios deliberados en endpoints ni payloads publicos.
+- Alternativas consideradas: partir primero `orders.service.ts` o hacer solo un corte cosmetico por helpers dentro del mismo archivo; descartado porque `repairs` era el hotspot mas urgente y un corte parcial dentro del mismo archivo no resolvia el problema de responsabilidad mezclada.
+- Archivos / modulos afectados: `next-stack/apps/api/src/modules/repairs/*`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/backend/BACKEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/api`, `test --workspace @nico/api`, `build --workspace @nico/api`, `smoke:backend`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano

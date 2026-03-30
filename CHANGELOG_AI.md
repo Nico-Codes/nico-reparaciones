@@ -563,6 +563,31 @@ pm run qa:frontend:e2e
 ---
 
 ### 2026-03-30 - Codex
+- Alcance: partir `RepairsModule` en subservicios internos manteniendo controller, rutas y comportamiento externo estables.
+- Tipo de intervencion: refactor estructural interno del backend + test unitario puntual + actualizacion de documentacion viva.
+- Archivos tocados:
+  - `next-stack/apps/api/src/modules/repairs/repairs.service.ts`
+  - `next-stack/apps/api/src/modules/repairs/repairs.module.ts`
+  - `next-stack/apps/api/src/modules/repairs/{repairs-admin.service.ts,repairs-public.service.ts,repairs-pricing.service.ts,repairs-notifications.service.ts,repairs-support.service.ts,repairs-timeline.service.ts,repairs.helpers.ts,repairs.types.ts,repairs.helpers.test.ts}`
+  - `project-docs/architecture/ARCHITECTURE.md`
+  - `project-docs/backend/BACKEND_MAP.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- Cambio comportamiento funcional: No deliberado en endpoints ni payloads. Si mejora estructural real del backend: `RepairsService` queda como facade y el dominio se separa por responsabilidad interna.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/api`
+  - `cmd /c npm run test --workspace @nico/api`
+  - `cmd /c npm run build --workspace @nico/api`
+  - `cmd /c npm run smoke:backend`
+  - `cmd /c npm run qa:route-parity`
+  - `git diff --check`
+- Riesgos / notas:
+  - `orders.service.ts` y `admin.service.ts` siguen siendo hotspots pendientes
+  - no se tocaron contratos compartidos ni frontend en esta ola
+
+---
+
+### 2026-03-30 - Codex
 - Alcance: reforzar la metodologia para que, cuando haya varias opciones razonables, Codex deje una recomendacion priorizada por defecto.
 - Tipo de intervencion: gobernanza operativa y metodologia documental; sin cambios de runtime, APIs ni comportamiento funcional de la aplicacion.
 - Archivos tocados:

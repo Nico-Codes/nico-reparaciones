@@ -21,6 +21,15 @@ Ubicacion:
 - `StoreModule`
 - `PrismaModule`
 
+## Modulos internos ya seccionados
+
+- `AdminModule`
+  - facade principal en `admin.service.ts`
+  - subservicios activos para dashboard, settings y brand assets
+- `RepairsModule`
+  - facade principal en `repairs.service.ts`
+  - subservicios activos para flujo admin, flujo publico, pricing snapshots, timeline, notificaciones y soporte/serializacion
+
 ## Seguridad
 
 - `JwtAuthGuard`
