@@ -1421,3 +1421,31 @@ pm run qa:frontend:e2e
   - el hotspot mas grande del repo completo sigue en frontend dentro de `RepairProviderPartPricingSection.tsx`
 
 ---
+
+### 2026-03-30 - Codex
+- Alcance: partir `RepairProviderPartPricingSection` en helpers y panels especificos, dejando el archivo principal como orquestador de estado y requests.
+- Tipo de intervencion: refactor interno seguro del frontend repairs + seccionado de hotspot compartido entre create/detail.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/repairs/RepairProviderPartPricingSection.tsx`
+  - `next-stack/apps/web/src/features/repairs/repair-provider-part-pricing-section.helpers.ts`
+  - `next-stack/apps/web/src/features/repairs/repair-provider-part-pricing-section.helpers.test.ts`
+  - `next-stack/apps/web/src/features/repairs/repair-provider-part-pricing-section.search.tsx`
+  - `next-stack/apps/web/src/features/repairs/repair-provider-part-pricing-section.preview.tsx`
+  - `next-stack/apps/web/src/features/repairs/repair-provider-part-pricing-section.snapshot.tsx`
+  - `project-docs/architecture/ARCHITECTURE.md`
+  - `project-docs/frontend/FRONTEND_MAP.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No deliberado en rutas ni en el contrato del componente. Se mantiene el flujo proveedor + repuesto + preview + snapshot; cambia solo la separacion interna y la legibilidad del modulo.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `cmd /c npm run qa:route-parity`
+  - `git diff --check`
+- Riesgos / notas:
+  - la pieza compartida mas grande de `repairs` ya no esta concentrada en un unico archivo, pero todavia quedan hotspots frontend claros en `AdminRepairDetailPage.tsx` y `AdminRepairCreatePage.tsx`
+  - este corte deja listo el terreno para extraer contratos/helpers adicionales del subdominio sin mezclar estado, render y calculo en una misma pieza
+
+---

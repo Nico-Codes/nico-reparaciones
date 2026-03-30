@@ -670,3 +670,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/api/src/modules/catalog-admin/*`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/backend/BACKEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `env:check`, `typecheck --workspace @nico/api`, `test --workspace @nico/api`, `build --workspace @nico/api`, `smoke:backend`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0056]
+- Fecha: 2026-03-30
+- Estado: aceptada
+- Tema: `RepairProviderPartPricingSection` pasa de hotspot monolitico a orquestador con helpers y subpanels
+- Contexto: despues de bajar los hotspots fuertes del backend, el archivo mas grande y mas riesgoso del repo completo seguia en frontend dentro de `RepairProviderPartPricingSection.tsx`. Ese archivo mezclaba carga de proveedores, busqueda agregada de repuestos, seleccion de supplier/part, preview de pricing, snapshot activo, historial, mensajes de estado y render de toda la UI en una sola pieza.
+- Decision: mantener la API del componente y el flujo funcional estable, pero repartir la implementacion en un orquestador principal (`RepairProviderPartPricingSection.tsx`) y piezas chicas por responsabilidad: `repair-provider-part-pricing-section.helpers.ts`, `repair-provider-part-pricing-section.search.tsx`, `repair-provider-part-pricing-section.preview.tsx` y `repair-provider-part-pricing-section.snapshot.tsx`. Tambien se agrega test unitario para helpers del subdominio.
+- Impacto: el hotspot principal del frontend baja de mas de mil lineas a unas 450, la lectura del flujo create/detail queda mucho mas clara y el siguiente corte sobre `AdminRepairDetailPage.tsx` o contracts de repairs se vuelve menos riesgoso. No hay cambios deliberados en rutas, payloads ni comportamiento visible esperado.
+- Alternativas consideradas: seguir agregando helpers privados dentro del mismo archivo o saltar primero a `AdminRepairDetailPage.tsx`; descartado porque el mayor retorno inmediato seguia estando en partir la pieza compartida de proveedor + repuesto + preview sin abrir mas superficie de UI.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/repairs/{RepairProviderPartPricingSection.tsx,repair-provider-part-pricing-section.helpers.ts,repair-provider-part-pricing-section.helpers.test.ts,repair-provider-part-pricing-section.search.tsx,repair-provider-part-pricing-section.preview.tsx,repair-provider-part-pricing-section.snapshot.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano

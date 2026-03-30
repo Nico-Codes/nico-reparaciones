@@ -191,6 +191,12 @@ Confirmado por codigo:
 
 Desde la ola de simplificacion de 2026-03-30 quedaron formalizados estos limites:
 
+- frontend `repairs` ahora secciona el flujo de proveedor + repuesto + preview en piezas chicas:
+  - `RepairProviderPartPricingSection.tsx` como orquestador de estado y requests
+  - `repair-provider-part-pricing-section.helpers.ts` para logica pura y tipos compartidos
+  - `repair-provider-part-pricing-section.search.tsx` para controles, resultados y resumen de seleccion
+  - `repair-provider-part-pricing-section.preview.tsx` para preview/calculo/aplicacion del snapshot draft
+  - `repair-provider-part-pricing-section.snapshot.tsx` para snapshot activo e historial
 - validacion Zod reusable en controllers: `*.schemas.ts`
 - helper comun para errores de parseo: `src/common/http/zod-bad-request.ts`
 - storage local encapsulado: `src/common/storage/public-asset-storage.service.ts`
