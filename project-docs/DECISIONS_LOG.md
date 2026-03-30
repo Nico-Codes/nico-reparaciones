@@ -682,3 +682,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/web/src/features/repairs/{RepairProviderPartPricingSection.tsx,repair-provider-part-pricing-section.helpers.ts,repair-provider-part-pricing-section.helpers.test.ts,repair-provider-part-pricing-section.search.tsx,repair-provider-part-pricing-section.preview.tsx,repair-provider-part-pricing-section.snapshot.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0057]
+- Fecha: 2026-03-30
+- Estado: aceptada
+- Tema: `AdminRepairDetailPage` pasa de pagina hotspot a orquestador con helpers y sections
+- Contexto: despues de partir `RepairProviderPartPricingSection`, el siguiente hotspot mas grande del frontend en `repairs` quedo concentrado en `AdminRepairDetailPage.tsx`. Esa pagina mezclaba carga del caso, diff del patch, validaciones, recalculo de sugerencia, formulario completo, stats, timeline e historial en un solo archivo de mas de 700 lineas.
+- Decision: mantener la ruta y el flujo del detalle admin estables, pero mover parseo/validacion/diff del patch a `admin-repair-detail.helpers.ts`, mover la UI seccionada a `admin-repair-detail.sections.tsx` y dejar `AdminRepairDetailPage.tsx` como orquestador de estado, requests y guardado. Tambien se agrega test unitario para helpers del detalle.
+- Impacto: `AdminRepairDetailPage.tsx` baja a unas 450 lineas, la pagina queda mas legible y el siguiente corte natural dentro de `repairs` pasa a `AdminRepairCreatePage.tsx`. No hay cambios deliberados en rutas, payloads ni comportamiento funcional esperado.
+- Alternativas consideradas: seguir agregando helpers privados dentro del mismo archivo o saltar primero a `AdminRepairCreatePage.tsx`; descartado porque el detalle admin ya podia apoyarse en el split previo de pricing y ofrecia el mejor retorno inmediato dentro del mismo subdominio.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/repairs/{AdminRepairDetailPage.tsx,admin-repair-detail.helpers.ts,admin-repair-detail.helpers.test.ts,admin-repair-detail.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano

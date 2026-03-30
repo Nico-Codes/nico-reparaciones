@@ -1449,3 +1449,29 @@ pm run qa:frontend:e2e
   - este corte deja listo el terreno para extraer contratos/helpers adicionales del subdominio sin mezclar estado, render y calculo en una misma pieza
 
 ---
+
+### 2026-03-30 - Codex
+- Alcance: partir `AdminRepairDetailPage` en helpers y sections, dejando la pagina principal como orquestador.
+- Tipo de intervencion: refactor interno seguro del frontend repairs + seccionado de pagina admin con mucha mezcla de estado, formulario e historial.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/repairs/AdminRepairDetailPage.tsx`
+  - `next-stack/apps/web/src/features/repairs/admin-repair-detail.helpers.ts`
+  - `next-stack/apps/web/src/features/repairs/admin-repair-detail.helpers.test.ts`
+  - `next-stack/apps/web/src/features/repairs/admin-repair-detail.sections.tsx`
+  - `project-docs/architecture/ARCHITECTURE.md`
+  - `project-docs/frontend/FRONTEND_MAP.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No deliberado en rutas ni en el flujo del detalle admin. Se mantiene la carga, edicion, sugerencias y timeline; cambia la separacion interna entre helpers puros, sections de UI y pagina orquestadora.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `cmd /c npm run qa:route-parity`
+  - `git diff --check`
+- Riesgos / notas:
+  - el detalle admin ya no es el hotspot principal del subdominio, pero `AdminRepairCreatePage.tsx` sigue concentrando bastante formulario y flujo
+  - este corte deja mas claro el proximo paso natural del frontend `repairs`: alinear create con la misma metodologia de helpers + sections
+
+---

@@ -197,6 +197,9 @@ Desde la ola de simplificacion de 2026-03-30 quedaron formalizados estos limites
   - `repair-provider-part-pricing-section.search.tsx` para controles, resultados y resumen de seleccion
   - `repair-provider-part-pricing-section.preview.tsx` para preview/calculo/aplicacion del snapshot draft
   - `repair-provider-part-pricing-section.snapshot.tsx` para snapshot activo e historial
+- `AdminRepairDetailPage.tsx` ahora queda como orquestador de carga, validacion y guardado:
+  - `admin-repair-detail.helpers.ts` concentra parseo, validaciones y diff del patch
+  - `admin-repair-detail.sections.tsx` concentra stats, estado, formulario, sugerencias e historial
 - validacion Zod reusable en controllers: `*.schemas.ts`
 - helper comun para errores de parseo: `src/common/http/zod-bad-request.ts`
 - storage local encapsulado: `src/common/storage/public-asset-storage.service.ts`

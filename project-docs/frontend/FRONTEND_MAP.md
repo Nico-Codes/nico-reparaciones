@@ -234,6 +234,15 @@ En la ola de simplificacion del 2026-03-30 quedaron confirmados estos limites in
   - busqueda de repuestos
   - preview de pricing
   - snapshot activo e historial
+- `AdminRepairDetailPage.tsx` ahora delega la UI en:
+  - `admin-repair-detail.helpers.ts`
+  - `admin-repair-detail.sections.tsx`
+- el archivo principal de detalle queda centrado en:
+  - carga del caso
+  - sincronizacion del formulario
+  - validacion
+  - recalculo de sugerencia
+  - guardado del patch
 - `AdminRepairPricingRuleEditPage.tsx`
 - `AdminModelGroupsPage.tsx`
 - `AdminRepairTypesPage.tsx`
