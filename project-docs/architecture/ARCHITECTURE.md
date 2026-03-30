@@ -207,6 +207,11 @@ Desde la ola de simplificacion de 2026-03-30 quedaron formalizados estos limites
   - `admin-provider-search-ranking.ts`
   - `admin-provider-search.text.ts`
   - `admin-providers.service.ts` como facade publica del subdominio
+- `CatalogAdminModule` ahora usa facade + subservicios por responsabilidad:
+  - `catalog-admin-categories.service.ts`
+  - `catalog-admin-products.service.ts`
+  - `catalog-admin-pricing.service.ts`
+  - `catalog-admin-support.service.ts`
 - `RepairsModule` ahora usa facade + subservicios por responsabilidad:
   - `repairs-admin.service.ts`
   - `repairs-public.service.ts`

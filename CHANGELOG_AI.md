@@ -1390,3 +1390,34 @@ pm run qa:frontend:e2e
   - el siguiente servicio backend grande vuelve a ser `catalog-admin.service.ts`; a nivel repo, el hotspot mayor sigue en `RepairProviderPartPricingSection.tsx`
 
 ---
+
+### 2026-03-30 - Codex
+- Alcance: partir `CatalogAdminModule` en categorias, productos, pricing y soporte compartido, dejando una fachada estable.
+- Tipo de intervencion: refactor interno seguro del backend catalog-admin + seccionado por responsabilidad.
+- Archivos tocados:
+  - `next-stack/apps/api/src/modules/catalog-admin/catalog-admin.module.ts`
+  - `next-stack/apps/api/src/modules/catalog-admin/catalog-admin.service.ts`
+  - `next-stack/apps/api/src/modules/catalog-admin/catalog-admin.types.ts`
+  - `next-stack/apps/api/src/modules/catalog-admin/catalog-admin-support.service.ts`
+  - `next-stack/apps/api/src/modules/catalog-admin/catalog-admin-categories.service.ts`
+  - `next-stack/apps/api/src/modules/catalog-admin/catalog-admin-products.service.ts`
+  - `next-stack/apps/api/src/modules/catalog-admin/catalog-admin-pricing.service.ts`
+  - `next-stack/apps/api/src/modules/catalog-admin/catalog-admin-pricing.service.test.ts`
+  - `project-docs/architecture/ARCHITECTURE.md`
+  - `project-docs/backend/BACKEND_MAP.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No deliberado en rutas ni payloads. Los endpoints `/catalog-admin/*` siguen estables; cambia solo la separacion interna entre categorias, productos, pricing y helpers compartidos.
+- Validaciones ejecutadas:
+  - `cmd /c npm run env:check`
+  - `cmd /c npm run typecheck --workspace @nico/api`
+  - `cmd /c npm run test --workspace @nico/api`
+  - `cmd /c npm run build --workspace @nico/api`
+  - `cmd /c npm run smoke:backend`
+  - `cmd /c npm run qa:route-parity`
+  - `git diff --check`
+- Riesgos / notas:
+  - el modulo backend ya no tiene un servicio publico grande, pero todavia quedan hotspots tecnicos en `admin-provider-registry.service.ts` y `admin-provider-search.parsers.ts`
+  - el hotspot mas grande del repo completo sigue en frontend dentro de `RepairProviderPartPricingSection.tsx`
+
+---

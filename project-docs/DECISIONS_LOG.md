@@ -658,3 +658,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/api/src/modules/admin/{admin-provider-search.service.ts,admin-provider-search.parsers.ts,admin-provider-search-ranking.ts,admin-provider-search.text.ts,admin-provider-search.service.test.ts}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/backend/BACKEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `typecheck --workspace @nico/api`, `test --workspace @nico/api`, `build --workspace @nico/api`, `smoke:backend`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0055]
+- Fecha: 2026-03-30
+- Estado: aceptada
+- Tema: `CatalogAdminModule` pasa de servicio monolitico a facade con subservicios internos
+- Contexto: `catalog-admin.service.ts` seguia mezclando categorias, productos, imagenes, pricing de productos, lectura/escritura de settings y validaciones compartidas en un solo archivo de mas de 700 lineas. Eso dejaba al modulo comercial/admin como el siguiente hotspot natural del backend.
+- Decision: mantener `CatalogAdminController` y las rutas estables, pero partir la implementacion interna en una facade chica (`catalog-admin.service.ts`) y subservicios por responsabilidad: `catalog-admin-categories.service.ts`, `catalog-admin-products.service.ts`, `catalog-admin-pricing.service.ts` y `catalog-admin-support.service.ts`, mas tipos compartidos en `catalog-admin.types.ts`.
+- Impacto: el servicio publico baja a menos de 100 lineas, el modulo gana limites internos claros entre catalogo, assets y pricing, y se reduce el riesgo de seguir limpiando backend o contracts sin tocar el contrato HTTP de `catalog-admin`.
+- Alternativas consideradas: dejar helpers privados dentro del mismo archivo o partir solo `pricing`; descartado porque seguia dejando mezclado el flujo de productos e imagenes y no resolvia la lectura global del modulo.
+- Archivos / modulos afectados: `next-stack/apps/api/src/modules/catalog-admin/*`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/backend/BACKEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `env:check`, `typecheck --workspace @nico/api`, `test --workspace @nico/api`, `build --workspace @nico/api`, `smoke:backend`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano
