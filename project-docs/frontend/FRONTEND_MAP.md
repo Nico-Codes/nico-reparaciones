@@ -236,6 +236,8 @@ Catalogo tecnico y pricing:
 - `admin-product-pricing-rules.helpers.ts`
 - `admin-product-pricing-rules.sections.tsx`
 - `AdminRepairPricingRulesPage.tsx`
+- `admin-repair-pricing-rules.helpers.ts`
+- `admin-repair-pricing-rules.sections.tsx`
 - `AdminRepairPricingRuleCreatePage.tsx`
 
 ## Seccionado interno reforzado
@@ -295,6 +297,14 @@ En la ola de simplificacion del 2026-03-30 quedaron confirmados estos limites in
   - sincronizacion del simulador
   - alta de reglas
   - edicion inline y borrado
+- `AdminRepairPricingRulesPage.tsx` ahora delega scope editable, filtros dependientes y payloads en:
+  - `admin-repair-pricing-rules.helpers.ts`
+  - `admin-repair-pricing-rules.sections.tsx`
+- el archivo principal de pricing de reparaciones queda centrado en:
+  - carga de reglas y catalogo tecnico
+  - sincronizacion de lookups por tipo/grupo
+  - patches de scope y estado
+  - guardado y borrado
 - `AdminRepairPricingRuleEditPage.tsx`
 - `AdminModelGroupsPage.tsx`
 - `AdminRepairTypesPage.tsx`

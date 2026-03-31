@@ -199,6 +199,16 @@ Confirmado por codigo:
   - alta de reglas
   - patches inline y borrado
 - la logica de mapping, filtros de alcance y armado de payloads queda fuera del render principal
+- `AdminRepairPricingRulesPage.tsx` ya no concentra scope editable, payloads y la grilla completa de reglas en un solo archivo
+- el feature de pricing de reparaciones ahora se reparte entre:
+  - `admin-repair-pricing-rules.helpers.ts`
+  - `admin-repair-pricing-rules.sections.tsx`
+- la pagina principal queda centrada en:
+  - carga de reglas y catalogo tecnico
+  - sincronizacion de nombres/lookups
+  - patches de estado
+  - guardado y borrado
+- la logica de scope, filtros dependientes y armado del patch queda fuera del render principal
 
 Desde la ola de simplificacion de 2026-03-30 quedaron formalizados estos limites:
 

@@ -790,3 +790,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/web/src/features/admin/{AdminProductPricingRulesPage.tsx,admin-product-pricing-rules.helpers.ts,admin-product-pricing-rules.helpers.test.ts,admin-product-pricing-rules.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0066]
+- Fecha: 2026-03-31
+- Estado: aceptada
+- Tema: `AdminRepairPricingRulesPage` pasa a orquestador y el pricing de reparaciones gana helpers + sections propios
+- Contexto: despues de ordenar el pricing comercial, el siguiente hotspot claro del area `admin/pricing` quedo en `AdminRepairPricingRulesPage.tsx`. La pagina mezclaba carga de reglas, lookups del catalogo tecnico, dependencia entre tipo/marca/grupo/modelo/falla, armado del patch y render completo de la grilla editable en un solo archivo de mas de 400 lineas.
+- Decision: mantener la ruta y el wiring con `repairsApi`, `adminApi` y `deviceCatalogApi` estables, pero mover mapping, scope dependiente, filtros y armado del payload a `admin-repair-pricing-rules.helpers.ts`, mover la grilla editable a `admin-repair-pricing-rules.sections.tsx` y dejar `AdminRepairPricingRulesPage.tsx` como orquestador de fetch, lookups y mutaciones. Tambien se agrega test unitario para helpers del feature.
+- Impacto: `AdminRepairPricingRulesPage.tsx` baja a unas 150 lineas, el pricing de reparaciones gana una frontera mas clara entre datos, scope y render, y el subdominio `admin/pricing` queda mucho mas consistente entre la version comercial y la de reparaciones. No hay cambios deliberados en rutas, payloads ni comportamiento visible esperado.
+- Alternativas consideradas: partir solo la celda de scope o saltar primero a `AdminRepairPricingRuleEditPage.tsx`; descartado porque el mayor retorno inmediato seguia estando en la pagina lista/editable principal y permitia fijar antes el mismo patron que en el pricing comercial.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/admin/{AdminRepairPricingRulesPage.tsx,admin-repair-pricing-rules.helpers.ts,admin-repair-pricing-rules.helpers.test.ts,admin-repair-pricing-rules.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano

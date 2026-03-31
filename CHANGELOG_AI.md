@@ -1689,3 +1689,29 @@ pm run qa:frontend:e2e
   - el feature sigue apoyandose en `features/catalogAdmin/productPricingApi.ts` como cliente compartido, lo cual esta bien por ahora pero todavia deja una frontera comun entre admin y catalog admin
 
 ---
+
+### 2026-03-31 - Codex
+- Alcance: partir `AdminRepairPricingRulesPage` en helpers y sections, dejando la pagina principal como orquestador del pricing de reparaciones.
+- Tipo de intervencion: refactor interno seguro del frontend admin/pricing + seccionado de la grilla editable de rules sin abrir una API nueva.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/admin/AdminRepairPricingRulesPage.tsx`
+  - `next-stack/apps/web/src/features/admin/admin-repair-pricing-rules.helpers.ts`
+  - `next-stack/apps/web/src/features/admin/admin-repair-pricing-rules.helpers.test.ts`
+  - `next-stack/apps/web/src/features/admin/admin-repair-pricing-rules.sections.tsx`
+  - `project-docs/architecture/ARCHITECTURE.md`
+  - `project-docs/frontend/FRONTEND_MAP.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No deliberado. Se mantienen carga, edicion inline, scope dependiente, guardado y borrado de reglas; cambia la separacion interna entre fetch/lookups, payloads y render de UI.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `cmd /c npm run qa:route-parity`
+  - `git diff --check`
+- Riesgos / notas:
+  - el area `admin/pricing` ya queda mucho mas consistente entre reglas comerciales y reglas de reparaciones, pero todavia quedan paginas especificas del mismo subdominio como `AdminRepairPricingRuleEditPage.tsx`
+  - el split mantiene `adminApi` y `deviceCatalogApi` como fronteras de lookup compartidas, lo cual es correcto por ahora pero sigue dejando dependencias cruzadas dentro del admin tecnico
+
+---
