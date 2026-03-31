@@ -219,6 +219,16 @@ Confirmado por codigo:
   - composicion del summary y work queue
   - ensamblado de secciones
 - la logica de metricas, contadores y prioridad operativa queda fuera del render principal
+- `StorePage.tsx` ya no concentra hero, filtros, sort mobile, resultados y cards en un solo archivo
+- la tienda publica ahora se reparte entre:
+  - `store-page.helpers.ts`
+  - `store-page.sections.tsx`
+- la pagina principal queda centrada en:
+  - fetch de hero, categorias y productos
+  - sincronizacion de query params
+  - control del sheet mobile de ordenamiento
+  - ensamblado del toolbar y resultados
+- la logica de query params, etiquetas derivadas y visual vars del hero queda fuera del render principal
 
 Desde la ola de simplificacion de 2026-03-30 quedaron formalizados estos limites:
 

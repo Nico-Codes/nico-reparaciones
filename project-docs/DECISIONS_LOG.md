@@ -814,3 +814,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/web/src/features/admin/{AdminDashboardPage.tsx,admin-dashboard.helpers.ts,admin-dashboard.helpers.test.ts,admin-dashboard.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0068]
+- Fecha: 2026-03-31
+- Estado: aceptada
+- Tema: `StorePage` pasa a orquestador y la tienda publica gana helpers + sections propios
+- Contexto: despues de bajar los hotspots mas grandes de `admin`, `orders`, `repairs` y `catalogAdmin`, el siguiente `.tsx` visible con mezcla innecesaria quedo en `StorePage.tsx`. La pagina concentraba fetch de hero/categorias/productos, sync de query params, calculos visuales del hero, toolbar, sort mobile, rail de categorias, empty state y card grid en un solo archivo de mas de 440 lineas.
+- Decision: mantener la ruta `/store`, el wiring con `storeApi` y el comportamiento de filtros estables, pero mover query helpers, visual vars del hero y labels derivadas a `store-page.helpers.ts`, mover toolbar, sheet mobile, rail de categorias, resultados y cards a `store-page.sections.tsx`, y dejar `StorePage.tsx` como orquestador de fetch, sincronizacion y composicion. Tambien se agrega test unitario para los helpers del feature.
+- Impacto: `StorePage.tsx` baja de forma marcada, la tienda publica gana una frontera clara entre datos, derivaciones y UI, y el siguiente hotspot del frontend se desplaza a paginas grandes de `catalogAdmin` o `admin` como `AdminCategoriesPage.tsx` y `AdminProductsPage.tsx`. No hay cambios deliberados en rutas, payloads ni comportamiento visible esperado.
+- Alternativas consideradas: partir solo la card de producto o saltar primero a `AdminCategoriesPage.tsx`; descartado porque el mayor retorno inmediato seguia estando en la pagina publica mas cargada y permitia cerrar tambien el frente visible del storefront con la misma metodologia ya usada en admin.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/store/{StorePage.tsx,store-page.helpers.ts,store-page.helpers.test.ts,store-page.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano

@@ -169,6 +169,8 @@ Auth:
 Store y carrito:
 
 - `StorePage.tsx`
+- `store-page.helpers.ts`
+- `store-page.sections.tsx`
 - `StoreProductDetailPage.tsx`
 - `CartPage.tsx`
 - `CartAddedPopup.tsx`
@@ -315,6 +317,14 @@ En la ola de simplificacion del 2026-03-30 quedaron confirmados estos limites in
   - manejo de loading/error
   - composicion del summary y work queue
   - ensamblado de secciones
+- `StorePage.tsx` ahora delega derivaciones puras y UI del catalogo en:
+  - `store-page.helpers.ts`
+  - `store-page.sections.tsx`
+- el archivo principal de tienda queda centrado en:
+  - fetch de hero, categorias y productos
+  - sincronizacion de query params
+  - estado del sheet mobile
+  - ensamblado del toolbar, resultados y empty state
 - `AdminRepairPricingRuleEditPage.tsx`
 - `AdminModelGroupsPage.tsx`
 - `AdminRepairTypesPage.tsx`

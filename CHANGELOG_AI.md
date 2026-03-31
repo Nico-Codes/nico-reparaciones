@@ -1741,3 +1741,29 @@ pm run qa:frontend:e2e
   - el split mantiene los mismos componentes base (`PageHeader`, `SectionCard`, `StatusBadge`) y no introduce una nueva capa de estado global
 
 ---
+
+### 2026-03-31 - Codex
+- Alcance: partir `StorePage` en helpers y sections, dejando la pagina principal como orquestador del storefront.
+- Tipo de intervencion: refactor interno seguro del frontend publico + seccionado del catalogo sin abrir una API nueva.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/store/StorePage.tsx`
+  - `next-stack/apps/web/src/features/store/store-page.helpers.ts`
+  - `next-stack/apps/web/src/features/store/store-page.helpers.test.ts`
+  - `next-stack/apps/web/src/features/store/store-page.sections.tsx`
+  - `project-docs/architecture/ARCHITECTURE.md`
+  - `project-docs/frontend/FRONTEND_MAP.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No deliberado. Se mantienen hero, filtros, sort mobile, categorias, resultados y card grid; cambia la separacion interna entre fetch/sync de query params, helpers puros y secciones de UI.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `cmd /c npm run qa:route-parity`
+  - `git diff --check`
+- Riesgos / notas:
+  - la tienda publica ya queda mas ordenada, pero siguen pendientes hotspots de `catalogAdmin` como `AdminCategoriesPage.tsx` y `AdminProductsPage.tsx`
+  - el split mantiene el mismo uso de `storeApi` y `useSearchParams`; no introduce estado global nuevo ni cambia la semantica del storefront
+
+---
