@@ -1,29 +1,25 @@
-﻿import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { CustomSelect } from '@/components/ui/custom-select';
-import { deviceCatalogApi } from '@/features/deviceCatalog/api';
+import { useEffect, useMemo, useState } from 'react';
 import { adminApi } from './api';
-
-type DeviceTypeItem = { id: string; name: string; slug: string; active: boolean };
-type BrandItem = { id: string; deviceTypeId?: string | null; name: string; slug: string; active: boolean };
-type ModelItem = {
-  id: string;
-  brandId: string;
-  name: string;
-  slug: string;
-  active: boolean;
-  brand: { id: string; name: string; slug: string };
-};
-type IssueItem = { id: string; deviceTypeId?: string | null; name: string; slug: string; active: boolean };
-
-function slugify(value: string) {
-  return value
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
+import {
+  buildBrandOptions,
+  buildDeviceTypeOptions,
+  getActiveBrands,
+  getDefaultDeviceTypeId,
+  getFilteredModels,
+  slugify,
+  type BrandItem,
+  type DeviceTypeItem,
+  type IssueItem,
+  type ModelItem,
+} from './admin-devices-catalog.helpers';
+import {
+  AdminDevicesCatalogBrandsSection,
+  AdminDevicesCatalogFilters,
+  AdminDevicesCatalogHero,
+  AdminDevicesCatalogIssuesSection,
+  AdminDevicesCatalogModelsSection,
+} from './admin-devices-catalog.sections';
+import { deviceCatalogApi } from '@/features/deviceCatalog/api';
 
 export function AdminDevicesCatalogPage() {
   const [deviceTypes, setDeviceTypes] = useState<DeviceTypeItem[]>([]);
@@ -33,343 +29,207 @@ export function AdminDevicesCatalogPage() {
   const [models, setModels] = useState<ModelItem[]>([]);
   const [issues, setIssues] = useState<IssueItem[]>([]);
   const [error, setError] = useState('');
-
   const [brandDraft, setBrandDraft] = useState('');
   const [modelDraft, setModelDraft] = useState('');
   const [issueDraft, setIssueDraft] = useState('');
 
   async function loadDeviceTypes() {
-    const res = await adminApi.deviceTypes();
-    setDeviceTypes(res.items.filter((type) => type.active));
-    setDeviceType((prev) => prev || res.items.find((type) => type.active)?.id || '');
+    const response = await adminApi.deviceTypes();
+    const activeTypes = response.items.filter((item) => item.active);
+    const nextDeviceTypeId = deviceType || getDefaultDeviceTypeId(activeTypes);
+    setDeviceTypes(activeTypes);
+    setDeviceType((current) => current || nextDeviceTypeId);
+    return nextDeviceTypeId;
   }
 
   async function loadBrandsAndIssues(typeId?: string) {
-    const [brandsRes, issuesRes] = await Promise.all([deviceCatalogApi.brands(typeId), deviceCatalogApi.issues(typeId)]);
-    setBrands(brandsRes.items);
-    setIssues(issuesRes.items);
+    const [brandsResponse, issuesResponse] = await Promise.all([
+      deviceCatalogApi.brands(typeId),
+      deviceCatalogApi.issues(typeId),
+    ]);
+    setBrands(brandsResponse.items);
+    setIssues(issuesResponse.items);
   }
 
   async function loadModels(brandId?: string) {
-    const res = await deviceCatalogApi.models(brandId || undefined);
-    setModels(res.items);
+    const response = await deviceCatalogApi.models(brandId || undefined);
+    setModels(response.items);
   }
 
   async function refreshAll() {
     setError('');
     try {
-      await loadDeviceTypes();
-      await loadBrandsAndIssues(deviceType || undefined);
+      const nextDeviceTypeId = await loadDeviceTypes();
+      await loadBrandsAndIssues(nextDeviceTypeId || undefined);
       await loadModels(selectedBrandId || undefined);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error cargando catálogo');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Error cargando catalogo');
     }
   }
 
   useEffect(() => {
     void refreshAll();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    void loadBrandsAndIssues(deviceType || undefined).catch((e) =>
-      setError(e instanceof Error ? e.message : 'Error cargando marcas y fallas'),
+    void loadBrandsAndIssues(deviceType || undefined).catch((cause) =>
+      setError(cause instanceof Error ? cause.message : 'Error cargando marcas y fallas'),
     );
   }, [deviceType]);
 
   useEffect(() => {
-    void loadModels(selectedBrandId || undefined).catch((e) =>
-      setError(e instanceof Error ? e.message : 'Error cargando modelos'),
+    void loadModels(selectedBrandId || undefined).catch((cause) =>
+      setError(cause instanceof Error ? cause.message : 'Error cargando modelos'),
     );
   }, [selectedBrandId]);
 
-  const activeBrands = useMemo(() => brands.filter((brand) => brand.active), [brands]);
+  const activeBrands = useMemo(() => getActiveBrands(brands), [brands]);
   const filteredModels = useMemo(
-    () => (selectedBrandId ? models.filter((model) => model.brandId === selectedBrandId) : models),
+    () => getFilteredModels(models, selectedBrandId),
     [models, selectedBrandId],
   );
-
   const deviceTypeOptions = useMemo(
-    () => [{ value: '', label: 'Elegí...' }, ...deviceTypes.map((type) => ({ value: type.id, label: type.name }))],
+    () => buildDeviceTypeOptions(deviceTypes),
     [deviceTypes],
   );
-  const brandOptions = useMemo(
-    () => [{ value: '', label: activeBrands[0]?.name ?? 'Elegí...' }, ...activeBrands.map((brand) => ({ value: brand.id, label: brand.name }))],
-    [activeBrands],
-  );
+  const brandOptions = useMemo(() => buildBrandOptions(activeBrands), [activeBrands]);
+
+  async function runCatalogAction(action: () => Promise<void>, fallback: string) {
+    setError('');
+    try {
+      await action();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : fallback);
+    }
+  }
 
   async function handleCreateBrand() {
     if (!brandDraft.trim() || !deviceType) return;
-    await deviceCatalogApi.createBrand({ deviceTypeId: deviceType, name: brandDraft.trim(), slug: slugify(brandDraft), active: true });
-    setBrandDraft('');
-    await refreshAll();
+    await runCatalogAction(async () => {
+      await deviceCatalogApi.createBrand({
+        deviceTypeId: deviceType,
+        name: brandDraft.trim(),
+        slug: slugify(brandDraft),
+        active: true,
+      });
+      setBrandDraft('');
+      await refreshAll();
+    }, 'Error creando marca');
   }
 
   async function handleCreateModel() {
     if (!selectedBrandId || !modelDraft.trim()) return;
-    await deviceCatalogApi.createModel({ brandId: selectedBrandId, name: modelDraft.trim(), slug: slugify(modelDraft) });
-    setModelDraft('');
-    await refreshAll();
+    await runCatalogAction(async () => {
+      await deviceCatalogApi.createModel({
+        brandId: selectedBrandId,
+        name: modelDraft.trim(),
+        slug: slugify(modelDraft),
+      });
+      setModelDraft('');
+      await refreshAll();
+    }, 'Error creando modelo');
   }
 
   async function handleCreateIssue() {
     if (!issueDraft.trim() || !deviceType) return;
-    await deviceCatalogApi.createIssue({ deviceTypeId: deviceType, name: issueDraft.trim(), slug: slugify(issueDraft), active: true });
-    setIssueDraft('');
-    await refreshAll();
+    await runCatalogAction(async () => {
+      await deviceCatalogApi.createIssue({
+        deviceTypeId: deviceType,
+        name: issueDraft.trim(),
+        slug: slugify(issueDraft),
+        active: true,
+      });
+      setIssueDraft('');
+      await refreshAll();
+    }, 'Error creando falla');
   }
 
   async function renameBrand(item: BrandItem) {
     const next = window.prompt('Nuevo nombre de marca', item.name)?.trim();
     if (!next || next === item.name) return;
-    await deviceCatalogApi.updateBrand(item.id, { name: next, slug: slugify(next) });
-    await refreshAll();
+    await runCatalogAction(async () => {
+      await deviceCatalogApi.updateBrand(item.id, { name: next, slug: slugify(next) });
+      await refreshAll();
+    }, 'Error renombrando marca');
   }
 
   async function toggleBrand(item: BrandItem) {
-    await deviceCatalogApi.updateBrand(item.id, { active: !item.active });
-    await refreshAll();
+    await runCatalogAction(async () => {
+      await deviceCatalogApi.updateBrand(item.id, { active: !item.active });
+      await refreshAll();
+    }, 'Error actualizando marca');
   }
 
   async function renameModel(item: ModelItem) {
     const next = window.prompt('Nuevo nombre de modelo', item.name)?.trim();
     if (!next || next === item.name) return;
-    await deviceCatalogApi.updateModel(item.id, { name: next, slug: slugify(next) });
-    await refreshAll();
+    await runCatalogAction(async () => {
+      await deviceCatalogApi.updateModel(item.id, { name: next, slug: slugify(next) });
+      await refreshAll();
+    }, 'Error renombrando modelo');
   }
 
   async function toggleModel(item: ModelItem) {
-    await deviceCatalogApi.updateModel(item.id, { active: !item.active });
-    await refreshAll();
+    await runCatalogAction(async () => {
+      await deviceCatalogApi.updateModel(item.id, { active: !item.active });
+      await refreshAll();
+    }, 'Error actualizando modelo');
   }
 
   async function renameIssue(item: IssueItem) {
     const next = window.prompt('Nuevo nombre de falla', item.name)?.trim();
     if (!next || next === item.name) return;
-    await deviceCatalogApi.updateIssue(item.id, { name: next, slug: slugify(next) });
-    await refreshAll();
+    await runCatalogAction(async () => {
+      await deviceCatalogApi.updateIssue(item.id, { name: next, slug: slugify(next) });
+      await refreshAll();
+    }, 'Error renombrando falla');
   }
 
   async function toggleIssue(item: IssueItem) {
-    await deviceCatalogApi.updateIssue(item.id, { active: !item.active });
-    await refreshAll();
+    await runCatalogAction(async () => {
+      await deviceCatalogApi.updateIssue(item.id, { active: !item.active });
+      await refreshAll();
+    }, 'Error actualizando falla');
   }
 
   return (
     <div className="store-shell space-y-6">
-      <section className="store-hero">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-black tracking-tight text-zinc-900">Catálogo de dispositivos</h1>
-            <p className="mt-1 text-sm text-zinc-600">
-              Gestiona marcas, modelos y fallas por tipo. En lugar de borrar, desactiva.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Link to="/admin/tiposreparacion" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">
-              Tipos
-            </Link>
-            <Link to="/admin/precios" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">
-              Precios
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {error ? <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">{error}</div> : null}
-
-      <section className="card">
-        <div className="card-head">
-          <div className="text-xl font-black tracking-tight text-zinc-900">Filtro de catálogo</div>
-          <p className="mt-1 text-sm text-zinc-500">Seleccioná tipo y marca para administrar cada bloque.</p>
-        </div>
-        <div className="card-body space-y-3">
-          <div className="grid gap-4 lg:grid-cols-2">
-            <div>
-              <label className="mb-1.5 block text-sm font-bold text-zinc-800">Tipo</label>
-              <CustomSelect
-                value={deviceType}
-                onChange={setDeviceType}
-                options={deviceTypeOptions}
-                triggerClassName="min-h-11 rounded-2xl font-bold"
-                ariaLabel="Seleccionar tipo de dispositivo"
-              />
-            </div>
-            <div>
-              <label className="mb-1.5 block text-sm font-bold text-zinc-800">Marca (para modelos)</label>
-              <CustomSelect
-                value={selectedBrandId}
-                onChange={setSelectedBrandId}
-                options={brandOptions}
-                triggerClassName="min-h-11 rounded-2xl font-bold"
-                ariaLabel="Seleccionar marca"
-              />
-            </div>
-          </div>
-          <div className="grid gap-2 text-xs text-zinc-500 lg:grid-cols-3">
-            <p>Esto filtra marcas y fallas.</p>
-            <p>Esto filtra modelos.</p>
-            <p className="lg:text-right">Tip: en "Nueva reparación" solo se muestran ítems activos.</p>
-          </div>
-        </div>
-      </section>
+      <AdminDevicesCatalogHero error={error} />
+      <AdminDevicesCatalogFilters
+        deviceType={deviceType}
+        selectedBrandId={selectedBrandId}
+        deviceTypeOptions={deviceTypeOptions}
+        brandOptions={brandOptions}
+        onDeviceTypeChange={setDeviceType}
+        onSelectedBrandChange={setSelectedBrandId}
+      />
 
       <div className="grid gap-4 xl:grid-cols-3">
-        <section className="card">
-          <div className="card-head flex items-center justify-between gap-2">
-            <div className="text-2xl font-black tracking-tight text-zinc-900">Marcas</div>
-            <span className="badge-zinc">{brands.length}</span>
-          </div>
-          <div className="card-body space-y-3">
-            <div className="flex gap-2">
-              <input
-                value={brandDraft}
-                onChange={(e) => setBrandDraft(e.target.value)}
-                placeholder="Ej: Samsung"
-                className="h-11 flex-1 rounded-2xl border border-zinc-200 px-3 text-sm"
-              />
-              <button type="button" className="btn-primary !h-11 !rounded-2xl px-4 text-sm font-bold" onClick={() => void handleCreateBrand()}>
-                Agregar
-              </button>
-            </div>
-
-            <div className="rounded-2xl border border-zinc-200">
-              <div className="grid grid-cols-[1fr_auto] gap-3 border-b border-zinc-100 px-3 py-2 text-xs font-black uppercase tracking-wide text-zinc-500">
-                <div>Nombre</div>
-                <div>Estado</div>
-              </div>
-              <div className="max-h-44 overflow-auto">
-                {brands.map((brand) => (
-                  <div
-                    key={brand.id}
-                    className="grid grid-cols-[1fr_auto] gap-3 border-b border-zinc-100 px-3 py-2.5 text-sm last:border-b-0"
-                  >
-                    <div>
-                      <div className="font-bold text-zinc-900">{brand.name}</div>
-                      <button type="button" className="mt-1 text-xs font-semibold text-sky-700" onClick={() => void renameBrand(brand)}>
-                        Renombrar
-                      </button>
-                      <button type="button" className="mt-1 ml-3 text-xs font-semibold text-zinc-700" onClick={() => void toggleBrand(brand)}>
-                        {brand.active ? 'Desactivar' : 'Activar'}
-                      </button>
-                    </div>
-                    <span className={brand.active ? 'badge-emerald self-center' : 'badge-zinc self-center'}>
-                      {brand.active ? 'Activa' : 'Inactiva'}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="card">
-          <div className="card-head flex items-center justify-between gap-2">
-            <div className="text-2xl font-black tracking-tight text-zinc-900">Modelos</div>
-            <span className="badge-zinc">{filteredModels.length}</span>
-          </div>
-          <div className="card-body space-y-3">
-            <div className="flex gap-2">
-              <input
-                value={modelDraft}
-                onChange={(e) => setModelDraft(e.target.value)}
-                placeholder="Ej: A52 / iPhone 12"
-                className="h-11 flex-1 rounded-2xl border border-zinc-200 px-3 text-sm"
-                disabled={!selectedBrandId}
-              />
-              <button
-                type="button"
-                className="btn-primary !h-11 !rounded-2xl px-4 text-sm font-bold"
-                disabled={!selectedBrandId}
-                onClick={() => void handleCreateModel()}
-              >
-                Agregar
-              </button>
-            </div>
-
-            <div className="rounded-2xl border border-zinc-200">
-              <div className="grid grid-cols-[1fr_auto] gap-3 border-b border-zinc-100 px-3 py-2 text-xs font-black uppercase tracking-wide text-zinc-500">
-                <div>Nombre</div>
-                <div>Estado</div>
-              </div>
-              <div className="max-h-44 overflow-auto">
-                {filteredModels.map((model) => (
-                  <div
-                    key={model.id}
-                    className="grid grid-cols-[1fr_auto] gap-3 border-b border-zinc-100 px-3 py-2.5 text-sm last:border-b-0"
-                  >
-                    <div>
-                      <div className="font-bold text-zinc-900">{model.name}</div>
-                      <div className="text-xs text-zinc-500">Grupo: -</div>
-                      <button type="button" className="mt-1 text-xs font-semibold text-sky-700" onClick={() => void renameModel(model)}>
-                        Renombrar
-                      </button>
-                      <button type="button" className="mt-1 ml-3 text-xs font-semibold text-zinc-700" onClick={() => void toggleModel(model)}>
-                        {model.active ? 'Desactivar' : 'Activar'}
-                      </button>
-                    </div>
-                    <span className={model.active ? 'badge-emerald self-center' : 'badge-zinc self-center'}>
-                      {model.active ? 'Activo' : 'Inactivo'}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <Link to="/admin/gruposmodelos" className="btn-outline !h-10 !rounded-xl px-4 text-sm font-bold">
-              Administrar grupos de modelos
-            </Link>
-          </div>
-        </section>
-
-        <section className="card">
-          <div className="card-head flex items-center justify-between gap-2">
-            <div className="text-2xl font-black tracking-tight text-zinc-900">Fallas</div>
-            <span className="badge-zinc">{issues.length}</span>
-          </div>
-          <div className="card-body space-y-3">
-            <div className="flex gap-2">
-              <input
-                value={issueDraft}
-                onChange={(e) => setIssueDraft(e.target.value)}
-                placeholder="Ej: No carga / Pantalla"
-                className="h-11 flex-1 rounded-2xl border border-zinc-200 px-3 text-sm"
-              />
-              <button type="button" className="btn-primary !h-11 !rounded-2xl px-4 text-sm font-bold" onClick={() => void handleCreateIssue()}>
-                Agregar
-              </button>
-            </div>
-
-            <div className="rounded-2xl border border-zinc-200">
-              <div className="grid grid-cols-[1fr_auto] gap-3 border-b border-zinc-100 px-3 py-2 text-xs font-black uppercase tracking-wide text-zinc-500">
-                <div>Nombre</div>
-                <div>Estado</div>
-              </div>
-              <div className="max-h-44 overflow-auto">
-                {issues.map((issue) => (
-                  <div
-                    key={issue.id}
-                    className="grid grid-cols-[1fr_auto] gap-3 border-b border-zinc-100 px-3 py-2.5 text-sm last:border-b-0"
-                  >
-                    <div>
-                      <div className="font-bold text-zinc-900">{issue.name}</div>
-                      <div className="text-xs text-zinc-500">slug: {issue.slug}</div>
-                      <button type="button" className="mt-1 text-xs font-semibold text-sky-700" onClick={() => void renameIssue(issue)}>
-                        Renombrar
-                      </button>
-                      <button type="button" className="mt-1 ml-3 text-xs font-semibold text-zinc-700" onClick={() => void toggleIssue(issue)}>
-                        {issue.active ? 'Desactivar' : 'Activar'}
-                      </button>
-                    </div>
-                    <span className={issue.active ? 'badge-emerald self-center' : 'badge-zinc self-center'}>
-                      {issue.active ? 'Activa' : 'Inactiva'}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
+        <AdminDevicesCatalogBrandsSection
+          brands={brands}
+          brandDraft={brandDraft}
+          onBrandDraftChange={setBrandDraft}
+          onCreateBrand={() => void handleCreateBrand()}
+          onRenameBrand={(item) => void renameBrand(item)}
+          onToggleBrand={(item) => void toggleBrand(item)}
+        />
+        <AdminDevicesCatalogModelsSection
+          filteredModels={filteredModels}
+          modelDraft={modelDraft}
+          selectedBrandId={selectedBrandId}
+          onModelDraftChange={setModelDraft}
+          onCreateModel={() => void handleCreateModel()}
+          onRenameModel={(item) => void renameModel(item)}
+          onToggleModel={(item) => void toggleModel(item)}
+        />
+        <AdminDevicesCatalogIssuesSection
+          issues={issues}
+          issueDraft={issueDraft}
+          onIssueDraftChange={setIssueDraft}
+          onCreateIssue={() => void handleCreateIssue()}
+          onRenameIssue={(item) => void renameIssue(item)}
+          onToggleIssue={(item) => void toggleIssue(item)}
+        />
       </div>
     </div>
   );

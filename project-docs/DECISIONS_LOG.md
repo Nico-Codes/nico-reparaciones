@@ -910,3 +910,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/web/src/features/warranties/{AdminWarrantyCreatePage.tsx,admin-warranty-create.helpers.ts,admin-warranty-create.helpers.test.ts,admin-warranty-create.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0076]
+- Fecha: 2026-03-31
+- Estado: aceptada
+- Tema: `AdminDevicesCatalogPage` pasa a orquestador y el catalogo tecnico gana helpers + sections propios
+- Contexto: despues de ordenar el alta de garantias, el siguiente hotspot claro del admin tecnico quedo en `AdminDevicesCatalogPage.tsx`. La pagina mezclaba slugify, filtros por tipo y marca, opciones derivadas, fetch de bloques y render completo de marcas/modelos/fallas en un solo archivo.
+- Decision: mantener la ruta y el wiring con `adminApi.deviceTypes()` y `deviceCatalogApi` estables, pero mover slugify, tipos del feature, opciones de selects y filtros de modelos a `admin-devices-catalog.helpers.ts`, mover hero, filtros y las tres columnas operativas a `admin-devices-catalog.sections.tsx`, y dejar `AdminDevicesCatalogPage.tsx` como orquestador de fetch, sync y mutaciones. Tambien se agrega test unitario para helpers del feature.
+- Impacto: `AdminDevicesCatalogPage.tsx` baja de forma marcada, el admin tecnico gana una frontera clara entre datos y UI, y el catalogo de dispositivos deja de concentrar helpers puros, opciones y bloques visuales en la misma pagina. No hay cambios deliberados en rutas, payloads ni comportamiento visible esperado.
+- Alternativas consideradas: partir solo la columna de modelos o saltar primero a `AdminOrderDetailPage.tsx`; descartado porque el mayor retorno inmediato seguia estando en el catalogo tecnico, que todavia mezclaba demasiadas responsabilidades locales.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/admin/{AdminDevicesCatalogPage.tsx,admin-devices-catalog.helpers.ts,admin-devices-catalog.helpers.test.ts,admin-devices-catalog.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano

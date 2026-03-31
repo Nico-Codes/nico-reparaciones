@@ -255,6 +255,9 @@ Catalogo tecnico y pricing:
 - `admin-repair-pricing-rules.helpers.ts`
 - `admin-repair-pricing-rules.sections.tsx`
 - `AdminRepairPricingRuleCreatePage.tsx`
+- `AdminDevicesCatalogPage.tsx`
+- `admin-devices-catalog.helpers.ts`
+- `admin-devices-catalog.sections.tsx`
 
 ## Seccionado interno reforzado
 
@@ -396,6 +399,14 @@ En la ola de simplificacion del 2026-03-30 quedaron confirmados estos limites in
   - sync del formulario y de la reparacion seleccionada
   - armado del payload de garantia
   - submit y navegacion de cierre
+- `AdminDevicesCatalogPage.tsx` ahora delega slugify, filtros y opciones derivadas en:
+  - `admin-devices-catalog.helpers.ts`
+  - `admin-devices-catalog.sections.tsx`
+- el archivo principal de catalogo tecnico queda centrado en:
+  - fetch de tipos, marcas, modelos y fallas
+  - sync de filtros por tipo y marca
+  - mutaciones de alta, rename y toggle
+  - composicion de los tres bloques operativos
 - `AdminRepairPricingRuleEditPage.tsx`
 - `AdminModelGroupsPage.tsx`
 - `AdminRepairTypesPage.tsx`

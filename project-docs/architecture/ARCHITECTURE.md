@@ -300,6 +300,16 @@ Confirmado por codigo:
   - guardado del incidente
   - navegacion de cierre
 - la logica de defaults, opciones, costo derivado y payload de garantia queda fuera del render principal
+- `AdminDevicesCatalogPage.tsx` ya no concentra slugify, filtros, opciones y los tres bloques del catalogo tecnico en un solo archivo
+- el feature de catalogo tecnico ahora se reparte entre:
+  - `admin-devices-catalog.helpers.ts`
+  - `admin-devices-catalog.sections.tsx`
+- la pagina principal queda centrada en:
+  - fetch de tipos, marcas, modelos y fallas
+  - sincronizacion de filtros por tipo y marca
+  - mutaciones de alta, rename y toggle
+  - composicion de las tres columnas operativas
+- la logica de slugify, opciones y filtros de modelos queda fuera del render principal
 
 Desde la ola de simplificacion de 2026-03-30 quedaron formalizados estos limites:
 

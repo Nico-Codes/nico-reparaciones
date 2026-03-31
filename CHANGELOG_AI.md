@@ -1949,3 +1949,29 @@ pm run qa:frontend:e2e
   - el split mantiene `adminApi`, `repairsApi` y `catalogAdminApi` como fronteras unicas del feature y no introduce estado global nuevo
 
 ---
+
+### 2026-03-31 - Codex
+- Alcance: partir `AdminDevicesCatalogPage` en helpers y sections, dejando la pagina principal como orquestador del catalogo tecnico.
+- Tipo de intervencion: refactor interno seguro del frontend admin tecnico + seccionado del feature de dispositivos sin abrir una API nueva.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/admin/AdminDevicesCatalogPage.tsx`
+  - `next-stack/apps/web/src/features/admin/admin-devices-catalog.helpers.ts`
+  - `next-stack/apps/web/src/features/admin/admin-devices-catalog.helpers.test.ts`
+  - `next-stack/apps/web/src/features/admin/admin-devices-catalog.sections.tsx`
+  - `project-docs/architecture/ARCHITECTURE.md`
+  - `project-docs/frontend/FRONTEND_MAP.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No deliberado. Se mantienen filtros por tipo/marca y mutaciones de alta, rename y toggle sobre marcas, modelos y fallas; cambia la separacion interna entre fetch/sync, helpers puros y bloques de UI.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `cmd /c npm run qa:route-parity`
+  - `git diff --check`
+- Riesgos / notas:
+  - el catalogo tecnico queda mucho mas claro, pero todavia siguen pendientes pantallas grandes como `AdminOrderDetailPage.tsx` y `AdminRepairPricingRuleEditPage.tsx`
+  - el split mantiene `adminApi` y `deviceCatalogApi` como fronteras unicas del feature y no introduce estado global nuevo
+
+---
