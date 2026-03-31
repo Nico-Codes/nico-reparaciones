@@ -214,6 +214,9 @@ Catalogo comercial:
 - `AdminProductEditPage.tsx`
 - `AdminProductLabelPage.tsx`
 - `AdminCategoriesPage.tsx`
+- `admin-product-form.helpers.ts`
+- `admin-product-form.controls.tsx`
+- `admin-product-edit.sections.tsx`
 
 Catalogo tecnico y pricing:
 
@@ -277,6 +280,8 @@ Clientes API por feature:
 - `features/cart/api.ts`
 - `features/catalogAdmin/api.ts`
 - `features/catalogAdmin/productPricingApi.ts`
+- `features/catalogAdmin/admin-product-form.helpers.ts`
+- `features/catalogAdmin/admin-product-form.controls.tsx`
 - `features/deviceCatalog/api.ts`
 - `features/help/api.ts`
 - `features/orders/api.ts`
@@ -311,6 +316,7 @@ Confirmado por codigo:
 
 - `App.tsx` es grande y concentra routing, aliases legacy y redirecciones
 - `AppShell.tsx` bajo bastante y hoy delega la UI transversal pesada a `layouts/app-shell/*`
+- `AdminProductEditPage.tsx` ya no concentra todo el formulario: hoy orquesta estado, carga y submit mientras la UI vive en `admin-product-edit.sections.tsx`
 - el frontend usa mas estado local que estado global compartido
 - en Fase 3 se retiraron tres remanentes sin referencias estaticas confirmadas:
   - `features/admin/AdminSettingsPage.tsx`

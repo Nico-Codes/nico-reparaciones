@@ -1528,3 +1528,31 @@ pm run qa:frontend:e2e
   - el siguiente retorno real del frontend ya pasa a `AdminProductEditPage.tsx`, `AdminProvidersPage.tsx` o `AdminOrdersPage.tsx`
 
 ---
+
+### 2026-03-31 - Codex
+- Alcance: partir `AdminProductEditPage` y extraer base compartida del formulario comercial de productos.
+- Tipo de intervencion: refactor interno seguro del frontend catalog admin + reduccion de duplicacion entre alta y edicion de productos.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/catalogAdmin/AdminProductEditPage.tsx`
+  - `next-stack/apps/web/src/features/catalogAdmin/AdminProductCreatePage.tsx`
+  - `next-stack/apps/web/src/features/catalogAdmin/admin-product-edit.sections.tsx`
+  - `next-stack/apps/web/src/features/catalogAdmin/admin-product-form.helpers.ts`
+  - `next-stack/apps/web/src/features/catalogAdmin/admin-product-form.helpers.test.ts`
+  - `next-stack/apps/web/src/features/catalogAdmin/admin-product-form.controls.tsx`
+  - `project-docs/architecture/ARCHITECTURE.md`
+  - `project-docs/frontend/FRONTEND_MAP.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No deliberado en rutas ni en el flujo de catalogo comercial. Se mantiene la carga, el pricing recomendado, el upload de imagen y el guardado; cambia la separacion interna entre estado, helpers puros, controles compartidos y secciones de UI.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `cmd /c npm run qa:route-parity`
+  - `git diff --check`
+- Riesgos / notas:
+  - `catalogAdmin` queda bastante mas ordenado entre create/edit, pero todavia no ataca el hotspot visual global de `styles.css`
+  - el siguiente retorno real del frontend ya pasa a `AdminProvidersPage.tsx`, `AdminOrdersPage.tsx` o a la particion de estilos globales
+
+---

@@ -718,3 +718,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/web/src/layouts/{AppShell.tsx,app-shell/account-menu.tsx,app-shell/footer.tsx,app-shell/link-icons.tsx,app-shell/mobile-sidebar.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0060]
+- Fecha: 2026-03-31
+- Estado: aceptada
+- Tema: `AdminProductEditPage` pasa a orquestador y el formulario comercial de productos gana base compartida
+- Contexto: despues de bajar `AppShell`, el siguiente hotspot claro del frontend quedo en `AdminProductEditPage.tsx`. La pagina mezclaba carga de producto, pricing recomendado, imagen, resumen, formulario completo y helpers repetidos que ya existian en el alta de productos.
+- Decision: mantener la ruta y el flujo de edicion estables, pero mover el render principal a `admin-product-edit.sections.tsx`, extraer helpers puros de catalogo comercial a `admin-product-form.helpers.ts` y centralizar controles repetidos en `admin-product-form.controls.tsx`. `AdminProductEditPage.tsx` queda como orquestador de estado, carga, upload y submit; `AdminProductCreatePage.tsx` reutiliza la base compartida.
+- Impacto: `AdminProductEditPage.tsx` baja a menos de 300 lineas, el modulo `catalogAdmin` reduce duplicacion entre create/edit y el siguiente hotspot del frontend se mueve hacia `AdminProvidersPage.tsx`, `AdminOrdersPage.tsx` o `styles.css`. No hay cambios deliberados en rutas, payloads ni comportamiento visible esperado.
+- Alternativas consideradas: partir solo la pagina de edicion sin tocar piezas compartidas o dejar helpers duplicados entre create/edit; descartado porque seguia duplicando slug, margen, opciones y controles basicos de formulario.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/catalogAdmin/{AdminProductEditPage.tsx,AdminProductCreatePage.tsx,admin-product-edit.sections.tsx,admin-product-form.helpers.ts,admin-product-form.helpers.test.ts,admin-product-form.controls.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano

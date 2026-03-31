@@ -9,23 +9,11 @@ import { SectionCard } from '@/components/ui/section-card';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { TextAreaField } from '@/components/ui/textarea-field';
 import { TextField } from '@/components/ui/text-field';
-import { CustomSelect } from '@/components/ui/custom-select';
 import { adminApi } from '@/features/admin/api';
 import { catalogAdminApi, type AdminCategory } from './api';
+import { BooleanChoice, SelectField } from './admin-product-form.controls';
+import { buildNamedOptions, buildProductMarginStats, money, slugify } from './admin-product-form.helpers';
 import { productPricingApi } from './productPricingApi';
-
-function money(value: number) {
-  return `$ ${Math.round(value || 0).toLocaleString('es-AR')}`;
-}
-
-function slugify(raw: string) {
-  return raw
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '');
-}
 
 export function AdminProductCreatePage() {
   const navigate = useNavigate();
@@ -149,24 +137,9 @@ export function AdminProductCreatePage() {
 
   const finalSlug = useMemo(() => slugify(slug.trim() || name.trim()), [name, slug]);
 
-  const categoryOptions = useMemo(
-    () => [{ value: '', label: 'Sin categoría' }, ...categories.map((category) => ({ value: category.id, label: category.name }))],
-    [categories],
-  );
-
-  const supplierOptions = useMemo(
-    () => [{ value: '', label: 'Sin proveedor' }, ...suppliers.map((supplier) => ({ value: supplier.id, label: supplier.name }))],
-    [suppliers],
-  );
-
-  const marginStats = useMemo(() => {
-    const cost = Number(costPrice || 0);
-    const sale = Number(price || 0);
-    const utility = sale - cost;
-    const margin = cost > 0 ? (utility / cost) * 100 : 0;
-    const tone: 'success' | 'warning' | 'danger' = utility > 0 ? 'success' : utility === 0 ? 'warning' : 'danger';
-    return { utility, margin, tone };
-  }, [costPrice, price]);
+  const categoryOptions = useMemo(() => buildNamedOptions(categories, 'Sin categoria'), [categories]);
+  const supplierOptions = useMemo(() => buildNamedOptions(suppliers, 'Sin proveedor'), [suppliers]);
+  const marginStats = useMemo(() => buildProductMarginStats(costPrice, price), [costPrice, price]);
 
   async function save() {
     setSaving(true);
@@ -388,7 +361,7 @@ export function AdminProductCreatePage() {
                   }}
                   className="block min-h-[2.85rem] w-full rounded-[0.95rem] border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-800 shadow-[0_1px_2px_rgba(15,23,42,0.06)] file:mr-3 file:rounded-xl file:border-0 file:bg-zinc-100 file:px-3 file:py-1.5 file:text-sm file:font-bold"
                 />
-                <span className="ui-field__hint">Formatos permitidos: JPG, PNG o WEBP. Máximo 4 MB.</span>
+                <span className="ui-field__hint">Formatos permitidos: JPG, PNG o WEBP. Maximo 4 MB.</span>
               </label>
               <div className="flex flex-wrap items-center gap-2">
                 <Button
@@ -450,55 +423,5 @@ export function AdminProductCreatePage() {
         </div>
       </div>
     </PageShell>
-  );
-}
-
-function SelectField({
-  label,
-  value,
-  onChange,
-  options,
-  ariaLabel,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  options: Array<{ value: string; label: string }>;
-  ariaLabel: string;
-}) {
-  return (
-    <div className="ui-field min-w-0">
-      <span className="ui-field__label">{label}</span>
-      <CustomSelect
-        value={value}
-        onChange={onChange}
-        options={options}
-        className="w-full"
-        triggerClassName="min-h-11 rounded-[1rem]"
-        ariaLabel={ariaLabel}
-      />
-    </div>
-  );
-}
-
-function BooleanChoice({
-  checked,
-  onChange,
-  title,
-  hint,
-}: {
-  checked: boolean;
-  onChange: (value: boolean) => void;
-  title: string;
-  hint: string;
-}) {
-  return (
-    <label className={`choice-card ${checked ? 'is-active' : ''}`}>
-      <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} />
-      <div>
-        <div className="choice-card__title">{title}</div>
-        <div className="choice-card__hint">{hint}</div>
-      </div>
-    </label>
   );
 }
