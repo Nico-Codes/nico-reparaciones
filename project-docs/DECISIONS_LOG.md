@@ -838,3 +838,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/web/src/features/catalogAdmin/{AdminCategoriesPage.tsx,admin-categories.helpers.ts,admin-categories.helpers.test.ts,admin-categories.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0070]
+- Fecha: 2026-03-31
+- Estado: aceptada
+- Tema: `AdminProductsPage` pasa a orquestador y el catalogo operativo gana helpers + sections propios
+- Contexto: despues de ordenar `AdminCategoriesPage`, el siguiente hotspot claro de `catalogAdmin` quedo en `AdminProductsPage.tsx`. La pagina mezclaba stats, filtros server/client, opciones de selects, resumen de precio/margen, listado de productos y patches rapidos en un solo archivo de mas de 500 lineas.
+- Decision: mantener la ruta `/admin/productos`, el wiring con `catalogAdminApi` y el comportamiento actual de filtros estables, pero mover stats, opciones, filtros client-side y resumen de precio/margen a `admin-products.helpers.ts`, mover toolbar, cards de stats y listado operativo a `admin-products.sections.tsx`, y dejar `AdminProductsPage.tsx` como orquestador de fetch, sync de filtros y mutaciones rapidas. Tambien se agrega test unitario para helpers del feature.
+- Impacto: `AdminProductsPage.tsx` baja de forma marcada, `catalogAdmin` queda mucho mas consistente entre categorias, productos y formularios comerciales, y el siguiente hotspot natural del frontend pasa a pantallas admin mas especificas como `AdminStoreHeroSettingsPage.tsx` o `AdminAutoReportsPage.tsx`. No hay cambios deliberados en rutas, payloads ni comportamiento visible esperado.
+- Alternativas consideradas: partir solo el listado de productos o saltar primero a otra pagina del admin; descartado porque cerrar primero el hotspot principal del catalogo comercial deja mas coherente el subdominio antes de abrir otros frentes.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/catalogAdmin/{AdminProductsPage.tsx,admin-products.helpers.ts,admin-products.helpers.test.ts,admin-products.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano

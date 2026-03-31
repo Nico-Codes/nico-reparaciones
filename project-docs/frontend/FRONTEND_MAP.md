@@ -225,6 +225,8 @@ Admin general:
 Catalogo comercial:
 
 - `AdminProductsPage.tsx`
+- `admin-products.helpers.ts`
+- `admin-products.sections.tsx`
 - `AdminProductCreatePage.tsx`
 - `AdminProductEditPage.tsx`
 - `AdminProductLabelPage.tsx`
@@ -335,6 +337,14 @@ En la ola de simplificacion del 2026-03-30 quedaron confirmados estos limites in
   - sync de ruta create/edit
   - mutaciones de alta, edicion, toggle y borrado
   - composicion del listado, alertas y formulario
+- `AdminProductsPage.tsx` ahora delega derivaciones y UI del catalogo operativo en:
+  - `admin-products.helpers.ts`
+  - `admin-products.sections.tsx`
+- el archivo principal de productos queda centrado en:
+  - fetch de categorias y productos
+  - sync de filtros server/client
+  - patches rapidos de stock, estado y destacado
+  - composicion del toolbar, stats y listado operativo
 - `AdminRepairPricingRuleEditPage.tsx`
 - `AdminModelGroupsPage.tsx`
 - `AdminRepairTypesPage.tsx`

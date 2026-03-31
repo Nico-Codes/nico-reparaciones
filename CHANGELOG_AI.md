@@ -1793,3 +1793,29 @@ pm run qa:frontend:e2e
   - el split mantiene `catalogAdminApi` como frontera unica del CRUD comercial, lo cual es correcto por ahora y no introduce estado global adicional
 
 ---
+
+### 2026-03-31 - Codex
+- Alcance: partir `AdminProductsPage` en helpers y sections, dejando la pagina principal como orquestador del catalogo operativo.
+- Tipo de intervencion: refactor interno seguro del frontend catalog admin + seccionado de la vista principal de productos sin abrir una API nueva.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/catalogAdmin/AdminProductsPage.tsx`
+  - `next-stack/apps/web/src/features/catalogAdmin/admin-products.helpers.ts`
+  - `next-stack/apps/web/src/features/catalogAdmin/admin-products.helpers.test.ts`
+  - `next-stack/apps/web/src/features/catalogAdmin/admin-products.sections.tsx`
+  - `project-docs/architecture/ARCHITECTURE.md`
+  - `project-docs/frontend/FRONTEND_MAP.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No deliberado. Se mantienen stats, filtros, listado, edicion rapida de stock y toggles de estado/destacado; cambia la separacion interna entre fetch/sync, helpers puros y secciones de UI.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `cmd /c npm run qa:route-parity`
+  - `git diff --check`
+- Riesgos / notas:
+  - `catalogAdmin` ya queda ordenado en sus pantallas principales, pero siguen pendientes hotspots de admin como `AdminStoreHeroSettingsPage.tsx` y `AdminAutoReportsPage.tsx`
+  - el split reutiliza helpers del formulario comercial para money/opciones y mantiene `catalogAdminApi` como frontera unica del subdominio
+
+---

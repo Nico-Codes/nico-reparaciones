@@ -239,6 +239,16 @@ Confirmado por codigo:
   - mutaciones de alta, edicion, toggle y borrado
   - ensamblado de alertas, listado y formulario
 - la logica de slug, filtros, stats y diff del draft queda fuera del render principal
+- `AdminProductsPage.tsx` ya no concentra stats, filtros, listado y patches rapidos del catalogo en un solo archivo
+- el catalogo operativo de productos ahora se reparte entre:
+  - `admin-products.helpers.ts`
+  - `admin-products.sections.tsx`
+- la pagina principal queda centrada en:
+  - fetch de categorias y productos
+  - sync de filtros
+  - patches rapidos de stock, estado y destacado
+  - ensamblado de stats, toolbar y listado
+- la logica de stats, filtros client-side, opciones y resumen de precio/margen queda fuera del render principal
 
 Desde la ola de simplificacion de 2026-03-30 quedaron formalizados estos limites:
 
