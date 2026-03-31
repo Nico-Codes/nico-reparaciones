@@ -209,6 +209,16 @@ Confirmado por codigo:
   - patches de estado
   - guardado y borrado
 - la logica de scope, filtros dependientes y armado del patch queda fuera del render principal
+- `AdminDashboardPage.tsx` ya no concentra resumen, bandeja y actividad del panel en un solo archivo
+- el dashboard admin ahora se reparte entre:
+  - `admin-dashboard.helpers.ts`
+  - `admin-dashboard.sections.tsx`
+- la pagina principal queda centrada en:
+  - fetch del dashboard
+  - estado de carga y error
+  - composicion del summary y work queue
+  - ensamblado de secciones
+- la logica de metricas, contadores y prioridad operativa queda fuera del render principal
 
 Desde la ola de simplificacion de 2026-03-30 quedaron formalizados estos limites:
 

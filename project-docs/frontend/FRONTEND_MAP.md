@@ -203,6 +203,8 @@ Reparaciones:
 Admin general:
 
 - `AdminDashboardPage.tsx`
+- `admin-dashboard.helpers.ts`
+- `admin-dashboard.sections.tsx`
 - `AdminAlertsPage.tsx`
 - `AdminUsersPage.tsx`
 - `AdminSettingsHubPage.tsx`
@@ -305,6 +307,14 @@ En la ola de simplificacion del 2026-03-30 quedaron confirmados estos limites in
   - sincronizacion de lookups por tipo/grupo
   - patches de scope y estado
   - guardado y borrado
+- `AdminDashboardPage.tsx` ahora delega summary, work queue y metadata operativa en:
+  - `admin-dashboard.helpers.ts`
+  - `admin-dashboard.sections.tsx`
+- el archivo principal del dashboard queda centrado en:
+  - fetch del panel
+  - manejo de loading/error
+  - composicion del summary y work queue
+  - ensamblado de secciones
 - `AdminRepairPricingRuleEditPage.tsx`
 - `AdminModelGroupsPage.tsx`
 - `AdminRepairTypesPage.tsx`

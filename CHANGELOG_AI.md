@@ -1715,3 +1715,29 @@ pm run qa:frontend:e2e
   - el split mantiene `adminApi` y `deviceCatalogApi` como fronteras de lookup compartidas, lo cual es correcto por ahora pero sigue dejando dependencias cruzadas dentro del admin tecnico
 
 ---
+
+### 2026-03-31 - Codex
+- Alcance: partir `AdminDashboardPage` en helpers y sections, dejando la pagina principal como orquestador del dashboard admin.
+- Tipo de intervencion: refactor interno seguro del frontend admin + separacion entre fetch, metricas operativas y secciones visuales.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/admin/AdminDashboardPage.tsx`
+  - `next-stack/apps/web/src/features/admin/admin-dashboard.helpers.ts`
+  - `next-stack/apps/web/src/features/admin/admin-dashboard.helpers.test.ts`
+  - `next-stack/apps/web/src/features/admin/admin-dashboard.sections.tsx`
+  - `project-docs/architecture/ARCHITECTURE.md`
+  - `project-docs/frontend/FRONTEND_MAP.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No deliberado. Se mantienen quick actions, gestion principal, resumen, bandeja, actividad reciente y administracion avanzada; cambia la separacion interna entre fetch, calculos del dashboard y render de UI.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `cmd /c npm run qa:route-parity`
+  - `git diff --check`
+- Riesgos / notas:
+  - el dashboard admin queda bastante mas claro, pero siguen pendientes paginas grandes del frontend como `StorePage.tsx`, `AdminCategoriesPage.tsx` y `AdminProductsPage.tsx`
+  - el split mantiene los mismos componentes base (`PageHeader`, `SectionCard`, `StatusBadge`) y no introduce una nueva capa de estado global
+
+---

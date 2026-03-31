@@ -802,3 +802,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/web/src/features/admin/{AdminRepairPricingRulesPage.tsx,admin-repair-pricing-rules.helpers.ts,admin-repair-pricing-rules.helpers.test.ts,admin-repair-pricing-rules.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0067]
+- Fecha: 2026-03-31
+- Estado: aceptada
+- Tema: `AdminDashboardPage` pasa a orquestador y el dashboard admin gana helpers + sections propios
+- Contexto: despues de cerrar el frente `admin/pricing`, el siguiente hotspot real del frontend quedo en `AdminDashboardPage.tsx`. La pagina mezclaba fetch, resumen operativo, bandeja de trabajo, accesos principales, actividad reciente, metricas y modulos avanzados en un solo archivo de mas de 450 lineas.
+- Decision: mantener la ruta y el wiring con `adminApi.dashboard()` estables, pero mover calculos puros del panel a `admin-dashboard.helpers.ts`, mover las secciones visuales a `admin-dashboard.sections.tsx` y dejar `AdminDashboardPage.tsx` como orquestador de carga, error, summary y render de alto nivel. Tambien se agrega test unitario para los helpers del dashboard.
+- Impacto: `AdminDashboardPage.tsx` baja a unas 80 lineas, el dashboard queda mucho mas legible y el subdominio `admin` gana una frontera clara entre fetch, metricas operativas y UI. No hay cambios deliberados en rutas ni comportamiento visible esperado.
+- Alternativas consideradas: partir solo las cards visuales o mover primero `StorePage.tsx`; descartado porque el mayor retorno inmediato seguia estando en el panel admin mas transversal y permitia aislar primero la logica operativa reutilizable del dashboard.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/admin/{AdminDashboardPage.tsx,admin-dashboard.helpers.ts,admin-dashboard.helpers.test.ts,admin-dashboard.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano
