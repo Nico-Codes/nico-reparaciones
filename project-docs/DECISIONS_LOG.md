@@ -694,3 +694,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/web/src/features/repairs/{AdminRepairDetailPage.tsx,admin-repair-detail.helpers.ts,admin-repair-detail.helpers.test.ts,admin-repair-detail.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0058]
+- Fecha: 2026-03-31
+- Estado: aceptada
+- Tema: `AdminRepairCreatePage` pasa de pagina hotspot a orquestador con helpers y sections
+- Contexto: despues de ordenar `RepairProviderPartPricingSection` y `AdminRepairDetailPage`, el siguiente hotspot claro del frontend en `repairs` quedo en `AdminRepairCreatePage.tsx`. La pagina mezclaba carga del catalogo tecnico, defaults de marca/modelo/falla, validaciones, recalculo de sugerencia, armado del payload, formulario completo y cierre visual en un solo archivo de mas de 680 lineas.
+- Decision: mantener la ruta y el flujo del alta admin estables, pero mover normalizacion/validaciones/armado del payload a `admin-repair-create.helpers.ts`, mover la UI seccionada a `admin-repair-create.sections.tsx` y dejar `AdminRepairCreatePage.tsx` como orquestador de catalogo, pricing y submit. Tambien se agrega test unitario para helpers del alta.
+- Impacto: `AdminRepairCreatePage.tsx` baja a unas 440 lineas, el flujo create queda alineado con el detalle admin y el subdominio `repairs` ya tiene un patron consistente entre create/detail/pricing. No hay cambios deliberados en rutas, payloads ni comportamiento funcional esperado.
+- Alternativas consideradas: seguir agregando helpers privados dentro del mismo archivo o saltar primero a otro hotspot del frontend como `AppShell.tsx`; descartado porque cerrar primero `repairs` deja el modulo mas consistente y reduce deuda donde todavia habia mas mezcla de estado y formulario.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/repairs/{AdminRepairCreatePage.tsx,admin-repair-create.helpers.ts,admin-repair-create.helpers.test.ts,admin-repair-create.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano

@@ -1475,3 +1475,29 @@ pm run qa:frontend:e2e
   - este corte deja mas claro el proximo paso natural del frontend `repairs`: alinear create con la misma metodologia de helpers + sections
 
 ---
+
+### 2026-03-31 - Codex
+- Alcance: partir `AdminRepairCreatePage` en helpers y sections, dejando la pagina principal como orquestador.
+- Tipo de intervencion: refactor interno seguro del frontend repairs + seccionado de pagina admin de alta con mezcla de catalogo, pricing y submit.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/repairs/AdminRepairCreatePage.tsx`
+  - `next-stack/apps/web/src/features/repairs/admin-repair-create.helpers.ts`
+  - `next-stack/apps/web/src/features/repairs/admin-repair-create.helpers.test.ts`
+  - `next-stack/apps/web/src/features/repairs/admin-repair-create.sections.tsx`
+  - `project-docs/architecture/ARCHITECTURE.md`
+  - `project-docs/frontend/FRONTEND_MAP.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No deliberado en rutas ni en el flujo del alta admin. Se mantiene la carga de catalogo, el preview/sugerencia y el submit; cambia la separacion interna entre helpers puros, sections de UI y pagina orquestadora.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `cmd /c npm run qa:route-parity`
+  - `git diff --check`
+- Riesgos / notas:
+  - `repairs` ya queda mucho mas consistente entre create/detail, pero todavia puede extraerse alguna logica comun de formularios si luego vale la pena
+  - el siguiente hotspot real del frontend ya se mueve fuera de `repairs` hacia `AppShell.tsx`, `AdminProductEditPage.tsx` o `AdminProvidersPage.tsx`
+
+---

@@ -243,6 +243,15 @@ En la ola de simplificacion del 2026-03-30 quedaron confirmados estos limites in
   - validacion
   - recalculo de sugerencia
   - guardado del patch
+- `AdminRepairCreatePage.tsx` ahora delega la UI en:
+  - `admin-repair-create.helpers.ts`
+  - `admin-repair-create.sections.tsx`
+- el archivo principal de alta queda centrado en:
+  - carga del catalogo tecnico
+  - sincronizacion de defaults de marca/modelo/falla
+  - recalculo de sugerencia
+  - armado del payload
+  - submit y navegacion al detalle creado
 - `AdminRepairPricingRuleEditPage.tsx`
 - `AdminModelGroupsPage.tsx`
 - `AdminRepairTypesPage.tsx`

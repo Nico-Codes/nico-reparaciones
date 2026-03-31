@@ -200,6 +200,9 @@ Desde la ola de simplificacion de 2026-03-30 quedaron formalizados estos limites
 - `AdminRepairDetailPage.tsx` ahora queda como orquestador de carga, validacion y guardado:
   - `admin-repair-detail.helpers.ts` concentra parseo, validaciones y diff del patch
   - `admin-repair-detail.sections.tsx` concentra stats, estado, formulario, sugerencias e historial
+- `AdminRepairCreatePage.tsx` ahora queda como orquestador de catalogo, pricing y submit:
+  - `admin-repair-create.helpers.ts` concentra normalizacion, validaciones y armado del payload
+  - `admin-repair-create.sections.tsx` concentra las sections de datos basicos, diagnostico y cierre
 - validacion Zod reusable en controllers: `*.schemas.ts`
 - helper comun para errores de parseo: `src/common/http/zod-bad-request.ts`
 - storage local encapsulado: `src/common/storage/public-asset-storage.service.ts`
