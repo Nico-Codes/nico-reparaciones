@@ -268,6 +268,8 @@ En la ola de simplificacion del 2026-03-30 quedaron confirmados estos limites in
 Operaciones:
 
 - `features/providers/AdminProvidersPage.tsx`
+- `features/providers/admin-providers.helpers.ts`
+- `features/providers/admin-providers.sections.tsx`
 - `features/warranties/AdminWarrantiesPage.tsx`
 - `features/warranties/AdminWarrantyCreatePage.tsx`
 
@@ -280,6 +282,7 @@ Clientes API por feature:
 - `features/cart/api.ts`
 - `features/catalogAdmin/api.ts`
 - `features/catalogAdmin/productPricingApi.ts`
+- `features/admin/api.ts` tambien actua como cliente de `providers`, `warranties` y `accounting`
 - `features/catalogAdmin/admin-product-form.helpers.ts`
 - `features/catalogAdmin/admin-product-form.controls.tsx`
 - `features/deviceCatalog/api.ts`
@@ -317,6 +320,7 @@ Confirmado por codigo:
 - `App.tsx` es grande y concentra routing, aliases legacy y redirecciones
 - `AppShell.tsx` bajo bastante y hoy delega la UI transversal pesada a `layouts/app-shell/*`
 - `AdminProductEditPage.tsx` ya no concentra todo el formulario: hoy orquesta estado, carga y submit mientras la UI vive en `admin-product-edit.sections.tsx`
+- `AdminProvidersPage.tsx` ya no concentra toda la UI operativa: hoy orquesta fetch, acciones y patches mientras la vista vive en `admin-providers.sections.tsx`
 - el frontend usa mas estado local que estado global compartido
 - en Fase 3 se retiraron tres remanentes sin referencias estaticas confirmadas:
   - `features/admin/AdminSettingsPage.tsx`

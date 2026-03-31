@@ -730,3 +730,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/web/src/features/catalogAdmin/{AdminProductEditPage.tsx,AdminProductCreatePage.tsx,admin-product-edit.sections.tsx,admin-product-form.helpers.ts,admin-product-form.helpers.test.ts,admin-product-form.controls.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0061]
+- Fecha: 2026-03-31
+- Estado: aceptada
+- Tema: `AdminProvidersPage` pasa a orquestador y el feature `providers` gana helpers + sections propios
+- Contexto: despues de ordenar `catalogAdmin`, el siguiente hotspot visible del frontend quedo en `AdminProvidersPage.tsx`. La pagina mezclaba resumen operativo, prioridad manual, query de prueba, alta de proveedor, tabla editable y acciones de probe/toggle/update en un solo archivo de mas de 500 lineas.
+- Decision: mantener la ruta y el wiring con `adminApi` estables, pero mover la UI pesada a `admin-providers.sections.tsx` y concentrar calculos/estado derivado del feature en `admin-providers.helpers.ts`, con cobertura unitaria en `admin-providers.helpers.test.ts`. `AdminProvidersPage.tsx` queda como orquestador de fetch, patches, reorder, probe y mensajes.
+- Impacto: `AdminProvidersPage.tsx` baja a menos de 200 lineas, el subdominio `providers` queda mejor seccionado y el siguiente hotspot fuerte del frontend se mueve hacia `AdminOrdersPage.tsx` o `styles.css`. No hay cambios deliberados en rutas, payloads ni comportamiento visible esperado.
+- Alternativas consideradas: partir solo la tabla editable o crear una capa API nueva exclusiva de `providers`; descartado porque el mayor retorno inmediato estaba en separar toda la UI operativa sin abrir una frontera nueva sobre `adminApi`.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/providers/{AdminProvidersPage.tsx,admin-providers.helpers.ts,admin-providers.helpers.test.ts,admin-providers.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano

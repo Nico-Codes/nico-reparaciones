@@ -225,6 +225,7 @@ Desde la ola de simplificacion de 2026-03-30 quedaron formalizados estos limites
   - `catalog-admin-pricing.service.ts`
   - `catalog-admin-support.service.ts`
 - en frontend, `catalogAdmin` ya reparte el formulario comercial entre helpers/controls compartidos y paginas orquestadoras
+- en frontend, `providers` ya reparte resumen, prioridad, alta y tabla editable entre helpers + sections del feature
 - `RepairsModule` ahora usa facade + subservicios por responsabilidad:
   - `repairs-admin.service.ts`
   - `repairs-public.service.ts`

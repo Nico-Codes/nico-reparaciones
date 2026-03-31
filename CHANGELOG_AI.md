@@ -1556,3 +1556,29 @@ pm run qa:frontend:e2e
   - el siguiente retorno real del frontend ya pasa a `AdminProvidersPage.tsx`, `AdminOrdersPage.tsx` o a la particion de estilos globales
 
 ---
+
+### 2026-03-31 - Codex
+- Alcance: partir `AdminProvidersPage` en helpers y sections, dejando la pagina principal como orquestador del feature.
+- Tipo de intervencion: refactor interno seguro del frontend de operaciones + seccionado del panel de proveedores sin abrir una API nueva.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/providers/AdminProvidersPage.tsx`
+  - `next-stack/apps/web/src/features/providers/admin-providers.helpers.ts`
+  - `next-stack/apps/web/src/features/providers/admin-providers.helpers.test.ts`
+  - `next-stack/apps/web/src/features/providers/admin-providers.sections.tsx`
+  - `project-docs/architecture/ARCHITECTURE.md`
+  - `project-docs/frontend/FRONTEND_MAP.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No deliberado. Se mantienen resumenes, prioridad de busqueda, alta de proveedor, probe, toggle y tabla editable; cambia la separacion interna entre estado/acciones del feature y render de UI.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `cmd /c npm run qa:route-parity`
+  - `git diff --check`
+- Riesgos / notas:
+  - `providers` ya queda mucho mas legible, pero el cliente sigue dependiendo de `features/admin/api.ts` como frontera compartida
+  - el siguiente retorno real del frontend ya pasa a `AdminOrdersPage.tsx` o a la particion de `styles.css`
+
+---
