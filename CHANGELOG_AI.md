@@ -1582,3 +1582,29 @@ pm run qa:frontend:e2e
   - el siguiente retorno real del frontend ya pasa a `AdminOrdersPage.tsx` o a la particion de `styles.css`
 
 ---
+
+### 2026-03-31 - Codex
+- Alcance: partir `AdminOrdersPage` en helpers y sections, dejando la pagina principal como orquestador del tracking admin.
+- Tipo de intervencion: refactor interno seguro del frontend de operaciones + seccionado del feature `orders` sin abrir una frontera API nueva.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/orders/AdminOrdersPage.tsx`
+  - `next-stack/apps/web/src/features/orders/admin-orders.helpers.ts`
+  - `next-stack/apps/web/src/features/orders/admin-orders.helpers.test.ts`
+  - `next-stack/apps/web/src/features/orders/admin-orders.sections.tsx`
+  - `project-docs/architecture/ARCHITECTURE.md`
+  - `project-docs/frontend/FRONTEND_MAP.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No deliberado. Se mantienen metricas, filtros, cambio de estado, detalle inline, enlaces de impresion y resumen de seguimiento; cambia la separacion interna entre fetch, estado derivado y render de UI.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `cmd /c npm run qa:route-parity`
+  - `git diff --check`
+- Riesgos / notas:
+  - `orders` ya queda mejor seccionado en el flujo admin, pero `AdminQuickSalesPage.tsx` sigue siendo el siguiente hotspot grande del mismo subdominio
+  - la particion de `styles.css` sigue pendiente y sigue siendo un frente transversal mas grande que cualquier pagina individual
+
+---

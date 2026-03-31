@@ -172,6 +172,8 @@ Pedidos:
 - `MyOrdersPage.tsx`
 - `OrderDetailPage.tsx`
 - `AdminOrdersPage.tsx`
+- `admin-orders.helpers.ts`
+- `admin-orders.sections.tsx`
 - `AdminOrderDetailPage.tsx`
 - `AdminOrderPrintPage.tsx`
 - `AdminOrderTicketPage.tsx`
@@ -258,6 +260,14 @@ En la ola de simplificacion del 2026-03-30 quedaron confirmados estos limites in
   - recalculo de sugerencia
   - armado del payload
   - submit y navegacion al detalle creado
+- `AdminOrdersPage.tsx` ahora delega la UI y el estado derivado en:
+  - `admin-orders.helpers.ts`
+  - `admin-orders.sections.tsx`
+- el archivo principal de pedidos admin queda centrado en:
+  - fetch del listado y del detalle seleccionado
+  - sincronizacion del pedido abierto
+  - cambio de estado
+  - composicion de metricas, filtros y tracking
 - `AdminRepairPricingRuleEditPage.tsx`
 - `AdminModelGroupsPage.tsx`
 - `AdminRepairTypesPage.tsx`

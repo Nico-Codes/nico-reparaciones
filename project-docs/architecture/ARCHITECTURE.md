@@ -203,6 +203,10 @@ Desde la ola de simplificacion de 2026-03-30 quedaron formalizados estos limites
 - `AdminRepairCreatePage.tsx` ahora queda como orquestador de catalogo, pricing y submit:
   - `admin-repair-create.helpers.ts` concentra normalizacion, validaciones y armado del payload
   - `admin-repair-create.sections.tsx` concentra las sections de datos basicos, diagnostico y cierre
+- frontend `orders` ahora secciona el tracking admin entre orquestacion, estado derivado y UI:
+  - `AdminOrdersPage.tsx` como orquestador de fetch, seleccion y cambio de estado
+  - `admin-orders.helpers.ts` para metricas, filtros y enlaces derivados del subdominio
+  - `admin-orders.sections.tsx` para filtros, resumen, listado y detalle inline del pedido
 - validacion Zod reusable en controllers: `*.schemas.ts`
 - helper comun para errores de parseo: `src/common/http/zod-bad-request.ts`
 - storage local encapsulado: `src/common/storage/public-asset-storage.service.ts`

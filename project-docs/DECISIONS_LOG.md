@@ -742,3 +742,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/web/src/features/providers/{AdminProvidersPage.tsx,admin-providers.helpers.ts,admin-providers.helpers.test.ts,admin-providers.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0062]
+- Fecha: 2026-03-31
+- Estado: aceptada
+- Tema: `AdminOrdersPage` pasa a orquestador y el feature `orders` gana helpers + sections propios
+- Contexto: despues de ordenar `providers`, el siguiente hotspot visible del frontend quedo en `AdminOrdersPage.tsx`. La pagina mezclaba metricas, filtros, contadores de WhatsApp, listado, detalle inline, enlaces de impresion, formato temporal y cambio de estado en un solo archivo de mas de 500 lineas.
+- Decision: mantener la ruta y el wiring con `ordersApi` estables, pero mover el estado derivado del feature a `admin-orders.helpers.ts`, mover la UI pesada a `admin-orders.sections.tsx` y dejar `AdminOrdersPage.tsx` como orquestador de fetch, detalle seleccionado y patches de estado. Tambien se agrega test unitario para helpers del tracking admin.
+- Impacto: `AdminOrdersPage.tsx` baja a menos de 200 lineas, el subdominio `orders` gana una frontera mas clara entre datos, metricas y render, y el siguiente hotspot natural dentro del mismo modulo pasa a `AdminQuickSalesPage.tsx`. No hay cambios deliberados en rutas, payloads ni comportamiento visible esperado.
+- Alternativas consideradas: partir solo el panel de detalle inline o mover primero `AdminQuickSalesPage.tsx`; descartado porque `AdminOrdersPage.tsx` era el hotspot mas transversal del feature y ordenar primero el tracking admin deja un patron mas reutilizable para el resto del modulo.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/orders/{AdminOrdersPage.tsx,admin-orders.helpers.ts,admin-orders.helpers.test.ts,admin-orders.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano
