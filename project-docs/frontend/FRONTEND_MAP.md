@@ -233,6 +233,8 @@ Catalogo tecnico y pricing:
 
 - `AdminCalculationsHubPage.tsx`
 - `AdminProductPricingRulesPage.tsx`
+- `admin-product-pricing-rules.helpers.ts`
+- `admin-product-pricing-rules.sections.tsx`
 - `AdminRepairPricingRulesPage.tsx`
 - `AdminRepairPricingRuleCreatePage.tsx`
 
@@ -285,6 +287,14 @@ En la ola de simplificacion del 2026-03-30 quedaron confirmados estos limites in
   - escaneo/carga por codigo
   - confirmacion de la venta
   - navegacion hacia pedido, ticket o impresion
+- `AdminProductPricingRulesPage.tsx` ahora delega mapping, filtros y payloads en:
+  - `admin-product-pricing-rules.helpers.ts`
+  - `admin-product-pricing-rules.sections.tsx`
+- el archivo principal de pricing comercial queda centrado en:
+  - carga de preferencias, categorias y productos
+  - sincronizacion del simulador
+  - alta de reglas
+  - edicion inline y borrado
 - `AdminRepairPricingRuleEditPage.tsx`
 - `AdminModelGroupsPage.tsx`
 - `AdminRepairTypesPage.tsx`

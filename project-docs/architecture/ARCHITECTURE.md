@@ -189,6 +189,17 @@ Confirmado por codigo:
 
 ## Orden interno reforzado
 
+- `AdminProductPricingRulesPage.tsx` ya no concentra preferencias, simulador, alta y edicion inline de reglas en un solo archivo
+- el feature de pricing comercial ahora se reparte entre:
+  - `admin-product-pricing-rules.helpers.ts`
+  - `admin-product-pricing-rules.sections.tsx`
+- la pagina principal queda centrada en:
+  - carga de preferencias, categorias y productos
+  - sincronizacion del simulador
+  - alta de reglas
+  - patches inline y borrado
+- la logica de mapping, filtros de alcance y armado de payloads queda fuera del render principal
+
 Desde la ola de simplificacion de 2026-03-30 quedaron formalizados estos limites:
 
 - frontend `repairs` ahora secciona el flujo de proveedor + repuesto + preview en piezas chicas:

@@ -778,3 +778,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/web/src/styles.css`, `next-stack/apps/web/src/styles/*`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `typecheck --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0065]
+- Fecha: 2026-03-31
+- Estado: aceptada
+- Tema: `AdminProductPricingRulesPage` pasa a orquestador y el pricing comercial gana helpers + sections propios
+- Contexto: despues de partir `styles.css`, el siguiente hotspot visible del frontend quedo en `AdminProductPricingRulesPage.tsx`. La pagina mezclaba preferencias globales, simulador, alta de reglas, edicion inline, filtros por categoria/producto y render completo del feature en un solo archivo de mas de 500 lineas.
+- Decision: mantener la ruta y el wiring con `productPricingApi` estables, pero mover mapping, filtros de alcance, armado de payloads y texto del simulador a `admin-product-pricing-rules.helpers.ts`, mover la UI pesada a `admin-product-pricing-rules.sections.tsx` y dejar `AdminProductPricingRulesPage.tsx` como orquestador de fetch, simulacion y mutaciones de reglas. Tambien se agrega test unitario para helpers del feature.
+- Impacto: `AdminProductPricingRulesPage.tsx` baja a menos de 300 lineas, el pricing comercial gana una frontera mas clara entre datos, simulacion y render, y el siguiente hotspot natural dentro del mismo subdominio pasa a `AdminRepairPricingRulesPage.tsx`. No hay cambios deliberados en rutas, payloads ni comportamiento visible esperado.
+- Alternativas consideradas: partir solo la tarjeta editable de reglas o saltar primero a `AdminRepairPricingRulesPage.tsx`; descartado porque el mayor retorno inmediato seguia estando en el hotspot mas grande del area de pricing comercial y permitia fijar antes el patron de helpers + sections.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/admin/{AdminProductPricingRulesPage.tsx,admin-product-pricing-rules.helpers.ts,admin-product-pricing-rules.helpers.test.ts,admin-product-pricing-rules.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano

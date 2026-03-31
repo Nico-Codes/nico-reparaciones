@@ -1663,3 +1663,29 @@ pm run qa:frontend:e2e
   - con este cambio el siguiente retorno real ya no pasa por seguir rompiendo `styles.css`, sino por revisar paginas grandes o refinar capas visuales con menor blast radius
 
 ---
+
+### 2026-03-31 - Codex
+- Alcance: partir `AdminProductPricingRulesPage` en helpers y sections, dejando la pagina principal como orquestador del pricing comercial.
+- Tipo de intervencion: refactor interno seguro del frontend admin/pricing + seccionado del simulador y las reglas comerciales sin abrir una API nueva.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/admin/AdminProductPricingRulesPage.tsx`
+  - `next-stack/apps/web/src/features/admin/admin-product-pricing-rules.helpers.ts`
+  - `next-stack/apps/web/src/features/admin/admin-product-pricing-rules.helpers.test.ts`
+  - `next-stack/apps/web/src/features/admin/admin-product-pricing-rules.sections.tsx`
+  - `project-docs/architecture/ARCHITECTURE.md`
+  - `project-docs/frontend/FRONTEND_MAP.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No deliberado. Se mantienen preferencias, simulador, alta de reglas, edicion inline y borrado; cambia la separacion interna entre fetch, payloads, filtros, texto derivado y render de UI.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `cmd /c npm run qa:route-parity`
+  - `git diff --check`
+- Riesgos / notas:
+  - el pricing comercial queda mucho mas legible, pero el siguiente hotspot claro del mismo subdominio sigue estando en `AdminRepairPricingRulesPage.tsx`
+  - el feature sigue apoyandose en `features/catalogAdmin/productPricingApi.ts` como cliente compartido, lo cual esta bien por ahora pero todavia deja una frontera comun entre admin y catalog admin
+
+---
