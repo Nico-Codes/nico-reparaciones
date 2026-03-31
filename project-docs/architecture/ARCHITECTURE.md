@@ -280,6 +280,16 @@ Confirmado por codigo:
   - sync del archivo seleccionado por slot
   - composicion del layout visual
 - la logica de paths, accept list y previews queda fuera del render principal
+- `AdminBusinessSettingsPage.tsx` ya no concentra defaults, hydrate/save, sidebar y acciones del negocio en un solo archivo
+- el feature de datos del negocio ahora se reparte entre:
+  - `admin-business-settings.helpers.ts`
+  - `admin-business-settings.sections.tsx`
+- la pagina principal queda centrada en:
+  - fetch de settings
+  - sincronizacion del formulario base
+  - guardado y cancelacion de cambios
+  - composicion de feedback, sidebar y acciones
+- la logica de defaults, payloads y dirty detection queda fuera del render principal
 
 Desde la ola de simplificacion de 2026-03-30 quedaron formalizados estos limites:
 

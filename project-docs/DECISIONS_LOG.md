@@ -886,3 +886,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/web/src/features/admin/{AdminVisualIdentityPage.tsx,admin-visual-identity.helpers.ts,admin-visual-identity.helpers.test.ts,admin-visual-identity.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0074]
+- Fecha: 2026-03-31
+- Estado: aceptada
+- Tema: `AdminBusinessSettingsPage` pasa a orquestador y la configuracion base del negocio gana helpers + sections propios
+- Contexto: despues de ordenar el admin visual, el siguiente hotspot claro del admin general quedo en `AdminBusinessSettingsPage.tsx`. La pagina mezclaba defaults, hydrate/save de settings, payloads de negocio, dirty detection, feedback, sidebar de resumen y acciones del formulario en un solo archivo.
+- Decision: mantener la ruta y el wiring con `adminSettingsApi` estables, pero mover defaults, lectura de settings, payloads y dirty detection a `admin-business-settings.helpers.ts`, mover feedback, secciones principales, sidebar y acciones a `admin-business-settings.sections.tsx`, y dejar `AdminBusinessSettingsPage.tsx` como orquestador de fetch, sync, guardado y cancelacion. Tambien se agrega test unitario para helpers del feature.
+- Impacto: `AdminBusinessSettingsPage.tsx` baja de forma marcada, la configuracion base del negocio gana una frontera clara entre datos y UI, y el admin general queda mas consistente con el patron de helpers + sections ya usado en branding, reportes y dashboard. No hay cambios deliberados en rutas, payloads ni comportamiento visible esperado.
+- Alternativas consideradas: partir solo el sidebar o saltar primero a `AdminWarrantyCreatePage.tsx`; descartado porque el mayor retorno inmediato seguia estando en la pagina de settings base que todavia mezclaba demasiado estado derivado con render.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/admin/{AdminBusinessSettingsPage.tsx,admin-business-settings.helpers.ts,admin-business-settings.helpers.test.ts,admin-business-settings.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano

@@ -215,6 +215,8 @@ Admin general:
 - `admin-auto-reports.helpers.ts`
 - `admin-auto-reports.sections.tsx`
 - `AdminBusinessSettingsPage.tsx`
+- `admin-business-settings.helpers.ts`
+- `admin-business-settings.sections.tsx`
 - `AdminVisualIdentityPage.tsx`
 - `admin-visual-identity.helpers.ts`
 - `admin-visual-identity.sections.tsx`
@@ -377,6 +379,15 @@ En la ola de simplificacion del 2026-03-30 quedaron confirmados estos limites in
   - upload/reset de assets
   - sync del archivo seleccionado por slot
   - composicion de alertas y secciones
+- `AdminBusinessSettingsPage.tsx` ahora delega defaults, payloads y estado dirty en:
+  - `admin-business-settings.helpers.ts`
+  - `admin-business-settings.sections.tsx`
+- el archivo principal de datos del negocio queda centrado en:
+  - fetch de settings
+  - sincronizacion del formulario base
+  - guardado del payload
+  - cancelacion de cambios
+  - composicion del feedback, sidebar y acciones
 - `AdminRepairPricingRuleEditPage.tsx`
 - `AdminModelGroupsPage.tsx`
 - `AdminRepairTypesPage.tsx`
