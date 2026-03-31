@@ -211,6 +211,15 @@ Desde la ola de simplificacion de 2026-03-30 quedaron formalizados estos limites
   - `AdminQuickSalesPage.tsx` como orquestador de catalogo, carrito y confirmacion
   - `admin-quick-sales.helpers.ts` para validaciones, totales y mutaciones puras del ticket
   - `admin-quick-sales.sections.tsx` para scanner, busqueda manual y ticket actual
+- la cascada global del frontend ahora queda repartida por capas fisicas sin cambiar el entrypoint del build:
+  - `styles.css` como entrypoint unico importado por `main.tsx`
+  - `src/styles/base.css`
+  - `src/styles/store.css`
+  - `src/styles/layout.css`
+  - `src/styles/repairs.css`
+  - `src/styles/components.css`
+  - `src/styles/admin.css`
+  - `src/styles/commerce.css`
 - validacion Zod reusable en controllers: `*.schemas.ts`
 - helper comun para errores de parseo: `src/common/http/zod-bad-request.ts`
 - storage local encapsulado: `src/common/storage/public-asset-storage.service.ts`
@@ -275,6 +284,6 @@ Seguridad confirmada:
 - `App.tsx` concentra gran parte del mapa de rutas y aliases legacy
 - `AppShell.tsx` sigue siendo entrypoint transversal del shell, pero la UI pesada ya se reparte en `layouts/app-shell/*`
 - `admin.service.ts` es el servicio mas grande y transversal del backend
-- `styles.css` del frontend sigue siendo un punto global demasiado grande
+- `styles.css` ya no es monolitico, pero la cascada visual global sigue siendo un punto transversal sensible aunque ahora este seccionada en `src/styles/*`
 - `catalog-admin.service.ts` y `admin.service.ts` escriben en `apps/web/public`
 - scripts de migracion y visual parity todavia dependen del repo root legacy

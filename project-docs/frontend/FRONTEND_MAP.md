@@ -22,6 +22,13 @@ Layout principal:
 Estilos globales:
 
 - `next-stack/apps/web/src/styles.css`
+- `next-stack/apps/web/src/styles/base.css`
+- `next-stack/apps/web/src/styles/store.css`
+- `next-stack/apps/web/src/styles/layout.css`
+- `next-stack/apps/web/src/styles/repairs.css`
+- `next-stack/apps/web/src/styles/components.css`
+- `next-stack/apps/web/src/styles/admin.css`
+- `next-stack/apps/web/src/styles/commerce.css`
 
 ## Router y estrategia de navegacion
 
@@ -333,7 +340,7 @@ Confirmado por codigo:
 - `AppShell.tsx` usa datos de branding visibles en header y deriva header/footer hacia `layouts/app-shell/*`
 - `CartAddedPopup.tsx` replica comportamiento legacy de agregado al carrito
 - `CustomSelect` y `ActionDropdown` concentran la base visual de selects y menus custom
-- `styles.css` contiene la mayor parte del lenguaje visual transversal
+- `styles.css` ahora funciona como entrypoint del lenguaje visual y reparte la cascada en `src/styles/*`
 
 ## Hallazgos relevantes para mantenimiento
 
@@ -341,6 +348,7 @@ Confirmado por codigo:
 - `AppShell.tsx` bajo bastante y hoy delega la UI transversal pesada a `layouts/app-shell/*`
 - `AdminProductEditPage.tsx` ya no concentra todo el formulario: hoy orquesta estado, carga y submit mientras la UI vive en `admin-product-edit.sections.tsx`
 - `AdminProvidersPage.tsx` ya no concentra toda la UI operativa: hoy orquesta fetch, acciones y patches mientras la vista vive en `admin-providers.sections.tsx`
+- `styles.css` ya no es un archivo monolitico: hoy solo importa capas fisicas (`base`, `store`, `layout`, `repairs`, `components`, `admin`, `commerce`) manteniendo el mismo wiring del build
 - el frontend usa mas estado local que estado global compartido
 - en Fase 3 se retiraron tres remanentes sin referencias estaticas confirmadas:
   - `features/admin/AdminSettingsPage.tsx`

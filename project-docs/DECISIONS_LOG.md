@@ -766,3 +766,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/web/src/features/orders/{AdminQuickSalesPage.tsx,admin-quick-sales.helpers.ts,admin-quick-sales.helpers.test.ts,admin-quick-sales.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0064]
+- Fecha: 2026-03-31
+- Estado: aceptada
+- Tema: `styles.css` pasa de hotspot monolitico a entrypoint con capas fisicas en `src/styles`
+- Contexto: despues de bajar los hotspots mas grandes de `orders`, el siguiente punto de complejidad transversal del frontend seguia en `next-stack/apps/web/src/styles.css`, un archivo de mas de 3600 lineas que mezclaba base, store, shell/layout, repairs, componentes UI, admin y commerce en una sola cascada.
+- Decision: mantener `main.tsx` y el wiring del build estables, pero convertir `styles.css` en un entrypoint delgado que solo importa capas fisicas y mover las reglas existentes a `src/styles/base.css`, `src/styles/store.css`, `src/styles/layout.css`, `src/styles/repairs.css`, `src/styles/components.css`, `src/styles/admin.css` y `src/styles/commerce.css`, respetando el orden original de cascada.
+- Impacto: el repo gana una frontera visual mucho mas clara sin cambiar clases, rutas ni comportamiento deliberado; la lectura del frontend deja de depender de un solo archivo gigante y los siguientes cambios de UI pasan a tener un area de impacto mas localizada.
+- Alternativas consideradas: seguir partiendo paginas individuales primero o reordenar estilos por componentes a mano; descartado porque el mayor hotspot restante era ya transversal y un reordenamiento semantico manual aumentaba el riesgo de romper la cascada respecto de un split fisico conservador por rangos reales.
+- Archivos / modulos afectados: `next-stack/apps/web/src/styles.css`, `next-stack/apps/web/src/styles/*`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano

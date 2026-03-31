@@ -1634,3 +1634,32 @@ pm run qa:frontend:e2e
   - la particion de `styles.css` sigue teniendo mas impacto transversal que cualquier pagina individual restante
 
 ---
+
+### 2026-03-31 - Codex
+- Alcance: partir `styles.css` en capas fisicas bajo `src/styles/`, dejando `styles.css` como entrypoint del build.
+- Tipo de intervencion: refactor interno seguro del frontend visual + limpieza estructural de la cascada global sin cambiar el wiring de `main.tsx`.
+- Archivos tocados:
+  - `next-stack/apps/web/src/styles.css`
+  - `next-stack/apps/web/src/styles/base.css`
+  - `next-stack/apps/web/src/styles/store.css`
+  - `next-stack/apps/web/src/styles/layout.css`
+  - `next-stack/apps/web/src/styles/repairs.css`
+  - `next-stack/apps/web/src/styles/components.css`
+  - `next-stack/apps/web/src/styles/admin.css`
+  - `next-stack/apps/web/src/styles/commerce.css`
+  - `project-docs/architecture/ARCHITECTURE.md`
+  - `project-docs/frontend/FRONTEND_MAP.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No deliberado. Se mantiene el mismo entrypoint CSS en `main.tsx` y la misma cascada general; cambia la seccion fisica de reglas para que base, store, layout, repairs, componentes, admin y commerce dejen de convivir en un unico archivo monolitico.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `cmd /c npm run qa:route-parity`
+  - `git diff --check`
+- Riesgos / notas:
+  - el split es conservador y mantiene el orden de cascada, pero futuras limpiezas todavia pueden afinar reglas muertas o cruces entre `commerce.css` y `admin.css`
+  - con este cambio el siguiente retorno real ya no pasa por seguir rompiendo `styles.css`, sino por revisar paginas grandes o refinar capas visuales con menor blast radius
+
+---
