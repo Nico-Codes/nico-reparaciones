@@ -270,6 +270,16 @@ Confirmado por codigo:
   - envio manual de reporte y alertas
   - recarga y limpieza del historial operativo
 - la logica de defaults, normalizacion del anti-spam, payloads y resumenes queda fuera del render principal
+- `AdminVisualIdentityPage.tsx` ya no concentra metadata de assets, resolucion de paths, previews y cards de upload en un solo archivo
+- el feature de identidad visual ahora se reparte entre:
+  - `admin-visual-identity.helpers.ts`
+  - `admin-visual-identity.sections.tsx`
+- la pagina principal queda centrada en:
+  - fetch de settings
+  - upload y reset de assets
+  - sync del archivo seleccionado por slot
+  - composicion del layout visual
+- la logica de paths, accept list y previews queda fuera del render principal
 
 Desde la ola de simplificacion de 2026-03-30 quedaron formalizados estos limites:
 

@@ -1871,3 +1871,29 @@ pm run qa:frontend:e2e
   - el split mantiene `adminSettingsApi` y `adminApi` como fronteras unicas del feature y no introduce estado global nuevo
 
 ---
+
+### 2026-03-31 - Codex
+- Alcance: partir `AdminVisualIdentityPage` en helpers y sections, dejando la pagina principal como orquestador de identidades, favicons, iconos y logos.
+- Tipo de intervencion: refactor interno seguro del frontend admin + seccionado del feature visual sin abrir una API nueva.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/admin/AdminVisualIdentityPage.tsx`
+  - `next-stack/apps/web/src/features/admin/admin-visual-identity.helpers.ts`
+  - `next-stack/apps/web/src/features/admin/admin-visual-identity.helpers.test.ts`
+  - `next-stack/apps/web/src/features/admin/admin-visual-identity.sections.tsx`
+  - `project-docs/architecture/ARCHITECTURE.md`
+  - `project-docs/frontend/FRONTEND_MAP.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No deliberado. Se mantienen upload/reset de assets, previews y estado por slot; cambia la separacion interna entre fetch/sync, helpers puros y bloques visuales. Tambien se corrigen textos dañados del feature y el preview de archivos temporales ahora limpia sus `objectURL`.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `cmd /c npm run qa:route-parity`
+  - `git diff --check`
+- Riesgos / notas:
+  - el subdominio visual del admin queda mucho mas consistente, pero todavia siguen pendientes otras pantallas grandes fuera de branding como `AdminBusinessSettingsPage.tsx`
+  - el split mantiene `brandAssetsApi` y `adminSettingsApi` como fronteras unicas del feature y no introduce estado global nuevo
+
+---

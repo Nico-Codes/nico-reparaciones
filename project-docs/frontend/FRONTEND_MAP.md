@@ -216,6 +216,8 @@ Admin general:
 - `admin-auto-reports.sections.tsx`
 - `AdminBusinessSettingsPage.tsx`
 - `AdminVisualIdentityPage.tsx`
+- `admin-visual-identity.helpers.ts`
+- `admin-visual-identity.sections.tsx`
 - `AdminStoreHeroSettingsPage.tsx`
 - `admin-store-hero-settings.helpers.ts`
 - `admin-store-hero-settings.sections.tsx`
@@ -367,6 +369,14 @@ En la ola de simplificacion del 2026-03-30 quedaron confirmados estos limites in
   - guardado de configuracion
   - envios manuales
   - limpieza e hidratacion del historial operativo
+- `AdminVisualIdentityPage.tsx` ahora delega metadata de assets, resolucion de paths y previews visuales en:
+  - `admin-visual-identity.helpers.ts`
+  - `admin-visual-identity.sections.tsx`
+- el archivo principal de identidad visual queda centrado en:
+  - fetch de settings
+  - upload/reset de assets
+  - sync del archivo seleccionado por slot
+  - composicion de alertas y secciones
 - `AdminRepairPricingRuleEditPage.tsx`
 - `AdminModelGroupsPage.tsx`
 - `AdminRepairTypesPage.tsx`

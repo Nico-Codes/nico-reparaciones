@@ -874,3 +874,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/web/src/features/admin/{AdminAutoReportsPage.tsx,admin-auto-reports.helpers.ts,admin-auto-reports.helpers.test.ts,admin-auto-reports.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0073]
+- Fecha: 2026-03-31
+- Estado: aceptada
+- Tema: `AdminVisualIdentityPage` pasa a orquestador y el admin visual gana helpers + sections propios
+- Contexto: despues de ordenar la portada y los reportes automaticos, el siguiente hotspot claro del admin visual quedo en `AdminVisualIdentityPage.tsx`. La pagina mezclaba metadata de favicons/iconos/logos, resolucion de settings y paths, preview visual, object URLs temporales y cards de upload en un solo archivo con varios textos dañados.
+- Decision: mantener la ruta y el wiring con `adminSettingsApi` y `brandAssetsApi` estables, pero mover metadata, accept list y resolucion de paths a `admin-visual-identity.helpers.ts`, mover header, alerts, sections, cards y previews a `admin-visual-identity.sections.tsx`, y dejar `AdminVisualIdentityPage.tsx` como orquestador de fetch, upload/reset y seleccion por slot. Tambien se agrega test unitario para helpers del feature.
+- Impacto: `AdminVisualIdentityPage.tsx` baja de forma marcada, el subdominio visual queda mas consistente con `AdminStoreHeroSettingsPage`, y ademas el preview de archivos temporales ahora limpia correctamente sus `objectURL`. No hay cambios deliberados en rutas, payloads ni comportamiento visible esperado.
+- Alternativas consideradas: partir solo las cards de upload o saltar primero a otra pagina admin; descartado porque el mayor retorno inmediato seguia estando en la otra pagina visual grande del subdominio y convenia cerrarla con el mismo patron ya usado en assets/branding.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/admin/{AdminVisualIdentityPage.tsx,admin-visual-identity.helpers.ts,admin-visual-identity.helpers.test.ts,admin-visual-identity.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano
