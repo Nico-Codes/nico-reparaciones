@@ -17,6 +17,7 @@ Router principal:
 Layout principal:
 
 - `next-stack/apps/web/src/layouts/AppShell.tsx`
+- `next-stack/apps/web/src/layouts/app-shell/*`
 
 Estilos globales:
 
@@ -67,14 +68,16 @@ Esto implica que la app no usa hoy Redux, Zustand ni un Context de dominio globa
 
 ### AppShell
 
-Concentra:
+Hoy orquesta:
 
 - navbar desktop y mobile
-- menu lateral mobile
-- menu de cuenta
+- estado de sidebar y menu de cuenta
+- sync de auth y branding visible
 - accesos de usuario y admin
-- branding visible del header/footer
-- integracion del popup de carrito agregado
+- popup de carrito agregado
+- wiring de `layouts/app-shell/mobile-sidebar.tsx`
+- wiring de `layouts/app-shell/account-menu.tsx`
+- wiring de `layouts/app-shell/footer.tsx`
 
 ### BrandingHeadSync
 
@@ -299,7 +302,7 @@ Hooks y almacenamiento relevantes:
 Confirmado por codigo:
 
 - `BrandingHeadSync.tsx` sincroniza branding del sitio
-- `AppShell.tsx` usa datos de branding visibles en header y footer
+- `AppShell.tsx` usa datos de branding visibles en header y deriva header/footer hacia `layouts/app-shell/*`
 - `CartAddedPopup.tsx` replica comportamiento legacy de agregado al carrito
 - `CustomSelect` y `ActionDropdown` concentran la base visual de selects y menus custom
 - `styles.css` contiene la mayor parte del lenguaje visual transversal
@@ -307,7 +310,7 @@ Confirmado por codigo:
 ## Hallazgos relevantes para mantenimiento
 
 - `App.tsx` es grande y concentra routing, aliases legacy y redirecciones
-- `AppShell.tsx` es grande y concentra bastante comportamiento transversal de UI
+- `AppShell.tsx` bajo bastante y hoy delega la UI transversal pesada a `layouts/app-shell/*`
 - el frontend usa mas estado local que estado global compartido
 - en Fase 3 se retiraron tres remanentes sin referencias estaticas confirmadas:
   - `features/admin/AdminSettingsPage.tsx`

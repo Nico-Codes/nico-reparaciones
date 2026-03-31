@@ -706,3 +706,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/web/src/features/repairs/{AdminRepairCreatePage.tsx,admin-repair-create.helpers.ts,admin-repair-create.helpers.test.ts,admin-repair-create.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0059]
+- Fecha: 2026-03-31
+- Estado: aceptada
+- Tema: `AppShell` pasa de layout monolitico a shell orquestador con subcomponentes en `layouts/app-shell`
+- Contexto: despues de ordenar los hotspots fuertes de `repairs`, el siguiente punto transversal mas grande del frontend quedo en `AppShell.tsx`. El archivo mezclaba sync de auth, branding, navbar, sidebar mobile, menu de cuenta, footer, focus management y comportamiento responsive en un solo layout de mas de 500 lineas.
+- Decision: mantener el wiring funcional del shell y sus rutas estables, pero mover la UI del menu de cuenta, sidebar mobile y footer a `layouts/app-shell/account-menu.tsx`, `layouts/app-shell/mobile-sidebar.tsx` y `layouts/app-shell/footer.tsx`, con iconos/fallbacks concentrados en `layouts/app-shell/link-icons.tsx`. `AppShell.tsx` queda como orquestador de estado, listeners, branding y accesos.
+- Impacto: `AppShell.tsx` baja a unas 370 lineas, el shell queda mas facil de leer y el proximo corte natural del frontend se desplaza a hotspots de pagina como `AdminProductEditPage.tsx` o `AdminProvidersPage.tsx`. No hay cambios deliberados en rutas, guards ni comportamiento visible esperado.
+- Alternativas consideradas: seguir agregando helpers privados dentro del mismo archivo o saltar primero a otra pagina grande del admin; descartado porque el shell es un punto transversal y concentraba demasiada UI compartida para seguir creciendo en un unico archivo.
+- Archivos / modulos afectados: `next-stack/apps/web/src/layouts/{AppShell.tsx,app-shell/account-menu.tsx,app-shell/footer.tsx,app-shell/link-icons.tsx,app-shell/mobile-sidebar.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano

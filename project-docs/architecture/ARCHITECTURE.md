@@ -263,7 +263,7 @@ Seguridad confirmada:
 ## Puntos sensibles de integracion
 
 - `App.tsx` concentra gran parte del mapa de rutas y aliases legacy
-- `AppShell.tsx` concentra navegacion, cuenta, navbar y comportamiento responsive
+- `AppShell.tsx` sigue siendo entrypoint transversal del shell, pero la UI pesada ya se reparte en `layouts/app-shell/*`
 - `admin.service.ts` es el servicio mas grande y transversal del backend
 - `styles.css` del frontend sigue siendo un punto global demasiado grande
 - `catalog-admin.service.ts` y `admin.service.ts` escriben en `apps/web/public`

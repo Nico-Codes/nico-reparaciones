@@ -1501,3 +1501,30 @@ pm run qa:frontend:e2e
   - el siguiente hotspot real del frontend ya se mueve fuera de `repairs` hacia `AppShell.tsx`, `AdminProductEditPage.tsx` o `AdminProvidersPage.tsx`
 
 ---
+
+### 2026-03-31 - Codex
+- Alcance: partir `AppShell` en subcomponentes de `app-shell`, dejando el layout principal como orquestador.
+- Tipo de intervencion: refactor interno seguro del frontend transversal + limpieza del shell compartido sin cambiar rutas ni flujo visible.
+- Archivos tocados:
+  - `next-stack/apps/web/src/layouts/AppShell.tsx`
+  - `next-stack/apps/web/src/layouts/app-shell/account-menu.tsx`
+  - `next-stack/apps/web/src/layouts/app-shell/footer.tsx`
+  - `next-stack/apps/web/src/layouts/app-shell/link-icons.tsx`
+  - `next-stack/apps/web/src/layouts/app-shell/mobile-sidebar.tsx`
+  - `project-docs/architecture/ARCHITECTURE.md`
+  - `project-docs/frontend/FRONTEND_MAP.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No deliberado. Se mantienen header, sidebar mobile, menu de cuenta, branding visible, popup de carrito y accesos; cambia la separacion interna entre estado/wiring del shell y subcomponentes de UI.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `cmd /c npm run qa:route-parity`
+  - `git diff --check`
+- Riesgos / notas:
+  - el split limpia el layout transversal, pero no resuelve todavia el hotspot de `styles.css`
+  - el siguiente retorno real del frontend ya pasa a `AdminProductEditPage.tsx`, `AdminProvidersPage.tsx` o `AdminOrdersPage.tsx`
+
+---

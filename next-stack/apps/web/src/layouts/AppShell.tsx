@@ -1,17 +1,19 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { createPortal } from 'react-dom';
-import { ChevronDown, HelpCircle, LogOut, Menu, Package, Settings, User, Wrench, WrenchIcon, X } from 'lucide-react';
+import { Menu, Wrench } from 'lucide-react';
 import { CartAddedPopup } from '@/features/cart/CartAddedPopup';
 import { useCartCount } from '@/features/cart/useCart';
 import { authStorage } from '@/features/auth/storage';
 import type { AuthUser } from '@/features/auth/types';
-import { cn } from '@/lib/utils';
 import { storeApi } from '@/features/store/api';
 import type { StoreBrandingAssets } from '@/features/store/types';
-import { BrandWordmark, CartGlyph, LinkBadge, MenuLink, MenuLinkIcon, WarnIcon } from '@/layouts/app-shell/primitives';
+import { AccountMenu } from '@/layouts/app-shell/account-menu';
+import { AppShellFooter } from '@/layouts/app-shell/footer';
+import { MobileSidebar } from '@/layouts/app-shell/mobile-sidebar';
+import { BrandWordmark, CartGlyph, WarnIcon } from '@/layouts/app-shell/primitives';
 import type { LinkItem } from '@/layouts/app-shell/types';
 import { isActiveGroup, lockScroll, resolveShellContext, unlockScroll } from '@/layouts/app-shell/utils';
+import { cn } from '@/lib/utils';
 
 type AppShellProps = {
   children: ReactNode;
@@ -29,6 +31,7 @@ export function AppShell({ children }: AppShellProps) {
   );
   const [authUser, setAuthUser] = useState<AuthUser | null>(() => authStorage.getUser());
   const [branding, setBranding] = useState<StoreBrandingAssets | null>(null);
+  const [adminSectionOpen, setAdminSectionOpen] = useState(false);
   const accountRef = useRef<HTMLDivElement | null>(null);
   const accountButtonRef = useRef<HTMLButtonElement | null>(null);
   const accountMenuRef = useRef<HTMLDivElement | null>(null);
@@ -124,13 +127,13 @@ export function AppShell({ children }: AppShellProps) {
   const iconRepairsUrl = branding?.icons.misReparaciones || null;
   const iconDashboardUrl = branding?.icons.dashboard || null;
   const iconStoreUrl = branding?.icons.tienda || null;
-  const emailStatusText = authUser?.emailVerified ? 'Correo verificado' : 'Correo pendiente de verificación';
+  const emailStatusText = authUser?.emailVerified ? 'Correo verificado' : 'Correo pendiente de verificacion';
   const userInitial = authUser?.name?.trim()?.charAt(0)?.toUpperCase() || 'U';
 
   const desktopLinks = useMemo<LinkItem[]>(
     () => [
       { to: '/store', label: 'Tienda', active: isActiveGroup(location.pathname, ['/store']) || location.pathname === '/' },
-      { to: '/reparacion', label: 'Reparación', active: isActiveGroup(location.pathname, ['/reparacion', '/repair-lookup']) },
+      { to: '/reparacion', label: 'Reparacion', active: isActiveGroup(location.pathname, ['/reparacion', '/repair-lookup']) },
       ...(isAdmin ? [{ to: '/admin', label: 'Admin', active: isActiveGroup(location.pathname, ['/admin']) }] : []),
     ],
     [isAdmin, location.pathname],
@@ -144,7 +147,16 @@ export function AppShell({ children }: AppShellProps) {
             { label: 'Mis reparaciones', to: '/repairs', active: isActiveGroup(location.pathname, ['/repairs']), icon: iconRepairsUrl },
             { label: 'Ayuda', to: '/help', active: isActiveGroup(location.pathname, ['/help']) },
             { label: 'Mi cuenta', to: '/mi-cuenta', active: isActiveGroup(location.pathname, ['/mi-cuenta']) },
-            ...(!authUser.emailVerified ? [{ label: 'Verificar correo', to: '/auth/verify-email', active: isActiveGroup(location.pathname, ['/auth/verify-email']), highlight: 'warning' as const }] : []),
+            ...(!authUser.emailVerified
+              ? [
+                  {
+                    label: 'Verificar correo',
+                    to: '/auth/verify-email',
+                    active: isActiveGroup(location.pathname, ['/auth/verify-email']),
+                    highlight: 'warning' as const,
+                  },
+                ]
+              : []),
           ]
         : [],
     [authUser, iconOrdersUrl, iconRepairsUrl, location.pathname],
@@ -157,9 +169,14 @@ export function AppShell({ children }: AppShellProps) {
             { label: 'Panel admin', to: '/admin', active: location.pathname === '/admin', icon: iconDashboardUrl },
             { label: 'Pedidos', to: '/admin/orders', active: isActiveGroup(location.pathname, ['/admin/orders']) },
             { label: 'Reparaciones', to: '/admin/repairs', active: isActiveGroup(location.pathname, ['/admin/repairs']) },
-            { label: 'Venta rápida', to: '/admin/ventas-rapidas', active: isActiveGroup(location.pathname, ['/admin/ventas-rapidas']) },
+            { label: 'Venta rapida', to: '/admin/ventas-rapidas', active: isActiveGroup(location.pathname, ['/admin/ventas-rapidas']) },
             { label: 'Productos', to: '/admin/productos', active: isActiveGroup(location.pathname, ['/admin/productos']) },
-            { label: 'Configuración', to: '/admin/configuraciones', active: isActiveGroup(location.pathname, ['/admin/configuraciones']), icon: iconSettingsUrl },
+            {
+              label: 'Configuracion',
+              to: '/admin/configuraciones',
+              active: isActiveGroup(location.pathname, ['/admin/configuraciones']),
+              icon: iconSettingsUrl,
+            },
           ]
         : [],
     [iconDashboardUrl, iconSettingsUrl, isAdmin, location.pathname],
@@ -168,13 +185,16 @@ export function AppShell({ children }: AppShellProps) {
   const sidebarNavLinks = useMemo<LinkItem[]>(
     () => [
       { label: 'Tienda', to: '/store', active: isActiveGroup(location.pathname, ['/store']) || location.pathname === '/', icon: iconStoreUrl },
-      { label: 'Reparación', to: '/reparacion', active: isActiveGroup(location.pathname, ['/reparacion', '/repair-lookup']), icon: iconRepairLookupUrl },
+      {
+        label: 'Reparacion',
+        to: '/reparacion',
+        active: isActiveGroup(location.pathname, ['/reparacion', '/repair-lookup']),
+        icon: iconRepairLookupUrl,
+      },
       ...(isAdmin ? [{ label: 'Admin', to: '/admin', active: isActiveGroup(location.pathname, ['/admin']), icon: iconDashboardUrl }] : []),
     ],
     [iconDashboardUrl, iconRepairLookupUrl, iconStoreUrl, isAdmin, location.pathname],
   );
-
-  const [adminSectionOpen, setAdminSectionOpen] = useState(isAdmin && adminLinks.some((link) => link.active));
 
   useEffect(() => {
     setAdminSectionOpen(isAdmin && adminLinks.some((link) => link.active));
@@ -185,6 +205,19 @@ export function AppShell({ children }: AppShellProps) {
     setAccountOpen(false);
     setSidebarOpen(false);
     navigate('/store', { replace: true });
+  };
+
+  const closeAccount = () => setAccountOpen(false);
+  const closeSidebar = () => setSidebarOpen(false);
+
+  const toggleSidebar = () => {
+    setAccountOpen(false);
+    setSidebarOpen((prev) => !prev);
+  };
+
+  const toggleAccount = () => {
+    if (!isDesktop) setSidebarOpen(false);
+    setAccountOpen((prev) => !prev);
   };
 
   const accountMenuItems = () => {
@@ -201,121 +234,49 @@ export function AppShell({ children }: AppShellProps) {
 
   const focusFirstAccountItem = () => focusAccountItem(0);
 
-  const mobileSidebarLayer =
-    !isDesktop && typeof document !== 'undefined'
-      ? createPortal(
-          <>
-            <div className={`fixed inset-0 z-[180] bg-zinc-950/40 ${sidebarOpen ? '' : 'hidden'}`} aria-hidden="true" onClick={() => setSidebarOpen(false)} />
+  const handleAccountButtonKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
+    if (event.key === 'ArrowDown' || event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      setAccountOpen(true);
+      window.setTimeout(() => focusFirstAccountItem(), 0);
+    }
+  };
 
-            <aside className={`fixed left-0 top-0 z-[190] flex h-full w-[86%] max-w-xs transform flex-col bg-white shadow-xl transition-transform duration-200 ease-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`} aria-label="Men?">
-              <div className="flex h-14 items-center justify-between border-b border-zinc-100 px-4">
-                <div className="flex items-center gap-2">
-                  {brandLogoUrl ? (
-                    <img src={brandLogoUrl} className="h-8 w-8 rounded-xl bg-white object-contain ring-1 ring-zinc-100" alt="NicoReparaciones" />
-                  ) : (
-                    <div className="grid h-8 w-8 place-items-center rounded-xl bg-white ring-1 ring-zinc-100">
-                      <Wrench className="h-4 w-4 text-sky-600" />
-                    </div>
-                  )}
-                  <div className="font-black text-zinc-900">Men?</div>
-                </div>
+  const handleAccountMenuKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      setAccountOpen(false);
+      accountButtonRef.current?.focus();
+      return;
+    }
 
-                <button className="icon-btn" aria-label="Cerrar men?" type="button" onClick={() => setSidebarOpen(false)}>
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
+    const items = accountMenuItems();
+    if (!items.length) return;
+    const currentIndex = items.findIndex((item) => item === document.activeElement);
 
-              <div className="flex-1 space-y-4 overflow-y-auto p-4">
-                {authUser ? (
-                  <div className="card">
-                    <div className="card-body flex items-center gap-3">
-                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-50 font-black text-sky-700 ring-1 ring-sky-100">{userInitial}</div>
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate font-black text-zinc-900">{authUser.name}</div>
-                        <div className="sidebar-sub truncate">{authUser.email}</div>
-                      </div>
-                    </div>
-                  </div>
-                ) : null}
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      focusAccountItem(currentIndex >= 0 ? (currentIndex + 1) % items.length : 0);
+      return;
+    }
 
-                <div className="sidebar-section space-y-2">
-                  <div className="sidebar-title">Navegaci?n</div>
-                  <div className="sidebar-links">
-                    {sidebarNavLinks.map((link) => (
-                      <Link key={link.label} className={`sidebar-link ${link.active ? 'active' : ''}`} to={link.to} onClick={() => setSidebarOpen(false)}>
-                        <span className="inline-flex items-center gap-2">
-                          <MenuLinkIcon iconUrl={link.icon} fallback={link.label === 'Tienda' ? <Wrench className="h-4 w-4 text-sky-600" /> : link.label === 'Reparaci?n' ? <WrenchIcon className="h-4 w-4 text-zinc-700" /> : <Settings className="h-4 w-4 text-zinc-500" />} />
-                          <span>{link.label}</span>
-                        </span>
-                      </Link>
-                    ))}
-                  </div>
-                </div>
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      focusAccountItem(currentIndex >= 0 ? (currentIndex - 1 + items.length) % items.length : items.length - 1);
+      return;
+    }
 
-                <div className="sidebar-section space-y-2">
-                  <div className="sidebar-title">Cuenta</div>
-                  <div className="sidebar-links">
-                    {accountLinks.map((link) => (
-                      <Link key={link.label} className={`sidebar-link ${link.active ? 'active' : ''} ${link.highlight === 'warning' ? 'text-amber-700' : ''}`} to={link.to} onClick={() => setSidebarOpen(false)}>
-                        <span className="inline-flex items-center gap-2">
-                          <MenuLinkIcon
-                            iconUrl={link.icon}
-                            fallback={
-                              link.label === 'Mis pedidos' ? <Package className="h-4 w-4 text-blue-600" /> :
-                              link.label === 'Mis reparaciones' ? <WrenchIcon className="h-4 w-4 text-zinc-700" /> :
-                              link.label === 'Ayuda' ? <HelpCircle className="h-4 w-4 text-zinc-700" /> :
-                              link.label === 'Mi cuenta' ? <User className="h-4 w-4 text-zinc-500" /> :
-                              <WarnIcon />
-                            }
-                          />
-                          <span>{link.label}</span>
-                        </span>
-                      </Link>
-                    ))}
+    if (event.key === 'Home') {
+      event.preventDefault();
+      focusAccountItem(0);
+      return;
+    }
 
-                    {isAdmin ? (
-                      <>
-                        <button type="button" className={`sidebar-link flex items-center justify-between gap-2 ${adminSectionOpen ? 'active' : ''}`} onClick={() => setAdminSectionOpen((prev) => !prev)}>
-                          <span>Admin</span>
-                          <ChevronDown className={`h-4 w-4 transition-transform ${adminSectionOpen ? 'rotate-180' : ''}`} />
-                        </button>
-                        <div className={adminSectionOpen ? '' : 'hidden'}>
-                          <div className="ml-2 grid gap-1 border-l border-zinc-200 pl-2">
-                            {adminLinks.map((link) => (
-                              <Link key={link.label} className={`sidebar-link font-semibold text-zinc-700 ${link.active ? 'active' : ''}`} to={link.to} onClick={() => setSidebarOpen(false)}>
-                                <span className="inline-flex items-center gap-2">
-                                  <MenuLinkIcon iconUrl={link.icon} fallback={link.label === 'Panel admin' ? <Settings className="h-4 w-4 text-zinc-500" /> : <Wrench className="h-4 w-4 text-zinc-500" />} />
-                                  <span>{link.label}</span>
-                                  <LinkBadge count={link.badgeCount} />
-                                </span>
-                              </Link>
-                            ))}
-                          </div>
-                        </div>
-                      </>
-                    ) : null}
-
-                    {authUser ? (
-                      <button type="button" className="sidebar-link text-rose-700" onClick={logout}>
-                        <span className="inline-flex items-center gap-2">
-                          <MenuLinkIcon iconUrl={iconLogoutUrl} fallback={<LogOut className="h-4 w-4" />} />
-                          <span>Cerrar sesi?n</span>
-                        </span>
-                      </button>
-                    ) : (
-                      <>
-                        <Link className="sidebar-link" to="/auth/login" onClick={() => setSidebarOpen(false)}><span>Iniciar sesi?n</span></Link>
-                        <Link className="sidebar-link" to="/auth/register" onClick={() => setSidebarOpen(false)}><span>Crear cuenta</span></Link>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </aside>
-          </>,
-          document.body,
-        )
-      : null;
+    if (event.key === 'End') {
+      event.preventDefault();
+      focusAccountItem(items.length - 1);
+    }
+  };
 
   return (
     <div className="app-shell text-zinc-900" data-shell-context={shellContext}>
@@ -326,13 +287,10 @@ export function AppShell({ children }: AppShellProps) {
               {!isDesktop ? (
                 <button
                   className="icon-btn"
-                  aria-label="Abrir menú"
+                  aria-label="Abrir menu"
                   aria-expanded={sidebarOpen ? 'true' : 'false'}
                   type="button"
-                  onClick={() => {
-                    setAccountOpen(false);
-                    setSidebarOpen((prev) => !prev);
-                  }}
+                  onClick={toggleSidebar}
                 >
                   <Menu className="h-5 w-5" />
                 </button>
@@ -348,7 +306,7 @@ export function AppShell({ children }: AppShellProps) {
                 )}
                 <div className="min-w-0 leading-tight">
                   <BrandWordmark title={brandTitle} />
-                  <div className="hidden truncate text-[11px] text-zinc-500 sm:block">Servicio técnico profesional y tienda de electrónica</div>
+                  <div className="hidden truncate text-[11px] text-zinc-500 sm:block">Servicio tecnico profesional y tienda de electronica</div>
                 </div>
               </Link>
             </div>
@@ -372,7 +330,11 @@ export function AppShell({ children }: AppShellProps) {
             <div className="flex items-center gap-2">
               {authUser && !authUser.emailVerified ? (
                 <>
-                  <Link to="/auth/verify-email" className="hidden h-9 items-center rounded-full border border-amber-300 bg-amber-50 px-3 text-xs font-bold text-amber-800 transition hover:bg-amber-100 sm:inline-flex" aria-label="Correo sin verificar">
+                  <Link
+                    to="/auth/verify-email"
+                    className="hidden h-9 items-center rounded-full border border-amber-300 bg-amber-50 px-3 text-xs font-bold text-amber-800 transition hover:bg-amber-100 sm:inline-flex"
+                    aria-label="Correo sin verificar"
+                  >
                     Correo sin verificar
                   </Link>
                   <Link to="/auth/verify-email" className="icon-btn text-amber-700 sm:hidden" aria-label="Correo sin verificar" title="Correo sin verificar">
@@ -381,7 +343,11 @@ export function AppShell({ children }: AppShellProps) {
                 </>
               ) : null}
 
-              <Link to="/cart" className="relative mr-2 inline-flex items-center justify-center rounded-none border-0 bg-transparent p-0 text-zinc-800 transition-colors hover:bg-transparent hover:text-sky-700" aria-label="Carrito">
+              <Link
+                to="/cart"
+                className="relative mr-2 inline-flex items-center justify-center rounded-none border-0 bg-transparent p-0 text-zinc-800 transition-colors hover:bg-transparent hover:text-sky-700"
+                aria-label="Carrito"
+              >
                 {iconCartUrl ? <img src={iconCartUrl} alt="" className="h-7 w-7 object-contain" /> : <CartGlyph />}
                 {cartCount > 0 ? (
                   <span className="absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-sky-600 px-1 text-[10px] font-black leading-4 text-white ring-2 ring-white">
@@ -392,192 +358,60 @@ export function AppShell({ children }: AppShellProps) {
 
               {!authUser ? (
                 <>
-                  <Link to="/auth/login" className="btn-outline hidden sm:inline-flex">Ingresar</Link>
-                  <Link to="/auth/login" className="btn-primary sm:hidden">Ingresar</Link>
+                  <Link to="/auth/login" className="btn-outline hidden sm:inline-flex">
+                    Ingresar
+                  </Link>
+                  <Link to="/auth/login" className="btn-primary sm:hidden">
+                    Ingresar
+                  </Link>
                 </>
               ) : (
-                <div
-                  className="relative"
-                  ref={accountRef}
-                  onMouseEnter={isDesktop ? () => setAccountOpen(true) : undefined}
-                  onMouseLeave={isDesktop ? () => setAccountOpen(false) : undefined}
-                >
-                  <button
-                    id="account-menu-button"
-                    ref={accountButtonRef}
-                    className="btn-ghost px-3 py-2"
-                    aria-expanded={accountOpen ? 'true' : 'false'}
-                    aria-haspopup="menu"
-                    aria-controls="account-menu"
-                    aria-label="Abrir menú de cuenta"
-                    type="button"
-                    onClick={() => {
-                      if (!isDesktop) setSidebarOpen(false);
-                      setAccountOpen((prev) => !prev);
-                    }}
-                    onKeyDown={(event) => {
-                      if (event.key === 'ArrowDown' || event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault();
-                        setAccountOpen(true);
-                        window.setTimeout(() => focusFirstAccountItem(), 0);
-                      }
-                    }}
-                  >
-                    <span className="sm:hidden">
-                      <User className="h-5 w-5" />
-                    </span>
-                    <span className="hidden max-w-[12rem] truncate sm:inline">{authUser.name || 'Cuenta'}</span>
-                    <ChevronDown className="hidden h-4 w-4 text-zinc-500 sm:inline-block" />
-                  </button>
-                  <div className="absolute right-0 top-full h-2 w-64" aria-hidden="true" />
-
-                  <div
-                    id="account-menu"
-                    ref={accountMenuRef}
-                    role="menu"
-                    aria-labelledby="account-menu-button"
-                    className={`dropdown-menu top-full ${accountOpen ? 'is-open' : 'hidden'}`}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Escape') {
-                        event.preventDefault();
-                        setAccountOpen(false);
-                        accountButtonRef.current?.focus();
-                        return;
-                      }
-
-                      const items = accountMenuItems();
-                      if (!items.length) return;
-                      const currentIndex = items.findIndex((item) => item === document.activeElement);
-
-                      if (event.key === 'ArrowDown') {
-                        event.preventDefault();
-                        focusAccountItem(currentIndex >= 0 ? (currentIndex + 1) % items.length : 0);
-                        return;
-                      }
-
-                      if (event.key === 'ArrowUp') {
-                        event.preventDefault();
-                        focusAccountItem(currentIndex >= 0 ? (currentIndex - 1 + items.length) % items.length : items.length - 1);
-                        return;
-                      }
-
-                      if (event.key === 'Home') {
-                        event.preventDefault();
-                        focusAccountItem(0);
-                        return;
-                      }
-
-                      if (event.key === 'End') {
-                        event.preventDefault();
-                        focusAccountItem(items.length - 1);
-                      }
-                    }}
-                    style={{ overflow: 'visible', maxHeight: 'none' }}
-                  >
-                    <div className="px-3 py-2">
-                      <div className="text-[11px] font-bold uppercase tracking-wide text-zinc-500">Estado de correo</div>
-                      <span className={`mt-1 inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${authUser.emailVerified ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-amber-200 bg-amber-50 text-amber-800'}`}>
-                        {emailStatusText}
-                      </span>
-                    </div>
-
-                    <div className="my-2 border-t border-zinc-200" />
-
-                    {accountLinks.map((link) => (
-                      <MenuLink
-                        key={link.label}
-                        link={link}
-                        menuItem
-                        onClick={() => setAccountOpen(false)}
-                        className={`dropdown-item ${link.active ? 'bg-sky-50 text-sky-700 ring-1 ring-sky-100' : ''} ${link.highlight === 'warning' ? 'text-amber-700' : ''}`}
-                      >
-                        <span className="inline-flex items-center gap-2">
-                          <MenuLinkIcon
-                            iconUrl={link.icon}
-                            fallback={
-                              link.label === 'Mis pedidos' ? <Package className="h-4 w-4 text-blue-600" /> :
-                              link.label === 'Mis reparaciones' ? <WrenchIcon className="h-4 w-4 text-zinc-600" /> :
-                              link.label === 'Ayuda' ? <HelpCircle className="h-4 w-4 text-zinc-700" /> :
-                              link.label === 'Mi cuenta' ? <User className="h-4 w-4 text-zinc-500" /> :
-                              <WarnIcon />
-                            }
-                          />
-                          <span>{link.label}</span>
-                        </span>
-                      </MenuLink>
-                    ))}
-
-                    <div className="my-2 border-t border-zinc-200" />
-                    <button type="button" role="menuitem" data-account-menu-item className="dropdown-item text-rose-700" onClick={logout}>
-                      <span className="inline-flex items-center gap-2">
-                        <MenuLinkIcon iconUrl={iconLogoutUrl} fallback={<LogOut className="h-4 w-4" />} />
-                        <span>Cerrar sesión</span>
-                      </span>
-                    </button>
-                  </div>
-                </div>
+                <AccountMenu
+                  authUser={authUser}
+                  isDesktop={isDesktop}
+                  accountOpen={accountOpen}
+                  accountRef={accountRef}
+                  accountButtonRef={accountButtonRef}
+                  accountMenuRef={accountMenuRef}
+                  accountLinks={accountLinks}
+                  emailStatusText={emailStatusText}
+                  iconLogoutUrl={iconLogoutUrl}
+                  onButtonClick={toggleAccount}
+                  onButtonKeyDown={handleAccountButtonKeyDown}
+                  onMenuKeyDown={handleAccountMenuKeyDown}
+                  onOpen={() => setAccountOpen(true)}
+                  onClose={closeAccount}
+                  onLinkClick={closeAccount}
+                  onLogout={logout}
+                />
               )}
             </div>
           </div>
         </div>
-
       </header>
 
-      {mobileSidebarLayer}
+      <MobileSidebar
+        open={sidebarOpen}
+        isDesktop={isDesktop}
+        authUser={authUser}
+        brandLogoUrl={brandLogoUrl}
+        isAdmin={isAdmin}
+        userInitial={userInitial}
+        sidebarNavLinks={sidebarNavLinks}
+        accountLinks={accountLinks}
+        adminLinks={adminLinks}
+        adminSectionOpen={adminSectionOpen}
+        iconLogoutUrl={iconLogoutUrl}
+        onClose={closeSidebar}
+        onLogout={logout}
+        onToggleAdminSection={() => setAdminSectionOpen((prev) => !prev)}
+      />
 
       <main className={cn('shell-main container-page')}>{children}</main>
 
-      <footer className="shell-footer mt-8 border-t bg-white">
-        <div className="container-page grid gap-6 py-6 md:grid-cols-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <div className="grid h-9 w-9 place-items-center rounded-xl border border-zinc-200 bg-white text-sky-600 shadow-sm">
-                {brandLogoUrl ? <img src={brandLogoUrl} alt="" className="h-6 w-6 object-contain" /> : <Wrench className="h-5 w-5" />}
-              </div>
-              <div className="font-black tracking-tight">{brandTitle}</div>
-            </div>
-            <p className="mt-2 text-sm text-zinc-500">Tienda, seguimiento de reparaciones y panel administrativo en una sola plataforma.</p>
-          </div>
-
-          <div className="text-sm">
-            <div className="mb-2 font-black text-zinc-900">Accesos</div>
-            <div className="grid gap-1 text-zinc-700">
-              <Link to="/store" className="hover:text-zinc-900">Tienda</Link>
-              <Link to="/cart" className="hover:text-zinc-900">Carrito</Link>
-              <Link to="/reparacion" className="hover:text-zinc-900">Consultar reparación</Link>
-            </div>
-          </div>
-
-          <div className="text-sm">
-            <div className="mb-2 font-black text-zinc-900">Cuenta</div>
-            <div className="grid gap-1 text-zinc-700">
-              {authUser ? (
-                <>
-                  <Link to="/orders" className="hover:text-zinc-900">Mis pedidos</Link>
-                  <Link to="/repairs" className="hover:text-zinc-900">Mis reparaciones</Link>
-                  <Link to="/help" className="hover:text-zinc-900">Ayuda</Link>
-                  {isAdmin ? <Link to="/admin" className="hover:text-zinc-900">Panel admin</Link> : null}
-                  <button type="button" className="text-left font-bold text-rose-700 hover:text-rose-800" onClick={logout}>Cerrar sesión</button>
-                </>
-              ) : (
-                <>
-                  <Link to="/help" className="hover:text-zinc-900">Ayuda</Link>
-                  <Link to="/auth/login" className="hover:text-zinc-900">Ingresar</Link>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="container-page flex flex-col gap-2 pb-6 text-xs text-zinc-500 sm:flex-row sm:items-center sm:justify-between">
-          <div>© {new Date().getFullYear()} {brandTitle}</div>
-          <div className="text-zinc-400">Hecho con React + NestJS</div>
-        </div>
-      </footer>
+      <AppShellFooter authUser={authUser} brandLogoUrl={brandLogoUrl} brandTitle={brandTitle} isAdmin={isAdmin} onLogout={logout} />
 
       <CartAddedPopup />
     </div>
   );
 }
-
-
