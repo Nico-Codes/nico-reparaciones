@@ -2058,3 +2058,29 @@ pm run qa:frontend:e2e
   - el split mantiene `adminApi`, `catalogAdminApi` y `productPricingApi` como fronteras unicas del feature y no introduce estado global nuevo
 
 ---
+
+### 2026-03-31 - Codex
+- Alcance: partir `AdminWarrantiesPage` en helpers y sections, dejando la pagina principal como orquestador del listado admin de garantias.
+- Tipo de intervencion: refactor interno seguro del frontend `warranties` + seccionado del listado operativo sin abrir una API nueva.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/warranties/AdminWarrantiesPage.tsx`
+  - `next-stack/apps/web/src/features/warranties/admin-warranties.helpers.ts`
+  - `next-stack/apps/web/src/features/warranties/admin-warranties.helpers.test.ts`
+  - `next-stack/apps/web/src/features/warranties/admin-warranties.sections.tsx`
+  - `project-docs/architecture/ARCHITECTURE.md`
+  - `project-docs/frontend/FRONTEND_MAP.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No deliberado. Se mantienen el fetch del listado, los filtros manuales, el top de proveedores y el cierre de incidentes; cambia la separacion interna entre fetch/sync, helpers puros y bloques de UI.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `cmd /c npm run qa:route-parity`
+  - `git diff --check`
+- Riesgos / notas:
+  - el subdominio `warranties` queda mas consistente, pero todavia siguen pendientes pantallas grandes como `AdminWhatsappPage.tsx` y `CheckoutPage.tsx`
+  - el split mantiene `adminApi` como frontera unica del feature y no introduce estado global nuevo
+
+---

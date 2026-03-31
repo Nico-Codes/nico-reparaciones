@@ -417,6 +417,14 @@ En la ola de simplificacion del 2026-03-30 quedaron confirmados estos limites in
   - sync del formulario y de la reparacion seleccionada
   - armado del payload de garantia
   - submit y navegacion de cierre
+- `AdminWarrantiesPage.tsx` ahora delega filtros, stats y bloques visuales del listado en:
+  - `admin-warranties.helpers.ts`
+  - `admin-warranties.sections.tsx`
+- el archivo principal de garantias queda centrado en:
+  - fetch del listado y resumen
+  - refresh manual de filtros
+  - cierre de incidentes
+  - composicion del hero, stats, filtros y tabla
 - `AdminDevicesCatalogPage.tsx` ahora delega slugify, filtros y opciones derivadas en:
   - `admin-devices-catalog.helpers.ts`
   - `admin-devices-catalog.sections.tsx`
@@ -462,6 +470,8 @@ Operaciones:
 - `features/providers/admin-providers.sections.tsx`
 - `features/warranties/AdminWarrantiesPage.tsx`
 - `features/warranties/AdminWarrantyCreatePage.tsx`
+- `features/warranties/admin-warranties.helpers.ts`
+- `features/warranties/admin-warranties.sections.tsx`
 - `features/warranties/admin-warranty-create.helpers.ts`
 - `features/warranties/admin-warranty-create.sections.tsx`
 

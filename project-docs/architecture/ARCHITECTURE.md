@@ -300,6 +300,16 @@ Confirmado por codigo:
   - guardado del incidente
   - navegacion de cierre
 - la logica de defaults, opciones, costo derivado y payload de garantia queda fuera del render principal
+- `AdminWarrantiesPage.tsx` ya no concentra filtros, cards de resumen, top de proveedores y la tabla completa en un solo archivo
+- el listado admin de garantias ahora se reparte entre:
+  - `admin-warranties.helpers.ts`
+  - `admin-warranties.sections.tsx`
+- la pagina principal queda centrada en:
+  - fetch del listado y resumen
+  - refresh manual de filtros
+  - cierre de incidentes
+  - composicion de hero, feedback, cards, top supplier y tabla
+- la logica de query, formato monetario, labels derivados y estilos de estado queda fuera del render principal
 - `AdminDevicesCatalogPage.tsx` ya no concentra slugify, filtros, opciones y los tres bloques del catalogo tecnico en un solo archivo
 - el feature de catalogo tecnico ahora se reparte entre:
   - `admin-devices-catalog.helpers.ts`

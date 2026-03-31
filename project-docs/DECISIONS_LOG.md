@@ -970,3 +970,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/web/src/features/catalogAdmin/{AdminProductCreatePage.tsx,admin-product-create.helpers.ts,admin-product-create.helpers.test.ts,admin-product-create.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0081]
+- Fecha: 2026-03-31
+- Estado: aceptada
+- Tema: `AdminWarrantiesPage` pasa a orquestador y el listado de garantias gana helpers + sections propios
+- Contexto: despues de ordenar el alta de garantias y el catalogo comercial, el siguiente hotspot claro del subdominio `warranties` quedo en `AdminWarrantiesPage.tsx`. La pagina mezclaba query params manuales, resumen, top de proveedores, filtros, tabla completa y cierre de incidentes en un solo archivo.
+- Decision: mantener la ruta y el wiring con `adminApi.warranties()` y `adminApi.closeWarranty()` estables, pero mover query building, defaults, formato monetario, labels derivados y clases de estado a `admin-warranties.helpers.ts`, mover hero, feedback, resumen, filtros y tabla a `admin-warranties.sections.tsx`, y dejar `AdminWarrantiesPage.tsx` como orquestador de fetch, refresh y cierre. Tambien se agrega test unitario para helpers del feature.
+- Impacto: `AdminWarrantiesPage.tsx` baja de forma marcada, el subdominio `warranties` queda consistente entre alta y listado, y la pantalla deja de mezclar todo el render con logica derivada de filtros y presentacion. No hay cambios deliberados en rutas, payloads ni comportamiento visible esperado.
+- Alternativas consideradas: partir solo la tabla o saltar primero a `AdminWhatsappPage.tsx`; descartado porque el mayor retorno inmediato seguia estando en cerrar el listado operativo de garantias, que aun concentraba demasiado estado local y render.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/warranties/{AdminWarrantiesPage.tsx,admin-warranties.helpers.ts,admin-warranties.helpers.test.ts,admin-warranties.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano
