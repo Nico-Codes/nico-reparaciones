@@ -958,3 +958,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/web/src/features/admin/{AdminModelGroupsPage.tsx,admin-model-groups.helpers.ts,admin-model-groups.helpers.test.ts,admin-model-groups.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0080]
+- Fecha: 2026-03-31
+- Estado: aceptada
+- Tema: `AdminProductCreatePage` pasa a orquestador y el alta de catalogo comercial gana helpers + sections propios
+- Contexto: despues de ordenar el admin tecnico, el siguiente hotspot claro del catalogo comercial quedo en `AdminProductCreatePage.tsx`. La pagina mezclaba carga de categorias/proveedores, recomendacion de pricing, validacion, payload de alta, preview de imagen y resumen previo en un solo archivo.
+- Decision: mantener la ruta y el wiring con `adminApi`, `catalogAdminApi` y `productPricingApi` estables, pero mover validacion, armado del payload y resumen previo a `admin-product-create.helpers.ts`, mover header actions, feedback, loading y el layout completo del alta a `admin-product-create.sections.tsx`, y dejar `AdminProductCreatePage.tsx` como orquestador de carga, sync, preview y submit. Tambien se agrega test unitario para helpers del feature.
+- Impacto: `AdminProductCreatePage.tsx` baja de forma marcada, `catalogAdmin` queda mas consistente entre categorias, listado, edicion y alta de productos, y el formulario deja de mezclar estado derivado, payload y toda la UI en el mismo archivo. No hay cambios deliberados en rutas, payloads ni comportamiento visible esperado.
+- Alternativas consideradas: unificar completo con `AdminProductEditPage.tsx` o saltar primero a `AdminWarrantiesPage.tsx`; descartado porque primero convenia cerrar la pantalla de alta con el mismo patron ya usado en `edit`, sin abrir un refactor mas transversal del subdominio.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/catalogAdmin/{AdminProductCreatePage.tsx,admin-product-create.helpers.ts,admin-product-create.helpers.test.ts,admin-product-create.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano

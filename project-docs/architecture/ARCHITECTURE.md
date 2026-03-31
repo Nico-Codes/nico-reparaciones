@@ -339,6 +339,16 @@ Confirmado por codigo:
   - mutaciones de alta y guardado
   - asignacion de modelos a grupo
 - la logica de opciones, patch local y composicion de bloques queda fuera del render principal
+- `AdminProductCreatePage.tsx` ya no concentra validacion, payload de alta, resumen previo y bloques visuales del formulario en un solo archivo
+- el alta de productos ahora se reparte entre:
+  - `admin-product-create.helpers.ts`
+  - `admin-product-create.sections.tsx`
+- la pagina principal queda centrada en:
+  - carga de categorias, proveedores y reglas de pricing
+  - sincronizacion de la recomendacion de precio
+  - manejo del preview de imagen
+  - submit y navegacion de cierre
+- la logica de validacion, payload y resumen previo queda fuera del render principal
 
 Desde la ola de simplificacion de 2026-03-30 quedaron formalizados estos limites:
 

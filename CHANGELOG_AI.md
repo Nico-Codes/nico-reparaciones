@@ -2032,3 +2032,29 @@ pm run qa:frontend:e2e
   - el split mantiene `adminApi`, `deviceCatalogApi` y `repairsApi` como fronteras unicas de estos features y no introduce estado global nuevo
 
 ---
+
+### 2026-03-31 - Codex
+- Alcance: partir `AdminProductCreatePage` en helpers y sections, dejando la pagina principal como orquestador del alta de catalogo comercial.
+- Tipo de intervencion: refactor interno seguro del frontend `catalogAdmin` + seccionado del alta de productos sin abrir una API nueva.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/catalogAdmin/AdminProductCreatePage.tsx`
+  - `next-stack/apps/web/src/features/catalogAdmin/admin-product-create.helpers.ts`
+  - `next-stack/apps/web/src/features/catalogAdmin/admin-product-create.helpers.test.ts`
+  - `next-stack/apps/web/src/features/catalogAdmin/admin-product-create.sections.tsx`
+  - `project-docs/architecture/ARCHITECTURE.md`
+  - `project-docs/frontend/FRONTEND_MAP.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No deliberado. Se mantienen la carga de categorias/proveedores, la recomendacion de pricing, el preview de imagen y el alta del producto; cambia la separacion interna entre fetch/sync, helpers puros y bloques de UI.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `cmd /c npm run qa:route-parity`
+  - `git diff --check`
+- Riesgos / notas:
+  - el catalogo comercial queda mas consistente, pero todavia siguen pendientes pantallas grandes como `AdminWarrantiesPage.tsx` y `AdminWhatsappPage.tsx`
+  - el split mantiene `adminApi`, `catalogAdminApi` y `productPricingApi` como fronteras unicas del feature y no introduce estado global nuevo
+
+---

@@ -239,6 +239,8 @@ Catalogo comercial:
 - `admin-products.sections.tsx`
 - `AdminProductCreatePage.tsx`
 - `AdminProductEditPage.tsx`
+- `admin-product-create.helpers.ts`
+- `admin-product-create.sections.tsx`
 - `AdminProductLabelPage.tsx`
 - `AdminCategoriesPage.tsx`
 - `admin-categories.helpers.ts`
@@ -339,6 +341,14 @@ En la ola de simplificacion del 2026-03-30 quedaron confirmados estos limites in
   - fetch del panel
   - manejo de loading/error
   - composicion del summary y work queue
+- `AdminProductCreatePage.tsx` ahora delega validacion, payloads y bloques visuales en:
+  - `admin-product-create.helpers.ts`
+  - `admin-product-create.sections.tsx`
+- el archivo principal de alta de producto queda centrado en:
+  - carga de categorias, proveedores y reglas de pricing
+  - sincronizacion de la recomendacion de precio
+  - manejo del preview de imagen
+  - submit y navegacion de cierre
   - ensamblado de secciones
 - `StorePage.tsx` ahora delega derivaciones puras y UI del catalogo en:
   - `store-page.helpers.ts`
