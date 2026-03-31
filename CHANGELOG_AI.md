@@ -1819,3 +1819,29 @@ pm run qa:frontend:e2e
   - el split reutiliza helpers del formulario comercial para money/opciones y mantiene `catalogAdminApi` como frontera unica del subdominio
 
 ---
+
+### 2026-03-31 - Codex
+- Alcance: partir `AdminStoreHeroSettingsPage` en helpers y sections, dejando la pagina principal como orquestador de la portada visual de la tienda.
+- Tipo de intervencion: refactor interno seguro del frontend admin + seccionado del feature de hero/storefront sin abrir una API nueva.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/admin/AdminStoreHeroSettingsPage.tsx`
+  - `next-stack/apps/web/src/features/admin/admin-store-hero-settings.helpers.ts`
+  - `next-stack/apps/web/src/features/admin/admin-store-hero-settings.helpers.test.ts`
+  - `next-stack/apps/web/src/features/admin/admin-store-hero-settings.sections.tsx`
+  - `project-docs/architecture/ARCHITECTURE.md`
+  - `project-docs/frontend/FRONTEND_MAP.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No deliberado. Se mantienen carga/guardado de textos, upload/reset de imagenes, preview y control del degradado; cambia la separacion interna entre fetch/sync, helpers puros y bloques visuales. Tambien se corrigen textos dañados del feature a una version ASCII consistente.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `cmd /c npm run qa:route-parity`
+  - `git diff --check`
+- Riesgos / notas:
+  - el area visual del admin queda mas clara, pero todavia siguen pendientes hotspots como `AdminAutoReportsPage.tsx` y otras pantallas grandes especificas del admin
+  - el split mantiene `adminSettingsApi` y `brandAssetsApi` como fronteras unicas del feature y no introduce estado global nuevo
+
+---

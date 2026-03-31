@@ -850,3 +850,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/web/src/features/catalogAdmin/{AdminProductsPage.tsx,admin-products.helpers.ts,admin-products.helpers.test.ts,admin-products.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0071]
+- Fecha: 2026-03-31
+- Estado: aceptada
+- Tema: `AdminStoreHeroSettingsPage` pasa a orquestador y la portada de tienda gana helpers + sections propios
+- Contexto: despues de ordenar `catalogAdmin`, el siguiente hotspot claro del admin visual quedo en `AdminStoreHeroSettingsPage.tsx`. La pagina mezclaba metadata de assets, hydrate/save de settings, conversion RGB/HEX, upload/reset de imagenes, preview y formulario visual en un solo archivo con textos dañados por mojibake.
+- Decision: mantener la ruta y el wiring con `adminSettingsApi` y `brandAssetsApi` estables, pero mover metadata, payloads y conversiones a `admin-store-hero-settings.helpers.ts`, mover las cards de upload, alertas, header y formulario visual a `admin-store-hero-settings.sections.tsx`, y dejar `AdminStoreHeroSettingsPage.tsx` como orquestador de fetch, sync, save y mutaciones de assets. Tambien se agrega test unitario para helpers del feature.
+- Impacto: `AdminStoreHeroSettingsPage.tsx` baja de forma marcada, el area visual del admin gana una frontera clara entre datos y UI, y la pagina deja de concentrar conversion de color, metadata y preview en el mismo archivo. No hay cambios deliberados en rutas, payloads ni comportamiento visible esperado.
+- Alternativas consideradas: partir solo las cards de imagen o saltar primero a `AdminAutoReportsPage.tsx`; descartado porque el mayor retorno inmediato seguia estando en la configuracion visual mas cargada del admin y permitia corregir a la vez los textos dañados del feature.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/admin/{AdminStoreHeroSettingsPage.tsx,admin-store-hero-settings.helpers.ts,admin-store-hero-settings.helpers.test.ts,admin-store-hero-settings.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano

@@ -215,6 +215,8 @@ Admin general:
 - `AdminBusinessSettingsPage.tsx`
 - `AdminVisualIdentityPage.tsx`
 - `AdminStoreHeroSettingsPage.tsx`
+- `admin-store-hero-settings.helpers.ts`
+- `admin-store-hero-settings.sections.tsx`
 - `Admin2faSecurityPage.tsx`
 - `AdminMailTemplatesPage.tsx`
 - `AdminWhatsappPage.tsx`
@@ -345,6 +347,15 @@ En la ola de simplificacion del 2026-03-30 quedaron confirmados estos limites in
   - sync de filtros server/client
   - patches rapidos de stock, estado y destacado
   - composicion del toolbar, stats y listado operativo
+- `AdminStoreHeroSettingsPage.tsx` ahora delega metadata de assets, conversiones RGB/HEX y UI visual en:
+  - `admin-store-hero-settings.helpers.ts`
+  - `admin-store-hero-settings.sections.tsx`
+- el archivo principal de portada de tienda queda centrado en:
+  - fetch de settings
+  - sincronizacion del formulario
+  - save del payload
+  - upload/reset de assets
+  - composicion de alertas, cards y formulario
 - `AdminRepairPricingRuleEditPage.tsx`
 - `AdminModelGroupsPage.tsx`
 - `AdminRepairTypesPage.tsx`

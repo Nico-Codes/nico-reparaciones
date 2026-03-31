@@ -249,6 +249,16 @@ Confirmado por codigo:
   - patches rapidos de stock, estado y destacado
   - ensamblado de stats, toolbar y listado
 - la logica de stats, filtros client-side, opciones y resumen de precio/margen queda fuera del render principal
+- `AdminStoreHeroSettingsPage.tsx` ya no concentra metadata de assets, conversiones RGB/HEX, cards de upload y formulario visual en un solo archivo
+- el feature de portada de tienda ahora se reparte entre:
+  - `admin-store-hero-settings.helpers.ts`
+  - `admin-store-hero-settings.sections.tsx`
+- la pagina principal queda centrada en:
+  - fetch de settings
+  - sincronizacion del formulario de portada
+  - guardado del payload
+  - upload y reset de imagenes
+- la logica de metadata, conversion de color y bloques visuales queda fuera del render principal
 
 Desde la ola de simplificacion de 2026-03-30 quedaron formalizados estos limites:
 
