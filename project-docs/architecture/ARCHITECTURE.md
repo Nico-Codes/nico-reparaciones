@@ -207,6 +207,10 @@ Desde la ola de simplificacion de 2026-03-30 quedaron formalizados estos limites
   - `AdminOrdersPage.tsx` como orquestador de fetch, seleccion y cambio de estado
   - `admin-orders.helpers.ts` para metricas, filtros y enlaces derivados del subdominio
   - `admin-orders.sections.tsx` para filtros, resumen, listado y detalle inline del pedido
+- frontend `orders` ahora tambien secciona la venta rapida admin entre orquestacion, helpers y panels:
+  - `AdminQuickSalesPage.tsx` como orquestador de catalogo, carrito y confirmacion
+  - `admin-quick-sales.helpers.ts` para validaciones, totales y mutaciones puras del ticket
+  - `admin-quick-sales.sections.tsx` para scanner, busqueda manual y ticket actual
 - validacion Zod reusable en controllers: `*.schemas.ts`
 - helper comun para errores de parseo: `src/common/http/zod-bad-request.ts`
 - storage local encapsulado: `src/common/storage/public-asset-storage.service.ts`

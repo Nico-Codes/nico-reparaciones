@@ -178,6 +178,8 @@ Pedidos:
 - `AdminOrderPrintPage.tsx`
 - `AdminOrderTicketPage.tsx`
 - `AdminQuickSalesPage.tsx`
+- `admin-quick-sales.helpers.ts`
+- `admin-quick-sales.sections.tsx`
 - `AdminQuickSalesHistoryPage.tsx`
 
 Reparaciones:
@@ -268,6 +270,14 @@ En la ola de simplificacion del 2026-03-30 quedaron confirmados estos limites in
   - sincronizacion del pedido abierto
   - cambio de estado
   - composicion de metricas, filtros y tracking
+- `AdminQuickSalesPage.tsx` ahora delega la UI y las validaciones del ticket en:
+  - `admin-quick-sales.helpers.ts`
+  - `admin-quick-sales.sections.tsx`
+- el archivo principal de venta rapida queda centrado en:
+  - carga del catalogo activo
+  - escaneo/carga por codigo
+  - confirmacion de la venta
+  - navegacion hacia pedido, ticket o impresion
 - `AdminRepairPricingRuleEditPage.tsx`
 - `AdminModelGroupsPage.tsx`
 - `AdminRepairTypesPage.tsx`

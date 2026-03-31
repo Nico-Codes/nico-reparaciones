@@ -1608,3 +1608,29 @@ pm run qa:frontend:e2e
   - la particion de `styles.css` sigue pendiente y sigue siendo un frente transversal mas grande que cualquier pagina individual
 
 ---
+
+### 2026-03-31 - Codex
+- Alcance: partir `AdminQuickSalesPage` en helpers y sections, dejando la pagina principal como orquestador de la venta rapida.
+- Tipo de intervencion: refactor interno seguro del frontend de operaciones + seccionado del flujo de mostrador sin abrir una frontera API nueva.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/orders/AdminQuickSalesPage.tsx`
+  - `next-stack/apps/web/src/features/orders/admin-quick-sales.helpers.ts`
+  - `next-stack/apps/web/src/features/orders/admin-quick-sales.helpers.test.ts`
+  - `next-stack/apps/web/src/features/orders/admin-quick-sales.sections.tsx`
+  - `project-docs/architecture/ARCHITECTURE.md`
+  - `project-docs/frontend/FRONTEND_MAP.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No deliberado. Se mantienen scanner/carga por codigo, busqueda manual, ticket actual, validaciones de telefono, confirmacion de la venta e impresion del ticket; cambia la separacion interna entre estado, helpers puros y panels de UI.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `cmd /c npm run qa:route-parity`
+  - `git diff --check`
+- Riesgos / notas:
+  - `orders` ya queda bastante mas coherente entre tracking admin y venta rapida, pero `AdminQuickSalesHistoryPage.tsx` y `styles.css` siguen siendo puntos a revisar si se quiere bajar mas complejidad visual/operativa
+  - la particion de `styles.css` sigue teniendo mas impacto transversal que cualquier pagina individual restante
+
+---

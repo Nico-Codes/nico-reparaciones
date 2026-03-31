@@ -754,3 +754,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/web/src/features/orders/{AdminOrdersPage.tsx,admin-orders.helpers.ts,admin-orders.helpers.test.ts,admin-orders.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0063]
+- Fecha: 2026-03-31
+- Estado: aceptada
+- Tema: `AdminQuickSalesPage` pasa a orquestador y la venta rapida gana helpers + sections propios
+- Contexto: despues de ordenar `AdminOrdersPage`, el siguiente hotspot claro del frontend dentro de `orders` quedo en `AdminQuickSalesPage.tsx`. La pagina mezclaba scanner, busqueda manual, mutaciones del carrito, validaciones de telefono, totales, ticket actual y confirmacion de la venta en un solo archivo de casi 500 lineas.
+- Decision: mantener la ruta y el wiring con `catalogAdminApi` y `ordersApi` estables, pero mover validaciones, mutaciones puras del carrito y totales a `admin-quick-sales.helpers.ts`, mover la UI de scanner, busqueda y ticket a `admin-quick-sales.sections.tsx` y dejar `AdminQuickSalesPage.tsx` como orquestador de estado, fetch y confirmacion. Tambien se agrega test unitario para helpers de venta rapida.
+- Impacto: `AdminQuickSalesPage.tsx` baja de forma marcada, el subdominio `orders` queda mas consistente entre tracking admin y venta rapida, y el siguiente hotspot natural dentro del frontend se desplaza a `styles.css` o a paginas grandes de `admin`/`pricing`. No hay cambios deliberados en rutas, payloads ni comportamiento visible esperado.
+- Alternativas consideradas: partir solo el scanner o mover primero `styles.css`; descartado porque cerrar antes el segundo hotspot fuerte de `orders` deja el modulo operativo mas coherente y reduce mejor el riesgo local que abrir ya un cleanup visual transversal.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/orders/{AdminQuickSalesPage.tsx,admin-quick-sales.helpers.ts,admin-quick-sales.helpers.test.ts,admin-quick-sales.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano
