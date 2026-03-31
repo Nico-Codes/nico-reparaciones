@@ -228,6 +228,8 @@ Admin general:
 - `Admin2faSecurityPage.tsx`
 - `AdminMailTemplatesPage.tsx`
 - `AdminWhatsappPage.tsx`
+- `admin-whatsapp.helpers.ts`
+- `admin-whatsapp.sections.tsx`
 - `AdminWhatsappOrdersPage.tsx`
 - `AdminHelpFaqPage.tsx`
 - `AdminAccountingPage.tsx`
@@ -425,6 +427,14 @@ En la ola de simplificacion del 2026-03-30 quedaron confirmados estos limites in
   - refresh manual de filtros
   - cierre de incidentes
   - composicion del hero, stats, filtros y tabla
+- `AdminWhatsappPage.tsx` ahora delega defaults, hydrate/save de templates y bloques visuales en:
+  - `admin-whatsapp.helpers.ts`
+  - `admin-whatsapp.sections.tsx`
+- el archivo principal de WhatsApp queda centrado en:
+  - fetch de templates y logs
+  - persistencia de plantillas
+  - refresh manual del historial
+  - composicion de variables, editor, acciones y logs
 - `AdminDevicesCatalogPage.tsx` ahora delega slugify, filtros y opciones derivadas en:
   - `admin-devices-catalog.helpers.ts`
   - `admin-devices-catalog.sections.tsx`

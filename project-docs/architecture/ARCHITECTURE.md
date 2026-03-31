@@ -310,6 +310,16 @@ Confirmado por codigo:
   - cierre de incidentes
   - composicion de hero, feedback, cards, top supplier y tabla
 - la logica de query, formato monetario, labels derivados y estilos de estado queda fuera del render principal
+- `AdminWhatsappPage.tsx` ya no concentra defaults, hydrate/save de templates, variables y logs en un solo archivo
+- el feature admin de WhatsApp ahora se reparte entre:
+  - `admin-whatsapp.helpers.ts`
+  - `admin-whatsapp.sections.tsx`
+- la pagina principal queda centrada en:
+  - fetch de plantillas
+  - fetch y refresh del historial reciente
+  - guardado de templates
+  - composicion de variables, editor y logs
+- la logica de defaults, orden canonico de templates y sanitizacion de logs queda fuera del render principal
 - `AdminDevicesCatalogPage.tsx` ya no concentra slugify, filtros, opciones y los tres bloques del catalogo tecnico en un solo archivo
 - el feature de catalogo tecnico ahora se reparte entre:
   - `admin-devices-catalog.helpers.ts`

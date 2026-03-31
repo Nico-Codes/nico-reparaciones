@@ -982,3 +982,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/web/src/features/warranties/{AdminWarrantiesPage.tsx,admin-warranties.helpers.ts,admin-warranties.helpers.test.ts,admin-warranties.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0082]
+- Fecha: 2026-03-31
+- Estado: aceptada
+- Tema: `AdminWhatsappPage` pasa a orquestador y el admin de templates/logs gana helpers + sections propios
+- Contexto: despues de ordenar el listado de garantias, el siguiente hotspot claro del admin general quedo en `AdminWhatsappPage.tsx`. La pagina mezclaba defaults por estado, hydrate/save de templates, listado de variables, acciones del editor y logs recientes en un solo archivo.
+- Decision: mantener la ruta y el wiring con `whatsappApi` y `whatsapp-ui` estables, pero mover defaults, orden canonico de templates, hydrate/save payloads y sanitizacion de logs a `admin-whatsapp.helpers.ts`, mover hero, feedback, variables, editor, acciones y logs a `admin-whatsapp.sections.tsx`, y dejar `AdminWhatsappPage.tsx` como orquestador de carga, guardado y refresh. Tambien se agrega test unitario para helpers del feature.
+- Impacto: `AdminWhatsappPage.tsx` baja de forma marcada, el admin general queda mas consistente con el patron de helpers + sections y el subdominio de comunicaciones deja de mezclar todo el render con defaults y logica derivada de templates/logs. No hay cambios deliberados en rutas, payloads ni comportamiento visible esperado.
+- Alternativas consideradas: partir solo el bloque de logs o saltar primero a `CheckoutPage.tsx`; descartado porque el mayor retorno inmediato seguia estando en cerrar el hotspot admin de WhatsApp, que todavia concentraba demasiadas responsabilidades locales.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/admin/{AdminWhatsappPage.tsx,admin-whatsapp.helpers.ts,admin-whatsapp.helpers.test.ts,admin-whatsapp.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano
