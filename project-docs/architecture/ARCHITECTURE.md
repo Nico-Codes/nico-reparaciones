@@ -259,6 +259,17 @@ Confirmado por codigo:
   - guardado del payload
   - upload y reset de imagenes
 - la logica de metadata, conversion de color y bloques visuales queda fuera del render principal
+- `AdminAutoReportsPage.tsx` ya no concentra constantes, payloads, estado derivado e historial operativo en un solo archivo
+- el feature de reportes automaticos ahora se reparte entre:
+  - `admin-auto-reports.helpers.ts`
+  - `admin-auto-reports.sections.tsx`
+- la pagina principal queda centrada en:
+  - fetch de settings
+  - sincronizacion del formulario de reportes
+  - guardado de configuracion
+  - envio manual de reporte y alertas
+  - recarga y limpieza del historial operativo
+- la logica de defaults, normalizacion del anti-spam, payloads y resumenes queda fuera del render principal
 
 Desde la ola de simplificacion de 2026-03-30 quedaron formalizados estos limites:
 

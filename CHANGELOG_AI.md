@@ -1845,3 +1845,29 @@ pm run qa:frontend:e2e
   - el split mantiene `adminSettingsApi` y `brandAssetsApi` como fronteras unicas del feature y no introduce estado global nuevo
 
 ---
+
+### 2026-03-31 - Codex
+- Alcance: partir `AdminAutoReportsPage` en helpers y sections, dejando la pagina principal como orquestador de reportes semanales y alertas operativas.
+- Tipo de intervencion: refactor interno seguro del frontend admin + seccionado del feature de reportes sin abrir una API nueva.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/admin/AdminAutoReportsPage.tsx`
+  - `next-stack/apps/web/src/features/admin/admin-auto-reports.helpers.ts`
+  - `next-stack/apps/web/src/features/admin/admin-auto-reports.helpers.test.ts`
+  - `next-stack/apps/web/src/features/admin/admin-auto-reports.sections.tsx`
+  - `project-docs/architecture/ARCHITECTURE.md`
+  - `project-docs/frontend/FRONTEND_MAP.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No deliberado. Se mantienen carga/guardado de configuracion, envios manuales y limpieza del historial; cambia la separacion interna entre fetch/sync, helpers puros y bloques visuales.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `cmd /c npm run qa:route-parity`
+  - `git diff --check`
+- Riesgos / notas:
+  - el feature de reportes queda mas claro y mantenible, pero todavia siguen pendientes otras pantallas admin grandes como `AdminVisualIdentityPage.tsx`
+  - el split mantiene `adminSettingsApi` y `adminApi` como fronteras unicas del feature y no introduce estado global nuevo
+
+---

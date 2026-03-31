@@ -212,6 +212,8 @@ Admin general:
 - `AdminSettingsHubPage.tsx`
 - `AdminSmtpSettingsPage.tsx`
 - `AdminAutoReportsPage.tsx`
+- `admin-auto-reports.helpers.ts`
+- `admin-auto-reports.sections.tsx`
 - `AdminBusinessSettingsPage.tsx`
 - `AdminVisualIdentityPage.tsx`
 - `AdminStoreHeroSettingsPage.tsx`
@@ -356,6 +358,15 @@ En la ola de simplificacion del 2026-03-30 quedaron confirmados estos limites in
   - save del payload
   - upload/reset de assets
   - composicion de alertas, cards y formulario
+- `AdminAutoReportsPage.tsx` ahora delega constantes, payloads y resumenes derivados en:
+  - `admin-auto-reports.helpers.ts`
+  - `admin-auto-reports.sections.tsx`
+- el archivo principal de reportes automaticos queda centrado en:
+  - fetch de settings
+  - sincronizacion del formulario
+  - guardado de configuracion
+  - envios manuales
+  - limpieza e hidratacion del historial operativo
 - `AdminRepairPricingRuleEditPage.tsx`
 - `AdminModelGroupsPage.tsx`
 - `AdminRepairTypesPage.tsx`

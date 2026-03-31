@@ -862,3 +862,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/web/src/features/admin/{AdminStoreHeroSettingsPage.tsx,admin-store-hero-settings.helpers.ts,admin-store-hero-settings.helpers.test.ts,admin-store-hero-settings.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0072]
+- Fecha: 2026-03-31
+- Estado: aceptada
+- Tema: `AdminAutoReportsPage` pasa a orquestador y el feature de reportes gana helpers + sections propios
+- Contexto: despues de ordenar `AdminStoreHeroSettingsPage`, el siguiente hotspot claro del admin general quedo en `AdminAutoReportsPage.tsx`. La pagina mezclaba defaults, carga de settings, payloads de guardado, historial operativo, status/meta de ejecucion, envios manuales y todo el render del formulario en un solo archivo.
+- Decision: mantener la ruta y el wiring con `adminSettingsApi` y `adminApi` estables, pero mover constantes, defaults, normalizacion del anti-spam, payloads e historial derivado a `admin-auto-reports.helpers.ts`, mover header, feedback, formulario e historial a `admin-auto-reports.sections.tsx`, y dejar `AdminAutoReportsPage.tsx` como orquestador de fetch, save y acciones manuales. Tambien se agrega test unitario para helpers del feature.
+- Impacto: `AdminAutoReportsPage.tsx` baja de forma marcada, el admin general gana una frontera mas clara entre settings/reporting y UI, y el feature deja de concentrar estado derivado, parsing de summary y payloads en el mismo archivo. No hay cambios deliberados en rutas, payloads ni comportamiento visible esperado.
+- Alternativas consideradas: partir solo el bloque del historial o saltar primero a `AdminVisualIdentityPage.tsx`; descartado porque el mayor retorno inmediato seguia estando en el feature de reportes, que mezclaba mejor que ninguno datos, formulario y acciones manuales.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/admin/{AdminAutoReportsPage.tsx,admin-auto-reports.helpers.ts,admin-auto-reports.helpers.test.ts,admin-auto-reports.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano
