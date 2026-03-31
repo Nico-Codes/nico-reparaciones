@@ -1030,3 +1030,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/web/src/features/cart/{CartPage.tsx,cart.helpers.ts,cart.helpers.test.ts,cart.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0086]
+- Fecha: 2026-03-31
+- Estado: aceptada
+- Tema: `StoreProductDetailPage` pasa a orquestador y el detalle publico de producto gana helpers + sections propios
+- Contexto: despues de ordenar el carrito, el siguiente hotspot claro del storefront quedo en `StoreProductDetailPage.tsx`. La pagina mezclaba fetch del producto, formato de precio, estado de stock, clamping de cantidad, breadcrumb y todo el render de compra/meta/ayuda en un solo archivo.
+- Decision: mantener la ruta y el wiring con `storeApi.product()` y `cartStorage.add()` estables, pero mover formato monetario, stock tone, disponibilidad, fallback description y clamping de cantidad a `store-product-detail.helpers.ts`, mover loading, empty state, breadcrumb y los bloques visuales del detalle a `store-product-detail.sections.tsx`, y dejar `StoreProductDetailPage.tsx` como orquestador de fetch, sync de cantidad y alta al carrito. Tambien se agrega test unitario para helpers del feature.
+- Impacto: `StoreProductDetailPage.tsx` baja de forma marcada, el storefront queda mas consistente entre tienda, detalle, carrito y checkout, y la pantalla deja de mezclar estado derivado con todo el render del detalle publico. No hay cambios deliberados en rutas, payloads ni comportamiento visible esperado.
+- Alternativas consideradas: partir solo la card de compra o saltar primero a `AdminRepairsListPage.tsx`; descartado porque el mayor retorno inmediato seguia estando en cerrar el flujo publico del producto antes de volver al frente operativo.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/store/{StoreProductDetailPage.tsx,store-product-detail.helpers.ts,store-product-detail.helpers.test.ts,store-product-detail.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano

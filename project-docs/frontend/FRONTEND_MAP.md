@@ -174,6 +174,8 @@ Store y carrito:
 - `store-page.helpers.ts`
 - `store-page.sections.tsx`
 - `StoreProductDetailPage.tsx`
+- `store-product-detail.helpers.ts`
+- `store-product-detail.sections.tsx`
 - `CartPage.tsx`
 - `cart.helpers.ts`
 - `cart.sections.tsx`
@@ -465,6 +467,14 @@ En la ola de simplificacion del 2026-03-30 quedaron confirmados estos limites in
   - normalizacion de items validos
   - navegacion al checkout
   - composicion del header, listado y resumen
+- `StoreProductDetailPage.tsx` ahora delega formato, stock y bloques visuales del detalle publico en:
+  - `store-product-detail.helpers.ts`
+  - `store-product-detail.sections.tsx`
+- el archivo principal del detalle queda centrado en:
+  - fetch del producto por slug
+  - sincronizacion de la cantidad segun stock
+  - alta al carrito
+  - composicion del breadcrumb, media, compra y metadatos
 - `AdminDevicesCatalogPage.tsx` ahora delega slugify, filtros y opciones derivadas en:
   - `admin-devices-catalog.helpers.ts`
   - `admin-devices-catalog.sections.tsx`

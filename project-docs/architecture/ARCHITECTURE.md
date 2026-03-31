@@ -350,6 +350,16 @@ Confirmado por codigo:
   - calculo de stock issue
   - navegacion al checkout
 - la logica de formato, stock, cantidades y bloques visuales del carrito queda fuera del render principal
+- `StoreProductDetailPage.tsx` ya no concentra formato de precio, stock, cantidad y el render completo del detalle publico en un solo archivo
+- el feature de detalle publico ahora se reparte entre:
+  - `store-product-detail.helpers.ts`
+  - `store-product-detail.sections.tsx`
+- la pagina principal queda centrada en:
+  - fetch del producto por slug
+  - sincronizacion de la cantidad segun stock
+  - alta al carrito
+  - composicion del detalle visual
+- la logica de formato, stock, labels de disponibilidad y bloques visuales queda fuera del render principal
 - `AdminDevicesCatalogPage.tsx` ya no concentra slugify, filtros, opciones y los tres bloques del catalogo tecnico en un solo archivo
 - el feature de catalogo tecnico ahora se reparte entre:
   - `admin-devices-catalog.helpers.ts`

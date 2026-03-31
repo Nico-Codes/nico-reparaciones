@@ -2188,3 +2188,29 @@ pm run qa:frontend:e2e
   - el split mantiene `quoteCart` y `useCartItems` como fronteras unicas del feature y no introduce estado global nuevo
 
 ---
+
+### 2026-03-31 - Codex
+- Alcance: partir `StoreProductDetailPage` en helpers y sections, dejando la pagina principal como orquestador del detalle publico.
+- Tipo de intervencion: refactor interno seguro del frontend `store/detail` + seccionado del detalle de producto sin abrir una API nueva.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/store/StoreProductDetailPage.tsx`
+  - `next-stack/apps/web/src/features/store/store-product-detail.helpers.ts`
+  - `next-stack/apps/web/src/features/store/store-product-detail.helpers.test.ts`
+  - `next-stack/apps/web/src/features/store/store-product-detail.sections.tsx`
+  - `project-docs/architecture/ARCHITECTURE.md`
+  - `project-docs/frontend/FRONTEND_MAP.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No deliberado. Se mantienen la carga del producto, la gestion de cantidad segun stock, el alta al carrito y las rutas de retorno/ayuda; cambia la separacion interna entre fetch/sync, helpers puros y bloques de UI.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `cmd /c npm run qa:route-parity`
+  - `git diff --check`
+- Riesgos / notas:
+  - el storefront queda mas consistente, pero todavia siguen pendientes pantallas grandes como `AdminRepairsListPage.tsx` y `AdminWhatsappOrdersPage.tsx`
+  - el split mantiene `storeApi` y `cartStorage` como fronteras unicas del feature y no introduce estado global nuevo
+
+---
