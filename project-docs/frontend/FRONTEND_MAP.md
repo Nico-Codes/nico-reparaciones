@@ -164,6 +164,8 @@ Auth:
 - `ResetPasswordPage.tsx`
 - `VerifyEmailPage.tsx`
 - `MyAccountPage.tsx`
+- `my-account.helpers.ts`
+- `my-account.sections.tsx`
 - `BootstrapAdminPage.tsx`
 
 Store y carrito:
@@ -445,6 +447,14 @@ En la ola de simplificacion del 2026-03-30 quedaron confirmados estos limites in
   - confirmacion del pedido
   - limpieza del carrito y navegacion de cierre
   - composicion de pago, cuenta, acciones y resumen
+- `MyAccountPage.tsx` ahora delega validaciones, normalizacion y bloques visuales de perfil/seguridad en:
+  - `my-account.helpers.ts`
+  - `my-account.sections.tsx`
+- el archivo principal de cuenta queda centrado en:
+  - fetch del perfil autenticado
+  - guardado del perfil y sincronizacion de `authStorage`
+  - cambio de contrasena
+  - composicion del header y las dos secciones operativas
 - `AdminDevicesCatalogPage.tsx` ahora delega slugify, filtros y opciones derivadas en:
   - `admin-devices-catalog.helpers.ts`
   - `admin-devices-catalog.sections.tsx`

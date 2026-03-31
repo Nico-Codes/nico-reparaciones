@@ -330,6 +330,16 @@ Confirmado por codigo:
   - confirmacion del pedido
   - limpieza del carrito y navegacion al detalle
 - la logica de normalizacion del carrito, estados vacios, formatos y bloques visuales queda fuera del render principal
+- `MyAccountPage.tsx` ya no concentra validaciones, drafts de perfil/contrasena y el render completo de la cuenta en un solo archivo
+- el feature de cuenta ahora se reparte entre:
+  - `my-account.helpers.ts`
+  - `my-account.sections.tsx`
+- la pagina principal queda centrada en:
+  - fetch del perfil autenticado
+  - guardado del perfil
+  - sincronizacion de `authStorage`
+  - cambio de contrasena
+- la logica de normalizacion, validacion y bloques visuales de perfil/seguridad queda fuera del render principal
 - `AdminDevicesCatalogPage.tsx` ya no concentra slugify, filtros, opciones y los tres bloques del catalogo tecnico en un solo archivo
 - el feature de catalogo tecnico ahora se reparte entre:
   - `admin-devices-catalog.helpers.ts`

@@ -1006,3 +1006,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/web/src/features/orders/{CheckoutPage.tsx,checkout.helpers.ts,checkout.helpers.test.ts,checkout.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0084]
+- Fecha: 2026-03-31
+- Estado: aceptada
+- Tema: `MyAccountPage` pasa a orquestador y el flujo autenticado de cuenta gana helpers + sections propios
+- Contexto: despues de ordenar el checkout, el siguiente hotspot claro del frontend autenticado quedo en `MyAccountPage.tsx`. La pagina mezclaba hydrate del perfil, drafts de nombre/email/contrasena, validaciones, sincronizacion de `authStorage`, feedback y el render completo de perfil y seguridad en un solo archivo.
+- Decision: mantener la ruta y el wiring con `authApi.account()`, `authApi.updateAccount()`, `authApi.updateAccountPassword()` y `authStorage` estables, pero mover drafts, normalizacion, validaciones y notices a `my-account.helpers.ts`, mover header actions, loading, feedback y las dos secciones visuales a `my-account.sections.tsx`, y dejar `MyAccountPage.tsx` como orquestador de fetch, guardado y sincronizacion. Tambien se agrega test unitario para helpers del feature.
+- Impacto: `MyAccountPage.tsx` baja de forma marcada, el flujo autenticado de cuenta queda consistente con el patron de helpers + sections y la pantalla deja de mezclar estado derivado con todo el render de perfil/seguridad. No hay cambios deliberados en rutas, payloads ni comportamiento visible esperado.
+- Alternativas consideradas: partir solo el formulario de perfil o saltar primero a `CartPage.tsx`; descartado porque el mayor retorno inmediato seguia estando en cerrar la pagina de cuenta completa, que todavia concentraba demasiadas responsabilidades locales.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/auth/{MyAccountPage.tsx,my-account.helpers.ts,my-account.helpers.test.ts,my-account.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano

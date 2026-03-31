@@ -1,25 +1,35 @@
-﻿import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { LoadingBlock } from '@/components/ui/loading-block';
+import { useEffect, useState, type FormEvent } from 'react';
 import { PageHeader } from '@/components/ui/page-header';
 import { PageShell } from '@/components/ui/page-shell';
-import { SectionCard } from '@/components/ui/section-card';
-import { StatusBadge } from '@/components/ui/status-badge';
-import { TextField } from '@/components/ui/text-field';
 import { authApi } from './api';
+import {
+  buildAccountProfileDraft,
+  buildAccountProfileNotice,
+  buildAccountProfileSnapshot,
+  canSaveAccountPassword,
+  canSaveAccountProfile,
+  createEmptyAccountPasswordDraft,
+  createEmptyAccountProfileDraft,
+  hasAccountProfileChanges,
+  normalizeAccountPasswordDraft,
+  validateAccountPassword,
+  validateAccountProfile,
+} from './my-account.helpers';
+import {
+  MyAccountHeaderActions,
+  MyAccountLoadingState,
+  MyAccountPageError,
+  MyAccountPasswordSection,
+  MyAccountProfileSection,
+} from './my-account.sections';
 import { authStorage } from './storage';
 
 export function MyAccountPage() {
   const [loading, setLoading] = useState(true);
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [initialProfile, setInitialProfile] = useState({ name: '', email: '' });
+  const [profile, setProfile] = useState(() => createEmptyAccountProfileDraft());
+  const [initialProfile, setInitialProfile] = useState(() => createEmptyAccountProfileDraft());
   const [emailVerified, setEmailVerified] = useState(false);
-
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordDraft, setPasswordDraft] = useState(() => createEmptyAccountPasswordDraft());
 
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
@@ -30,15 +40,8 @@ export function MyAccountPage() {
   const [passwordNotice, setPasswordNotice] = useState('');
   const [previewToken, setPreviewToken] = useState('');
 
-  const trimmedName = useMemo(() => name.trim(), [name]);
-  const trimmedEmail = useMemo(() => email.trim().toLowerCase(), [email]);
-  const profileChanged = trimmedName !== initialProfile.name || trimmedEmail !== initialProfile.email;
-  const profileCanSave = trimmedName.length > 0 && trimmedEmail.length > 0 && profileChanged && !savingProfile;
-  const passwordCanSave =
-    currentPassword.trim().length > 0 &&
-    newPassword.trim().length >= 8 &&
-    confirmPassword.trim().length > 0 &&
-    !savingPassword;
+  const profileCanSave = canSaveAccountProfile(profile, initialProfile, savingProfile);
+  const passwordCanSave = canSaveAccountPassword(passwordDraft, savingPassword);
 
   useEffect(() => {
     let mounted = true;
@@ -50,11 +53,9 @@ export function MyAccountPage() {
       try {
         const res = await authApi.account();
         if (!mounted) return;
-        const nextName = res.user.name ?? '';
-        const nextEmail = res.user.email ?? '';
-        setName(nextName);
-        setEmail(nextEmail);
-        setInitialProfile({ name: nextName.trim(), email: nextEmail.trim().toLowerCase() });
+        const nextProfile = buildAccountProfileDraft(res.user);
+        setProfile(nextProfile);
+        setInitialProfile(buildAccountProfileSnapshot(nextProfile));
         setEmailVerified(Boolean(res.user.emailVerified));
       } catch (e) {
         if (!mounted) return;
@@ -71,42 +72,35 @@ export function MyAccountPage() {
     };
   }, []);
 
-  async function onSaveProfile(event: FormEvent) {
+  async function onSaveProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setProfileError('');
     setProfileNotice('');
     setPreviewToken('');
 
-    if (!trimmedName) {
-      setProfileError('Ingresá un nombre para guardar el perfil.');
+    const profileValidationError = validateAccountProfile(profile);
+    if (profileValidationError) {
+      setProfileError(profileValidationError);
       return;
     }
 
-    if (!trimmedEmail) {
-      setProfileError('Ingresá un correo válido para guardar el perfil.');
-      return;
-    }
-
-    if (!profileChanged) {
+    if (!hasAccountProfileChanges(profile, initialProfile)) {
       setProfileNotice('No hay cambios para guardar en el perfil.');
       return;
     }
 
     setSavingProfile(true);
     try {
-      const res = await authApi.updateAccount({ name: trimmedName, email: trimmedEmail });
+      const normalizedProfile = buildAccountProfileSnapshot(profile);
+      const res = await authApi.updateAccount(normalizedProfile);
       authStorage.setUser(res.user);
-      const nextName = res.user.name ?? trimmedName;
-      const nextEmail = res.user.email ?? trimmedEmail;
-      setName(nextName);
-      setEmail(nextEmail);
-      setInitialProfile({ name: nextName.trim(), email: nextEmail.trim().toLowerCase() });
+
+      const nextProfile = buildAccountProfileDraft(res.user);
+      setProfile(nextProfile);
+      setInitialProfile(buildAccountProfileSnapshot(nextProfile));
       setEmailVerified(Boolean(res.user.emailVerified));
-      setProfileNotice(
-        res.emailVerification?.required
-          ? 'Perfil guardado. El nuevo correo requiere verificación.'
-          : 'Perfil guardado correctamente.',
-      );
+      setProfileNotice(buildAccountProfileNotice(res.emailVerification));
+
       if (res.emailVerification?.previewToken) {
         setPreviewToken(res.emailVerification.previewToken);
       }
@@ -117,42 +111,28 @@ export function MyAccountPage() {
     }
   }
 
-  async function onSavePassword(event: FormEvent) {
+  async function onSavePassword(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setPasswordError('');
     setPasswordNotice('');
 
-    const normalizedCurrentPassword = currentPassword.trim();
-    const normalizedNewPassword = newPassword.trim();
-    const normalizedConfirmPassword = confirmPassword.trim();
-
-    if (!normalizedCurrentPassword || !normalizedNewPassword || !normalizedConfirmPassword) {
-      setPasswordError('Completá los tres campos para actualizar la contraseña.');
-      return;
-    }
-
-    if (normalizedNewPassword.length < 8) {
-      setPasswordError('La nueva contraseña debe tener al menos 8 caracteres.');
-      return;
-    }
-
-    if (normalizedNewPassword !== normalizedConfirmPassword) {
-      setPasswordError('La confirmación no coincide con la nueva contraseña.');
+    const passwordValidationError = validateAccountPassword(passwordDraft);
+    if (passwordValidationError) {
+      setPasswordError(passwordValidationError);
       return;
     }
 
     setSavingPassword(true);
     try {
+      const normalizedPassword = normalizeAccountPasswordDraft(passwordDraft);
       const res = await authApi.updateAccountPassword({
-        currentPassword: normalizedCurrentPassword,
-        newPassword: normalizedNewPassword,
+        currentPassword: normalizedPassword.currentPassword,
+        newPassword: normalizedPassword.newPassword,
       });
-      setPasswordNotice(res.message || 'Contraseña actualizada correctamente.');
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
+      setPasswordNotice(res.message || 'Contrasena actualizada correctamente.');
+      setPasswordDraft(createEmptyAccountPasswordDraft());
     } catch (e) {
-      setPasswordError(e instanceof Error ? e.message : 'No se pudo actualizar la contraseña.');
+      setPasswordError(e instanceof Error ? e.message : 'No se pudo actualizar la contrasena.');
     } finally {
       setSavingPassword(false);
     }
@@ -164,149 +144,45 @@ export function MyAccountPage() {
         context="account"
         eyebrow="Mi cuenta"
         title="Perfil y seguridad"
-        subtitle="Gestioná tus datos personales y el acceso a tu cuenta."
-        actions={
-          <>
-            <StatusBadge tone={emailVerified ? 'success' : 'warning'} label={emailVerified ? 'Correo verificado' : 'Correo pendiente'} />
-            <Button variant="outline" asChild>
-              <Link to="/orders">Ver pedidos</Link>
-            </Button>
-          </>
-        }
+        subtitle="Gestiona tus datos personales y el acceso a tu cuenta."
+        actions={<MyAccountHeaderActions emailVerified={emailVerified} />}
       />
 
-      {pageError ? (
-        <SectionCard tone="info" className="border-rose-200 bg-rose-50">
-          <div className="text-sm font-semibold text-rose-700">{pageError}</div>
-        </SectionCard>
-      ) : null}
+      <MyAccountPageError message={pageError} />
 
       {loading ? (
-        <SectionCard title="Cargando cuenta" description="Preparando tus datos personales.">
-          <LoadingBlock lines={4} />
-        </SectionCard>
+        <MyAccountLoadingState />
       ) : (
         <>
-          <SectionCard
-            title="Perfil"
-            description="Estos datos se usan para identificar tu cuenta y las notificaciones."
-            actions={<StatusBadge tone="info" size="sm" label="Cuenta activa" />}
-          >
-            <form className="grid gap-4 md:grid-cols-2" onSubmit={onSaveProfile}>
-              <TextField
-                label="Nombre"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                placeholder="Tu nombre"
-                autoComplete="name"
-                required
-              />
-              <TextField
-                label="Correo electrónico"
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder="tu@email.com"
-                autoComplete="email"
-                required
-              />
-              <div className="md:col-span-2 flex flex-wrap gap-3">
-                <Button type="submit" disabled={!profileCanSave}>
-                  {savingProfile ? 'Guardando perfil...' : 'Guardar perfil'}
-                </Button>
-                <Button variant="outline" asChild>
-                  <Link to="/auth/verify-email">Verificar correo</Link>
-                </Button>
-              </div>
-            </form>
+          <MyAccountProfileSection
+            profile={profile}
+            saving={savingProfile}
+            canSave={profileCanSave}
+            error={profileError}
+            notice={profileNotice}
+            previewToken={previewToken}
+            onNameChange={(value) => setProfile((current) => ({ ...current, name: value }))}
+            onEmailChange={(value) => setProfile((current) => ({ ...current, email: value }))}
+            onSubmit={onSaveProfile}
+          />
 
-            {profileError ? (
-              <div className="ui-alert ui-alert--danger mt-4">
-                <div>
-                  <span className="ui-alert__title">No pudimos guardar el perfil.</span>
-                  <div className="ui-alert__text">{profileError}</div>
-                </div>
-              </div>
-            ) : null}
-
-            {profileNotice ? (
-              <div className="ui-alert ui-alert--success mt-4">
-                <div>
-                  <span className="ui-alert__title">Perfil actualizado</span>
-                  <div className="ui-alert__text">{profileNotice}</div>
-                </div>
-              </div>
-            ) : null}
-
-            {previewToken ? (
-              <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
-                <div className="font-bold">Token de vista previa para verificación (desarrollo)</div>
-                <div className="mt-1 break-all">{previewToken}</div>
-              </div>
-            ) : null}
-          </SectionCard>
-
-          <SectionCard
-            title="Contraseña"
-            description="Actualizá tu clave de acceso para mantener la cuenta protegida."
-          >
-            <form className="grid gap-4 md:grid-cols-3" onSubmit={onSavePassword}>
-              <TextField
-                label="Contraseña actual"
-                type="password"
-                value={currentPassword}
-                onChange={(event) => setCurrentPassword(event.target.value)}
-                placeholder="********"
-                autoComplete="current-password"
-                required
-              />
-              <TextField
-                label="Nueva contraseña"
-                type="password"
-                value={newPassword}
-                onChange={(event) => setNewPassword(event.target.value)}
-                placeholder="********"
-                autoComplete="new-password"
-                hint="Usá al menos 8 caracteres."
-                required
-              />
-              <TextField
-                label="Confirmar nueva contraseña"
-                type="password"
-                value={confirmPassword}
-                onChange={(event) => setConfirmPassword(event.target.value)}
-                placeholder="********"
-                autoComplete="new-password"
-                required
-              />
-              <div className="md:col-span-3 flex flex-wrap gap-3">
-                <Button type="submit" disabled={!passwordCanSave}>
-                  {savingPassword ? 'Actualizando contraseña...' : 'Actualizar contraseña'}
-                </Button>
-                <Button variant="ghost" asChild>
-                  <Link to="/repairs">Ver reparaciones</Link>
-                </Button>
-              </div>
-            </form>
-
-            {passwordError ? (
-              <div className="ui-alert ui-alert--danger mt-4">
-                <div>
-                  <span className="ui-alert__title">No pudimos actualizar la contraseña.</span>
-                  <div className="ui-alert__text">{passwordError}</div>
-                </div>
-              </div>
-            ) : null}
-
-            {passwordNotice ? (
-              <div className="ui-alert ui-alert--success mt-4">
-                <div>
-                  <span className="ui-alert__title">Contraseña actualizada</span>
-                  <div className="ui-alert__text">{passwordNotice}</div>
-                </div>
-              </div>
-            ) : null}
-          </SectionCard>
+          <MyAccountPasswordSection
+            passwordDraft={passwordDraft}
+            saving={savingPassword}
+            canSave={passwordCanSave}
+            error={passwordError}
+            notice={passwordNotice}
+            onCurrentPasswordChange={(value) =>
+              setPasswordDraft((current) => ({ ...current, currentPassword: value }))
+            }
+            onNewPasswordChange={(value) =>
+              setPasswordDraft((current) => ({ ...current, newPassword: value }))
+            }
+            onConfirmPasswordChange={(value) =>
+              setPasswordDraft((current) => ({ ...current, confirmPassword: value }))
+            }
+            onSubmit={onSavePassword}
+          />
         </>
       )}
     </PageShell>
