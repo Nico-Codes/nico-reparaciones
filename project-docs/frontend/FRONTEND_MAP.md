@@ -229,6 +229,8 @@ Catalogo comercial:
 - `AdminProductEditPage.tsx`
 - `AdminProductLabelPage.tsx`
 - `AdminCategoriesPage.tsx`
+- `admin-categories.helpers.ts`
+- `admin-categories.sections.tsx`
 - `admin-product-form.helpers.ts`
 - `admin-product-form.controls.tsx`
 - `admin-product-edit.sections.tsx`
@@ -325,6 +327,14 @@ En la ola de simplificacion del 2026-03-30 quedaron confirmados estos limites in
   - sincronizacion de query params
   - estado del sheet mobile
   - ensamblado del toolbar, resultados y empty state
+- `AdminCategoriesPage.tsx` ahora delega derivaciones y UI del CRUD en:
+  - `admin-categories.helpers.ts`
+  - `admin-categories.sections.tsx`
+- el archivo principal de categorias queda centrado en:
+  - fetch del listado
+  - sync de ruta create/edit
+  - mutaciones de alta, edicion, toggle y borrado
+  - composicion del listado, alertas y formulario
 - `AdminRepairPricingRuleEditPage.tsx`
 - `AdminModelGroupsPage.tsx`
 - `AdminRepairTypesPage.tsx`

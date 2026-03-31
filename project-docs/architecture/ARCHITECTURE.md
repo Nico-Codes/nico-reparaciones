@@ -229,6 +229,16 @@ Confirmado por codigo:
   - control del sheet mobile de ordenamiento
   - ensamblado del toolbar y resultados
 - la logica de query params, etiquetas derivadas y visual vars del hero queda fuera del render principal
+- `AdminCategoriesPage.tsx` ya no concentra slugify, stats, listado y formulario del CRUD en un solo archivo
+- el CRUD de categorias ahora se reparte entre:
+  - `admin-categories.helpers.ts`
+  - `admin-categories.sections.tsx`
+- la pagina principal queda centrada en:
+  - fetch del listado
+  - sync de create/edit por ruta
+  - mutaciones de alta, edicion, toggle y borrado
+  - ensamblado de alertas, listado y formulario
+- la logica de slug, filtros, stats y diff del draft queda fuera del render principal
 
 Desde la ola de simplificacion de 2026-03-30 quedaron formalizados estos limites:
 

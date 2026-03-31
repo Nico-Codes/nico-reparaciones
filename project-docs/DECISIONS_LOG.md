@@ -826,3 +826,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/web/src/features/store/{StorePage.tsx,store-page.helpers.ts,store-page.helpers.test.ts,store-page.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0069]
+- Fecha: 2026-03-31
+- Estado: aceptada
+- Tema: `AdminCategoriesPage` pasa a orquestador y el CRUD de categorias gana helpers + sections propios
+- Contexto: despues de ordenar `StorePage`, el siguiente hotspot claro del subdominio `catalogAdmin` quedo en `AdminCategoriesPage.tsx`. La pagina mezclaba slugify, stats, filtro local, deteccion de cambios, listado, alertas y formulario create/edit en un solo archivo de mas de 400 lineas.
+- Decision: mantener las rutas `/admin/categorias`, `/admin/categorias/crear` y `/admin/categorias/:id/editar` estables, pero mover slugify, stats, filtro y diff del draft a `admin-categories.helpers.ts`, mover alertas, rail operativo, listado y formulario a `admin-categories.sections.tsx`, y dejar `AdminCategoriesPage.tsx` como orquestador de fetch, sync de ruta y mutaciones del CRUD. Tambien se agrega test unitario para helpers del feature.
+- Impacto: `AdminCategoriesPage.tsx` baja de forma marcada, `catalogAdmin` gana un patron consistente entre categorias y productos, y el siguiente hotspot natural del subdominio pasa a `AdminProductsPage.tsx`. No hay cambios deliberados en rutas, payloads ni comportamiento visible esperado.
+- Alternativas consideradas: partir solo el formulario o saltar primero a `AdminProductsPage.tsx`; descartado porque el mayor retorno inmediato seguia estando en el CRUD base del catalogo y ordenarlo primero deja mejor preparado el resto del subdominio.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/catalogAdmin/{AdminCategoriesPage.tsx,admin-categories.helpers.ts,admin-categories.helpers.test.ts,admin-categories.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano

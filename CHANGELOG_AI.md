@@ -1767,3 +1767,29 @@ pm run qa:frontend:e2e
   - el split mantiene el mismo uso de `storeApi` y `useSearchParams`; no introduce estado global nuevo ni cambia la semantica del storefront
 
 ---
+
+### 2026-03-31 - Codex
+- Alcance: partir `AdminCategoriesPage` en helpers y sections, dejando la pagina principal como orquestador del CRUD de categorias.
+- Tipo de intervencion: refactor interno seguro del frontend catalog admin + seccionado del feature base de categorias sin abrir una API nueva.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/catalogAdmin/AdminCategoriesPage.tsx`
+  - `next-stack/apps/web/src/features/catalogAdmin/admin-categories.helpers.ts`
+  - `next-stack/apps/web/src/features/catalogAdmin/admin-categories.helpers.test.ts`
+  - `next-stack/apps/web/src/features/catalogAdmin/admin-categories.sections.tsx`
+  - `project-docs/architecture/ARCHITECTURE.md`
+  - `project-docs/frontend/FRONTEND_MAP.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No deliberado. Se mantienen create/edit, toggle, borrado, stats y filtro local; cambia la separacion interna entre fetch/ruta, helpers puros y secciones de UI.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `cmd /c npm run qa:route-parity`
+  - `git diff --check`
+- Riesgos / notas:
+  - `catalogAdmin` queda mas consistente entre categorias y productos, pero el siguiente hotspot claro del subdominio sigue en `AdminProductsPage.tsx`
+  - el split mantiene `catalogAdminApi` como frontera unica del CRUD comercial, lo cual es correcto por ahora y no introduce estado global adicional
+
+---
