@@ -1018,3 +1018,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/web/src/features/auth/{MyAccountPage.tsx,my-account.helpers.ts,my-account.helpers.test.ts,my-account.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0085]
+- Fecha: 2026-03-31
+- Estado: aceptada
+- Tema: `CartPage` pasa a orquestador y el flujo publico de carrito gana helpers + sections propios
+- Contexto: despues de ordenar `MyAccountPage`, el siguiente hotspot claro del flujo publico quedo en `CartPage.tsx`. La pagina mezclaba quote del carrito, normalizacion de items validos, deteccion de stock issue, clamping de cantidades, feedback y el render completo de listado/resumen en un solo archivo.
+- Decision: mantener la ruta y el wiring con `quoteCart()` y `useCartItems()` estables, pero mover formato monetario, stock tone, normalizacion de items, stock issue y clamping de cantidades a `cart.helpers.ts`, mover empty state, feedback, listado y resumen a `cart.sections.tsx`, y dejar `CartPage.tsx` como orquestador de fetch, normalizacion y navegacion. Tambien se agrega test unitario para helpers del feature.
+- Impacto: `CartPage.tsx` baja de forma marcada, el flujo publico de compra queda mas consistente entre carrito y checkout, y la pantalla deja de mezclar estado derivado con todo el render del listado/resumen. No hay cambios deliberados en rutas, payloads ni comportamiento visible esperado.
+- Alternativas consideradas: partir solo el resumen o saltar primero a `StoreProductDetailPage.tsx`; descartado porque el mayor retorno inmediato seguia estando en cerrar el carrito, que todavia concentraba demasiada logica operativa local.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/cart/{CartPage.tsx,cart.helpers.ts,cart.helpers.test.ts,cart.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano

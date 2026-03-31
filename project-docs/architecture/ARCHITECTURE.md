@@ -340,6 +340,16 @@ Confirmado por codigo:
   - sincronizacion de `authStorage`
   - cambio de contrasena
 - la logica de normalizacion, validacion y bloques visuales de perfil/seguridad queda fuera del render principal
+- `CartPage.tsx` ya no concentra quote, normalizacion de stock/cantidades y el render completo del carrito en un solo archivo
+- el feature de carrito ahora se reparte entre:
+  - `cart.helpers.ts`
+  - `cart.sections.tsx`
+- la pagina principal queda centrada en:
+  - fetch del quote del carrito
+  - normalizacion de items validos
+  - calculo de stock issue
+  - navegacion al checkout
+- la logica de formato, stock, cantidades y bloques visuales del carrito queda fuera del render principal
 - `AdminDevicesCatalogPage.tsx` ya no concentra slugify, filtros, opciones y los tres bloques del catalogo tecnico en un solo archivo
 - el feature de catalogo tecnico ahora se reparte entre:
   - `admin-devices-catalog.helpers.ts`

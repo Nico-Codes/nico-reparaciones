@@ -175,6 +175,8 @@ Store y carrito:
 - `store-page.sections.tsx`
 - `StoreProductDetailPage.tsx`
 - `CartPage.tsx`
+- `cart.helpers.ts`
+- `cart.sections.tsx`
 - `CartAddedPopup.tsx`
 - `CheckoutPage.tsx`
 - `checkout.helpers.ts`
@@ -455,6 +457,14 @@ En la ola de simplificacion del 2026-03-30 quedaron confirmados estos limites in
   - guardado del perfil y sincronizacion de `authStorage`
   - cambio de contrasena
   - composicion del header y las dos secciones operativas
+- `CartPage.tsx` ahora delega normalizacion del quote, stock y bloques visuales del carrito en:
+  - `cart.helpers.ts`
+  - `cart.sections.tsx`
+- el archivo principal de carrito queda centrado en:
+  - fetch del quote del carrito
+  - normalizacion de items validos
+  - navegacion al checkout
+  - composicion del header, listado y resumen
 - `AdminDevicesCatalogPage.tsx` ahora delega slugify, filtros y opciones derivadas en:
   - `admin-devices-catalog.helpers.ts`
   - `admin-devices-catalog.sections.tsx`
