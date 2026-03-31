@@ -310,6 +310,16 @@ Confirmado por codigo:
   - mutaciones de alta, rename y toggle
   - composicion de las tres columnas operativas
 - la logica de slugify, opciones y filtros de modelos queda fuera del render principal
+- `AdminOrderDetailPage.tsx` ya no concentra metricas, alertas, seguimiento, listado de lineas y sidebar operativo en un solo archivo
+- el detalle admin de pedidos ahora se reparte entre:
+  - `admin-order-detail.helpers.ts`
+  - `admin-order-detail.sections.tsx`
+- la pagina principal queda centrada en:
+  - fetch del pedido
+  - sincronizacion del estado editable
+  - guardado del cambio de estado
+  - composicion del header y las secciones del detalle
+- la logica de metricas, facts, links derivados y bloques visuales queda fuera del render principal
 
 Desde la ola de simplificacion de 2026-03-30 quedaron formalizados estos limites:
 

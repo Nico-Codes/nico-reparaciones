@@ -922,3 +922,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/web/src/features/admin/{AdminDevicesCatalogPage.tsx,admin-devices-catalog.helpers.ts,admin-devices-catalog.helpers.test.ts,admin-devices-catalog.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0077]
+- Fecha: 2026-03-31
+- Estado: aceptada
+- Tema: `AdminOrderDetailPage` pasa a orquestador y el detalle admin de pedidos gana helpers + sections propios
+- Contexto: despues de ordenar el catalogo tecnico, el siguiente hotspot claro del frontend operativo quedo en `AdminOrderDetailPage.tsx`. La pagina mezclaba carga del pedido, calculo de metricas, labels derivados, alertas, seguimiento, listado de lineas, facts del cliente y panel de cambio de estado en un solo archivo.
+- Decision: mantener la ruta y el wiring con `ordersApi` estables, pero mover metricas, facts, links y labels derivados a `admin-order-detail.helpers.ts`, mover estados de carga/error/not found, metricas, alertas y bloques visuales del detalle a `admin-order-detail.sections.tsx`, y dejar `AdminOrderDetailPage.tsx` como orquestador de fetch, sync de estado y guardado. Tambien se agrega test unitario para helpers del feature.
+- Impacto: `AdminOrderDetailPage.tsx` baja de forma marcada, el subdominio `orders` queda mas consistente con el patron de helpers + sections ya usado en listado y ventas rapidas, y el detalle admin deja de mezclar estado derivado con toda la composicion visual. No hay cambios deliberados en rutas, payloads ni comportamiento visible esperado.
+- Alternativas consideradas: partir solo el sidebar de estado o saltar primero a `AdminRepairPricingRuleEditPage.tsx`; descartado porque el mayor retorno inmediato seguia estando en el detalle operativo de pedidos, que todavia concentraba demasiadas responsabilidades.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/orders/{AdminOrderDetailPage.tsx,admin-order-detail.helpers.ts,admin-order-detail.helpers.test.ts,admin-order-detail.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano

@@ -1975,3 +1975,29 @@ pm run qa:frontend:e2e
   - el split mantiene `adminApi` y `deviceCatalogApi` como fronteras unicas del feature y no introduce estado global nuevo
 
 ---
+
+### 2026-03-31 - Codex
+- Alcance: partir `AdminOrderDetailPage` en helpers y sections, dejando la pagina principal como orquestador del detalle admin de pedidos.
+- Tipo de intervencion: refactor interno seguro del frontend operativo + seccionado del feature `orders` sin abrir una API nueva.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/orders/AdminOrderDetailPage.tsx`
+  - `next-stack/apps/web/src/features/orders/admin-order-detail.helpers.ts`
+  - `next-stack/apps/web/src/features/orders/admin-order-detail.helpers.test.ts`
+  - `next-stack/apps/web/src/features/orders/admin-order-detail.sections.tsx`
+  - `project-docs/architecture/ARCHITECTURE.md`
+  - `project-docs/frontend/FRONTEND_MAP.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No deliberado. Se mantienen la carga del pedido, el cambio de estado, el seguimiento visual, la impresion/ticket y el resumen operativo; cambia la separacion interna entre fetch/sync, helpers puros y secciones de UI.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `cmd /c npm run qa:route-parity`
+  - `git diff --check`
+- Riesgos / notas:
+  - el detalle admin de pedidos queda mucho mas claro, pero todavia siguen pendientes pantallas grandes como `AdminRepairPricingRuleEditPage.tsx` y `AdminModelGroupsPage.tsx`
+  - el split mantiene `ordersApi` como frontera unica del feature y no introduce estado global nuevo
+
+---

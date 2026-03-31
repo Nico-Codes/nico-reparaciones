@@ -184,6 +184,8 @@ Pedidos:
 - `admin-orders.helpers.ts`
 - `admin-orders.sections.tsx`
 - `AdminOrderDetailPage.tsx`
+- `admin-order-detail.helpers.ts`
+- `admin-order-detail.sections.tsx`
 - `AdminOrderPrintPage.tsx`
 - `AdminOrderTicketPage.tsx`
 - `AdminQuickSalesPage.tsx`
@@ -407,6 +409,14 @@ En la ola de simplificacion del 2026-03-30 quedaron confirmados estos limites in
   - sync de filtros por tipo y marca
   - mutaciones de alta, rename y toggle
   - composicion de los tres bloques operativos
+- `AdminOrderDetailPage.tsx` ahora delega metricas, facts y bloques del detalle en:
+  - `admin-order-detail.helpers.ts`
+  - `admin-order-detail.sections.tsx`
+- el archivo principal de detalle queda centrado en:
+  - fetch del pedido
+  - sincronizacion del estado editable
+  - guardado del cambio de estado
+  - composicion del header y las secciones del detalle
 - `AdminRepairPricingRuleEditPage.tsx`
 - `AdminModelGroupsPage.tsx`
 - `AdminRepairTypesPage.tsx`
