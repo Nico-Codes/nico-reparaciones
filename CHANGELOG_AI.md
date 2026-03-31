@@ -2001,3 +2001,34 @@ pm run qa:frontend:e2e
   - el split mantiene `ordersApi` como frontera unica del feature y no introduce estado global nuevo
 
 ---
+
+### 2026-03-31 - Codex
+- Alcance: compartir la base del formulario entre `AdminRepairPricingRuleCreatePage` y `AdminRepairPricingRuleEditPage`, y partir `AdminModelGroupsPage` en helpers y sections.
+- Tipo de intervencion: refactor interno seguro del frontend admin tecnico + consolidacion de formularios gemelos sin abrir APIs nuevas.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/admin/AdminRepairPricingRuleCreatePage.tsx`
+  - `next-stack/apps/web/src/features/admin/AdminRepairPricingRuleEditPage.tsx`
+  - `next-stack/apps/web/src/features/admin/admin-repair-pricing-rule-form.helpers.ts`
+  - `next-stack/apps/web/src/features/admin/admin-repair-pricing-rule-form.helpers.test.ts`
+  - `next-stack/apps/web/src/features/admin/admin-repair-pricing-rule-form.sections.tsx`
+  - `next-stack/apps/web/src/features/admin/AdminModelGroupsPage.tsx`
+  - `next-stack/apps/web/src/features/admin/admin-model-groups.helpers.ts`
+  - `next-stack/apps/web/src/features/admin/admin-model-groups.helpers.test.ts`
+  - `next-stack/apps/web/src/features/admin/admin-model-groups.sections.tsx`
+  - `project-docs/architecture/ARCHITECTURE.md`
+  - `project-docs/frontend/FRONTEND_MAP.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No deliberado. Se mantienen el alta/edicion de reglas de pricing puntual y la administracion de grupos de modelos; cambia la separacion interna entre fetch/sync, helpers puros y secciones de UI.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `cmd /c npm run qa:route-parity`
+  - `git diff --check`
+- Riesgos / notas:
+  - el admin tecnico queda bastante mas consistente, pero todavia siguen pendientes pantallas grandes como `AdminWhatsappPage.tsx` y `AdminWarrantiesPage.tsx`
+  - el split mantiene `adminApi`, `deviceCatalogApi` y `repairsApi` como fronteras unicas de estos features y no introduce estado global nuevo
+
+---

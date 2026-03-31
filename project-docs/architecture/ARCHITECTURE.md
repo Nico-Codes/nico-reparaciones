@@ -320,6 +320,25 @@ Confirmado por codigo:
   - guardado del cambio de estado
   - composicion del header y las secciones del detalle
 - la logica de metricas, facts, links derivados y bloques visuales queda fuera del render principal
+- `AdminRepairPricingRuleCreatePage.tsx` y `AdminRepairPricingRuleEditPage.tsx` ya no duplican payloads, filtros y el formulario entero
+- el feature de pricing puntual ahora comparte:
+  - `admin-repair-pricing-rule-form.helpers.ts`
+  - `admin-repair-pricing-rule-form.sections.tsx`
+- las paginas principales quedan centradas en:
+  - carga de catalogo y de la regla actual cuando aplica
+  - sync del estado del formulario
+  - guardado del payload
+  - navegacion de cierre
+- la logica de opciones, transiciones dependientes y armado del payload queda fuera del render principal
+- `AdminModelGroupsPage.tsx` ya no concentra filtros, opciones, patch local y los dos bloques operativos del catalogo tecnico en un solo archivo
+- el feature de grupos de modelos ahora se reparte entre:
+  - `admin-model-groups.helpers.ts`
+  - `admin-model-groups.sections.tsx`
+- la pagina principal queda centrada en:
+  - carga de filtros, marcas, grupos y modelos
+  - mutaciones de alta y guardado
+  - asignacion de modelos a grupo
+- la logica de opciones, patch local y composicion de bloques queda fuera del render principal
 
 Desde la ola de simplificacion de 2026-03-30 quedaron formalizados estos limites:
 

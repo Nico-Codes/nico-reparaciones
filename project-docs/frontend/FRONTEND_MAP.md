@@ -257,9 +257,15 @@ Catalogo tecnico y pricing:
 - `admin-repair-pricing-rules.helpers.ts`
 - `admin-repair-pricing-rules.sections.tsx`
 - `AdminRepairPricingRuleCreatePage.tsx`
+- `AdminRepairPricingRuleEditPage.tsx`
+- `admin-repair-pricing-rule-form.helpers.ts`
+- `admin-repair-pricing-rule-form.sections.tsx`
 - `AdminDevicesCatalogPage.tsx`
 - `admin-devices-catalog.helpers.ts`
 - `admin-devices-catalog.sections.tsx`
+- `AdminModelGroupsPage.tsx`
+- `admin-model-groups.helpers.ts`
+- `admin-model-groups.sections.tsx`
 
 ## Seccionado interno reforzado
 
@@ -417,6 +423,21 @@ En la ola de simplificacion del 2026-03-30 quedaron confirmados estos limites in
   - sincronizacion del estado editable
   - guardado del cambio de estado
   - composicion del header y las secciones del detalle
+- `AdminRepairPricingRuleCreatePage.tsx` y `AdminRepairPricingRuleEditPage.tsx` ahora comparten la base del formulario en:
+  - `admin-repair-pricing-rule-form.helpers.ts`
+  - `admin-repair-pricing-rule-form.sections.tsx`
+- las paginas principales de pricing puntual quedan centradas en:
+  - carga del catalogo y de la regla actual cuando aplica
+  - sync del estado del formulario
+  - guardado del payload
+  - navegacion de cierre
+- `AdminModelGroupsPage.tsx` ahora delega opciones, patch local y bloques visuales en:
+  - `admin-model-groups.helpers.ts`
+  - `admin-model-groups.sections.tsx`
+- el archivo principal de grupos queda centrado en:
+  - carga de filtros, marcas, grupos y modelos
+  - mutaciones de alta y guardado
+  - asignacion de modelos a grupo
 - `AdminRepairPricingRuleEditPage.tsx`
 - `AdminModelGroupsPage.tsx`
 - `AdminRepairTypesPage.tsx`

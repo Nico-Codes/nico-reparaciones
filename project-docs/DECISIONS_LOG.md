@@ -934,3 +934,27 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/web/src/features/orders/{AdminOrderDetailPage.tsx,admin-order-detail.helpers.ts,admin-order-detail.helpers.test.ts,admin-order-detail.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0078]
+- Fecha: 2026-03-31
+- Estado: aceptada
+- Tema: `AdminRepairPricingRuleCreatePage` y `AdminRepairPricingRuleEditPage` comparten una base comun de formulario
+- Contexto: despues de ordenar el detalle de pedidos, el siguiente hotspot claro del admin tecnico quedo en el pricing puntual de reparaciones. `create` y `edit` duplicaban casi toda la estructura: carga de catalogo, filtros por tipo/marca/modelo/falla, payloads y formulario completo.
+- Decision: mantener las rutas y el wiring con `adminApi`, `deviceCatalogApi` y `repairsApi` estables, pero mover tipos, defaults, opciones, transiciones dependientes y armado del payload a `admin-repair-pricing-rule-form.helpers.ts`, mover hero, feedback y formulario completo a `admin-repair-pricing-rule-form.sections.tsx`, y dejar `AdminRepairPricingRuleCreatePage.tsx` y `AdminRepairPricingRuleEditPage.tsx` como orquestadores de carga, sync y guardado. Tambien se agrega test unitario para helpers del feature compartido.
+- Impacto: el pricing puntual deja de duplicar logica en dos pantallas casi gemelas, el subdominio `admin/pricing` gana una frontera comun mas clara y las pantallas de alta/edicion quedan mucho mas chicas. No hay cambios deliberados en rutas, payloads ni comportamiento visible esperado.
+- Alternativas consideradas: partir solo `edit` y dejar `create` como estaba, o saltar directo a `AdminModelGroupsPage.tsx`; descartado porque compartir la base comun elimina mas complejidad real y evita mantener dos refactors paralelos del mismo formulario.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/admin/{AdminRepairPricingRuleCreatePage.tsx,AdminRepairPricingRuleEditPage.tsx,admin-repair-pricing-rule-form.helpers.ts,admin-repair-pricing-rule-form.helpers.test.ts,admin-repair-pricing-rule-form.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano
+
+### [DL-0079]
+- Fecha: 2026-03-31
+- Estado: aceptada
+- Tema: `AdminModelGroupsPage` pasa a orquestador y el admin tecnico gana helpers + sections para grupos de modelos
+- Contexto: despues de compartir la base del pricing puntual, `AdminModelGroupsPage.tsx` seguia como uno de los hotspots claros del admin tecnico. La pagina mezclaba filtros, opciones derivadas, patch local de grupos, feedback y los dos bloques visuales de grupos/modelos en un solo archivo.
+- Decision: mantener la ruta y el wiring con `adminApi` y `deviceCatalogApi` estables, pero mover tipos, opciones y patch local a `admin-model-groups.helpers.ts`, mover hero, alerts, filtros y los dos bloques operativos a `admin-model-groups.sections.tsx`, y dejar `AdminModelGroupsPage.tsx` como orquestador de carga, mutaciones y asignacion. Tambien se agrega test unitario para helpers del feature.
+- Impacto: el admin tecnico queda mas consistente entre pricing, catalogo de dispositivos y grupos de modelos, y la pagina deja de concentrar todo el render y la logica derivada en el mismo archivo. No hay cambios deliberados en rutas, payloads ni comportamiento visible esperado.
+- Alternativas consideradas: partir solo el bloque de grupos o saltar primero a `AdminWhatsappPage.tsx`; descartado porque el mayor retorno inmediato seguia estando en cerrar el cluster del admin tecnico mientras el contexto de catalogo seguia fresco.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/admin/{AdminModelGroupsPage.tsx,admin-model-groups.helpers.ts,admin-model-groups.helpers.test.ts,admin-model-groups.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano
