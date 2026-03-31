@@ -898,3 +898,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/web/src/features/admin/{AdminBusinessSettingsPage.tsx,admin-business-settings.helpers.ts,admin-business-settings.helpers.test.ts,admin-business-settings.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0075]
+- Fecha: 2026-03-31
+- Estado: aceptada
+- Tema: `AdminWarrantyCreatePage` pasa a orquestador y el alta de garantias gana helpers + sections propios
+- Contexto: despues de ordenar business settings, el siguiente hotspot claro del frontend operativo quedo en `AdminWarrantyCreatePage.tsx`. La pagina mezclaba defaults del formulario, lookups de reparacion/producto/proveedor, calculo de perdida, payload de guardado y render completo del alta en un solo archivo.
+- Decision: mantener la ruta y el wiring con `adminApi`, `repairsApi` y `catalogAdminApi` estables, pero mover defaults, opciones, calculos y payloads a `admin-warranty-create.helpers.ts`, mover hero, feedback, secciones del formulario y acciones a `admin-warranty-create.sections.tsx`, y dejar `AdminWarrantyCreatePage.tsx` como orquestador de fetch, sync y submit. Tambien se agrega test unitario para helpers del feature.
+- Impacto: `AdminWarrantyCreatePage.tsx` baja de forma marcada, el subdominio `warranties` gana una frontera clara entre datos y UI, y la pantalla deja de concentrar el armado de costo/perdida/payload junto con todo el render del formulario. No hay cambios deliberados en rutas, payloads ni comportamiento visible esperado.
+- Alternativas consideradas: partir solo la tarjeta de costos o saltar primero a `AdminDevicesCatalogPage.tsx`; descartado porque el mayor retorno inmediato seguia estando en el alta de garantias, que mezclaba demasiada logica de negocio con render.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/warranties/{AdminWarrantyCreatePage.tsx,admin-warranty-create.helpers.ts,admin-warranty-create.helpers.test.ts,admin-warranty-create.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano

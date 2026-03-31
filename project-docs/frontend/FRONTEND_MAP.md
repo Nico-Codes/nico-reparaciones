@@ -388,6 +388,14 @@ En la ola de simplificacion del 2026-03-30 quedaron confirmados estos limites in
   - guardado del payload
   - cancelacion de cambios
   - composicion del feedback, sidebar y acciones
+- `AdminWarrantyCreatePage.tsx` ahora delega defaults, payloads y opciones derivadas en:
+  - `admin-warranty-create.helpers.ts`
+  - `admin-warranty-create.sections.tsx`
+- el archivo principal de alta de garantia queda centrado en:
+  - fetch de reparaciones, proveedores y productos
+  - sync del formulario y de la reparacion seleccionada
+  - armado del payload de garantia
+  - submit y navegacion de cierre
 - `AdminRepairPricingRuleEditPage.tsx`
 - `AdminModelGroupsPage.tsx`
 - `AdminRepairTypesPage.tsx`
@@ -402,6 +410,8 @@ Operaciones:
 - `features/providers/admin-providers.sections.tsx`
 - `features/warranties/AdminWarrantiesPage.tsx`
 - `features/warranties/AdminWarrantyCreatePage.tsx`
+- `features/warranties/admin-warranty-create.helpers.ts`
+- `features/warranties/admin-warranty-create.sections.tsx`
 
 ## Servicios, API clients y hooks importantes
 

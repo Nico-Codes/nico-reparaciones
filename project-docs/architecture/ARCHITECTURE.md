@@ -290,6 +290,16 @@ Confirmado por codigo:
   - guardado y cancelacion de cambios
   - composicion de feedback, sidebar y acciones
 - la logica de defaults, payloads y dirty detection queda fuera del render principal
+- `AdminWarrantyCreatePage.tsx` ya no concentra lookups, defaults, payloads y el formulario completo en un solo archivo
+- el feature de alta de garantias ahora se reparte entre:
+  - `admin-warranty-create.helpers.ts`
+  - `admin-warranty-create.sections.tsx`
+- la pagina principal queda centrada en:
+  - fetch de reparaciones, proveedores y productos
+  - sincronizacion del formulario y la reparacion seleccionada
+  - guardado del incidente
+  - navegacion de cierre
+- la logica de defaults, opciones, costo derivado y payload de garantia queda fuera del render principal
 
 Desde la ola de simplificacion de 2026-03-30 quedaron formalizados estos limites:
 
