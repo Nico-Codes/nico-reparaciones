@@ -175,6 +175,8 @@ Store y carrito:
 - `CartPage.tsx`
 - `CartAddedPopup.tsx`
 - `CheckoutPage.tsx`
+- `checkout.helpers.ts`
+- `checkout.sections.tsx`
 
 Pedidos:
 
@@ -435,6 +437,14 @@ En la ola de simplificacion del 2026-03-30 quedaron confirmados estos limites in
   - persistencia de plantillas
   - refresh manual del historial
   - composicion de variables, editor, acciones y logs
+- `CheckoutPage.tsx` ahora delega derivaciones, validaciones y bloques visuales del checkout en:
+  - `checkout.helpers.ts`
+  - `checkout.sections.tsx`
+- el archivo principal de checkout queda centrado en:
+  - fetch y normalizacion del quote del carrito
+  - confirmacion del pedido
+  - limpieza del carrito y navegacion de cierre
+  - composicion de pago, cuenta, acciones y resumen
 - `AdminDevicesCatalogPage.tsx` ahora delega slugify, filtros y opciones derivadas en:
   - `admin-devices-catalog.helpers.ts`
   - `admin-devices-catalog.sections.tsx`

@@ -1,33 +1,29 @@
-﻿import { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, CreditCard, ShieldCheck } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { EmptyState } from '@/components/ui/empty-state';
-import { LoadingBlock } from '@/components/ui/loading-block';
-import { PageHeader } from '@/components/ui/page-header';
-import { PageShell } from '@/components/ui/page-shell';
-import { SectionCard } from '@/components/ui/section-card';
-import { StatusBadge } from '@/components/ui/status-badge';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { quoteCart } from '@/features/cart/api';
 import { cartStorage } from '@/features/cart/storage';
 import type { CartQuoteResponse } from '@/features/cart/types';
 import { authStorage } from '@/features/auth/storage';
+import {
+  buildCheckoutItems,
+  buildValidCheckoutLines,
+  hasInvalidCheckoutItems,
+  resolveSelectedPayment,
+  sameCartItems,
+} from './checkout.helpers';
+import {
+  CheckoutAccountSection,
+  CheckoutActions,
+  CheckoutEmptyState,
+  CheckoutFeedback,
+  CheckoutLoadingState,
+  CheckoutPaymentSection,
+  CheckoutSummarySection,
+} from './checkout.sections';
+import { PageHeader } from '@/components/ui/page-header';
+import { PageShell } from '@/components/ui/page-shell';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { ordersApi } from './api';
-
-const PAYMENT_OPTIONS = [
-  { value: 'efectivo', title: 'Pago en el local', subtitle: 'Pagás al retirar.' },
-  { value: 'transferencia', title: 'Transferencia', subtitle: 'Te enviamos los datos después de confirmar.' },
-  { value: 'debito', title: 'Débito', subtitle: 'Pagás al retirar con tarjeta.' },
-  { value: 'credito', title: 'Crédito', subtitle: 'Pagás al retirar con tarjeta.' },
-] as const;
-
-const money = (value: number) => `$ ${value.toLocaleString('es-AR')}`;
-
-type BadgeTone = 'neutral' | 'info' | 'accent' | 'success' | 'warning' | 'danger';
-
-function emailVerificationTone(verified: boolean | undefined): BadgeTone {
-  return verified ? 'success' : 'warning';
-}
 
 export function CheckoutPage() {
   const navigate = useNavigate();
@@ -52,14 +48,11 @@ export function CheckoutPage() {
         setQuote(response);
 
         if (response.items.length) {
-          const normalized = response.items
-            .filter((item) => item.valid)
-            .map((item) => ({ productId: item.productId, quantity: item.quantity }));
+          const normalized = buildCheckoutItems(buildValidCheckoutLines(response.items));
           const current = cartStorage.getItems();
-          const same =
-            normalized.length === current.length &&
-            normalized.every((item, index) => current[index]?.productId === item.productId && current[index]?.quantity === item.quantity);
-          if (!same) cartStorage.setItems(normalized);
+          if (!sameCartItems(normalized, current)) {
+            cartStorage.setItems(normalized);
+          }
         }
       })
       .catch((cause) => {
@@ -76,14 +69,11 @@ export function CheckoutPage() {
     };
   }, []);
 
-  const validItems = useMemo(() => quote?.items.filter((item) => item.valid) ?? [], [quote]);
-  const validCheckoutItems = useMemo(
-    () => validItems.map((item) => ({ productId: item.productId, quantity: item.quantity })),
-    [validItems],
-  );
-  const hasInvalidItems = useMemo(() => (quote?.items ?? []).some((item) => !item.valid), [quote]);
+  const validItems = useMemo(() => buildValidCheckoutLines(quote?.items ?? []), [quote]);
+  const validCheckoutItems = useMemo(() => buildCheckoutItems(validItems), [validItems]);
+  const hasInvalidItems = useMemo(() => hasInvalidCheckoutItems(quote?.items ?? []), [quote]);
   const canConfirm = !loading && !submitting && validCheckoutItems.length > 0;
-  const selectedPayment = PAYMENT_OPTIONS.find((option) => option.value === paymentMethod) ?? PAYMENT_OPTIONS[0];
+  const selectedPayment = useMemo(() => resolveSelectedPayment(paymentMethod), [paymentMethod]);
 
   async function confirmOrder() {
     if (!canConfirm) return;
@@ -104,74 +94,16 @@ export function CheckoutPage() {
   }
 
   if (loading) {
-    return (
-      <PageShell context="store" className="space-y-6">
-        <PageHeader
-          context="store"
-          eyebrow="Compra"
-          title="Preparando checkout"
-          subtitle="Estamos validando stock y resumen antes de mostrar la confirmación."
-          actions={<StatusBadge label="Preparando" tone="info" />}
-        />
-        <SectionCard>
-          <LoadingBlock label="Preparando checkout" lines={4} />
-        </SectionCard>
-      </PageShell>
-    );
+    return <CheckoutLoadingState message="Preparando checkout" />;
   }
 
   if (!validItems.length) {
-    const emptyTitle = hasCartItems ? 'Hay productos para revisar' : 'Tu carrito está vacío';
-    const emptyDescription = hasCartItems
-      ? 'Volvé al carrito para ajustar cantidades o quitar productos sin stock antes de confirmar la compra.'
-      : 'Necesitás productos válidos en el carrito para confirmar la compra.';
-
     return (
-      <PageShell context="store" className="space-y-6">
-        <PageHeader
-          context="store"
-          eyebrow="Compra"
-          title="Checkout"
-          subtitle={hasCartItems ? 'Todavía no podemos confirmar el pedido con el stock actual.' : 'Necesitás productos válidos en el carrito para confirmar la compra.'}
-        />
-
-        {message ? (
-          <div className="ui-alert ui-alert--danger">
-            <AlertTriangle className="mt-0.5 h-4 w-4 flex-none" />
-            <div>
-              <span className="ui-alert__title">No pudimos preparar el checkout.</span>
-              <div className="ui-alert__text">{message}</div>
-            </div>
-          </div>
-        ) : null}
-
-        {hasInvalidItems ? (
-          <div className="ui-alert ui-alert--warning">
-            <AlertTriangle className="mt-0.5 h-4 w-4 flex-none" />
-            <div>
-              <span className="ui-alert__title">Hay productos con cambios de stock o cantidad.</span>
-              <div className="ui-alert__text">Revisá el carrito antes de continuar para evitar un pedido incompleto.</div>
-            </div>
-          </div>
-        ) : null}
-
-        <SectionCard>
-          <EmptyState
-            title={emptyTitle}
-            description={emptyDescription}
-            actions={(
-              <div className="flex flex-wrap gap-3">
-                <Button asChild>
-                  <Link to="/cart">Revisar carrito</Link>
-                </Button>
-                <Button asChild variant="outline">
-                  <Link to="/store">Ir a la tienda</Link>
-                </Button>
-              </div>
-            )}
-          />
-        </SectionCard>
-      </PageShell>
+      <CheckoutEmptyState
+        hasCartItems={hasCartItems}
+        hasInvalidItems={hasInvalidItems}
+        message={message}
+      />
     );
   }
 
@@ -185,117 +117,24 @@ export function CheckoutPage() {
         actions={<StatusBadge label={`${validItems.length} productos`} tone="info" />}
       />
 
-      {message ? (
-        <div className="ui-alert ui-alert--danger">
-          <AlertTriangle className="mt-0.5 h-4 w-4 flex-none" />
-          <div>
-            <span className="ui-alert__title">No pudimos confirmar el pedido.</span>
-            <div className="ui-alert__text">{message}</div>
-          </div>
-        </div>
-      ) : null}
+      <CheckoutFeedback message={message} />
 
       <div className="commerce-layout commerce-layout--checkout">
         <div className="commerce-stack">
-          <SectionCard
-            title="Pago"
-            description="Elegí cómo querés completar la compra. El retiro siempre es en el local."
-          >
-            <div className="checkout-option-grid">
-              {PAYMENT_OPTIONS.map((option) => {
-                const active = paymentMethod === option.value;
-                return (
-                  <label key={option.value} className="block cursor-pointer">
-                    <input
-                      className="sr-only peer"
-                      type="radio"
-                      name="payment_method"
-                      value={option.value}
-                      checked={active}
-                      onChange={() => setPaymentMethod(option.value)}
-                      disabled={submitting}
-                    />
-                    <div className={`checkout-option ${active ? 'is-active' : ''}`}>
-                      <div className="checkout-option__title">{option.title}</div>
-                      <div className="checkout-option__subtitle">{option.subtitle}</div>
-                    </div>
-                  </label>
-                );
-              })}
-            </div>
-          </SectionCard>
-
-          <SectionCard
-            tone="muted"
-            title="Cuenta"
-            description="Estos datos se usan para asociar el pedido y enviarte actualizaciones."
-            actions={<StatusBadge label={user?.emailVerified ? 'Email verificado' : 'Email pendiente'} tone={emailVerificationTone(user?.emailVerified)} />}
-          >
-            <div className="meta-grid">
-              <div className="meta-tile">
-                <div className="meta-tile__label">Nombre</div>
-                <div className="meta-tile__value">{user?.name ?? 'Sin cuenta cargada'}</div>
-              </div>
-              <div className="meta-tile">
-                <div className="meta-tile__label">Email</div>
-                <div className="meta-tile__value">{user?.email ?? 'Sin email'}</div>
-              </div>
-            </div>
-            <div className="mt-4">
-              <Button asChild variant="ghost" size="sm">
-                <Link to="/auth/login">Cambiar cuenta</Link>
-              </Button>
-            </div>
-          </SectionCard>
-
-          <div className="grid gap-2 sm:flex sm:flex-row">
-            <Button type="button" className="w-full sm:w-auto" onClick={confirmOrder} disabled={!canConfirm}>
-              <CreditCard className="h-4 w-4" />
-              {submitting ? 'Procesando...' : 'Confirmar pedido'}
-            </Button>
-            <Button asChild variant="outline" className="w-full justify-center sm:w-auto">
-              <Link to="/cart">Volver al carrito</Link>
-            </Button>
-          </div>
+          <CheckoutPaymentSection
+            paymentMethod={paymentMethod}
+            submitting={submitting}
+            onChange={setPaymentMethod}
+          />
+          <CheckoutAccountSection user={user} />
+          <CheckoutActions canConfirm={canConfirm} submitting={submitting} onConfirm={() => void confirmOrder()} />
         </div>
 
-        <SectionCard
-          className="commerce-sticky"
-          title="Resumen del pedido"
-          description="Control final de productos, método de pago y total estimado."
-        >
-          <div className="summary-box">
-            <div className="summary-box__label">Pago seleccionado</div>
-            <div className="summary-box__value">{selectedPayment.title}</div>
-          </div>
-
-          <div className="mt-4 line-list">
-            {validItems.map((line) => (
-              <div key={line.productId} className="line-item">
-                <div className="line-item__main">
-                  <div className="line-item__title">{line.name}</div>
-                  <div className="line-item__meta">
-                    {line.quantity} × {money(line.unitPrice)}
-                  </div>
-                </div>
-                <div className="line-item__total">{money(line.lineTotal)}</div>
-              </div>
-            ))}
-          </div>
-
-          <div className="summary-box mt-4">
-            <div className="summary-box__label">Total</div>
-            <div className="summary-box__value">{money(quote?.totals.subtotal ?? 0)}</div>
-          </div>
-
-          <div className="ui-alert ui-alert--info mt-4">
-            <ShieldCheck className="mt-0.5 h-4 w-4 flex-none" />
-            <div>
-              <span className="ui-alert__title">Compra con retiro en local</span>
-              <div className="ui-alert__text">Una vez confirmado, el pedido aparecerá en tu cuenta y el equipo del local podrá continuar con la gestión.</div>
-            </div>
-          </div>
-        </SectionCard>
+        <CheckoutSummarySection
+          quote={quote}
+          items={validItems}
+          paymentTitle={selectedPayment.title}
+        />
       </div>
     </PageShell>
   );

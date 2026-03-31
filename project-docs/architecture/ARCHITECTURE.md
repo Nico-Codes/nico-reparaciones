@@ -320,6 +320,16 @@ Confirmado por codigo:
   - guardado de templates
   - composicion de variables, editor y logs
 - la logica de defaults, orden canonico de templates y sanitizacion de logs queda fuera del render principal
+- `CheckoutPage.tsx` ya no concentra quote del carrito, normalizacion local, estados vacios y el resumen final en un solo archivo
+- el feature de checkout ahora se reparte entre:
+  - `checkout.helpers.ts`
+  - `checkout.sections.tsx`
+- la pagina principal queda centrada en:
+  - fetch del quote del carrito
+  - sincronizacion del metodo de pago
+  - confirmacion del pedido
+  - limpieza del carrito y navegacion al detalle
+- la logica de normalizacion del carrito, estados vacios, formatos y bloques visuales queda fuera del render principal
 - `AdminDevicesCatalogPage.tsx` ya no concentra slugify, filtros, opciones y los tres bloques del catalogo tecnico en un solo archivo
 - el feature de catalogo tecnico ahora se reparte entre:
   - `admin-devices-catalog.helpers.ts`

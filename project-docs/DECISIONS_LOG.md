@@ -994,3 +994,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/web/src/features/admin/{AdminWhatsappPage.tsx,admin-whatsapp.helpers.ts,admin-whatsapp.helpers.test.ts,admin-whatsapp.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0083]
+- Fecha: 2026-03-31
+- Estado: aceptada
+- Tema: `CheckoutPage` pasa a orquestador y el flujo de compra gana helpers + sections propios
+- Contexto: despues de ordenar el admin de WhatsApp, el siguiente hotspot operativo claro del frontend quedo en `CheckoutPage.tsx`. La pagina mezclaba quote del carrito, normalizacion de items locales, estados vacios, seleccion de pago, resumen final y confirmacion del pedido en un solo archivo.
+- Decision: mantener la ruta y el wiring con `quoteCart`, `cartStorage`, `authStorage` y `ordersApi.checkout()` estables, pero mover opciones de pago, normalizacion del carrito, estados vacios, formato de montos y derivaciones de cuenta a `checkout.helpers.ts`, mover loading, empty state, pago, cuenta, acciones y resumen a `checkout.sections.tsx`, y dejar `CheckoutPage.tsx` como orquestador de carga, confirmacion y navegacion. Tambien se agrega test unitario para helpers del feature.
+- Impacto: `CheckoutPage.tsx` baja de forma marcada, el flujo de compra queda mas consistente con el patron de helpers + sections y el checkout deja de mezclar todo el render con logica derivada de carrito y pago. No hay cambios deliberados en rutas, payloads ni comportamiento visible esperado.
+- Alternativas consideradas: partir solo el resumen o saltar primero a `MyAccountPage.tsx`; descartado porque el mayor retorno inmediato seguia estando en cerrar el checkout, que es un flujo operativo mas sensible y todavia concentraba demasiadas responsabilidades.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/orders/{CheckoutPage.tsx,checkout.helpers.ts,checkout.helpers.test.ts,checkout.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano

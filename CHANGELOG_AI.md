@@ -2110,3 +2110,29 @@ pm run qa:frontend:e2e
   - el split mantiene `whatsappApi` y `whatsapp-ui` como fronteras unicas del feature y no introduce estado global nuevo
 
 ---
+
+### 2026-03-31 - Codex
+- Alcance: partir `CheckoutPage` en helpers y sections, dejando la pagina principal como orquestador del flujo de compra.
+- Tipo de intervencion: refactor interno seguro del frontend `orders/store` + seccionado del checkout sin abrir una API nueva.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/orders/CheckoutPage.tsx`
+  - `next-stack/apps/web/src/features/orders/checkout.helpers.ts`
+  - `next-stack/apps/web/src/features/orders/checkout.helpers.test.ts`
+  - `next-stack/apps/web/src/features/orders/checkout.sections.tsx`
+  - `project-docs/architecture/ARCHITECTURE.md`
+  - `project-docs/frontend/FRONTEND_MAP.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No deliberado. Se mantienen el quote del carrito, la seleccion de pago, la confirmacion del pedido y la limpieza del carrito; cambia la separacion interna entre fetch/sync, helpers puros y bloques de UI.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `cmd /c npm run qa:route-parity`
+  - `git diff --check`
+- Riesgos / notas:
+  - el flujo de compra queda mas consistente, pero todavia siguen pendientes pantallas grandes como `MyAccountPage.tsx` y `CartPage.tsx`
+  - el split mantiene `quoteCart`, `cartStorage`, `authStorage` y `ordersApi` como fronteras unicas del feature y no introduce estado global nuevo
+
+---
