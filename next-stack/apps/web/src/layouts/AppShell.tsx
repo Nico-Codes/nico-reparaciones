@@ -1,18 +1,12 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import type { ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { Menu, Wrench } from 'lucide-react';
 import { CartAddedPopup } from '@/features/cart/CartAddedPopup';
-import { useCartCount } from '@/features/cart/useCart';
-import { authStorage } from '@/features/auth/storage';
-import type { AuthUser } from '@/features/auth/types';
-import { storeApi } from '@/features/store/api';
-import type { StoreBrandingAssets } from '@/features/store/types';
 import { AccountMenu } from '@/layouts/app-shell/account-menu';
 import { AppShellFooter } from '@/layouts/app-shell/footer';
 import { MobileSidebar } from '@/layouts/app-shell/mobile-sidebar';
+import { useAppShell } from '@/layouts/app-shell/use-app-shell';
 import { BrandWordmark, CartGlyph, WarnIcon } from '@/layouts/app-shell/primitives';
-import type { LinkItem } from '@/layouts/app-shell/types';
-import { isActiveGroup, lockScroll, resolveShellContext, unlockScroll } from '@/layouts/app-shell/utils';
 import { cn } from '@/lib/utils';
 
 type AppShellProps = {
@@ -20,263 +14,40 @@ type AppShellProps = {
 };
 
 export function AppShell({ children }: AppShellProps) {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const shellContext = resolveShellContext(location.pathname);
-  const cartCount = useCartCount();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [accountOpen, setAccountOpen] = useState(false);
-  const [isDesktop, setIsDesktop] = useState(() =>
-    typeof window !== 'undefined' ? window.matchMedia('(min-width: 768px)').matches : true,
-  );
-  const [authUser, setAuthUser] = useState<AuthUser | null>(() => authStorage.getUser());
-  const [branding, setBranding] = useState<StoreBrandingAssets | null>(null);
-  const [adminSectionOpen, setAdminSectionOpen] = useState(false);
-  const accountRef = useRef<HTMLDivElement | null>(null);
-  const accountButtonRef = useRef<HTMLButtonElement | null>(null);
-  const accountMenuRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    const sync = () => setAuthUser(authStorage.getUser());
-    window.addEventListener('storage', sync);
-    window.addEventListener('focus', sync);
-    window.addEventListener('nico:auth-changed', sync);
-    return () => {
-      window.removeEventListener('storage', sync);
-      window.removeEventListener('focus', sync);
-      window.removeEventListener('nico:auth-changed', sync);
-    };
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    void storeApi
-      .branding()
-      .then((data) => {
-        if (!cancelled) setBranding(data);
-      })
-      .catch(() => {
-        if (!cancelled) setBranding(null);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    setSidebarOpen(false);
-    setAccountOpen(false);
-    setAuthUser(authStorage.getUser());
-  }, [location.pathname]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const mediaQuery = window.matchMedia('(min-width: 768px)');
-    const syncViewport = (event?: MediaQueryListEvent) => setIsDesktop(event ? event.matches : mediaQuery.matches);
-
-    syncViewport();
-    mediaQuery.addEventListener('change', syncViewport);
-
-    return () => mediaQuery.removeEventListener('change', syncViewport);
-  }, []);
-
-  useEffect(() => {
-    if (isDesktop) setSidebarOpen(false);
-  }, [isDesktop]);
-
-  useEffect(() => {
-    if (sidebarOpen) lockScroll();
-    else unlockScroll();
-
-    return () => unlockScroll();
-  }, [sidebarOpen]);
-
-  useEffect(() => {
-    const onEsc = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
-      setAccountOpen(false);
-      setSidebarOpen(false);
-      accountButtonRef.current?.focus();
-    };
-
-    const onClickOutside = (event: MouseEvent) => {
-      if (!accountOpen || !accountRef.current) return;
-      const target = event.target;
-      if (!(target instanceof Node)) return;
-      if (!accountRef.current.contains(target)) setAccountOpen(false);
-    };
-
-    document.addEventListener('keydown', onEsc);
-    document.addEventListener('mousedown', onClickOutside);
-    return () => {
-      document.removeEventListener('keydown', onEsc);
-      document.removeEventListener('mousedown', onClickOutside);
-    };
-  }, [accountOpen]);
-
-  const isAdmin = authUser?.role === 'ADMIN';
-  const brandLogoUrl = branding?.logoPrincipal || null;
-  const brandTitle = (branding?.siteTitle || 'NicoReparaciones').trim();
-  const iconCartUrl = branding?.icons.carrito || null;
-  const iconLogoutUrl = branding?.icons.logout || null;
-  const iconSettingsUrl = branding?.icons.settings || null;
-  const iconRepairLookupUrl = branding?.icons.consultarReparacion || null;
-  const iconOrdersUrl = branding?.icons.misPedidos || null;
-  const iconRepairsUrl = branding?.icons.misReparaciones || null;
-  const iconDashboardUrl = branding?.icons.dashboard || null;
-  const iconStoreUrl = branding?.icons.tienda || null;
-  const emailStatusText = authUser?.emailVerified ? 'Correo verificado' : 'Correo pendiente de verificacion';
-  const userInitial = authUser?.name?.trim()?.charAt(0)?.toUpperCase() || 'U';
-
-  const desktopLinks = useMemo<LinkItem[]>(
-    () => [
-      { to: '/store', label: 'Tienda', active: isActiveGroup(location.pathname, ['/store']) || location.pathname === '/' },
-      { to: '/reparacion', label: 'Reparacion', active: isActiveGroup(location.pathname, ['/reparacion', '/repair-lookup']) },
-      ...(isAdmin ? [{ to: '/admin', label: 'Admin', active: isActiveGroup(location.pathname, ['/admin']) }] : []),
-    ],
-    [isAdmin, location.pathname],
-  );
-
-  const accountLinks = useMemo<LinkItem[]>(
-    () =>
-      authUser
-        ? [
-            { label: 'Mis pedidos', to: '/orders', active: isActiveGroup(location.pathname, ['/orders']), icon: iconOrdersUrl },
-            { label: 'Mis reparaciones', to: '/repairs', active: isActiveGroup(location.pathname, ['/repairs']), icon: iconRepairsUrl },
-            { label: 'Ayuda', to: '/help', active: isActiveGroup(location.pathname, ['/help']) },
-            { label: 'Mi cuenta', to: '/mi-cuenta', active: isActiveGroup(location.pathname, ['/mi-cuenta']) },
-            ...(!authUser.emailVerified
-              ? [
-                  {
-                    label: 'Verificar correo',
-                    to: '/auth/verify-email',
-                    active: isActiveGroup(location.pathname, ['/auth/verify-email']),
-                    highlight: 'warning' as const,
-                  },
-                ]
-              : []),
-          ]
-        : [],
-    [authUser, iconOrdersUrl, iconRepairsUrl, location.pathname],
-  );
-
-  const adminLinks = useMemo<LinkItem[]>(
-    () =>
-      isAdmin
-        ? [
-            { label: 'Panel admin', to: '/admin', active: location.pathname === '/admin', icon: iconDashboardUrl },
-            { label: 'Pedidos', to: '/admin/orders', active: isActiveGroup(location.pathname, ['/admin/orders']) },
-            { label: 'Reparaciones', to: '/admin/repairs', active: isActiveGroup(location.pathname, ['/admin/repairs']) },
-            { label: 'Venta rapida', to: '/admin/ventas-rapidas', active: isActiveGroup(location.pathname, ['/admin/ventas-rapidas']) },
-            { label: 'Productos', to: '/admin/productos', active: isActiveGroup(location.pathname, ['/admin/productos']) },
-            {
-              label: 'Configuracion',
-              to: '/admin/configuraciones',
-              active: isActiveGroup(location.pathname, ['/admin/configuraciones']),
-              icon: iconSettingsUrl,
-            },
-          ]
-        : [],
-    [iconDashboardUrl, iconSettingsUrl, isAdmin, location.pathname],
-  );
-
-  const sidebarNavLinks = useMemo<LinkItem[]>(
-    () => [
-      { label: 'Tienda', to: '/store', active: isActiveGroup(location.pathname, ['/store']) || location.pathname === '/', icon: iconStoreUrl },
-      {
-        label: 'Reparacion',
-        to: '/reparacion',
-        active: isActiveGroup(location.pathname, ['/reparacion', '/repair-lookup']),
-        icon: iconRepairLookupUrl,
-      },
-      ...(isAdmin ? [{ label: 'Admin', to: '/admin', active: isActiveGroup(location.pathname, ['/admin']), icon: iconDashboardUrl }] : []),
-    ],
-    [iconDashboardUrl, iconRepairLookupUrl, iconStoreUrl, isAdmin, location.pathname],
-  );
-
-  useEffect(() => {
-    setAdminSectionOpen(isAdmin && adminLinks.some((link) => link.active));
-  }, [adminLinks, isAdmin]);
-
-  const logout = () => {
-    authStorage.clear();
-    setAccountOpen(false);
-    setSidebarOpen(false);
-    navigate('/store', { replace: true });
-  };
-
-  const closeAccount = () => setAccountOpen(false);
-  const closeSidebar = () => setSidebarOpen(false);
-
-  const toggleSidebar = () => {
-    setAccountOpen(false);
-    setSidebarOpen((prev) => !prev);
-  };
-
-  const toggleAccount = () => {
-    if (!isDesktop) setSidebarOpen(false);
-    setAccountOpen((prev) => !prev);
-  };
-
-  const accountMenuItems = () => {
-    if (!accountMenuRef.current) return [] as HTMLElement[];
-    return Array.from(accountMenuRef.current.querySelectorAll<HTMLElement>('[data-account-menu-item]'));
-  };
-
-  const focusAccountItem = (index: number) => {
-    const items = accountMenuItems();
-    if (!items.length) return;
-    const safeIndex = Math.max(0, Math.min(index, items.length - 1));
-    items[safeIndex]?.focus();
-  };
-
-  const focusFirstAccountItem = () => focusAccountItem(0);
-
-  const handleAccountButtonKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
-    if (event.key === 'ArrowDown' || event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      setAccountOpen(true);
-      window.setTimeout(() => focusFirstAccountItem(), 0);
-    }
-  };
-
-  const handleAccountMenuKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      setAccountOpen(false);
-      accountButtonRef.current?.focus();
-      return;
-    }
-
-    const items = accountMenuItems();
-    if (!items.length) return;
-    const currentIndex = items.findIndex((item) => item === document.activeElement);
-
-    if (event.key === 'ArrowDown') {
-      event.preventDefault();
-      focusAccountItem(currentIndex >= 0 ? (currentIndex + 1) % items.length : 0);
-      return;
-    }
-
-    if (event.key === 'ArrowUp') {
-      event.preventDefault();
-      focusAccountItem(currentIndex >= 0 ? (currentIndex - 1 + items.length) % items.length : items.length - 1);
-      return;
-    }
-
-    if (event.key === 'Home') {
-      event.preventDefault();
-      focusAccountItem(0);
-      return;
-    }
-
-    if (event.key === 'End') {
-      event.preventDefault();
-      focusAccountItem(items.length - 1);
-    }
-  };
+  const {
+    shellContext,
+    cartCount,
+    sidebarOpen,
+    accountOpen,
+    isDesktop,
+    authUser,
+    isAdmin,
+    brandLogoUrl,
+    brandTitle,
+    brandHomeTo,
+    iconCartUrl,
+    iconLogoutUrl,
+    emailStatusText,
+    userInitial,
+    needsEmailVerification,
+    accountRef,
+    accountButtonRef,
+    accountMenuRef,
+    desktopLinks,
+    accountLinks,
+    adminLinks,
+    sidebarNavLinks,
+    adminSectionOpen,
+    logout,
+    closeAccount,
+    openAccount,
+    closeSidebar,
+    toggleSidebar,
+    toggleAccount,
+    toggleAdminSection,
+    handleAccountButtonKeyDown,
+    handleAccountMenuKeyDown,
+  } = useAppShell();
 
   return (
     <div className="app-shell text-zinc-900" data-shell-context={shellContext}>
@@ -296,7 +67,7 @@ export function AppShell({ children }: AppShellProps) {
                 </button>
               ) : null}
 
-              <Link to={isAdmin ? '/admin' : '/store'} className="flex min-w-0 items-center gap-2">
+              <Link to={brandHomeTo} className="flex min-w-0 items-center gap-2">
                 {brandLogoUrl ? (
                   <img src={brandLogoUrl} className="h-9 w-9 object-contain" alt="NicoReparaciones" />
                 ) : (
@@ -328,7 +99,7 @@ export function AppShell({ children }: AppShellProps) {
             </nav>
 
             <div className="flex items-center gap-2">
-              {authUser && !authUser.emailVerified ? (
+              {needsEmailVerification ? (
                 <>
                   <Link
                     to="/auth/verify-email"
@@ -379,7 +150,7 @@ export function AppShell({ children }: AppShellProps) {
                   onButtonClick={toggleAccount}
                   onButtonKeyDown={handleAccountButtonKeyDown}
                   onMenuKeyDown={handleAccountMenuKeyDown}
-                  onOpen={() => setAccountOpen(true)}
+                  onOpen={openAccount}
                   onClose={closeAccount}
                   onLinkClick={closeAccount}
                   onLogout={logout}
@@ -404,7 +175,7 @@ export function AppShell({ children }: AppShellProps) {
         iconLogoutUrl={iconLogoutUrl}
         onClose={closeSidebar}
         onLogout={logout}
-        onToggleAdminSection={() => setAdminSectionOpen((prev) => !prev)}
+        onToggleAdminSection={toggleAdminSection}
       />
 
       <main className={cn('shell-main container-page')}>{children}</main>

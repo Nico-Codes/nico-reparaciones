@@ -78,13 +78,13 @@ Esto implica que la app no usa hoy Redux, Zustand ni un Context de dominio globa
 Hoy orquesta:
 
 - navbar desktop y mobile
-- estado de sidebar y menu de cuenta
-- sync de auth y branding visible
+- composicion visual del header, footer y sidebar mobile
 - accesos de usuario y admin
 - popup de carrito agregado
 - wiring de `layouts/app-shell/mobile-sidebar.tsx`
 - wiring de `layouts/app-shell/account-menu.tsx`
 - wiring de `layouts/app-shell/footer.tsx`
+- delega sync de auth, branding visible, media-query, foco accesible y armado de links a `layouts/app-shell/use-app-shell.ts`
 
 ### BrandingHeadSync
 

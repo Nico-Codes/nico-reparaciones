@@ -2389,6 +2389,30 @@ pm run qa:frontend:e2e
 ---
 
 ### 2026-04-01 - Codex
+- Alcance: refinamiento transversal del shell global para bajar la orquestacion local de `AppShell`.
+- Tipo de intervencion: refactor interno seguro del layout compartido con hook dedicado y helpers puros testeables.
+- Archivos tocados:
+  - `next-stack/apps/web/src/layouts/AppShell.tsx`
+  - `next-stack/apps/web/src/layouts/app-shell/{helpers.ts,helpers.test.ts,use-app-shell.ts}`
+  - `project-docs/frontend/FRONTEND_MAP.md`
+  - `project-docs/architecture/ARCHITECTURE.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No deliberado. Se mantienen rutas, branding visible, menu de cuenta, sidebar mobile y footer; cambia solo la separacion interna entre composicion visual, estado derivado y listeners globales.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `cmd /c npm run qa:route-parity`
+  - `git diff --check`
+- Riesgos / notas:
+  - `AppShell` deja de concentrar la orquestacion transversal y queda mas alineado con el patron shell + hook + helpers
+  - la siguiente ola razonable ya no esta en paginas pendientes, sino en seguir afinando shells grandes o `sections.tsx` deliberadamente densos
+
+---
+
+### 2026-04-01 - Codex
 - Alcance: cerrar el seccionado pendiente del frontend en admin general, catalogo tecnico y flujos publicos/detalle.
 - Tipo de intervencion: refactor interno seguro multi-feature para consolidar el patron `Page.tsx` orquestadora + `helpers.ts` + `sections.tsx`.
 - Archivos tocados:

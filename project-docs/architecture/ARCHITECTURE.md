@@ -549,7 +549,7 @@ Seguridad confirmada:
 ## Puntos sensibles de integracion
 
 - `App.tsx` concentra gran parte del mapa de rutas y aliases legacy
-- `AppShell.tsx` sigue siendo entrypoint transversal del shell, pero la UI pesada ya se reparte en `layouts/app-shell/*`
+- `AppShell.tsx` sigue siendo entrypoint transversal del shell, pero la UI pesada ya se reparte en `layouts/app-shell/*` y la orquestacion transversal ahora vive en `layouts/app-shell/use-app-shell.ts`
 - `admin.service.ts` es el servicio mas grande y transversal del backend
 - `styles.css` ya no es monolitico, pero la cascada visual global sigue siendo un punto transversal sensible aunque ahora este seccionada en `src/styles/*`
 - `catalog-admin.service.ts` y `admin.service.ts` escriben en `apps/web/public`

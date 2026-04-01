@@ -1138,3 +1138,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/web/src/features/repairs/{AdminRepairCreatePage.tsx,use-admin-repair-create.ts}`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0095]
+- Fecha: 2026-04-01
+- Estado: aceptada
+- Tema: `AppShell` pasa de shell con demasiada orquestacion local a shell de composicion con hook dedicado
+- Contexto: aunque `AppShell.tsx` ya habia delegado bastante UI a `layouts/app-shell/*`, todavia mezclaba listeners globales, sync de auth y branding, media-query, bloqueo de scroll, foco accesible del menu de cuenta y armado de links dentro del mismo archivo. Eso dejaba demasiada responsabilidad transversal en el shell principal.
+- Decision: mantener header, footer, sidebar y menu de cuenta visibles sin cambios deliberados, pero mover la orquestacion transversal a `layouts/app-shell/use-app-shell.ts` y extraer el armado de links/datos derivados a `layouts/app-shell/helpers.ts`. `AppShell.tsx` queda como punto de composicion y los calculos puros del shell quedan cubiertos por tests.
+- Impacto: baja la complejidad real del shell global sin cambiar rutas, branding visible ni comportamiento de autenticacion. El layout transversal queda mas consistente con la metodologia aplicada al resto del frontend: shell liviano, hook para orquestacion y helpers puros testeables.
+- Alternativas consideradas: seguir refinando solo `repairs` o partir todavia mas componentes visuales del shell; descartado porque el mayor retorno inmediato estaba en sacar la orquestacion transversal del archivo principal sin reabrir otra capa de UI.
+- Archivos / modulos afectados: `next-stack/apps/web/src/layouts/{AppShell.tsx}`, `next-stack/apps/web/src/layouts/app-shell/{helpers.ts,helpers.test.ts,use-app-shell.ts}`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano
