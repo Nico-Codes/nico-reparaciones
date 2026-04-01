@@ -330,6 +330,15 @@ Confirmado por codigo:
   - guardado de templates por estado
   - composicion de variables, editor y logs
 - la logica de defaults, orden canonico de templates y sanitizacion de logs queda fuera del render principal
+- `AdminAccountingPage.tsx` ya no concentra filtros, opciones, resumen por categoria y tabla operativa en un solo archivo
+- el feature de contabilidad ahora se reparte entre:
+  - `admin-accounting.helpers.ts`
+  - `admin-accounting.sections.tsx`
+- la pagina principal queda centrada en:
+  - fetch del libro unificado
+  - sincronizacion de filtros por texto, direccion, categoria y rango
+  - composicion del hero, resumen, categorias y tabla
+- la logica de formato monetario, opciones y tonos de ingresos/egresos queda fuera del render principal
 - `CheckoutPage.tsx` ya no concentra quote del carrito, normalizacion local, estados vacios y el resumen final en un solo archivo
 - el feature de checkout ahora se reparte entre:
   - `checkout.helpers.ts`

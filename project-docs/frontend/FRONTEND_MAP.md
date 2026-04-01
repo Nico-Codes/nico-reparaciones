@@ -245,6 +245,8 @@ Admin general:
 - `admin-whatsapp-orders.sections.tsx`
 - `AdminHelpFaqPage.tsx`
 - `AdminAccountingPage.tsx`
+- `admin-accounting.helpers.ts`
+- `admin-accounting.sections.tsx`
 
 Catalogo comercial:
 
@@ -455,6 +457,13 @@ En la ola de simplificacion del 2026-03-30 quedaron confirmados estos limites in
   - persistencia de plantillas por estado
   - refresh manual del historial
   - composicion de variables, editor, acciones y logs
+- `AdminAccountingPage.tsx` ahora delega filtros, opciones y bloques visuales del libro contable en:
+  - `admin-accounting.helpers.ts`
+  - `admin-accounting.sections.tsx`
+- el archivo principal de contabilidad queda centrado en:
+  - fetch del libro unificado
+  - sincronizacion de filtros por texto, direccion, categoria y rango
+  - composicion del hero, resumen, categorias y tabla operativa
 - `CheckoutPage.tsx` ahora delega derivaciones, validaciones y bloques visuales del checkout en:
   - `checkout.helpers.ts`
   - `checkout.sections.tsx`

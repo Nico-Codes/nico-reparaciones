@@ -1066,3 +1066,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/web/src/features/admin/{AdminWhatsappOrdersPage.tsx,admin-whatsapp-orders.helpers.ts,admin-whatsapp-orders.helpers.test.ts,admin-whatsapp-orders.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0089]
+- Fecha: 2026-04-01
+- Estado: aceptada
+- Tema: `AdminAccountingPage` pasa a orquestador y contabilidad gana helpers + sections propios
+- Contexto: despues de ordenar el canal de WhatsApp para pedidos, el siguiente hotspot claro del admin operativo quedo en `AdminAccountingPage.tsx`. La pagina mezclaba fetch del libro, filtros, opciones, cards de resumen, comparativo por categoria y tabla de movimientos en un solo archivo.
+- Decision: mantener la ruta y el wiring con `adminApi.accounting()` estables, pero mover formato monetario, opciones, params de request y tonos de ingresos/egresos a `admin-accounting.helpers.ts`, mover hero, feedback, resumen, comparativo por categoria, filtros y tabla a `admin-accounting.sections.tsx`, y dejar `AdminAccountingPage.tsx` como orquestador de fetch y composicion. Tambien se agrega test unitario para helpers del feature.
+- Impacto: `AdminAccountingPage.tsx` baja de forma marcada, el subdominio operativo queda mas consistente con el patron `helpers + sections`, y la pantalla deja de mezclar estado derivado con todo el render del libro contable. No hay cambios deliberados en rutas, payloads ni comportamiento visible esperado.
+- Alternativas consideradas: partir solo la tabla o saltar primero a `Admin2faSecurityPage.tsx`; descartado porque el mayor retorno inmediato seguia estando en cerrar el hotspot operativo de contabilidad, que todavia concentraba demasiadas responsabilidades locales.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/accounting/{AdminAccountingPage.tsx,admin-accounting.helpers.ts,admin-accounting.helpers.test.ts,admin-accounting.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano
