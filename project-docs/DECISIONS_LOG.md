@@ -1054,3 +1054,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/web/src/features/repairs/{AdminRepairsListPage.tsx,admin-repairs-list.helpers.ts,admin-repairs-list.helpers.test.ts,admin-repairs-list.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0088]
+- Fecha: 2026-04-01
+- Estado: aceptada
+- Tema: `AdminWhatsappOrdersPage` pasa a orquestador y el canal de pedidos gana helpers + sections propios
+- Contexto: despues de ordenar el listado admin de reparaciones, el siguiente hotspot claro del admin operativo quedo en `AdminWhatsappOrdersPage.tsx`. La pagina mezclaba defaults de plantillas, hydrate/save del canal `orders`, variables disponibles, editor por estado y logs recientes en un solo archivo.
+- Decision: mantener la ruta y el wiring con `whatsappApi` y `whatsapp-ui` estables, pero mover defaults, orden canonico, hydrate/save input y normalizacion de logs a `admin-whatsapp-orders.helpers.ts`, mover hero, feedback, variables, editor, acciones y logs a `admin-whatsapp-orders.sections.tsx`, y dejar `AdminWhatsappOrdersPage.tsx` como orquestador de carga, guardado y refresh. Tambien se agrega test unitario para helpers del feature.
+- Impacto: `AdminWhatsappOrdersPage.tsx` baja de forma marcada, el subdominio de comunicaciones queda mas consistente entre reparaciones y pedidos, y la pantalla deja de mezclar estado derivado con todo el render del canal `orders`. No hay cambios deliberados en rutas, payloads ni comportamiento visible esperado.
+- Alternativas consideradas: partir solo el bloque de logs o saltar primero a `AdminAccountingPage.tsx`; descartado porque el mayor retorno inmediato seguia estando en cerrar el hotspot de comunicaciones, que todavia concentraba demasiadas responsabilidades locales.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/admin/{AdminWhatsappOrdersPage.tsx,admin-whatsapp-orders.helpers.ts,admin-whatsapp-orders.helpers.test.ts,admin-whatsapp-orders.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano

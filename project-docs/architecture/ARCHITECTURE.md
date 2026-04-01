@@ -320,6 +320,16 @@ Confirmado por codigo:
   - guardado de templates
   - composicion de variables, editor y logs
 - la logica de defaults, orden canonico de templates y sanitizacion de logs queda fuera del render principal
+- `AdminWhatsappOrdersPage.tsx` ya no concentra defaults, hydrate/save de templates, variables y logs de pedidos en un solo archivo
+- el feature admin de WhatsApp para pedidos ahora se reparte entre:
+  - `admin-whatsapp-orders.helpers.ts`
+  - `admin-whatsapp-orders.sections.tsx`
+- la pagina principal queda centrada en:
+  - fetch de plantillas del canal `orders`
+  - fetch y refresh del historial reciente
+  - guardado de templates por estado
+  - composicion de variables, editor y logs
+- la logica de defaults, orden canonico de templates y sanitizacion de logs queda fuera del render principal
 - `CheckoutPage.tsx` ya no concentra quote del carrito, normalizacion local, estados vacios y el resumen final en un solo archivo
 - el feature de checkout ahora se reparte entre:
   - `checkout.helpers.ts`

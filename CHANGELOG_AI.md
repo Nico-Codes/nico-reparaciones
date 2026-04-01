@@ -2240,3 +2240,29 @@ pm run qa:frontend:e2e
   - el split mantiene `repairsApi` como frontera unica del feature y no introduce estado global nuevo
 
 ---
+
+### 2026-04-01 - Codex
+- Alcance: partir `AdminWhatsappOrdersPage` en helpers y sections, dejando la pagina principal como orquestador del canal WhatsApp para pedidos.
+- Tipo de intervencion: refactor interno seguro del frontend `admin/communications` + seccionado del canal `orders` sin abrir una API nueva.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/admin/AdminWhatsappOrdersPage.tsx`
+  - `next-stack/apps/web/src/features/admin/admin-whatsapp-orders.helpers.ts`
+  - `next-stack/apps/web/src/features/admin/admin-whatsapp-orders.helpers.test.ts`
+  - `next-stack/apps/web/src/features/admin/admin-whatsapp-orders.sections.tsx`
+  - `project-docs/architecture/ARCHITECTURE.md`
+  - `project-docs/frontend/FRONTEND_MAP.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No deliberado. Se mantienen la carga y guardado de plantillas del canal `orders`, las variables disponibles y los logs recientes; cambia la separacion interna entre fetch/sync, helpers puros y bloques de UI.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `cmd /c npm run qa:route-parity`
+  - `git diff --check`
+- Riesgos / notas:
+  - el subdominio de comunicaciones queda mas consistente, pero todavia siguen pendientes pantallas como `AdminAccountingPage.tsx` y `Admin2faSecurityPage.tsx`
+  - el split mantiene `whatsappApi` y `whatsapp-ui` como fronteras unicas del feature y no introduce estado global nuevo
+
+---

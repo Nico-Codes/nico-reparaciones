@@ -241,6 +241,8 @@ Admin general:
 - `admin-whatsapp.helpers.ts`
 - `admin-whatsapp.sections.tsx`
 - `AdminWhatsappOrdersPage.tsx`
+- `admin-whatsapp-orders.helpers.ts`
+- `admin-whatsapp-orders.sections.tsx`
 - `AdminHelpFaqPage.tsx`
 - `AdminAccountingPage.tsx`
 
@@ -443,6 +445,14 @@ En la ola de simplificacion del 2026-03-30 quedaron confirmados estos limites in
 - el archivo principal de WhatsApp queda centrado en:
   - fetch de templates y logs
   - persistencia de plantillas
+  - refresh manual del historial
+  - composicion de variables, editor, acciones y logs
+- `AdminWhatsappOrdersPage.tsx` ahora delega defaults, hydrate/save de templates y bloques visuales en:
+  - `admin-whatsapp-orders.helpers.ts`
+  - `admin-whatsapp-orders.sections.tsx`
+- el archivo principal de WhatsApp para pedidos queda centrado en:
+  - fetch de templates y logs del canal `orders`
+  - persistencia de plantillas por estado
   - refresh manual del historial
   - composicion de variables, editor, acciones y logs
 - `CheckoutPage.tsx` ahora delega derivaciones, validaciones y bloques visuales del checkout en:
