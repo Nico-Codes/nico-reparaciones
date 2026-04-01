@@ -339,6 +339,16 @@ Confirmado por codigo:
   - sincronizacion de filtros por texto, direccion, categoria y rango
   - composicion del hero, resumen, categorias y tabla
 - la logica de formato monetario, opciones y tonos de ingresos/egresos queda fuera del render principal
+- `Admin2faSecurityPage.tsx` ya no concentra validaciones, QR, feedback y bloques de activacion/desactivacion en un solo archivo
+- el feature admin de seguridad 2FA ahora se reparte entre:
+  - `admin-2fa-security.helpers.ts`
+  - `admin-2fa-security.sections.tsx`
+- la pagina principal queda centrada en:
+  - fetch del estado 2FA
+  - generacion del secreto
+  - activacion y desactivacion del segundo factor
+  - composicion del feedback y de los bloques visuales
+- la logica de QR, normalizacion del codigo y mensajes derivados queda fuera del render principal
 - `CheckoutPage.tsx` ya no concentra quote del carrito, normalizacion local, estados vacios y el resumen final en un solo archivo
 - el feature de checkout ahora se reparte entre:
   - `checkout.helpers.ts`

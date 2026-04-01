@@ -236,6 +236,8 @@ Admin general:
 - `admin-store-hero-settings.helpers.ts`
 - `admin-store-hero-settings.sections.tsx`
 - `Admin2faSecurityPage.tsx`
+- `admin-2fa-security.helpers.ts`
+- `admin-2fa-security.sections.tsx`
 - `AdminMailTemplatesPage.tsx`
 - `AdminWhatsappPage.tsx`
 - `admin-whatsapp.helpers.ts`
@@ -602,6 +604,15 @@ Confirmado por codigo:
 - `AdminProductEditPage.tsx` ya no concentra todo el formulario: hoy orquesta estado, carga y submit mientras la UI vive en `admin-product-edit.sections.tsx`
 - `AdminProvidersPage.tsx` ya no concentra toda la UI operativa: hoy orquesta fetch, acciones y patches mientras la vista vive en `admin-providers.sections.tsx`
 - `styles.css` ya no es un archivo monolitico: hoy solo importa capas fisicas (`base`, `store`, `layout`, `repairs`, `components`, `admin`, `commerce`) manteniendo el mismo wiring del build
+- `Admin2faSecurityPage.tsx` ya no concentra validaciones, QR, feedback y bloques de activacion/desactivacion en un solo archivo
+- el feature admin de seguridad 2FA ahora se reparte entre:
+  - `admin-2fa-security.helpers.ts`
+  - `admin-2fa-security.sections.tsx`
+- la pagina principal queda centrada en:
+  - fetch del estado 2FA
+  - generacion, activacion y desactivacion del segundo factor
+  - composicion del feedback y de los bloques visuales
+- la logica de QR, normalizacion del codigo y mensajes derivados queda fuera del render principal
 - el frontend usa mas estado local que estado global compartido
 - en Fase 3 se retiraron tres remanentes sin referencias estaticas confirmadas:
   - `features/admin/AdminSettingsPage.tsx`

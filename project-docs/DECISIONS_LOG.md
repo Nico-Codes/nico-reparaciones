@@ -1078,3 +1078,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/web/src/features/accounting/{AdminAccountingPage.tsx,admin-accounting.helpers.ts,admin-accounting.helpers.test.ts,admin-accounting.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0090]
+- Fecha: 2026-04-01
+- Estado: aceptada
+- Tema: `Admin2faSecurityPage` pasa a orquestador y la seguridad 2FA gana helpers + sections propios
+- Contexto: despues de ordenar `AdminAccountingPage`, el siguiente hotspot claro del admin de configuracion quedo en `Admin2faSecurityPage.tsx`. La pagina mezclaba fetch del estado, generacion del secreto, validaciones del codigo, QR, feedback y todo el render de activacion/desactivacion en un solo archivo.
+- Decision: mantener la ruta y el wiring con `adminSecurityApi` estables, pero mover derivaciones de estado, QR, normalizacion/validacion del codigo y mensajes de exito/error a `admin-2fa-security.helpers.ts`, mover header, feedback, loading, empty state y card de estado a `admin-2fa-security.sections.tsx`, y dejar `Admin2faSecurityPage.tsx` como orquestador de fetch, generacion, activacion, desactivacion y composicion. Tambien se agrega test unitario para helpers del feature.
+- Impacto: `Admin2faSecurityPage.tsx` baja de forma marcada, el admin de seguridad queda consistente con el patron `helpers + sections` y la pantalla deja de mezclar estado derivado con todo el render 2FA. No hay cambios deliberados en rutas, payloads ni comportamiento visible esperado.
+- Alternativas consideradas: partir solo la card de setup o saltar primero a `AdminUsersPage.tsx`; descartado porque el mayor retorno inmediato seguia estando en cerrar el hotspot de seguridad, que todavia concentraba demasiadas responsabilidades locales.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/admin/{Admin2faSecurityPage.tsx,admin-2fa-security.helpers.ts,admin-2fa-security.helpers.test.ts,admin-2fa-security.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano

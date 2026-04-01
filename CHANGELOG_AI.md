@@ -2292,3 +2292,29 @@ pm run qa:frontend:e2e
   - el split mantiene `adminApi.accounting()` como frontera unica del feature y no introduce estado global nuevo
 
 ---
+
+### 2026-04-01 - Codex
+- Alcance: partir `Admin2faSecurityPage` en helpers y sections, dejando la pagina principal como orquestador del flujo 2FA admin.
+- Tipo de intervencion: refactor interno seguro del frontend `admin/security` + seccionado del setup de doble factor sin abrir una API nueva.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/admin/Admin2faSecurityPage.tsx`
+  - `next-stack/apps/web/src/features/admin/admin-2fa-security.helpers.ts`
+  - `next-stack/apps/web/src/features/admin/admin-2fa-security.helpers.test.ts`
+  - `next-stack/apps/web/src/features/admin/admin-2fa-security.sections.tsx`
+  - `project-docs/architecture/ARCHITECTURE.md`
+  - `project-docs/frontend/FRONTEND_MAP.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No deliberado. Se mantienen la carga del estado 2FA, la generacion del secreto, la activacion/desactivacion y la copia de la URL `otpauth`; cambia la separacion interna entre fetch/sync, helpers puros y bloques de UI. Como mejora menor, el input TOTP ahora normaliza a 6 digitos numericos antes de enviar.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `cmd /c npm run qa:route-parity`
+  - `git diff --check`
+- Riesgos / notas:
+  - el admin de configuracion queda mas consistente, pero todavia siguen pendientes pantallas como `AdminUsersPage.tsx` y `AdminHelpFaqPage.tsx`
+  - el split mantiene `adminSecurityApi` como frontera unica del feature y no introduce estado global nuevo
+
+---
