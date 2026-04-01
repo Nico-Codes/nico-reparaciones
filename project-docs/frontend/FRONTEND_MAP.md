@@ -333,10 +333,12 @@ En la ola de simplificacion del 2026-03-30 quedaron confirmados estos limites in
 - `AdminRepairCreatePage.tsx` ahora delega la UI en:
   - `admin-repair-create.helpers.ts`
   - `admin-repair-create.sections.tsx`
+- `AdminRepairCreatePage.tsx` ahora tambien delega la orquestacion pesada en:
+  - `use-admin-repair-create.ts`
 - el archivo principal de alta queda centrado en:
-  - carga del catalogo tecnico
-  - sincronizacion de defaults de marca/modelo/falla
-  - recalculo de sugerencia
+  - composicion del header y alerts
+  - composicion de sections y notas
+  - wiring final del flujo de provider part pricing
   - armado del payload
   - submit y navegacion al detalle creado
 - `AdminOrdersPage.tsx` ahora delega la UI y el estado derivado en:

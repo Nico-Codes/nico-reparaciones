@@ -464,6 +464,7 @@ Desde la ola de simplificacion de 2026-03-30 quedaron formalizados estos limites
 - `AdminRepairCreatePage.tsx` ahora queda como orquestador de catalogo, pricing y submit:
   - `admin-repair-create.helpers.ts` concentra normalizacion, validaciones y armado del payload
   - `admin-repair-create.sections.tsx` concentra las sections de datos basicos, diagnostico y cierre
+  - `use-admin-repair-create.ts` concentra carga del catalogo, estado de pricing suggestion, submit y wiring con snapshots
 - frontend `orders` ahora secciona el tracking admin entre orquestacion, estado derivado y UI:
   - `AdminOrdersPage.tsx` como orquestador de fetch, seleccion y cambio de estado
   - `admin-orders.helpers.ts` para metricas, filtros y enlaces derivados del subdominio

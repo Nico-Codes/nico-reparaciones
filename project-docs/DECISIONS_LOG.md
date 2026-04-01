@@ -1126,3 +1126,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/web/src/features/repairs/{AdminRepairDetailPage.tsx,use-admin-repair-detail.ts}`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0094]
+- Fecha: 2026-04-01
+- Estado: aceptada
+- Tema: `AdminRepairCreatePage` pasa de shell cargado a shell liviano con hook dedicado
+- Contexto: despues de aliviar `AdminRepairDetailPage`, el siguiente shell mas cargado dentro de `repairs` era `AdminRepairCreatePage.tsx`. Aunque ya estaba seccionada en helpers + sections, todavia mezclaba carga de catalogo, sincronizacion de selects, pricing suggestion, validacion, submit y wiring del snapshot en la misma pagina.
+- Decision: mantener la ruta, las sections y la interfaz visible estables, pero mover la orquestacion del alta a `use-admin-repair-create.ts`. La pagina queda como shell de composicion y el hook concentra catalogo, estado derivado del formulario, pricing suggestion, submit y wiring hacia `RepairProviderPartPricingSection`.
+- Impacto: baja la complejidad real del shell principal de alta sin cambiar contratos ni comportamiento esperado. El subdominio `repairs` queda mas consistente: detail y create ya siguen el mismo patron de shell liviano + hook + helpers + sections.
+- Alternativas consideradas: seguir refinando `AppShell.tsx` o volver al listado admin; descartado porque el mayor retorno inmediato seguia estando en cerrar el par create/detail con el mismo criterio.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/repairs/{AdminRepairCreatePage.tsx,use-admin-repair-create.ts}`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano
