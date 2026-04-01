@@ -360,6 +360,15 @@ Confirmado por codigo:
   - alta al carrito
   - composicion del detalle visual
 - la logica de formato, stock, labels de disponibilidad y bloques visuales queda fuera del render principal
+- `AdminRepairsListPage.tsx` ya no concentra filtros, stats, formato de fechas/precios y el render completo del listado tecnico en un solo archivo
+- el listado admin de reparaciones ahora se reparte entre:
+  - `admin-repairs-list.helpers.ts`
+  - `admin-repairs-list.sections.tsx`
+- la pagina principal queda centrada en:
+  - fetch del listado admin
+  - sincronizacion de texto y estado
+  - composicion del hero, metricas y mesa operativa
+- la logica de filtros, labels comerciales, origen y bloques visuales queda fuera del render principal
 - `AdminDevicesCatalogPage.tsx` ya no concentra slugify, filtros, opciones y los tres bloques del catalogo tecnico en un solo archivo
 - el feature de catalogo tecnico ahora se reparte entre:
   - `admin-devices-catalog.helpers.ts`

@@ -2214,3 +2214,29 @@ pm run qa:frontend:e2e
   - el split mantiene `storeApi` y `cartStorage` como fronteras unicas del feature y no introduce estado global nuevo
 
 ---
+
+### 2026-04-01 - Codex
+- Alcance: partir `AdminRepairsListPage` en helpers y sections, dejando la pagina principal como orquestador del listado tecnico.
+- Tipo de intervencion: refactor interno seguro del frontend `repairs/admin` + seccionado de la mesa operativa sin abrir una API nueva.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/repairs/AdminRepairsListPage.tsx`
+  - `next-stack/apps/web/src/features/repairs/admin-repairs-list.helpers.ts`
+  - `next-stack/apps/web/src/features/repairs/admin-repairs-list.helpers.test.ts`
+  - `next-stack/apps/web/src/features/repairs/admin-repairs-list.sections.tsx`
+  - `project-docs/architecture/ARCHITECTURE.md`
+  - `project-docs/frontend/FRONTEND_MAP.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No deliberado. Se mantienen el fetch del listado admin, los filtros por texto/estado, las metricas operativas y el acceso al detalle; cambia la separacion interna entre fetch/sync, helpers puros y bloques de UI.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `cmd /c npm run qa:route-parity`
+  - `git diff --check`
+- Riesgos / notas:
+  - el subdominio `repairs` queda mas consistente, pero todavia siguen pendientes pantallas como `AdminWhatsappOrdersPage.tsx` y `AdminAccountingPage.tsx`
+  - el split mantiene `repairsApi` como frontera unica del feature y no introduce estado global nuevo
+
+---

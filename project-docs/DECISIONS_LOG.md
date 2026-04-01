@@ -1042,3 +1042,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/web/src/features/store/{StoreProductDetailPage.tsx,store-product-detail.helpers.ts,store-product-detail.helpers.test.ts,store-product-detail.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0087]
+- Fecha: 2026-04-01
+- Estado: aceptada
+- Tema: `AdminRepairsListPage` pasa a orquestador y el listado tecnico gana helpers + sections propios
+- Contexto: despues de ordenar el storefront, el siguiente hotspot operativo claro del frontend quedo en `AdminRepairsListPage.tsx`. La pagina mezclaba fetch del listado, filtros, stats, formato de fechas/precios, labels comerciales y todo el render de la mesa operativa en un solo archivo.
+- Decision: mantener la ruta y el wiring con `repairsApi.adminList()` estables, pero mover opciones de filtro, stats, filtros de texto/estado, labels derivados y formateos a `admin-repairs-list.helpers.ts`, mover header actions, metricas, toolbar y listado operativo a `admin-repairs-list.sections.tsx`, y dejar `AdminRepairsListPage.tsx` como orquestador de fetch y composicion. Tambien se agrega test unitario para helpers del feature.
+- Impacto: `AdminRepairsListPage.tsx` baja de forma marcada, el subdominio `repairs` queda mas consistente entre listado, alta, detalle y pricing, y la mesa operativa deja de mezclar estado derivado con todo el render del listado tecnico. No hay cambios deliberados en rutas, payloads ni comportamiento visible esperado.
+- Alternativas consideradas: partir solo la fila operativa o saltar primero a `AdminWhatsappOrdersPage.tsx`; descartado porque el mayor retorno inmediato seguia estando en cerrar el listado tecnico, que todavia concentraba demasiadas responsabilidades locales.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/repairs/{AdminRepairsListPage.tsx,admin-repairs-list.helpers.ts,admin-repairs-list.helpers.test.ts,admin-repairs-list.sections.tsx}`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano

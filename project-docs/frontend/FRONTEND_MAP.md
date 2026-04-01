@@ -208,6 +208,8 @@ Reparaciones:
 - `MyRepairsPage.tsx`
 - `RepairDetailPage.tsx`
 - `AdminRepairsListPage.tsx`
+- `admin-repairs-list.helpers.ts`
+- `admin-repairs-list.sections.tsx`
 - `AdminRepairDetailPage.tsx`
 - `AdminRepairPrintPage.tsx`
 - `AdminRepairTicketPage.tsx`
@@ -475,6 +477,13 @@ En la ola de simplificacion del 2026-03-30 quedaron confirmados estos limites in
   - sincronizacion de la cantidad segun stock
   - alta al carrito
   - composicion del breadcrumb, media, compra y metadatos
+- `AdminRepairsListPage.tsx` ahora delega filtros, stats y bloques visuales del listado tecnico en:
+  - `admin-repairs-list.helpers.ts`
+  - `admin-repairs-list.sections.tsx`
+- el archivo principal del listado queda centrado en:
+  - fetch del listado admin
+  - sincronizacion de query y filtro de estado
+  - composicion del header, metricas y mesa operativa
 - `AdminDevicesCatalogPage.tsx` ahora delega slugify, filtros y opciones derivadas en:
   - `admin-devices-catalog.helpers.ts`
   - `admin-devices-catalog.sections.tsx`

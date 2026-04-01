@@ -1,42 +1,19 @@
-﻿import { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, Plus, RefreshCcw, Search } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { CustomSelect } from '@/components/ui/custom-select';
-import { EmptyState } from '@/components/ui/empty-state';
-import { FilterBar } from '@/components/ui/filter-bar';
-import { LoadingBlock } from '@/components/ui/loading-block';
+import { useEffect, useMemo, useState } from 'react';
 import { PageHeader } from '@/components/ui/page-header';
 import { PageShell } from '@/components/ui/page-shell';
-import { SectionCard } from '@/components/ui/section-card';
-import { StatusBadge } from '@/components/ui/status-badge';
-import { TextField } from '@/components/ui/text-field';
 import { repairsApi } from './api';
-import { REPAIR_STATUS_LABELS, repairCode, repairStatusLabel, repairStatusTone } from './repair-ui';
+import {
+  buildAdminRepairStats,
+  filterAdminRepairItems,
+  hasAdminRepairFilters,
+} from './admin-repairs-list.helpers';
+import {
+  AdminRepairsFilters,
+  AdminRepairsHeaderActions,
+  AdminRepairsMetrics,
+  AdminRepairsOperationsSection,
+} from './admin-repairs-list.sections';
 import type { RepairItem } from './types';
-
-const STATUS_FILTER_OPTIONS = [{ value: '', label: 'Todos los estados' }, ...Object.entries(REPAIR_STATUS_LABELS).map(([value, label]) => ({ value, label }))];
-
-function money(value: number | null) {
-  return value != null ? `$ ${value.toLocaleString('es-AR')}` : 'Sin definir';
-}
-
-function formatDateTime(dateIso: string) {
-  const date = new Date(dateIso);
-  return `${date.toLocaleDateString('es-AR')} ${date.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}`;
-}
-
-function timeAgo(dateIso: string) {
-  const diffMs = Date.now() - new Date(dateIso).getTime();
-  const mins = Math.max(0, Math.floor(diffMs / 60000));
-  if (mins < 60) return `hace ${Math.max(1, mins)} min`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `hace ${hours} h`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `hace ${days} dia${days === 1 ? '' : 's'}`;
-  const weeks = Math.floor(days / 7);
-  return `hace ${weeks} semana${weeks === 1 ? '' : 's'}`;
-}
 
 export function AdminRepairsListPage() {
   const [items, setItems] = useState<RepairItem[]>([]);
@@ -62,39 +39,13 @@ export function AdminRepairsListPage() {
     void load();
   }, []);
 
-  const filteredItems = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-    const base = items.filter((item) => {
-      if (statusFilter && item.status !== statusFilter) return false;
-      if (!normalizedQuery) return true;
-      return [
-        repairCode(item.id),
-        item.customerName,
-        item.customerPhone ?? '',
-        item.deviceBrand ?? '',
-        item.deviceModel ?? '',
-        item.issueLabel ?? '',
-        repairStatusLabel(item.status),
-      ]
-        .join(' ')
-        .toLowerCase()
-        .includes(normalizedQuery);
-    });
-
-    return base.slice(0, 50);
-  }, [items, query, statusFilter]);
-
-  const stats = useMemo(
-    () => ({
-      total: items.length,
-      waitingApproval: items.filter((item) => item.status === 'WAITING_APPROVAL').length,
-      readyPickup: items.filter((item) => item.status === 'READY_PICKUP').length,
-      completed: items.filter((item) => item.status === 'DELIVERED').length,
-    }),
-    [items],
+  const filteredItems = useMemo(
+    () => filterAdminRepairItems(items, query, statusFilter),
+    [items, query, statusFilter],
   );
 
-  const hasFilters = query.trim().length > 0 || statusFilter.length > 0;
+  const stats = useMemo(() => buildAdminRepairStats(items), [items]);
+  const hasFilters = hasAdminRepairFilters(query, statusFilter);
 
   return (
     <PageShell context="admin" className="space-y-6" data-admin-repairs-page>
@@ -103,182 +54,35 @@ export function AdminRepairsListPage() {
         eyebrow="Servicio tecnico"
         title="Reparaciones"
         subtitle="Vista operativa para seguimiento, atencion al cliente y acceso rapido al detalle de cada caso."
-        actions={(
-          <>
-            <StatusBadge label={`${stats.total} ingresos`} tone="info" />
-            <Button asChild size="sm" data-admin-repair-create-cta>
-              <Link to="/admin/repairs/create">
-                <Plus className="h-4 w-4" />
-                Nueva reparacion
-              </Link>
-            </Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => void load()}>
-              <RefreshCcw className="h-4 w-4" />
-              Actualizar
-            </Button>
-          </>
-        )}
+        actions={<AdminRepairsHeaderActions total={stats.total} onRefresh={() => void load()} />}
       />
 
-      <section className="nr-stat-grid" data-reveal>
-        <MetricCard label="Ingresos visibles" value={String(stats.total)} meta="Total cargado en el panel" />
-        <MetricCard label="Esperando aprobacion" value={String(stats.waitingApproval)} meta="Casos listos para presupuesto" />
-        <MetricCard label="Listas para retirar" value={String(stats.readyPickup)} meta="Equipos terminados pendientes de entrega" />
-        <MetricCard label="Entregadas" value={String(stats.completed)} meta="Casos cerrados correctamente" />
-      </section>
+      <AdminRepairsMetrics stats={stats} />
 
-      <FilterBar
-        actions={(
-          <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:justify-end">
-            {hasFilters ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setQuery('');
-                  setStatusFilter('');
-                }}
-              >
-                Limpiar
-              </Button>
-            ) : null}
-            <Button type="button" variant="outline" size="sm" onClick={() => void load()}>
-              <RefreshCcw className="h-4 w-4" />
-              Recargar
-            </Button>
-          </div>
-        )}
-      >
-        <TextField
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          label="Buscar"
-          placeholder="Codigo, cliente, telefono o equipo"
-          leadingIcon={<Search className="h-4 w-4" />}
-          wrapperClassName="min-w-0 sm:min-w-[18rem]"
-        />
-        <div className="ui-field min-w-0 sm:min-w-[14rem]">
-          <span className="ui-field__label">Estado</span>
-          <CustomSelect
-            value={statusFilter}
-            onChange={setStatusFilter}
-            options={STATUS_FILTER_OPTIONS}
-            className="w-full"
-            triggerClassName="min-h-11 rounded-[1rem]"
-            ariaLabel="Filtrar reparaciones por estado"
-          />
-        </div>
-      </FilterBar>
+      <AdminRepairsFilters
+        query={query}
+        statusFilter={statusFilter}
+        hasFilters={hasFilters}
+        onQueryChange={setQuery}
+        onStatusFilterChange={setStatusFilter}
+        onClearFilters={() => {
+          setQuery('');
+          setStatusFilter('');
+        }}
+        onReload={() => void load()}
+      />
 
-      <SectionCard
-        title="Mesa operativa"
-        description="Listado compacto con contexto suficiente para decidir el siguiente paso sin cargar ruido visual innecesario."
-        actions={<StatusBadge label={statusFilter ? repairStatusLabel(statusFilter) : 'Todos los estados'} tone={statusFilter ? repairStatusTone(statusFilter) : 'neutral'} />}
-      >
-        {error ? (
-          <div className="ui-alert ui-alert--danger mb-4">
-            <AlertTriangle className="mt-0.5 h-4 w-4 flex-none" />
-            <div>
-              <span className="ui-alert__title">No se pudo cargar el listado.</span>
-              <div className="ui-alert__text">{error}</div>
-            </div>
-          </div>
-        ) : null}
-
-        <div className="admin-collection">
-          {loading ? (
-            <SectionCard tone="muted" bodyClassName="space-y-3">
-              <LoadingBlock label="Cargando reparaciones" lines={4} />
-            </SectionCard>
-          ) : filteredItems.length === 0 ? (
-            <EmptyState
-              title="No hay reparaciones para mostrar"
-              description={hasFilters ? 'Proba otra busqueda o volve a todos los estados.' : 'Todavia no hay reparaciones registradas en el panel.'}
-              actions={
-                hasFilters ? (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setQuery('');
-                      setStatusFilter('');
-                    }}
-                  >
-                    Limpiar filtros
-                  </Button>
-                ) : undefined
-              }
-            />
-          ) : (
-            filteredItems.map((repair) => {
-              const displayPrice = repair.finalPrice ?? repair.quotedPrice;
-              const issueLabel = repair.issueLabel || 'Sin diagnostico registrado';
-              const deviceLabel = [repair.deviceBrand, repair.deviceModel].filter(Boolean).join(' ') || 'Equipo sin identificar';
-              return (
-                <article key={repair.id} className="admin-entity-row">
-                  <div className="admin-entity-row__top">
-                    <div className="admin-entity-row__heading">
-                      <div className="admin-entity-row__title-row">
-                        <div className="admin-entity-row__title">{repairCode(repair.id)}</div>
-                        <StatusBadge label={repairStatusLabel(repair.status)} tone={repairStatusTone(repair.status)} />
-                        {repair.finalPrice != null ? <StatusBadge label="Precio final cargado" tone="success" /> : null}
-                      </div>
-                      <div className="admin-entity-row__meta">
-                        <span>{repair.customerName}</span>
-                        <span>{repair.customerPhone || 'Sin telefono'}</span>
-                        <span>{formatDateTime(repair.createdAt)}</span>
-                        <span>{timeAgo(repair.createdAt)}</span>
-                      </div>
-                    </div>
-                    <div className="admin-entity-row__aside">
-                      <span className="admin-entity-row__eyebrow">Importe de referencia</span>
-                      <div className="admin-entity-row__value">{money(displayPrice)}</div>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 detail-grid">
-                    <div className="detail-stack">
-                      <div className="detail-panel">
-                        <div className="detail-panel__label">Equipo</div>
-                        <div className="detail-panel__value">{deviceLabel}</div>
-                      </div>
-                      <div className="detail-panel">
-                        <div className="detail-panel__label">Estado comercial</div>
-                        <div className="detail-panel__value">
-                          {repair.finalPrice != null ? 'Presupuesto final confirmado' : repair.quotedPrice != null ? 'Con presupuesto cargado' : 'Sin presupuesto cargado'}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="detail-panel">
-                      <div className="detail-panel__label">Falla reportada</div>
-                      <div className="detail-panel__value">{issueLabel}</div>
-                    </div>
-                  </div>
-
-                  <div className="admin-entity-row__actions">
-                    <StatusBadge label={repair.userId ? 'Cliente web' : 'Ingreso interno'} tone="neutral" />
-                    <Button asChild variant="outline" size="sm">
-                      <Link to={`/admin/repairs/${encodeURIComponent(repair.id)}`}>Ver detalle</Link>
-                    </Button>
-                  </div>
-                </article>
-              );
-            })
-          )}
-        </div>
-      </SectionCard>
+      <AdminRepairsOperationsSection
+        error={error}
+        loading={loading}
+        items={filteredItems}
+        statusFilter={statusFilter}
+        hasFilters={hasFilters}
+        onClearFilters={() => {
+          setQuery('');
+          setStatusFilter('');
+        }}
+      />
     </PageShell>
-  );
-}
-
-function MetricCard({ label, value, meta }: { label: string; value: string; meta: string }) {
-  return (
-    <article className="nr-stat-card">
-      <div className="nr-stat-card__label">{label}</div>
-      <div className="nr-stat-card__value">{value}</div>
-      <div className="nr-stat-card__meta">{meta}</div>
-    </article>
   );
 }
