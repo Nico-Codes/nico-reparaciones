@@ -52,7 +52,7 @@ export function RepairProviderPartPricingPreviewPanel({
           <div className="ui-alert ui-alert--info">
             <Calculator className="mt-0.5 h-4 w-4 flex-none" />
             <div>
-              <span className="ui-alert__title">Preview no disponible todavía</span>
+              <span className="ui-alert__title">Preview no disponible todavia</span>
               <div className="ui-alert__text">{previewInputState.reason}</div>
             </div>
           </div>
@@ -70,9 +70,9 @@ export function RepairProviderPartPricingPreviewPanel({
           <div className="ui-alert ui-alert--warning">
             <Calculator className="mt-0.5 h-4 w-4 flex-none" />
             <div>
-              <span className="ui-alert__title">El preview quedó desactualizado</span>
+              <span className="ui-alert__title">El preview quedo desactualizado</span>
               <div className="ui-alert__text">
-                Recalculá para que el costo, la regla y el sugerido reflejen el proveedor, repuesto y contexto técnico
+                Recalcula para que el costo, la regla y el sugerido reflejen el proveedor, repuesto y contexto tecnico
                 actuales.
               </div>
             </div>
@@ -86,7 +86,7 @@ export function RepairProviderPartPricingPreviewPanel({
                   {money(activePreviewResult.calculation.suggestedQuotedPrice, 'Sin sugerencia')}
                 </div>
                 <div className="summary-box__hint">
-                  {activePreviewResult.rule?.name ?? 'Regla activa'} · {previewModeLabel(activePreviewResult)}
+                  {activePreviewResult.rule?.name ?? 'Regla activa'} | {previewModeLabel(activePreviewResult)}
                 </div>
               </div>
               <div className="summary-box">
@@ -95,7 +95,7 @@ export function RepairProviderPartPricingPreviewPanel({
                 <div className="summary-box__hint">
                   {pendingSnapshotIsCurrent
                     ? 'Hay un snapshot listo para guardar.'
-                    : 'Podés usar el sugerido o mantener un override manual.'}
+                    : 'Podes usar el sugerido o mantener un override manual.'}
                 </div>
               </div>
             </div>
@@ -103,7 +103,7 @@ export function RepairProviderPartPricingPreviewPanel({
             {compactMode ? (
               <details className="nr-disclosure">
                 <summary className="nr-disclosure__summary">
-                  <span className="nr-disclosure__title">Ver detalle del cálculo</span>
+                  <span className="nr-disclosure__title">Ver detalle del calculo</span>
                   <span className="nr-disclosure__meta">{previewModeLabel(activePreviewResult)}</span>
                 </summary>
                 <div className="nr-disclosure__body">
@@ -121,8 +121,8 @@ export function RepairProviderPartPricingPreviewPanel({
                   <span className="ui-alert__title">Snapshot listo para guardar</span>
                   <div className="ui-alert__text">
                     {mode === 'create'
-                      ? 'Al crear la reparación se guardará este proveedor, repuesto y cálculo como snapshot activo.'
-                      : 'Al guardar el caso, este snapshot reemplazará al activo y quedará trazado históricamente.'}
+                      ? 'Al crear la reparacion se guardara este proveedor, repuesto y calculo como snapshot activo.'
+                      : 'Al guardar el caso, este snapshot reemplazara al activo y quedara trazado historicamente.'}
                   </div>
                 </div>
               </div>
@@ -134,8 +134,8 @@ export function RepairProviderPartPricingPreviewPanel({
             <div>
               <span className="ui-alert__title">No encontramos una regla aplicable</span>
               <div className="ui-alert__text">
-                El proveedor y el repuesto se encontraron, pero no hay una regla activa que cierre el cálculo para este
-                contexto técnico.
+                El proveedor y el repuesto se encontraron, pero no hay una regla activa que cierre el calculo para este
+                contexto tecnico.
               </div>
             </div>
           </div>
@@ -145,7 +145,7 @@ export function RepairProviderPartPricingPreviewPanel({
             <div>
               <span className="ui-alert__title">Listo para calcular</span>
               <div className="ui-alert__text">
-                Cuando el repuesto elegido y el contexto técnico estén definidos, calculá el preview y decidí si querés
+                Cuando el repuesto elegido y el contexto tecnico esten definidos, calcula el preview y decide si quieres
                 aplicarlo.
               </div>
             </div>
@@ -198,17 +198,17 @@ function PreviewFacts({ result }: { result: RepairProviderPartPricingPreviewResu
         <div className="fact-value">{money(result.calculation.baseCost, 'Sin costo')}</div>
       </div>
       <div className="fact-row">
-        <div className="fact-label">Extras / envío</div>
+        <div className="fact-label">Extras / envio</div>
         <div className="fact-value fact-value--text">
-          {money(result.calculation.extraCost, '0')} · Envío {money(result.calculation.shippingCost, '0')}
+          {money(result.calculation.extraCost, '0')} | Envio {money(result.calculation.shippingCost, '0')}
         </div>
       </div>
       <div className="fact-row">
         <div className="fact-label">Margen / modo</div>
         <div className="fact-value fact-value--text">
           {result.calculation.calcMode === 'FIXED_TOTAL'
-            ? 'Total fijo según regla'
-            : `${result.calculation.marginPercent ?? 0}% · ${previewModeLabel(result)}`}
+            ? 'Total fijo segun regla'
+            : `${result.calculation.marginPercent ?? 0}% | ${previewModeLabel(result)}`}
         </div>
       </div>
       <div className="fact-row">
@@ -216,7 +216,7 @@ function PreviewFacts({ result }: { result: RepairProviderPartPricingPreviewResu
         <div className="fact-value fact-value--text">
           {result.calculation.minFinalPrice != null ? `Piso ${money(result.calculation.minFinalPrice, '0')}` : 'Sin piso'}
           {result.calculation.appliedShippingFee != null
-            ? ` · Fee ${money(result.calculation.appliedShippingFee, '0')}`
+            ? ` | Fee ${money(result.calculation.appliedShippingFee, '0')}`
             : ''}
         </div>
       </div>

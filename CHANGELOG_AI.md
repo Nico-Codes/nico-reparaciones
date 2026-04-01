@@ -562,6 +562,29 @@ pm run qa:frontend:e2e
 
 ---
 
+### 2026-04-01 - Codex
+- Alcance: segunda ola de refinamiento sobre el flujo tecnico de proveedor + repuesto en `repairs`.
+- Tipo de intervencion: refactor interno seguro para mover estado async y derivado a un hook dedicado.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/repairs/{RepairProviderPartPricingSection.tsx,use-repair-provider-part-pricing.ts,repair-provider-part-pricing-section.search.tsx,repair-provider-part-pricing-section.preview.tsx}`
+  - `project-docs/frontend/FRONTEND_MAP.md`
+  - `project-docs/architecture/ARCHITECTURE.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No deliberado. Se mantiene la misma interfaz publica de la seccion, los mismos requests y la misma interaccion de snapshot/preview; cambia la distribucion interna entre shell, hook y subcomponentes. Como mejora menor, el copy del feature queda en ASCII consistente y deja de arrastrar mojibake.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `cmd /c npm run qa:route-parity`
+  - `git diff --check`
+- Riesgos / notas:
+  - el frente de seccionado ya no tiene paginas pendientes; lo que sigue es refinamiento sobre bloques grandes ya estructurados
+  - `repairs` queda mas ordenado, pero aun existen candidatos de segunda ola como `AdminRepairDetailPage.tsx`, `AdminRepairCreatePage.tsx` y `AppShell.tsx`
+
+---
+
 ### 2026-03-30 - Codex
 - Alcance: seguir la particion del backend sobre `AdminModule`, extrayendo el subdominio de proveedores sin tocar rutas admin ni payloads publicos.
 - Tipo de intervencion: refactor interno seguro del backend + actualizacion de documentacion viva.

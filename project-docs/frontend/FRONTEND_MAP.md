@@ -307,12 +307,14 @@ Catalogo tecnico y pricing:
 
 En la ola de simplificacion del 2026-03-30 quedaron confirmados estos limites internos:
 
-- `RepairProviderPartPricingSection.tsx` ya no concentra toda la UI de proveedor + repuesto + snapshot en un solo archivo
+- `RepairProviderPartPricingSection.tsx` ya no concentra toda la UI ni toda la orquestacion de proveedor + repuesto + snapshot en un solo archivo
 - la seccion se reparte entre:
+  - `use-repair-provider-part-pricing.ts`
   - `repair-provider-part-pricing-section.helpers.ts`
   - `repair-provider-part-pricing-section.search.tsx`
   - `repair-provider-part-pricing-section.preview.tsx`
   - `repair-provider-part-pricing-section.snapshot.tsx`
+- el componente principal ahora queda como shell de composicion y delega el estado async, los requests y el preview derivado a `use-repair-provider-part-pricing.ts`
 - el archivo principal de la feature queda como orquestador de estado, requests y sincronizacion del snapshot draft
 - create/detail siguen compartiendo la misma pieza, pero con una frontera mas clara entre:
   - busqueda de repuestos

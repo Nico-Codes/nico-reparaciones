@@ -96,7 +96,7 @@ export function RepairProviderPartPricingSearchControls({
         <div className="ui-alert ui-alert--danger mb-4">
           <AlertTriangle className="mt-0.5 h-4 w-4 flex-none" />
           <div className="grow">
-            <span className="ui-alert__title">No pudimos cargar proveedores con búsqueda</span>
+            <span className="ui-alert__title">No pudimos cargar proveedores con busqueda</span>
             <div className="ui-alert__text">{providersError}</div>
           </div>
           <Button
@@ -117,7 +117,7 @@ export function RepairProviderPartPricingSearchControls({
           label="Buscar repuesto"
           value={partQueryInput}
           onChange={(event) => onPartQueryChange(event.target.value)}
-          placeholder="Ej: módulo Samsung A10"
+          placeholder="Ej: modulo Samsung A10"
           hint={selectedProviderHint}
           disabled={disabled}
           data-admin-repair-part-query
@@ -132,9 +132,9 @@ export function RepairProviderPartPricingSearchControls({
               disabled={providersLoading || disabled}
               className="w-full"
               triggerClassName="min-h-11 rounded-[1rem]"
-              ariaLabel="Filtrar búsqueda por proveedor"
+              ariaLabel="Filtrar busqueda por proveedor"
             />
-            <span className="ui-field__hint">Podés acotar la búsqueda a un proveedor si querés un fallback manual.</span>
+            <span className="ui-field__hint">Podes acotar la busqueda a un proveedor si queres un fallback manual.</span>
           </div>
         ) : null}
         <div className="flex items-end">
@@ -153,8 +153,8 @@ export function RepairProviderPartPricingSearchControls({
       {compactMode ? (
         <details className="nr-disclosure mt-4">
           <summary className="nr-disclosure__summary">
-            <span className="nr-disclosure__title">Ajustes avanzados del cálculo</span>
-            <span className="nr-disclosure__meta">Proveedor puntual, cantidad, extras y envío</span>
+            <span className="nr-disclosure__title">Ajustes avanzados del calculo</span>
+            <span className="nr-disclosure__meta">Proveedor puntual, cantidad, extras y envio</span>
           </summary>
           <div className="nr-disclosure__body">
             <div className="ui-field">
@@ -166,9 +166,9 @@ export function RepairProviderPartPricingSearchControls({
                 disabled={providersLoading || disabled}
                 className="w-full"
                 triggerClassName="min-h-11 rounded-[1rem]"
-                ariaLabel="Filtrar búsqueda por proveedor"
+                ariaLabel="Filtrar busqueda por proveedor"
               />
-              <span className="ui-field__hint">Usalo solo si querés repetir la búsqueda contra un proveedor puntual.</span>
+              <span className="ui-field__hint">Usalo solo si queres repetir la busqueda contra un proveedor puntual.</span>
             </div>
 
             <div className="grid gap-4 md:grid-cols-3">
@@ -191,7 +191,7 @@ export function RepairProviderPartPricingSearchControls({
                 disabled={disabled}
               />
               <TextField
-                label="Envío"
+                label="Envio"
                 value={shippingCostInput}
                 onChange={(event) => onShippingCostChange(event.target.value)}
                 inputMode="decimal"
@@ -223,7 +223,7 @@ export function RepairProviderPartPricingSearchControls({
             disabled={disabled}
           />
           <TextField
-            label="Envío"
+            label="Envio"
             value={shippingCostInput}
             onChange={(event) => onShippingCostChange(event.target.value)}
             inputMode="decimal"
@@ -268,17 +268,17 @@ export function RepairProviderPartPricingSearchResults({
       ) : !partSearchQuery ? (
         <EmptyState
           icon={<PackageSearch className="h-5 w-5" />}
-          title="Todavía no buscaste repuestos"
-          description="Escribí el repuesto una vez y consultá todos los proveedores activos. Luego podrás elegir la mejor opción para el cálculo."
+          title="Todavia no buscaste repuestos"
+          description="Escribi el repuesto una vez y consulta todos los proveedores activos. Luego podras elegir la mejor opcion para el calculo."
         />
       ) : visiblePartResults.length === 0 ? (
         <EmptyState
           icon={<PackageSearch className="h-5 w-5" />}
-          title="Sin resultados para esta búsqueda"
+          title="Sin resultados para esta busqueda"
           description={
             visibleSearchHasFailures
               ? `No hubo resultados utilizables. ${visibleFailedSupplierNames.length} proveedor${visibleFailedSupplierNames.length === 1 ? '' : 'es'} no respondieron.`
-              : 'No encontramos un repuesto utilizable con esa consulta. Probá otra descripción o acotá a un proveedor puntual.'
+              : 'No encontramos un repuesto utilizable con esa consulta. Proba otra descripcion o acota a un proveedor puntual.'
           }
         />
       ) : (
@@ -301,7 +301,7 @@ export function RepairProviderPartPricingSearchResults({
 
           {hasTechnicalSearchDetails ? (
             <details className="rounded-2xl border border-zinc-200 bg-white/90 px-4 py-3 text-sm text-zinc-600">
-              <summary className="cursor-pointer select-none font-medium text-zinc-800">Ver detalle técnico</summary>
+              <summary className="cursor-pointer select-none font-medium text-zinc-800">Ver detalle tecnico</summary>
               <div className="mt-3 space-y-2 text-xs leading-5 text-zinc-500">
                 {visibleFailedSupplierNames.length > 0 ? <div>Fallos visibles: {visibleFailedSupplierNames.join(', ')}.</div> : null}
                 {hiddenSmokeSupplierCount > 0 ? (
@@ -352,8 +352,8 @@ export function RepairProviderPartPricingSearchResults({
                   </div>
                   <div className="admin-entity-row__meta">
                     {part.brand || 'Marca no informada'}
-                    {part.sku ? ` · SKU ${part.sku}` : ''}
-                    {part.url ? ' · con enlace' : ' · sin enlace directo'}
+                    {part.sku ? ` | SKU ${part.sku}` : ''}
+                    {part.url ? ' | con enlace' : ' | sin enlace directo'}
                   </div>
                 </div>
                 <div className="flex flex-col items-end gap-2">
@@ -367,7 +367,7 @@ export function RepairProviderPartPricingSearchResults({
                           rel="noreferrer"
                           onClick={(event) => event.stopPropagation()}
                         >
-                          Ver artículo
+                          Ver articulo
                         </a>
                       </Button>
                     ) : (
@@ -402,10 +402,10 @@ export function RepairProviderPartPricingSelectedPartSummary({ selectedPart }: S
 
   return (
     <div className="mt-4 summary-box">
-      <div className="summary-box__label">Opción seleccionada</div>
+      <div className="summary-box__label">Opcion seleccionada</div>
       <div className="summary-box__value">{selectedPart.supplier.name}</div>
       <div className="summary-box__hint">
-        {selectedPart.name} · {money(selectedPart.price, 'Sin precio')} · {availabilityLabel(selectedPart.availability)}
+        {selectedPart.name} | {money(selectedPart.price, 'Sin precio')} | {availabilityLabel(selectedPart.availability)}
       </div>
     </div>
   );
