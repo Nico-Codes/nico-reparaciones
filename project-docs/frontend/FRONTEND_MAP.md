@@ -323,11 +323,12 @@ En la ola de simplificacion del 2026-03-30 quedaron confirmados estos limites in
 - `AdminRepairDetailPage.tsx` ahora delega la UI en:
   - `admin-repair-detail.helpers.ts`
   - `admin-repair-detail.sections.tsx`
+- `AdminRepairDetailPage.tsx` ahora tambien delega la orquestacion pesada en:
+  - `use-admin-repair-detail.ts`
 - el archivo principal de detalle queda centrado en:
-  - carga del caso
-  - sincronizacion del formulario
-  - validacion
-  - recalculo de sugerencia
+  - composicion del header y alerts
+  - composicion de sections y sidebar
+  - wiring final del flujo de pricing y snapshot
   - guardado del patch
 - `AdminRepairCreatePage.tsx` ahora delega la UI en:
   - `admin-repair-create.helpers.ts`

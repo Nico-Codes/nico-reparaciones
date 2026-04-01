@@ -563,6 +563,29 @@ pm run qa:frontend:e2e
 ---
 
 ### 2026-04-01 - Codex
+- Alcance: segunda ola de refinamiento sobre el shell admin de detalle de reparaciones.
+- Tipo de intervencion: refactor interno seguro para mover la orquestacion a un hook dedicado.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/repairs/{AdminRepairDetailPage.tsx,use-admin-repair-detail.ts}`
+  - `project-docs/frontend/FRONTEND_MAP.md`
+  - `project-docs/architecture/ARCHITECTURE.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No deliberado. Se mantiene la misma ruta, los mismos requests, la misma estructura visual y el mismo wiring con pricing suggestion y snapshot. Cambia solo la distribucion interna entre shell y hook.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `cmd /c npm run qa:route-parity`
+  - `git diff --check`
+- Riesgos / notas:
+  - el seccionado ya esta cerrado; esta ola ya es refinamiento de shells grandes
+  - dentro de `repairs`, los siguientes candidatos naturales de segunda ola son `AdminRepairCreatePage.tsx` y `AppShell.tsx`
+
+---
+
+### 2026-04-01 - Codex
 - Alcance: segunda ola de refinamiento sobre el flujo tecnico de proveedor + repuesto en `repairs`.
 - Tipo de intervencion: refactor interno seguro para mover estado async y derivado a un hook dedicado.
 - Archivos tocados:

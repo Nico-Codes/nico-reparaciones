@@ -1114,3 +1114,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/web/src/features/repairs/{RepairProviderPartPricingSection.tsx,use-repair-provider-part-pricing.ts,repair-provider-part-pricing-section.search.tsx,repair-provider-part-pricing-section.preview.tsx}`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0093]
+- Fecha: 2026-04-01
+- Estado: aceptada
+- Tema: `AdminRepairDetailPage` pasa de shell cargado a shell liviano con hook dedicado
+- Contexto: despues de mover el flujo tecnico de proveedor + repuesto a un hook, el siguiente shell con mayor retorno dentro de `repairs` era `AdminRepairDetailPage.tsx`. Aunque ya estaba seccionada en helpers + sections, todavia mezclaba fetch del caso, timeline, pricing suggestion, validacion, guardado, notices y wiring del snapshot en la misma pagina.
+- Decision: mantener la ruta, las sections y la interfaz visible estables, pero mover la orquestacion del detalle a `use-admin-repair-detail.ts`. La pagina queda como shell de composicion y el hook concentra fetch, reload, save, pricing suggestion, estado derivado del formulario y wiring hacia `RepairProviderPartPricingSection`.
+- Impacto: baja la complejidad real del shell principal de detalle sin cambiar contratos ni comportamiento esperado. El subdominio `repairs` queda mas consistente: sections visuales, helpers puros y hooks para la orquestacion pesada.
+- Alternativas consideradas: seguir refinando `AppShell.tsx` o partir otra `sections.tsx`; descartado porque el mayor retorno inmediato seguia estando en el flujo admin tecnico mas cargado del repo.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/repairs/{AdminRepairDetailPage.tsx,use-admin-repair-detail.ts}`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano

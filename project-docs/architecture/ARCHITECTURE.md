@@ -460,6 +460,7 @@ Desde la ola de simplificacion de 2026-03-30 quedaron formalizados estos limites
 - `AdminRepairDetailPage.tsx` ahora queda como orquestador de carga, validacion y guardado:
   - `admin-repair-detail.helpers.ts` concentra parseo, validaciones y diff del patch
   - `admin-repair-detail.sections.tsx` concentra stats, estado, formulario, sugerencias e historial
+  - `use-admin-repair-detail.ts` concentra fetch del caso, timeline, pricing suggestion, save/reload y wiring con snapshots
 - `AdminRepairCreatePage.tsx` ahora queda como orquestador de catalogo, pricing y submit:
   - `admin-repair-create.helpers.ts` concentra normalizacion, validaciones y armado del payload
   - `admin-repair-create.sections.tsx` concentra las sections de datos basicos, diagnostico y cierre
