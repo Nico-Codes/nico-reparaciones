@@ -2318,3 +2318,28 @@ pm run qa:frontend:e2e
   - el split mantiene `adminSecurityApi` como frontera unica del feature y no introduce estado global nuevo
 
 ---
+
+### 2026-04-01 - Codex
+- Alcance: cerrar el seccionado pendiente del frontend en admin general, catalogo tecnico y flujos publicos/detalle.
+- Tipo de intervencion: refactor interno seguro multi-feature para consolidar el patron `Page.tsx` orquestadora + `helpers.ts` + `sections.tsx`.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/admin/{AdminUsersPage.tsx,admin-users.helpers.ts,admin-users.helpers.test.ts,admin-users.sections.tsx,AdminSettingsHubPage.tsx,admin-settings-hub.helpers.ts,admin-settings-hub.helpers.test.ts,admin-settings-hub.sections.tsx,AdminAlertsPage.tsx,admin-alerts.helpers.ts,admin-alerts.helpers.test.ts,admin-alerts.sections.tsx,AdminHelpFaqPage.tsx,admin-help-faq.helpers.ts,admin-help-faq.helpers.test.ts,admin-help-faq.sections.tsx,AdminRepairTypesPage.tsx,admin-repair-types.helpers.ts,admin-repair-types.helpers.test.ts,admin-repair-types.sections.tsx,AdminDeviceTypesPage.tsx,admin-device-types.helpers.ts,admin-device-types.helpers.test.ts,admin-device-types.sections.tsx,admin-taxonomy.helpers.ts}`
+  - `next-stack/apps/web/src/features/orders/{OrderDetailPage.tsx,order-detail.helpers.ts,order-detail.helpers.test.ts,order-detail.sections.tsx}`
+  - `next-stack/apps/web/src/features/repairs/{RepairDetailPage.tsx,repair-detail.helpers.ts,repair-detail.helpers.test.ts,repair-detail.sections.tsx,PublicRepairLookupPage.tsx,public-repair-lookup.helpers.ts,public-repair-lookup.helpers.test.ts,public-repair-lookup.sections.tsx,PublicRepairQuoteApprovalPage.tsx,public-repair-quote-approval.helpers.ts,public-repair-quote-approval.helpers.test.ts,public-repair-quote-approval.sections.tsx}`
+  - `project-docs/architecture/ARCHITECTURE.md`
+  - `project-docs/frontend/FRONTEND_MAP.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No deliberado. Se mantienen rutas, payloads y APIs; cambia la separacion interna entre fetch/sync, logica pura y bloques visuales. Como mejora menor, lookup publico, aprobacion de presupuesto y catalogo tecnico ahora centralizan mejor normalizaciones y mensajes derivados.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `cmd /c npm run qa:route-parity`
+  - `git diff --check`
+- Riesgos / notas:
+  - el seccionado pendiente del frontend queda cerrado en los `Page.tsx` que todavia concentraban demasiada responsabilidad local
+  - lo que sigue grande en el arbol son mayormente pantallas ya seccionadas o archivos `sections.tsx` deliberadamente densos, no nuevos hotspots sin estructura
+
+---

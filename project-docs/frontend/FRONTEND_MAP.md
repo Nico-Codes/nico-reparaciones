@@ -188,6 +188,8 @@ Pedidos:
 
 - `MyOrdersPage.tsx`
 - `OrderDetailPage.tsx`
+- `order-detail.helpers.ts`
+- `order-detail.sections.tsx`
 - `AdminOrdersPage.tsx`
 - `admin-orders.helpers.ts`
 - `admin-orders.sections.tsx`
@@ -204,9 +206,15 @@ Pedidos:
 Reparaciones:
 
 - `PublicRepairLookupPage.tsx`
+- `public-repair-lookup.helpers.ts`
+- `public-repair-lookup.sections.tsx`
 - `PublicRepairQuoteApprovalPage.tsx`
+- `public-repair-quote-approval.helpers.ts`
+- `public-repair-quote-approval.sections.tsx`
 - `MyRepairsPage.tsx`
 - `RepairDetailPage.tsx`
+- `repair-detail.helpers.ts`
+- `repair-detail.sections.tsx`
 - `AdminRepairsListPage.tsx`
 - `admin-repairs-list.helpers.ts`
 - `admin-repairs-list.sections.tsx`
@@ -220,8 +228,14 @@ Admin general:
 - `admin-dashboard.helpers.ts`
 - `admin-dashboard.sections.tsx`
 - `AdminAlertsPage.tsx`
+- `admin-alerts.helpers.ts`
+- `admin-alerts.sections.tsx`
 - `AdminUsersPage.tsx`
+- `admin-users.helpers.ts`
+- `admin-users.sections.tsx`
 - `AdminSettingsHubPage.tsx`
+- `admin-settings-hub.helpers.ts`
+- `admin-settings-hub.sections.tsx`
 - `AdminSmtpSettingsPage.tsx`
 - `AdminAutoReportsPage.tsx`
 - `admin-auto-reports.helpers.ts`
@@ -246,6 +260,8 @@ Admin general:
 - `admin-whatsapp-orders.helpers.ts`
 - `admin-whatsapp-orders.sections.tsx`
 - `AdminHelpFaqPage.tsx`
+- `admin-help-faq.helpers.ts`
+- `admin-help-faq.sections.tsx`
 - `AdminAccountingPage.tsx`
 - `admin-accounting.helpers.ts`
 - `admin-accounting.sections.tsx`
@@ -539,7 +555,11 @@ En la ola de simplificacion del 2026-03-30 quedaron confirmados estos limites in
 - `AdminRepairPricingRuleEditPage.tsx`
 - `AdminModelGroupsPage.tsx`
 - `AdminRepairTypesPage.tsx`
+- `admin-repair-types.helpers.ts`
+- `admin-repair-types.sections.tsx`
 - `AdminDeviceTypesPage.tsx`
+- `admin-device-types.helpers.ts`
+- `admin-device-types.sections.tsx`
 - `AdminDevicesCatalogPage.tsx`
 - `features/deviceCatalog/AdminDeviceCatalogPage.tsx`
 
@@ -613,6 +633,14 @@ Confirmado por codigo:
   - generacion, activacion y desactivacion del segundo factor
   - composicion del feedback y de los bloques visuales
 - la logica de QR, normalizacion del codigo y mensajes derivados queda fuera del render principal
+- cierre de seccionado pendiente:
+  - `AdminUsersPage.tsx` ahora delega stats, filtros y listado en `admin-users.helpers.ts` y `admin-users.sections.tsx`
+  - `AdminSettingsHubPage.tsx` ahora delega datasets y cards en `admin-settings-hub.helpers.ts` y `admin-settings-hub.sections.tsx`
+  - `AdminAlertsPage.tsx` ahora delega targets, severidad, metricas y listado en `admin-alerts.helpers.ts` y `admin-alerts.sections.tsx`
+  - `AdminHelpFaqPage.tsx` ahora delega sort, payloads y editor en `admin-help-faq.helpers.ts` y `admin-help-faq.sections.tsx`
+  - `AdminRepairTypesPage.tsx` y `AdminDeviceTypesPage.tsx` ahora delegan slugify/payloads y grillas en helpers + sections propios
+  - `RepairDetailPage.tsx`, `OrderDetailPage.tsx`, `PublicRepairLookupPage.tsx` y `PublicRepairQuoteApprovalPage.tsx` ahora delegan derivaciones y bloques visuales en helpers + sections por feature
+- con esta ola, el seccionado pendiente del frontend queda cerrado en las pantallas que todavia mezclaban fetch, validaciones y render completo en un solo `Page.tsx`
 - el frontend usa mas estado local que estado global compartido
 - en Fase 3 se retiraron tres remanentes sin referencias estaticas confirmadas:
   - `features/admin/AdminSettingsPage.tsx`

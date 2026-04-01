@@ -516,6 +516,11 @@ Desde la ola de simplificacion de 2026-03-30 quedaron formalizados estos limites
   - `orders-notifications.service.ts`
   - `orders-support.service.ts`
 - harness de tests del monorepo con Vitest por workspace
+- cierre de seccionado frontend pendiente:
+  - `AdminUsersPage.tsx`, `AdminSettingsHubPage.tsx`, `AdminAlertsPage.tsx` y `AdminHelpFaqPage.tsx` ya no concentran datasets, filtros, mutaciones y bloques visuales en una sola pagina
+  - `AdminRepairTypesPage.tsx` y `AdminDeviceTypesPage.tsx` ya no concentran formularios de alta, tablas editables y normalizacion de slug dentro del render principal
+  - `RepairDetailPage.tsx`, `OrderDetailPage.tsx`, `PublicRepairLookupPage.tsx` y `PublicRepairQuoteApprovalPage.tsx` ya no concentran fetch, estados derivados y UI completa en una sola pantalla
+  - el patron estable del frontend queda consolidado en `Page.tsx` orquestadora + `helpers.ts` para logica pura + `sections.tsx` para bloques visuales
 
 Esto no cambia rutas ni contratos publicos, pero reduce acople interno y hace mas segura la limpieza futura.
 
