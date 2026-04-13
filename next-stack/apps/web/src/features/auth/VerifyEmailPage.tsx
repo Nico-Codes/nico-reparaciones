@@ -1,11 +1,10 @@
-﻿import { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
-import { PageHeader } from '@/components/ui/page-header';
-import { PageShell } from '@/components/ui/page-shell';
 import { SectionCard } from '@/components/ui/section-card';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { AuthLayout } from './AuthLayout';
 import { authApi } from './api';
 import { authStorage } from './storage';
 
@@ -24,7 +23,7 @@ export function VerifyEmailPage() {
   async function handleResend() {
     if (!canResend) {
       setMessage('');
-      setError('Necesitás iniciar sesión para reenviar el correo de verificación.');
+      setError('Necesitas iniciar sesion para reenviar el correo de verificacion.');
       return;
     }
 
@@ -33,9 +32,9 @@ export function VerifyEmailPage() {
     setError('');
     try {
       const res = await authApi.requestVerifyEmail();
-      setMessage(res.previewToken ? `Correo reenviado. Token de vista previa: ${res.previewToken}` : 'Correo de verificación reenviado.');
+      setMessage(res.previewToken ? `Correo reenviado. Token de vista previa: ${res.previewToken}` : 'Correo de verificacion reenviado.');
     } catch (err) {
-      setError((err as { message?: string })?.message ?? 'No se pudo reenviar el correo de verificación.');
+      setError((err as { message?: string })?.message ?? 'No se pudo reenviar el correo de verificacion.');
     } finally {
       setLoading(false);
     }
@@ -67,27 +66,26 @@ export function VerifyEmailPage() {
   }
 
   return (
-    <PageShell context="account" className="space-y-6">
-      <PageHeader
-        context="account"
-        eyebrow="Verificación"
-        title="Confirmá tu correo"
-        subtitle={canConfirmToken ? 'Recibimos un enlace de verificación. Confirmá el correo con un toque.' : 'Te enviamos un enlace para confirmar tu cuenta y proteger los pedidos.'}
-        actions={user?.email ? <StatusBadge tone="warning" label={user.email} /> : null}
-      />
-
-      <SectionCard title="Correo electrónico" description="Este paso confirma la titularidad de la cuenta y habilita un seguimiento más confiable.">
+    <AuthLayout
+      eyebrow="Verificacion"
+      title="Confirma tu correo"
+      subtitle={
+        canConfirmToken
+          ? 'Recibimos un enlace de verificacion. Confirma el correo con un toque.'
+          : 'Te enviamos un enlace para confirmar tu cuenta y proteger los pedidos.'
+      }
+      statusLabel={canConfirmToken ? 'Token cargado' : 'Verificacion'}
+      headerActions={user?.email ? <StatusBadge tone="warning" label={user.email} /> : null}
+    >
+      <SectionCard title="Correo electronico" description="Este paso confirma la titularidad de la cuenta y habilita un seguimiento mas confiable.">
         {showMissingContext ? (
           <EmptyState
-            title="Necesitás iniciar sesión o abrir el enlace completo"
-            description="Para reenviar la verificación debés entrar a tu cuenta. Si llegaste desde un email, abrí el enlace completo con el token incluido."
+            title="Necesitas iniciar sesion o abrir el enlace completo"
+            description="Para reenviar la verificacion primero debes ingresar. Si llegaste desde un email, abri el enlace completo con el token incluido."
             actions={
               <div className="flex flex-wrap gap-3">
                 <Button asChild>
                   <Link to="/auth/login">Ingresar</Link>
-                </Button>
-                <Button asChild variant="outline">
-                  <Link to="/auth/register">Crear cuenta</Link>
                 </Button>
               </div>
             }
@@ -96,10 +94,10 @@ export function VerifyEmailPage() {
           <div className="space-y-4">
             <p className="text-sm leading-relaxed text-zinc-700">
               {canConfirmToken ? (
-                'Usá el botón principal para confirmar la dirección vinculada a tu cuenta.'
+                'Usa el boton principal para confirmar la direccion vinculada a tu cuenta.'
               ) : (
                 <>
-                  Te enviamos un enlace de verificación a <span className="font-black text-zinc-900">{user?.email ?? 'tu correo'}</span>.
+                  Te enviamos un enlace de verificacion a <span className="font-black text-zinc-900">{user?.email ?? 'tu correo'}</span>.
                 </>
               )}
             </p>
@@ -111,17 +109,19 @@ export function VerifyEmailPage() {
                 </Button>
               ) : (
                 <Button type="button" onClick={() => void handleResend()} disabled={loading || !canResend} className="w-full justify-center sm:col-span-2">
-                  {loading ? 'Enviando...' : 'Reenviar correo de verificación'}
+                  {loading ? 'Enviando...' : 'Reenviar correo de verificacion'}
                 </Button>
               )}
 
               <Button asChild variant="outline" className="w-full justify-center">
-                <Link to="/mi-cuenta">Cambiar email en mi cuenta</Link>
+                <Link to={user ? '/mi-cuenta' : '/auth/login'}>
+                  {user ? 'Cambiar email en mi cuenta' : 'Ingresar a mi cuenta'}
+                </Link>
               </Button>
 
               {user ? (
                 <Button type="button" variant="ghost" className="w-full justify-center" onClick={handleLogout}>
-                  Cerrar sesión
+                  Cerrar sesion
                 </Button>
               ) : null}
             </div>
@@ -129,7 +129,7 @@ export function VerifyEmailPage() {
             {error ? (
               <div className="ui-alert ui-alert--danger">
                 <div>
-                  <span className="ui-alert__title">No pudimos completar la verificación.</span>
+                  <span className="ui-alert__title">No pudimos completar la verificacion.</span>
                   <div className="ui-alert__text">{error}</div>
                 </div>
               </div>
@@ -145,6 +145,6 @@ export function VerifyEmailPage() {
           </div>
         )}
       </SectionCard>
-    </PageShell>
+    </AuthLayout>
   );
 }

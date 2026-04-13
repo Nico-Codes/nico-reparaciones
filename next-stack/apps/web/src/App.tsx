@@ -100,7 +100,7 @@ export default function App() {
         <Route path="/api/*" element={<RootEntryRedirect />} />
         <Route path="/auth/login" element={withSuspense(<LoginPage />)} />
         <Route path="/auth/register" element={withSuspense(<RegisterPage />)} />
-        <Route path="/auth/verify-email" element={withShellSuspense(<VerifyEmailPage />)} />
+        <Route path="/auth/verify-email" element={withSuspense(<VerifyEmailPage />)} />
         <Route path="/auth/forgot-password" element={withSuspense(<ForgotPasswordPage />)} />
         <Route path="/auth/reset-password" element={withSuspense(<ResetPasswordPage />)} />
         <Route path="/auth/bootstrap-admin" element={withSuspense(<BootstrapAdminPage />)} />

@@ -137,14 +137,9 @@ export function MobileSidebar({
                   </span>
                 </button>
               ) : (
-                <>
-                  <Link className="sidebar-link" to="/auth/login" onClick={onClose}>
-                    <span>Iniciar sesion</span>
-                  </Link>
-                  <Link className="sidebar-link" to="/auth/register" onClick={onClose}>
-                    <span>Crear cuenta</span>
-                  </Link>
-                </>
+                <Link className="sidebar-link" to="/auth/login" onClick={onClose}>
+                  <span>Ingresar</span>
+                </Link>
               )}
             </div>
           </div>

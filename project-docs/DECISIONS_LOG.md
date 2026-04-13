@@ -1212,3 +1212,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/web/src/features/admin/{AdminDevicesCatalogPage.tsx,admin-devices-catalog.sections.tsx}`, `next-stack/apps/api/src/modules/device-catalog/{device-catalog.service.ts,device-catalog.service.test.ts}`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `typecheck --workspace @nico/api`, `typecheck --workspace @nico/web`, `test --workspace @nico/api`, `build --workspace @nico/api`, `build --workspace @nico/web`, `smoke:backend`, `smoke:web`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0100]
+- Fecha: 2026-04-13
+- Estado: aceptada
+- Tema: el acceso publico deja de promocionar registro global y auth gana una navbar liviana propia
+- Contexto: las vistas de auth estaban aisladas del shell publico, por eso login/registro no mostraban navbar. Al mismo tiempo, el acceso no autenticado mostraba CTAs redundantes y el alta publica aparecia en lugares demasiado globales para el flujo deseado.
+- Decision: mantener `/auth/register` publico, pero dejar de promocionarlo en navbar/sidebar/empty states generales. `AuthLayout` pasa a incluir una topbar publica liviana con marca, `Tienda`, `Reparacion`, `Ayuda` y un unico CTA de login. El registro queda recomendado solo dentro de `LoginPage`. `VerifyEmailPage` se alinea al mismo shell y deja de derivar a registro desde estado sin contexto.
+- Impacto: mejora la consistencia visual de auth, desaparece el CTA global de crear cuenta y el flujo de acceso queda mas claro: un solo ingreso publico y recomendacion contextual de registro desde login. No cambian rutas ni APIs.
+- Alternativas consideradas: reutilizar `AppShell` completo en auth o dejar auth aislado y solo limpiar botones; descartado porque el shell completo arrastraba UI de app logueada y la segunda opcion no resolvia la falta de navbar ni el desorden visual del acceso.
+- Archivos / modulos afectados: `next-stack/apps/web/src/{App.tsx}`, `next-stack/apps/web/src/features/auth/{AuthLayout.tsx,LoginPage.tsx,RegisterPage.tsx,VerifyEmailPage.tsx}`, `next-stack/apps/web/src/layouts/{AppShell.tsx}`, `next-stack/apps/web/src/layouts/app-shell/mobile-sidebar.tsx`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `git diff --check`.
+- Responsable: Codex + operador humano

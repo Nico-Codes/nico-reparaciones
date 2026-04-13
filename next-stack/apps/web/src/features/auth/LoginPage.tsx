@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { SectionCard } from '@/components/ui/section-card';
@@ -31,12 +31,12 @@ export function LoginPage() {
     setResult('');
 
     if (!normalizedEmail || !normalizedPassword) {
-      setResult('Ingresá tu email y contraseña para continuar.');
+      setResult('Ingresa tu email y contrasena para continuar.');
       return;
     }
 
     if (needsTwoFactor && !normalizedTwoFactorCode) {
-      setResult('Ingresá el código 2FA para completar el acceso.');
+      setResult('Ingresa el codigo 2FA para completar el acceso.');
       return;
     }
 
@@ -59,7 +59,7 @@ export function LoginPage() {
           : fallback;
       navigate(target, { replace: true });
     } catch (error) {
-      const message = (error as { message?: string })?.message ?? 'No pudimos iniciar sesión.';
+      const message = (error as { message?: string })?.message ?? 'No pudimos iniciar sesion.';
       if (message.toLowerCase().includes('2fa')) setNeedsTwoFactor(true);
       setResult(message);
     } finally {
@@ -70,15 +70,24 @@ export function LoginPage() {
   return (
     <AuthLayout
       title="Ingresar"
-      subtitle="Accedé para seguir tus pedidos, reparaciones y gestiones desde la cuenta actual."
+      subtitle="Entra con tu cuenta para seguir pedidos, consultar reparaciones y gestionar tu perfil."
       eyebrow="Cuenta"
       statusLabel={needsTwoFactor ? '2FA requerida' : 'Acceso'}
     >
       <SectionCard
-        title="Iniciá sesión"
-        description="Usá tu email y contraseña para entrar al sistema."
-        actions={needsTwoFactor ? <StatusBadge tone="warning" size="sm" label="Código 2FA" /> : undefined}
+        title="Inicia sesion"
+        description="Usa tu email y contrasena para entrar. Si tenes 2FA activa, el sistema te va a pedir el codigo al continuar."
+        actions={needsTwoFactor ? <StatusBadge tone="warning" size="sm" label="Codigo 2FA" /> : undefined}
       >
+        {result ? (
+          <div className="ui-alert ui-alert--danger mb-4">
+            <div>
+              <span className="ui-alert__title">No pudimos iniciar sesion.</span>
+              <div className="ui-alert__text">{result}</div>
+            </div>
+          </div>
+        ) : null}
+
         <form className="space-y-4" onSubmit={onSubmit}>
           <TextField
             label="Email"
@@ -90,7 +99,7 @@ export function LoginPage() {
             required
           />
           <TextField
-            label="Contraseña"
+            label="Contrasena"
             type="password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
@@ -100,7 +109,7 @@ export function LoginPage() {
           />
           {needsTwoFactor ? (
             <TextField
-              label="Código 2FA"
+              label="Codigo 2FA"
               type="text"
               value={twoFactorCode}
               onChange={(event) => setTwoFactorCode(event.target.value)}
@@ -111,31 +120,30 @@ export function LoginPage() {
             />
           ) : null}
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Button asChild variant="outline" className="w-full justify-center">
-              <Link to="/auth/forgot-password">Olvidé mi contraseña</Link>
-            </Button>
-            <Button type="submit" className="w-full justify-center" disabled={!canSubmit || loading}>
-              {loading ? 'Ingresando...' : 'Ingresar'}
-            </Button>
-          </div>
+          <Button type="submit" className="w-full justify-center" disabled={!canSubmit || loading}>
+            {loading ? 'Ingresando...' : 'Ingresar'}
+          </Button>
         </form>
 
-        <div className="mt-4 border-t border-zinc-200 pt-4 text-sm text-zinc-600">
-          ¿No tenés cuenta?{' '}
-          <Link className="font-semibold text-sky-700 hover:text-sky-800" to="/auth/register">
-            Crear cuenta
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200 pt-4 text-sm text-zinc-600">
+          <span>Olvidaste tu contrasena?</span>
+          <Link className="font-semibold text-sky-700 hover:text-sky-800" to="/auth/forgot-password">
+            Recuperarla
           </Link>
         </div>
+      </SectionCard>
 
-        {result ? (
-          <div className="ui-alert ui-alert--danger mt-4">
-            <div>
-              <span className="ui-alert__title">No pudimos iniciar sesión.</span>
-              <div className="ui-alert__text">{result}</div>
-            </div>
-          </div>
-        ) : null}
+      <SectionCard
+        tone="muted"
+        title="No tenes cuenta?"
+        description="Podes crear una cuenta web para comprar, seguir pedidos y consultar reparaciones desde el mismo perfil."
+      >
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-zinc-600">El registro sigue disponible, pero lo recomendamos desde este paso para mantener el acceso ordenado.</p>
+          <Button asChild variant="outline" className="justify-center">
+            <Link to="/auth/register">Crear cuenta</Link>
+          </Button>
+        </div>
       </SectionCard>
     </AuthLayout>
   );

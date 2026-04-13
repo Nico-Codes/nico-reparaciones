@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { SectionCard } from '@/components/ui/section-card';
@@ -26,17 +26,17 @@ export function RegisterPage() {
     setPreviewToken('');
 
     if (!normalizedName) {
-      setFeedback({ text: 'Ingresá tu nombre para crear la cuenta.', tone: 'danger' });
+      setFeedback({ text: 'Ingresa tu nombre para crear la cuenta.', tone: 'danger' });
       return;
     }
 
     if (!normalizedEmail) {
-      setFeedback({ text: 'Ingresá un email válido para continuar.', tone: 'danger' });
+      setFeedback({ text: 'Ingresa un email valido para continuar.', tone: 'danger' });
       return;
     }
 
     if (password.trim().length < 8) {
-      setFeedback({ text: 'La contraseña debe tener al menos 8 caracteres.', tone: 'danger' });
+      setFeedback({ text: 'La contrasena debe tener al menos 8 caracteres.', tone: 'danger' });
       return;
     }
 
@@ -46,7 +46,7 @@ export function RegisterPage() {
       authStorage.setSession(res.user, res.tokens);
       setPreviewToken(res.emailVerification?.previewToken ?? '');
       setFeedback({
-        text: 'Cuenta creada correctamente. Revisá tu correo para verificar la dirección si hace falta.',
+        text: 'Cuenta creada correctamente. Revisa tu correo para verificar la direccion si hace falta.',
         tone: 'success',
       });
     } catch (error) {
@@ -62,13 +62,13 @@ export function RegisterPage() {
   return (
     <AuthLayout
       title="Crear cuenta"
-      subtitle="Registrate para comprar, seguir pedidos y consultar reparaciones."
+      subtitle="Crea tu cuenta para comprar, seguir pedidos y consultar reparaciones desde un solo lugar."
       eyebrow="Nueva cuenta"
       statusLabel="Registro"
     >
       <SectionCard
-        title="Completá tus datos"
-        description="Vas a poder usar la misma cuenta para compras, seguimiento y verificación por email."
+        title="Completa tus datos"
+        description="Esta cuenta te va a servir para compras, seguimiento y verificacion por email."
         actions={<StatusBadge tone="info" size="sm" label="Alta web" />}
       >
         <form className="space-y-4" onSubmit={onSubmit}>
@@ -77,7 +77,7 @@ export function RegisterPage() {
             type="text"
             value={name}
             onChange={(event) => setName(event.target.value)}
-            placeholder="Juan Pérez"
+            placeholder="Juan Perez"
             autoComplete="name"
             required
           />
@@ -91,25 +91,27 @@ export function RegisterPage() {
             required
           />
           <TextField
-            label="Contraseña"
+            label="Contrasena"
             type="password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             placeholder="********"
-            hint="Mínimo 8 caracteres."
+            hint="Minimo 8 caracteres."
             autoComplete="new-password"
             required
           />
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Button asChild variant="outline" className="w-full justify-center">
-              <Link to="/auth/login">Ya tengo cuenta</Link>
-            </Button>
-            <Button type="submit" className="w-full justify-center" disabled={!canSubmit || loading}>
-              {loading ? 'Creando...' : 'Crear cuenta'}
-            </Button>
-          </div>
+          <Button type="submit" className="w-full justify-center" disabled={!canSubmit || loading}>
+            {loading ? 'Creando...' : 'Crear cuenta'}
+          </Button>
         </form>
+
+        <div className="mt-4 border-t border-zinc-200 pt-4 text-sm text-zinc-600">
+          Ya tenes cuenta?{' '}
+          <Link className="font-semibold text-sky-700 hover:text-sky-800" to="/auth/login">
+            Ingresa
+          </Link>
+        </div>
 
         {feedback ? (
           <div className={`ui-alert mt-4 ${feedback.tone === 'success' ? 'ui-alert--success' : 'ui-alert--danger'}`}>
@@ -123,7 +125,7 @@ export function RegisterPage() {
         ) : null}
         {previewToken ? (
           <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
-            <div className="font-bold">Token de vista previa para verificación (desarrollo)</div>
+            <div className="font-bold">Token de vista previa para verificacion (desarrollo)</div>
             <div className="mt-1 break-all">{previewToken}</div>
           </div>
         ) : null}

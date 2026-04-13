@@ -13,6 +13,32 @@
 ---
 
 ### 2026-04-13 - Codex
+- Alcance: limpiar el acceso publico para dejar un solo CTA de login, quitar la promocion global de registro y ordenar visualmente las vistas de auth con una navbar publica liviana.
+- Tipo de intervencion: ajuste funcional controlado del frontend `auth` + simplificacion del estado no autenticado del shell publico.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/auth/AuthLayout.tsx`
+  - `next-stack/apps/web/src/features/auth/LoginPage.tsx`
+  - `next-stack/apps/web/src/features/auth/RegisterPage.tsx`
+  - `next-stack/apps/web/src/features/auth/VerifyEmailPage.tsx`
+  - `next-stack/apps/web/src/App.tsx`
+  - `next-stack/apps/web/src/layouts/AppShell.tsx`
+  - `next-stack/apps/web/src/layouts/app-shell/mobile-sidebar.tsx`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. Los usuarios no autenticados ahora ven un solo CTA publico de login, `Crear cuenta` deja de aparecer en accesos globales, login pasa a recomendar registro desde la propia vista y auth gana una topbar publica visible con navegacion base. `VerifyEmailPage` ya no deriva a registro desde el estado sin contexto.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - el registro sigue publico por ruta, pero deja de promocionarse fuera de login por decision deliberada de UX
+  - `AuthLayout` ahora depende de branding publico para mostrar marca y logo, con fallback seguro cuando la carga falla
+
+---
+
+### 2026-04-13 - Codex
 - Alcance: habilitar borrado real en el catalogo tecnico de dispositivos para marcas, modelos y fallas, con confirmacion en UI y guardas de backend cuando existan referencias activas.
 - Tipo de intervencion: ajuste funcional controlado en frontend `admin` + endurecimiento del backend `device-catalog`.
 - Archivos tocados:

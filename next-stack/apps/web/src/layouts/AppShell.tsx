@@ -128,14 +128,9 @@ export function AppShell({ children }: AppShellProps) {
               </Link>
 
               {!authUser ? (
-                <>
-                  <Link to="/auth/login" className="btn-outline hidden sm:inline-flex">
-                    Ingresar
-                  </Link>
-                  <Link to="/auth/login" className="btn-primary sm:hidden">
-                    Ingresar
-                  </Link>
-                </>
+                <Link to="/auth/login" className="btn-primary">
+                  Ingresar
+                </Link>
               ) : (
                 <AccountMenu
                   authUser={authUser}
