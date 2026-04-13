@@ -13,6 +13,32 @@
 ---
 
 ### 2026-04-13 - Codex
+- Alcance: habilitar borrado real en el catalogo tecnico de dispositivos para marcas, modelos y fallas, con confirmacion en UI y guardas de backend cuando existan referencias activas.
+- Tipo de intervencion: ajuste funcional controlado en frontend `admin` + endurecimiento del backend `device-catalog`.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/admin/AdminDevicesCatalogPage.tsx`
+  - `next-stack/apps/web/src/features/admin/admin-devices-catalog.sections.tsx`
+  - `next-stack/apps/api/src/modules/device-catalog/device-catalog.service.ts`
+  - `next-stack/apps/api/src/modules/device-catalog/device-catalog.service.test.ts`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. El admin ahora muestra la accion `Eliminar` en marcas, modelos y fallas. El borrado pide confirmacion y solo se ejecuta si el item no esta en uso por reparaciones o reglas de precio; si hay relaciones activas, el backend responde con un mensaje legible y la recomendacion implicita sigue siendo desactivar cuando no corresponde borrar historico.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/api`
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/api`
+  - `cmd /c npm run build --workspace @nico/api`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:backend`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - el borrado sigue siendo deliberadamente mas restrictivo que desactivar, para no dejar referencias logicas colgadas en `repairs` o `repairPricingRules`
+  - la UI de catalogo tecnico queda alineada con las capacidades reales del backend y deja de ocultar el flujo de eliminacion
+
+---
+
+### 2026-04-13 - Codex
 - Alcance: cierre de la segunda ola de refinamiento del frontend despues del seccionado principal.
 - Tipo de intervencion: refactor interno seguro de wrappers visuales y hooks del frontend para dejar fronteras publicas mas finas y panels/hooks especializados.
 - Archivos tocados:

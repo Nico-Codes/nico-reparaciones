@@ -26,6 +26,7 @@ type AdminDevicesCatalogBrandsSectionProps = {
   onCreateBrand: () => void;
   onRenameBrand: (item: BrandItem) => void;
   onToggleBrand: (item: BrandItem) => void;
+  onDeleteBrand: (item: BrandItem) => void;
 };
 
 type AdminDevicesCatalogModelsSectionProps = {
@@ -36,6 +37,7 @@ type AdminDevicesCatalogModelsSectionProps = {
   onCreateModel: () => void;
   onRenameModel: (item: ModelItem) => void;
   onToggleModel: (item: ModelItem) => void;
+  onDeleteModel: (item: ModelItem) => void;
 };
 
 type AdminDevicesCatalogIssuesSectionProps = {
@@ -45,6 +47,7 @@ type AdminDevicesCatalogIssuesSectionProps = {
   onCreateIssue: () => void;
   onRenameIssue: (item: IssueItem) => void;
   onToggleIssue: (item: IssueItem) => void;
+  onDeleteIssue: (item: IssueItem) => void;
 };
 
 export function AdminDevicesCatalogHero({ error }: AdminDevicesCatalogHeroProps) {
@@ -55,7 +58,7 @@ export function AdminDevicesCatalogHero({ error }: AdminDevicesCatalogHeroProps)
           <div>
             <h1 className="text-2xl font-black tracking-tight text-zinc-900">Catalogo de dispositivos</h1>
             <p className="mt-1 text-sm text-zinc-600">
-              Gestiona marcas, modelos y fallas por tipo. En lugar de borrar, desactiva.
+              Gestiona marcas, modelos y fallas por tipo. Puedes desactivar o eliminar; si existen relaciones activas, el sistema bloquea el borrado.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -130,6 +133,7 @@ export function AdminDevicesCatalogBrandsSection({
   onCreateBrand,
   onRenameBrand,
   onToggleBrand,
+  onDeleteBrand,
 }: AdminDevicesCatalogBrandsSectionProps) {
   return (
     <section className="card">
@@ -169,6 +173,9 @@ export function AdminDevicesCatalogBrandsSection({
                   <button type="button" className="mt-1 ml-3 text-xs font-semibold text-zinc-700" onClick={() => onToggleBrand(brand)}>
                     {brand.active ? 'Desactivar' : 'Activar'}
                   </button>
+                  <button type="button" className="mt-1 ml-3 text-xs font-semibold text-rose-700" onClick={() => onDeleteBrand(brand)}>
+                    Eliminar
+                  </button>
                 </div>
                 <span className={brand.active ? 'badge-emerald self-center' : 'badge-zinc self-center'}>
                   {brand.active ? 'Activa' : 'Inactiva'}
@@ -190,6 +197,7 @@ export function AdminDevicesCatalogModelsSection({
   onCreateModel,
   onRenameModel,
   onToggleModel,
+  onDeleteModel,
 }: AdminDevicesCatalogModelsSectionProps) {
   return (
     <section className="card">
@@ -236,6 +244,9 @@ export function AdminDevicesCatalogModelsSection({
                   <button type="button" className="mt-1 ml-3 text-xs font-semibold text-zinc-700" onClick={() => onToggleModel(model)}>
                     {model.active ? 'Desactivar' : 'Activar'}
                   </button>
+                  <button type="button" className="mt-1 ml-3 text-xs font-semibold text-rose-700" onClick={() => onDeleteModel(model)}>
+                    Eliminar
+                  </button>
                 </div>
                 <span className={model.active ? 'badge-emerald self-center' : 'badge-zinc self-center'}>
                   {model.active ? 'Activo' : 'Inactivo'}
@@ -260,6 +271,7 @@ export function AdminDevicesCatalogIssuesSection({
   onCreateIssue,
   onRenameIssue,
   onToggleIssue,
+  onDeleteIssue,
 }: AdminDevicesCatalogIssuesSectionProps) {
   return (
     <section className="card">
@@ -299,6 +311,9 @@ export function AdminDevicesCatalogIssuesSection({
                   </button>
                   <button type="button" className="mt-1 ml-3 text-xs font-semibold text-zinc-700" onClick={() => onToggleIssue(issue)}>
                     {issue.active ? 'Desactivar' : 'Activar'}
+                  </button>
+                  <button type="button" className="mt-1 ml-3 text-xs font-semibold text-rose-700" onClick={() => onDeleteIssue(issue)}>
+                    Eliminar
                   </button>
                 </div>
                 <span className={issue.active ? 'badge-emerald self-center' : 'badge-zinc self-center'}>

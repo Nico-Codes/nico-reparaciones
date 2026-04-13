@@ -1200,3 +1200,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/web/src/features/repairs/{AdminRepairCreatePage.tsx,admin-repair-create.sections.tsx,admin-repair-create-basic-panel.tsx,admin-repair-create-diagnosis-panel.tsx,admin-repair-create-submit-panel.tsx}`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0099]
+- Fecha: 2026-04-13
+- Estado: aceptada
+- Tema: el catalogo tecnico de dispositivos habilita borrado explicito, pero solo cuando marca/modelo/falla no estan en uso
+- Contexto: en el admin de catalogo de dispositivos ya existian endpoints `DELETE` para marcas, modelos y fallas, pero la UI solo exponia renombrar y activar/desactivar. Ademas, varias referencias de `repairs` y `repairPricingRules` usan ids logicos que no siempre quedan protegidos por FK directas, por lo que habilitar un borrado ciego desde la pantalla podia dejar referencias colgadas.
+- Decision: exponer `Eliminar` en la UI de marcas, modelos y fallas con confirmacion explicita e irreversible, mantener `Desactivar` como opcion segura, y endurecer `DeviceCatalogService` para bloquear el borrado cuando el item siga referenciado por reparaciones o reglas de precio. Si el borrado queda bloqueado por relaciones de base de datos, el backend devuelve un mensaje legible.
+- Impacto: el admin de catalogo tecnico gana el flujo que faltaba sin convertir `Eliminar` en un hard delete inseguro. La politica operativa pasa a ser: se puede borrar solo lo no usado; si ya existe uso historico u operativo, se desactiva. No cambia ninguna ruta publica ni se agregan endpoints nuevos.
+- Alternativas consideradas: exponer solo el boton de borrado y confiar en el backend actual, o mantener borrado oculto y obligar siempre a desactivar; descartado porque la primera opcion dejaba inconsistencias posibles y la segunda no resolvia la necesidad operativa del usuario.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/admin/{AdminDevicesCatalogPage.tsx,admin-devices-catalog.sections.tsx}`, `next-stack/apps/api/src/modules/device-catalog/{device-catalog.service.ts,device-catalog.service.test.ts}`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/api`, `typecheck --workspace @nico/web`, `test --workspace @nico/api`, `build --workspace @nico/api`, `build --workspace @nico/web`, `smoke:backend`, `smoke:web`, `git diff --check`.
+- Responsable: Codex + operador humano

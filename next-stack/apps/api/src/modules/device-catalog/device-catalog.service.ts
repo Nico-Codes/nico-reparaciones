@@ -1,5 +1,5 @@
-import { Inject, Injectable } from '@nestjs/common';
-import type { DeviceModel } from '@prisma/client';
+import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma, type DeviceModel } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 @Injectable()
@@ -111,22 +111,94 @@ export class DeviceCatalogService {
   }
 
   async deleteBrand(id: string) {
-    await this.prisma.deviceBrand.delete({ where: { id } });
+    await this.ensureBrandCanBeDeleted(id);
+    try {
+      await this.prisma.deviceBrand.delete({ where: { id } });
+    } catch (error) {
+      this.rethrowDeleteError(error, 'marca');
+    }
     return { ok: true };
   }
 
   async deleteModel(id: string) {
-    await this.prisma.deviceModel.delete({ where: { id } });
+    await this.ensureModelCanBeDeleted(id);
+    try {
+      await this.prisma.deviceModel.delete({ where: { id } });
+    } catch (error) {
+      this.rethrowDeleteError(error, 'modelo');
+    }
     return { ok: true };
   }
 
   async deleteIssue(id: string) {
-    await this.prisma.deviceIssueType.delete({ where: { id } });
+    await this.ensureIssueCanBeDeleted(id);
+    try {
+      await this.prisma.deviceIssueType.delete({ where: { id } });
+    } catch (error) {
+      this.rethrowDeleteError(error, 'falla');
+    }
     return { ok: true };
   }
 
   private nullableId(value?: string | null) {
     const v = (value ?? '').trim();
     return v || null;
+  }
+
+  private async ensureBrandCanBeDeleted(id: string) {
+    const [repairsCount, rulesCount] = await Promise.all([
+      this.prisma.repair.count({ where: { deviceBrandId: id } }),
+      this.prisma.repairPricingRule.count({ where: { deviceBrandId: id } }),
+    ]);
+
+    if (repairsCount > 0 || rulesCount > 0) {
+      throw new BadRequestException(
+        'No se puede eliminar la marca porque ya esta en uso por reparaciones o reglas de precio. Desactivala si no queres usarla mas.',
+      );
+    }
+  }
+
+  private async ensureModelCanBeDeleted(id: string) {
+    const [repairsCount, rulesCount] = await Promise.all([
+      this.prisma.repair.count({ where: { deviceModelId: id } }),
+      this.prisma.repairPricingRule.count({ where: { deviceModelId: id } }),
+    ]);
+
+    if (repairsCount > 0 || rulesCount > 0) {
+      throw new BadRequestException(
+        'No se puede eliminar el modelo porque ya esta en uso por reparaciones o reglas de precio. Desactivalo si no queres usarlo mas.',
+      );
+    }
+  }
+
+  private async ensureIssueCanBeDeleted(id: string) {
+    const [repairsCount, rulesCount] = await Promise.all([
+      this.prisma.repair.count({ where: { deviceIssueTypeId: id } }),
+      this.prisma.repairPricingRule.count({ where: { deviceIssueTypeId: id } }),
+    ]);
+
+    if (repairsCount > 0 || rulesCount > 0) {
+      throw new BadRequestException(
+        'No se puede eliminar la falla porque ya esta en uso por reparaciones o reglas de precio. Desactivala si no queres usarla mas.',
+      );
+    }
+  }
+
+  private rethrowDeleteError(error: unknown, entityLabel: string): never {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === 'P2003') {
+        throw new BadRequestException(
+          `No se puede eliminar la ${entityLabel} porque todavia tiene relaciones activas. Desactivala o limpia esas relaciones primero.`,
+        );
+      }
+      if (error.code === 'P2025') {
+        throw new NotFoundException(`${this.capitalize(entityLabel)} no encontrada`);
+      }
+    }
+    throw error;
+  }
+
+  private capitalize(value: string) {
+    return value.charAt(0).toUpperCase() + value.slice(1);
   }
 }

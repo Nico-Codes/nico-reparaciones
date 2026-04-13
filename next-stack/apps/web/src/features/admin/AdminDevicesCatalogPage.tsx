@@ -56,12 +56,12 @@ export function AdminDevicesCatalogPage() {
     setModels(response.items);
   }
 
-  async function refreshAll() {
+  async function refreshAll(nextSelectedBrandId = selectedBrandId) {
     setError('');
     try {
       const nextDeviceTypeId = await loadDeviceTypes();
       await loadBrandsAndIssues(nextDeviceTypeId || undefined);
-      await loadModels(selectedBrandId || undefined);
+      await loadModels(nextSelectedBrandId || undefined);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Error cargando catalogo');
     }
@@ -160,6 +160,21 @@ export function AdminDevicesCatalogPage() {
     }, 'Error actualizando marca');
   }
 
+  async function deleteBrand(item: BrandItem) {
+    const confirmed = window.confirm(
+      `Vas a eliminar la marca "${item.name}".\n\nEste cambio es irreversible. Si solo queres ocultarla, usa "Desactivar".`,
+    );
+    if (!confirmed) return;
+    await runCatalogAction(async () => {
+      const nextSelectedBrandId = selectedBrandId === item.id ? '' : selectedBrandId;
+      await deviceCatalogApi.deleteBrand(item.id);
+      if (nextSelectedBrandId !== selectedBrandId) {
+        setSelectedBrandId(nextSelectedBrandId);
+      }
+      await refreshAll(nextSelectedBrandId);
+    }, 'Error eliminando marca');
+  }
+
   async function renameModel(item: ModelItem) {
     const next = window.prompt('Nuevo nombre de modelo', item.name)?.trim();
     if (!next || next === item.name) return;
@@ -176,6 +191,17 @@ export function AdminDevicesCatalogPage() {
     }, 'Error actualizando modelo');
   }
 
+  async function deleteModel(item: ModelItem) {
+    const confirmed = window.confirm(
+      `Vas a eliminar el modelo "${item.name}".\n\nEste cambio es irreversible. Si solo queres ocultarlo, usa "Desactivar".`,
+    );
+    if (!confirmed) return;
+    await runCatalogAction(async () => {
+      await deviceCatalogApi.deleteModel(item.id);
+      await refreshAll();
+    }, 'Error eliminando modelo');
+  }
+
   async function renameIssue(item: IssueItem) {
     const next = window.prompt('Nuevo nombre de falla', item.name)?.trim();
     if (!next || next === item.name) return;
@@ -190,6 +216,17 @@ export function AdminDevicesCatalogPage() {
       await deviceCatalogApi.updateIssue(item.id, { active: !item.active });
       await refreshAll();
     }, 'Error actualizando falla');
+  }
+
+  async function deleteIssue(item: IssueItem) {
+    const confirmed = window.confirm(
+      `Vas a eliminar la falla "${item.name}".\n\nEste cambio es irreversible. Si solo queres ocultarla, usa "Desactivar".`,
+    );
+    if (!confirmed) return;
+    await runCatalogAction(async () => {
+      await deviceCatalogApi.deleteIssue(item.id);
+      await refreshAll();
+    }, 'Error eliminando falla');
   }
 
   return (
@@ -212,6 +249,7 @@ export function AdminDevicesCatalogPage() {
           onCreateBrand={() => void handleCreateBrand()}
           onRenameBrand={(item) => void renameBrand(item)}
           onToggleBrand={(item) => void toggleBrand(item)}
+          onDeleteBrand={(item) => void deleteBrand(item)}
         />
         <AdminDevicesCatalogModelsSection
           filteredModels={filteredModels}
@@ -221,6 +259,7 @@ export function AdminDevicesCatalogPage() {
           onCreateModel={() => void handleCreateModel()}
           onRenameModel={(item) => void renameModel(item)}
           onToggleModel={(item) => void toggleModel(item)}
+          onDeleteModel={(item) => void deleteModel(item)}
         />
         <AdminDevicesCatalogIssuesSection
           issues={issues}
@@ -229,6 +268,7 @@ export function AdminDevicesCatalogPage() {
           onCreateIssue={() => void handleCreateIssue()}
           onRenameIssue={(item) => void renameIssue(item)}
           onToggleIssue={(item) => void toggleIssue(item)}
+          onDeleteIssue={(item) => void deleteIssue(item)}
         />
       </div>
     </div>
