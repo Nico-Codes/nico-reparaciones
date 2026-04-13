@@ -1162,3 +1162,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/web/src/features/repairs/{use-repair-provider-part-pricing.ts,use-repair-provider-part-search.ts,repair-provider-part-pricing-section.helpers.ts,repair-provider-part-pricing-section.helpers.test.ts}`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0097]
+- Fecha: 2026-04-13
+- Estado: aceptada
+- Tema: `admin-repair-detail.sections.tsx` se divide en panels visuales mas chicos
+- Contexto: despues de sacar la orquestacion de `AdminRepairDetailPage.tsx`, el siguiente punto denso dentro del detalle admin seguia siendo `admin-repair-detail.sections.tsx`, que todavia mezclaba stats, badges de estado, pricing sugerido y sidebar tecnica en un unico archivo visual demasiado cargado.
+- Decision: mantener estable `AdminRepairDetailPage.tsx`, `use-admin-repair-detail.ts` y la interfaz visible, pero partir `admin-repair-detail.sections.tsx` en panels visuales mas chicos: `admin-repair-detail-status-panels.tsx`, `admin-repair-detail-pricing-panels.tsx` y `admin-repair-detail-sidebar.tsx`. El archivo `sections` queda como composicion de bloques y preserva la frontera publica del feature.
+- Impacto: baja la densidad visual y facilita mantenimiento local del detalle admin sin tocar rutas, payloads ni reglas de negocio. El subdominio `repairs` queda mas consistente: shell liviano, hook de orquestacion, helpers puros y panels visuales separados.
+- Alternativas consideradas: seguir refinando hooks del mismo feature o saltar a otro `sections.tsx`; descartado porque el mayor retorno inmediato estaba en cerrar el hotspot visual restante del detalle admin antes de movernos a otro subdominio.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/repairs/{admin-repair-detail.sections.tsx,admin-repair-detail-status-panels.tsx,admin-repair-detail-pricing-panels.tsx,admin-repair-detail-sidebar.tsx}`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano

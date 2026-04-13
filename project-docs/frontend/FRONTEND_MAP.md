@@ -325,6 +325,10 @@ En la ola de simplificacion del 2026-03-30 quedaron confirmados estos limites in
 - `AdminRepairDetailPage.tsx` ahora delega la UI en:
   - `admin-repair-detail.helpers.ts`
   - `admin-repair-detail.sections.tsx`
+- `admin-repair-detail.sections.tsx` ahora delega bloques visuales densos en:
+  - `admin-repair-detail-status-panels.tsx`
+  - `admin-repair-detail-pricing-panels.tsx`
+  - `admin-repair-detail-sidebar.tsx`
 - `AdminRepairDetailPage.tsx` ahora tambien delega la orquestacion pesada en:
   - `use-admin-repair-detail.ts`
 - el archivo principal de detalle queda centrado en:

@@ -13,6 +13,29 @@
 ---
 
 ### 2026-04-13 - Codex
+- Alcance: refinamiento visual del detalle admin de reparaciones para cerrar el hotspot que seguia dentro de `sections.tsx`.
+- Tipo de intervencion: refactor interno seguro del frontend `repairs`, separando panels visuales sin tocar hooks ni contratos del feature.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/repairs/{admin-repair-detail.sections.tsx,admin-repair-detail-status-panels.tsx,admin-repair-detail-pricing-panels.tsx,admin-repair-detail-sidebar.tsx}`
+  - `project-docs/frontend/FRONTEND_MAP.md`
+  - `project-docs/architecture/ARCHITECTURE.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No deliberado. Se mantiene el mismo flujo del detalle admin; cambia solo la separacion interna de los bloques visuales de estado, pricing sugerido e informacion lateral.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `cmd /c npm run qa:route-parity`
+  - `git diff --check`
+- Riesgos / notas:
+  - `AdminRepairDetailPage.tsx` ya no depende de un unico `sections.tsx` tan cargado, pero el siguiente refinamiento razonable dentro de `repairs` pasa por `admin-repair-create.sections.tsx`
+  - la frontera publica del feature se mantiene estable: page + hook + sections siguen exportando igual hacia el resto del modulo
+
+---
+
+### 2026-04-13 - Codex
 - Alcance: segunda ola de refinamiento sobre el flujo tecnico de proveedor + repuesto en `repairs`.
 - Tipo de intervencion: refactor interno seguro del hotspot principal del frontend para separar busqueda de proveedores de preview/snapshot.
 - Archivos tocados:

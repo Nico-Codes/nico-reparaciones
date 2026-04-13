@@ -460,7 +460,8 @@ Desde la ola de simplificacion de 2026-03-30 quedaron formalizados estos limites
   - `repair-provider-part-pricing-section.snapshot.tsx` para snapshot activo e historial
 - `AdminRepairDetailPage.tsx` ahora queda como orquestador de carga, validacion y guardado:
   - `admin-repair-detail.helpers.ts` concentra parseo, validaciones y diff del patch
-  - `admin-repair-detail.sections.tsx` concentra stats, estado, formulario, sugerencias e historial
+  - `admin-repair-detail.sections.tsx` concentra la composicion de stats, estado, formulario, sugerencias e historial
+  - `admin-repair-detail-status-panels.tsx`, `admin-repair-detail-pricing-panels.tsx` y `admin-repair-detail-sidebar.tsx` separan los bloques visuales mas densos del detalle
   - `use-admin-repair-detail.ts` concentra fetch del caso, timeline, pricing suggestion, save/reload y wiring con snapshots
 - `AdminRepairCreatePage.tsx` ahora queda como orquestador de catalogo, pricing y submit:
   - `admin-repair-create.helpers.ts` concentra normalizacion, validaciones y armado del payload
