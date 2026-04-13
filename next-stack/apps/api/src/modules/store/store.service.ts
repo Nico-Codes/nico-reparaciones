@@ -100,6 +100,7 @@ export class StoreService {
         'business_name',
         'shop_name',
         'brand_asset.logo_principal.path',
+        'brand_asset.auth_login_background.path',
         'brand_asset.icon_settings.path',
         'brand_asset.icon_carrito.path',
         'brand_asset.icon_logout.path',
@@ -121,6 +122,7 @@ export class StoreService {
       const raw = {
         siteTitle: map.get('business_name') || map.get('shop_name') || 'NicoReparaciones',
         logoPrincipal: map.get('brand_asset.logo_principal.path') || 'brand/logo.png',
+        authPanelImage: map.get('brand_asset.auth_login_background.path') || '',
         iconSettings: map.get('brand_asset.icon_settings.path') || 'icons/settings.svg',
         iconCarrito: map.get('brand_asset.icon_carrito.path') || 'icons/carrito.svg',
         iconLogout: map.get('brand_asset.icon_logout.path') || 'icons/logout.svg',
@@ -141,6 +143,7 @@ export class StoreService {
       return {
         siteTitle: raw.siteTitle.trim() || 'NicoReparaciones',
         logoPrincipal: this.resolveHeroAssetUrl(raw.logoPrincipal) ?? '/brand/logo.png',
+        authPanelImage: this.resolveHeroAssetUrl(raw.authPanelImage),
         icons: {
           settings: this.resolveHeroAssetUrl(raw.iconSettings),
           carrito: this.resolveHeroAssetUrl(raw.iconCarrito),
@@ -165,6 +168,7 @@ export class StoreService {
       return {
         siteTitle: 'NicoReparaciones',
         logoPrincipal: this.resolveHeroAssetUrl('brand/logo.png') ?? '/brand/logo.png',
+        authPanelImage: null,
         icons: {
           settings: this.resolveHeroAssetUrl('icons/settings.svg'),
           carrito: this.resolveHeroAssetUrl('icons/carrito.svg'),

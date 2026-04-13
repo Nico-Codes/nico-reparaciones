@@ -128,6 +128,20 @@ export const STORE_HERO_ASSETS: AssetCard[] = [
   },
 ];
 
+export const AUTH_VISUAL_ASSETS: AssetCard[] = [
+  {
+    title: 'Fondo visual login',
+    filename: 'brand-assets/identity/auth-login-background.png',
+    slot: 'auth_login_background',
+    settingKey: 'brand_asset.auth_login_background.path',
+    defaultPath: '',
+    formats: 'PNG, JPG, JPEG, WEBP',
+    maxKb: 6144,
+    preview: { kind: 'hero' },
+    showReset: true,
+  },
+];
+
 export const NAV_ICON_ASSETS: AssetCard[] = [
   {
     title: 'Icono ajustes',
@@ -236,6 +250,7 @@ export const LOGO_ASSETS: AssetCard[] = [
 export const VISUAL_IDENTITY_SECTIONS: AssetSectionDefinition[] = [
   { title: 'Favicons e iconos de app', items: FAVICON_ASSETS, columns: 'three' },
   { title: 'Portada de tienda', items: STORE_HERO_ASSETS, columns: 'two' },
+  { title: 'Acceso y auth', items: AUTH_VISUAL_ASSETS, columns: 'one' },
   { title: 'Iconos de navegacion', items: NAV_ICON_ASSETS, columns: 'three' },
   { title: 'Logos', items: LOGO_ASSETS, columns: 'one' },
 ];

@@ -20,6 +20,20 @@ Registrar decisiones tecnicas confirmadas para evitar dependencia de memoria ora
 
 ---
 
+### [DL-0102]
+- Fecha: 2026-04-13
+- Estado: aceptada
+- Tema: tratar el fondo visual del login como asset administrable de branding y compactar el acceso para evitar scroll en desktop
+- Contexto: el shell de auth ya habia ganado una escena propia, pero el panel izquierdo seguia dependiendo solo de gradientes fijos en codigo y el login seguia quedando largo en pantallas desktop medianas. Eso rompia dos criterios: el branding visual no era editable desde admin y la vista principal de acceso no entraba completa con comodidad.
+- Decision: agregar `brand_asset.auth_login_background.path` al circuito canonico de branding, administrarlo desde `AdminVisualIdentityPage`, exponerlo en `GET /api/store/branding` y consumirlo en `AuthLayout` como fondo del panel visual izquierdo con overlay seguro. Al mismo tiempo, reducir la altura efectiva del flujo de login unificando el CTA de registro dentro de la misma tarjeta y compactando spacing del shell de auth.
+- Impacto: el fondo del login deja de ser una decision hardcodeada del frontend y pasa a gestionarse igual que hero, logos e iconos. El acceso principal entra mejor en desktop y mantiene la politica de recomendar registro solo desde login.
+- Alternativas consideradas: dejar el fondo del login embebido en CSS o crear un endpoint/configuracion paralela solo para auth; descartado por duplicar fuentes de verdad y por complicar el mantenimiento del branding.
+- Archivos / modulos afectados: `next-stack/apps/api/src/modules/{admin,store}/*`, `next-stack/apps/web/src/features/{auth,admin,store}/*`, `next-stack/apps/web/src/styles/auth.css`, `project-docs/architecture/{ARCHITECTURE.md,ASSET_STRATEGY.md}`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/api`, `test --workspace @nico/api`, `build --workspace @nico/api`, `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `git diff --check`.
+- Responsable: Codex + operador humano
+
+---
+
 ### [DL-0099]
 - Fecha: 2026-04-13
 - Estado: aceptada

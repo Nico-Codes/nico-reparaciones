@@ -13,6 +13,40 @@
 ---
 
 ### 2026-04-13 - Codex
+- Alcance: volver administrable desde branding el fondo visual del login y compactar el flujo de acceso para que entre mejor en desktop sin scroll externo.
+- Tipo de intervencion: ajuste funcional controlado en backend `admin/store` + refactor visual puntual del frontend `auth/admin`.
+- Archivos tocados:
+  - `next-stack/apps/api/src/modules/admin/app-settings.registry.ts`
+  - `next-stack/apps/api/src/modules/admin/app-settings.registry.test.ts`
+  - `next-stack/apps/api/src/modules/store/store.service.ts`
+  - `next-stack/apps/web/src/features/store/types.ts`
+  - `next-stack/apps/web/src/features/admin/admin-visual-identity.helpers.ts`
+  - `next-stack/apps/web/src/features/admin/admin-visual-identity.helpers.test.ts`
+  - `next-stack/apps/web/src/features/admin/admin-visual-identity.sections.tsx`
+  - `next-stack/apps/web/src/features/auth/AuthLayout.tsx`
+  - `next-stack/apps/web/src/features/auth/LoginPage.tsx`
+  - `next-stack/apps/web/src/styles/auth.css`
+  - `project-docs/architecture/ARCHITECTURE.md`
+  - `project-docs/architecture/ASSET_STRATEGY.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. El admin ahora puede subir/restaurar el fondo visual del login desde identidad visual. `AuthLayout` consume ese asset desde `/store/branding` y login se compacta para entrar mejor en desktop, manteniendo el registro solo como recomendacion dentro de la propia vista.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/api`
+  - `cmd /c npm run test --workspace @nico/api`
+  - `cmd /c npm run build --workspace @nico/api`
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - si no se configura imagen, auth sigue usando el fallback abstracto actual
+  - la compactacion prioriza desktop; mobile mantiene el layout en columna unica con banda visual superior
+
+---
+
+### 2026-04-13 - Codex
 - Alcance: rediseñar la experiencia visual de auth para alinearla a una composicion de dos paneles, con topbar publica liviana y escena propia de acceso.
 - Tipo de intervencion: refactor visual/UX del frontend `auth` sin cambios en rutas, APIs ni contratos de componentes globales.
 - Archivos tocados:

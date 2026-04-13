@@ -60,6 +60,7 @@ export function AuthLayout({
 
   const brandTitle = (branding?.siteTitle || 'NicoReparaciones').trim();
   const brandLogoUrl = branding?.logoPrincipal || null;
+  const authPanelImageUrl = branding?.authPanelImage || null;
 
   const publicLinks = useMemo(
     () => [
@@ -134,7 +135,15 @@ export function AuthLayout({
 
       <div className="container-page auth-stage">
         <div className="auth-scene">
-          <aside className="auth-visual">
+          <aside className={`auth-visual ${authPanelImageUrl ? 'has-media' : ''}`}>
+            {authPanelImageUrl ? (
+              <img
+                src={authPanelImageUrl}
+                alt=""
+                aria-hidden="true"
+                className="auth-visual__media"
+              />
+            ) : null}
             <span className="auth-visual__shape auth-visual__shape--one" />
             <span className="auth-visual__shape auth-visual__shape--two" />
             <span className="auth-visual__shape auth-visual__shape--three" />
@@ -156,7 +165,7 @@ export function AuthLayout({
               </div>
 
               <span className="auth-visual__eyebrow">Cuenta web</span>
-              <h2 className="auth-visual__title">Acceso claro, simple y seguro.</h2>
+              <h2 className="auth-visual__title">Acceso claro y ordenado.</h2>
               <p className="auth-visual__copy">Tu cuenta Nico para entrar, seguir pedidos y consultar reparaciones sin friccion.</p>
             </div>
           </aside>

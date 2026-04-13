@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   acceptFromFormats,
+  AUTH_VISUAL_ASSETS,
   FAVICON_ASSETS,
   resolveAssetState,
   summarizeAssetPath,
@@ -46,5 +47,12 @@ describe('admin-visual-identity.helpers', () => {
     expect(summarizeAssetPath('')).toBe('');
     expect(acceptFromFormats('PNG, JPG, SVG')).toBe('.png,.jpg,.svg');
     expect(acceptFromFormats('ICO')).toBe('.ico');
+  });
+
+  it('exposes the auth visual asset in the branding catalog', () => {
+    expect(AUTH_VISUAL_ASSETS[0]).toMatchObject({
+      slot: 'auth_login_background',
+      settingKey: 'brand_asset.auth_login_background.path',
+    });
   });
 });
