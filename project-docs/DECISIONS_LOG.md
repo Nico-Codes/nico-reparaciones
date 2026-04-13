@@ -1224,3 +1224,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/web/src/{App.tsx}`, `next-stack/apps/web/src/features/auth/{AuthLayout.tsx,LoginPage.tsx,RegisterPage.tsx,VerifyEmailPage.tsx}`, `next-stack/apps/web/src/layouts/{AppShell.tsx}`, `next-stack/apps/web/src/layouts/app-shell/mobile-sidebar.tsx`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0101]
+- Fecha: 2026-04-13
+- Estado: aceptada
+- Tema: auth adopta una escena visual propia de dos paneles, pero sin separarse del sistema visual de Nico
+- Contexto: despues de limpiar la politica de acceso publico, el problema restante era visual y estructural. Login, registro y recuperacion seguian funcionando, pero la experiencia de auth no tenia una identidad clara y quedaba demasiado plana frente a la referencia deseada. Al mismo tiempo, no convenia reusar `AppShell` completo ni contaminar `layout.css` o `components.css` con un rediseño especifico de auth.
+- Decision: mantener `AuthLayout` como shell publico de auth, pero rehacerlo con dos capas: `topbar` liviana y `auth-scene` propia debajo. La escena usa una composicion de dos paneles con un bloque izquierdo visual puro y un bloque derecho para encabezado + cards del flujo. El styling vive en `styles/auth.css` y queda encapsulado al subdominio `auth`. `LoginPage` mantiene la recomendacion de alta como unico punto publico de registro; `RegisterPage`, `ForgotPasswordPage`, `ResetPasswordPage`, `VerifyEmailPage` y `BootstrapAdminPage` heredan el mismo shell con distinta sobriedad de contenido.
+- Impacto: auth gana una identidad visual consistente, mas cercana a la referencia deseada, sin tocar APIs, rutas ni contratos globales de `Button`, `TextField` o `SectionCard`. El repo mantiene orden visual porque el cambio no invade el styling del resto de los contextos (`store`, `admin`, `account`).
+- Alternativas consideradas: copiar casi literal la referencia o rediseñar componentes globales para que el efecto salga "solo" desde el sistema; descartado porque lo primero rompia la identidad de Nico y lo segundo contaminaba estilos transversales por una necesidad localizada.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/auth/{AuthLayout.tsx,LoginPage.tsx,RegisterPage.tsx,ForgotPasswordPage.tsx,ResetPasswordPage.tsx,VerifyEmailPage.tsx,BootstrapAdminPage.tsx}`, `next-stack/apps/web/src/styles/{auth.css}`, `next-stack/apps/web/src/styles.css`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `git diff --check`.
+- Responsable: Codex + operador humano

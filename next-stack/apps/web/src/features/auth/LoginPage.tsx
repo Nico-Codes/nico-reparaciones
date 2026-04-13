@@ -70,13 +70,14 @@ export function LoginPage() {
   return (
     <AuthLayout
       title="Ingresar"
-      subtitle="Entra con tu cuenta para seguir pedidos, consultar reparaciones y gestionar tu perfil."
+      subtitle="Entra con tu cuenta para seguir pedidos, consultar reparaciones y gestionar tu perfil desde un solo lugar."
       eyebrow="Cuenta"
       statusLabel={needsTwoFactor ? '2FA requerida' : 'Acceso'}
     >
       <SectionCard
-        title="Inicia sesion"
-        description="Usa tu email y contrasena para entrar. Si tenes 2FA activa, el sistema te va a pedir el codigo al continuar."
+        className="auth-card"
+        title="Entrar a tu cuenta"
+        description="Usa tu email y contrasena para continuar. Si tenes 2FA activa, el sistema te va a pedir el codigo en el mismo flujo."
         actions={needsTwoFactor ? <StatusBadge tone="warning" size="sm" label="Codigo 2FA" /> : undefined}
       >
         {result ? (
@@ -88,7 +89,7 @@ export function LoginPage() {
           </div>
         ) : null}
 
-        <form className="space-y-4" onSubmit={onSubmit}>
+        <form className="auth-form" onSubmit={onSubmit}>
           <TextField
             label="Email"
             type="email"
@@ -125,21 +126,22 @@ export function LoginPage() {
           </Button>
         </form>
 
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200 pt-4 text-sm text-zinc-600">
+        <div className="auth-link-row">
           <span>Olvidaste tu contrasena?</span>
-          <Link className="font-semibold text-sky-700 hover:text-sky-800" to="/auth/forgot-password">
+          <Link className="auth-inline-link" to="/auth/forgot-password">
             Recuperarla
           </Link>
         </div>
       </SectionCard>
 
       <SectionCard
+        className="auth-card auth-card--secondary"
         tone="muted"
         title="No tenes cuenta?"
         description="Podes crear una cuenta web para comprar, seguir pedidos y consultar reparaciones desde el mismo perfil."
       >
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-zinc-600">El registro sigue disponible, pero lo recomendamos desde este paso para mantener el acceso ordenado.</p>
+        <div className="auth-register-prompt">
+          <p className="auth-helper-copy">El registro sigue disponible, pero lo recomendamos desde este paso para mantener el acceso ordenado y sin duplicar accesos publicos.</p>
           <Button asChild variant="outline" className="justify-center">
             <Link to="/auth/register">Crear cuenta</Link>
           </Button>

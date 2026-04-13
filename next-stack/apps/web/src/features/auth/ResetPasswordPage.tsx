@@ -25,7 +25,7 @@ export function ResetPasswordPage() {
       setFeedback({ text: res.message, tone: 'success' });
     } catch (error) {
       setFeedback({
-        text: (error as { message?: string })?.message ?? 'No pudimos actualizar la contraseña.',
+        text: (error as { message?: string })?.message ?? 'No pudimos actualizar la contrasena.',
         tone: 'danger',
       });
     } finally {
@@ -35,28 +35,29 @@ export function ResetPasswordPage() {
 
   return (
     <AuthLayout
-      title="Restablecer contraseña"
-      subtitle="Definí una nueva contraseña para volver a ingresar con seguridad."
+      title="Restablecer contrasena"
+      subtitle="Defini una nueva contrasena para volver a ingresar con seguridad."
       eyebrow="Seguridad"
       statusLabel={token.trim() ? 'Token cargado' : 'Token manual'}
     >
       <SectionCard
-        title="Nueva contraseña"
-        description="Pegá el token recibido y elegí una clave nueva para la cuenta."
+        className="auth-card"
+        title="Nueva contrasena"
+        description="Pega el token recibido y elegi una clave nueva para la cuenta."
         actions={token.trim() ? <StatusBadge tone="info" size="sm" label="Token listo" /> : <StatusBadge tone="warning" size="sm" label="Token requerido" />}
       >
-        <form className="space-y-4" onSubmit={onSubmit}>
+        <form className="auth-form" onSubmit={onSubmit}>
           <TextAreaField
             label="Token"
             value={token}
             onChange={(e) => setToken(e.target.value)}
             rows={3}
-            placeholder="Pegá acá el token del enlace o del mail"
+            placeholder="Pega aca el token del enlace o del mail"
             required
           />
 
           <TextField
-            label="Nueva contraseña"
+            label="Nueva contrasena"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -70,7 +71,7 @@ export function ResetPasswordPage() {
               <Link to="/auth/login">Volver a ingresar</Link>
             </Button>
             <Button type="submit" className="w-full justify-center" disabled={loading}>
-              {loading ? 'Actualizando...' : 'Guardar nueva contraseña'}
+              {loading ? 'Actualizando...' : 'Guardar nueva contrasena'}
             </Button>
           </div>
         </form>
@@ -79,7 +80,7 @@ export function ResetPasswordPage() {
           <div className={`ui-alert mt-4 ${feedback.tone === 'success' ? 'ui-alert--success' : 'ui-alert--danger'}`}>
             <div>
               <span className="ui-alert__title">
-                {feedback.tone === 'success' ? 'Contraseña actualizada' : 'No pudimos actualizar la contraseña.'}
+                {feedback.tone === 'success' ? 'Contrasena actualizada' : 'No pudimos actualizar la contrasena.'}
               </span>
               <div className="ui-alert__text">{feedback.text}</div>
             </div>

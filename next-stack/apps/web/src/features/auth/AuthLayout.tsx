@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Wrench } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { PageHeader } from '@/components/ui/page-header';
 import { PageShell } from '@/components/ui/page-shell';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { authStorage } from './storage';
@@ -90,35 +89,33 @@ export function AuthLayout({
   }, [authUser, location.pathname]);
 
   return (
-    <PageShell context="account" className="min-h-screen">
-      <header className="border-b border-zinc-200 bg-white/90 backdrop-blur">
-        <div className="container-page py-3">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <Link to="/store" className="flex min-w-0 items-center gap-3">
-              {brandLogoUrl ? (
-                <img src={brandLogoUrl} className="h-10 w-10 rounded-2xl bg-white object-contain ring-1 ring-zinc-100" alt={brandTitle} />
-              ) : (
-                <div className="grid h-10 w-10 place-items-center rounded-2xl border border-zinc-100 bg-white text-sky-600 ring-1 ring-zinc-100">
-                  <Wrench className="h-5 w-5" />
-                </div>
-              )}
-              <div className="min-w-0 leading-tight">
+    <PageShell context="account" className="auth-shell">
+      <header className="auth-topbar">
+        <div className="container-page">
+          <div className="auth-topbar__row">
+            <Link to="/store" className="auth-topbar__brand">
+              <span className="auth-topbar__mark">
+                {brandLogoUrl ? (
+                  <img src={brandLogoUrl} className="auth-topbar__logo" alt={brandTitle} />
+                ) : (
+                  <span className="auth-topbar__fallback">
+                    <Wrench className="h-5 w-5" />
+                  </span>
+                )}
+              </span>
+              <div className="auth-topbar__copy">
                 <BrandWordmark title={brandTitle} />
-                <div className="hidden truncate text-[11px] text-zinc-500 sm:block">Acceso a cuenta, pedidos y reparaciones</div>
+                <span className="auth-topbar__tag">Cuenta, pedidos y reparaciones</span>
               </div>
             </Link>
 
-            <div className="flex flex-col gap-3 md:flex-row md:items-center">
-              <nav className="flex flex-wrap items-center gap-2">
+            <div className="auth-topbar__nav-wrap">
+              <nav className="auth-topbar__nav">
                 {publicLinks.map((link) => (
                   <Link
                     key={link.label}
                     to={link.to}
-                    className={`inline-flex items-center rounded-full px-3 py-2 text-sm font-bold transition ${
-                      link.active
-                        ? 'bg-sky-50 text-sky-700 ring-1 ring-sky-200'
-                        : 'text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900'
-                    }`}
+                    className={`auth-topbar__nav-link ${link.active ? 'is-active' : ''}`}
                   >
                     {link.label}
                   </Link>
@@ -126,7 +123,7 @@ export function AuthLayout({
               </nav>
 
               {authCta ? (
-                <Button asChild variant={authCta.variant} className="justify-center rounded-full px-5">
+                <Button asChild variant={authCta.variant} className="auth-topbar__cta">
                   <Link to={authCta.to}>{authCta.label}</Link>
                 </Button>
               ) : null}
@@ -135,22 +132,53 @@ export function AuthLayout({
         </div>
       </header>
 
-      <div className="container-page px-4 py-6 md:py-8">
-        <div className="mx-auto max-w-5xl space-y-6">
-          <PageHeader
-            context="account"
-            eyebrow={eyebrow}
-            title={title}
-            subtitle={subtitle}
-            actions={(
-              <>
-                <StatusBadge tone="info" label={statusLabel} />
-                {headerActions}
-              </>
-            )}
-          />
+      <div className="container-page auth-stage">
+        <div className="auth-scene">
+          <aside className="auth-visual">
+            <span className="auth-visual__shape auth-visual__shape--one" />
+            <span className="auth-visual__shape auth-visual__shape--two" />
+            <span className="auth-visual__shape auth-visual__shape--three" />
+            <span className="auth-visual__shape auth-visual__shape--four" />
+            <span className="auth-visual__shape auth-visual__shape--five" />
 
-          <div className="mx-auto w-full max-w-2xl space-y-4">{children}</div>
+            <div className="auth-visual__content">
+              <div className="auth-visual__brand-chip">
+                <span className="auth-visual__brand-mark">
+                  {brandLogoUrl ? (
+                    <img src={brandLogoUrl} className="auth-visual__brand-logo" alt={brandTitle} />
+                  ) : (
+                    <span className="auth-visual__brand-fallback">
+                      <Wrench className="h-4 w-4" />
+                    </span>
+                  )}
+                </span>
+                <span className="auth-visual__brand-title">{brandTitle}</span>
+              </div>
+
+              <span className="auth-visual__eyebrow">Cuenta web</span>
+              <h2 className="auth-visual__title">Acceso claro, simple y seguro.</h2>
+              <p className="auth-visual__copy">Tu cuenta Nico para entrar, seguir pedidos y consultar reparaciones sin friccion.</p>
+            </div>
+          </aside>
+
+          <section className="auth-panel">
+            <div className="auth-panel__surface">
+              <div className="auth-panel__header">
+                <div>
+                  <p className="auth-panel__eyebrow">{eyebrow}</p>
+                  <h1 className="auth-panel__title">{title}</h1>
+                  {subtitle ? <p className="auth-panel__subtitle">{subtitle}</p> : null}
+                </div>
+
+                <div className="auth-panel__meta">
+                  <StatusBadge tone="info" label={statusLabel} />
+                  {headerActions}
+                </div>
+              </div>
+
+              <div className="auth-panel__content">{children}</div>
+            </div>
+          </section>
         </div>
       </div>
     </PageShell>

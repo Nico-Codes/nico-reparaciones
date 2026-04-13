@@ -21,7 +21,7 @@ export function ForgotPasswordPage() {
     setPreviewToken('');
 
     if (!normalizedEmail) {
-      setFeedback({ text: 'Ingresá un email válido para recibir el enlace.', tone: 'danger' });
+      setFeedback({ text: 'Ingresa un email valido para recibir el enlace.', tone: 'danger' });
       return;
     }
 
@@ -32,7 +32,7 @@ export function ForgotPasswordPage() {
       setPreviewToken(res.previewToken ?? '');
     } catch (error) {
       setFeedback({
-        text: (error as { message?: string })?.message ?? 'No pudimos enviar el enlace de recuperación.',
+        text: (error as { message?: string })?.message ?? 'No pudimos enviar el enlace de recuperacion.',
         tone: 'danger',
       });
     } finally {
@@ -42,17 +42,18 @@ export function ForgotPasswordPage() {
 
   return (
     <AuthLayout
-      title="Recuperar contraseña"
+      title="Recuperar contrasena"
       subtitle="Te enviaremos un enlace seguro para restablecer el acceso a tu cuenta."
       eyebrow="Acceso"
-      statusLabel="Recuperación"
+      statusLabel="Recuperacion"
     >
       <SectionCard
+        className="auth-card"
         title="Restablecer por email"
-        description="Ingresá el correo asociado a tu cuenta y te mandamos un enlace para continuar."
+        description="Ingresa el correo asociado a tu cuenta y te mandamos un enlace para continuar."
         actions={<StatusBadge tone="warning" size="sm" label="Enlace seguro" />}
       >
-        <form className="space-y-4" onSubmit={onSubmit}>
+        <form className="auth-form" onSubmit={onSubmit}>
           <TextField
             label="Email"
             type="email"

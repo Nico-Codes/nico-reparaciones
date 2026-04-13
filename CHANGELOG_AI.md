@@ -13,6 +13,34 @@
 ---
 
 ### 2026-04-13 - Codex
+- Alcance: rediseñar la experiencia visual de auth para alinearla a una composicion de dos paneles, con topbar publica liviana y escena propia de acceso.
+- Tipo de intervencion: refactor visual/UX del frontend `auth` sin cambios en rutas, APIs ni contratos de componentes globales.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/auth/AuthLayout.tsx`
+  - `next-stack/apps/web/src/features/auth/LoginPage.tsx`
+  - `next-stack/apps/web/src/features/auth/RegisterPage.tsx`
+  - `next-stack/apps/web/src/features/auth/ForgotPasswordPage.tsx`
+  - `next-stack/apps/web/src/features/auth/ResetPasswordPage.tsx`
+  - `next-stack/apps/web/src/features/auth/VerifyEmailPage.tsx`
+  - `next-stack/apps/web/src/features/auth/BootstrapAdminPage.tsx`
+  - `next-stack/apps/web/src/styles.css`
+  - `next-stack/apps/web/src/styles/auth.css`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si, menor. Se mantiene el flujo de login, alta, reset, verificacion y bootstrap, pero auth pasa a tener un shell visual propio con escena de dos paneles, topbar publica coherente y cards de acceso adaptadas a ese nuevo escenario. El registro sigue apareciendo solo como recomendacion desde login.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - el cambio esta encapsulado en `auth.css` para no contaminar el styling global del resto del sitio
+  - `BootstrapAdminPage` hereda el shell base de auth, pero sin un tratamiento visual especial fuera de esa consistencia compartida
+
+---
+
+### 2026-04-13 - Codex
 - Alcance: limpiar el acceso publico para dejar un solo CTA de login, quitar la promocion global de registro y ordenar visualmente las vistas de auth con una navbar publica liviana.
 - Tipo de intervencion: ajuste funcional controlado del frontend `auth` + simplificacion del estado no autenticado del shell publico.
 - Archivos tocados:

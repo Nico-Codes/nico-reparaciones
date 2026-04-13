@@ -67,11 +67,12 @@ export function RegisterPage() {
       statusLabel="Registro"
     >
       <SectionCard
+        className="auth-card"
         title="Completa tus datos"
-        description="Esta cuenta te va a servir para compras, seguimiento y verificacion por email."
+        description="Vas a poder usar la misma cuenta para compras, seguimiento y verificacion por email."
         actions={<StatusBadge tone="info" size="sm" label="Alta web" />}
       >
-        <form className="space-y-4" onSubmit={onSubmit}>
+        <form className="auth-form" onSubmit={onSubmit}>
           <TextField
             label="Nombre"
             type="text"
@@ -106,9 +107,9 @@ export function RegisterPage() {
           </Button>
         </form>
 
-        <div className="mt-4 border-t border-zinc-200 pt-4 text-sm text-zinc-600">
+        <div className="auth-link-row">
           Ya tenes cuenta?{' '}
-          <Link className="font-semibold text-sky-700 hover:text-sky-800" to="/auth/login">
+          <Link className="auth-inline-link" to="/auth/login">
             Ingresa
           </Link>
         </div>

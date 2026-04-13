@@ -77,7 +77,11 @@ export function VerifyEmailPage() {
       statusLabel={canConfirmToken ? 'Token cargado' : 'Verificacion'}
       headerActions={user?.email ? <StatusBadge tone="warning" label={user.email} /> : null}
     >
-      <SectionCard title="Correo electronico" description="Este paso confirma la titularidad de la cuenta y habilita un seguimiento mas confiable.">
+      <SectionCard
+        className="auth-card"
+        title="Correo electronico"
+        description="Este paso confirma la titularidad de la cuenta y habilita un seguimiento mas confiable."
+      >
         {showMissingContext ? (
           <EmptyState
             title="Necesitas iniciar sesion o abrir el enlace completo"
