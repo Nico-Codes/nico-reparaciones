@@ -557,3 +557,19 @@ Seguridad confirmada:
 - `styles.css` ya no es monolitico, pero la cascada visual global sigue siendo un punto transversal sensible aunque ahora este seccionada en `src/styles/*`
 - `catalog-admin.service.ts` y `admin.service.ts` escriben en `apps/web/public`
 - scripts de migracion y visual parity todavia dependen del repo root legacy
+
+## Segunda ola de refinamiento frontend
+
+En el cierre de la segunda ola del 2026-04-13 se consolidaron fronteras internas mas chicas sin cambiar rutas ni contratos:
+
+- `orders` separa la tabla/metricas admin en row, counters y detail panel dedicados.
+- `repairs` separa la busqueda de proveedor + repuesto en controles, resultados y resumen, y extrae catalogo/pricing sugerido del hook de alta a hooks dedicados.
+- `admin/pricing` deja `sections.tsx` como frontera publica y mueve controles, rows y panels a archivos propios.
+- `providers`, `dashboard` y `catalogAdmin/products` dejan de mezclar todas las cards internas en un solo `sections.tsx`.
+- `hero settings`, `quick sales` y `product edit` cierran la misma estrategia: wrapper fino + panels/blocks especializados.
+
+Impacto arquitectonico:
+
+- baja la profundidad accidental de los wrappers visuales;
+- los puntos publicos del feature quedan mas estables;
+- el peso real del frontend pasa a paneles terminales y hooks de dominio, no a paginas o `sections.tsx` monoliticos.

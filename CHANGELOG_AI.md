@@ -13,6 +13,33 @@
 ---
 
 ### 2026-04-13 - Codex
+- Alcance: cierre de la segunda ola de refinamiento del frontend despues del seccionado principal.
+- Tipo de intervencion: refactor interno seguro de wrappers visuales y hooks del frontend para dejar fronteras publicas mas finas y panels/hooks especializados.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/orders/{admin-orders.sections.tsx,admin-orders-counters.tsx,admin-orders-detail-panel.tsx,admin-orders-row.tsx,admin-quick-sales.sections.tsx,admin-quick-sales-search.tsx,admin-quick-sales-ticket.tsx}`
+  - `next-stack/apps/web/src/features/repairs/{repair-provider-part-pricing-section.search.tsx,repair-provider-part-search-controls.tsx,repair-provider-part-search-results.tsx,repair-provider-part-selected-summary.tsx,use-admin-repair-create.ts,use-admin-repair-create-catalog.ts,use-admin-repair-create-pricing.ts}`
+  - `next-stack/apps/web/src/features/providers/{admin-providers.sections.tsx,admin-providers-panels.tsx}`
+  - `next-stack/apps/web/src/features/admin/{admin-dashboard.sections.tsx,admin-dashboard-panels.tsx,admin-product-pricing-rules.sections.tsx,admin-product-pricing-rules.fields.tsx,admin-product-pricing-rules-panels.tsx,admin-repair-pricing-rules.sections.tsx,admin-repair-pricing-rules.controls.tsx,admin-repair-pricing-rules-row.tsx,admin-store-hero-settings.sections.tsx,admin-store-hero-settings.assets.tsx,admin-store-hero-settings.form.tsx}`
+  - `next-stack/apps/web/src/features/catalogAdmin/{admin-products.sections.tsx,admin-products-panels.tsx,admin-product-edit.sections.tsx,admin-product-edit-panels.tsx}`
+  - `project-docs/frontend/FRONTEND_MAP.md`
+  - `project-docs/architecture/ARCHITECTURE.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No deliberado. Se mantiene el mismo comportamiento visible; cambia la segmentacion interna y se sanea copy/estructura en algunos bloques operativos.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `cmd /c npm run qa:route-parity`
+  - `git diff --check`
+- Riesgos / notas:
+  - con esta tanda se da por cerrada la segunda ola de refinamiento: ya no quedan paginas o `sections.tsx` claramente monoliticos pendientes
+  - lo que sigue grande en frontend ya es complejidad terminal de paneles o hooks de dominio, no deuda obvia de seccionado
+
+---
+
+### 2026-04-13 - Codex
 - Alcance: refinamiento visual del alta admin de reparaciones para cerrar el hotspot que seguia dentro de `sections.tsx`.
 - Tipo de intervencion: refactor interno seguro del frontend `repairs`, separando panels visuales del alta y saneando copy del feature.
 - Archivos tocados:

@@ -20,6 +20,20 @@ Registrar decisiones tecnicas confirmadas para evitar dependencia de memoria ora
 
 ---
 
+### [DL-0099]
+- Fecha: 2026-04-13
+- Estado: aceptada
+- Tema: dar por cerrada la segunda ola de refinamiento del frontend cuando los wrappers queden como fronteras y no como hotspots
+- Contexto: despues del seccionado principal, ya no quedaban paginas grandes sin partir, pero seguian varios `sections.tsx` y un hook de `repairs` mezclando demasiadas responsabilidades internas. El riesgo era seguir rompiendo por tamaño de archivo sin una regla clara de cierre.
+- Decision: cerrar la segunda ola cuando los wrappers publicos (`sections.tsx` y hooks orquestadores) queden reducidos a composicion y deleguen la logica o la UI densa a panels, rows o hooks especializados. Se aplico ese criterio en `orders`, `repairs`, `providers`, `dashboard`, `catalogAdmin`, `admin/pricing` y `hero settings`.
+- Impacto: el frontend queda mucho mas consistente: paginas -> helpers + sections; sections -> panels/rows; hooks densos -> hooks especializados. Lo que sigue grande ahora ya es complejidad terminal del dominio y no deuda evidente de seccionado.
+- Alternativas consideradas: seguir partiendo indefinidamente cualquier archivo largo o cortar la ola antes de tiempo; descartado por generar una limpieza sin criterio de cierre o dejar wrappers aun demasiado cargados.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/{orders,repairs,providers,admin,catalogAdmin}/*`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/architecture/ARCHITECTURE.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano
+
+---
+
 ### [DL-0043]
 - Fecha: 2026-03-13
 - Estado: aceptada

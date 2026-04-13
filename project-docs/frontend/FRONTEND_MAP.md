@@ -678,6 +678,44 @@ Confirmado por codigo:
 - `RootEntryRedirect` envia a `/admin` o `/store` segun la sesion local existente.
 
 ### Hallazgo residual confirmado
+
+## Segunda ola de refinamiento cerrada
+
+En la ola de refinamiento final del 2026-04-13 se cerraron los hotspots internos que seguian densos despues del seccionado principal:
+
+- `admin-orders.sections.tsx` ahora solo expone la frontera publica y delega en:
+  - `admin-orders-counters.tsx`
+  - `admin-orders-detail-panel.tsx`
+  - `admin-orders-row.tsx`
+- `repair-provider-part-pricing-section.search.tsx` ahora solo compone y delega en:
+  - `repair-provider-part-search-controls.tsx`
+  - `repair-provider-part-search-results.tsx`
+  - `repair-provider-part-selected-summary.tsx`
+- `use-admin-repair-create.ts` ya no concentra catalogo + pricing sugerido; ahora delega en:
+  - `use-admin-repair-create-catalog.ts`
+  - `use-admin-repair-create-pricing.ts`
+- `admin-product-pricing-rules.sections.tsx` ahora queda como frontera y reparte la UI en:
+  - `admin-product-pricing-rules.fields.tsx`
+  - `admin-product-pricing-rules-panels.tsx`
+- `admin-providers.sections.tsx` ahora queda como frontera y delega en:
+  - `admin-providers-panels.tsx`
+- `admin-dashboard.sections.tsx` ahora queda como frontera y delega en:
+  - `admin-dashboard-panels.tsx`
+- `admin-products.sections.tsx` ahora queda como frontera y delega en:
+  - `admin-products-panels.tsx`
+- `admin-quick-sales.sections.tsx` ahora queda como frontera y delega en:
+  - `admin-quick-sales-search.tsx`
+  - `admin-quick-sales-ticket.tsx`
+- `admin-product-edit.sections.tsx` ahora queda como frontera y delega la UI mayor en:
+  - `admin-product-edit-panels.tsx`
+- `admin-repair-pricing-rules.sections.tsx` ahora queda como frontera y delega en:
+  - `admin-repair-pricing-rules.controls.tsx`
+  - `admin-repair-pricing-rules-row.tsx`
+- `admin-store-hero-settings.sections.tsx` ahora queda como frontera y delega en:
+  - `admin-store-hero-settings.assets.tsx`
+  - `admin-store-hero-settings.form.tsx`
+
+Con este cierre, lo que queda grande en frontend ya no son paginas o `sections.tsx` monoliticos pendientes, sino paneles finales u orquestadores deliberados del dominio.
 - el router nuevo ya no expone `/auth/google*`.
 - el auth social fue retirado como alcance del proyecto en Fase 4D.
 
