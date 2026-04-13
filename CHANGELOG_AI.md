@@ -13,6 +13,40 @@
 ---
 
 ### 2026-04-13 - Codex
+- Alcance: alinear el navbar de auth con la navbar real del sitio, corregir el responsive del login y separar el fondo visual del acceso en variantes desktop/mobile.
+- Tipo de intervencion: ajuste funcional controlado en frontend `auth/app-shell/admin` + ampliacion menor del branding publico/backend.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/auth/AuthLayout.tsx`
+  - `next-stack/apps/web/src/layouts/app-shell/mobile-sidebar.tsx`
+  - `next-stack/apps/web/src/styles/auth.css`
+  - `next-stack/apps/api/src/modules/admin/app-settings.registry.ts`
+  - `next-stack/apps/api/src/modules/admin/app-settings.registry.test.ts`
+  - `next-stack/apps/api/src/modules/store/store.service.ts`
+  - `next-stack/apps/web/src/features/store/types.ts`
+  - `next-stack/apps/web/src/features/admin/admin-visual-identity.helpers.ts`
+  - `next-stack/apps/web/src/features/admin/admin-visual-identity.helpers.test.ts`
+  - `next-stack/apps/web/src/features/admin/admin-visual-identity.sections.tsx`
+  - `project-docs/DECISIONS_LOG.md`
+  - `project-docs/architecture/ARCHITECTURE.md`
+  - `project-docs/architecture/ASSET_STRATEGY.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. Auth ahora usa la misma gramática de header que la web general y el login mobile deja de depender de un topbar separado. El branding expone dos fondos configurables para auth (`desktop` y `mobile`) dentro de identidad visual, con fallback seguro al asset desktop cuando la variante mobile no exista.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/api`
+  - `cmd /c npm run test --workspace @nico/api`
+  - `cmd /c npm run build --workspace @nico/api`
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - el smoke valida `/auth/login`, pero la calidad visual fina del responsive sigue siendo recomendable revisarla manualmente con viewport real
+  - `MobileSidebar` ahora soporta ocultar el link de login cuando la vista actual ya es `/auth/login`
+
+---
+
+### 2026-04-13 - Codex
 - Alcance: volver administrable desde branding el fondo visual del login y compactar el flujo de acceso para que entre mejor en desktop sin scroll externo.
 - Tipo de intervencion: ajuste funcional controlado en backend `admin/store` + refactor visual puntual del frontend `auth/admin`.
 - Archivos tocados:

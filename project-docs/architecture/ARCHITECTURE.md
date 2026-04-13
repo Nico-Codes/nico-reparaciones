@@ -183,7 +183,7 @@ Confirmado por codigo:
 
 - `BrandingHeadSync` sincroniza parte del head del sitio
 - `AdminVisualIdentityPage` y `AdminStoreHeroSettingsPage` gestionan assets y hero
-- `GET /api/store/branding` ya alimenta no solo logo/iconos/favicons sino tambien el fondo visual del shell de auth
+- `GET /api/store/branding` ya alimenta no solo logo/iconos/favicons sino tambien las variantes `desktop/mobile` del fondo visual del shell de auth
 - `main.ts` del API sirve assets estaticos desde `apps/web/public` si la carpeta existe
 - la escritura local de assets ahora pasa por `PublicAssetStorageService`
 - `AdminService` delega branding, settings, dashboard y providers a subservicios especificos en vez de concentrar todo en un solo archivo

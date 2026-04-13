@@ -51,7 +51,10 @@ export type StoreHeroConfig = {
 export type StoreBrandingAssets = {
   siteTitle: string;
   logoPrincipal: string;
-  authPanelImage?: string | null;
+  authPanelImages?: {
+    desktop: string | null;
+    mobile: string | null;
+  };
   icons: {
     settings: string | null;
     carrito: string | null;

@@ -130,7 +130,7 @@
   display: flex;
   flex: 1 1 auto;
   align-items: center;
-  padding: 0.85rem 1rem 1.2rem;
+  padding: 0.9rem 1rem 1.2rem;
 }
 
 .auth-scene {
@@ -163,12 +163,16 @@
 }
 
 .auth-visual__media {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.auth-visual__picture {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: block;
 }
 
 .auth-visual.has-media::before {
@@ -477,20 +481,42 @@
 
 @media (max-width: 1023.98px) {
   .auth-stage {
-    padding-top: 1rem;
+    align-items: stretch;
+    padding: 0.75rem 0.75rem 1rem;
   }
 
   .auth-scene {
     grid-template-columns: 1fr;
+    min-height: 0;
   }
 
   .auth-visual {
-    min-height: 14.5rem;
-    align-items: flex-start;
+    min-height: 12rem;
+    align-items: flex-end;
+    padding: 1.1rem 1.1rem 1.35rem;
+  }
+
+  .auth-visual::after {
+    inset: auto -10% -6.6rem -10%;
+    height: 12rem;
+  }
+
+  .auth-visual__content {
+    max-width: 17rem;
+    gap: 0.7rem;
+  }
+
+  .auth-visual__title {
+    font-size: clamp(1.7rem, 5vw, 2.35rem);
+  }
+
+  .auth-visual__copy {
+    font-size: 0.92rem;
+    line-height: 1.55;
   }
 
   .auth-panel__surface {
-    padding: 1.35rem;
+    padding: 1.15rem 1.1rem 1.2rem;
   }
 }
 
@@ -509,72 +535,74 @@
 }
 
 @media (max-width: 767.98px) {
-  .auth-topbar__row {
-    align-items: flex-start;
-  }
-
-  .auth-topbar__nav-wrap {
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  .auth-topbar__nav {
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    max-width: 100%;
-    padding-bottom: 0.2rem;
-  }
-
-  .auth-topbar__nav-link {
-    white-space: nowrap;
-  }
-
-  .auth-topbar__cta {
-    width: 100%;
-  }
-
   .auth-stage {
-    padding: 0.85rem 0.75rem 1.25rem;
+    padding: 0.65rem 0.4rem 0.95rem;
   }
 
   .auth-scene {
-    border-radius: 1.5rem;
+    border-radius: 1.35rem;
   }
 
   .auth-visual {
-    min-height: 12rem;
-    padding: 1.25rem;
+    min-height: 9.4rem;
+    padding: 0.9rem 0.9rem 1rem;
+  }
+
+  .auth-visual::after {
+    inset: auto -12% -5.8rem -12%;
+    height: 9.25rem;
+  }
+
+  .auth-visual__content {
+    max-width: none;
+    gap: 0.55rem;
+  }
+
+  .auth-visual__brand-chip {
+    padding: 0.45rem 0.65rem;
+    gap: 0.55rem;
   }
 
   .auth-visual__title {
-    font-size: 1.9rem;
+    font-size: 1.55rem;
+    line-height: 1.02;
   }
 
   .auth-visual__copy {
-    font-size: 0.92rem;
+    max-width: 15rem;
+    font-size: 0.84rem;
+    line-height: 1.4;
   }
 
   .auth-panel__surface {
-    padding: 1.15rem;
-    gap: 1.1rem;
+    padding: 1rem 0.9rem 1.05rem;
+    gap: 0.85rem;
   }
 
   .auth-panel__header {
-    gap: 0.75rem;
+    gap: 0.55rem;
   }
 
   .auth-panel__title {
-    font-size: 1.7rem;
+    font-size: 1.55rem;
+  }
+
+  .auth-panel__subtitle {
+    margin-top: 0.45rem;
+    font-size: 0.9rem;
+    line-height: 1.5;
   }
 
   .auth-card .section-card__header,
   .auth-card .section-card__body {
-    padding-left: 0.95rem;
-    padding-right: 0.95rem;
+    padding-left: 0.9rem;
+    padding-right: 0.9rem;
   }
 
   .auth-link-row {
-    align-items: flex-start;
-    flex-direction: column;
+    margin-top: 0.8rem;
+    padding-top: 0.7rem;
+    gap: 0.45rem;
+    font-size: 0.84rem;
   }
 }

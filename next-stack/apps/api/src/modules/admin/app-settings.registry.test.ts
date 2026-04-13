@@ -26,6 +26,7 @@ describe('app-settings.registry', () => {
     expect(getAppSettingDefinition('business_name')?.owner).toBe('business');
     expect(BRAND_ASSET_SLOTS.logo_principal.fileBase).toBe('logo-principal');
     expect(BRAND_ASSET_SLOTS.auth_login_background.fileBase).toBe('auth-login-background');
+    expect(BRAND_ASSET_SLOTS.auth_login_background_mobile.fileBase).toBe('auth-login-background-mobile');
   });
 
   it('merges defined settings with stored rows and keeps custom extras', () => {

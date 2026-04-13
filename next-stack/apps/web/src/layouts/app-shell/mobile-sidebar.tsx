@@ -18,6 +18,7 @@ type MobileSidebarProps = {
   adminLinks: LinkItem[];
   adminSectionOpen: boolean;
   iconLogoutUrl: string | null;
+  hideGuestLoginLink?: boolean;
   onClose: () => void;
   onLogout: () => void;
   onToggleAdminSection: () => void;
@@ -35,6 +36,7 @@ export function MobileSidebar({
   adminLinks,
   adminSectionOpen,
   iconLogoutUrl,
+  hideGuestLoginLink = false,
   onClose,
   onLogout,
   onToggleAdminSection,
@@ -42,6 +44,9 @@ export function MobileSidebar({
   if (isDesktop || typeof document === 'undefined') {
     return null;
   }
+
+  const showGuestLoginLink = !authUser && !hideGuestLoginLink;
+  const showAccountSection = !!authUser || accountLinks.length > 0 || isAdmin || showGuestLoginLink;
 
   return createPortal(
     <>
@@ -95,54 +100,56 @@ export function MobileSidebar({
             </div>
           </div>
 
-          <div className="sidebar-section space-y-2">
-            <div className="sidebar-title">Cuenta</div>
-            <div className="sidebar-links">
-              {accountLinks.map((link) => (
-                <Link key={link.label} className={`sidebar-link ${link.active ? 'active' : ''} ${link.highlight === 'warning' ? 'text-amber-700' : ''}`} to={link.to} onClick={onClose}>
-                  <span className="inline-flex items-center gap-2">
-                    <MenuLinkIcon iconUrl={link.icon} fallback={renderAccountLinkIcon(link.label)} />
-                    <span>{link.label}</span>
-                  </span>
-                </Link>
-              ))}
+          {showAccountSection ? (
+            <div className="sidebar-section space-y-2">
+              <div className="sidebar-title">Cuenta</div>
+              <div className="sidebar-links">
+                {accountLinks.map((link) => (
+                  <Link key={link.label} className={`sidebar-link ${link.active ? 'active' : ''} ${link.highlight === 'warning' ? 'text-amber-700' : ''}`} to={link.to} onClick={onClose}>
+                    <span className="inline-flex items-center gap-2">
+                      <MenuLinkIcon iconUrl={link.icon} fallback={renderAccountLinkIcon(link.label)} />
+                      <span>{link.label}</span>
+                    </span>
+                  </Link>
+                ))}
 
-              {isAdmin ? (
-                <>
-                  <button type="button" className={`sidebar-link flex items-center justify-between gap-2 ${adminSectionOpen ? 'active' : ''}`} onClick={onToggleAdminSection}>
-                    <span>Admin</span>
-                    <ChevronDown className={`h-4 w-4 transition-transform ${adminSectionOpen ? 'rotate-180' : ''}`} />
-                  </button>
-                  <div className={adminSectionOpen ? '' : 'hidden'}>
-                    <div className="ml-2 grid gap-1 border-l border-zinc-200 pl-2">
-                      {adminLinks.map((link) => (
-                        <Link key={link.label} className={`sidebar-link font-semibold text-zinc-700 ${link.active ? 'active' : ''}`} to={link.to} onClick={onClose}>
-                          <span className="inline-flex items-center gap-2">
-                            <MenuLinkIcon iconUrl={link.icon} fallback={renderAdminLinkIcon(link.label)} />
-                            <span>{link.label}</span>
-                            <LinkBadge count={link.badgeCount} />
-                          </span>
-                        </Link>
-                      ))}
+                {isAdmin ? (
+                  <>
+                    <button type="button" className={`sidebar-link flex items-center justify-between gap-2 ${adminSectionOpen ? 'active' : ''}`} onClick={onToggleAdminSection}>
+                      <span>Admin</span>
+                      <ChevronDown className={`h-4 w-4 transition-transform ${adminSectionOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    <div className={adminSectionOpen ? '' : 'hidden'}>
+                      <div className="ml-2 grid gap-1 border-l border-zinc-200 pl-2">
+                        {adminLinks.map((link) => (
+                          <Link key={link.label} className={`sidebar-link font-semibold text-zinc-700 ${link.active ? 'active' : ''}`} to={link.to} onClick={onClose}>
+                            <span className="inline-flex items-center gap-2">
+                              <MenuLinkIcon iconUrl={link.icon} fallback={renderAdminLinkIcon(link.label)} />
+                              <span>{link.label}</span>
+                              <LinkBadge count={link.badgeCount} />
+                            </span>
+                          </Link>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                </>
-              ) : null}
+                  </>
+                ) : null}
 
-              {authUser ? (
-                <button type="button" className="sidebar-link text-rose-700" onClick={onLogout}>
-                  <span className="inline-flex items-center gap-2">
-                    <MenuLinkIcon iconUrl={iconLogoutUrl} fallback={<LogOut className="h-4 w-4" />} />
-                    <span>Cerrar sesion</span>
-                  </span>
-                </button>
-              ) : (
-                <Link className="sidebar-link" to="/auth/login" onClick={onClose}>
-                  <span>Ingresar</span>
-                </Link>
-              )}
+                {authUser ? (
+                  <button type="button" className="sidebar-link text-rose-700" onClick={onLogout}>
+                    <span className="inline-flex items-center gap-2">
+                      <MenuLinkIcon iconUrl={iconLogoutUrl} fallback={<LogOut className="h-4 w-4" />} />
+                      <span>Cerrar sesion</span>
+                    </span>
+                  </button>
+                ) : showGuestLoginLink ? (
+                  <Link className="sidebar-link" to="/auth/login" onClick={onClose}>
+                    <span>Ingresar</span>
+                  </Link>
+                ) : null}
+              </div>
             </div>
-          </div>
+          ) : null}
         </div>
       </aside>
     </>,

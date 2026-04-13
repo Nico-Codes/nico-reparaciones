@@ -20,6 +20,20 @@ Registrar decisiones tecnicas confirmadas para evitar dependencia de memoria ora
 
 ---
 
+### [DL-0103]
+- Fecha: 2026-04-13
+- Estado: aceptada
+- Tema: alinear el header de auth con la navbar real del sitio y separar el fondo visual del login en variantes desktop/mobile
+- Contexto: el primer rediseño de auth habia mejorado la escena visual, pero el header seguia usando una gramática distinta a `AppShell`, lo que generaba inconsistencia en desktop y una experiencia mobile pobre en login. Ademas, el fondo izquierdo del acceso tenia una sola variante editable, insuficiente para responsive real.
+- Decision: rehacer `AuthLayout` para reutilizar la misma estructura visual del shell general (`shell-header`, nav pill desktop, burger + `MobileSidebar`), manteniendo solo la regla de ocultar el CTA redundante de login en `/auth/login`. En branding, mantener el fondo actual como variante desktop y agregar una variante mobile independiente bajo el mismo circuito de `AdminBrandAssetsService` + `/api/store/branding`.
+- Impacto: auth deja de parecer una superficie separada del sitio y pasa a verse alineado al resto de la web. El login puede usar una imagen optimizada para desktop y otra para mobile sin introducir configuraciones paralelas.
+- Alternativas consideradas: mantener un header propio de auth con styling parecido o reutilizar una sola imagen del login en todos los breakpoints; descartado por seguir dejando diferencias visuales con la navbar real y por limitar el control responsive del branding.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/auth/AuthLayout.tsx`, `next-stack/apps/web/src/layouts/app-shell/mobile-sidebar.tsx`, `next-stack/apps/web/src/styles/auth.css`, `next-stack/apps/api/src/modules/{admin,store}/*`, `next-stack/apps/web/src/features/admin/admin-visual-identity.*`, `project-docs/architecture/{ARCHITECTURE.md,ASSET_STRATEGY.md}`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/api`, `test --workspace @nico/api`, `build --workspace @nico/api`, `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `git diff --check`.
+- Responsable: Codex + operador humano
+
+---
+
 ### [DL-0102]
 - Fecha: 2026-04-13
 - Estado: aceptada

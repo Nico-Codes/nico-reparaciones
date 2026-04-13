@@ -54,7 +54,7 @@ export function AdminVisualIdentityHeader() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-black tracking-tight text-zinc-900">Identidad visual</h1>
-          <p className="mt-1 text-sm text-zinc-600">Sube y administra logos, iconos, favicons y fondos visuales del sitio.</p>
+          <p className="mt-1 text-sm text-zinc-600">Sube y administra logos, iconos, favicons y fondos visuales del sitio, incluido el acceso web en desktop y mobile.</p>
         </div>
         <Link to="/admin/configuraciones" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">
           Volver a configuracion

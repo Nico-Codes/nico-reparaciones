@@ -54,5 +54,9 @@ describe('admin-visual-identity.helpers', () => {
       slot: 'auth_login_background',
       settingKey: 'brand_asset.auth_login_background.path',
     });
+    expect(AUTH_VISUAL_ASSETS[1]).toMatchObject({
+      slot: 'auth_login_background_mobile',
+      settingKey: 'brand_asset.auth_login_background_mobile.path',
+    });
   });
 });

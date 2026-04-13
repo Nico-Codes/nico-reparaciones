@@ -130,7 +130,7 @@ export const STORE_HERO_ASSETS: AssetCard[] = [
 
 export const AUTH_VISUAL_ASSETS: AssetCard[] = [
   {
-    title: 'Fondo visual login',
+    title: 'Fondo visual login (desktop)',
     filename: 'brand-assets/identity/auth-login-background.png',
     slot: 'auth_login_background',
     settingKey: 'brand_asset.auth_login_background.path',
@@ -138,6 +138,17 @@ export const AUTH_VISUAL_ASSETS: AssetCard[] = [
     formats: 'PNG, JPG, JPEG, WEBP',
     maxKb: 6144,
     preview: { kind: 'hero' },
+    showReset: true,
+  },
+  {
+    title: 'Fondo visual login (mobile)',
+    filename: 'brand-assets/identity/auth-login-background-mobile.png',
+    slot: 'auth_login_background_mobile',
+    settingKey: 'brand_asset.auth_login_background_mobile.path',
+    defaultPath: '',
+    formats: 'PNG, JPG, JPEG, WEBP',
+    maxKb: 4096,
+    preview: { kind: 'hero', mobile: true },
     showReset: true,
   },
 ];
