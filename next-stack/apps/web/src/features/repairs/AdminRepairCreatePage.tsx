@@ -22,7 +22,7 @@ export function AdminRepairCreatePage() {
         context="admin"
         eyebrow="Servicio tecnico"
         title="Nueva reparacion"
-        subtitle="Ingresa el caso con los datos minimos y, si quieres, vincularlo al catalogo tecnico activo."
+        subtitle="Ingresa el caso con los datos minimos y, si queres, vincularlo al catalogo tecnico activo."
         actions={
           <>
             <StatusBadge label="Alta manual" tone="info" />
@@ -51,7 +51,7 @@ export function AdminRepairCreatePage() {
           <AlertTriangle className="mt-0.5 h-4 w-4 flex-none" />
           <div>
             <span className="ui-alert__title">Catalogo parcial</span>
-            <div className="ui-alert__text">{create.catalogError} Puedes continuar con carga manual de marca, modelo y falla.</div>
+            <div className="ui-alert__text">{create.catalogError} Podes continuar con carga manual de marca, modelo y falla.</div>
           </div>
           <Button
             type="button"

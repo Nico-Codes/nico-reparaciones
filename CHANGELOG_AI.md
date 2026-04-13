@@ -13,6 +13,29 @@
 ---
 
 ### 2026-04-13 - Codex
+- Alcance: refinamiento visual del alta admin de reparaciones para cerrar el hotspot que seguia dentro de `sections.tsx`.
+- Tipo de intervencion: refactor interno seguro del frontend `repairs`, separando panels visuales del alta y saneando copy del feature.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/repairs/{AdminRepairCreatePage.tsx,admin-repair-create.sections.tsx,admin-repair-create-basic-panel.tsx,admin-repair-create-diagnosis-panel.tsx,admin-repair-create-submit-panel.tsx}`
+  - `project-docs/frontend/FRONTEND_MAP.md`
+  - `project-docs/architecture/ARCHITECTURE.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No deliberado. Se mantiene el mismo flujo de alta admin; cambia solo la separacion interna de los bloques visuales y se normaliza el copy visible del feature.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `cmd /c npm run qa:route-parity`
+  - `git diff --check`
+- Riesgos / notas:
+  - `repairs` queda mas parejo entre create y detail tambien a nivel visual; lo siguiente ya no es seccionado pendiente sino refinamiento de otros shells o `sections.tsx` deliberadamente densos
+  - la frontera publica del feature se mantiene estable: page + hook + sections siguen exportando igual hacia el resto del modulo
+
+---
+
+### 2026-04-13 - Codex
 - Alcance: refinamiento visual del detalle admin de reparaciones para cerrar el hotspot que seguia dentro de `sections.tsx`.
 - Tipo de intervencion: refactor interno seguro del frontend `repairs`, separando panels visuales sin tocar hooks ni contratos del feature.
 - Archivos tocados:

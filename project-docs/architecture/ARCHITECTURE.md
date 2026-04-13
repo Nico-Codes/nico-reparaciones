@@ -465,7 +465,8 @@ Desde la ola de simplificacion de 2026-03-30 quedaron formalizados estos limites
   - `use-admin-repair-detail.ts` concentra fetch del caso, timeline, pricing suggestion, save/reload y wiring con snapshots
 - `AdminRepairCreatePage.tsx` ahora queda como orquestador de catalogo, pricing y submit:
   - `admin-repair-create.helpers.ts` concentra normalizacion, validaciones y armado del payload
-  - `admin-repair-create.sections.tsx` concentra las sections de datos basicos, diagnostico y cierre
+  - `admin-repair-create.sections.tsx` concentra la composicion de datos basicos, diagnostico y cierre
+  - `admin-repair-create-basic-panel.tsx`, `admin-repair-create-diagnosis-panel.tsx` y `admin-repair-create-submit-panel.tsx` separan los bloques visuales mas densos del alta
   - `use-admin-repair-create.ts` concentra carga del catalogo, estado de pricing suggestion, submit y wiring con snapshots
 - frontend `orders` ahora secciona el tracking admin entre orquestacion, estado derivado y UI:
   - `AdminOrdersPage.tsx` como orquestador de fetch, seleccion y cambio de estado

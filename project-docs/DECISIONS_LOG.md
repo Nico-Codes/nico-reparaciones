@@ -1174,3 +1174,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/web/src/features/repairs/{admin-repair-detail.sections.tsx,admin-repair-detail-status-panels.tsx,admin-repair-detail-pricing-panels.tsx,admin-repair-detail-sidebar.tsx}`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0098]
+- Fecha: 2026-04-13
+- Estado: aceptada
+- Tema: `admin-repair-create.sections.tsx` se divide en panels visuales mas chicos
+- Contexto: despues de dejar `AdminRepairCreatePage.tsx` como shell con hook dedicado, el siguiente hotspot del alta admin seguia estando en `admin-repair-create.sections.tsx`, que todavia concentraba datos basicos, diagnostico/pricing y cierre/resumen en un solo archivo visual largo.
+- Decision: mantener estable `AdminRepairCreatePage.tsx`, `use-admin-repair-create.ts` y la interfaz visible, pero partir `admin-repair-create.sections.tsx` en tres panels visuales: `admin-repair-create-basic-panel.tsx`, `admin-repair-create-diagnosis-panel.tsx` y `admin-repair-create-submit-panel.tsx`. El archivo `sections` queda como frontera publica y composicion del feature.
+- Impacto: baja la densidad visual del alta admin sin tocar rutas, payloads ni reglas de negocio. El subdominio `repairs` queda mas parejo entre create y detail: page shell, hook de orquestacion, helpers puros y panels visuales dedicados.
+- Alternativas consideradas: seguir refinando hooks o saltar directo a otro subdominio; descartado porque el mayor retorno inmediato estaba en cerrar el par visual de create/detail con el mismo criterio.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/repairs/{AdminRepairCreatePage.tsx,admin-repair-create.sections.tsx,admin-repair-create-basic-panel.tsx,admin-repair-create-diagnosis-panel.tsx,admin-repair-create-submit-panel.tsx}`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano

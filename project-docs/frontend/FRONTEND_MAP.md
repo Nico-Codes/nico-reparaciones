@@ -339,6 +339,10 @@ En la ola de simplificacion del 2026-03-30 quedaron confirmados estos limites in
 - `AdminRepairCreatePage.tsx` ahora delega la UI en:
   - `admin-repair-create.helpers.ts`
   - `admin-repair-create.sections.tsx`
+- `admin-repair-create.sections.tsx` ahora delega bloques visuales densos en:
+  - `admin-repair-create-basic-panel.tsx`
+  - `admin-repair-create-diagnosis-panel.tsx`
+  - `admin-repair-create-submit-panel.tsx`
 - `AdminRepairCreatePage.tsx` ahora tambien delega la orquestacion pesada en:
   - `use-admin-repair-create.ts`
 - el archivo principal de alta queda centrado en:
