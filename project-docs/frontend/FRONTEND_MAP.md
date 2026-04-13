@@ -310,12 +310,14 @@ En la ola de simplificacion del 2026-03-30 quedaron confirmados estos limites in
 - `RepairProviderPartPricingSection.tsx` ya no concentra toda la UI ni toda la orquestacion de proveedor + repuesto + snapshot en un solo archivo
 - la seccion se reparte entre:
   - `use-repair-provider-part-pricing.ts`
+  - `use-repair-provider-part-search.ts`
   - `repair-provider-part-pricing-section.helpers.ts`
   - `repair-provider-part-pricing-section.search.tsx`
   - `repair-provider-part-pricing-section.preview.tsx`
   - `repair-provider-part-pricing-section.snapshot.tsx`
-- el componente principal ahora queda como shell de composicion y delega el estado async, los requests y el preview derivado a `use-repair-provider-part-pricing.ts`
-- el archivo principal de la feature queda como orquestador de estado, requests y sincronizacion del snapshot draft
+- el componente principal ahora queda como shell de composicion y delega el estado async a hooks mas chicos
+- `use-repair-provider-part-pricing.ts` queda enfocado en preview, snapshot draft y aplicacion del sugerido
+- `use-repair-provider-part-search.ts` concentra carga de proveedores, busqueda agregada, seleccion e hidratacion desde snapshots activos
 - create/detail siguen compartiendo la misma pieza, pero con una frontera mas clara entre:
   - busqueda de repuestos
   - preview de pricing

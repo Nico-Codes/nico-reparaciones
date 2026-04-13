@@ -1,5 +1,6 @@
 import type {
   AdminProviderAggregatePartSearchItem,
+  AdminProviderAggregateSearchSupplierItem,
   AdminProviderItem,
 } from '@/features/admin/api';
 import type {
@@ -43,6 +44,26 @@ export type SnapshotOriginInfo = {
   title: string;
   description: string;
   tone: 'success' | 'warning';
+};
+
+export type ProviderPricingStatusBadge = {
+  label: string;
+  tone: 'success' | 'warning' | 'danger' | 'info' | 'neutral';
+};
+
+export type VisibleProviderSearchState = {
+  visiblePartResults: AdminProviderAggregatePartSearchItem[];
+  visibleSearchSuppliers: AdminProviderAggregateSearchSupplierItem[];
+  visibleSearchSummary: {
+    searchedSuppliers: number;
+    suppliersWithResults: number;
+    failedSuppliers: number;
+    totalResults: number;
+  };
+  visibleFailedSupplierNames: string[];
+  hiddenSmokeSupplierCount: number;
+  hiddenSmokeFailureCount: number;
+  hasTechnicalSearchDetails: boolean;
 };
 
 export function normalizeNullable(value: string) {
@@ -170,4 +191,79 @@ export function buildProviderFilterOptions(
       ? [{ value: activeSnapshot.supplierId, label: `${activeSnapshot.supplierNameSnapshot} (histórico)` }]
       : [];
   return [{ value: '', label: 'Todos los proveedores activos' }, ...historicalMissing, ...base];
+}
+
+export function resolveSelectedProviderFilter(
+  providers: AdminProviderItem[],
+  supplierFilterId: string,
+  activeSnapshot?: RepairPricingSnapshotItem | null,
+) {
+  if (!supplierFilterId) return null;
+  return (
+    providers.find((item) => item.id === supplierFilterId) ?? {
+      id: supplierFilterId,
+      name: activeSnapshot?.supplierNameSnapshot || 'Proveedor historico',
+      endpoint: activeSnapshot?.supplierEndpointSnapshot ?? '',
+    }
+  );
+}
+
+export function buildVisibleProviderSearchState(
+  partResults: AdminProviderAggregatePartSearchItem[],
+  searchSuppliers: AdminProviderAggregateSearchSupplierItem[],
+): VisibleProviderSearchState {
+  const visiblePartResults = partResults.filter((item) => !isSmokeSupplierName(item.supplier.name));
+  const visibleSearchSuppliers = searchSuppliers.filter((item) => !isSmokeSupplierName(item.supplier.name));
+  const visibleFailedSupplierNames = visibleSearchSuppliers.filter((item) => item.status === 'error').map((item) => item.supplier.name);
+  const hiddenSmokeSupplierCount = searchSuppliers.filter((item) => isSmokeSupplierName(item.supplier.name)).length;
+  const hiddenSmokeFailureCount = searchSuppliers.filter((item) => item.status === 'error' && isSmokeSupplierName(item.supplier.name)).length;
+
+  return {
+    visiblePartResults,
+    visibleSearchSuppliers,
+    visibleSearchSummary: {
+      searchedSuppliers: visibleSearchSuppliers.length,
+      suppliersWithResults: visibleSearchSuppliers.filter((item) => item.status === 'ok' && item.total > 0).length,
+      failedSuppliers: visibleSearchSuppliers.filter((item) => item.status === 'error').length,
+      totalResults: visiblePartResults.length,
+    },
+    visibleFailedSupplierNames,
+    hiddenSmokeSupplierCount,
+    hiddenSmokeFailureCount,
+    hasTechnicalSearchDetails: visibleFailedSupplierNames.length > 0 || hiddenSmokeSupplierCount > 0,
+  };
+}
+
+type BuildProviderPricingStatusBadgeInput = {
+  pendingSnapshotIsCurrent: boolean;
+  previewLoading: boolean;
+  searchLoading: boolean;
+  providersLoading: boolean;
+  providersError: string;
+  searchError: string;
+  activePreviewError: string;
+  previewNeedsRefresh: boolean;
+  activePreviewResult: RepairProviderPartPricingPreviewResult | null;
+  activeSnapshot?: RepairPricingSnapshotItem | null;
+};
+
+export function buildProviderPricingStatusBadge({
+  pendingSnapshotIsCurrent,
+  previewLoading,
+  searchLoading,
+  providersLoading,
+  providersError,
+  searchError,
+  activePreviewError,
+  previewNeedsRefresh,
+  activePreviewResult,
+  activeSnapshot,
+}: BuildProviderPricingStatusBadgeInput): ProviderPricingStatusBadge {
+  if (pendingSnapshotIsCurrent) return { label: 'Snapshot listo', tone: 'success' };
+  if (previewLoading || searchLoading || providersLoading) return { label: 'Cargando', tone: 'info' };
+  if (providersError || searchError || activePreviewError) return { label: 'Error', tone: 'danger' };
+  if (previewNeedsRefresh) return { label: 'Recalcular', tone: 'warning' };
+  if (activePreviewResult?.matched && activePreviewResult.snapshotDraft) return { label: 'Preview listo', tone: 'success' };
+  if (activePreviewResult && !activePreviewResult.matched) return { label: 'Sin regla', tone: 'warning' };
+  return { label: activeSnapshot ? 'Snapshot activo' : 'Opcional', tone: 'neutral' };
 }

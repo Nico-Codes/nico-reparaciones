@@ -1150,3 +1150,15 @@ ext-stack/scripts/env-check.mjs, project-docs/WHATSAPP_CLOUD_API_INTEGRATION.md.
 - Archivos / modulos afectados: `next-stack/apps/web/src/layouts/{AppShell.tsx}`, `next-stack/apps/web/src/layouts/app-shell/{helpers.ts,helpers.test.ts,use-app-shell.ts}`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
 - Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
 - Responsable: Codex + operador humano
+
+### [DL-0096]
+- Fecha: 2026-04-13
+- Estado: aceptada
+- Tema: el flujo de proveedor + repuesto se parte entre busqueda de proveedores y preview tecnico
+- Contexto: `use-repair-provider-part-pricing.ts` ya habia bajado la carga del componente principal, pero seguia mezclando demasiadas responsabilidades: carga de proveedores, busqueda agregada, hidratacion desde snapshot activo, validacion de inputs de costo, preview tecnico y aplicacion del draft en un solo hook largo.
+- Decision: mantener estable `RepairProviderPartPricingSection.tsx` y sus panels, pero separar el flujo en dos capas. `use-repair-provider-part-search.ts` concentra proveedores, busqueda, seleccion e hidratacion; `use-repair-provider-part-pricing.ts` queda enfocado en preview, snapshot draft, sugerido y status general. La logica derivada transversal se consolida en `repair-provider-part-pricing-section.helpers.ts` con mas cobertura de tests.
+- Impacto: baja la complejidad real del hotspot tecnico mas pesado del frontend sin tocar rutas, payloads ni comportamiento esperado del flujo create/detail. El modulo `repairs` queda mas facil de mantener porque la frontera entre "buscar proveedor" y "calcular/aplicar snapshot" ahora es explicita.
+- Alternativas consideradas: seguir rompiendo `sections.tsx` o atacar otro feature grande; descartado porque el mayor retorno inmediato seguia estando en el hook tecnico mas denso del repo.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/repairs/{use-repair-provider-part-pricing.ts,use-repair-provider-part-search.ts,repair-provider-part-pricing-section.helpers.ts,repair-provider-part-pricing-section.helpers.test.ts}`, `project-docs/frontend/FRONTEND_MAP.md`, `project-docs/architecture/ARCHITECTURE.md`, `project-docs/DECISIONS_LOG.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `qa:route-parity`, `git diff --check`.
+- Responsable: Codex + operador humano

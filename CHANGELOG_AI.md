@@ -12,6 +12,29 @@
 
 ---
 
+### 2026-04-13 - Codex
+- Alcance: segunda ola de refinamiento sobre el flujo tecnico de proveedor + repuesto en `repairs`.
+- Tipo de intervencion: refactor interno seguro del hotspot principal del frontend para separar busqueda de proveedores de preview/snapshot.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/repairs/{use-repair-provider-part-pricing.ts,use-repair-provider-part-search.ts,repair-provider-part-pricing-section.helpers.ts,repair-provider-part-pricing-section.helpers.test.ts}`
+  - `project-docs/frontend/FRONTEND_MAP.md`
+  - `project-docs/architecture/ARCHITECTURE.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No deliberado. Se mantiene el mismo flujo de busqueda, seleccion, preview y aplicacion del snapshot; cambia la separacion interna entre busqueda agregada e inteligencia de preview.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `cmd /c npm run qa:route-parity`
+  - `git diff --check`
+- Riesgos / notas:
+  - el hotspot sigue siendo complejo por naturaleza del dominio, pero ahora la frontera entre seleccion de proveedor y calculo tecnico es mucho mas clara
+  - el siguiente frente con mejor retorno ya no es este hook, sino shells o `sections.tsx` que siguen densos dentro de `repairs`
+
+---
+
 ### 2026-03-13 - Codex
 - Alcance: activacion de envio real de WhatsApp por Meta Cloud API reutilizando templates, logs y triggers existentes.
 - Tipo de intervencion: backend real de integracion + schema/logs + webhook minimo + ajuste menor de UI admin para estados reales.

@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
   availabilityLabel,
+  buildProviderPricingStatusBadge,
   buildProviderFilterOptions,
+  buildVisibleProviderSearchState,
   parseOptionalMoney,
   parsePositiveInteger,
   partKey,
+  resolveSelectedProviderFilter,
   snapshotStatusLabel,
 } from './repair-provider-part-pricing-section.helpers';
 
@@ -43,5 +46,61 @@ describe('repair-provider-part-pricing-section helpers', () => {
 
     expect(options.map((item) => item.value)).toEqual(['', 'sup-old', 'sup-1']);
     expect(options[1]?.label).toMatch(/histórico/i);
+  });
+  it('resolves provider fallback and hides smoke suppliers in derived search state', () => {
+    expect(
+      resolveSelectedProviderFilter([{ id: 'sup-1', name: 'Proveedor 1', endpoint: 'https://one.test' } as any], 'sup-old', {
+        supplierId: 'sup-old',
+        supplierNameSnapshot: 'Proveedor historico',
+        supplierEndpointSnapshot: 'https://old.test',
+      } as any),
+    ).toMatchObject({ id: 'sup-old', name: 'Proveedor historico' });
+
+    const visible = buildVisibleProviderSearchState(
+      [
+        { name: 'Modulo A30', supplier: { name: 'Proveedor 1' } } as any,
+        { name: 'Smoke item', supplier: { name: 'Smoke Supplier 1' } } as any,
+      ],
+      [
+        { supplier: { name: 'Proveedor 1' }, status: 'ok', total: 1 } as any,
+        { supplier: { name: 'Smoke Supplier 1' }, status: 'error', total: 0 } as any,
+      ],
+    );
+
+    expect(visible.visiblePartResults).toHaveLength(1);
+    expect(visible.hiddenSmokeSupplierCount).toBe(1);
+    expect(visible.visibleSearchSummary.totalResults).toBe(1);
+  });
+
+  it('builds status badge priority consistently', () => {
+    expect(
+      buildProviderPricingStatusBadge({
+        pendingSnapshotIsCurrent: false,
+        previewLoading: false,
+        searchLoading: false,
+        providersLoading: false,
+        providersError: '',
+        searchError: '',
+        activePreviewError: '',
+        previewNeedsRefresh: true,
+        activePreviewResult: null,
+        activeSnapshot: null,
+      }),
+    ).toEqual({ label: 'Recalcular', tone: 'warning' });
+
+    expect(
+      buildProviderPricingStatusBadge({
+        pendingSnapshotIsCurrent: true,
+        previewLoading: true,
+        searchLoading: false,
+        providersLoading: false,
+        providersError: '',
+        searchError: '',
+        activePreviewError: '',
+        previewNeedsRefresh: false,
+        activePreviewResult: null,
+        activeSnapshot: null,
+      }),
+    ).toEqual({ label: 'Snapshot listo', tone: 'success' });
   });
 });

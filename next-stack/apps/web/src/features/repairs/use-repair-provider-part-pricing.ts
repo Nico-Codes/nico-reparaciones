@@ -1,22 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  adminApi,
-  type AdminProviderAggregatePartSearchItem,
-  type AdminProviderAggregateSearchSupplierItem,
-  type AdminProviderItem,
-} from '@/features/admin/api';
 import { repairsApi, type RepairProviderPartPricingPreviewResult } from './api';
 import {
-  buildHydratedPart,
-  buildProviderFilterOptions,
-  isSmokeSupplierName,
+  buildProviderPricingStatusBadge,
   normalizeNullable,
-  parseOptionalMoney,
-  parsePositiveInteger,
   partKey,
   type RepairProviderPartPricingSectionProps,
 } from './repair-provider-part-pricing-section.helpers';
 import { buildRepairPricingInput } from './repair-pricing';
+import { useRepairProviderPartSearch } from './use-repair-provider-part-search';
 
 export function useRepairProviderPartPricing({
   mode,
@@ -32,159 +23,53 @@ export function useRepairProviderPartPricing({
   onStatusMessage,
   hydrateKey,
 }: RepairProviderPartPricingSectionProps) {
-  const providerRequestIdRef = useRef(0);
-  const searchRequestIdRef = useRef(0);
   const previewRequestIdRef = useRef(0);
   const pendingSnapshotKeyRef = useRef('');
-  const pendingSnapshotChangeRef = useRef(onPendingSnapshotDraftChange);
 
-  const [providerReloadToken, setProviderReloadToken] = useState(0);
-  const [providers, setProviders] = useState<AdminProviderItem[]>([]);
-  const [providersLoading, setProvidersLoading] = useState(true);
-  const [providersError, setProvidersError] = useState('');
-  const [supplierFilterId, setSupplierFilterId] = useState('');
-  const [partQueryInput, setPartQueryInput] = useState('');
-  const [partSearchQuery, setPartSearchQuery] = useState('');
-  const [partResults, setPartResults] = useState<AdminProviderAggregatePartSearchItem[]>([]);
-  const [searchSuppliers, setSearchSuppliers] = useState<AdminProviderAggregateSearchSupplierItem[]>([]);
-  const [selectedPartKey, setSelectedPartKey] = useState('');
-  const [searchLoading, setSearchLoading] = useState(false);
-  const [searchError, setSearchError] = useState('');
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState('');
   const [previewResult, setPreviewResult] = useState<RepairProviderPartPricingPreviewResult | null>(null);
   const [previewResolvedKey, setPreviewResolvedKey] = useState('');
   const [previewTouched, setPreviewTouched] = useState(false);
-  const [quantityInput, setQuantityInput] = useState('1');
-  const [extraCostInput, setExtraCostInput] = useState('');
-  const [shippingCostInput, setShippingCostInput] = useState('');
 
-  useEffect(() => {
-    pendingSnapshotChangeRef.current = onPendingSnapshotDraftChange;
-  }, [onPendingSnapshotDraftChange]);
-
-  useEffect(() => {
-    const requestId = providerRequestIdRef.current + 1;
-    providerRequestIdRef.current = requestId;
-    let mounted = true;
-    setProvidersLoading(true);
-    setProvidersError('');
-
-    async function loadProviders() {
-      try {
-        const response = await adminApi.providers({ active: '1' });
-        if (!mounted || requestId !== providerRequestIdRef.current) return;
-        setProviders(response.items.filter((item) => item.active && item.searchEnabled && Boolean(item.endpoint)));
-      } catch (error) {
-        if (!mounted || requestId !== providerRequestIdRef.current) return;
-        setProvidersError(error instanceof Error ? error.message : 'No pudimos cargar los proveedores con busqueda habilitada.');
-      } finally {
-        if (mounted && requestId === providerRequestIdRef.current) setProvidersLoading(false);
-      }
-    }
-
-    void loadProviders();
-    return () => {
-      mounted = false;
-    };
-  }, [providerReloadToken]);
-
-  useEffect(() => {
-    pendingSnapshotKeyRef.current = '';
-    setSearchError('');
-    setPreviewError('');
+  function clearPreviewAndPending() {
     setPreviewResult(null);
     setPreviewResolvedKey('');
     setPreviewTouched(false);
+    setPreviewError('');
+    onPendingSnapshotDraftChange(null);
+    pendingSnapshotKeyRef.current = '';
+  }
 
-    if (!activeSnapshot || activeSnapshot.source !== 'SUPPLIER_PART') {
-      setSupplierFilterId('');
-      setPartQueryInput('');
-      setPartSearchQuery('');
-      setPartResults([]);
-      setSearchSuppliers([]);
-      setSelectedPartKey('');
-      setQuantityInput('1');
-      setExtraCostInput('');
-      setShippingCostInput('');
-      pendingSnapshotChangeRef.current(null);
-      return;
-    }
+  const search = useRepairProviderPartSearch({
+    activeSnapshot,
+    hydrateKey,
+    disabled,
+    onResetPreviewAndPending: clearPreviewAndPending,
+  });
 
-    const hydratedPart = buildHydratedPart(activeSnapshot);
-    setSupplierFilterId(activeSnapshot.supplierId ?? '');
-    setPartQueryInput(activeSnapshot.supplierSearchQuery ?? activeSnapshot.partNameSnapshot);
-    setPartSearchQuery(activeSnapshot.supplierSearchQuery ?? activeSnapshot.partNameSnapshot);
-    setPartResults(hydratedPart ? [hydratedPart] : []);
-    setSearchSuppliers(
-      hydratedPart
-        ? [
-            {
-              supplier: hydratedPart.supplier,
-              status: 'ok',
-              total: 1,
-              error: null,
-              url: activeSnapshot.partUrlSnapshot ?? '',
-            },
-          ]
-        : [],
-    );
-    setSelectedPartKey(hydratedPart ? partKey(hydratedPart) : '');
-    setQuantityInput(String(activeSnapshot.quantity || 1));
-    setExtraCostInput(activeSnapshot.extraCost != null ? String(activeSnapshot.extraCost) : '');
-    setShippingCostInput(activeSnapshot.shippingCost != null ? String(activeSnapshot.shippingCost) : '');
-    pendingSnapshotChangeRef.current(null);
-  }, [activeSnapshot, hydrateKey]);
-
-  const providerFilterOptions = useMemo(
-    () => buildProviderFilterOptions(providers, activeSnapshot),
-    [activeSnapshot, providers],
-  );
-
-  const selectedProviderFilter = useMemo(() => {
-    if (!supplierFilterId) return null;
-    return (
-      providers.find((item) => item.id === supplierFilterId) ?? {
-        id: supplierFilterId,
-        name: activeSnapshot?.supplierNameSnapshot || 'Proveedor historico',
-        endpoint: activeSnapshot?.supplierEndpointSnapshot ?? '',
-      }
-    );
-  }, [activeSnapshot?.supplierEndpointSnapshot, activeSnapshot?.supplierNameSnapshot, providers, supplierFilterId]);
-
-  const selectedProviderHint = selectedProviderFilter?.endpoint
-    ? `Filtro puntual: ${selectedProviderFilter.name}`
-    : 'Se consultaran todos los proveedores activos con busqueda configurada.';
-
-  const selectedPart = useMemo(
-    () => partResults.find((item) => partKey(item) === selectedPartKey) ?? null,
-    [partResults, selectedPartKey],
-  );
   const technicalPricingInput = useMemo(() => buildRepairPricingInput(technicalContext), [technicalContext]);
-  const parsedQuantity = useMemo(() => parsePositiveInteger(quantityInput), [quantityInput]);
-  const parsedExtraCost = useMemo(() => parseOptionalMoney(extraCostInput, 'extra'), [extraCostInput]);
-  const parsedShippingCost = useMemo(() => parseOptionalMoney(shippingCostInput, 'envio'), [shippingCostInput]);
 
   const previewInputState = useMemo(() => {
     if (!technicalPricingInput.canResolve) {
       return { canResolve: false, reason: technicalPricingInput.reason, key: '', input: null };
     }
-    if (!selectedPart) {
+    if (!search.selectedPart) {
       return { canResolve: false, reason: 'Busca una vez en proveedores y selecciona un repuesto antes de calcular.', key: '', input: null };
     }
-    if (selectedPart.price == null) {
+    if (search.selectedPart.price == null) {
       return { canResolve: false, reason: 'La opcion elegida no trae un precio utilizable.', key: '', input: null };
     }
-    if (parsedQuantity.error) return { canResolve: false, reason: parsedQuantity.error, key: '', input: null };
-    if (parsedExtraCost.error) return { canResolve: false, reason: parsedExtraCost.error, key: '', input: null };
-    if (parsedShippingCost.error) return { canResolve: false, reason: parsedShippingCost.error, key: '', input: null };
+    if (search.parsedQuantity.error) return { canResolve: false, reason: search.parsedQuantity.error, key: '', input: null };
+    if (search.parsedExtraCost.error) return { canResolve: false, reason: search.parsedExtraCost.error, key: '', input: null };
+    if (search.parsedShippingCost.error) return { canResolve: false, reason: search.parsedShippingCost.error, key: '', input: null };
 
     const input = {
-      supplierId: selectedPart.supplier.id,
-      supplierSearchQuery: normalizeNullable(partSearchQuery),
-      quantity: parsedQuantity.value ?? 1,
-      extraCost: parsedExtraCost.value ?? 0,
-      shippingCost: parsedShippingCost.value ?? 0,
+      supplierId: search.selectedPart.supplier.id,
+      supplierSearchQuery: normalizeNullable(search.partSearchQuery),
+      quantity: search.parsedQuantity.value ?? 1,
+      extraCost: search.parsedExtraCost.value ?? 0,
+      shippingCost: search.parsedShippingCost.value ?? 0,
       deviceTypeId: technicalPricingInput.input.deviceTypeId ?? null,
       deviceBrandId: technicalPricingInput.input.deviceBrandId ?? null,
       deviceModelGroupId: technicalPricingInput.input.deviceModelGroupId ?? null,
@@ -194,21 +79,21 @@ export function useRepairProviderPartPricing({
       deviceModel: technicalPricingInput.input.deviceModel ?? null,
       issueLabel: technicalPricingInput.input.issueLabel ?? null,
       part: {
-        externalPartId: selectedPart.externalPartId ?? null,
-        name: selectedPart.name,
-        sku: selectedPart.sku ?? null,
-        brand: selectedPart.brand ?? null,
-        price: selectedPart.price,
-        availability: selectedPart.availability ?? 'unknown',
-        url: selectedPart.url ?? null,
+        externalPartId: search.selectedPart.externalPartId ?? null,
+        name: search.selectedPart.name,
+        sku: search.selectedPart.sku ?? null,
+        brand: search.selectedPart.brand ?? null,
+        price: search.selectedPart.price,
+        availability: search.selectedPart.availability ?? 'unknown',
+        url: search.selectedPart.url ?? null,
       },
     };
 
     const key = JSON.stringify([
       technicalPricingInput.key,
-      selectedPart.supplier.id,
-      normalizeNullable(partSearchQuery) ?? '',
-      partKey(selectedPart),
+      search.selectedPart.supplier.id,
+      normalizeNullable(search.partSearchQuery) ?? '',
+      partKey(search.selectedPart),
       input.quantity,
       input.extraCost ?? 0,
       input.shippingCost ?? 0,
@@ -216,14 +101,14 @@ export function useRepairProviderPartPricing({
 
     return { canResolve: true, reason: '', key, input };
   }, [
-    parsedExtraCost.error,
-    parsedExtraCost.value,
-    parsedQuantity.error,
-    parsedQuantity.value,
-    parsedShippingCost.error,
-    parsedShippingCost.value,
-    partSearchQuery,
-    selectedPart,
+    search.parsedExtraCost.error,
+    search.parsedExtraCost.value,
+    search.parsedQuantity.error,
+    search.parsedQuantity.value,
+    search.parsedShippingCost.error,
+    search.parsedShippingCost.value,
+    search.partSearchQuery,
+    search.selectedPart,
     technicalPricingInput,
   ]);
 
@@ -235,37 +120,6 @@ export function useRepairProviderPartPricing({
   const pendingSnapshotIsCurrent =
     Boolean(pendingSnapshotDraft) && !!pendingSnapshotKeyRef.current && pendingSnapshotKeyRef.current === previewInputState.key;
 
-  const visiblePartResults = useMemo(
-    () => partResults.filter((item) => !isSmokeSupplierName(item.supplier.name)),
-    [partResults],
-  );
-  const visibleSearchSuppliers = useMemo(
-    () => searchSuppliers.filter((item) => !isSmokeSupplierName(item.supplier.name)),
-    [searchSuppliers],
-  );
-  const visibleSearchSummary = useMemo(
-    () => ({
-      searchedSuppliers: visibleSearchSuppliers.length,
-      suppliersWithResults: visibleSearchSuppliers.filter((item) => item.status === 'ok' && item.total > 0).length,
-      failedSuppliers: visibleSearchSuppliers.filter((item) => item.status === 'error').length,
-      totalResults: visiblePartResults.length,
-    }),
-    [visiblePartResults.length, visibleSearchSuppliers],
-  );
-  const visibleFailedSupplierNames = useMemo(
-    () => visibleSearchSuppliers.filter((item) => item.status === 'error').map((item) => item.supplier.name),
-    [visibleSearchSuppliers],
-  );
-  const hiddenSmokeSupplierCount = useMemo(
-    () => searchSuppliers.filter((item) => isSmokeSupplierName(item.supplier.name)).length,
-    [searchSuppliers],
-  );
-  const hiddenSmokeFailureCount = useMemo(
-    () => searchSuppliers.filter((item) => item.status === 'error' && isSmokeSupplierName(item.supplier.name)).length,
-    [searchSuppliers],
-  );
-  const hasTechnicalSearchDetails = visibleFailedSupplierNames.length > 0 || hiddenSmokeSupplierCount > 0;
-
   useEffect(() => {
     if (!pendingSnapshotDraft) {
       pendingSnapshotKeyRef.current = '';
@@ -276,91 +130,33 @@ export function useRepairProviderPartPricing({
     pendingSnapshotKeyRef.current = '';
   }, [pendingSnapshotDraft, previewInputState.key, onPendingSnapshotDraftChange]);
 
-  const statusBadge = useMemo(() => {
-    if (pendingSnapshotIsCurrent) return { label: 'Snapshot listo', tone: 'success' as const };
-    if (previewLoading || searchLoading || providersLoading) return { label: 'Cargando', tone: 'info' as const };
-    if (providersError || searchError || activePreviewError) return { label: 'Error', tone: 'danger' as const };
-    if (previewNeedsRefresh) return { label: 'Recalcular', tone: 'warning' as const };
-    if (activePreviewResult?.matched && activePreviewResult.snapshotDraft) return { label: 'Preview listo', tone: 'success' as const };
-    if (activePreviewResult && !activePreviewResult.matched) return { label: 'Sin regla', tone: 'warning' as const };
-    return { label: activeSnapshot ? 'Snapshot activo' : 'Opcional', tone: 'neutral' as const };
-  }, [
-    activePreviewError,
-    activePreviewResult,
-    activeSnapshot,
-    pendingSnapshotIsCurrent,
-    previewLoading,
-    previewNeedsRefresh,
-    providersError,
-    providersLoading,
-    searchError,
-    searchLoading,
-  ]);
-
-  function clearPreviewAndPending() {
-    setPreviewResult(null);
-    setPreviewResolvedKey('');
-    setPreviewTouched(false);
-    onPendingSnapshotDraftChange(null);
-    pendingSnapshotKeyRef.current = '';
-  }
-
-  function clearSearchResults() {
-    setPartResults([]);
-    setSearchSuppliers([]);
-    setSelectedPartKey('');
-  }
-
-  function handleSupplierFilterChange(next: string) {
-    setSupplierFilterId(next);
-    clearSearchResults();
-    clearPreviewAndPending();
-    setSearchError('');
-  }
-
-  function handleSelectPart(nextKey: string) {
-    setSelectedPartKey(nextKey);
-    clearPreviewAndPending();
-  }
-
-  async function searchParts() {
-    if (searchLoading || disabled) return;
-    const query = partQueryInput.trim();
-    if (query.length < 2) {
-      setSearchError('Ingresa al menos 2 caracteres para buscar repuestos.');
-      return;
-    }
-
-    const requestId = searchRequestIdRef.current + 1;
-    searchRequestIdRef.current = requestId;
-    setSearchLoading(true);
-    setSearchError('');
-    setPartSearchQuery(query);
-    clearPreviewAndPending();
-
-    try {
-      const response = await adminApi.searchPartsAcrossProviders({
-        q: query,
-        supplierId: normalizeNullable(supplierFilterId),
-        limitPerSupplier: 6,
-        totalLimit: 24,
-      });
-      if (requestId !== searchRequestIdRef.current) return;
-      setSearchSuppliers(response.suppliers);
-      setPartResults(response.items);
-      setSelectedPartKey((current) =>
-        current && response.items.some((item) => partKey(item) === current) ? current : '',
-      );
-    } catch (error) {
-      if (requestId !== searchRequestIdRef.current) return;
-      setSearchSuppliers([]);
-      setPartResults([]);
-      setSelectedPartKey('');
-      setSearchError(error instanceof Error ? error.message : 'No pudimos buscar repuestos en los proveedores configurados.');
-    } finally {
-      if (requestId === searchRequestIdRef.current) setSearchLoading(false);
-    }
-  }
+  const statusBadge = useMemo(
+    () =>
+      buildProviderPricingStatusBadge({
+        pendingSnapshotIsCurrent,
+        previewLoading,
+        searchLoading: search.searchLoading,
+        providersLoading: search.providersLoading,
+        providersError: search.providersError,
+        searchError: search.searchError,
+        activePreviewError,
+        previewNeedsRefresh,
+        activePreviewResult,
+        activeSnapshot,
+      }),
+    [
+      activePreviewError,
+      activePreviewResult,
+      activeSnapshot,
+      pendingSnapshotIsCurrent,
+      previewLoading,
+      previewNeedsRefresh,
+      search.providersError,
+      search.providersLoading,
+      search.searchError,
+      search.searchLoading,
+    ],
+  );
 
   async function calculatePreview() {
     if (!previewInputState.canResolve || !previewInputState.input || previewLoading || disabled) return;
@@ -415,7 +211,7 @@ export function useRepairProviderPartPricing({
 
   return {
     statusBadge,
-    selectedPart,
+    selectedPart: search.selectedPart,
     snapshotPanelsProps: {
       mode,
       activeSnapshot,
@@ -425,40 +221,40 @@ export function useRepairProviderPartPricing({
     searchControlsProps: {
       compactMode,
       disabled,
-      providersLoading,
-      providersError,
-      selectedProviderHint,
-      providerFilterOptions,
-      supplierFilterId,
-      partQueryInput,
-      quantityInput,
-      extraCostInput,
-      shippingCostInput,
-      quantityHint: parsedQuantity.error || 'Cantidad de repuestos a considerar.',
-      extraCostHint: parsedExtraCost.error || 'Costo adicional manual si aplica.',
-      shippingCostHint: parsedShippingCost.error || 'Envio real del proveedor si corresponde.',
-      searchLoading,
-      onProviderReload: () => setProviderReloadToken((value) => value + 1),
-      onSupplierFilterChange: handleSupplierFilterChange,
-      onPartQueryChange: setPartQueryInput,
-      onQuantityChange: setQuantityInput,
-      onExtraCostChange: setExtraCostInput,
-      onShippingCostChange: setShippingCostInput,
-      onSearch: () => void searchParts(),
+      providersLoading: search.providersLoading,
+      providersError: search.providersError,
+      selectedProviderHint: search.selectedProviderHint,
+      providerFilterOptions: search.providerFilterOptions,
+      supplierFilterId: search.supplierFilterId,
+      partQueryInput: search.partQueryInput,
+      quantityInput: search.quantityInput,
+      extraCostInput: search.extraCostInput,
+      shippingCostInput: search.shippingCostInput,
+      quantityHint: search.parsedQuantity.error || 'Cantidad de repuestos a considerar.',
+      extraCostHint: search.parsedExtraCost.error || 'Costo adicional manual si aplica.',
+      shippingCostHint: search.parsedShippingCost.error || 'Envio real del proveedor si corresponde.',
+      searchLoading: search.searchLoading,
+      onProviderReload: search.reloadProviders,
+      onSupplierFilterChange: search.handleSupplierFilterChange,
+      onPartQueryChange: search.setPartQueryInput,
+      onQuantityChange: search.setQuantityInput,
+      onExtraCostChange: search.setExtraCostInput,
+      onShippingCostChange: search.setShippingCostInput,
+      onSearch: () => void search.searchParts(),
     },
     searchResultsProps: {
-      searchLoading,
-      searchError,
-      partSearchQuery,
-      visiblePartResults,
-      visibleSearchSummary,
-      visibleFailedSupplierNames,
-      hiddenSmokeSupplierCount,
-      hiddenSmokeFailureCount,
-      hasTechnicalSearchDetails,
-      selectedPartKey,
+      searchLoading: search.searchLoading,
+      searchError: search.searchError,
+      partSearchQuery: search.partSearchQuery,
+      visiblePartResults: search.visiblePartResults,
+      visibleSearchSummary: search.visibleSearchSummary,
+      visibleFailedSupplierNames: search.visibleFailedSupplierNames,
+      hiddenSmokeSupplierCount: search.hiddenSmokeSupplierCount,
+      hiddenSmokeFailureCount: search.hiddenSmokeFailureCount,
+      hasTechnicalSearchDetails: search.hasTechnicalSearchDetails,
+      selectedPartKey: search.selectedPartKey,
       disabled,
-      onSelectPart: handleSelectPart,
+      onSelectPart: search.handleSelectPart,
     },
     previewPanelProps: {
       compactMode,
