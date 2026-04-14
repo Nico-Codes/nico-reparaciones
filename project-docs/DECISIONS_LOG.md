@@ -20,6 +20,20 @@ Registrar decisiones tecnicas confirmadas para evitar dependencia de memoria ora
 
 ---
 
+### [DL-0104]
+- Fecha: 2026-04-14
+- Estado: aceptada
+- Tema: tratar el panel visual de auth como imagen real de branding y no como ilustracion CSS generada
+- Contexto: despues de separar el fondo visual del login en variantes `desktop/mobile`, la implementacion seguia renderizando blobs, waves y shapes decorativos dentro de `AuthLayout` y `auth.css`. Eso dejaba el panel izquierdo como una ilustracion compuesta por CSS, no como el asset real editable pedido para identidad visual.
+- Decision: simplificar `auth-visual` para que renderice solo tres capas: imagen real de branding (`desktop/mobile` con fallback), overlay suave de contraste y `auth-visual__content`. Se eliminan del markup y del stylesheet todos los `auth-visual__shape*`, la ola blanca inferior y la composicion decorativa basada en gradientes. La navbar de auth mantiene la misma estructura visual del shell publico real.
+- Impacto: el fondo del login pasa a comportarse igual que los demas assets administrables de la web. Cambiar la imagen desde identidad visual modifica directamente el panel izquierdo sin depender de formas dibujadas en CSS. El responsive mobile queda mas compacto porque la banda visual superior deja de cargar decoracion adicional.
+- Alternativas consideradas: mantener las variantes desktop/mobile pero seguir enriqueciendo el panel con formas CSS o esconder por completo el bloque visual en mobile; descartado por seguir rompiendo el criterio de "imagen real editable" y por perder consistencia visual del acceso.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/auth/AuthLayout.tsx`, `next-stack/apps/web/src/styles/auth.css`, `project-docs/architecture/{ARCHITECTURE.md,ASSET_STRATEGY.md}`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/api`, `test --workspace @nico/api`, `build --workspace @nico/api`, `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `git diff --check`.
+- Responsable: Codex + operador humano
+
+---
+
 ### [DL-0103]
 - Fecha: 2026-04-13
 - Estado: aceptada

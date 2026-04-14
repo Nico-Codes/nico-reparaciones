@@ -12,6 +12,32 @@
 
 ---
 
+### 2026-04-14 - Codex
+- Alcance: corregir el shell de auth para que el panel visual use solo la imagen real de branding y no una ilustracion armada con CSS, manteniendo el header alineado al shell publico.
+- Tipo de intervencion: ajuste funcional controlado en frontend `auth`.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/auth/AuthLayout.tsx`
+  - `next-stack/apps/web/src/styles/auth.css`
+  - `project-docs/DECISIONS_LOG.md`
+  - `project-docs/architecture/ARCHITECTURE.md`
+  - `project-docs/architecture/ASSET_STRATEGY.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. El panel izquierdo de auth ya no compone blobs, waves ni shapes en CSS: ahora muestra la imagen desktop/mobile configurable desde branding, un overlay simple y el contenido textual encima. La banda mobile tambien queda mas compacta.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/api`
+  - `cmd /c npm run test --workspace @nico/api`
+  - `cmd /c npm run build --workspace @nico/api`
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - si no hay asset configurado, `auth-visual` cae a un fondo simple de fallback
+  - no se hizo inspeccion manual con navegador real; el ajuste visual se valido por smoke y revision de codigo
+
+---
+
 ### 2026-04-13 - Codex
 - Alcance: alinear el navbar de auth con la navbar real del sitio, corregir el responsive del login y separar el fondo visual del acceso en variantes desktop/mobile.
 - Tipo de intervencion: ajuste funcional controlado en frontend `auth/app-shell/admin` + ampliacion menor del branding publico/backend.

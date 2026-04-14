@@ -281,7 +281,7 @@ export function AuthLayout({
 
       <div className="container-page auth-stage">
         <div className="auth-scene">
-          <aside className={`auth-visual ${authPanelImageDesktopUrl || authPanelImageMobileUrl ? 'has-media' : ''}`}>
+          <aside className="auth-visual">
             {authPanelImageDesktopUrl || authPanelImageMobileUrl ? (
               <picture className="auth-visual__picture" aria-hidden="true">
                 {authPanelImageMobileUrl ? <source media="(max-width: 1023.98px)" srcSet={authPanelImageMobileUrl} /> : null}
@@ -292,11 +292,7 @@ export function AuthLayout({
                 />
               </picture>
             ) : null}
-            <span className="auth-visual__shape auth-visual__shape--one" />
-            <span className="auth-visual__shape auth-visual__shape--two" />
-            <span className="auth-visual__shape auth-visual__shape--three" />
-            <span className="auth-visual__shape auth-visual__shape--four" />
-            <span className="auth-visual__shape auth-visual__shape--five" />
+            <span className="auth-visual__overlay" aria-hidden="true" />
 
             <div className="auth-visual__content">
               <div className="auth-visual__brand-chip">
