@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { SectionCard } from '@/components/ui/section-card';
-import { CustomSelect } from '@/components/ui/custom-select';
+import { CustomSelect, type CustomSelectMenuAction } from '@/components/ui/custom-select';
 import type { BrandItem, DeviceTypeItem, IssueItem, ModelItem } from './admin-devices-catalog.helpers';
 import type { RepairRuleRow } from './admin-repair-pricing-rules.helpers';
 import type { RepairCalculationGroupItem, RepairCalculationScope } from './admin-repair-calculation-context';
@@ -106,6 +106,11 @@ export function AdminRepairCalculationsScopeSection({
   groupOptions,
   modelOptions,
   issueOptions,
+  deviceTypeAction,
+  brandAction,
+  groupAction,
+  modelAction,
+  issueAction,
   onScopeChange,
   onClear,
 }: {
@@ -116,6 +121,11 @@ export function AdminRepairCalculationsScopeSection({
   groupOptions: Array<{ value: string; label: string }>;
   modelOptions: Array<{ value: string; label: string }>;
   issueOptions: Array<{ value: string; label: string }>;
+  deviceTypeAction?: CustomSelectMenuAction;
+  brandAction?: CustomSelectMenuAction;
+  groupAction?: CustomSelectMenuAction;
+  modelAction?: CustomSelectMenuAction;
+  issueAction?: CustomSelectMenuAction;
   onScopeChange: (patch: Partial<RepairCalculationScope>) => void;
   onClear: () => void;
 }) {
@@ -138,6 +148,7 @@ export function AdminRepairCalculationsScopeSection({
               options={deviceTypeOptions}
               triggerClassName="min-h-11 rounded-2xl font-bold"
               ariaLabel="Seleccionar tipo"
+              menuAction={deviceTypeAction}
             />
           </ScopeField>
           <ScopeField label="Marca">
@@ -147,6 +158,7 @@ export function AdminRepairCalculationsScopeSection({
               options={brandOptions}
               triggerClassName="min-h-11 rounded-2xl font-bold"
               ariaLabel="Seleccionar marca"
+              menuAction={brandAction}
             />
           </ScopeField>
           <ScopeField label="Grupo">
@@ -156,6 +168,7 @@ export function AdminRepairCalculationsScopeSection({
               options={groupOptions}
               triggerClassName="min-h-11 rounded-2xl font-bold"
               ariaLabel="Seleccionar grupo"
+              menuAction={groupAction}
             />
           </ScopeField>
           <ScopeField label="Modelo">
@@ -165,6 +178,7 @@ export function AdminRepairCalculationsScopeSection({
               options={modelOptions}
               triggerClassName="min-h-11 rounded-2xl font-bold"
               ariaLabel="Seleccionar modelo"
+              menuAction={modelAction}
             />
           </ScopeField>
           <ScopeField label="Falla">
@@ -174,6 +188,7 @@ export function AdminRepairCalculationsScopeSection({
               options={issueOptions}
               triggerClassName="min-h-11 rounded-2xl font-bold"
               ariaLabel="Seleccionar falla"
+              menuAction={issueAction}
             />
           </ScopeField>
         </div>

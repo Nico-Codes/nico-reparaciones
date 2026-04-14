@@ -26,13 +26,19 @@ export const deviceCatalogApi = {
     return authJsonRequest(`/device-catalog/brands/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(input) });
   },
   createModel(input: { brandId: string; name: string; slug: string }) {
-    return authJsonRequest('/device-catalog/models', { method: 'POST', body: JSON.stringify(input) });
+    return authJsonRequest<{ item: { id: string; brandId: string; name: string; slug: string; active: boolean } }>(
+      '/device-catalog/models',
+      { method: 'POST', body: JSON.stringify(input) },
+    );
   },
   updateModel(id: string, input: { brandId?: string; name?: string; slug?: string; active?: boolean }) {
     return authJsonRequest(`/device-catalog/models/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(input) });
   },
   createIssue(input: { deviceTypeId?: string | null; name: string; slug: string; active?: boolean }) {
-    return authJsonRequest('/device-catalog/issues', { method: 'POST', body: JSON.stringify(input) });
+    return authJsonRequest<{ item: { id: string; deviceTypeId?: string | null; name: string; slug: string; active: boolean } }>(
+      '/device-catalog/issues',
+      { method: 'POST', body: JSON.stringify(input) },
+    );
   },
   updateIssue(id: string, input: { deviceTypeId?: string | null; name?: string; slug?: string; active?: boolean }) {
     return authJsonRequest(`/device-catalog/issues/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(input) });

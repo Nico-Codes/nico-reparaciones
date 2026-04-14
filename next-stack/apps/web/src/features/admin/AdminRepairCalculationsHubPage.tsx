@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import type { CustomSelectMenuAction } from '@/components/ui/custom-select';
 import { adminApi } from './api';
 import type { DeviceTypeItem, BrandItem, IssueItem, ModelItem } from './admin-devices-catalog.helpers';
 import { slugify } from './admin-devices-catalog.helpers';
@@ -38,6 +39,7 @@ export function AdminRepairCalculationsHubPage() {
   const [searchParams] = useSearchParams();
   const initialScopeRef = useRef(readRepairCalculationScope(searchParams));
   const hydratedFromSearchRef = useRef(false);
+  const pendingScopePatchRef = useRef<Partial<RepairCalculationScope> | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -116,11 +118,16 @@ export function AdminRepairCalculationsHubPage() {
       setIssues(nextIssues);
       setRules(nextRules);
       setScope((current) => {
-        if (!hydratedFromSearchRef.current) {
-          hydratedFromSearchRef.current = true;
-          return hydrateRepairCalculationScope(initialScopeRef.current, nextCatalog);
+        const baseScope = !hydratedFromSearchRef.current
+          ? hydrateRepairCalculationScope(initialScopeRef.current, nextCatalog)
+          : hydrateRepairCalculationScope(current, nextCatalog);
+        hydratedFromSearchRef.current = true;
+        if (pendingScopePatchRef.current) {
+          const pendingPatch = pendingScopePatchRef.current;
+          pendingScopePatchRef.current = null;
+          return applyRepairCalculationScopePatch(baseScope, pendingPatch, nextCatalog);
         }
-        return hydrateRepairCalculationScope(current, nextCatalog);
+        return baseScope;
       });
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Error cargando catalogo tecnico');
@@ -225,7 +232,8 @@ export function AdminRepairCalculationsHubPage() {
     setCreatingType(true);
     await runCatalogAction(
       async () => {
-        await adminApi.createDeviceType({ name: typeDraft.trim(), active: typeDraftActive });
+        const response = await adminApi.createDeviceType({ name: typeDraft.trim(), active: typeDraftActive });
+        pendingScopePatchRef.current = { deviceTypeId: response.item.id };
         setTypeDraft('');
         setTypeDraftActive(true);
       },
@@ -261,7 +269,6 @@ export function AdminRepairCalculationsHubPage() {
 
   async function createBrand() {
     if (!scope.deviceTypeId || !brandDraft.trim()) return;
-    let createdBrandId = '';
     await runCatalogAction(
       async () => {
         const response = await deviceCatalogApi.createBrand({
@@ -270,15 +277,12 @@ export function AdminRepairCalculationsHubPage() {
           slug: slugify(brandDraft),
           active: true,
         });
-        createdBrandId = response.item.id;
+        pendingScopePatchRef.current = { deviceBrandId: response.item.id };
         setBrandDraft('');
       },
       'Marca creada.',
       'No se pudo crear la marca.',
     );
-    if (createdBrandId) {
-      patchScope({ deviceBrandId: createdBrandId });
-    }
   }
 
   async function renameBrand(row: BrandItem) {
@@ -315,11 +319,12 @@ export function AdminRepairCalculationsHubPage() {
     if (!scope.deviceBrandId || !groupDraft.trim()) return;
     await runCatalogAction(
       async () => {
-        await adminApi.createModelGroup({
+        const response = await adminApi.createModelGroup({
           deviceBrandId: scope.deviceBrandId,
           name: groupDraft.trim(),
           active: groupDraftActive,
         });
+        pendingScopePatchRef.current = { deviceModelGroupId: response.item.id };
         setGroupDraft('');
         setGroupDraftActive(true);
       },
@@ -347,11 +352,12 @@ export function AdminRepairCalculationsHubPage() {
     if (!scope.deviceBrandId || !modelDraft.trim()) return;
     await runCatalogAction(
       async () => {
-        await deviceCatalogApi.createModel({
+        const response = await deviceCatalogApi.createModel({
           brandId: scope.deviceBrandId,
           name: modelDraft.trim(),
           slug: slugify(modelDraft),
         });
+        pendingScopePatchRef.current = { deviceModelId: response.item.id };
         setModelDraft('');
       },
       'Modelo creado.',
@@ -408,12 +414,13 @@ export function AdminRepairCalculationsHubPage() {
     if (!scope.deviceTypeId || !issueDraft.trim()) return;
     await runCatalogAction(
       async () => {
-        await deviceCatalogApi.createIssue({
+        const response = await deviceCatalogApi.createIssue({
           deviceTypeId: scope.deviceTypeId,
           name: issueDraft.trim(),
           slug: slugify(issueDraft),
           active: true,
         });
+        pendingScopePatchRef.current = { deviceIssueTypeId: response.item.id };
         setIssueDraft('');
       },
       'Falla creada.',
@@ -459,6 +466,152 @@ export function AdminRepairCalculationsHubPage() {
     editTo: `/admin/precios/${encodeURIComponent(row.id)}/editar${scopeSearch}`,
   }));
 
+  function promptName(message: string) {
+    return window.prompt(message)?.trim() ?? '';
+  }
+
+  async function quickCreateDeviceType() {
+    const nextName = promptName('Nuevo tipo de dispositivo');
+    if (!nextName) return;
+    setCreatingType(true);
+    await runCatalogAction(
+      async () => {
+        const response = await adminApi.createDeviceType({ name: nextName, active: true });
+        pendingScopePatchRef.current = { deviceTypeId: response.item.id };
+      },
+      'Tipo de dispositivo creado desde el scope.',
+      'No se pudo crear el tipo de dispositivo.',
+    );
+    setCreatingType(false);
+  }
+
+  async function quickCreateBrand() {
+    if (!scope.deviceTypeId) return;
+    const nextName = promptName('Nueva marca para el tipo actual');
+    if (!nextName) return;
+    await runCatalogAction(
+      async () => {
+        const response = await deviceCatalogApi.createBrand({
+          deviceTypeId: scope.deviceTypeId,
+          name: nextName,
+          slug: slugify(nextName),
+          active: true,
+        });
+        pendingScopePatchRef.current = { deviceBrandId: response.item.id };
+      },
+      'Marca creada desde el scope.',
+      'No se pudo crear la marca.',
+    );
+  }
+
+  async function quickCreateGroup() {
+    if (!scope.deviceBrandId) return;
+    const nextName = promptName('Nuevo grupo para la marca activa');
+    if (!nextName) return;
+    await runCatalogAction(
+      async () => {
+        const response = await adminApi.createModelGroup({
+          deviceBrandId: scope.deviceBrandId,
+          name: nextName,
+          active: true,
+        });
+        pendingScopePatchRef.current = { deviceModelGroupId: response.item.id };
+      },
+      'Grupo creado desde el scope.',
+      'No se pudo crear el grupo.',
+    );
+  }
+
+  async function quickCreateModel() {
+    if (!scope.deviceBrandId) return;
+    const nextName = promptName('Nuevo modelo para la marca activa');
+    if (!nextName) return;
+    await runCatalogAction(
+      async () => {
+        const response = await deviceCatalogApi.createModel({
+          brandId: scope.deviceBrandId,
+          name: nextName,
+          slug: slugify(nextName),
+        });
+        pendingScopePatchRef.current = { deviceModelId: response.item.id };
+      },
+      'Modelo creado desde el scope.',
+      'No se pudo crear el modelo.',
+    );
+  }
+
+  async function quickCreateIssue() {
+    if (!scope.deviceTypeId) return;
+    const nextName = promptName('Nueva falla para el tipo activo');
+    if (!nextName) return;
+    await runCatalogAction(
+      async () => {
+        const response = await deviceCatalogApi.createIssue({
+          deviceTypeId: scope.deviceTypeId,
+          name: nextName,
+          slug: slugify(nextName),
+          active: true,
+        });
+        pendingScopePatchRef.current = { deviceIssueTypeId: response.item.id };
+      },
+      'Falla creada desde el scope.',
+      'No se pudo crear la falla.',
+    );
+  }
+
+  const deviceTypeMenuAction = useMemo<CustomSelectMenuAction>(
+    () => ({
+      label: '+ Agregar tipo',
+      onSelect: () => void quickCreateDeviceType(),
+      helperText: 'Si no aparece en la lista, lo creas aca mismo.',
+    }),
+    [],
+  );
+  const brandMenuAction = useMemo<CustomSelectMenuAction>(
+    () => ({
+      label: scope.deviceTypeId ? '+ Agregar marca' : 'Primero elegi un tipo',
+      onSelect: () => void quickCreateBrand(),
+      disabled: !scope.deviceTypeId,
+      helperText: scope.deviceTypeId
+        ? 'La nueva marca queda vinculada al tipo activo y se selecciona sola.'
+        : 'Marca depende del tipo de dispositivo.',
+    }),
+    [scope.deviceTypeId],
+  );
+  const groupMenuAction = useMemo<CustomSelectMenuAction>(
+    () => ({
+      label: scope.deviceBrandId ? '+ Agregar grupo' : 'Primero elegi una marca',
+      onSelect: () => void quickCreateGroup(),
+      disabled: !scope.deviceBrandId,
+      helperText: scope.deviceBrandId
+        ? 'El grupo nuevo queda dentro de la marca activa.'
+        : 'Grupo depende de la marca activa.',
+    }),
+    [scope.deviceBrandId],
+  );
+  const modelMenuAction = useMemo<CustomSelectMenuAction>(
+    () => ({
+      label: scope.deviceBrandId ? '+ Agregar modelo' : 'Primero elegi una marca',
+      onSelect: () => void quickCreateModel(),
+      disabled: !scope.deviceBrandId,
+      helperText: scope.deviceBrandId
+        ? 'El modelo nuevo queda dentro de la marca activa.'
+        : 'Modelo depende de la marca activa.',
+    }),
+    [scope.deviceBrandId],
+  );
+  const issueMenuAction = useMemo<CustomSelectMenuAction>(
+    () => ({
+      label: scope.deviceTypeId ? '+ Agregar falla' : 'Primero elegi un tipo',
+      onSelect: () => void quickCreateIssue(),
+      disabled: !scope.deviceTypeId,
+      helperText: scope.deviceTypeId
+        ? 'La falla nueva queda ligada al tipo activo.'
+        : 'Falla depende del tipo de dispositivo.',
+    }),
+    [scope.deviceTypeId],
+  );
+
   return (
     <div className="store-shell space-y-6">
       <AdminRepairCalculationsHubHero
@@ -475,6 +628,11 @@ export function AdminRepairCalculationsHubPage() {
         groupOptions={groupOptions}
         modelOptions={modelOptions}
         issueOptions={issueOptions}
+        deviceTypeAction={deviceTypeMenuAction}
+        brandAction={brandMenuAction}
+        groupAction={groupMenuAction}
+        modelAction={modelMenuAction}
+        issueAction={issueMenuAction}
         onScopeChange={patchScope}
         onClear={() => setScope(EMPTY_REPAIR_CALCULATION_SCOPE)}
       />

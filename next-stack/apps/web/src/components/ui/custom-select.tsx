@@ -8,6 +8,13 @@ export type CustomSelectOption = {
   disabled?: boolean;
 };
 
+export type CustomSelectMenuAction = {
+  label: string;
+  onSelect: () => void;
+  disabled?: boolean;
+  helperText?: string;
+};
+
 type CustomSelectProps = {
   value: string;
   onChange: (value: string) => void;
@@ -18,6 +25,7 @@ type CustomSelectProps = {
   menuClassName?: string;
   ariaLabel?: string;
   name?: string;
+  menuAction?: CustomSelectMenuAction;
 };
 
 function firstEnabledIndex(options: CustomSelectOption[]) {
@@ -37,6 +45,7 @@ export function CustomSelect({
   menuClassName,
   ariaLabel,
   name,
+  menuAction,
 }: CustomSelectProps) {
   const id = useId();
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -207,6 +216,25 @@ export function CustomSelect({
               {option.label}
             </button>
           ))}
+          {menuAction ? (
+            <div className="nr-select-menu-footer">
+              <button
+                type="button"
+                className="nr-select-menu-action"
+                disabled={menuAction.disabled}
+                onClick={() => {
+                  setOpen(false);
+                  menuAction.onSelect();
+                  triggerRef.current?.focus();
+                }}
+              >
+                {menuAction.label}
+              </button>
+              {menuAction.helperText ? (
+                <div className="nr-select-menu-note">{menuAction.helperText}</div>
+              ) : null}
+            </div>
+          ) : null}
         </div>,
         document.body,
       )

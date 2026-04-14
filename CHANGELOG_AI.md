@@ -13,6 +13,27 @@
 ---
 
 ### 2026-04-14 - Codex
+- Alcance: volver mas didactico el `Scope activo` de la hub de reparaciones para que cada select permita alta rapida del item faltante desde el propio dropdown.
+- Tipo de intervencion: mejora funcional de UX en frontend `admin/calculos/reparaciones`.
+- Archivos tocados:
+  - `next-stack/apps/web/src/components/ui/custom-select.tsx`
+  - `next-stack/apps/web/src/styles/base.css`
+  - `next-stack/apps/web/src/features/admin/AdminRepairCalculationsHubPage.tsx`
+  - `next-stack/apps/web/src/features/admin/admin-repair-calculations-hub.sections.tsx`
+  - `next-stack/apps/web/src/features/deviceCatalog/api.ts`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. Al abrir los selects de `Tipo`, `Marca`, `Grupo`, `Modelo` y `Falla` dentro del scope ahora aparece una accion `+ Agregar ...` cuando falta el item buscado. Esa accion crea el item en el contexto correcto y lo deja seleccionado automaticamente dentro del mismo scope.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+- Riesgos / notas:
+  - el alta rapida usa prompt nativo por ahora; prioriza velocidad de operacion sobre una modal custom
+  - las acciones de `Marca`, `Grupo`, `Modelo` y `Falla` se habilitan solo cuando existe el contexto padre minimo necesario
+
+---
+
+### 2026-04-14 - Codex
 - Alcance: centralizar la gestion del catalogo tecnico y del pricing de reparaciones en una hub unica, y volver explicita la marca activa usada para crear modelos.
 - Tipo de intervencion: reorganizacion funcional del frontend `admin/repairs pricing` + ajuste puntual de backend `admin` para borrado seguro de tipos.
 - Archivos tocados:
