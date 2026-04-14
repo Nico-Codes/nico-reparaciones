@@ -13,6 +13,33 @@
 ---
 
 ### 2026-04-14 - Codex
+- Alcance: reemplazar el `prompt` nativo del alta rapida en el scope de reparaciones por un dialogo propio del admin y blindar el backend contra duplicados de modelos por nombre normalizado.
+- Tipo de intervencion: mejora funcional full-stack en `device-catalog` + UX del frontend `admin/calculos/reparaciones`.
+- Archivos tocados:
+  - `next-stack/apps/api/src/modules/device-catalog/device-catalog.service.ts`
+  - `next-stack/apps/api/src/modules/device-catalog/device-catalog.service.test.ts`
+  - `next-stack/apps/web/src/features/admin/AdminRepairCalculationsHubPage.tsx`
+  - `next-stack/apps/web/src/features/admin/admin-devices-catalog.helpers.ts`
+  - `next-stack/apps/web/src/features/admin/admin-repair-calculations-hub.sections.tsx`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. El alta rapida desde el scope ya no usa `prompt` del navegador; abre un dialogo visual consistente con la web. Ademas, crear o renombrar modelos equivalentes dentro de la misma marca ahora queda bloqueado tambien en backend, incluyendo variantes por mayusculas, minusculas, espacios o slugs historicos inconsistentes.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/api`
+  - `cmd /c npm run test --workspace @nico/api`
+  - `cmd /c npm run build --workspace @nico/api`
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:backend`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - el dialogo rapido reutiliza la logica del scope actual y por ahora no reemplaza los `prompt` de renombrado inline; solo corrige el alta rapida
+  - la proteccion definitiva de duplicados vive ahora en backend, asi que el catalogo no depende solo del estado cargado en frontend
+
+---
+
+### 2026-04-14 - Codex
 - Alcance: advertir y prevenir duplicados de modelos mientras se escribe el alta dentro del catalogo de dispositivos y la hub de calculos de reparaciones.
 - Tipo de intervencion: mejora funcional de UX en frontend con heuristica de similitud compartida.
 - Archivos tocados:

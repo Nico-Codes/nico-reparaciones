@@ -65,23 +65,39 @@ export class DeviceCatalogService {
   }
 
   async createModel(input: { brandId: string; name: string; slug: string; active?: boolean }) {
+    const name = input.name.trim();
+    const slug = this.normalizeCatalogSlug(input.slug || input.name);
+    await this.ensureModelNameAvailable(input.brandId, name);
     return this.prisma.deviceModel.create({
       data: {
         brandId: input.brandId,
-        name: input.name.trim(),
-        slug: input.slug.trim(),
+        name,
+        slug,
         active: input.active ?? true,
       },
     });
   }
 
   async updateModel(id: string, input: { brandId?: string; name?: string; slug?: string; active?: boolean }) {
+    const current = await this.prisma.deviceModel.findUnique({
+      where: { id },
+      select: { id: true, brandId: true, name: true, slug: true },
+    });
+    if (!current) throw new NotFoundException('Modelo no encontrado');
+
+    const nextBrandId = input.brandId ?? current.brandId;
+    const nextName = input.name !== undefined ? input.name.trim() : current.name;
+    if (input.name !== undefined || input.brandId !== undefined) {
+      await this.ensureModelNameAvailable(nextBrandId, nextName, current.id);
+    }
+
+    const nextSlug = this.normalizeCatalogSlug(input.slug ?? nextName);
     return this.prisma.deviceModel.update({
       where: { id },
       data: {
-        ...(input.brandId !== undefined ? { brandId: input.brandId } : {}),
-        ...(input.name !== undefined ? { name: input.name.trim() } : {}),
-        ...(input.slug !== undefined ? { slug: input.slug.trim() } : {}),
+        ...(input.brandId !== undefined ? { brandId: nextBrandId } : {}),
+        ...(input.name !== undefined ? { name: nextName } : {}),
+        ...(input.slug !== undefined || input.name !== undefined ? { slug: nextSlug } : {}),
         ...(input.active !== undefined ? { active: input.active } : {}),
       },
     });
@@ -143,6 +159,37 @@ export class DeviceCatalogService {
   private nullableId(value?: string | null) {
     const v = (value ?? '').trim();
     return v || null;
+  }
+
+  private normalizeCatalogSlug(value: string) {
+    return value
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/\p{Diacritic}/gu, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
+
+  private async ensureModelNameAvailable(brandId: string, name: string, ignoreId?: string) {
+    const normalizedName = this.normalizeCatalogSlug(name).replace(/-/g, '');
+    const existingModels = await this.prisma.deviceModel.findMany({
+      where: { brandId },
+      select: { id: true, name: true, slug: true },
+    });
+
+    const duplicate = existingModels.find((item) => {
+      if (ignoreId && item.id === ignoreId) return false;
+      const normalizedItemName = this.normalizeCatalogSlug(item.name).replace(/-/g, '');
+      const normalizedItemSlug = this.normalizeCatalogSlug(item.slug).replace(/-/g, '');
+      return normalizedItemName === normalizedName || normalizedItemSlug === normalizedName;
+    });
+
+    if (duplicate) {
+      throw new BadRequestException(
+        `Ya existe un modelo equivalente dentro de esta marca: "${duplicate.name}". Reutilizalo o renombralo antes de crear otro.`,
+      );
+    }
   }
 
   private async ensureBrandCanBeDeleted(id: string) {

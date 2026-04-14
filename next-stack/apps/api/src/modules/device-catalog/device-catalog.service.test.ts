@@ -2,6 +2,36 @@ import { describe, expect, it } from 'vitest';
 import { DeviceCatalogService } from './device-catalog.service.js';
 
 describe('DeviceCatalogService', () => {
+  it('blocks creating a model when an equivalent name already exists in the brand', async () => {
+    const service = new DeviceCatalogService({
+      deviceModel: {
+        findMany: async () => [
+          { id: 'model_1', name: 'A13', slug: 'A13' },
+        ],
+      },
+    } as never);
+
+    await expect(service.createModel({ brandId: 'brand_1', name: 'a 13', slug: 'a-13' })).rejects.toThrow(
+      'Ya existe un modelo equivalente dentro de esta marca: "A13". Reutilizalo o renombralo antes de crear otro.',
+    );
+  });
+
+  it('blocks renaming a model to an equivalent name already used by another model in the brand', async () => {
+    const service = new DeviceCatalogService({
+      deviceModel: {
+        findUnique: async () => ({ id: 'model_2', brandId: 'brand_1', name: 'A14', slug: 'a14' }),
+        findMany: async () => [
+          { id: 'model_1', name: 'A13', slug: 'A13' },
+          { id: 'model_2', name: 'A14', slug: 'a14' },
+        ],
+      },
+    } as never);
+
+    await expect(service.updateModel('model_2', { name: 'a13' })).rejects.toThrow(
+      'Ya existe un modelo equivalente dentro de esta marca: "A13". Reutilizalo o renombralo antes de crear otro.',
+    );
+  });
+
   it('blocks deleting a brand used by repairs', async () => {
     const service = new DeviceCatalogService({
       repair: {

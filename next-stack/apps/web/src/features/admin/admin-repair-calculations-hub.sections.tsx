@@ -669,6 +669,126 @@ export function AdminRepairCalculationsRulesPanel({
   );
 }
 
+export function AdminRepairCalculationsQuickCreateDialog({
+  open,
+  title,
+  description,
+  fieldLabel,
+  placeholder,
+  submitLabel,
+  contextLabel,
+  value,
+  matches,
+  hasExactDuplicate,
+  onValueChange,
+  onClose,
+  onSubmit,
+}: {
+  open: boolean;
+  title: string;
+  description: string;
+  fieldLabel: string;
+  placeholder: string;
+  submitLabel: string;
+  contextLabel: string;
+  value: string;
+  matches: SimilarModelMatch[];
+  hasExactDuplicate: boolean;
+  onValueChange: (value: string) => void;
+  onClose: () => void;
+  onSubmit: () => void;
+}) {
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-[560] flex items-end justify-center p-3 sm:items-center sm:p-6">
+      <button
+        type="button"
+        className="absolute inset-0 border-0 bg-slate-950/45 backdrop-blur-sm"
+        onClick={onClose}
+        aria-label="Cerrar formulario rapido"
+      />
+      <div className="card relative z-10 w-full max-w-xl overflow-hidden border border-sky-100 shadow-[0_28px_72px_-32px_rgba(15,23,42,0.45)]">
+        <div className="card-head flex items-start justify-between gap-3">
+          <div>
+            <div className="text-lg font-black tracking-tight text-zinc-900">{title}</div>
+            <p className="mt-1 text-sm text-zinc-600">{description}</p>
+          </div>
+          <button type="button" onClick={onClose} className="icon-btn" aria-label="Cerrar">
+            <span aria-hidden="true">×</span>
+          </button>
+        </div>
+        <div className="card-body space-y-4">
+          <div className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+            <span className="font-black">Contexto activo:</span> {contextLabel}
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-sm font-bold text-zinc-800">{fieldLabel}</label>
+            <input
+              value={value}
+              onChange={(event) => onValueChange(event.target.value)}
+              placeholder={placeholder}
+              className="h-12 w-full rounded-2xl border border-zinc-200 px-4 text-sm font-semibold text-zinc-900"
+              autoFocus
+            />
+          </div>
+
+          {matches.length > 0 ? (
+            <div
+              className={`rounded-2xl px-4 py-3 text-sm ${
+                hasExactDuplicate
+                  ? 'border border-amber-200 bg-amber-50 text-amber-950'
+                  : 'border border-sky-200 bg-sky-50 text-sky-950'
+              }`}
+            >
+              <div className="font-black">
+                {hasExactDuplicate
+                  ? 'Ya existe un modelo equivalente para esta marca.'
+                  : 'Encontramos modelos parecidos para esta marca.'}
+              </div>
+              <div className="mt-1 text-xs font-medium opacity-80">
+                {hasExactDuplicate
+                  ? 'Bloqueamos el alta para evitar un duplicado exacto.'
+                  : 'Revisa estas coincidencias antes de crear otro registro.'}
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {matches.map(({ item, exact }) => (
+                  <span
+                    key={item.id}
+                    className={`rounded-full border px-3 py-1 text-xs font-bold ${
+                      exact
+                        ? 'border-amber-300 bg-white text-amber-900'
+                        : 'border-sky-200 bg-white text-sky-900'
+                    }`}
+                  >
+                    {item.name}
+                    {exact ? ' · coincide exacto' : item.active ? ' · similar' : ' · similar inactivo'}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          <div className="flex flex-wrap justify-end gap-2">
+            <button type="button" onClick={onClose} className="btn-outline !h-11 !rounded-2xl px-4 text-sm font-bold">
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={onSubmit}
+              disabled={!value.trim() || hasExactDuplicate}
+              className="btn-primary !h-11 !rounded-2xl px-5 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {submitLabel}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ScopeField({
   label,
   children,
@@ -725,7 +845,7 @@ function SimilarModelHint({
       <div className="mt-1 text-xs font-medium opacity-80">
         {hasExactDuplicate
           ? 'Bloqueamos el alta para evitar duplicados exactos.'
-          : 'Si uno ya corresponde, selecciónalo en el scope o reutiliza ese registro.'}
+          : 'Si uno ya corresponde, seleccionalo en el scope o reutiliza ese registro.'}
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
         {matches.map(({ item, exact }) => (

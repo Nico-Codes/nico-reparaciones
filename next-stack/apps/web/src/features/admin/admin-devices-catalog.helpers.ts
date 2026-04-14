@@ -90,7 +90,10 @@ export function getFilteredModels(models: ModelItem[], selectedBrandId: string) 
 export function findSimilarModels(models: ModelItem[], draft: string, limit = 5): SimilarModelMatch[] {
   return models
     .map((item) => {
-      const similarity = getModelSimilarityScore(item.name, draft);
+      const similarityByName = getModelSimilarityScore(item.name, draft);
+      const similarityBySlug = getModelSimilarityScore(item.slug, draft);
+      const similarity =
+        similarityByName.score >= similarityBySlug.score ? similarityByName : similarityBySlug;
       return { item, exact: similarity.exact, score: similarity.score };
     })
     .filter((item) => item.score > 0)
@@ -106,7 +109,11 @@ export function findSimilarModels(models: ModelItem[], draft: string, limit = 5)
 export function hasExactModelMatch(models: ModelItem[], draft: string) {
   const compactDraft = compactCatalogValue(draft);
   if (!compactDraft) return false;
-  return models.some((item) => compactCatalogValue(item.name) === compactDraft);
+  return models.some(
+    (item) =>
+      compactCatalogValue(item.name) === compactDraft ||
+      compactCatalogValue(item.slug) === compactDraft,
+  );
 }
 
 export function buildDeviceTypeOptions(deviceTypes: DeviceTypeItem[]) {

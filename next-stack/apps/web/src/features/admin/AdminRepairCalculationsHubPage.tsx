@@ -25,6 +25,7 @@ import {
   AdminRepairCalculationsHubHero,
   AdminRepairCalculationsIssuesPanel,
   AdminRepairCalculationsModelsPanel,
+  AdminRepairCalculationsQuickCreateDialog,
   AdminRepairCalculationsRulesPanel,
   AdminRepairCalculationsScopeSection,
   AdminRepairCalculationsTypesPanel,
@@ -34,6 +35,8 @@ import { deviceCatalogApi } from '@/features/deviceCatalog/api';
 import { repairsApi } from '@/features/repairs/api';
 
 type RepairRulesApiRow = NonNullable<Awaited<ReturnType<typeof repairsApi.pricingRulesList>>['items']>;
+type QuickCreateKind = 'deviceType' | 'brand' | 'group' | 'model' | 'issue';
+type QuickCreateState = { kind: QuickCreateKind; value: string };
 
 export function AdminRepairCalculationsHubPage() {
   const [searchParams] = useSearchParams();
@@ -60,6 +63,7 @@ export function AdminRepairCalculationsHubPage() {
   const [groupDraftActive, setGroupDraftActive] = useState(true);
   const [modelDraft, setModelDraft] = useState('');
   const [issueDraft, setIssueDraft] = useState('');
+  const [quickCreate, setQuickCreate] = useState<QuickCreateState | null>(null);
 
   const [creatingType, setCreatingType] = useState(false);
   const [savingTypeId, setSavingTypeId] = useState<string | null>(null);
@@ -197,6 +201,14 @@ export function AdminRepairCalculationsHubPage() {
     () => hasExactModelMatch(brandModels, modelDraft),
     [brandModels, modelDraft],
   );
+  const quickCreateSimilarModels = useMemo(
+    () => (quickCreate?.kind === 'model' ? findSimilarModels(brandModels, quickCreate.value) : []),
+    [brandModels, quickCreate],
+  );
+  const quickCreateHasExactDuplicate = useMemo(
+    () => (quickCreate?.kind === 'model' ? hasExactModelMatch(brandModels, quickCreate.value) : false),
+    [brandModels, quickCreate],
+  );
 
   const deviceTypeOptions = useMemo(
     () => [{ value: '', label: 'Tipo: Todos' }, ...deviceTypes.map((item) => ({ value: item.id, label: item.name }))],
@@ -234,24 +246,140 @@ export function AdminRepairCalculationsHubPage() {
       await action();
       setSuccess(successMessage);
       await loadAll();
+      return true;
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : fallbackMessage);
+      return false;
+    }
+  }
+
+  async function createDeviceTypeValue(name: string, active = true, successMessage = 'Tipo de dispositivo creado.') {
+    return runCatalogAction(
+      async () => {
+        const response = await adminApi.createDeviceType({ name: name.trim(), active });
+        pendingScopePatchRef.current = { deviceTypeId: response.item.id };
+      },
+      successMessage,
+      'No se pudo crear el tipo de dispositivo.',
+    );
+  }
+
+  async function createBrandValue(name: string, successMessage = 'Marca creada.') {
+    if (!scope.deviceTypeId) return false;
+    return runCatalogAction(
+      async () => {
+        const response = await deviceCatalogApi.createBrand({
+          deviceTypeId: scope.deviceTypeId,
+          name: name.trim(),
+          slug: slugify(name),
+          active: true,
+        });
+        pendingScopePatchRef.current = { deviceBrandId: response.item.id };
+      },
+      successMessage,
+      'No se pudo crear la marca.',
+    );
+  }
+
+  async function createGroupValue(name: string, active = true, successMessage = 'Grupo creado.') {
+    if (!scope.deviceBrandId) return false;
+    return runCatalogAction(
+      async () => {
+        const response = await adminApi.createModelGroup({
+          deviceBrandId: scope.deviceBrandId,
+          name: name.trim(),
+          active,
+        });
+        pendingScopePatchRef.current = { deviceModelGroupId: response.item.id };
+      },
+      successMessage,
+      'No se pudo crear el grupo.',
+    );
+  }
+
+  function getModelDuplicateError(name: string) {
+    if (!hasExactModelMatch(brandModels, name)) return '';
+    return `Ya existe un modelo con ese nombre dentro de ${selectedBrand?.name || 'la marca activa'}.`;
+  }
+
+  async function createModelValue(name: string, successMessage = 'Modelo creado.') {
+    if (!scope.deviceBrandId) return false;
+    const duplicateError = getModelDuplicateError(name);
+    if (duplicateError) {
+      setError(duplicateError);
+      return false;
+    }
+    return runCatalogAction(
+      async () => {
+        const response = await deviceCatalogApi.createModel({
+          brandId: scope.deviceBrandId,
+          name: name.trim(),
+          slug: slugify(name),
+        });
+        pendingScopePatchRef.current = { deviceModelId: response.item.id };
+      },
+      successMessage,
+      'No se pudo crear el modelo.',
+    );
+  }
+
+  async function createIssueValue(name: string, successMessage = 'Falla creada.') {
+    if (!scope.deviceTypeId) return false;
+    return runCatalogAction(
+      async () => {
+        const response = await deviceCatalogApi.createIssue({
+          deviceTypeId: scope.deviceTypeId,
+          name: name.trim(),
+          slug: slugify(name),
+          active: true,
+        });
+        pendingScopePatchRef.current = { deviceIssueTypeId: response.item.id };
+      },
+      successMessage,
+      'No se pudo crear la falla.',
+    );
+  }
+
+  function openQuickCreate(kind: QuickCreateKind) {
+    setError('');
+    setQuickCreate({ kind, value: '' });
+  }
+
+  function closeQuickCreate() {
+    setQuickCreate(null);
+  }
+
+  async function submitQuickCreate() {
+    if (!quickCreate || !quickCreate.value.trim()) return;
+    let created = false;
+    if (quickCreate.kind === 'deviceType') {
+      created = await createDeviceTypeValue(quickCreate.value, true, 'Tipo de dispositivo creado desde el scope.');
+    }
+    if (quickCreate.kind === 'brand') {
+      created = await createBrandValue(quickCreate.value, 'Marca creada desde el scope.');
+    }
+    if (quickCreate.kind === 'group') {
+      created = await createGroupValue(quickCreate.value, true, 'Grupo creado desde el scope.');
+    }
+    if (quickCreate.kind === 'model') {
+      created = await createModelValue(quickCreate.value, 'Modelo creado desde el scope.');
+    }
+    if (quickCreate.kind === 'issue') {
+      created = await createIssueValue(quickCreate.value, 'Falla creada desde el scope.');
+    }
+    if (created) {
+      closeQuickCreate();
     }
   }
 
   async function createDeviceType() {
     if (!typeDraft.trim()) return;
     setCreatingType(true);
-    await runCatalogAction(
-      async () => {
-        const response = await adminApi.createDeviceType({ name: typeDraft.trim(), active: typeDraftActive });
-        pendingScopePatchRef.current = { deviceTypeId: response.item.id };
-        setTypeDraft('');
-        setTypeDraftActive(true);
-      },
-      'Tipo de dispositivo creado.',
-      'No se pudo crear el tipo de dispositivo.',
-    );
+    const created = await createDeviceTypeValue(typeDraft, typeDraftActive);
+    if (created) {
+      setTypeDraft('');
+      setTypeDraftActive(true);
+    }
     setCreatingType(false);
   }
 
@@ -281,20 +409,8 @@ export function AdminRepairCalculationsHubPage() {
 
   async function createBrand() {
     if (!scope.deviceTypeId || !brandDraft.trim()) return;
-    await runCatalogAction(
-      async () => {
-        const response = await deviceCatalogApi.createBrand({
-          deviceTypeId: scope.deviceTypeId,
-          name: brandDraft.trim(),
-          slug: slugify(brandDraft),
-          active: true,
-        });
-        pendingScopePatchRef.current = { deviceBrandId: response.item.id };
-        setBrandDraft('');
-      },
-      'Marca creada.',
-      'No se pudo crear la marca.',
-    );
+    const created = await createBrandValue(brandDraft);
+    if (created) setBrandDraft('');
   }
 
   async function renameBrand(row: BrandItem) {
@@ -329,20 +445,11 @@ export function AdminRepairCalculationsHubPage() {
 
   async function createGroup() {
     if (!scope.deviceBrandId || !groupDraft.trim()) return;
-    await runCatalogAction(
-      async () => {
-        const response = await adminApi.createModelGroup({
-          deviceBrandId: scope.deviceBrandId,
-          name: groupDraft.trim(),
-          active: groupDraftActive,
-        });
-        pendingScopePatchRef.current = { deviceModelGroupId: response.item.id };
-        setGroupDraft('');
-        setGroupDraftActive(true);
-      },
-      'Grupo creado.',
-      'No se pudo crear el grupo.',
-    );
+    const created = await createGroupValue(groupDraft, groupDraftActive);
+    if (created) {
+      setGroupDraft('');
+      setGroupDraftActive(true);
+    }
   }
 
   async function saveGroup(row: RepairCalculationGroupItem) {
@@ -362,23 +469,8 @@ export function AdminRepairCalculationsHubPage() {
 
   async function createModel() {
     if (!scope.deviceBrandId || !modelDraft.trim()) return;
-    if (hasExactModelDuplicate) {
-      setError(`Ya existe un modelo con ese nombre dentro de ${selectedBrand?.name || 'la marca activa'}.`);
-      return;
-    }
-    await runCatalogAction(
-      async () => {
-        const response = await deviceCatalogApi.createModel({
-          brandId: scope.deviceBrandId,
-          name: modelDraft.trim(),
-          slug: slugify(modelDraft),
-        });
-        pendingScopePatchRef.current = { deviceModelId: response.item.id };
-        setModelDraft('');
-      },
-      'Modelo creado.',
-      'No se pudo crear el modelo.',
-    );
+    const created = await createModelValue(modelDraft);
+    if (created) setModelDraft('');
   }
 
   async function renameModel(row: ModelItem) {
@@ -428,20 +520,8 @@ export function AdminRepairCalculationsHubPage() {
 
   async function createIssue() {
     if (!scope.deviceTypeId || !issueDraft.trim()) return;
-    await runCatalogAction(
-      async () => {
-        const response = await deviceCatalogApi.createIssue({
-          deviceTypeId: scope.deviceTypeId,
-          name: issueDraft.trim(),
-          slug: slugify(issueDraft),
-          active: true,
-        });
-        pendingScopePatchRef.current = { deviceIssueTypeId: response.item.id };
-        setIssueDraft('');
-      },
-      'Falla creada.',
-      'No se pudo crear la falla.',
-    );
+    const created = await createIssueValue(issueDraft);
+    if (created) setIssueDraft('');
   }
 
   async function renameIssue(row: IssueItem) {
@@ -481,119 +561,111 @@ export function AdminRepairCalculationsHubPage() {
     specificityTone: specificity.tone,
     editTo: `/admin/precios/${encodeURIComponent(row.id)}/editar${scopeSearch}`,
   }));
+  const quickCreateMeta = useMemo(() => {
+    if (!quickCreate) return null;
 
-  function promptName(message: string) {
-    return window.prompt(message)?.trim() ?? '';
-  }
+    const updateValue = (value: string) =>
+      setQuickCreate((current) => (current ? { ...current, value } : current));
 
-  async function quickCreateDeviceType() {
-    const nextName = promptName('Nuevo tipo de dispositivo');
-    if (!nextName) return;
-    setCreatingType(true);
-    await runCatalogAction(
-      async () => {
-        const response = await adminApi.createDeviceType({ name: nextName, active: true });
-        pendingScopePatchRef.current = { deviceTypeId: response.item.id };
-      },
-      'Tipo de dispositivo creado desde el scope.',
-      'No se pudo crear el tipo de dispositivo.',
-    );
-    setCreatingType(false);
-  }
-
-  async function quickCreateBrand() {
-    if (!scope.deviceTypeId) return;
-    const nextName = promptName('Nueva marca para el tipo actual');
-    if (!nextName) return;
-    await runCatalogAction(
-      async () => {
-        const response = await deviceCatalogApi.createBrand({
-          deviceTypeId: scope.deviceTypeId,
-          name: nextName,
-          slug: slugify(nextName),
-          active: true,
-        });
-        pendingScopePatchRef.current = { deviceBrandId: response.item.id };
-      },
-      'Marca creada desde el scope.',
-      'No se pudo crear la marca.',
-    );
-  }
-
-  async function quickCreateGroup() {
-    if (!scope.deviceBrandId) return;
-    const nextName = promptName('Nuevo grupo para la marca activa');
-    if (!nextName) return;
-    await runCatalogAction(
-      async () => {
-        const response = await adminApi.createModelGroup({
-          deviceBrandId: scope.deviceBrandId,
-          name: nextName,
-          active: true,
-        });
-        pendingScopePatchRef.current = { deviceModelGroupId: response.item.id };
-      },
-      'Grupo creado desde el scope.',
-      'No se pudo crear el grupo.',
-    );
-  }
-
-  async function quickCreateModel() {
-    if (!scope.deviceBrandId) return;
-    const nextName = promptName('Nuevo modelo para la marca activa');
-    if (!nextName) return;
-    if (hasExactModelMatch(brandModels, nextName)) {
-      setError(`Ya existe un modelo con ese nombre dentro de ${selectedBrand?.name || 'la marca activa'}.`);
-      return;
+    if (quickCreate.kind === 'deviceType') {
+      return {
+        title: 'Agregar tipo',
+        description: 'Se crea en el catalogo tecnico y queda seleccionado en el scope.',
+        fieldLabel: 'Nombre del tipo',
+        placeholder: 'Ej: Celular',
+        submitLabel: 'Crear tipo',
+        contextLabel: 'Impacta la raiz del arbol tecnico.',
+        value: quickCreate.value,
+        onValueChange: updateValue,
+        onClose: closeQuickCreate,
+        onSubmit: () => void submitQuickCreate(),
+        matches: [] as typeof quickCreateSimilarModels,
+        hasExactDuplicate: false,
+      };
     }
-    await runCatalogAction(
-      async () => {
-        const response = await deviceCatalogApi.createModel({
-          brandId: scope.deviceBrandId,
-          name: nextName,
-          slug: slugify(nextName),
-        });
-        pendingScopePatchRef.current = { deviceModelId: response.item.id };
-      },
-      'Modelo creado desde el scope.',
-      'No se pudo crear el modelo.',
-    );
-  }
 
-  async function quickCreateIssue() {
-    if (!scope.deviceTypeId) return;
-    const nextName = promptName('Nueva falla para el tipo activo');
-    if (!nextName) return;
-    await runCatalogAction(
-      async () => {
-        const response = await deviceCatalogApi.createIssue({
-          deviceTypeId: scope.deviceTypeId,
-          name: nextName,
-          slug: slugify(nextName),
-          active: true,
-        });
-        pendingScopePatchRef.current = { deviceIssueTypeId: response.item.id };
-      },
-      'Falla creada desde el scope.',
-      'No se pudo crear la falla.',
-    );
-  }
+    if (quickCreate.kind === 'brand') {
+      return {
+        title: 'Agregar marca',
+        description: 'La marca nueva queda vinculada al tipo activo y se selecciona automaticamente.',
+        fieldLabel: 'Nombre de la marca',
+        placeholder: 'Ej: Samsung',
+        submitLabel: 'Crear marca',
+        contextLabel: `Tipo activo: ${summary.find((item) => item.label === 'Tipo')?.value || 'Sin tipo'}`,
+        value: quickCreate.value,
+        onValueChange: updateValue,
+        onClose: closeQuickCreate,
+        onSubmit: () => void submitQuickCreate(),
+        matches: [] as typeof quickCreateSimilarModels,
+        hasExactDuplicate: false,
+      };
+    }
+
+    if (quickCreate.kind === 'group') {
+      return {
+        title: 'Agregar grupo',
+        description: 'El grupo se crea dentro de la marca activa para ordenar modelos y reglas.',
+        fieldLabel: 'Nombre del grupo',
+        placeholder: 'Ej: Galaxy A / Redmi Note',
+        submitLabel: 'Crear grupo',
+        contextLabel: `Marca activa: ${selectedBrand?.name || 'Sin marca'}`,
+        value: quickCreate.value,
+        onValueChange: updateValue,
+        onClose: closeQuickCreate,
+        onSubmit: () => void submitQuickCreate(),
+        matches: [] as typeof quickCreateSimilarModels,
+        hasExactDuplicate: false,
+      };
+    }
+
+    if (quickCreate.kind === 'model') {
+      return {
+        title: 'Agregar modelo',
+        description: 'Revisa las coincidencias antes de crear para no duplicar la marca activa.',
+        fieldLabel: 'Nombre del modelo',
+        placeholder: selectedBrand ? `Ej: ${selectedBrand.name} A13` : 'Ej: A13',
+        submitLabel: quickCreateHasExactDuplicate ? 'Ya existe' : 'Crear modelo',
+        contextLabel: `Marca activa: ${selectedBrand?.name || 'Sin marca'}`,
+        value: quickCreate.value,
+        onValueChange: updateValue,
+        onClose: closeQuickCreate,
+        onSubmit: () => void submitQuickCreate(),
+        matches: quickCreateSimilarModels,
+        hasExactDuplicate: quickCreateHasExactDuplicate,
+      };
+    }
+
+    return {
+      title: 'Agregar falla',
+      description: 'La falla queda asociada al tipo activo y ya entra al scope.',
+      fieldLabel: 'Nombre de la falla',
+      placeholder: 'Ej: No carga / Pantalla',
+      submitLabel: 'Crear falla',
+      contextLabel: `Tipo activo: ${summary.find((item) => item.label === 'Tipo')?.value || 'Sin tipo'}`,
+      value: quickCreate.value,
+      onValueChange: updateValue,
+      onClose: closeQuickCreate,
+      onSubmit: () => void submitQuickCreate(),
+      matches: [] as typeof quickCreateSimilarModels,
+      hasExactDuplicate: false,
+    };
+  }, [quickCreate, quickCreateHasExactDuplicate, quickCreateSimilarModels, selectedBrand, summary]);
 
   const deviceTypeMenuAction = useMemo<CustomSelectMenuAction>(
     () => ({
       label: '+ Agregar tipo',
-      onSelect: () => void quickCreateDeviceType(),
-      helperText: 'Si no aparece en la lista, lo creas aca mismo.',
+      onSelect: () => openQuickCreate('deviceType'),
+      helperText: 'Abre un formulario rapido dentro de esta pantalla.',
     }),
     [],
   );
   const brandMenuAction = useMemo<CustomSelectMenuAction>(
     () => ({
       label: scope.deviceTypeId ? '+ Agregar marca' : 'Primero elegi un tipo',
-      onSelect: () => void quickCreateBrand(),
+      onSelect: () => openQuickCreate('brand'),
       disabled: !scope.deviceTypeId,
       helperText: scope.deviceTypeId
-        ? 'La nueva marca queda vinculada al tipo activo y se selecciona sola.'
+        ? 'Abre un formulario rapido y la vincula al tipo activo.'
         : 'Marca depende del tipo de dispositivo.',
     }),
     [scope.deviceTypeId],
@@ -601,10 +673,10 @@ export function AdminRepairCalculationsHubPage() {
   const groupMenuAction = useMemo<CustomSelectMenuAction>(
     () => ({
       label: scope.deviceBrandId ? '+ Agregar grupo' : 'Primero elegi una marca',
-      onSelect: () => void quickCreateGroup(),
+      onSelect: () => openQuickCreate('group'),
       disabled: !scope.deviceBrandId,
       helperText: scope.deviceBrandId
-        ? 'El grupo nuevo queda dentro de la marca activa.'
+        ? 'Abre un formulario rapido dentro de la marca activa.'
         : 'Grupo depende de la marca activa.',
     }),
     [scope.deviceBrandId],
@@ -612,10 +684,10 @@ export function AdminRepairCalculationsHubPage() {
   const modelMenuAction = useMemo<CustomSelectMenuAction>(
     () => ({
       label: scope.deviceBrandId ? '+ Agregar modelo' : 'Primero elegi una marca',
-      onSelect: () => void quickCreateModel(),
+      onSelect: () => openQuickCreate('model'),
       disabled: !scope.deviceBrandId,
       helperText: scope.deviceBrandId
-        ? 'El modelo nuevo queda dentro de la marca activa.'
+        ? 'Abre un formulario rapido con control de duplicados.'
         : 'Modelo depende de la marca activa.',
     }),
     [scope.deviceBrandId],
@@ -623,10 +695,10 @@ export function AdminRepairCalculationsHubPage() {
   const issueMenuAction = useMemo<CustomSelectMenuAction>(
     () => ({
       label: scope.deviceTypeId ? '+ Agregar falla' : 'Primero elegi un tipo',
-      onSelect: () => void quickCreateIssue(),
+      onSelect: () => openQuickCreate('issue'),
       disabled: !scope.deviceTypeId,
       helperText: scope.deviceTypeId
-        ? 'La falla nueva queda ligada al tipo activo.'
+        ? 'Abre un formulario rapido ligado al tipo activo.'
         : 'Falla depende del tipo de dispositivo.',
     }),
     [scope.deviceTypeId],
@@ -655,6 +727,21 @@ export function AdminRepairCalculationsHubPage() {
         issueAction={issueMenuAction}
         onScopeChange={patchScope}
         onClear={() => setScope(EMPTY_REPAIR_CALCULATION_SCOPE)}
+      />
+      <AdminRepairCalculationsQuickCreateDialog
+        open={Boolean(quickCreateMeta)}
+        title={quickCreateMeta?.title || ''}
+        description={quickCreateMeta?.description || ''}
+        fieldLabel={quickCreateMeta?.fieldLabel || ''}
+        placeholder={quickCreateMeta?.placeholder || ''}
+        submitLabel={quickCreateMeta?.submitLabel || 'Crear'}
+        contextLabel={quickCreateMeta?.contextLabel || ''}
+        value={quickCreateMeta?.value || ''}
+        matches={quickCreateMeta?.matches || []}
+        hasExactDuplicate={quickCreateMeta?.hasExactDuplicate || false}
+        onValueChange={quickCreateMeta?.onValueChange || (() => {})}
+        onClose={quickCreateMeta?.onClose || (() => {})}
+        onSubmit={quickCreateMeta?.onSubmit || (() => {})}
       />
 
       {loading ? (
