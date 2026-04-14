@@ -1,6 +1,8 @@
 import type { AuthResponse } from './types';
 import { authStorage } from './storage';
 import { authJsonRequest, publicJsonRequest } from './http';
+import { apiOrigin } from './http';
+import { resolvePostAuthReturnTo } from './google-auth.helpers';
 
 export const authApi = {
   register(input: { name: string; email: string; password: string }) {
@@ -13,6 +15,17 @@ export const authApi = {
     return publicJsonRequest<AuthResponse>('/auth/login', {
       method: 'POST',
       body: JSON.stringify(input),
+    });
+  },
+  googleStartUrl(returnTo?: string) {
+    const url = new URL('/api/auth/google/start', apiOrigin);
+    url.searchParams.set('returnTo', resolvePostAuthReturnTo(returnTo));
+    return url.toString();
+  },
+  googleComplete(resultToken: string) {
+    return publicJsonRequest<AuthResponse>('/auth/google/complete', {
+      method: 'POST',
+      body: JSON.stringify({ resultToken }),
     });
   },
   me(accessToken?: string) {

@@ -113,6 +113,7 @@ Rutas legacy alias relevantes:
 ## Rutas auth
 
 - `/auth/login`
+- `/auth/google/callback`
 - `/auth/register`
 - `/auth/verify-email`
 - `/auth/forgot-password`
@@ -121,8 +122,8 @@ Rutas legacy alias relevantes:
 
 Nota importante:
 
-- no existen rutas `/auth/google` ni `/auth/google/callback` en el router nuevo.
-- el auth social no forma parte del stack nuevo.
+- el router nuevo expone `/auth/google/callback` como frontera publica para completar el redirect de Google login.
+- el boton social vive solo en `LoginPage.tsx`; `register` sigue sin CTA social propio.
 
 ## Rutas de usuario autenticado
 
@@ -159,11 +160,13 @@ Principales grupos detectados:
 Auth:
 
 - `LoginPage.tsx`
+- `GoogleAuthCallbackPage.tsx`
 - `RegisterPage.tsx`
 - `ForgotPasswordPage.tsx`
 - `ResetPasswordPage.tsx`
 - `VerifyEmailPage.tsx`
 - `MyAccountPage.tsx`
+- `google-auth.helpers.ts`
 - `my-account.helpers.ts`
 - `my-account.sections.tsx`
 - `BootstrapAdminPage.tsx`
@@ -716,8 +719,8 @@ En la ola de refinamiento final del 2026-04-13 se cerraron los hotspots internos
   - `admin-store-hero-settings.form.tsx`
 
 Con este cierre, lo que queda grande en frontend ya no son paginas o `sections.tsx` monoliticos pendientes, sino paneles finales u orquestadores deliberados del dominio.
-- el router nuevo ya no expone `/auth/google*`.
-- el auth social fue retirado como alcance del proyecto en Fase 4D.
+- el router nuevo vuelve a exponer `/auth/google/callback` para cerrar el redirect de Google login.
+- el auth social queda acotado a `LoginPage.tsx` y solo para cuentas `USER`.
 
 ### Evidencia funcional
 - `npm run smoke:web` OK

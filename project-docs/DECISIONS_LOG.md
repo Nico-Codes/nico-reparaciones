@@ -20,6 +20,20 @@ Registrar decisiones tecnicas confirmadas para evitar dependencia de memoria ora
 
 ---
 
+### [DL-0105]
+- Fecha: 2026-04-14
+- Estado: aceptada
+- Tema: reintroducir login con Google solo para cuentas cliente usando redirect OAuth y vinculacion por email
+- Contexto: el stack actual habia quedado sin auth social y el login web solo aceptaba email + contrasena. El pedido fue agregar Google sin abrir un sistema paralelo ni debilitar el acceso admin, manteniendo la UI social solo en login.
+- Decision: agregar flujo OAuth por redirect resuelto principalmente en backend (`/api/auth/google/start`, `/api/auth/google/callback`, `/api/auth/google/complete`), sin SDK web de Google ni Passport por defecto. El alcance queda limitado a cuentas `USER`: si Google devuelve un email ya existente de usuario, se vincula por email; si el email corresponde a `ADMIN`, el acceso social se rechaza. El callback del backend no entrega tokens finales por query string: redirige al frontend con un `result token` corto y firmado, y el frontend lo canjea por el `AuthResponse` normal antes de persistir sesion.
+- Impacto: clientes pueden entrar con Google desde `LoginPage` sin romper el flujo local existente. `register` sigue publico, pero el alta social queda absorbida por login. El modelo `User` incorpora `googleSubject` como identificador social persistente y las cuentas Google se marcan verificadas cuando Google entrega `email_verified=true`.
+- Alternativas consideradas: permitir Google tambien para `ADMIN`, usar popup/SDK web o reinstalar auth social mas amplio en varias pantallas; descartado por complejidad mayor, mayor superficie de riesgo y por no respetar el alcance pedido.
+- Archivos / modulos afectados: `next-stack/apps/api/src/modules/auth/*`, `next-stack/apps/api/prisma/*`, `next-stack/packages/contracts/src/index.ts`, `next-stack/apps/web/src/features/auth/*`, `next-stack/apps/web/src/App.tsx`, `next-stack/apps/web/src/app/routing/route-pages.tsx`, `project-docs/{architecture/ARCHITECTURE.md,frontend/FRONTEND_MAP.md,backend/BACKEND_MAP.md}`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/api`, `test --workspace @nico/api`, `build --workspace @nico/api`, `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `git diff --check`.
+- Responsable: Codex + operador humano
+
+---
+
 ### [DL-0104]
 - Fecha: 2026-04-14
 - Estado: aceptada

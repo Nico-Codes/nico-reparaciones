@@ -296,6 +296,41 @@
   text-decoration: underline;
 }
 
+.auth-social-divider {
+  position: relative;
+  margin-top: 0.15rem;
+  text-align: center;
+}
+
+.auth-social-divider::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  border-top: 1px solid rgba(226, 232, 240, 0.88);
+}
+
+.auth-social-divider span {
+  position: relative;
+  display: inline-block;
+  padding: 0 0.75rem;
+  background: rgba(255, 255, 255, 0.94);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.auth-google-mark {
+  display: inline-flex;
+  height: 1.15rem;
+  width: 1.15rem;
+  align-items: center;
+  justify-content: center;
+}
+
 @media (max-width: 1023.98px) {
   .auth-stage {
     align-items: stretch;

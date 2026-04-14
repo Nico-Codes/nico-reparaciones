@@ -43,6 +43,7 @@ Ubicacion:
 - `RolesGuard`
 - roles `USER` y `ADMIN`
 - throttling, logging, health endpoints, correo SMTP y 2FA admin
+- `AuthModule` ahora tambien expone el redirect OAuth de Google para cuentas `USER`, con vinculacion por email y callback de completado sin tokens en query string
 
 ## Observacion clave
 

@@ -70,6 +70,7 @@ import {
   CartPage,
   CheckoutPage,
   ForgotPasswordPage,
+  GoogleAuthCallbackPage,
   HelpPage,
   LoginPage,
   MyAccountPage,
@@ -99,6 +100,7 @@ export default function App() {
         <Route path="/api/auth/*" element={<ApiAuthAliasRedirect />} />
         <Route path="/api/*" element={<RootEntryRedirect />} />
         <Route path="/auth/login" element={withSuspense(<LoginPage />)} />
+        <Route path="/auth/google/callback" element={withSuspense(<GoogleAuthCallbackPage />)} />
         <Route path="/auth/register" element={withSuspense(<RegisterPage />)} />
         <Route path="/auth/verify-email" element={withSuspense(<VerifyEmailPage />)} />
         <Route path="/auth/forgot-password" element={withSuspense(<ForgotPasswordPage />)} />

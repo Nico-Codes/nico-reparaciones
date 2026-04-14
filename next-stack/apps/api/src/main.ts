@@ -72,6 +72,10 @@ function assertProductionSafeEnv() {
   const apiUrl = env('API_URL');
   const allowBootstrap = env('ALLOW_ADMIN_BOOTSTRAP');
   const previewTokens = env('MAIL_PREVIEW_TOKENS');
+  const googleEnabled = isTruthy(env('GOOGLE_OAUTH_ENABLED'));
+  const googleClientId = env('GOOGLE_CLIENT_ID');
+  const googleClientSecret = env('GOOGLE_CLIENT_SECRET');
+  const googleRedirectUri = env('GOOGLE_OAUTH_REDIRECT_URI');
 
   if (jwtAccess.length < 32) errors.push('JWT_ACCESS_SECRET demasiado corto (mínimo recomendado: 32)');
   if (jwtRefresh.length < 32) errors.push('JWT_REFRESH_SECRET demasiado corto (mínimo recomendado: 32)');
@@ -81,6 +85,11 @@ function assertProductionSafeEnv() {
   if (!apiUrl || !isHttpsUrl(apiUrl)) errors.push('API_URL debe ser HTTPS en producción');
   if (isTruthy(allowBootstrap)) errors.push('ALLOW_ADMIN_BOOTSTRAP no puede estar habilitado en producción');
   if (isTruthy(previewTokens)) errors.push('MAIL_PREVIEW_TOKENS no puede estar habilitado en producción');
+  if (googleEnabled && !googleClientId) errors.push('GOOGLE_CLIENT_ID es obligatorio cuando GOOGLE_OAUTH_ENABLED=1');
+  if (googleEnabled && !googleClientSecret) errors.push('GOOGLE_CLIENT_SECRET es obligatorio cuando GOOGLE_OAUTH_ENABLED=1');
+  if (googleEnabled && googleRedirectUri && !isHttpsUrl(googleRedirectUri)) {
+    errors.push('GOOGLE_OAUTH_REDIRECT_URI debe ser HTTPS en producción');
+  }
 
   if (errors.length) {
     throw new Error(`[env] Configuración insegura para producción:\n- ${errors.join('\n- ')}`);

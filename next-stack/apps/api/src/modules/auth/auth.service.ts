@@ -5,12 +5,12 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import type { AppSetting } from '@prisma/client';
 import type {
   AccountPasswordUpdateInput,
   AccountUpdateInput,
   BootstrapAdminInput,
   ForgotPasswordInput,
+  GoogleAuthCompleteInput,
   LoginInput,
   RefreshTokenInput,
   RegisterInput,
@@ -27,6 +27,24 @@ export type JwtPayload = {
   sub: string;
   email: string;
   role: 'USER' | 'ADMIN';
+};
+
+type GoogleOauthStatePayload = {
+  purpose: 'google-oauth-state';
+  returnTo: string;
+};
+
+type GoogleOauthResultPayload = {
+  purpose: 'google-login-result';
+  sub: string;
+  returnTo: string;
+};
+
+type GoogleUserinfo = {
+  sub?: string;
+  email?: string;
+  email_verified?: boolean;
+  name?: string;
 };
 
 @Injectable()
@@ -107,6 +125,58 @@ export class AuthService {
       user: this.usersService.toPublicUser(user),
       tokens,
     };
+  }
+
+  async createGoogleAuthorizationUrl(returnTo?: string) {
+    const config = this.getGoogleOauthConfig();
+    const stateToken = await this.buildGoogleStateToken(returnTo);
+    const url = new URL('https://accounts.google.com/o/oauth2/v2/auth');
+    url.searchParams.set('client_id', config.clientId);
+    url.searchParams.set('redirect_uri', config.redirectUri);
+    url.searchParams.set('response_type', 'code');
+    url.searchParams.set('scope', 'openid email profile');
+    url.searchParams.set('state', stateToken);
+    url.searchParams.set('prompt', 'select_account');
+    return url.toString();
+  }
+
+  async handleGoogleCallback(params: { code?: string; state?: string; error?: string }) {
+    const config = this.getGoogleOauthConfig();
+    const returnTo = await this.verifyGoogleStateToken(params.state ?? '');
+
+    if (params.error?.trim()) {
+      throw new BadRequestException(this.resolveGoogleCallbackError(params.error));
+    }
+
+    const code = (params.code ?? '').trim();
+    if (!code) {
+      throw new BadRequestException('No recibimos un codigo valido de Google');
+    }
+
+    const accessToken = await this.exchangeGoogleCode(code, config);
+    const profile = await this.fetchGoogleUserinfo(accessToken);
+    const user = await this.resolveGoogleUser(profile);
+    const resultToken = await this.buildGoogleResultToken(user.id, returnTo);
+    return this.buildGoogleFrontendCallbackUrl({ resultToken });
+  }
+
+  async completeGoogleLogin(input: GoogleAuthCompleteInput) {
+    this.getGoogleOauthConfig();
+    const payload = await this.verifyGoogleResultToken(input.resultToken);
+    const user = await this.usersService.findById(payload.sub);
+    if (!user || user.role !== 'USER') {
+      throw new UnauthorizedException('Resultado de login Google invalido');
+    }
+
+    const tokens = await this.issueTokens(user.id, user.email, user.role);
+    return {
+      user: this.usersService.toPublicUser(user),
+      tokens,
+    };
+  }
+
+  async buildGoogleFrontendErrorRedirect(message: string) {
+    return this.buildGoogleFrontendCallbackUrl({ error: message });
   }
 
   async me(accessToken: string) {
@@ -473,6 +543,226 @@ export class AuthService {
     const secret = ((await this.getAppSetting(this.twoFactorSettingKey(userId, 'secret'))) ?? '').trim();
     if (!secret) return false;
     return this.verifyTotpCode(secret, code);
+  }
+
+  private getGoogleOauthConfig() {
+    if (!this.isTruthy(process.env.GOOGLE_OAUTH_ENABLED ?? '')) {
+      throw new BadRequestException('El acceso con Google no esta disponible');
+    }
+
+    const clientId = (process.env.GOOGLE_CLIENT_ID ?? '').trim();
+    const clientSecret = (process.env.GOOGLE_CLIENT_SECRET ?? '').trim();
+    const redirectUri = ((process.env.GOOGLE_OAUTH_REDIRECT_URI ?? '').trim() || `${this.getApiBaseUrl()}/api/auth/google/callback`).replace(/\/$/, '');
+
+    if (!clientId || !clientSecret) {
+      throw new BadRequestException('Falta configurar Google OAuth en el servidor');
+    }
+
+    return {
+      clientId,
+      clientSecret,
+      redirectUri,
+    };
+  }
+
+  private async buildGoogleStateToken(returnTo?: string) {
+    const payload: GoogleOauthStatePayload = {
+      purpose: 'google-oauth-state',
+      returnTo: this.resolveSafeReturnTo(returnTo),
+    };
+
+    return this.jwtService.signAsync(payload, {
+      secret: this.getGoogleFlowSecret(),
+      expiresIn: '10m',
+    });
+  }
+
+  private async verifyGoogleStateToken(token: string) {
+    try {
+      const payload = await this.jwtService.verifyAsync<GoogleOauthStatePayload>(token, {
+        secret: this.getGoogleFlowSecret(),
+      });
+      if (payload.purpose !== 'google-oauth-state') {
+        throw new Error('unexpected-purpose');
+      }
+      return this.resolveSafeReturnTo(payload.returnTo);
+    } catch {
+      throw new BadRequestException('El estado del acceso con Google es invalido o expiro');
+    }
+  }
+
+  private async buildGoogleResultToken(userId: string, returnTo: string) {
+    const payload: GoogleOauthResultPayload = {
+      purpose: 'google-login-result',
+      sub: userId,
+      returnTo: this.resolveSafeReturnTo(returnTo),
+    };
+
+    return this.jwtService.signAsync(payload, {
+      secret: this.getGoogleFlowSecret(),
+      expiresIn: '5m',
+    });
+  }
+
+  private async verifyGoogleResultToken(token: string) {
+    try {
+      const payload = await this.jwtService.verifyAsync<GoogleOauthResultPayload>(token, {
+        secret: this.getGoogleFlowSecret(),
+      });
+      if (payload.purpose !== 'google-login-result' || !payload.sub) {
+        throw new Error('unexpected-purpose');
+      }
+      return {
+        ...payload,
+        returnTo: this.resolveSafeReturnTo(payload.returnTo),
+      };
+    } catch {
+      throw new UnauthorizedException('El resultado del acceso con Google es invalido o expiro');
+    }
+  }
+
+  private async exchangeGoogleCode(code: string, config: ReturnType<AuthService['getGoogleOauthConfig']>) {
+    const response = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        code,
+        client_id: config.clientId,
+        client_secret: config.clientSecret,
+        redirect_uri: config.redirectUri,
+        grant_type: 'authorization_code',
+      }),
+    });
+
+    const data = (await response.json().catch(() => ({}))) as { access_token?: string; error?: string };
+    if (!response.ok || !data.access_token) {
+      throw new BadRequestException('No pudimos validar el acceso con Google');
+    }
+
+    return data.access_token;
+  }
+
+  private async fetchGoogleUserinfo(accessToken: string) {
+    const response = await fetch('https://openidconnect.googleapis.com/v1/userinfo', {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    const data = (await response.json().catch(() => ({}))) as GoogleUserinfo;
+    if (!response.ok) {
+      throw new BadRequestException('No pudimos obtener los datos del usuario desde Google');
+    }
+
+    if (!data.sub || !data.email || !data.email_verified) {
+      throw new BadRequestException('Google no devolvio un email verificado para esta cuenta');
+    }
+
+    return {
+      sub: data.sub.trim(),
+      email: data.email.trim().toLowerCase(),
+      name: this.normalizeGoogleDisplayName(data.name, data.email),
+    };
+  }
+
+  private async resolveGoogleUser(profile: { sub: string; email: string; name: string }) {
+    const byGoogleSubject = await this.usersService.findByGoogleSubject(profile.sub);
+    if (byGoogleSubject) {
+      if (byGoogleSubject.role !== 'USER') {
+        throw new UnauthorizedException('Las cuentas admin deben ingresar con el acceso local');
+      }
+
+      if (!byGoogleSubject.emailVerified) {
+        return this.prisma.user.update({
+          where: { id: byGoogleSubject.id },
+          data: {
+            emailVerified: true,
+            emailVerifiedAt: byGoogleSubject.emailVerifiedAt ?? new Date(),
+          },
+        });
+      }
+
+      return byGoogleSubject;
+    }
+
+    const existingByEmail = await this.usersService.findByEmail(profile.email);
+    if (existingByEmail) {
+      if (existingByEmail.role !== 'USER') {
+        throw new UnauthorizedException('Las cuentas admin deben ingresar con el acceso local');
+      }
+      if (existingByEmail.googleSubject && existingByEmail.googleSubject !== profile.sub) {
+        throw new UnauthorizedException('La cuenta ya esta vinculada a otro acceso de Google');
+      }
+
+      return this.prisma.user.update({
+        where: { id: existingByEmail.id },
+        data: {
+          googleSubject: profile.sub,
+          emailVerified: true,
+          emailVerifiedAt: existingByEmail.emailVerifiedAt ?? new Date(),
+        },
+      });
+    }
+
+    return this.usersService.create({
+      name: profile.name,
+      email: profile.email,
+      role: 'USER',
+      passwordHash: null,
+      googleSubject: profile.sub,
+      emailVerified: true,
+      emailVerifiedAt: new Date(),
+    });
+  }
+
+  private buildGoogleFrontendCallbackUrl(params: { resultToken?: string; error?: string }) {
+    const url = new URL('/auth/google/callback', this.getWebBaseUrl());
+    const fragment = new URLSearchParams();
+    if (params.resultToken) fragment.set('result', params.resultToken);
+    if (params.error) fragment.set('error', params.error);
+    const hash = fragment.toString();
+    return hash ? `${url.toString()}#${hash}` : url.toString();
+  }
+
+  private resolveGoogleCallbackError(errorCode: string) {
+    if (errorCode === 'access_denied') {
+      return 'Cancelaste el acceso con Google antes de completarlo';
+    }
+    return 'No pudimos completar el acceso con Google';
+  }
+
+  private normalizeGoogleDisplayName(nameRaw: string | undefined, email: string) {
+    const name = (nameRaw ?? '').trim();
+    if (name) return name;
+    const localPart = email.split('@')[0] ?? 'Usuario';
+    const cleaned = localPart.replace(/[._-]+/g, ' ').trim();
+    return cleaned ? cleaned.replace(/\b\w/g, (char) => char.toUpperCase()) : 'Usuario';
+  }
+
+  private resolveSafeReturnTo(raw: string | null | undefined) {
+    const value = (raw ?? '').trim();
+    if (!value.startsWith('/')) return '/store';
+    if (value.startsWith('/auth/') || value.startsWith('/api/')) return '/store';
+    return value || '/store';
+  }
+
+  private getApiBaseUrl() {
+    return (
+      (process.env.API_URL ?? '').trim() ||
+      'http://localhost:3001'
+    ).replace(/\/$/, '');
+  }
+
+  private getGoogleFlowSecret() {
+    const baseSecret = (process.env.JWT_ACCESS_SECRET ?? 'dev-access-secret-change-me').trim();
+    return `${baseSecret}:google-oauth`;
+  }
+
+  private isTruthy(value: string) {
+    const normalized = value.trim().toLowerCase();
+    return normalized === '1' || normalized === 'true' || normalized === 'yes' || normalized === 'on';
   }
 
   private async issueTokens(userId: string, email: string, role: 'USER' | 'ADMIN') {

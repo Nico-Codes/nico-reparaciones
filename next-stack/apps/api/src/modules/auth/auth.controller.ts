@@ -8,6 +8,8 @@ import {
   HttpStatus,
   Inject,
   Post,
+  Query,
+  Res,
   UnauthorizedException,
   UseGuards,
   UsePipes,
@@ -17,6 +19,7 @@ import type {
   AccountUpdateInput,
   BootstrapAdminInput,
   ForgotPasswordInput,
+  GoogleAuthCompleteInput,
   LoginInput,
   RefreshTokenInput,
   RegisterInput,
@@ -28,6 +31,7 @@ import {
   accountUpdateSchema,
   bootstrapAdminSchema,
   forgotPasswordSchema,
+  googleAuthCompleteSchema,
   loginSchema,
   refreshTokenSchema,
   registerSchema,
@@ -58,6 +62,43 @@ export class AuthController {
   @UsePipes(new ZodValidationPipe(loginSchema))
   async login(@Body() input: LoginInput) {
     return this.authService.login(input);
+  }
+
+  @Get('google/start')
+  async googleStart(@Query('returnTo') returnTo: string | undefined, @Res() res: any) {
+    try {
+      const redirectUrl = await this.authService.createGoogleAuthorizationUrl(returnTo);
+      return res.redirect(redirectUrl);
+    } catch (error) {
+      const message = (error as { message?: string })?.message ?? 'No pudimos iniciar el acceso con Google';
+      const fallbackUrl = await this.authService.buildGoogleFrontendErrorRedirect(message);
+      return res.redirect(fallbackUrl);
+    }
+  }
+
+  @Get('google/callback')
+  async googleCallback(
+    @Query('code') code: string | undefined,
+    @Query('state') state: string | undefined,
+    @Query('error') error: string | undefined,
+    @Res() res: any,
+  ) {
+    try {
+      const redirectUrl = await this.authService.handleGoogleCallback({ code, state, error });
+      return res.redirect(redirectUrl);
+    } catch (callbackError) {
+      const message = (callbackError as { message?: string })?.message ?? 'No pudimos completar el acceso con Google';
+      const fallbackUrl = await this.authService.buildGoogleFrontendErrorRedirect(message);
+      return res.redirect(fallbackUrl);
+    }
+  }
+
+  @Post('google/complete')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @HttpCode(HttpStatus.OK)
+  @UsePipes(new ZodValidationPipe(googleAuthCompleteSchema))
+  async googleComplete(@Body() input: GoogleAuthCompleteInput) {
+    return this.authService.completeGoogleLogin(input);
   }
 
   @Post('refresh')

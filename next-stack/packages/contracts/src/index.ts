@@ -49,6 +49,12 @@ export const refreshTokenSchema = z.object({
 
 export type RefreshTokenInput = z.infer<typeof refreshTokenSchema>;
 
+export const googleAuthCompleteSchema = z.object({
+  resultToken: z.string().min(20).max(2000),
+});
+
+export type GoogleAuthCompleteInput = z.infer<typeof googleAuthCompleteSchema>;
+
 export const bootstrapAdminSchema = z.object({
   setupKey: z.string().min(6),
   name: z.string().trim().min(2).max(120),

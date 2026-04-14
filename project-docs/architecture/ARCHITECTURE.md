@@ -78,6 +78,7 @@ Dependencias:
 Frontend:
 
 - `/auth/login`
+- `/auth/google/callback`
 - `/auth/register`
 - `/auth/verify-email`
 - `/auth/forgot-password`
@@ -88,6 +89,9 @@ Backend:
 
 - `POST /api/auth/register`
 - `POST /api/auth/login`
+- `GET /api/auth/google/start`
+- `GET /api/auth/google/callback`
+- `POST /api/auth/google/complete`
 - `POST /api/auth/refresh`
 - `POST /api/auth/verify-email/request`
 - `POST /api/auth/verify-email/confirm`
@@ -101,6 +105,7 @@ Backend:
 Notas tecnicas:
 
 - auth en frontend se persiste en `localStorage`
+- el redirect de Google usa `/auth/google/callback` en frontend y completa la sesion local despues de canjear un `result token` corto
 - eventos de sincronizacion: `nico:auth-changed`
 - `RequireAuth` y `RequireAdmin` protegen rutas
 

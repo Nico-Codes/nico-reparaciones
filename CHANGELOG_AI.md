@@ -13,6 +13,41 @@
 ---
 
 ### 2026-04-14 - Codex
+- Alcance: agregar login con Google para clientes usando redirect OAuth backend + callback dedicado en frontend, con vinculacion por email y sin habilitar acceso social para admins.
+- Tipo de intervencion: cambio funcional de backend `auth/prisma/contracts` + frontend `auth/router`.
+- Archivos tocados:
+  - `next-stack/apps/api/prisma/schema.prisma`
+  - `next-stack/apps/api/prisma/migrations/20260414110000_add_google_subject_to_user/migration.sql`
+  - `next-stack/apps/api/src/modules/auth/{auth.controller.ts,auth.service.ts,users.service.ts}`
+  - `next-stack/apps/api/src/main.ts`
+  - `next-stack/packages/contracts/src/index.ts`
+  - `next-stack/.env.example`
+  - `next-stack/.env.production.example`
+  - `next-stack/apps/web/src/features/auth/{LoginPage.tsx,GoogleAuthCallbackPage.tsx,api.ts,google-auth.helpers.ts,google-auth.helpers.test.ts}`
+  - `next-stack/apps/web/src/app/routing/{route-pages.tsx}`
+  - `next-stack/apps/web/src/App.tsx`
+  - `next-stack/apps/web/src/styles/auth.css`
+  - `project-docs/{DECISIONS_LOG.md,architecture/ARCHITECTURE.md,frontend/FRONTEND_MAP.md,backend/BACKEND_MAP.md}`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. `LoginPage` ahora puede iniciar un redirect OAuth con Google para cuentas `USER`; el backend vincula por email cuando corresponde, crea usuarios Google cuando no existen, y rechaza acceso social para `ADMIN`. El frontend completa la sesion desde `/auth/google/callback` sin recibir tokens finales por query string.
+- Validaciones ejecutadas:
+  - `cmd /c npm run db:generate --workspace @nico/api`
+  - `cmd /c npm run typecheck --workspace @nico/api`
+  - `cmd /c npm run test --workspace @nico/api`
+  - `cmd /c npm run build --workspace @nico/api`
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - el flujo completo con Google real requiere configurar `GOOGLE_OAUTH_*` antes de probar contra el proveedor
+  - la validacion automatica cubre el wiring y las reglas de dominio; no sustituye una prueba manual con credenciales reales
+  - en Windows, `prisma generate` puede chocar con un lock local del engine (`EPERM` al renombrar la DLL); si vuelve a ocurrir, hay que liberar el proceso que retiene el engine y regenerar antes de probar contra Google real
+
+---
+
+### 2026-04-14 - Codex
 - Alcance: corregir el shell de auth para que el panel visual use solo la imagen real de branding y no una ilustracion armada con CSS, manteniendo el header alineado al shell publico.
 - Tipo de intervencion: ajuste funcional controlado en frontend `auth`.
 - Archivos tocados:

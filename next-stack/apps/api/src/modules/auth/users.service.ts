@@ -16,14 +16,31 @@ export class UsersService {
     });
   }
 
-  create(data: { name: string; email: string; passwordHash: string; role?: UserRole }) {
+  create(data: {
+    name: string;
+    email: string;
+    passwordHash?: string | null;
+    role?: UserRole;
+    googleSubject?: string | null;
+    emailVerified?: boolean;
+    emailVerifiedAt?: Date | null;
+  }) {
     return this.prisma.user.create({
       data: {
         name: data.name,
         email: data.email.trim().toLowerCase(),
-        passwordHash: data.passwordHash,
+        passwordHash: data.passwordHash ?? null,
         role: data.role ?? 'USER',
+        googleSubject: data.googleSubject ?? null,
+        emailVerified: data.emailVerified ?? false,
+        emailVerifiedAt: data.emailVerifiedAt ?? null,
       },
+    });
+  }
+
+  findByGoogleSubject(googleSubject: string) {
+    return this.prisma.user.findUnique({
+      where: { googleSubject },
     });
   }
 

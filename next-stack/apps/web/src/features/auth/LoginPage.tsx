@@ -6,6 +6,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { TextField } from '@/components/ui/text-field';
 import { AuthLayout } from './AuthLayout';
 import { authApi } from './api';
+import { rememberGoogleReturnTo, resolvePostAuthReturnTo } from './google-auth.helpers';
 import { authStorage } from './storage';
 
 export function LoginPage() {
@@ -16,6 +17,7 @@ export function LoginPage() {
   const [twoFactorCode, setTwoFactorCode] = useState('');
   const [needsTwoFactor, setNeedsTwoFactor] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [result, setResult] = useState('');
   const from = typeof (location.state as { from?: unknown } | null)?.from === 'string'
     ? ((location.state as { from?: string }).from ?? '')
@@ -25,6 +27,7 @@ export function LoginPage() {
   const normalizedPassword = useMemo(() => password.trim(), [password]);
   const normalizedTwoFactorCode = useMemo(() => twoFactorCode.trim(), [twoFactorCode]);
   const canSubmit = normalizedEmail.length > 0 && normalizedPassword.length > 0 && (!needsTwoFactor || normalizedTwoFactorCode.length > 0);
+  const requestedReturnTo = useMemo(() => resolvePostAuthReturnTo(from, '/store'), [from]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -50,13 +53,7 @@ export function LoginPage() {
       authStorage.setSession(res.user, res.tokens);
       setNeedsTwoFactor(false);
       const fallback = res.user.role === 'ADMIN' ? '/admin' : '/store';
-      const target =
-        from &&
-        from.startsWith('/') &&
-        !from.startsWith('/auth/') &&
-        !from.startsWith('/api/')
-          ? from
-          : fallback;
+      const target = resolvePostAuthReturnTo(from, fallback);
       navigate(target, { replace: true });
     } catch (error) {
       const message = (error as { message?: string })?.message ?? 'No pudimos iniciar sesion.';
@@ -65,6 +62,12 @@ export function LoginPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function startGoogleLogin() {
+    setGoogleLoading(true);
+    rememberGoogleReturnTo(requestedReturnTo);
+    window.location.assign(authApi.googleStartUrl(requestedReturnTo));
   }
 
   return (
@@ -125,6 +128,22 @@ export function LoginPage() {
             {loading ? 'Ingresando...' : 'Ingresar'}
           </Button>
         </form>
+
+        <div className="auth-social-divider" aria-hidden="true">
+          <span>o</span>
+        </div>
+
+        <Button type="button" variant="outline" className="w-full justify-center gap-3" disabled={loading || googleLoading} onClick={startGoogleLogin}>
+          <span className="auth-google-mark" aria-hidden="true">
+            <svg viewBox="0 0 18 18" className="h-4 w-4">
+              <path fill="#EA4335" d="M9 7.36v3.52h4.9c-.22 1.13-.87 2.09-1.85 2.73l3 2.33c1.75-1.61 2.76-3.98 2.76-6.79 0-.64-.06-1.27-.18-1.87H9Z" />
+              <path fill="#4285F4" d="M9 18c2.43 0 4.48-.8 5.98-2.16l-3-2.33c-.83.56-1.9.89-2.98.89-2.29 0-4.23-1.55-4.92-3.63H1v2.4A9 9 0 0 0 9 18Z" />
+              <path fill="#FBBC05" d="M4.08 10.77A5.4 5.4 0 0 1 3.8 9c0-.62.1-1.22.28-1.77V4.83H1A9 9 0 0 0 0 9c0 1.45.35 2.82 1 4.17l3.08-2.4Z" />
+              <path fill="#34A853" d="M9 3.58c1.32 0 2.5.45 3.43 1.33l2.58-2.58C13.47.9 11.43 0 9 0A9 9 0 0 0 1 4.83l3.08 2.4C4.77 5.13 6.71 3.58 9 3.58Z" />
+            </svg>
+          </span>
+          {googleLoading ? 'Redirigiendo a Google...' : 'Continuar con Google'}
+        </Button>
 
         <div className="auth-link-row">
           <span>Olvidaste tu contrasena?</span>
