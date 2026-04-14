@@ -38,6 +38,10 @@ type RepairRulesApiRow = NonNullable<Awaited<ReturnType<typeof repairsApi.pricin
 type QuickCreateKind = 'deviceType' | 'brand' | 'group' | 'model' | 'issue';
 type QuickCreateState = { kind: QuickCreateKind; value: string };
 
+function normalizeTaxonomyDraft(value: string) {
+  return value.toUpperCase();
+}
+
 export function AdminRepairCalculationsHubPage() {
   const [searchParams] = useSearchParams();
   const initialScopeRef = useRef(readRepairCalculationScope(searchParams));
@@ -254,9 +258,10 @@ export function AdminRepairCalculationsHubPage() {
   }
 
   async function createDeviceTypeValue(name: string, active = true, successMessage = 'Tipo de dispositivo creado.') {
+    const normalizedName = normalizeTaxonomyDraft(name).trim();
     return runCatalogAction(
       async () => {
-        const response = await adminApi.createDeviceType({ name: name.trim(), active });
+        const response = await adminApi.createDeviceType({ name: normalizedName, active });
         pendingScopePatchRef.current = { deviceTypeId: response.item.id };
       },
       successMessage,
@@ -266,12 +271,13 @@ export function AdminRepairCalculationsHubPage() {
 
   async function createBrandValue(name: string, successMessage = 'Marca creada.') {
     if (!scope.deviceTypeId) return false;
+    const normalizedName = normalizeTaxonomyDraft(name).trim();
     return runCatalogAction(
       async () => {
         const response = await deviceCatalogApi.createBrand({
           deviceTypeId: scope.deviceTypeId,
-          name: name.trim(),
-          slug: slugify(name),
+          name: normalizedName,
+          slug: slugify(normalizedName),
           active: true,
         });
         pendingScopePatchRef.current = { deviceBrandId: response.item.id };
@@ -283,11 +289,12 @@ export function AdminRepairCalculationsHubPage() {
 
   async function createGroupValue(name: string, active = true, successMessage = 'Grupo creado.') {
     if (!scope.deviceBrandId) return false;
+    const normalizedName = normalizeTaxonomyDraft(name).trim();
     return runCatalogAction(
       async () => {
         const response = await adminApi.createModelGroup({
           deviceBrandId: scope.deviceBrandId,
-          name: name.trim(),
+          name: normalizedName,
           active,
         });
         pendingScopePatchRef.current = { deviceModelGroupId: response.item.id };
@@ -304,7 +311,8 @@ export function AdminRepairCalculationsHubPage() {
 
   async function createModelValue(name: string, successMessage = 'Modelo creado.') {
     if (!scope.deviceBrandId) return false;
-    const duplicateError = getModelDuplicateError(name);
+    const normalizedName = normalizeTaxonomyDraft(name).trim();
+    const duplicateError = getModelDuplicateError(normalizedName);
     if (duplicateError) {
       setError(duplicateError);
       return false;
@@ -313,8 +321,8 @@ export function AdminRepairCalculationsHubPage() {
       async () => {
         const response = await deviceCatalogApi.createModel({
           brandId: scope.deviceBrandId,
-          name: name.trim(),
-          slug: slugify(name),
+          name: normalizedName,
+          slug: slugify(normalizedName),
         });
         pendingScopePatchRef.current = { deviceModelId: response.item.id };
       },
@@ -325,12 +333,13 @@ export function AdminRepairCalculationsHubPage() {
 
   async function createIssueValue(name: string, successMessage = 'Falla creada.') {
     if (!scope.deviceTypeId) return false;
+    const normalizedName = normalizeTaxonomyDraft(name).trim();
     return runCatalogAction(
       async () => {
         const response = await deviceCatalogApi.createIssue({
           deviceTypeId: scope.deviceTypeId,
-          name: name.trim(),
-          slug: slugify(name),
+          name: normalizedName,
+          slug: slugify(normalizedName),
           active: true,
         });
         pendingScopePatchRef.current = { deviceIssueTypeId: response.item.id };
@@ -565,7 +574,7 @@ export function AdminRepairCalculationsHubPage() {
     if (!quickCreate) return null;
 
     const updateValue = (value: string) =>
-      setQuickCreate((current) => (current ? { ...current, value } : current));
+      setQuickCreate((current) => (current ? { ...current, value: normalizeTaxonomyDraft(value) } : current));
 
     if (quickCreate.kind === 'deviceType') {
       return {
@@ -758,10 +767,18 @@ export function AdminRepairCalculationsHubPage() {
             savingId={savingTypeId}
             deletingId={deletingTypeId}
             focusedId={scope.deviceTypeId}
-            onNewNameChange={setTypeDraft}
+            onNewNameChange={(value) => setTypeDraft(normalizeTaxonomyDraft(value))}
             onNewActiveChange={setTypeDraftActive}
             onCreate={() => void createDeviceType()}
-            onRowChange={(id, patch) => setDeviceTypes((current) => current.map((row) => (row.id === id ? { ...row, ...patch } : row)))}
+            onRowChange={(id, patch) =>
+              setDeviceTypes((current) =>
+                current.map((row) =>
+                  row.id === id
+                    ? { ...row, ...patch, ...(patch.name !== undefined ? { name: normalizeTaxonomyDraft(patch.name) } : {}) }
+                    : row,
+                ),
+              )
+            }
             onSave={(row) => void saveDeviceType(row)}
             onDelete={(row) => void deleteDeviceType(row)}
             openTo={`/admin/tiposdispositivo${buildRepairCalculationSearch({ deviceTypeId: scope.deviceTypeId })}`}
@@ -772,7 +789,7 @@ export function AdminRepairCalculationsHubPage() {
             draft={brandDraft}
             selectedBrandId={scope.deviceBrandId}
             creatingDisabled={!scope.deviceTypeId || !brandDraft.trim()}
-            onDraftChange={setBrandDraft}
+            onDraftChange={(value) => setBrandDraft(normalizeTaxonomyDraft(value))}
             onCreate={() => void createBrand()}
             onRename={(row) => void renameBrand(row)}
             onToggle={(row) => void toggleBrand(row)}
@@ -790,11 +807,17 @@ export function AdminRepairCalculationsHubPage() {
             active={groupDraftActive}
             disabled={!scope.deviceBrandId}
             savingId={savingGroupId}
-            onDraftChange={setGroupDraft}
+            onDraftChange={(value) => setGroupDraft(normalizeTaxonomyDraft(value))}
             onActiveChange={setGroupDraftActive}
             onCreate={() => void createGroup()}
             onRowChange={(id, patch) =>
-              setGroups((current) => current.map((row) => (row.id === id ? { ...row, ...patch } : row)))
+              setGroups((current) =>
+                current.map((row) =>
+                  row.id === id
+                    ? { ...row, ...patch, ...(patch.name !== undefined ? { name: normalizeTaxonomyDraft(patch.name) } : {}) }
+                    : row,
+                ),
+              )
             }
             onSave={(row) => void saveGroup(row)}
             openTo={`/admin/gruposmodelos${buildRepairCalculationSearch({
@@ -812,7 +835,7 @@ export function AdminRepairCalculationsHubPage() {
             brandSelected={Boolean(scope.deviceBrandId)}
             selectedBrandName={selectedBrand?.name ?? ''}
             groupOptions={groupOptions}
-            onDraftChange={setModelDraft}
+            onDraftChange={(value) => setModelDraft(normalizeTaxonomyDraft(value))}
             onCreate={() => void createModel()}
             onRename={(row) => void renameModel(row)}
             onToggle={(row) => void toggleModel(row)}
@@ -831,7 +854,7 @@ export function AdminRepairCalculationsHubPage() {
             rows={filteredIssues}
             draft={issueDraft}
             typeSelected={Boolean(scope.deviceTypeId)}
-            onDraftChange={setIssueDraft}
+            onDraftChange={(value) => setIssueDraft(normalizeTaxonomyDraft(value))}
             onCreate={() => void createIssue()}
             onRename={(row) => void renameIssue(row)}
             onToggle={(row) => void toggleIssue(row)}

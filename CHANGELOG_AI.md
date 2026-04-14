@@ -13,6 +13,34 @@
 ---
 
 ### 2026-04-14 - Codex
+- Alcance: normalizar el alta y edicion rapida del catalogo tecnico a mayusculas y pulir el modal de alta rapida del scope con animacion y backdrop global.
+- Tipo de intervencion: mejora funcional full-stack sobre `admin/calculos/reparaciones` y persistencia canonica en backend.
+- Archivos tocados:
+  - `next-stack/apps/api/src/modules/admin/admin.service.ts`
+  - `next-stack/apps/api/src/modules/device-catalog/device-catalog.service.ts`
+  - `next-stack/apps/api/src/modules/device-catalog/device-catalog.service.test.ts`
+  - `next-stack/apps/web/src/features/admin/AdminRepairCalculationsHubPage.tsx`
+  - `next-stack/apps/web/src/features/admin/admin-repair-calculations-hub.sections.tsx`
+  - `next-stack/apps/web/src/styles/base.css`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. Los nombres nuevos de tipo, marca, grupo, modelo y falla ahora se escriben y se guardan en mayusculas desde la hub, y el backend refuerza esa regla para no depender de una sola pantalla. El popup de alta rapida ahora abre y cierra con transicion suave, bloquea scroll de fondo y usa un overlay global que cubre todo el viewport.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/api`
+  - `cmd /c npm run test --workspace @nico/api`
+  - `cmd /c npm run build --workspace @nico/api`
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:backend`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - los `prompt` nativos que siguen vivos en renombrados inline todavia no fueron reemplazados por modales propios
+  - la normalizacion a mayusculas se endurecio en backend para `device type`, `brand`, `group`, `model` e `issue`, pero otras pantallas de texto libre fuera de este subdominio no se alteran
+
+---
+
+### 2026-04-14 - Codex
 - Alcance: reemplazar el `prompt` nativo del alta rapida en el scope de reparaciones por un dialogo propio del admin y blindar el backend contra duplicados de modelos por nombre normalizado.
 - Tipo de intervencion: mejora funcional full-stack en `device-catalog` + UX del frontend `admin/calculos/reparaciones`.
 - Archivos tocados:

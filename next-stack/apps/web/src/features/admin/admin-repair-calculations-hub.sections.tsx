@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { SectionCard } from '@/components/ui/section-card';
 import { CustomSelect, type CustomSelectMenuAction } from '@/components/ui/custom-select';
@@ -54,7 +55,6 @@ export function AdminRepairCalculationsHubHero({
     </>
   );
 }
-
 export function AdminRepairCalculationsGuideSection() {
   return (
     <SectionCard
@@ -250,8 +250,9 @@ export function AdminRepairCalculationsTypesPanel({
             <input
               value={newName}
               onChange={(event) => onNewNameChange(event.target.value)}
-              className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm"
+              className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm uppercase"
               placeholder="Ej: Celular"
+              autoCapitalize="characters"
             />
           </div>
           <label className="inline-flex items-center gap-2 text-sm font-bold text-zinc-800 md:pb-3">
@@ -276,7 +277,8 @@ export function AdminRepairCalculationsTypesPanel({
                   <input
                     value={row.name}
                     onChange={(event) => onRowChange(row.id, { name: event.target.value })}
-                    className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm"
+                    className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm uppercase"
+                    autoCapitalize="characters"
                   />
                 </div>
                 <label className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-800 md:pb-2">
@@ -336,7 +338,13 @@ export function AdminRepairCalculationsBrandsPanel({
     >
       <div className="space-y-3">
         <div className="flex gap-2">
-          <input value={draft} onChange={(event) => onDraftChange(event.target.value)} placeholder="Ej: Samsung" className="h-11 flex-1 rounded-2xl border border-zinc-200 px-3 text-sm" />
+          <input
+            value={draft}
+            onChange={(event) => onDraftChange(event.target.value)}
+            placeholder="Ej: Samsung"
+            className="h-11 flex-1 rounded-2xl border border-zinc-200 px-3 text-sm uppercase"
+            autoCapitalize="characters"
+          />
           <button type="button" onClick={onCreate} disabled={creatingDisabled} className="btn-primary !h-11 !rounded-2xl px-4 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-60">
             Agregar
           </button>
@@ -398,7 +406,14 @@ export function AdminRepairCalculationsGroupsPanel({
         <div className="grid gap-3 md:grid-cols-[1fr_auto_auto] md:items-end">
           <div>
             <label className="mb-1.5 block text-sm font-bold text-zinc-800">Nuevo grupo</label>
-            <input value={draft} onChange={(event) => onDraftChange(event.target.value)} placeholder="Ej: Serie A / PS5" className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" disabled={disabled} />
+            <input
+              value={draft}
+              onChange={(event) => onDraftChange(event.target.value)}
+              placeholder="Ej: Serie A / PS5"
+              className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm uppercase"
+              disabled={disabled}
+              autoCapitalize="characters"
+            />
           </div>
           <label className="inline-flex items-center gap-2 text-sm font-bold text-zinc-800 md:pb-3">
             <input type="checkbox" checked={active} onChange={(event) => onActiveChange(event.target.checked)} className="h-4 w-4 rounded border-zinc-300" disabled={disabled} />
@@ -418,7 +433,12 @@ export function AdminRepairCalculationsGroupsPanel({
               <div className="grid gap-3 md:grid-cols-[1fr_auto_auto] md:items-end">
                 <div>
                   <label className="mb-1 block text-xs font-black uppercase tracking-wide text-zinc-500">Nombre</label>
-                  <input value={row.name} onChange={(event) => onRowChange(row.id, { name: event.target.value })} className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm" />
+                  <input
+                    value={row.name}
+                    onChange={(event) => onRowChange(row.id, { name: event.target.value })}
+                    className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm uppercase"
+                    autoCapitalize="characters"
+                  />
                 </div>
                 <label className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-800 md:pb-2">
                   <input type="checkbox" checked={row.active} onChange={(event) => onRowChange(row.id, { active: event.target.checked })} className="h-4 w-4 rounded border-zinc-300" />
@@ -485,11 +505,12 @@ export function AdminRepairCalculationsModelsPanel({
         )}
         <div className="flex gap-2">
           <input
-            value={draft}
-            onChange={(event) => onDraftChange(event.target.value)}
-            placeholder={brandSelected ? `Nuevo modelo para ${selectedBrandName}` : 'Primero elegi una marca'}
-            className="h-11 flex-1 rounded-2xl border border-zinc-200 px-3 text-sm"
-            disabled={!brandSelected}
+              value={draft}
+              onChange={(event) => onDraftChange(event.target.value)}
+              placeholder={brandSelected ? `Nuevo modelo para ${selectedBrandName}` : 'Primero elegi una marca'}
+              className="h-11 flex-1 rounded-2xl border border-zinc-200 px-3 text-sm uppercase"
+              disabled={!brandSelected}
+              autoCapitalize="characters"
           />
           <button type="button" onClick={onCreate} disabled={!brandSelected || hasExactDuplicate || !draft.trim()} className="btn-primary !h-11 !rounded-2xl px-4 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-60">
             {hasExactDuplicate ? 'Ya existe' : 'Agregar modelo'}
@@ -574,7 +595,14 @@ export function AdminRepairCalculationsIssuesPanel({
     >
       <div className="space-y-3">
         <div className="flex gap-2">
-          <input value={draft} onChange={(event) => onDraftChange(event.target.value)} placeholder="Ej: Modulo / No carga" className="h-11 flex-1 rounded-2xl border border-zinc-200 px-3 text-sm" disabled={!typeSelected} />
+          <input
+            value={draft}
+            onChange={(event) => onDraftChange(event.target.value)}
+            placeholder="Ej: Modulo / No carga"
+            className="h-11 flex-1 rounded-2xl border border-zinc-200 px-3 text-sm uppercase"
+            disabled={!typeSelected}
+            autoCapitalize="characters"
+          />
           <button type="button" onClick={onCreate} disabled={!typeSelected || !draft.trim()} className="btn-primary !h-11 !rounded-2xl px-4 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-60">
             Agregar
           </button>
@@ -698,24 +726,54 @@ export function AdminRepairCalculationsQuickCreateDialog({
   onClose: () => void;
   onSubmit: () => void;
 }) {
-  if (!open) return null;
+  const [mounted, setMounted] = useState(open);
+  const [visible, setVisible] = useState(false);
 
-  return (
-    <div className="fixed inset-0 z-[560] flex items-end justify-center p-3 sm:items-center sm:p-6">
+  useEffect(() => {
+    if (open) {
+      setMounted(true);
+      return;
+    }
+
+    setVisible(false);
+    const timeout = window.setTimeout(() => setMounted(false), 220);
+    return () => window.clearTimeout(timeout);
+  }, [open]);
+
+  useEffect(() => {
+    if (!mounted) return;
+    const frame = window.requestAnimationFrame(() => setVisible(open));
+    return () => window.cancelAnimationFrame(frame);
+  }, [mounted, open]);
+
+  useEffect(() => {
+    if (!mounted || typeof document === 'undefined') return;
+    document.documentElement.classList.add('nr-scroll-lock');
+    document.body.classList.add('nr-scroll-lock');
+    return () => {
+      document.documentElement.classList.remove('nr-scroll-lock');
+      document.body.classList.remove('nr-scroll-lock');
+    };
+  }, [mounted]);
+
+  if (!mounted || typeof document === 'undefined') return null;
+
+  return createPortal(
+    <div className={`nr-admin-modal${visible ? ' is-visible' : ''}`} aria-hidden={visible ? 'false' : 'true'}>
       <button
         type="button"
-        className="absolute inset-0 border-0 bg-slate-950/45 backdrop-blur-sm"
+        className="nr-admin-modal__backdrop"
         onClick={onClose}
         aria-label="Cerrar formulario rapido"
       />
-      <div className="card relative z-10 w-full max-w-xl overflow-hidden border border-sky-100 shadow-[0_28px_72px_-32px_rgba(15,23,42,0.45)]">
+      <div className="card nr-admin-modal__dialog overflow-hidden border border-sky-100 shadow-[0_28px_72px_-32px_rgba(15,23,42,0.45)]">
         <div className="card-head flex items-start justify-between gap-3">
           <div>
             <div className="text-lg font-black tracking-tight text-zinc-900">{title}</div>
             <p className="mt-1 text-sm text-zinc-600">{description}</p>
           </div>
           <button type="button" onClick={onClose} className="icon-btn" aria-label="Cerrar">
-            <span aria-hidden="true">×</span>
+            <span aria-hidden="true">x</span>
           </button>
         </div>
         <div className="card-body space-y-4">
@@ -729,8 +787,9 @@ export function AdminRepairCalculationsQuickCreateDialog({
               value={value}
               onChange={(event) => onValueChange(event.target.value)}
               placeholder={placeholder}
-              className="h-12 w-full rounded-2xl border border-zinc-200 px-4 text-sm font-semibold text-zinc-900"
+              className="h-12 w-full rounded-2xl border border-zinc-200 px-4 text-sm font-semibold text-zinc-900 uppercase"
               autoFocus
+              autoCapitalize="characters"
             />
           </div>
 
@@ -763,7 +822,7 @@ export function AdminRepairCalculationsQuickCreateDialog({
                     }`}
                   >
                     {item.name}
-                    {exact ? ' · coincide exacto' : item.active ? ' · similar' : ' · similar inactivo'}
+                    {exact ? ' | coincide exacto' : item.active ? ' | similar' : ' | similar inactivo'}
                   </span>
                 ))}
               </div>
@@ -785,7 +844,8 @@ export function AdminRepairCalculationsQuickCreateDialog({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -858,7 +918,7 @@ function SimilarModelHint({
             }`}
           >
             {item.name}
-            {exact ? ' · coincide exacto' : item.active ? ' · similar' : ' · similar inactivo'}
+            {exact ? ' | coincide exacto' : item.active ? ' | similar' : ' | similar inactivo'}
           </span>
         ))}
       </div>

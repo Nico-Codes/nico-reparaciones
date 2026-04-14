@@ -118,7 +118,7 @@ export class AdminService {
   }
 
   async createDeviceType(input: { name: string; active?: boolean }) {
-    const name = input.name.trim();
+    const name = this.normalizeCatalogName(input.name);
     const slugBase = this.slugify(name) || 'tipo';
     let slug = slugBase;
     let idx = 2;
@@ -135,7 +135,7 @@ export class AdminService {
     const item = await this.prisma.deviceType.update({
       where: { id },
       data: {
-        ...(input.name != null ? { name: input.name.trim() } : {}),
+        ...(input.name != null ? { name: this.normalizeCatalogName(input.name) } : {}),
         ...(input.active != null ? { active: input.active } : {}),
       },
     });
@@ -207,7 +207,7 @@ export class AdminService {
     const brand = await this.prisma.deviceBrand.findUnique({ where: { id: input.deviceBrandId } });
     if (!brand) throw new BadRequestException('Marca no encontrada');
 
-    const name = input.name.trim();
+    const name = this.normalizeCatalogName(input.name);
     const slugBase = this.slugify(name) || 'grupo';
     let slug = slugBase;
     let idx = 2;
@@ -234,7 +234,7 @@ export class AdminService {
     const item = await this.prisma.deviceModelGroup.update({
       where: { id },
       data: {
-        ...(input.name != null ? { name: input.name.trim() } : {}),
+        ...(input.name != null ? { name: this.normalizeCatalogName(input.name) } : {}),
         ...(input.active != null ? { active: input.active } : {}),
       },
     });
@@ -480,6 +480,10 @@ export class AdminService {
       .replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '');
+  }
+
+  private normalizeCatalogName(value: string) {
+    return value.trim().toUpperCase();
   }
 
   private cleanNullable(value?: string | null) {

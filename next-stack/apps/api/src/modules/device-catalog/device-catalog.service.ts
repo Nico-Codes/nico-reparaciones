@@ -42,10 +42,11 @@ export class DeviceCatalogService {
   }
 
   async createBrand(input: { deviceTypeId?: string | null; name: string; slug: string; active?: boolean }) {
+    const name = this.normalizeCatalogName(input.name);
     return this.prisma.deviceBrand.create({
       data: {
         deviceTypeId: this.nullableId(input.deviceTypeId),
-        name: input.name.trim(),
+        name,
         slug: input.slug.trim(),
         active: input.active ?? true,
       },
@@ -57,7 +58,7 @@ export class DeviceCatalogService {
       where: { id },
       data: {
         ...(input.deviceTypeId !== undefined ? { deviceTypeId: this.nullableId(input.deviceTypeId) } : {}),
-        ...(input.name !== undefined ? { name: input.name.trim() } : {}),
+        ...(input.name !== undefined ? { name: this.normalizeCatalogName(input.name) } : {}),
         ...(input.slug !== undefined ? { slug: input.slug.trim() } : {}),
         ...(input.active !== undefined ? { active: input.active } : {}),
       },
@@ -65,7 +66,7 @@ export class DeviceCatalogService {
   }
 
   async createModel(input: { brandId: string; name: string; slug: string; active?: boolean }) {
-    const name = input.name.trim();
+    const name = this.normalizeCatalogName(input.name);
     const slug = this.normalizeCatalogSlug(input.slug || input.name);
     await this.ensureModelNameAvailable(input.brandId, name);
     return this.prisma.deviceModel.create({
@@ -86,7 +87,7 @@ export class DeviceCatalogService {
     if (!current) throw new NotFoundException('Modelo no encontrado');
 
     const nextBrandId = input.brandId ?? current.brandId;
-    const nextName = input.name !== undefined ? input.name.trim() : current.name;
+    const nextName = input.name !== undefined ? this.normalizeCatalogName(input.name) : current.name;
     if (input.name !== undefined || input.brandId !== undefined) {
       await this.ensureModelNameAvailable(nextBrandId, nextName, current.id);
     }
@@ -104,10 +105,11 @@ export class DeviceCatalogService {
   }
 
   async createIssue(input: { deviceTypeId?: string | null; name: string; slug: string; active?: boolean }) {
+    const name = this.normalizeCatalogName(input.name);
     return this.prisma.deviceIssueType.create({
       data: {
         deviceTypeId: this.nullableId(input.deviceTypeId),
-        name: input.name.trim(),
+        name,
         slug: input.slug.trim(),
         active: input.active ?? true,
       },
@@ -119,7 +121,7 @@ export class DeviceCatalogService {
       where: { id },
       data: {
         ...(input.deviceTypeId !== undefined ? { deviceTypeId: this.nullableId(input.deviceTypeId) } : {}),
-        ...(input.name != null ? { name: input.name.trim() } : {}),
+        ...(input.name != null ? { name: this.normalizeCatalogName(input.name) } : {}),
         ...(input.slug != null ? { slug: input.slug.trim() } : {}),
         ...(input.active != null ? { active: input.active } : {}),
       },
@@ -159,6 +161,10 @@ export class DeviceCatalogService {
   private nullableId(value?: string | null) {
     const v = (value ?? '').trim();
     return v || null;
+  }
+
+  private normalizeCatalogName(value: string) {
+    return value.trim().toUpperCase();
   }
 
   private normalizeCatalogSlug(value: string) {

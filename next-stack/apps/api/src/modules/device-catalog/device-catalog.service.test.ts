@@ -2,6 +2,28 @@ import { describe, expect, it } from 'vitest';
 import { DeviceCatalogService } from './device-catalog.service.js';
 
 describe('DeviceCatalogService', () => {
+  it('stores model names in uppercase when creating them', async () => {
+    let payload: { brandId: string; name: string; slug: string; active: boolean } | null = null;
+    const service = new DeviceCatalogService({
+      deviceModel: {
+        findMany: async () => [],
+        create: async ({ data }: { data: { brandId: string; name: string; slug: string; active: boolean } }) => {
+          payload = data;
+          return data;
+        },
+      },
+    } as never);
+
+    await service.createModel({ brandId: 'brand_1', name: 'a13', slug: 'a13' });
+
+    expect(payload).toEqual({
+      brandId: 'brand_1',
+      name: 'A13',
+      slug: 'a13',
+      active: true,
+    });
+  });
+
   it('blocks creating a model when an equivalent name already exists in the brand', async () => {
     const service = new DeviceCatalogService({
       deviceModel: {
