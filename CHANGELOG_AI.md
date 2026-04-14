@@ -13,6 +13,30 @@
 ---
 
 ### 2026-04-14 - Codex
+- Alcance: advertir y prevenir duplicados de modelos mientras se escribe el alta dentro del catalogo de dispositivos y la hub de calculos de reparaciones.
+- Tipo de intervencion: mejora funcional de UX en frontend con heuristica de similitud compartida.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/admin/admin-devices-catalog.helpers.ts`
+  - `next-stack/apps/web/src/features/admin/admin-devices-catalog.helpers.test.ts`
+  - `next-stack/apps/web/src/features/admin/AdminDevicesCatalogPage.tsx`
+  - `next-stack/apps/web/src/features/admin/admin-devices-catalog.sections.tsx`
+  - `next-stack/apps/web/src/features/admin/AdminRepairCalculationsHubPage.tsx`
+  - `next-stack/apps/web/src/features/admin/admin-repair-calculations-hub.sections.tsx`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. Al escribir un modelo nuevo ahora se muestran coincidencias parecidas dentro de la marca activa y se bloquea el alta cuando la coincidencia es exacta.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - la deteccion de similitud es heuristica y prioriza evitar duplicados operativos comunes como `Note 13` vs `Note13`
+  - el quick-add del dropdown sigue usando prompt nativo; ahi solo se bloquea el duplicado exacto porque no existe tipeo progresivo dentro del prompt
+
+---
+
+### 2026-04-14 - Codex
 - Alcance: volver mas didactico el `Scope activo` de la hub de reparaciones para que cada select permita alta rapida del item faltante desde el propio dropdown.
 - Tipo de intervencion: mejora funcional de UX en frontend `admin/calculos/reparaciones`.
 - Archivos tocados:

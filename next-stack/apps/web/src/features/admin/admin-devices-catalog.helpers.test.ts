@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest';
 import {
   buildBrandOptions,
   buildDeviceTypeOptions,
+  findSimilarModels,
   getActiveBrands,
   getDefaultDeviceTypeId,
   getFilteredModels,
+  hasExactModelMatch,
   slugify,
   type BrandItem,
   type DeviceTypeItem,
@@ -63,5 +65,41 @@ describe('admin-devices-catalog.helpers', () => {
 
     expect(getFilteredModels(models, '')).toEqual([]);
     expect(getFilteredModels(models, 'b1')).toEqual([models[0]]);
+  });
+
+  it('detects exact duplicates and similar models while drafting', () => {
+    const models: ModelItem[] = [
+      {
+        id: 'm1',
+        brandId: 'b1',
+        name: 'Redmi Note 13',
+        slug: 'redmi-note-13',
+        active: true,
+        brand: { id: 'b1', name: 'Xiaomi', slug: 'xiaomi' },
+      },
+      {
+        id: 'm2',
+        brandId: 'b1',
+        name: 'Redmi Note 13 Pro',
+        slug: 'redmi-note-13-pro',
+        active: true,
+        brand: { id: 'b1', name: 'Xiaomi', slug: 'xiaomi' },
+      },
+      {
+        id: 'm3',
+        brandId: 'b1',
+        name: 'Poco X6',
+        slug: 'poco-x6',
+        active: false,
+        brand: { id: 'b1', name: 'Xiaomi', slug: 'xiaomi' },
+      },
+    ];
+
+    const matches = findSimilarModels(models, 'Redmi Note13');
+    expect(matches).toHaveLength(2);
+    expect(matches[0]).toMatchObject({ item: { id: 'm1' }, exact: true });
+    expect(matches[1]).toMatchObject({ item: { id: 'm2' }, exact: false });
+    expect(hasExactModelMatch(models, 'Redmi Note13')).toBe(true);
+    expect(hasExactModelMatch(models, 'Redmi 13')).toBe(false);
   });
 });

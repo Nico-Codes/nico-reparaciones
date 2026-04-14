@@ -4,8 +4,10 @@ import { adminApi } from './api';
 import {
   buildBrandOptions,
   buildDeviceTypeOptions,
+  findSimilarModels,
   getDefaultDeviceTypeId,
   getFilteredModels,
+  hasExactModelMatch,
   slugify,
   type BrandItem,
   type DeviceTypeItem,
@@ -110,6 +112,14 @@ export function AdminDevicesCatalogPage() {
     () => getFilteredModels(models, selectedBrandId),
     [models, selectedBrandId],
   );
+  const similarModels = useMemo(
+    () => findSimilarModels(filteredModels, modelDraft),
+    [filteredModels, modelDraft],
+  );
+  const hasExactModelDuplicate = useMemo(
+    () => hasExactModelMatch(filteredModels, modelDraft),
+    [filteredModels, modelDraft],
+  );
   const selectedBrand = useMemo(
     () => brands.find((brand) => brand.id === selectedBrandId) ?? null,
     [brands, selectedBrandId],
@@ -146,6 +156,10 @@ export function AdminDevicesCatalogPage() {
 
   async function handleCreateModel() {
     if (!selectedBrandId || !modelDraft.trim()) return;
+    if (hasExactModelDuplicate) {
+      setError(`Ya existe un modelo con ese nombre dentro de ${selectedBrand?.name || 'la marca activa'}.`);
+      return;
+    }
     await runCatalogAction(async () => {
       await deviceCatalogApi.createModel({
         brandId: selectedBrandId,
@@ -283,6 +297,8 @@ export function AdminDevicesCatalogPage() {
         <AdminDevicesCatalogModelsSection
           filteredModels={filteredModels}
           modelDraft={modelDraft}
+          similarModels={similarModels}
+          hasExactModelDuplicate={hasExactModelDuplicate}
           selectedBrandId={selectedBrandId}
           selectedBrandName={selectedBrand?.name ?? ''}
           manageGroupsTo={`/admin/gruposmodelos${selectedBrandId || deviceType ? `?${new URLSearchParams({

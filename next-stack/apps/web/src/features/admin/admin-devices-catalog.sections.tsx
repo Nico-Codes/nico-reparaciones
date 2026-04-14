@@ -4,6 +4,7 @@ import type {
   BrandItem,
   IssueItem,
   ModelItem,
+  SimilarModelMatch,
 } from './admin-devices-catalog.helpers';
 
 type AdminDevicesCatalogHeroProps = {
@@ -34,6 +35,8 @@ type AdminDevicesCatalogBrandsSectionProps = {
 type AdminDevicesCatalogModelsSectionProps = {
   filteredModels: ModelItem[];
   modelDraft: string;
+  similarModels: SimilarModelMatch[];
+  hasExactModelDuplicate: boolean;
   selectedBrandId: string;
   selectedBrandName: string;
   manageGroupsTo: string;
@@ -213,6 +216,8 @@ export function AdminDevicesCatalogBrandsSection({
 export function AdminDevicesCatalogModelsSection({
   filteredModels,
   modelDraft,
+  similarModels,
+  hasExactModelDuplicate,
   selectedBrandId,
   selectedBrandName,
   manageGroupsTo,
@@ -249,12 +254,19 @@ export function AdminDevicesCatalogModelsSection({
           <button
             type="button"
             className="btn-primary !h-11 !rounded-2xl px-4 text-sm font-bold"
-            disabled={!selectedBrandId}
+            disabled={!selectedBrandId || hasExactModelDuplicate || !modelDraft.trim()}
             onClick={onCreateModel}
           >
-            Agregar modelo
+            {hasExactModelDuplicate ? 'Ya existe' : 'Agregar modelo'}
           </button>
         </div>
+        {selectedBrandId && modelDraft.trim() ? (
+          <SimilarModelsNotice
+            selectedBrandName={selectedBrandName}
+            matches={similarModels}
+            hasExactDuplicate={hasExactModelDuplicate}
+          />
+        ) : null}
 
         <div className="rounded-2xl border border-zinc-200">
           <div className="grid grid-cols-[1fr_auto] gap-3 border-b border-zinc-100 px-3 py-2 text-xs font-black uppercase tracking-wide text-zinc-500">
@@ -363,5 +375,59 @@ export function AdminDevicesCatalogIssuesSection({
         </div>
       </div>
     </section>
+  );
+}
+
+function SimilarModelsNotice({
+  selectedBrandName,
+  matches,
+  hasExactDuplicate,
+}: {
+  selectedBrandName: string;
+  matches: SimilarModelMatch[];
+  hasExactDuplicate: boolean;
+}) {
+  if (matches.length === 0) {
+    return (
+      <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+        No encontramos modelos parecidos en {selectedBrandName}. Si confirmas que no existe, puedes crearlo.
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`rounded-2xl px-4 py-3 text-sm ${
+        hasExactDuplicate
+          ? 'border border-amber-200 bg-amber-50 text-amber-950'
+          : 'border border-sky-200 bg-sky-50 text-sky-950'
+      }`}
+    >
+      <div className="font-black">
+        {hasExactDuplicate
+          ? `Ya existe un modelo igual dentro de ${selectedBrandName}.`
+          : `Revisa estos modelos parecidos antes de crear uno nuevo en ${selectedBrandName}.`}
+      </div>
+      <div className="mt-1 text-xs font-medium opacity-80">
+        {hasExactDuplicate
+          ? 'Bloqueamos el alta para evitar un duplicado exacto.'
+          : 'Si uno ya corresponde, usa ese registro y evita duplicar el catalogo.'}
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {matches.map(({ item, exact }) => (
+          <span
+            key={item.id}
+            className={`rounded-full border px-3 py-1 text-xs font-bold ${
+              exact
+                ? 'border-amber-300 bg-white text-amber-900'
+                : 'border-sky-200 bg-white text-sky-900'
+            }`}
+          >
+            {item.name}
+            {exact ? ' · coincide exacto' : item.active ? ' · similar' : ' · similar inactivo'}
+          </span>
+        ))}
+      </div>
+    </div>
   );
 }

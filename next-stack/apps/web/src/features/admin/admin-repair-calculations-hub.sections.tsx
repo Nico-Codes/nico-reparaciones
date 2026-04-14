@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { SectionCard } from '@/components/ui/section-card';
 import { CustomSelect, type CustomSelectMenuAction } from '@/components/ui/custom-select';
-import type { BrandItem, DeviceTypeItem, IssueItem, ModelItem } from './admin-devices-catalog.helpers';
+import type { BrandItem, DeviceTypeItem, IssueItem, ModelItem, SimilarModelMatch } from './admin-devices-catalog.helpers';
 import type { RepairRuleRow } from './admin-repair-pricing-rules.helpers';
 import type { RepairCalculationGroupItem, RepairCalculationScope } from './admin-repair-calculation-context';
 
@@ -439,6 +439,8 @@ export function AdminRepairCalculationsGroupsPanel({
 export function AdminRepairCalculationsModelsPanel({
   rows,
   draft,
+  similarRows,
+  hasExactDuplicate,
   brandSelected,
   selectedBrandName,
   groupOptions,
@@ -453,6 +455,8 @@ export function AdminRepairCalculationsModelsPanel({
 }: {
   rows: ModelItem[];
   draft: string;
+  similarRows: SimilarModelMatch[];
+  hasExactDuplicate: boolean;
   brandSelected: boolean;
   selectedBrandName: string;
   groupOptions: Array<{ value: string; label: string }>;
@@ -487,10 +491,17 @@ export function AdminRepairCalculationsModelsPanel({
             className="h-11 flex-1 rounded-2xl border border-zinc-200 px-3 text-sm"
             disabled={!brandSelected}
           />
-          <button type="button" onClick={onCreate} disabled={!brandSelected || !draft.trim()} className="btn-primary !h-11 !rounded-2xl px-4 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-60">
-            Agregar modelo
+          <button type="button" onClick={onCreate} disabled={!brandSelected || hasExactDuplicate || !draft.trim()} className="btn-primary !h-11 !rounded-2xl px-4 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-60">
+            {hasExactDuplicate ? 'Ya existe' : 'Agregar modelo'}
           </button>
         </div>
+        {brandSelected && draft.trim() ? (
+          <SimilarModelHint
+            selectedBrandName={selectedBrandName}
+            matches={similarRows}
+            hasExactDuplicate={hasExactDuplicate}
+          />
+        ) : null}
 
         <div className="max-h-80 space-y-2 overflow-auto pr-1">
           {brandSelected && rows.length === 0 ? <PanelEmptyState label="No hay modelos para el contexto actual." /> : null}
@@ -679,6 +690,60 @@ function PanelHint({ label }: { label: string }) {
 
 function PanelEmptyState({ label }: { label: string }) {
   return <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-4 text-sm text-zinc-600">{label}</div>;
+}
+
+function SimilarModelHint({
+  selectedBrandName,
+  matches,
+  hasExactDuplicate,
+}: {
+  selectedBrandName: string;
+  matches: SimilarModelMatch[];
+  hasExactDuplicate: boolean;
+}) {
+  if (matches.length === 0) {
+    return (
+      <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+        No encontramos modelos parecidos en {selectedBrandName}. Si confirmas que es nuevo, puedes crearlo.
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`rounded-2xl px-4 py-3 text-sm ${
+        hasExactDuplicate
+          ? 'border border-amber-200 bg-amber-50 text-amber-950'
+          : 'border border-sky-200 bg-sky-50 text-sky-950'
+      }`}
+    >
+      <div className="font-black">
+        {hasExactDuplicate
+          ? `Ya existe un modelo igual dentro de ${selectedBrandName}.`
+          : `Modelos parecidos en ${selectedBrandName}. Revisa antes de crear otro.`}
+      </div>
+      <div className="mt-1 text-xs font-medium opacity-80">
+        {hasExactDuplicate
+          ? 'Bloqueamos el alta para evitar duplicados exactos.'
+          : 'Si uno ya corresponde, selecciónalo en el scope o reutiliza ese registro.'}
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {matches.map(({ item, exact }) => (
+          <span
+            key={item.id}
+            className={`rounded-full border px-3 py-1 text-xs font-bold ${
+              exact
+                ? 'border-amber-300 bg-white text-amber-900'
+                : 'border-sky-200 bg-white text-sky-900'
+            }`}
+          >
+            {item.name}
+            {exact ? ' · coincide exacto' : item.active ? ' · similar' : ' · similar inactivo'}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function SimpleTaxonomyCard({

@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import type { CustomSelectMenuAction } from '@/components/ui/custom-select';
 import { adminApi } from './api';
 import type { DeviceTypeItem, BrandItem, IssueItem, ModelItem } from './admin-devices-catalog.helpers';
-import { slugify } from './admin-devices-catalog.helpers';
+import { findSimilarModels, hasExactModelMatch, slugify } from './admin-devices-catalog.helpers';
 import {
   applyRepairCalculationScopePatch,
   buildRepairCalculationSearch,
@@ -159,6 +159,10 @@ export function AdminRepairCalculationsHubPage() {
           ),
     [models, scope.deviceBrandId, scope.deviceModelGroupId],
   );
+  const brandModels = useMemo(
+    () => (!scope.deviceBrandId ? [] : models.filter((model) => model.brandId === scope.deviceBrandId)),
+    [models, scope.deviceBrandId],
+  );
   const filteredIssues = useMemo(
     () => (!scope.deviceTypeId ? issues : issues.filter((issue) => issue.deviceTypeId === scope.deviceTypeId)),
     [issues, scope.deviceTypeId],
@@ -184,6 +188,14 @@ export function AdminRepairCalculationsHubPage() {
   const selectedBrand = useMemo(
     () => brands.find((brand) => brand.id === scope.deviceBrandId) ?? null,
     [brands, scope.deviceBrandId],
+  );
+  const similarModels = useMemo(
+    () => findSimilarModels(brandModels, modelDraft),
+    [brandModels, modelDraft],
+  );
+  const hasExactModelDuplicate = useMemo(
+    () => hasExactModelMatch(brandModels, modelDraft),
+    [brandModels, modelDraft],
   );
 
   const deviceTypeOptions = useMemo(
@@ -350,6 +362,10 @@ export function AdminRepairCalculationsHubPage() {
 
   async function createModel() {
     if (!scope.deviceBrandId || !modelDraft.trim()) return;
+    if (hasExactModelDuplicate) {
+      setError(`Ya existe un modelo con ese nombre dentro de ${selectedBrand?.name || 'la marca activa'}.`);
+      return;
+    }
     await runCatalogAction(
       async () => {
         const response = await deviceCatalogApi.createModel({
@@ -526,6 +542,10 @@ export function AdminRepairCalculationsHubPage() {
     if (!scope.deviceBrandId) return;
     const nextName = promptName('Nuevo modelo para la marca activa');
     if (!nextName) return;
+    if (hasExactModelMatch(brandModels, nextName)) {
+      setError(`Ya existe un modelo con ese nombre dentro de ${selectedBrand?.name || 'la marca activa'}.`);
+      return;
+    }
     await runCatalogAction(
       async () => {
         const response = await deviceCatalogApi.createModel({
@@ -700,6 +720,8 @@ export function AdminRepairCalculationsHubPage() {
           <AdminRepairCalculationsModelsPanel
             rows={filteredModels}
             draft={modelDraft}
+            similarRows={similarModels}
+            hasExactDuplicate={hasExactModelDuplicate}
             brandSelected={Boolean(scope.deviceBrandId)}
             selectedBrandName={selectedBrand?.name ?? ''}
             groupOptions={groupOptions}
