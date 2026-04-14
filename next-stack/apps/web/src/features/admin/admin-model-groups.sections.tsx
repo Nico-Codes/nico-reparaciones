@@ -10,9 +10,14 @@ export function AdminModelGroupsHero() {
           <h1 className="text-2xl font-black tracking-tight text-zinc-900">Grupos de modelos</h1>
           <p className="mt-1 text-sm text-zinc-600">Sirve para separar PS4 vs PS5, Samsung Serie A vs Serie S, etc.</p>
         </div>
-        <Link to="/admin/precios" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">
-          Precios
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link to="/admin/calculos/reparaciones" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">
+            Hub reparaciones
+          </Link>
+          <Link to="/admin/precios" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">
+            Precios
+          </Link>
+        </div>
       </div>
     </section>
   );

@@ -188,6 +188,11 @@ export const adminApi = {
       body: JSON.stringify(input),
     });
   },
+  deleteDeviceType(id: string) {
+    return authRequest<{ ok: boolean }>(`/admin/device-types/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+  },
   modelGroups(deviceBrandId: string) {
     return authRequest<{
       groups: Array<{ id: string; name: string; slug: string; active: boolean }>;

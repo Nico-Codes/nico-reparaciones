@@ -3,6 +3,7 @@ export type BrandItem = { id: string; deviceTypeId?: string | null; name: string
 export type ModelItem = {
   id: string;
   brandId: string;
+  deviceModelGroupId?: string | null;
   name: string;
   slug: string;
   active: boolean;
@@ -28,7 +29,7 @@ export function getActiveBrands(brands: BrandItem[]) {
 }
 
 export function getFilteredModels(models: ModelItem[], selectedBrandId: string) {
-  return selectedBrandId ? models.filter((model) => model.brandId === selectedBrandId) : models;
+  return selectedBrandId ? models.filter((model) => model.brandId === selectedBrandId) : [];
 }
 
 export function buildDeviceTypeOptions(deviceTypes: DeviceTypeItem[]) {
@@ -38,9 +39,12 @@ export function buildDeviceTypeOptions(deviceTypes: DeviceTypeItem[]) {
   ];
 }
 
-export function buildBrandOptions(activeBrands: BrandItem[]) {
+export function buildBrandOptions(brands: BrandItem[]) {
   return [
-    { value: '', label: activeBrands[0]?.name ?? 'Elegi...' },
-    ...activeBrands.map((brand) => ({ value: brand.id, label: brand.name })),
+    { value: '', label: 'Sin marca activa' },
+    ...brands.map((brand) => ({
+      value: brand.id,
+      label: brand.active ? brand.name : `${brand.name} (inactiva)`,
+    })),
   ];
 }

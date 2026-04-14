@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { deviceCatalogApi } from '@/features/deviceCatalog/api';
 import { adminApi } from './api';
+import { readRepairCalculationScope } from './admin-repair-calculation-context';
 import {
   buildModelGroupBrandOptions,
   buildModelGroupDeviceTypeOptions,
@@ -20,6 +22,8 @@ import {
 } from './admin-model-groups.sections';
 
 export function AdminModelGroupsPage() {
+  const [searchParams] = useSearchParams();
+  const initialScope = useMemo(() => readRepairCalculationScope(searchParams), [searchParams]);
   const [deviceTypes, setDeviceTypes] = useState<DeviceTypeOpt[]>([]);
   const [brands, setBrands] = useState<BrandOpt[]>([]);
   const [deviceType, setDeviceType] = useState('');
@@ -45,7 +49,14 @@ export function AdminModelGroupsPage() {
       try {
         const typesRes = await adminApi.deviceTypes();
         if (!mounted) return;
-        setDeviceTypes(typesRes.items.filter((item) => item.active));
+        const activeTypes = typesRes.items.filter((item) => item.active);
+        setDeviceTypes(activeTypes);
+        setDeviceType((current) =>
+          current ||
+          (initialScope.deviceTypeId && activeTypes.some((item) => item.id === initialScope.deviceTypeId)
+            ? initialScope.deviceTypeId
+            : ''),
+        );
       } catch (e) {
         if (!mounted) return;
         setError(e instanceof Error ? e.message : 'Error cargando catálogo');
@@ -69,7 +80,13 @@ export function AdminModelGroupsPage() {
         if (!mounted) return;
         const activeBrands = brandsRes.items.filter((item) => item.active);
         setBrands(activeBrands);
-        setBrand((current) => (current && activeBrands.some((brandItem) => brandItem.id === current) ? current : ''));
+        setBrand((current) => {
+          if (current && activeBrands.some((brandItem) => brandItem.id === current)) return current;
+          if (initialScope.deviceBrandId && activeBrands.some((brandItem) => brandItem.id === initialScope.deviceBrandId)) {
+            return initialScope.deviceBrandId;
+          }
+          return '';
+        });
       } catch (e) {
         if (!mounted) return;
         setError(e instanceof Error ? e.message : 'Error cargando marcas');

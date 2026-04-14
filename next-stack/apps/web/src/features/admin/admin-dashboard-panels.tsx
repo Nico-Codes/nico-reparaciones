@@ -22,7 +22,7 @@ const PRIMARY_MODULES = [
   { title: 'Productos', description: 'Alta, stock, publicacion y etiquetas.', to: '/admin/productos', icon: Boxes },
   { title: 'Categorias', description: 'Ordena y mantene el catalogo visible.', to: '/admin/categorias', icon: ClipboardList },
   { title: 'Proveedores', description: 'Busqueda, probing y costo real de repuestos.', to: '/admin/proveedores', icon: PackagePlus },
-  { title: 'Pricing', description: 'Reglas automaticas para reparaciones y margenes.', to: '/admin/precios', icon: BadgeDollarSign },
+  { title: 'Pricing', description: 'Catalogo tecnico y reglas automaticas para reparaciones y margenes.', to: '/admin/calculos/reparaciones', icon: BadgeDollarSign },
 ] as const;
 
 const ADVANCED_MODULES = [

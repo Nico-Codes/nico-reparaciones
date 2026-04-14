@@ -1,15 +1,23 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { adminApi } from './api';
 import { buildDeviceTypeCreateInput, buildDeviceTypeUpdateInput, type DeviceTypeRow, updateDeviceTypeRows } from './admin-device-types.helpers';
+import { readRepairCalculationScope, sortRowsByFocusId } from './admin-repair-calculation-context';
 import { AdminDeviceTypesLayout } from './admin-device-types.sections';
 
 export function AdminDeviceTypesPage() {
+  const [searchParams] = useSearchParams();
+  const focusedDeviceTypeId = useMemo(
+    () => readRepairCalculationScope(searchParams).deviceTypeId,
+    [searchParams],
+  );
   const [newName, setNewName] = useState('');
   const [newActive, setNewActive] = useState(true);
   const [rows, setRows] = useState<DeviceTypeRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -29,6 +37,8 @@ export function AdminDeviceTypesPage() {
   useEffect(() => {
     void load();
   }, []);
+
+  const sortedRows = useMemo(() => sortRowsByFocusId(rows, focusedDeviceTypeId), [rows, focusedDeviceTypeId]);
 
   async function createRow() {
     if (!newName.trim()) return;
@@ -63,14 +73,35 @@ export function AdminDeviceTypesPage() {
     }
   }
 
+  async function deleteRow(row: DeviceTypeRow) {
+    const confirmed = window.confirm(
+      `Vas a eliminar el tipo "${row.name}".\n\nEste cambio es irreversible. Si todavia tiene marcas, fallas, reparaciones o reglas, el sistema lo va a bloquear.`,
+    );
+    if (!confirmed) return;
+    setDeletingId(row.id);
+    setError('');
+    setSuccess('');
+    try {
+      await adminApi.deleteDeviceType(row.id);
+      setSuccess('Tipo de dispositivo eliminado.');
+      await load();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No se pudo eliminar el tipo de dispositivo');
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   return (
     <AdminDeviceTypesLayout
       newName={newName}
       newActive={newActive}
-      rows={rows}
+      rows={sortedRows}
       loading={loading}
       creating={creating}
       savingId={savingId}
+      deletingId={deletingId}
+      focusedId={focusedDeviceTypeId}
       error={error}
       success={success}
       onNewNameChange={setNewName}
@@ -78,6 +109,7 @@ export function AdminDeviceTypesPage() {
       onCreate={() => void createRow()}
       onRowChange={(id, patch) => setRows((current) => updateDeviceTypeRows(current, id, patch))}
       onSave={(row) => void saveRow(row)}
+      onDelete={(row) => void deleteRow(row)}
     />
   );
 }

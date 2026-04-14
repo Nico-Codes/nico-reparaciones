@@ -3,7 +3,12 @@ import { buildRepairTypeCreateInput, buildRepairTypeUpdateInput, updateRepairTyp
 
 describe('admin-repair-types.helpers', () => {
   it('arma el payload de alta con slug', () => {
-    expect(buildRepairTypeCreateInput('Pantalla rota', true)).toEqual({ name: 'Pantalla rota', slug: 'pantalla-rota', active: true });
+    expect(buildRepairTypeCreateInput('Pantalla rota', true, 'type-phone')).toEqual({
+      deviceTypeId: 'type-phone',
+      name: 'Pantalla rota',
+      slug: 'pantalla-rota',
+      active: true,
+    });
   });
 
   it('arma el payload de update con fallback slug', () => {

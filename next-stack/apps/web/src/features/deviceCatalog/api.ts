@@ -17,7 +17,10 @@ export const deviceCatalogApi = {
     );
   },
   createBrand(input: { deviceTypeId?: string | null; name: string; slug: string; active?: boolean }) {
-    return authJsonRequest('/device-catalog/brands', { method: 'POST', body: JSON.stringify(input) });
+    return authJsonRequest<{ item: { id: string; deviceTypeId?: string | null; name: string; slug: string; active: boolean } }>(
+      '/device-catalog/brands',
+      { method: 'POST', body: JSON.stringify(input) },
+    );
   },
   updateBrand(id: string, input: { deviceTypeId?: string | null; name?: string; slug?: string; active?: boolean }) {
     return authJsonRequest(`/device-catalog/brands/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(input) });

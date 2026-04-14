@@ -142,6 +142,37 @@ export class AdminService {
     return { item: { id: item.id, name: item.name, slug: item.slug, active: item.active } };
   }
 
+  async deleteDeviceType(id: string) {
+    const existing = await this.prisma.deviceType.findUnique({
+      where: { id },
+      select: { id: true, name: true },
+    });
+    if (!existing) throw new BadRequestException('Tipo de dispositivo no encontrado');
+
+    const [brandsCount, issuesCount, repairsCount, rulesCount] = await Promise.all([
+      this.prisma.deviceBrand.count({ where: { deviceTypeId: id } }),
+      this.prisma.deviceIssueType.count({ where: { deviceTypeId: id } }),
+      this.prisma.repair.count({ where: { deviceTypeId: id } }),
+      this.prisma.repairPricingRule.count({ where: { deviceTypeId: id } }),
+    ]);
+
+    const blockers = [
+      brandsCount ? `${brandsCount} marca${brandsCount === 1 ? '' : 's'}` : '',
+      issuesCount ? `${issuesCount} falla${issuesCount === 1 ? '' : 's'}` : '',
+      repairsCount ? `${repairsCount} reparacion${repairsCount === 1 ? '' : 'es'}` : '',
+      rulesCount ? `${rulesCount} regla${rulesCount === 1 ? '' : 's'} de calculo` : '',
+    ].filter(Boolean);
+
+    if (blockers.length > 0) {
+      throw new BadRequestException(
+        `No se puede eliminar el tipo "${existing.name}" porque todavia tiene ${blockers.join(', ')} asociados.`,
+      );
+    }
+
+    await this.prisma.deviceType.delete({ where: { id } });
+    return { ok: true };
+  }
+
   async modelGroups(deviceBrandIdRaw: string) {
     const deviceBrandId = (deviceBrandIdRaw ?? '').trim();
     if (!deviceBrandId) return { groups: [], models: [] };

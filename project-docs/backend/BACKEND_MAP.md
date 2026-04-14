@@ -45,6 +45,17 @@ Ubicacion:
 - throttling, logging, health endpoints, correo SMTP y 2FA admin
 - `AuthModule` ahora tambien expone el redirect OAuth de Google para cuentas `USER`, con vinculacion por email y callback de completado sin tokens en query string
 
+## Catalogo tecnico y pricing de reparaciones
+
+- el backend no cambio el modelo del arbol tecnico:
+  - `DeviceType -> DeviceBrand -> DeviceModelGroup -> DeviceModel`
+  - `DeviceIssueType` depende de `DeviceType`
+- la nueva hub frontend `/admin/calculos/reparaciones` hidrata todo reutilizando endpoints ya existentes de:
+  - `AdminModule` para `device-types`, `model-groups` y `assign-model-group`
+  - `DeviceCatalogModule` para `brands`, `models` y `issues`
+  - `RepairsModule` para `pricingRulesList`
+- `AdminModule` ahora tambien expone `DELETE /api/admin/device-types/:id` para permitir borrado real del tipo cuando no existan marcas, fallas, reparaciones ni reglas asociadas
+
 ## Observacion clave
 
 No existe ya backend legacy dentro del repo. Todo comportamiento servidor activo parte de `next-stack/apps/api`.

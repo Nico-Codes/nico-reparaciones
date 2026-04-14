@@ -1,7 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { adminApi } from '@/features/admin/api';
 import { deviceCatalogApi } from '@/features/deviceCatalog/api';
 import { repairsApi } from '@/features/repairs/api';
+import {
+  buildRepairCalculationSearch,
+  buildRepairScopeSummary,
+  filterRepairRulesByScope,
+  hydrateRepairCalculationScope,
+  readRepairCalculationScope,
+} from './admin-repair-calculation-context';
 import {
   applyRepairScopePatch,
   fromApiRepairRule,
@@ -16,6 +24,9 @@ import {
 import { RepairPricingHeaderActions, RepairPricingRulesTableSection } from './admin-repair-pricing-rules.sections';
 
 export function AdminRepairPricingRulesPage() {
+  const [searchParams] = useSearchParams();
+  const scopeRequestKey = searchParams.toString();
+  const requestedScope = useMemo(() => readRepairCalculationScope(searchParams), [scopeRequestKey, searchParams]);
   const [rows, setRows] = useState<RepairRuleRow[]>([]);
   const [deviceTypes, setDeviceTypes] = useState<RepairDeviceType[]>([]);
   const [brandsCatalog, setBrandsCatalog] = useState<RepairBrandCatalogItem[]>([]);
@@ -29,6 +40,7 @@ export function AdminRepairPricingRulesPage() {
   const [success, setSuccess] = useState('');
   const [savingId, setSavingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [activeScopeSearch, setActiveScopeSearch] = useState('');
 
   async function load() {
     setLoading(true);
@@ -46,6 +58,15 @@ export function AdminRepairPricingRulesPage() {
       const activeModels = catalogModels.items.filter((item) => item.active);
       const activeIssues = catalogIssues.items.filter((item) => item.active);
       const { names: groupLookups, byBrand } = await loadModelGroupLookups(activeBrands.map((brand) => brand.id));
+      const hydratedScope = hydrateRepairCalculationScope(requestedScope, {
+        deviceTypes: activeTypes,
+        brands: activeBrands,
+        groups: Object.entries(byBrand).flatMap(([brandId, brandGroups]) =>
+          brandGroups.map((group) => ({ ...group, deviceBrandId: brandId })),
+        ),
+        models: activeModels,
+        issues: activeIssues,
+      });
 
       setRows(res.items.map(fromApiRepairRule));
       setDeviceTypes(activeTypes);
@@ -55,6 +76,7 @@ export function AdminRepairPricingRulesPage() {
       setDeviceTypeNames(Object.fromEntries(activeTypes.map((type) => [type.id, type.name])));
       setModelGroupNames(groupLookups);
       setModelGroupsByBrand(byBrand);
+      setActiveScopeSearch(buildRepairCalculationSearch(hydratedScope));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Error cargando reglas');
     } finally {
@@ -86,7 +108,37 @@ export function AdminRepairPricingRulesPage() {
 
   useEffect(() => {
     void load();
-  }, []);
+  }, [scopeRequestKey]);
+
+  const visibleRows = useMemo(
+    () =>
+      activeScopeSearch
+        ? filterRepairRulesByScope(
+            rows,
+            readRepairCalculationScope(new URLSearchParams(activeScopeSearch.slice(1))),
+            { brands: brandsCatalog, models: modelsCatalog, issues: issuesCatalog },
+          )
+        : rows,
+    [activeScopeSearch, rows, brandsCatalog, modelsCatalog, issuesCatalog],
+  );
+  const scopeSummary = useMemo(
+    () =>
+      activeScopeSearch
+        ? buildRepairScopeSummary(
+            readRepairCalculationScope(new URLSearchParams(activeScopeSearch.slice(1))),
+            {
+              deviceTypes,
+              brands: brandsCatalog,
+              groups: Object.entries(modelGroupsByBrand).flatMap(([brandId, brandGroups]) =>
+                brandGroups.map((group) => ({ ...group, deviceBrandId: brandId })),
+              ),
+              models: modelsCatalog,
+              issues: issuesCatalog,
+            },
+          )
+        : [],
+    [activeScopeSearch, deviceTypes, brandsCatalog, modelGroupsByBrand, modelsCatalog, issuesCatalog],
+  );
 
   function patchRow(id: string, patch: Partial<RepairRuleRow>) {
     setRows((prev) => prev.map((row) => (row.id === id ? { ...row, ...patch } : row)));
@@ -140,15 +192,21 @@ export function AdminRepairPricingRulesPage() {
               Configura calculo automatico por tipo, marca, grupo/modelo y falla con edicion en linea.
             </p>
           </div>
-          <RepairPricingHeaderActions />
+          <RepairPricingHeaderActions contextSearch={activeScopeSearch} />
         </div>
       </section>
 
       {error ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{error}</div> : null}
       {success ? <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">{success}</div> : null}
+      {activeScopeSearch ? (
+        <div className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+          <span className="font-black">Contexto desde hub:</span>{' '}
+          {scopeSummary.map((item) => `${item.label}: ${item.value}`).join(' | ')}
+        </div>
+      ) : null}
 
       <RepairPricingRulesTableSection
-        rows={rows}
+        rows={visibleRows}
         loading={loading}
         deviceTypes={deviceTypes}
         brandsCatalog={brandsCatalog}
@@ -163,6 +221,7 @@ export function AdminRepairPricingRulesPage() {
         onPatchScope={patchScope}
         onSaveRow={(row) => void saveRow(row)}
         onDeleteRow={(id) => void deleteRow(id)}
+        contextSearch={activeScopeSearch}
       />
     </div>
   );

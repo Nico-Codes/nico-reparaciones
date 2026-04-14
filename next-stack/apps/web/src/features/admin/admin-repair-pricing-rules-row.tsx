@@ -22,6 +22,7 @@ export function RepairPricingRuleRowCard({
   modelGroupsByBrand,
   saving,
   deleting,
+  editSearch,
   onPatchRow,
   onPatchScope,
   onSave,
@@ -37,6 +38,7 @@ export function RepairPricingRuleRowCard({
   modelGroupsByBrand: Record<string, RepairModelGroupItem[]>;
   saving: boolean;
   deleting: boolean;
+  editSearch?: string;
   onPatchRow: (id: string, patch: Partial<RepairRuleRow>) => void;
   onPatchScope: (id: string, patch: Partial<RepairRuleRow>) => void;
   onSave: (row: RepairRuleRow) => void;
@@ -81,7 +83,7 @@ export function RepairPricingRuleRowCard({
       <InlineText value={row.priority} onChange={(value) => onPatchRow(row.id, { priority: value })} />
       <div className="flex items-center gap-2">
         <Link
-          to={`/admin/precios/${encodeURIComponent(row.id)}/editar`}
+          to={`/admin/precios/${encodeURIComponent(row.id)}/editar${editSearch ?? ''}`}
           className="btn-outline !h-8 !rounded-xl px-3 text-sm font-bold"
         >
           Editar

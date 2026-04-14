@@ -2,6 +2,7 @@ export type RepairRuleCalcMode = 'BASE_PLUS_MARGIN' | 'FIXED_TOTAL';
 
 export type DeviceTypeOpt = { id: string; name: string; slug: string; active: boolean };
 export type BrandOpt = { id: string; deviceTypeId?: string | null; name: string; slug: string; active: boolean };
+export type ModelGroupOpt = { id: string; name: string; slug: string; active: boolean };
 export type ModelOpt = {
   id: string;
   brandId: string;
@@ -39,6 +40,7 @@ export type RepairPricingRuleFormState = {
   name: string;
   deviceTypeId: string;
   brandId: string;
+  modelGroupId: string;
   modelId: string;
   issueId: string;
   brandText: string;
@@ -58,6 +60,7 @@ export type RepairPricingRuleFormState = {
 export type RepairPricingRuleCatalog = {
   deviceTypes: DeviceTypeOpt[];
   brands: BrandOpt[];
+  modelGroupsByBrand: Record<string, ModelGroupOpt[]>;
   models: ModelOpt[];
   issues: IssueOpt[];
 };
@@ -70,6 +73,7 @@ export type RepairPricingRuleOption = {
 export type RepairPricingRuleOptions = {
   deviceTypeOptions: RepairPricingRuleOption[];
   brandOptions: RepairPricingRuleOption[];
+  groupOptions: RepairPricingRuleOption[];
   modelOptions: RepairPricingRuleOption[];
   issueOptions: RepairPricingRuleOption[];
   calcModeOptions: RepairPricingRuleOption[];
@@ -87,6 +91,7 @@ export function createRepairPricingRuleFormState(): RepairPricingRuleFormState {
     name: '',
     deviceTypeId: '',
     brandId: '',
+    modelGroupId: '',
     modelId: '',
     issueId: '',
     brandText: '',
@@ -109,6 +114,7 @@ export function buildRepairPricingRuleFormState(rule: RepairRuleApiItem): Repair
     name: rule.name ?? '',
     deviceTypeId: rule.deviceTypeId ?? '',
     brandId: rule.deviceBrandId ?? '',
+    modelGroupId: rule.deviceModelGroupId ?? '',
     modelId: rule.deviceModelId ?? '',
     issueId: rule.deviceIssueTypeId ?? '',
     brandText: rule.deviceBrand ?? '',
@@ -128,13 +134,17 @@ export function buildRepairPricingRuleFormState(rule: RepairRuleApiItem): Repair
 
 export function buildRepairPricingRuleOptions(
   catalog: RepairPricingRuleCatalog,
-  form: Pick<RepairPricingRuleFormState, 'deviceTypeId' | 'brandId'>,
+  form: Pick<RepairPricingRuleFormState, 'deviceTypeId' | 'brandId' | 'modelGroupId'>,
 ): RepairPricingRuleOptions {
+  const filteredGroups = form.brandId ? catalog.modelGroupsByBrand[form.brandId] ?? [] : [];
   const filteredBrands = form.deviceTypeId
     ? catalog.brands.filter((brand) => brand.deviceTypeId === form.deviceTypeId)
     : catalog.brands;
   const filteredModels = form.brandId
-    ? catalog.models.filter((model) => model.brandId === form.brandId)
+    ? catalog.models.filter(
+        (model) =>
+          model.brandId === form.brandId && (!form.modelGroupId || (model.deviceModelGroupId ?? '') === form.modelGroupId),
+      )
     : catalog.models;
   const filteredIssues = form.deviceTypeId
     ? catalog.issues.filter((issue) => issue.deviceTypeId === form.deviceTypeId)
@@ -143,6 +153,7 @@ export function buildRepairPricingRuleOptions(
   return {
     deviceTypeOptions: [REPAIR_RULE_EMPTY_OPTION, ...catalog.deviceTypes.map((type) => ({ value: type.id, label: type.name }))],
     brandOptions: [REPAIR_RULE_EMPTY_OPTION, ...filteredBrands.map((brand) => ({ value: brand.id, label: brand.name }))],
+    groupOptions: [REPAIR_RULE_EMPTY_OPTION, ...filteredGroups.map((group) => ({ value: group.id, label: group.name }))],
     modelOptions: [REPAIR_RULE_EMPTY_OPTION, ...filteredModels.map((model) => ({ value: model.id, label: model.name }))],
     issueOptions: [REPAIR_RULE_EMPTY_OPTION, ...filteredIssues.map((issue) => ({ value: issue.id, label: issue.name }))],
     calcModeOptions: REPAIR_RULE_CALC_MODE_OPTIONS,
@@ -158,6 +169,7 @@ export function applyRepairPricingRuleDeviceType(
     ...form,
     deviceTypeId: nextDeviceTypeId,
     brandId: '',
+    modelGroupId: '',
     modelId: '',
     issueId: isRepairPricingRuleIssueCompatible(form.issueId, issues, nextDeviceTypeId) ? form.issueId : '',
   };
@@ -179,19 +191,35 @@ export function applyRepairPricingRuleBrand(
     ...form,
     deviceTypeId: nextDeviceTypeId,
     brandId,
+    modelGroupId: '',
     modelId: '',
     issueId: isRepairPricingRuleIssueCompatible(form.issueId, issues, nextDeviceTypeId) ? form.issueId : '',
   };
 }
 
-export function buildRepairPricingRulePayload(form: RepairPricingRuleFormState, catalog: Pick<RepairPricingRuleCatalog, 'brands' | 'models' | 'issues'>) {
+export function applyRepairPricingRuleModelGroup(
+  form: RepairPricingRuleFormState,
+  modelGroupId: string,
+): RepairPricingRuleFormState {
   return {
-    name: form.name.trim() || `Regla ${form.issueText || 'reparación'}`,
+    ...form,
+    modelGroupId,
+    modelId: '',
+  };
+}
+
+export function buildRepairPricingRulePayload(
+  form: RepairPricingRuleFormState,
+  catalog: Pick<RepairPricingRuleCatalog, 'brands' | 'models' | 'issues'>,
+) {
+  return {
+    name: form.name.trim() || `Regla ${form.issueText || 'reparacion'}`,
     active: form.active,
     priority: Number(form.priority || 0),
     deviceTypeId: form.deviceTypeId || (catalog.brands.find((brand) => brand.id === form.brandId)?.deviceTypeId ?? null),
     deviceBrandId: form.brandId || null,
-    deviceModelGroupId: catalog.models.find((model) => model.id === form.modelId)?.deviceModelGroupId ?? null,
+    deviceModelGroupId:
+      form.modelGroupId || (catalog.models.find((model) => model.id === form.modelId)?.deviceModelGroupId ?? null),
     deviceModelId: form.modelId || null,
     deviceIssueTypeId: form.issueId || null,
     deviceBrand: form.brandText.trim() || (catalog.brands.find((brand) => brand.id === form.brandId)?.name ?? null),

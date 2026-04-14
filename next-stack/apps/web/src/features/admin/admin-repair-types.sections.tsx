@@ -1,9 +1,12 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { CustomSelect } from '@/components/ui/custom-select';
 import { SectionCard } from '@/components/ui/section-card';
 import type { RepairTypeRow } from './admin-repair-types.helpers';
 
 type AdminRepairTypesLayoutProps = {
+  deviceType: string;
+  deviceTypeOptions: Array<{ value: string; label: string }>;
   newName: string;
   newActive: boolean;
   rows: RepairTypeRow[];
@@ -13,6 +16,8 @@ type AdminRepairTypesLayoutProps = {
   deletingId: string | null;
   error: string;
   success: string;
+  focusedId: string;
+  onDeviceTypeChange: (value: string) => void;
   onNewNameChange: (value: string) => void;
   onNewActiveChange: (value: boolean) => void;
   onCreate: () => void;
@@ -22,6 +27,8 @@ type AdminRepairTypesLayoutProps = {
 };
 
 export function AdminRepairTypesLayout({
+  deviceType,
+  deviceTypeOptions,
   newName,
   newActive,
   rows,
@@ -31,6 +38,8 @@ export function AdminRepairTypesLayout({
   deletingId,
   error,
   success,
+  focusedId,
+  onDeviceTypeChange,
   onNewNameChange,
   onNewActiveChange,
   onCreate,
@@ -44,11 +53,16 @@ export function AdminRepairTypesLayout({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-black tracking-tight text-zinc-900">Tipos de reparacion</h1>
-            <p className="mt-1 text-sm text-zinc-600">Estos son los tipos usados en el calculo automatico.</p>
+            <p className="mt-1 text-sm text-zinc-600">Fallas por tipo de dispositivo usadas en el calculo automatico.</p>
           </div>
-          <Link to="/admin/precios" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">
-            Precios
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link to="/admin/calculos/reparaciones" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">
+              Hub reparaciones
+            </Link>
+            <Link to="/admin/precios" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">
+              Precios
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -56,8 +70,18 @@ export function AdminRepairTypesLayout({
       {success ? <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">{success}</div> : null}
 
       <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
-        <SectionCard title="Crear tipo">
+        <SectionCard title="Crear falla">
           <div className="space-y-4">
+            <div>
+              <label className="mb-1.5 block text-sm font-bold text-zinc-800">Tipo de dispositivo</label>
+              <CustomSelect
+                value={deviceType}
+                onChange={onDeviceTypeChange}
+                options={deviceTypeOptions}
+                triggerClassName="min-h-11 rounded-2xl font-bold"
+                ariaLabel="Seleccionar tipo de dispositivo para fallas"
+              />
+            </div>
             <div>
               <label className="mb-1.5 block text-sm font-bold text-zinc-800">Nombre</label>
               <input value={newName} onChange={(event) => onNewNameChange(event.target.value)} placeholder="Ej: Modulo" className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" />
@@ -66,7 +90,7 @@ export function AdminRepairTypesLayout({
               <input type="checkbox" checked={newActive} onChange={(event) => onNewActiveChange(event.target.checked)} className="h-4 w-4 rounded border-zinc-300" />
               Activo
             </label>
-            <Button type="button" onClick={onCreate} disabled={creating || !newName.trim()} className="w-full justify-center">
+            <Button type="button" onClick={onCreate} disabled={creating || !deviceType || !newName.trim()} className="w-full justify-center">
               {creating ? 'Creando...' : 'Crear'}
             </Button>
           </div>
@@ -77,7 +101,7 @@ export function AdminRepairTypesLayout({
             {loading ? <div className="h-24 animate-pulse rounded-2xl border border-zinc-200 bg-zinc-50" /> : null}
             {!loading && rows.length === 0 ? <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-600">Sin tipos de reparacion cargados.</div> : null}
             {rows.map((row) => (
-              <div key={row.id} className="rounded-2xl border border-zinc-200 bg-white p-3">
+              <div key={row.id} className={`rounded-2xl border bg-white p-3 ${focusedId === row.id ? 'border-sky-300 ring-2 ring-sky-100' : 'border-zinc-200'}`}>
                 <div className="grid gap-3 md:grid-cols-[1fr_180px_auto] md:items-center">
                   <div>
                     <label className="mb-1 block text-xs font-black uppercase tracking-wide text-zinc-500">Nombre</label>

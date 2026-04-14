@@ -9,22 +9,25 @@ import type {
 } from './admin-repair-pricing-rules.helpers';
 import { RepairPricingRuleRowCard } from './admin-repair-pricing-rules-row';
 
-export function RepairPricingHeaderActions() {
+export function RepairPricingHeaderActions({ contextSearch = '' }: { contextSearch?: string }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <Link to="/admin/tiposdispositivo" className="btn-outline !h-10 !rounded-xl px-4 text-sm font-bold">
+      <Link to={`/admin/calculos/reparaciones${contextSearch}`} className="btn-outline !h-10 !rounded-xl px-4 text-sm font-bold">
+        Hub
+      </Link>
+      <Link to={`/admin/tiposdispositivo${contextSearch}`} className="btn-outline !h-10 !rounded-xl px-4 text-sm font-bold">
         Dispositivos
       </Link>
-      <Link to="/admin/catalogodispositivos" className="btn-outline !h-10 !rounded-xl px-4 text-sm font-bold">
+      <Link to={`/admin/catalogodispositivos${contextSearch}`} className="btn-outline !h-10 !rounded-xl px-4 text-sm font-bold">
         Catalogo
       </Link>
-      <Link to="/admin/gruposmodelos" className="btn-outline !h-10 !rounded-xl px-4 text-sm font-bold">
+      <Link to={`/admin/gruposmodelos${contextSearch}`} className="btn-outline !h-10 !rounded-xl px-4 text-sm font-bold">
         Grupos
       </Link>
-      <Link to="/admin/tiposreparacion" className="btn-outline !h-10 !rounded-xl px-4 text-sm font-bold">
+      <Link to={`/admin/tiposreparacion${contextSearch}`} className="btn-outline !h-10 !rounded-xl px-4 text-sm font-bold">
         Tipos
       </Link>
-      <Link to="/admin/precios/crear" className="btn-primary !h-10 !rounded-xl px-4 text-sm font-bold">
+      <Link to={`/admin/precios/crear${contextSearch}`} className="btn-primary !h-10 !rounded-xl px-4 text-sm font-bold">
         + Nueva regla
       </Link>
     </div>
@@ -47,6 +50,7 @@ export function RepairPricingRulesTableSection({
   onPatchScope,
   onSaveRow,
   onDeleteRow,
+  contextSearch,
 }: {
   rows: RepairRuleRow[];
   loading: boolean;
@@ -63,6 +67,7 @@ export function RepairPricingRulesTableSection({
   onPatchScope: (id: string, patch: Partial<RepairRuleRow>) => void;
   onSaveRow: (row: RepairRuleRow) => void;
   onDeleteRow: (id: string) => void;
+  contextSearch?: string;
 }) {
   return (
     <section className="card">
@@ -106,6 +111,7 @@ export function RepairPricingRulesTableSection({
                 onPatchScope={onPatchScope}
                 onSave={onSaveRow}
                 onDelete={onDeleteRow}
+                editSearch={contextSearch}
               />
             ))}
           </div>

@@ -20,6 +20,20 @@ Registrar decisiones tecnicas confirmadas para evitar dependencia de memoria ora
 
 ---
 
+### [DL-0106]
+- Fecha: 2026-04-14
+- Estado: aceptada
+- Tema: centralizar catalogo tecnico + pricing de reparaciones en una hub unica y volver explicita la marca activa para crear modelos
+- Contexto: la gestion del subdominio de reparaciones estaba repartida entre catalogo de dispositivos, grupos de modelos, tipos de reparacion y reglas de precio. Eso volvia dificil entender el arbol real (`Tipo -> Marca -> Grupo -> Modelo`, `Falla por Tipo`) y dejaba demasiado implicito como se cargaban modelos dentro de una marca.
+- Decision: crear una entrada unica en `/admin/calculos/reparaciones` que hidrate tipos, marcas, grupos, modelos, fallas y reglas con el mismo contexto de scope. Las vistas historicas se mantienen como editores especificos, pero pasan a leer query string para prehidratar contexto desde la hub. Ademas, tanto la hub como `AdminDevicesCatalogPage.tsx` dejan visible una `marca activa` y la usan explicitamente para crear modelos, evitando depender de una seleccion separada y poco obvia.
+- Impacto: el operador puede entender y operar el arbol tecnico desde una sola pantalla, con deep links a editores puntuales cuando hace falta. El flujo para agregar un modelo a una marca deja de ser ambiguo porque ahora la marca de trabajo se ve, se selecciona desde la propia lista y se mantiene como contexto visible.
+- Alternativas consideradas: seguir con pantallas separadas y solo mejorar copy puntual, o mover toda la logica a un backend agregado nuevo; descartado por mantener la confusion operativa o por abrir complejidad innecesaria sin cambiar reglas de negocio.
+- Archivos / modulos afectados: `next-stack/apps/web/src/features/admin/{AdminRepairCalculationsHubPage.tsx,admin-repair-calculation-context.ts,admin-repair-calculations-hub.sections.tsx,AdminCalculationsHubPage.tsx,AdminDevicesCatalogPage.tsx,admin-devices-catalog.*,AdminModelGroupsPage.tsx,AdminRepairTypesPage.tsx,AdminRepairPricingRulesPage.tsx,AdminRepairPricingRuleCreatePage.tsx,AdminRepairPricingRuleEditPage.tsx}`, `next-stack/apps/api/src/modules/admin/{admin.controller.ts,admin.service.ts}`, `next-stack/apps/web/src/features/{admin,deviceCatalog}/api.ts`, `project-docs/{frontend/FRONTEND_MAP.md,backend/BACKEND_MAP.md,architecture/ARCHITECTURE.md}`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/api`, `test --workspace @nico/api`, `build --workspace @nico/api`, `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `git diff --check`.
+- Responsable: Codex + operador humano
+
+---
+
 ### [DL-0105]
 - Fecha: 2026-04-14
 - Estado: aceptada

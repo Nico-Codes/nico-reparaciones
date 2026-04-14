@@ -6,9 +6,11 @@ import type { RepairPricingRuleFormState, RepairPricingRuleOption, RepairRuleCal
 export function AdminRepairPricingRuleHero({
   title,
   subtitle,
+  backTo,
 }: {
   title: string;
   subtitle: string;
+  backTo: string;
 }) {
   return (
     <section className="store-hero">
@@ -17,7 +19,7 @@ export function AdminRepairPricingRuleHero({
           <h1 className="text-2xl font-black tracking-tight text-zinc-900">{title}</h1>
           <p className="mt-1 text-sm text-zinc-600">{subtitle}</p>
         </div>
-        <Link to="/admin/precios" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">
+        <Link to={backTo} className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">
           Volver
         </Link>
       </div>
@@ -32,7 +34,7 @@ export function AdminRepairPricingRuleError({ error }: { error: string }) {
 
 export function AdminRepairPricingRuleLoading({ label }: { label: string }) {
   return (
-    <section className="card mx-auto w-full max-w-[820px]">
+    <section className="card mx-auto w-full max-w-[920px]">
       <div className="card-body">{label}</div>
     </section>
   );
@@ -42,6 +44,7 @@ export function AdminRepairPricingRuleFormCard({
   form,
   deviceTypeOptions,
   brandOptions,
+  groupOptions,
   modelOptions,
   issueOptions,
   calcModeOptions,
@@ -51,14 +54,17 @@ export function AdminRepairPricingRuleFormCard({
   onFieldChange,
   onDeviceTypeChange,
   onBrandChange,
+  onModelGroupChange,
   onModelChange,
   onIssueChange,
   onCalcModeChange,
   onSave,
+  backTo,
 }: {
   form: RepairPricingRuleFormState;
   deviceTypeOptions: RepairPricingRuleOption[];
   brandOptions: RepairPricingRuleOption[];
+  groupOptions: RepairPricingRuleOption[];
   modelOptions: RepairPricingRuleOption[];
   issueOptions: RepairPricingRuleOption[];
   calcModeOptions: RepairPricingRuleOption[];
@@ -68,25 +74,27 @@ export function AdminRepairPricingRuleFormCard({
   onFieldChange: (field: keyof RepairPricingRuleFormState, value: string | boolean) => void;
   onDeviceTypeChange: (value: string) => void;
   onBrandChange: (value: string) => void;
+  onModelGroupChange: (value: string) => void;
   onModelChange: (value: string) => void;
   onIssueChange: (value: string) => void;
   onCalcModeChange: (value: RepairRuleCalcMode) => void;
   onSave: () => void;
+  backTo: string;
 }) {
   return (
-    <section className="card mx-auto w-full max-w-[820px]">
+    <section className="card mx-auto w-full max-w-[920px]">
       <div className="card-body space-y-4 md:space-y-5">
         <Field label="Nombre de la regla *">
           <input
             value={form.name}
             onChange={(event) => onFieldChange('name', event.target.value)}
             className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm"
-            placeholder="Ej: Módulo Samsung A línea media"
+            placeholder="Ej: Modulo Samsung Serie A"
           />
         </Field>
 
-        <div className="grid gap-4 md:grid-cols-3">
-          <Field label="Tipo de dispositivo (catálogo, opcional)">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <Field label="Tipo de dispositivo (catalogo, opcional)">
             <CustomSelect
               value={form.deviceTypeId}
               onChange={onDeviceTypeChange}
@@ -96,7 +104,7 @@ export function AdminRepairPricingRuleFormCard({
               ariaLabel="Seleccionar tipo de dispositivo"
             />
           </Field>
-          <Field label="Marca (catálogo, opcional)">
+          <Field label="Marca (catalogo, opcional)">
             <CustomSelect
               value={form.brandId}
               onChange={onBrandChange}
@@ -106,7 +114,17 @@ export function AdminRepairPricingRuleFormCard({
               ariaLabel="Seleccionar marca"
             />
           </Field>
-          <Field label="Modelo (catálogo, opcional)">
+          <Field label="Grupo (catalogo, opcional)">
+            <CustomSelect
+              value={form.modelGroupId}
+              onChange={onModelGroupChange}
+              options={groupOptions}
+              disabled={loading}
+              triggerClassName="min-h-11 rounded-2xl font-bold"
+              ariaLabel="Seleccionar grupo"
+            />
+          </Field>
+          <Field label="Modelo (catalogo, opcional)">
             <CustomSelect
               value={form.modelId}
               onChange={onModelChange}
@@ -118,14 +136,14 @@ export function AdminRepairPricingRuleFormCard({
           </Field>
         </div>
 
-        <Field label="Tipo de reparación / falla (catálogo, opcional)">
+        <Field label="Tipo de reparacion / falla (catalogo, opcional)">
           <CustomSelect
             value={form.issueId}
             onChange={onIssueChange}
             options={issueOptions}
             disabled={loading}
             triggerClassName="min-h-11 rounded-2xl font-bold"
-            ariaLabel="Seleccionar tipo de reparación"
+            ariaLabel="Seleccionar tipo de reparacion"
           />
         </Field>
 
@@ -147,16 +165,16 @@ export function AdminRepairPricingRuleFormCard({
         </div>
 
         <div className="grid gap-4 md:grid-cols-4">
-          <Field label="Modo de cálculo">
+          <Field label="Modo de calculo">
             <CustomSelect
               value={form.calcMode}
               onChange={(value) => onCalcModeChange(value as RepairRuleCalcMode)}
               options={calcModeOptions}
               triggerClassName="min-h-11 rounded-2xl font-bold"
-              ariaLabel="Seleccionar modo de cálculo"
+              ariaLabel="Seleccionar modo de calculo"
             />
           </Field>
-          <Field label="Mínimo de ganancia (opcional)">
+          <Field label="Minimo de ganancia (opcional)">
             <input
               value={form.minProfit}
               onChange={(event) => onFieldChange('minProfit', event.target.value)}
@@ -165,7 +183,7 @@ export function AdminRepairPricingRuleFormCard({
               disabled={form.calcMode === 'FIXED_TOTAL'}
             />
           </Field>
-          <Field label="Mínimo final (opcional)">
+          <Field label="Minimo final (opcional)">
             <input
               value={form.minFinalPrice}
               onChange={(event) => onFieldChange('minFinalPrice', event.target.value)}
@@ -173,7 +191,7 @@ export function AdminRepairPricingRuleFormCard({
               placeholder="0"
             />
           </Field>
-          <Field label="Envío (opcional)">
+          <Field label="Envio (opcional)">
             <input
               value={form.shippingFee}
               onChange={(event) => onFieldChange('shippingFee', event.target.value)}
@@ -190,8 +208,8 @@ export function AdminRepairPricingRuleFormCard({
           <Field label="Modelo (texto fallback)">
             <input value={form.modelText} onChange={(event) => onFieldChange('modelText', event.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" placeholder="A32" />
           </Field>
-          <Field label="Reparación (texto fallback)">
-            <input value={form.issueText} onChange={(event) => onFieldChange('issueText', event.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" placeholder="Módulo" />
+          <Field label="Reparacion (texto fallback)">
+            <input value={form.issueText} onChange={(event) => onFieldChange('issueText', event.target.value)} className="h-11 w-full rounded-2xl border border-zinc-200 px-3 text-sm" placeholder="Modulo" />
           </Field>
         </div>
 
@@ -205,7 +223,7 @@ export function AdminRepairPricingRuleFormCard({
         </label>
 
         <div className="flex flex-wrap items-center justify-end gap-2 pt-2">
-          <Link to="/admin/precios" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">
+          <Link to={backTo} className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">
             Cancelar
           </Link>
           <button

@@ -22,17 +22,21 @@ type AdminDevicesCatalogFiltersProps = {
 type AdminDevicesCatalogBrandsSectionProps = {
   brands: BrandItem[];
   brandDraft: string;
+  selectedBrandId: string;
   onBrandDraftChange: (value: string) => void;
   onCreateBrand: () => void;
   onRenameBrand: (item: BrandItem) => void;
   onToggleBrand: (item: BrandItem) => void;
   onDeleteBrand: (item: BrandItem) => void;
+  onSelectBrand: (value: string) => void;
 };
 
 type AdminDevicesCatalogModelsSectionProps = {
   filteredModels: ModelItem[];
   modelDraft: string;
   selectedBrandId: string;
+  selectedBrandName: string;
+  manageGroupsTo: string;
   onModelDraftChange: (value: string) => void;
   onCreateModel: () => void;
   onRenameModel: (item: ModelItem) => void;
@@ -62,6 +66,9 @@ export function AdminDevicesCatalogHero({ error }: AdminDevicesCatalogHeroProps)
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <Link to="/admin/calculos/reparaciones" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">
+              Hub reparaciones
+            </Link>
             <Link to="/admin/tiposreparacion" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">
               Tipos
             </Link>
@@ -90,8 +97,8 @@ export function AdminDevicesCatalogFilters({
   return (
     <section className="card">
       <div className="card-head">
-        <div className="text-xl font-black tracking-tight text-zinc-900">Filtro de catalogo</div>
-        <p className="mt-1 text-sm text-zinc-500">Selecciona tipo y marca para administrar cada bloque.</p>
+        <div className="text-xl font-black tracking-tight text-zinc-900">Filtro y contexto de trabajo</div>
+        <p className="mt-1 text-sm text-zinc-500">Paso 1: elegi el tipo. Paso 2: activa una marca para cargar o revisar sus modelos.</p>
       </div>
       <div className="card-body space-y-3">
         <div className="grid gap-4 lg:grid-cols-2">
@@ -117,8 +124,8 @@ export function AdminDevicesCatalogFilters({
           </div>
         </div>
         <div className="grid gap-2 text-xs text-zinc-500 lg:grid-cols-3">
-          <p>Esto filtra marcas y fallas.</p>
-          <p>Esto filtra modelos.</p>
+          <p>El tipo define que marcas y fallas pertenecen a ese catalogo.</p>
+          <p>La marca activa es la que se usa para crear modelos nuevos.</p>
           <p className="lg:text-right">Tip: en "Nueva reparacion" solo se muestran items activos.</p>
         </div>
       </div>
@@ -129,11 +136,13 @@ export function AdminDevicesCatalogFilters({
 export function AdminDevicesCatalogBrandsSection({
   brands,
   brandDraft,
+  selectedBrandId,
   onBrandDraftChange,
   onCreateBrand,
   onRenameBrand,
   onToggleBrand,
   onDeleteBrand,
+  onSelectBrand,
 }: AdminDevicesCatalogBrandsSectionProps) {
   return (
     <section className="card">
@@ -163,10 +172,15 @@ export function AdminDevicesCatalogBrandsSection({
             {brands.map((brand) => (
               <div
                 key={brand.id}
-                className="grid grid-cols-[1fr_auto] gap-3 border-b border-zinc-100 px-3 py-2.5 text-sm last:border-b-0"
+                className={`grid grid-cols-[1fr_auto] gap-3 border-b px-3 py-2.5 text-sm last:border-b-0 ${
+                  selectedBrandId === brand.id ? 'border-sky-200 bg-sky-50/70' : 'border-zinc-100'
+                }`}
               >
                 <div>
                   <div className="font-bold text-zinc-900">{brand.name}</div>
+                  {selectedBrandId === brand.id ? (
+                    <div className="mt-1 text-xs font-bold text-sky-700">Marca activa para modelos</div>
+                  ) : null}
                   <button type="button" className="mt-1 text-xs font-semibold text-sky-700" onClick={() => onRenameBrand(brand)}>
                     Renombrar
                   </button>
@@ -175,6 +189,13 @@ export function AdminDevicesCatalogBrandsSection({
                   </button>
                   <button type="button" className="mt-1 ml-3 text-xs font-semibold text-rose-700" onClick={() => onDeleteBrand(brand)}>
                     Eliminar
+                  </button>
+                  <button
+                    type="button"
+                    className="mt-1 ml-3 text-xs font-semibold text-indigo-700"
+                    onClick={() => onSelectBrand(brand.id)}
+                  >
+                    {selectedBrandId === brand.id ? 'Editando esta marca' : 'Usar para modelos'}
                   </button>
                 </div>
                 <span className={brand.active ? 'badge-emerald self-center' : 'badge-zinc self-center'}>
@@ -193,6 +214,8 @@ export function AdminDevicesCatalogModelsSection({
   filteredModels,
   modelDraft,
   selectedBrandId,
+  selectedBrandName,
+  manageGroupsTo,
   onModelDraftChange,
   onCreateModel,
   onRenameModel,
@@ -206,11 +229,20 @@ export function AdminDevicesCatalogModelsSection({
         <span className="badge-zinc">{filteredModels.length}</span>
       </div>
       <div className="card-body space-y-3">
+        {selectedBrandId ? (
+          <div className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+            <span className="font-black">Marca activa:</span> {selectedBrandName}. Todo modelo nuevo se crea dentro de esta marca.
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 px-4 py-3 text-sm text-zinc-600">
+            Paso 2: elegi una marca desde el selector superior o toca <span className="font-bold">"Usar para modelos"</span> en la columna de marcas.
+          </div>
+        )}
         <div className="flex gap-2">
           <input
             value={modelDraft}
             onChange={(event) => onModelDraftChange(event.target.value)}
-            placeholder="Ej: A52 / iPhone 12"
+            placeholder={selectedBrandId ? `Nuevo modelo para ${selectedBrandName}` : 'Primero elegi una marca'}
             className="h-11 flex-1 rounded-2xl border border-zinc-200 px-3 text-sm"
             disabled={!selectedBrandId}
           />
@@ -220,7 +252,7 @@ export function AdminDevicesCatalogModelsSection({
             disabled={!selectedBrandId}
             onClick={onCreateModel}
           >
-            Agregar
+            Agregar modelo
           </button>
         </div>
 
@@ -230,6 +262,12 @@ export function AdminDevicesCatalogModelsSection({
             <div>Estado</div>
           </div>
           <div className="max-h-44 overflow-auto">
+            {!selectedBrandId ? (
+              <div className="px-3 py-4 text-sm text-zinc-600">No hay marca activa. Selecciona una para ver o crear sus modelos.</div>
+            ) : null}
+            {selectedBrandId && filteredModels.length === 0 ? (
+              <div className="px-3 py-4 text-sm text-zinc-600">Todavia no hay modelos para esta marca.</div>
+            ) : null}
             {filteredModels.map((model) => (
               <div
                 key={model.id}
@@ -237,7 +275,7 @@ export function AdminDevicesCatalogModelsSection({
               >
                 <div>
                   <div className="font-bold text-zinc-900">{model.name}</div>
-                  <div className="text-xs text-zinc-500">Grupo: -</div>
+                  <div className="text-xs text-zinc-500">Marca: {selectedBrandName || model.brand.name}</div>
                   <button type="button" className="mt-1 text-xs font-semibold text-sky-700" onClick={() => onRenameModel(model)}>
                     Renombrar
                   </button>
@@ -256,7 +294,7 @@ export function AdminDevicesCatalogModelsSection({
           </div>
         </div>
 
-        <Link to="/admin/gruposmodelos" className="btn-outline !h-10 !rounded-xl px-4 text-sm font-bold">
+        <Link to={manageGroupsTo} className="btn-outline !h-10 !rounded-xl px-4 text-sm font-bold">
           Administrar grupos de modelos
         </Link>
       </div>

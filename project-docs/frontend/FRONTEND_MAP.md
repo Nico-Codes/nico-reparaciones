@@ -142,6 +142,7 @@ Principales grupos detectados:
 - pedidos
 - ventas rapidas
 - reparaciones
+- hub de calculo de reparaciones en `/admin/calculos/reparaciones`
 - productos y categorias
 - usuarios
 - configuraciones
@@ -208,6 +209,10 @@ Pedidos:
 
 Reparaciones:
 
+- `AdminRepairCalculationsHubPage.tsx`
+- `admin-repair-calculation-context.ts`
+- `admin-repair-calculation-context.test.ts`
+- `admin-repair-calculations-hub.sections.tsx`
 - `PublicRepairLookupPage.tsx`
 - `public-repair-lookup.helpers.ts`
 - `public-repair-lookup.sections.tsx`
@@ -224,6 +229,15 @@ Reparaciones:
 - `AdminRepairDetailPage.tsx`
 - `AdminRepairPrintPage.tsx`
 - `AdminRepairTicketPage.tsx`
+
+Notas operativas del subdominio:
+
+- la entrada recomendada para catalogo tecnico + pricing de reparaciones ahora es `/admin/calculos/reparaciones`
+- la UI explica y mantiene este orden:
+  - `Tipo -> Marca -> Grupo -> Modelo`
+  - `Falla por Tipo`
+- el alta de modelos ya no depende de una marca implicita: catalogo y hub muestran una `marca activa` visible y seleccionable desde la propia lista de marcas
+- las vistas historicas (`/admin/catalogodispositivos`, `/admin/gruposmodelos`, `/admin/tiposreparacion`, `/admin/precios`) siguen existiendo como editores especificos con contexto por query string
 
 Admin general:
 

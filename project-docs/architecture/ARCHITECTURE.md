@@ -136,6 +136,7 @@ Frontend:
 
 - `/reparacion`
 - `/reparacion/:id/presupuesto`
+- `/admin/calculos/reparaciones`
 - `/repairs`
 - `/repairs/:id`
 - `/admin/repairs`
@@ -156,6 +157,13 @@ Backend:
 - `POST /api/repairs/admin`
 - `PATCH /api/repairs/admin/:id/status`
 - `PATCH /api/repairs/admin/:id`
+
+Notas de organizacion del subdominio:
+
+- la entrada operativa recomendada para catalogo tecnico + calculo automatico es ahora `/admin/calculos/reparaciones`
+- esa hub no cambia la logica de dominio: sigue modelando `Tipo -> Marca -> Grupo -> Modelo`, mientras que `Falla` depende de `Tipo`
+- la hub reutiliza endpoints existentes de `AdminModule`, `DeviceCatalogModule` y `RepairsModule`; no abre una segunda fuente de verdad para catalogo ni pricing
+- el alta de modelos pasa a depender de una `marca activa` explicita en UI, tanto en la hub como en `AdminDevicesCatalogPage.tsx`, para evitar que la relacion marca -> modelo quede implicita
 
 ### Admin general
 

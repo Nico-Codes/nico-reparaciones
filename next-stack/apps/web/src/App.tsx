@@ -44,6 +44,7 @@ import {
   AdminProductEditPage,
   AdminProductLabelPage,
   AdminProductPricingRulesPage,
+  AdminRepairCalculationsHubPage,
   AdminProductsPage,
   AdminProvidersPage,
   AdminQuickSalesHistoryPage,
@@ -175,6 +176,7 @@ export default function App() {
         <Route path="/admin/seguridad/2fa" element={<RequireAdmin>{withShellSuspense(<Admin2faSecurityPage />)}</RequireAdmin>} />
         <Route path="/admin/calculos" element={<RequireAdmin>{withShellSuspense(<AdminCalculationsHubPage />)}</RequireAdmin>} />
         <Route path="/admin/calculos/productos" element={<RequireAdmin>{withShellSuspense(<AdminProductPricingRulesPage />)}</RequireAdmin>} />
+        <Route path="/admin/calculos/reparaciones" element={<RequireAdmin>{withShellSuspense(<AdminRepairCalculationsHubPage />)}</RequireAdmin>} />
         <Route path="/admin/precios" element={<RequireAdmin>{withShellSuspense(<AdminRepairPricingRulesPage />)}</RequireAdmin>} />
         <Route path="/admin/precios/crear" element={<RequireAdmin>{withShellSuspense(<AdminRepairPricingRuleCreatePage />)}</RequireAdmin>} />
         <Route path="/admin/precios/:id/editar" element={<RequireAdmin>{withShellSuspense(<AdminRepairPricingRuleEditPage />)}</RequireAdmin>} />

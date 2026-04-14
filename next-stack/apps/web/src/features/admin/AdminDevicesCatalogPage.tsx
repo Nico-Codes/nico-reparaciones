@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { adminApi } from './api';
 import {
   buildBrandOptions,
   buildDeviceTypeOptions,
-  getActiveBrands,
   getDefaultDeviceTypeId,
   getFilteredModels,
   slugify,
@@ -19,9 +19,13 @@ import {
   AdminDevicesCatalogIssuesSection,
   AdminDevicesCatalogModelsSection,
 } from './admin-devices-catalog.sections';
+import { readRepairCalculationScope } from './admin-repair-calculation-context';
 import { deviceCatalogApi } from '@/features/deviceCatalog/api';
 
 export function AdminDevicesCatalogPage() {
+  const [searchParams] = useSearchParams();
+  const initialScopeRef = useRef(readRepairCalculationScope(searchParams));
+  const hydratedFromSearchRef = useRef(false);
   const [deviceTypes, setDeviceTypes] = useState<DeviceTypeItem[]>([]);
   const [deviceType, setDeviceType] = useState('');
   const [selectedBrandId, setSelectedBrandId] = useState('');
@@ -36,7 +40,13 @@ export function AdminDevicesCatalogPage() {
   async function loadDeviceTypes() {
     const response = await adminApi.deviceTypes();
     const activeTypes = response.items.filter((item) => item.active);
-    const nextDeviceTypeId = deviceType || getDefaultDeviceTypeId(activeTypes);
+    const preferredTypeId =
+      !hydratedFromSearchRef.current &&
+      initialScopeRef.current.deviceTypeId &&
+      activeTypes.some((item) => item.id === initialScopeRef.current.deviceTypeId)
+        ? initialScopeRef.current.deviceTypeId
+        : '';
+    const nextDeviceTypeId = deviceType || preferredTypeId || getDefaultDeviceTypeId(activeTypes);
     setDeviceTypes(activeTypes);
     setDeviceType((current) => current || nextDeviceTypeId);
     return nextDeviceTypeId;
@@ -49,6 +59,7 @@ export function AdminDevicesCatalogPage() {
     ]);
     setBrands(brandsResponse.items);
     setIssues(issuesResponse.items);
+    return { brands: brandsResponse.items, issues: issuesResponse.items };
   }
 
   async function loadModels(brandId?: string) {
@@ -60,8 +71,20 @@ export function AdminDevicesCatalogPage() {
     setError('');
     try {
       const nextDeviceTypeId = await loadDeviceTypes();
-      await loadBrandsAndIssues(nextDeviceTypeId || undefined);
-      await loadModels(nextSelectedBrandId || undefined);
+      const { brands: nextBrands } = await loadBrandsAndIssues(nextDeviceTypeId || undefined);
+      const preferredBrandId =
+        !hydratedFromSearchRef.current &&
+        initialScopeRef.current.deviceBrandId &&
+        nextBrands.some((item) => item.id === initialScopeRef.current.deviceBrandId)
+          ? initialScopeRef.current.deviceBrandId
+          : '';
+      const resolvedBrandId =
+        nextSelectedBrandId && nextBrands.some((item) => item.id === nextSelectedBrandId)
+          ? nextSelectedBrandId
+          : preferredBrandId;
+      hydratedFromSearchRef.current = true;
+      setSelectedBrandId(resolvedBrandId);
+      await loadModels(resolvedBrandId || undefined);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Error cargando catalogo');
     }
@@ -83,16 +106,19 @@ export function AdminDevicesCatalogPage() {
     );
   }, [selectedBrandId]);
 
-  const activeBrands = useMemo(() => getActiveBrands(brands), [brands]);
   const filteredModels = useMemo(
     () => getFilteredModels(models, selectedBrandId),
     [models, selectedBrandId],
+  );
+  const selectedBrand = useMemo(
+    () => brands.find((brand) => brand.id === selectedBrandId) ?? null,
+    [brands, selectedBrandId],
   );
   const deviceTypeOptions = useMemo(
     () => buildDeviceTypeOptions(deviceTypes),
     [deviceTypes],
   );
-  const brandOptions = useMemo(() => buildBrandOptions(activeBrands), [activeBrands]);
+  const brandOptions = useMemo(() => buildBrandOptions(brands), [brands]);
 
   async function runCatalogAction(action: () => Promise<void>, fallback: string) {
     setError('');
@@ -106,14 +132,15 @@ export function AdminDevicesCatalogPage() {
   async function handleCreateBrand() {
     if (!brandDraft.trim() || !deviceType) return;
     await runCatalogAction(async () => {
-      await deviceCatalogApi.createBrand({
+      const response = await deviceCatalogApi.createBrand({
         deviceTypeId: deviceType,
         name: brandDraft.trim(),
         slug: slugify(brandDraft),
         active: true,
       });
       setBrandDraft('');
-      await refreshAll();
+      setSelectedBrandId(response.item.id);
+      await refreshAll(response.item.id);
     }, 'Error creando marca');
   }
 
@@ -245,16 +272,23 @@ export function AdminDevicesCatalogPage() {
         <AdminDevicesCatalogBrandsSection
           brands={brands}
           brandDraft={brandDraft}
+          selectedBrandId={selectedBrandId}
           onBrandDraftChange={setBrandDraft}
           onCreateBrand={() => void handleCreateBrand()}
           onRenameBrand={(item) => void renameBrand(item)}
           onToggleBrand={(item) => void toggleBrand(item)}
           onDeleteBrand={(item) => void deleteBrand(item)}
+          onSelectBrand={setSelectedBrandId}
         />
         <AdminDevicesCatalogModelsSection
           filteredModels={filteredModels}
           modelDraft={modelDraft}
           selectedBrandId={selectedBrandId}
+          selectedBrandName={selectedBrand?.name ?? ''}
+          manageGroupsTo={`/admin/gruposmodelos${selectedBrandId || deviceType ? `?${new URLSearchParams({
+            ...(deviceType ? { deviceTypeId: deviceType } : {}),
+            ...(selectedBrandId ? { deviceBrandId: selectedBrandId } : {}),
+          }).toString()}` : ''}`}
           onModelDraftChange={setModelDraft}
           onCreateModel={() => void handleCreateModel()}
           onRenameModel={(item) => void renameModel(item)}

@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   Inject,
   Param,
@@ -117,6 +118,11 @@ export class AdminController {
     const parsed = deviceTypeUpdateSchema.safeParse(body);
     if (!parsed.success) return zodErrorBody(parsed);
     return this.adminService.updateDeviceType(id, parsed.data);
+  }
+
+  @Delete('device-types/:id')
+  deleteDeviceType(@Param('id') id: string) {
+    return this.adminService.deleteDeviceType(id);
   }
 
   @Get('model-groups')

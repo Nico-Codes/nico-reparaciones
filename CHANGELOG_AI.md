@@ -13,6 +13,34 @@
 ---
 
 ### 2026-04-14 - Codex
+- Alcance: centralizar la gestion del catalogo tecnico y del pricing de reparaciones en una hub unica, y volver explicita la marca activa usada para crear modelos.
+- Tipo de intervencion: reorganizacion funcional del frontend `admin/repairs pricing` + ajuste puntual de backend `admin` para borrado seguro de tipos.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/admin/{AdminRepairCalculationsHubPage.tsx,admin-repair-calculation-context.ts,admin-repair-calculation-context.test.ts,admin-repair-calculations-hub.sections.tsx,AdminCalculationsHubPage.tsx,AdminDeviceTypesPage.tsx,admin-device-types.sections.tsx,AdminDevicesCatalogPage.tsx,admin-devices-catalog.helpers.ts,admin-devices-catalog.helpers.test.ts,admin-devices-catalog.sections.tsx,AdminModelGroupsPage.tsx,admin-model-groups.sections.tsx,AdminRepairTypesPage.tsx,admin-repair-types.helpers.ts,admin-repair-types.helpers.test.ts,admin-repair-types.sections.tsx,AdminRepairPricingRulesPage.tsx,admin-repair-pricing-rules.sections.tsx,admin-repair-pricing-rules-row.tsx,AdminRepairPricingRuleCreatePage.tsx,AdminRepairPricingRuleEditPage.tsx,admin-repair-pricing-rule-form.helpers.ts,admin-repair-pricing-rule-form.helpers.test.ts,admin-repair-pricing-rule-form.sections.tsx,api.ts}`
+  - `next-stack/apps/web/src/features/deviceCatalog/api.ts`
+  - `next-stack/apps/web/src/App.tsx`
+  - `next-stack/apps/web/src/app/routing/route-pages.tsx`
+  - `next-stack/apps/web/src/features/admin/admin-dashboard-panels.tsx`
+  - `next-stack/apps/api/src/modules/admin/{admin.controller.ts,admin.service.ts}`
+  - `project-docs/{frontend/FRONTEND_MAP.md,backend/BACKEND_MAP.md,architecture/ARCHITECTURE.md,DECISIONS_LOG.md}`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. Ahora existe `/admin/calculos/reparaciones` como entrada central para `Tipo -> Marca -> Grupo -> Modelo`, `Falla por Tipo` y reglas de calculo. Las vistas especificas siguen vivas, pero reciben contexto por query string. En catalogo y en la hub, la marca usada para crear modelos deja de ser implicita: queda visible como `marca activa`, seleccionable desde la propia lista. Ademas, `device types` ya soporta borrado real cuando no tiene dependencias activas.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/api`
+  - `cmd /c npm run test --workspace @nico/api`
+  - `cmd /c npm run build --workspace @nico/api`
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - la hub reutiliza endpoints existentes; si en el futuro crece mucho el volumen de catalogo, puede convenir sumar un endpoint agregado de lectura para hidratarla con menos roundtrips
+  - el flujo de modelos ahora exige contexto explicito de marca; es deliberado para evitar altas ambiguas
+
+---
+
+### 2026-04-14 - Codex
 - Alcance: agregar login con Google para clientes usando redirect OAuth backend + callback dedicado en frontend, con vinculacion por email y sin habilitar acceso social para admins.
 - Tipo de intervencion: cambio funcional de backend `auth/prisma/contracts` + frontend `auth/router`.
 - Archivos tocados:

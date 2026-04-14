@@ -17,6 +17,10 @@ const catalog = {
     { id: 'brand-a', deviceTypeId: 'type-a', name: 'Samsung', slug: 'samsung', active: true },
     { id: 'brand-b', deviceTypeId: 'type-b', name: 'Sony', slug: 'sony', active: true },
   ],
+  modelGroupsByBrand: {
+    'brand-a': [{ id: 'group-a', name: 'Serie A', slug: 'serie-a', active: true }],
+    'brand-b': [],
+  },
   models: [
     {
       id: 'model-a',
@@ -36,9 +40,14 @@ const catalog = {
 
 describe('admin-repair-pricing-rule-form.helpers', () => {
   it('filters brand, model and issue options from current scope', () => {
-    const options = buildRepairPricingRuleOptions(catalog, { deviceTypeId: 'type-a', brandId: 'brand-a' });
+    const options = buildRepairPricingRuleOptions(catalog, {
+      deviceTypeId: 'type-a',
+      brandId: 'brand-a',
+      modelGroupId: '',
+    });
 
     expect(options.brandOptions.map((item) => item.value)).toEqual(['', 'brand-a']);
+    expect(options.groupOptions.map((item) => item.value)).toEqual(['', 'group-a']);
     expect(options.modelOptions.map((item) => item.value)).toEqual(['', 'model-a']);
     expect(options.issueOptions.map((item) => item.value)).toEqual(['', 'issue-a']);
   });
