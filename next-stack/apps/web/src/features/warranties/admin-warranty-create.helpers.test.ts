@@ -68,6 +68,7 @@ function makeProvider(input: Partial<AdminProviderItem> & Pick<AdminProviderItem
     confidenceLabel: '',
     active: true,
     searchEnabled: false,
+    searchInRepairs: false,
     statusProbe: 'none',
     lastProbeAt: '',
     lastQuery: '',

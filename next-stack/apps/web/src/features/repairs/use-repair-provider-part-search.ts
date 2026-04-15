@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   adminApi,
   type AdminProviderAggregatePartSearchItem,
-  type AdminProviderAggregateSearchSupplierItem,
   type AdminProviderItem,
 } from '@/features/admin/api';
 import type { RepairPricingSnapshotItem } from './types';
@@ -42,7 +41,6 @@ export function useRepairProviderPartSearch({
   const [partQueryInput, setPartQueryInput] = useState('');
   const [partSearchQuery, setPartSearchQuery] = useState('');
   const [partResults, setPartResults] = useState<AdminProviderAggregatePartSearchItem[]>([]);
-  const [searchSuppliers, setSearchSuppliers] = useState<AdminProviderAggregateSearchSupplierItem[]>([]);
   const [selectedPartKey, setSelectedPartKey] = useState('');
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState('');
@@ -65,7 +63,11 @@ export function useRepairProviderPartSearch({
       try {
         const response = await adminApi.providers({ active: '1' });
         if (!mounted || requestId !== providerRequestIdRef.current) return;
-        setProviders(response.items.filter((item) => item.active && item.searchEnabled && Boolean(item.endpoint)));
+        setProviders(
+          response.items.filter(
+            (item) => item.active && item.searchEnabled && item.searchInRepairs && Boolean(item.endpoint),
+          ),
+        );
       } catch (error) {
         if (!mounted || requestId !== providerRequestIdRef.current) return;
         setProvidersError(error instanceof Error ? error.message : 'No pudimos cargar los proveedores con busqueda habilitada.');
@@ -89,7 +91,6 @@ export function useRepairProviderPartSearch({
       setPartQueryInput('');
       setPartSearchQuery('');
       setPartResults([]);
-      setSearchSuppliers([]);
       setSelectedPartKey('');
       setQuantityInput('1');
       setExtraCostInput('');
@@ -102,19 +103,6 @@ export function useRepairProviderPartSearch({
     setPartQueryInput(activeSnapshot.supplierSearchQuery ?? activeSnapshot.partNameSnapshot);
     setPartSearchQuery(activeSnapshot.supplierSearchQuery ?? activeSnapshot.partNameSnapshot);
     setPartResults(hydratedPart ? [hydratedPart] : []);
-    setSearchSuppliers(
-      hydratedPart
-        ? [
-            {
-              supplier: hydratedPart.supplier,
-              status: 'ok',
-              total: 1,
-              error: null,
-              url: activeSnapshot.partUrlSnapshot ?? '',
-            },
-          ]
-        : [],
-    );
     setSelectedPartKey(hydratedPart ? partKey(hydratedPart) : '');
     setQuantityInput(String(activeSnapshot.quantity || 1));
     setExtraCostInput(activeSnapshot.extraCost != null ? String(activeSnapshot.extraCost) : '');
@@ -133,7 +121,7 @@ export function useRepairProviderPartSearch({
 
   const selectedProviderHint = selectedProviderFilter?.endpoint
     ? `Filtro puntual: ${selectedProviderFilter.name}`
-    : 'Se consultaran todos los proveedores activos con busqueda configurada.';
+    : 'Se consultaran todos los proveedores reales activos con busqueda configurada.';
 
   const selectedPart = useMemo(
     () => partResults.find((item) => partKey(item) === selectedPartKey) ?? null,
@@ -144,13 +132,12 @@ export function useRepairProviderPartSearch({
   const parsedExtraCost = useMemo(() => parseOptionalMoney(extraCostInput, 'extra'), [extraCostInput]);
   const parsedShippingCost = useMemo(() => parseOptionalMoney(shippingCostInput, 'envio'), [shippingCostInput]);
   const visibleSearchState = useMemo(
-    () => buildVisibleProviderSearchState(partResults, searchSuppliers),
-    [partResults, searchSuppliers],
+    () => buildVisibleProviderSearchState(partResults),
+    [partResults],
   );
 
   function clearSearchResults() {
     setPartResults([]);
-    setSearchSuppliers([]);
     setSelectedPartKey('');
   }
 
@@ -189,12 +176,10 @@ export function useRepairProviderPartSearch({
         totalLimit: 24,
       });
       if (requestId !== searchRequestIdRef.current) return;
-      setSearchSuppliers(response.suppliers);
       setPartResults(response.items);
       setSelectedPartKey((current) => (current && response.items.some((item) => partKey(item) === current) ? current : ''));
     } catch (error) {
       if (requestId !== searchRequestIdRef.current) return;
-      setSearchSuppliers([]);
       setPartResults([]);
       setSelectedPartKey('');
       setSearchError(error instanceof Error ? error.message : 'No pudimos buscar repuestos en los proveedores configurados.');

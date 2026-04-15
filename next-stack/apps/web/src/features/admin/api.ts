@@ -57,6 +57,7 @@ export type AdminProviderItem = {
   confidenceLabel: string;
   active: boolean;
   searchEnabled: boolean;
+  searchInRepairs: boolean;
   statusProbe: 'ok' | 'none';
   lastProbeAt: string;
   lastQuery: string;
@@ -244,6 +245,7 @@ export const adminApi = {
     notes?: string | null;
     searchPriority?: number;
     searchEnabled?: boolean;
+    searchInRepairs?: boolean;
     searchMode?: 'json' | 'html';
     searchEndpoint?: string | null;
     searchConfigJson?: string | null;
@@ -262,6 +264,7 @@ export const adminApi = {
       notes: string | null;
       searchPriority: number;
       searchEnabled: boolean;
+      searchInRepairs: boolean;
       searchMode: 'json' | 'html';
       searchEndpoint: string | null;
       searchConfigJson: string | null;

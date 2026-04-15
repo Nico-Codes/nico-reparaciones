@@ -7,7 +7,7 @@ import type { ProviderStats, SupplierRegistryRow } from './admin-providers.types
 const DEFAULT_SUPPLIER_CATALOG: Array<
   Pick<
     SupplierRegistryRow,
-    'name' | 'searchPriority' | 'searchMode' | 'searchEnabled' | 'searchEndpoint' | 'searchConfigJson'
+    'name' | 'searchPriority' | 'searchEnabled' | 'searchInRepairs' | 'searchMode' | 'searchEndpoint' | 'searchConfigJson'
   >
 > = [
   {
@@ -15,6 +15,7 @@ const DEFAULT_SUPPLIER_CATALOG: Array<
     searchPriority: 10,
     searchMode: 'html',
     searchEnabled: true,
+    searchInRepairs: true,
     searchEndpoint: 'https://www.puntocell.com.ar/shop?search={query}',
     searchConfigJson:
       '{"item_regex":"<div class=\\"oe_product[\\\\s\\\\S]*?<\\\\/form>\\\\s*<\\\\/div>","name_regex":"o_wsale_products_item_title[\\\\s\\\\S]*?<a[^>]*>(.*?)<\\\\/a>","price_regex":"(?:\\\\$|ARS)[^0-9]{0,120}([0-9\\\\.,]+)","url_regex":"href=\\"([^\\"]*\\\\/shop\\\\/\\\\d+\\\\-[^\\"]+)\\"","context_window":12000}',
@@ -22,17 +23,20 @@ const DEFAULT_SUPPLIER_CATALOG: Array<
   {
     name: 'Evophone',
     searchPriority: 20,
-    searchMode: 'html',
+    searchMode: 'json',
     searchEnabled: true,
-    searchEndpoint: 'https://www.evophone.com.ar/?s={query}&post_type=product&dgwt_wcas=1',
+    searchInRepairs: true,
+    searchEndpoint:
+      'https://www.evophone.com.ar/wp-content/plugins/ajax-search-for-woocommerce-premium/includes/Engines/TNTSearchMySQL/Endpoints/search.php?s={query}',
     searchConfigJson:
-      '{"profile":"woodmart","candidate_paths":["/producto/"],"exclude_paths":["/categoria-producto/","add-to-cart=","yoast.com/product/"],"context_window":2200}',
+      '{"items_path":"suggestions","name_path":"value","url_path":"url","sku_path":"sku","price_path":"price","type_path":"type","ignore_type_values":["no-results"],"ignore_name_regex":"no hay resultados"}',
   },
   {
     name: 'Celuphone',
     searchPriority: 30,
     searchMode: 'html',
     searchEnabled: true,
+    searchInRepairs: true,
     searchEndpoint: 'https://celuphone.com.ar/?s={query}&post_type=product&dgwt_wcas=1',
     searchConfigJson:
       '{"profile":"shoptimizer","candidate_paths":["/producto/"],"exclude_paths":["/categoria-producto/","add-to-cart="],"context_window":2200}',
@@ -40,17 +44,19 @@ const DEFAULT_SUPPLIER_CATALOG: Array<
   {
     name: 'Okey Rosario',
     searchPriority: 40,
-    searchMode: 'html',
+    searchMode: 'json',
     searchEnabled: true,
-    searchEndpoint: 'https://okeyrosario.com.ar/?s={query}&post_type=product',
+    searchInRepairs: true,
+    searchEndpoint: 'https://okeyrosario.com.ar/wp-admin/admin-ajax.php?action=flatsome_ajax_search_products&query={query}',
     searchConfigJson:
-      '{"profile":"flatsome","candidate_paths":["/producto/"],"exclude_paths":["/categoria-producto/","add-to-cart=","yoast.com/product/"],"context_window":1800}',
+      '{"items_path":"suggestions","name_path":"value","url_path":"url","price_path":"price","type_path":"type","ignore_type_values":["no-results"],"ignore_name_regex":"no se han encontrado productos"}',
   },
   {
     name: 'Novocell',
     searchPriority: 45,
     searchMode: 'html',
     searchEnabled: true,
+    searchInRepairs: true,
     searchEndpoint: 'https://www.novocell.com.ar/search?q={query}',
     searchConfigJson:
       '{"profile":"wix","candidate_paths":["/product-page/"],"exclude_paths":[],"context_window":2400}',
@@ -58,17 +64,19 @@ const DEFAULT_SUPPLIER_CATALOG: Array<
   {
     name: 'Electrostore',
     searchPriority: 50,
-    searchMode: 'html',
+    searchMode: 'json',
     searchEnabled: true,
-    searchEndpoint: 'https://electrostore.com.ar/?s={query}&post_type=product',
+    searchInRepairs: true,
+    searchEndpoint: 'https://electrostore.com.ar/wp-admin/admin-ajax.php?action=flatsome_ajax_search_products&query={query}',
     searchConfigJson:
-      '{"profile":"flatsome","candidate_paths":["/producto/"],"exclude_paths":["/categoria-producto/","add-to-cart=","yoast.com/product/"],"context_window":1800}',
+      '{"items_path":"suggestions","name_path":"value","url_path":"url","price_path":"price","type_path":"type","ignore_type_values":["no-results"],"ignore_name_regex":"no se han encontrado productos"}',
   },
   {
     name: 'El Reparador de PC',
     searchPriority: 60,
     searchMode: 'json',
     searchEnabled: true,
+    searchInRepairs: true,
     searchEndpoint: 'https://api.elreparadordepc.com/api/web/tenant/www?in_stock=false&q={query}',
     searchConfigJson:
       '{"items_path":"productos","name_path":"nombre","sku_path":"sku","price_path":"precio","availability_path":"stock"}',
@@ -78,6 +86,7 @@ const DEFAULT_SUPPLIER_CATALOG: Array<
     searchPriority: 70,
     searchMode: 'html',
     searchEnabled: true,
+    searchInRepairs: true,
     searchEndpoint: 'https://tiendamovilrosario.com.ar/?s={query}&post_type=product',
     searchConfigJson:
       '{"profile":"xstore","candidate_paths":["/product/"],"exclude_paths":["/product-category/","add-to-cart="],"context_window":2200}',
@@ -142,6 +151,7 @@ export class AdminProviderRegistryService {
     notes?: string | null;
     searchPriority?: number;
     searchEnabled?: boolean;
+    searchInRepairs?: boolean;
     searchMode?: 'json' | 'html';
     searchEndpoint?: string | null;
     searchConfigJson?: string | null;
@@ -163,6 +173,7 @@ export class AdminProviderRegistryService {
       active: input.active ?? true,
       searchPriority: this.clampInt(input.searchPriority ?? 100, 1, 99999),
       searchEnabled: input.searchEnabled ?? false,
+      searchInRepairs: input.searchInRepairs ?? false,
       searchMode: input.searchMode === 'json' ? 'json' : 'html',
       searchEndpoint: this.cleanNullable(input.searchEndpoint),
       searchConfigJson: this.normalizeJsonString(input.searchConfigJson),
@@ -187,6 +198,7 @@ export class AdminProviderRegistryService {
       notes: string | null;
       searchPriority: number;
       searchEnabled: boolean;
+      searchInRepairs: boolean;
       searchMode: 'json' | 'html';
       searchEndpoint: string | null;
       searchConfigJson: string | null;
@@ -214,6 +226,7 @@ export class AdminProviderRegistryService {
           ? this.clampInt(input.searchPriority, 1, 99999)
           : current.searchPriority,
       searchEnabled: input.searchEnabled ?? current.searchEnabled,
+      searchInRepairs: input.searchInRepairs ?? current.searchInRepairs,
       searchMode: input.searchMode ? input.searchMode : current.searchMode,
       searchEndpoint:
         input.searchEndpoint !== undefined ? this.cleanNullable(input.searchEndpoint) : current.searchEndpoint,
@@ -259,6 +272,7 @@ export class AdminProviderRegistryService {
           ...items[index],
           searchPriority: seed.searchPriority,
           searchEnabled: seed.searchEnabled,
+          searchInRepairs: seed.searchInRepairs,
           searchMode: seed.searchMode,
           searchEndpoint: seed.searchEndpoint,
           searchConfigJson: seed.searchConfigJson,
@@ -274,6 +288,7 @@ export class AdminProviderRegistryService {
           active: true,
           searchPriority: seed.searchPriority,
           searchEnabled: seed.searchEnabled,
+          searchInRepairs: seed.searchInRepairs,
           searchMode: seed.searchMode,
           searchEndpoint: seed.searchEndpoint,
           searchConfigJson: seed.searchConfigJson,
@@ -376,6 +391,7 @@ export class AdminProviderRegistryService {
       active: row.active,
       searchPriority: this.clampInt(row.searchPriority, 1, 99999),
       searchEnabled: row.searchEnabled,
+      searchInRepairs: row.searchInRepairs,
       searchMode: row.searchMode === 'json' ? 'json' : 'html',
       searchEndpoint: row.searchEndpoint,
       searchConfigJson: this.normalizeJsonString(row.searchConfigJson),
@@ -403,6 +419,7 @@ export class AdminProviderRegistryService {
             active: row.active,
             searchPriority: row.searchPriority,
             searchEnabled: row.searchEnabled,
+            searchInRepairs: row.searchInRepairs,
             searchMode: row.searchMode,
             searchEndpoint: row.searchEndpoint,
             searchConfigJson: row.searchConfigJson,
@@ -421,6 +438,7 @@ export class AdminProviderRegistryService {
             active: row.active,
             searchPriority: row.searchPriority,
             searchEnabled: row.searchEnabled,
+            searchInRepairs: row.searchInRepairs,
             searchMode: row.searchMode,
             searchEndpoint: row.searchEndpoint,
             searchConfigJson: row.searchConfigJson,
@@ -464,6 +482,7 @@ export class AdminProviderRegistryService {
       confidenceLabel,
       active: row.active,
       searchEnabled: row.searchEnabled,
+      searchInRepairs: row.searchInRepairs,
       statusProbe: row.lastProbeStatus,
       lastProbeAt: row.lastProbeAt ? this.formatDateTimeShort(new Date(row.lastProbeAt)) : '-',
       lastQuery: row.lastProbeQuery ?? '-',

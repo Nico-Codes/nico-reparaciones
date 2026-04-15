@@ -110,6 +110,7 @@ export const providerCreateSchema = z.object({
   notes: z.string().trim().max(1500).optional().nullable(),
   searchPriority: z.number().int().min(1).max(99999).optional(),
   searchEnabled: z.boolean().optional(),
+  searchInRepairs: z.boolean().optional(),
   searchMode: z.enum(['json', 'html']).optional(),
   searchEndpoint: z.string().trim().max(500).optional().nullable(),
   searchConfigJson: z.string().max(8000).optional().nullable(),

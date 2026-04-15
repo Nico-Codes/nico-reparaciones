@@ -1,6 +1,5 @@
 import type {
   AdminProviderAggregatePartSearchItem,
-  AdminProviderAggregateSearchSupplierItem,
   AdminProviderItem,
 } from '@/features/admin/api';
 import type {
@@ -53,17 +52,6 @@ export type ProviderPricingStatusBadge = {
 
 export type VisibleProviderSearchState = {
   visiblePartResults: AdminProviderAggregatePartSearchItem[];
-  visibleSearchSuppliers: AdminProviderAggregateSearchSupplierItem[];
-  visibleSearchSummary: {
-    searchedSuppliers: number;
-    suppliersWithResults: number;
-    failedSuppliers: number;
-    totalResults: number;
-  };
-  visibleFailedSupplierNames: string[];
-  hiddenSmokeSupplierCount: number;
-  hiddenSmokeFailureCount: number;
-  hasTechnicalSearchDetails: boolean;
 };
 
 export function normalizeNullable(value: string) {
@@ -210,27 +198,9 @@ export function resolveSelectedProviderFilter(
 
 export function buildVisibleProviderSearchState(
   partResults: AdminProviderAggregatePartSearchItem[],
-  searchSuppliers: AdminProviderAggregateSearchSupplierItem[],
 ): VisibleProviderSearchState {
-  const visiblePartResults = partResults.filter((item) => !isSmokeSupplierName(item.supplier.name));
-  const visibleSearchSuppliers = searchSuppliers.filter((item) => !isSmokeSupplierName(item.supplier.name));
-  const visibleFailedSupplierNames = visibleSearchSuppliers.filter((item) => item.status === 'error').map((item) => item.supplier.name);
-  const hiddenSmokeSupplierCount = searchSuppliers.filter((item) => isSmokeSupplierName(item.supplier.name)).length;
-  const hiddenSmokeFailureCount = searchSuppliers.filter((item) => item.status === 'error' && isSmokeSupplierName(item.supplier.name)).length;
-
   return {
-    visiblePartResults,
-    visibleSearchSuppliers,
-    visibleSearchSummary: {
-      searchedSuppliers: visibleSearchSuppliers.length,
-      suppliersWithResults: visibleSearchSuppliers.filter((item) => item.status === 'ok' && item.total > 0).length,
-      failedSuppliers: visibleSearchSuppliers.filter((item) => item.status === 'error').length,
-      totalResults: visiblePartResults.length,
-    },
-    visibleFailedSupplierNames,
-    hiddenSmokeSupplierCount,
-    hiddenSmokeFailureCount,
-    hasTechnicalSearchDetails: visibleFailedSupplierNames.length > 0 || hiddenSmokeSupplierCount > 0,
+    visiblePartResults: partResults.filter((item) => !isSmokeSupplierName(item.supplier.name)),
   };
 }
 

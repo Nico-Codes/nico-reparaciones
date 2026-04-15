@@ -132,6 +132,23 @@ export function ProvidersCreatePanel({
               Habilitar busqueda de repuestos
             </label>
           </div>
+          <div className="mb-3 grid grid-cols-[auto_1fr] items-start gap-x-4 gap-y-1">
+            <input
+              id="draft-search-in-repairs"
+              type="checkbox"
+              checked={draft.searchInRepairs}
+              onChange={(event) => onDraftChange({ searchInRepairs: event.target.checked })}
+              className="mt-0.5 h-4 w-4"
+            />
+            <div>
+              <label htmlFor="draft-search-in-repairs" className="text-sm font-bold text-zinc-900">
+                Incluir en busqueda de reparaciones
+              </label>
+              <div className="text-xs text-zinc-500">
+                Solo los marcados entran en la busqueda agregada del flujo de repuestos.
+              </div>
+            </div>
+          </div>
           <div className="grid gap-3 md:grid-cols-2">
             <div>
               <label className="mb-1 block text-sm font-bold text-zinc-700">Modo</label>
@@ -317,6 +334,14 @@ function ProviderRow({
               Actualizar
             </button>
           </div>
+          <label className="flex items-center gap-2 text-sm font-bold text-zinc-700">
+            <input
+              type="checkbox"
+              checked={provider.searchInRepairs}
+              onChange={(event) => onPatchProvider(provider.id, { searchInRepairs: event.target.checked })}
+            />
+            Incluir en busqueda de reparaciones
+          </label>
           <div className="grid grid-cols-[0.75fr_1.25fr] gap-2">
             <CustomSelect
               value={provider.mode}

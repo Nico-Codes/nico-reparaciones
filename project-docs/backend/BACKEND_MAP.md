@@ -63,7 +63,41 @@ No existe ya backend legacy dentro del repo. Todo comportamiento servidor activo
 ## Hotspot actual recomendado
 
 - `admin-provider-search.service.ts` ya bajo a una fachada chica y la complejidad de scraping quedo seccionada en helpers especificos.
+- `admin-provider-search.service.ts` ahora separa con claridad:
+  - `searchProviderParts()` para busqueda directa puntual por proveedor
+  - `searchPartsAcrossProviders()` para agregado del flujo de reparaciones, filtrado solo a proveedores con `searchInRepairs=true`
+  - `filterProviderSearchItems()` como gating comun de matching exacto + ranking
 - `catalog-admin.service.ts` ya bajo a una fachada chica y el modulo quedo separado por categorias, productos y pricing.
 - El siguiente hotspot backend por servicio pasa a ser `admin-provider-registry.service.ts`; a nivel helper tecnico, `admin-provider-search.parsers.ts` sigue siendo el bloque de scraping mas pesado.
 - El hotspot mas grande del repo completo sigue estando en frontend: `RepairProviderPartPricingSection.tsx`.
 - Recomendacion prioritaria: si seguimos bajando complejidad del backend, conviene decidir entre partir `admin-provider-registry.service.ts` o pasar al hotspot grande de frontend en `repairs`.
+
+## Proveedores de repuestos: estado actual
+
+- `Supplier` ahora incluye `searchInRepairs` para distinguir proveedores reales del agregado de repuestos frente a filas dummy/historicas.
+- `importDefaultProviders()` sincroniza por nombre canonico y tambien normaliza:
+  - `searchEndpoint`
+  - `searchConfigJson`
+  - `searchPriority`
+  - `searchEnabled`
+  - `searchInRepairs`
+- Proveedores canonicos actualmente marcados para agregado:
+  - `PuntoCell`
+  - `Evophone`
+  - `Celuphone`
+  - `Okey Rosario`
+  - `Novocell`
+  - `Electrostore`
+  - `El Reparador de PC`
+  - `Tienda Movil Rosario`
+- Perfiles/transportes vigentes mas relevantes:
+  - `Evophone`: endpoint JSON TNTSearch
+  - `Okey Rosario`: endpoint JSON Flatsome live search
+  - `Electrostore`: endpoint JSON Flatsome live search
+  - `El Reparador de PC`: JSON API
+  - `Celuphone`, `Novocell`, `Tienda Movil Rosario`, `PuntoCell`: HTML/provider profile
+- La politica actual de matching es `exacta solamente` en el agregado:
+  - sin variantes automaticas
+  - sin aliases
+  - sin expansion por grupo/modelo
+  - si no hay match exacto util, se prefiere `0 resultados`

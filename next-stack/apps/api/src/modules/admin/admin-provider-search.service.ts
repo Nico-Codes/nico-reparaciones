@@ -1,6 +1,11 @@
 import { BadGatewayException, BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { buildProviderSearchUrl, estimateProbeResultCount, extractNormalizedParts } from './admin-provider-search.parsers.js';
-import { availabilityOrder, buildPartSearchQueryProfile, rankSupplierPart } from './admin-provider-search-ranking.js';
+import {
+  availabilityOrder,
+  buildPartSearchQueryProfile,
+  matchesSupplierPartExactQuery,
+  rankSupplierPart,
+} from './admin-provider-search-ranking.js';
 import { clampInt, cleanNullable } from './admin-provider-search.text.js';
 import { AdminProviderRegistryService } from './admin-provider-registry.service.js';
 import type {
@@ -151,7 +156,7 @@ export class AdminProviderSearchService {
       }
 
       const body = await response.text();
-      const normalized = extractNormalizedParts(body, row, url, limit);
+      const normalized = this.filterProviderSearchItems(row, q, extractNormalizedParts(body, row, url, limit));
 
       items[index] = {
         ...row,
@@ -208,19 +213,25 @@ export class AdminProviderSearchService {
 
     const selectedSupplier = supplierId ? registry.find((item) => item.id === supplierId) ?? null : null;
     if (supplierId && !selectedSupplier) throw new NotFoundException('Proveedor no encontrado');
-    if (selectedSupplier && (!selectedSupplier.active || !selectedSupplier.searchEnabled || !selectedSupplier.searchEndpoint)) {
+    if (
+      selectedSupplier &&
+      (!selectedSupplier.active ||
+        !selectedSupplier.searchEnabled ||
+        !selectedSupplier.searchInRepairs ||
+        !selectedSupplier.searchEndpoint)
+    ) {
       throw new BadRequestException('El proveedor seleccionado no esta disponible para busqueda de repuestos');
     }
 
     const candidates = (selectedSupplier ? [selectedSupplier] : registry)
-      .filter((item) => item.active && item.searchEnabled && !!item.searchEndpoint)
+      .filter((item) => item.active && item.searchEnabled && item.searchInRepairs && !!item.searchEndpoint)
       .sort((left, right) => {
         if (left.searchPriority !== right.searchPriority) return left.searchPriority - right.searchPriority;
         return left.name.localeCompare(right.name, 'es');
       });
 
     if (candidates.length === 0) {
-      throw new BadRequestException('No hay proveedores activos con busqueda habilitada');
+      throw new BadRequestException('No hay proveedores reales activos para la busqueda de repuestos');
     }
 
     const outcomes = await Promise.all(
@@ -328,7 +339,7 @@ export class AdminProviderSearchService {
       }
 
       const body = await response.text();
-      const items = extractNormalizedParts(body, row, url, limit);
+      const items = this.filterProviderSearchItems(row, q, extractNormalizedParts(body, row, url, limit));
 
       return {
         supplier: row,
@@ -346,5 +357,56 @@ export class AdminProviderSearchService {
         error: error instanceof Error ? error.message : 'No se pudo consultar el proveedor',
       };
     }
+  }
+
+  private filterProviderSearchItems(row: SupplierRegistryRow, query: string, items: ProviderPartSearchOutcome['items']) {
+    const profile = buildPartSearchQueryProfile(query);
+    return items
+      .map((item) => ({
+        item,
+        rank: rankSupplierPart(
+          {
+            ...item,
+            supplier: {
+              id: row.id,
+              name: row.name,
+              priority: row.searchPriority,
+              endpoint: row.searchEndpoint,
+              mode: row.searchMode,
+            },
+          },
+          profile,
+        ),
+      }))
+      .filter(({ item, rank }) => {
+        if (rank < 0) return false;
+        return matchesSupplierPartExactQuery(
+          {
+            ...item,
+            supplier: {
+              id: row.id,
+              name: row.name,
+              priority: row.searchPriority,
+              endpoint: row.searchEndpoint,
+              mode: row.searchMode,
+            },
+          },
+          profile,
+        );
+      })
+      .sort((left, right) => {
+        if (left.rank !== right.rank) return right.rank - left.rank;
+
+        const availabilityDiff = availabilityOrder(left.item.availability) - availabilityOrder(right.item.availability);
+        if (availabilityDiff !== 0) return availabilityDiff;
+
+        const leftPrice = left.item.price == null ? Number.POSITIVE_INFINITY : left.item.price;
+        const rightPrice = right.item.price == null ? Number.POSITIVE_INFINITY : right.item.price;
+        if (leftPrice !== rightPrice) return leftPrice - rightPrice;
+
+        return left.item.name.localeCompare(right.item.name, 'es');
+      })
+      .map(({ item }) => item)
+      .slice(0, items.length);
   }
 }

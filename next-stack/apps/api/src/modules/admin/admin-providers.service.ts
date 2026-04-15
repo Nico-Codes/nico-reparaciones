@@ -22,6 +22,7 @@ export class AdminProvidersService {
     notes?: string | null;
     searchPriority?: number;
     searchEnabled?: boolean;
+    searchInRepairs?: boolean;
     searchMode?: 'json' | 'html';
     searchEndpoint?: string | null;
     searchConfigJson?: string | null;
@@ -38,6 +39,7 @@ export class AdminProvidersService {
       notes: string | null;
       searchPriority: number;
       searchEnabled: boolean;
+      searchInRepairs: boolean;
       searchMode: 'json' | 'html';
       searchEndpoint: string | null;
       searchConfigJson: string | null;

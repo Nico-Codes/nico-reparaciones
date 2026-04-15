@@ -5,6 +5,7 @@ export type ProviderSearchQueryProfile = {
   normalized: string;
   tokens: string[];
   specificTokens: string[];
+  requiredGenericTokens: string[];
   genericTokens: Set<string>;
 };
 
@@ -32,11 +33,13 @@ export function buildPartSearchQueryProfile(query: string): ProviderSearchQueryP
   ]);
   const tokens = [...new Set(normalizeSearchText(query).split(' ').filter((token) => token.length >= 2))];
   const specificTokens = tokens.filter((token) => !genericTokens.has(token));
+  const requiredGenericTokens = tokens.filter((token) => genericTokens.has(token));
 
   return {
     normalized: normalizeSearchText(query),
     tokens,
     specificTokens,
+    requiredGenericTokens,
     genericTokens,
   };
 }
@@ -46,11 +49,11 @@ export function availabilityOrder(value: 'in_stock' | 'out_of_stock' | 'unknown'
 }
 
 export function rankSupplierPart(item: NormalizedSupplierPartWithProvider, profile: ProviderSearchQueryProfile) {
-  const nameTokens = normalizeSearchText(item.name).split(' ').filter(Boolean);
-  const brandTokens = normalizeSearchText(item.brand).split(' ').filter(Boolean);
-  const skuTokens = normalizeSearchText(item.sku).split(' ').filter(Boolean);
-  const rawLabelTokens = normalizeSearchText(item.rawLabel).split(' ').filter(Boolean);
-  const urlTokens = normalizeSearchText(slugToLabel(item.url)).split(' ').filter(Boolean);
+  const nameTokens = collectSupplierPartTokens(item.name);
+  const brandTokens = collectSupplierPartTokens(item.brand);
+  const skuTokens = collectSupplierPartTokens(item.sku);
+  const rawLabelTokens = collectSupplierPartTokens(item.rawLabel);
+  const urlTokens = collectSupplierPartTokens(slugToLabel(item.url));
   const haystack = [...nameTokens, ...brandTokens, ...skuTokens, ...rawLabelTokens, ...urlTokens].join(' ');
   const exactTokens = new Set(haystack.split(' ').filter(Boolean));
 
@@ -90,4 +93,45 @@ export function rankSupplierPart(item: NormalizedSupplierPartWithProvider, profi
   if (item.price === 0) score -= 40;
 
   return score;
+}
+
+export function matchesSupplierPartExactQuery(item: NormalizedSupplierPartWithProvider, profile: ProviderSearchQueryProfile) {
+  if (!profile.tokens.length) return true;
+
+  const exactTokens = collectAllSupplierPartTokens(item);
+  if (!exactTokens.size) return false;
+
+  const hasAllSpecificTokens = profile.specificTokens.every((token) => matchesSpecificQueryToken(token, exactTokens));
+  if (!hasAllSpecificTokens) return false;
+
+  if (!profile.requiredGenericTokens.length) return true;
+  return profile.requiredGenericTokens.some((token) => exactTokens.has(token));
+}
+
+function collectAllSupplierPartTokens(item: NormalizedSupplierPartWithProvider) {
+  return new Set(
+    [
+      ...collectSupplierPartTokens(item.name),
+      ...collectSupplierPartTokens(item.brand),
+      ...collectSupplierPartTokens(item.sku),
+      ...collectSupplierPartTokens(item.rawLabel),
+      ...collectSupplierPartTokens(slugToLabel(item.url)),
+    ].filter(Boolean),
+  );
+}
+
+function collectSupplierPartTokens(value?: string | null) {
+  return normalizeSearchText(value).split(' ').filter(Boolean);
+}
+
+function matchesSpecificQueryToken(queryToken: string, candidateTokens: Set<string>) {
+  if (candidateTokens.has(queryToken)) return true;
+
+  const queryHasDigits = /\d/.test(queryToken);
+  if (!queryHasDigits || queryToken.length < 3) return false;
+
+  for (const candidateToken of candidateTokens) {
+    if (candidateToken.startsWith(queryToken)) return true;
+  }
+  return false;
 }

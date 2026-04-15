@@ -24,6 +24,7 @@ function makeProvider(input: Partial<AdminProviderItem> & Pick<AdminProviderItem
     confidenceLabel: input.confidenceLabel ?? 'Media',
     active: input.active ?? true,
     searchEnabled: input.searchEnabled ?? true,
+    searchInRepairs: input.searchInRepairs ?? false,
     statusProbe: input.statusProbe ?? 'none',
     lastProbeAt: input.lastProbeAt ?? '-',
     lastQuery: input.lastQuery ?? '',
@@ -41,6 +42,7 @@ describe('admin-providers helpers', () => {
       name: '',
       priority: '100',
       enabled: true,
+      searchInRepairs: false,
       mode: 'JSON API',
     });
   });

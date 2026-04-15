@@ -6,6 +6,7 @@ export type AdminProviderDraft = {
   priority: string;
   notes: string;
   enabled: boolean;
+  searchInRepairs: boolean;
   mode: string;
   endpoint: string;
   configJson: string;
@@ -38,6 +39,7 @@ export function createInitialProviderDraft(): AdminProviderDraft {
     priority: '100',
     notes: '',
     enabled: true,
+    searchInRepairs: false,
     mode: 'JSON API',
     endpoint: 'https://proveedor.com/api/search?q={query}',
     configJson:

@@ -2870,6 +2870,35 @@ pm run qa:frontend:e2e
 
 ---
 
+### 2026-04-15 - Codex
+- Alcance: reordenar la busqueda agregada de repuestos para consultar solo proveedores reales, endurecer matching exacto y simplificar la UI operativa del flujo de reparaciones.
+- Tipo de intervencion: ajuste funcional backend + frontend con cambio de modelo menor (`Supplier.searchInRepairs`) y sincronizacion de catalogo default de proveedores.
+- Archivos tocados:
+  - `next-stack/apps/api/prisma/{schema.prisma,migrations/20260415103000_add_supplier_search_in_repairs/migration.sql}`
+  - `next-stack/apps/api/src/modules/admin/{admin-provider-registry.service.ts,admin-provider-registry.service.test.ts,admin-provider-search.service.ts,admin-provider-search.service.test.ts,admin-provider-search.parsers.ts,admin-provider-search.parsers.test.ts,admin-provider-search-ranking.ts,admin-providers.types.ts,admin-providers.service.ts,admin.schemas.ts,admin.service.ts}`
+  - `next-stack/apps/web/src/features/{admin/api.ts,providers/{AdminProvidersPage.tsx,admin-providers.helpers.ts,admin-providers.helpers.test.ts,admin-providers-panels.tsx},repairs/{use-repair-provider-part-search.ts,use-repair-provider-part-pricing.ts,repair-provider-part-pricing-section.helpers.ts,repair-provider-part-pricing-section.helpers.test.ts,repair-provider-part-search-results.tsx},warranties/admin-warranty-create.helpers.test.ts}`
+  - `project-docs/{DECISIONS_LOG.md,backend/BACKEND_MAP.md,frontend/FRONTEND_MAP.md}`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. La busqueda agregada del flujo de reparaciones ahora consulta solo proveedores marcados con `searchInRepairs`, filtra resultados por matching exacto antes de rankear y deja de mostrar el desglose visible por proveedor en la UI. En admin/proveedores aparece el toggle `Incluir en busqueda de reparaciones`.
+- Validaciones ejecutadas:
+  - `cmd /c npm run db:generate --workspace @nico/api`
+  - `cmd /c npm run typecheck --workspace @nico/api`
+  - `cmd /c npm run test --workspace @nico/api`
+  - `cmd /c npm run build --workspace @nico/api`
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run db:migrate --workspace @nico/api`
+  - `cmd /c npm run smoke:backend`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - el agregado ya no va a traer proveedores dummy/historicos salvo que el operador los marque explicitamente con `searchInRepairs`
+  - `Celuphone`, `Evophone`, `Okey Rosario`, `Electrostore`, `El Reparador de PC`, `Novocell` y `Tienda Movil Rosario` quedaron alineados a perfiles/endpoints mas estables, pero siguen dependiendo de HTML/APIs de terceros que pueden cambiar
+  - para poder regenerar Prisma Client con engine hubo que reiniciar el proceso local del API del repo y volver a levantar una instancia limpia para el smoke
+
+---
+
 ### 2026-04-01 - Codex
 - Alcance: cerrar el seccionado pendiente del frontend en admin general, catalogo tecnico y flujos publicos/detalle.
 - Tipo de intervencion: refactor interno seguro multi-feature para consolidar el patron `Page.tsx` orquestadora + `helpers.ts` + `sections.tsx`.

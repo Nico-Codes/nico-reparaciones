@@ -129,6 +129,7 @@ function normalizeJsonPart(
   index: number,
 ): NormalizedSupplierPart | null {
   if (!item || typeof item !== 'object') return null;
+  if (shouldIgnoreJsonPart(item, config)) return null;
 
   const externalId = findJsonString(
     item,
@@ -172,6 +173,11 @@ function extractNormalizedPartsFromHtml(
   const config = parseJson<Record<string, unknown>>(row.searchConfigJson) ?? {};
   const profile = resolveHtmlSearchProfile(row, requestUrl, config);
 
+  const singleProductPage = extractHtmlSingleProductPage(html, config, row, requestUrl, profile);
+  if (singleProductPage) {
+    return [singleProductPage];
+  }
+
   const providerSpecific = extractHtmlPartsFromKnownProviderHtml(html, config, row, requestUrl, limit, profile);
   if (providerSpecific.length > 0) {
     return dedupeNormalizedParts(providerSpecific, limit);
@@ -180,11 +186,6 @@ function extractNormalizedPartsFromHtml(
   const parsedFromBlocks = extractHtmlPartsFromBlocks(html, config, row, requestUrl, limit, profile);
   if (parsedFromBlocks.length > 0) {
     return dedupeNormalizedParts(parsedFromBlocks, limit);
-  }
-
-  const singleProductPage = extractHtmlSingleProductPage(html, config, row, requestUrl, profile);
-  if (singleProductPage) {
-    return [singleProductPage];
   }
 
   const parsedFromAnchors = extractHtmlPartsFromAnchors(html, config, row, requestUrl, limit, profile);
@@ -376,6 +377,41 @@ function dedupeNormalizedParts(items: NormalizedSupplierPart[], limit: number) {
   }
 
   return result;
+}
+
+function shouldIgnoreJsonPart(item: unknown, config: Record<string, unknown>) {
+  const typeValue = normalizeSearchText(findJsonString(item, config, ['type_path'], ['type', 'kind']));
+  const ignoredTypes = Array.isArray(config.ignore_type_values)
+    ? config.ignore_type_values
+        .map((value) => (typeof value === 'string' ? normalizeSearchText(value) : ''))
+        .filter(Boolean)
+    : [];
+  if (typeValue && ignoredTypes.includes(typeValue)) return true;
+
+  const labelValue =
+    cleanLabel(
+      findJsonString(item, config, ['name_path', 'title_path', 'label_path'], [
+        'name',
+        'title',
+        'label',
+        'description',
+        'productName',
+        'nombre',
+        'titulo',
+        'value',
+      ]),
+    ) ?? null;
+  const normalizedLabel = normalizeSearchText(labelValue);
+  if (/^(no hay resultados|no se han encontrado productos|sin resultados?)$/.test(normalizedLabel)) return true;
+
+  const ignoreNameRegex =
+    typeof config.ignore_name_regex === 'string' && config.ignore_name_regex.trim()
+      ? new RegExp(String(config.ignore_name_regex), 'i')
+      : null;
+  if (ignoreNameRegex && labelValue && ignoreNameRegex.test(labelValue)) return true;
+
+  const externalId = findJsonString(item, config, ['externalPartId', 'external_id_path', 'id_path'], ['id']);
+  return externalId === '-1';
 }
 
 function isLikelyProductUrl(

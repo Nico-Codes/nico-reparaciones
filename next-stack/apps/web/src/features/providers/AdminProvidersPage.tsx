@@ -90,6 +90,7 @@ export function AdminProvidersPage() {
         notes: draft.notes.trim() || null,
         searchPriority: Number(draft.priority) || 100,
         searchEnabled: draft.enabled,
+        searchInRepairs: draft.searchInRepairs,
         searchMode: toSearchMode(draft.mode),
         searchEndpoint: draft.endpoint.trim() || null,
         searchConfigJson: draft.configJson.trim() || null,
@@ -102,6 +103,7 @@ export function AdminProvidersPage() {
         endpoint: current.endpoint,
         configJson: current.configJson,
         enabled: current.enabled,
+        searchInRepairs: current.searchInRepairs,
         priority: current.priority,
       }));
       setMessage('Proveedor creado.');
@@ -120,6 +122,7 @@ export function AdminProvidersPage() {
         notes: row.notes || null,
         searchPriority: row.priority,
         searchEnabled: row.searchEnabled,
+        searchInRepairs: row.searchInRepairs,
         searchMode: toSearchMode(row.mode),
         searchEndpoint: row.endpoint || null,
         searchConfigJson: row.configJson || null,

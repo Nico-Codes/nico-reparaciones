@@ -61,15 +61,9 @@ describe('repair-provider-part-pricing-section helpers', () => {
         { name: 'Modulo A30', supplier: { name: 'Proveedor 1' } } as any,
         { name: 'Smoke item', supplier: { name: 'Smoke Supplier 1' } } as any,
       ],
-      [
-        { supplier: { name: 'Proveedor 1' }, status: 'ok', total: 1 } as any,
-        { supplier: { name: 'Smoke Supplier 1' }, status: 'error', total: 0 } as any,
-      ],
     );
 
     expect(visible.visiblePartResults).toHaveLength(1);
-    expect(visible.hiddenSmokeSupplierCount).toBe(1);
-    expect(visible.visibleSearchSummary.totalResults).toBe(1);
   });
 
   it('builds status badge priority consistently', () => {

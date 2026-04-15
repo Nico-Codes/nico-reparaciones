@@ -736,6 +736,29 @@ Con este cierre, lo que queda grande en frontend ya no son paginas o `sections.t
 - el router nuevo vuelve a exponer `/auth/google/callback` para cerrar el redirect de Google login.
 - el auth social queda acotado a `LoginPage.tsx` y solo para cuentas `USER`.
 
+## Repairs: busqueda de repuestos
+
+- `RepairProviderPartPricingSection` mantiene tres piezas claras:
+  - `repair-provider-part-search-controls.tsx`
+  - `repair-provider-part-search-results.tsx`
+  - `repair-provider-part-selected-summary.tsx`
+- La UI de resultados ya no muestra auditoria visible por proveedor. El foco vuelve a ser:
+  - loading
+  - error global
+  - empty state
+  - lista de repuestos utiles
+- `use-repair-provider-part-search.ts` ahora hidrata el selector de proveedores solo con `active && searchEnabled && searchInRepairs && endpoint`.
+- `repair-provider-part-pricing-section.helpers.ts` sigue filtrando `smoke suppliers` del rendering visible por seguridad, pero la experiencia publica del flujo ya no expone cards tecnicas de proveedor.
+
+## Admin: proveedores
+
+- `AdminProvidersPage.tsx` expone ahora un toggle explicito `Incluir en busqueda de reparaciones`.
+- Ese toggle existe tanto al crear como al editar un proveedor.
+- La intencion operativa es separar:
+  - `Busqueda habilitada`: el proveedor soporta scraping/probe
+  - `Incluir en busqueda de reparaciones`: entra o no al agregado del flujo de repuestos
+- Esto evita que filas dummy/historicas contaminen el buscador de `repairs` aunque sigan existiendo en el registry para auditoria o pruebas puntuales.
+
 ### Evidencia funcional
 - `npm run smoke:web` OK
 - `npm run qa:route-parity` OK

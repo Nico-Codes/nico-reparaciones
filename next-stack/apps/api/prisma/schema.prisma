@@ -404,6 +404,7 @@ model Supplier {
   active           Boolean            @default(true)
   searchPriority   Int                @default(100)
   searchEnabled    Boolean            @default(false)
+  searchInRepairs  Boolean            @default(false)
   searchMode       String             @default("html")
   searchEndpoint   String?
   searchConfigJson String?

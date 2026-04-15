@@ -13,6 +13,7 @@ function createSupplierRow(
     active: true,
     searchPriority: 10,
     searchEnabled: true,
+    searchInRepairs: false,
     searchMode: 'html',
     searchEndpoint: 'https://supplier.test/?s={query}',
     searchConfigJson: null,
@@ -181,6 +182,65 @@ describe('admin-provider-search parsers', () => {
     expect(parts[0]).toMatchObject({
       name: 'MODULO SAMSUNG A13 A135',
       url: 'https://celuphone.com.ar/producto/modulo-samsung-a13-a135/',
+    });
+  });
+
+  it('prioritizes the redirected single product page over related celuphone products', () => {
+    const row = createSupplierRow({
+      name: 'Celuphone',
+      searchEndpoint: 'https://celuphone.com.ar/?s={query}&post_type=product&dgwt_wcas=1',
+      searchConfigJson:
+        '{"profile":"shoptimizer","candidate_paths":["/producto/"],"exclude_paths":["/categoria-producto/"],"context_window":2200}',
+    });
+
+    const html = `
+      <html>
+        <head>
+          <link rel="canonical" href="https://celuphone.com.ar/producto/modulo-xiaomi-redmi-13c-negro-original/" />
+          <script type="application/ld+json">
+            {
+              "@context": "https://schema.org",
+              "@type": "Product",
+              "name": "Modulo Xiaomi Redmi 13C/POCO C65 Negro Original",
+              "sku": "REDMI-13C-ORI",
+              "url": "https://celuphone.com.ar/producto/modulo-xiaomi-redmi-13c-negro-original/",
+              "offers": {
+                "@type": "Offer",
+                "price": "32990",
+                "availability": "https://schema.org/InStock"
+              }
+            }
+          </script>
+        </head>
+        <body>
+          <h1 class="product_title entry-title">Modulo Xiaomi Redmi 13C/POCO C65 Negro Original</h1>
+          <ul class="products">
+            <li class="product type-product post-455">
+              <a href="https://celuphone.com.ar/producto/modulo-samsung-a13-a135/" class="woocommerce-LoopProduct-link">
+                <h2 class="woocommerce-loop-product__title">MODULO SAMSUNG A13 A135</h2>
+              </a>
+              <span class="price">
+                <span class="woocommerce-Price-amount amount"><bdi><span class="woocommerce-Price-currencySymbol">&#36;</span>&nbsp;16.500</bdi></span>
+              </span>
+            </li>
+          </ul>
+        </body>
+      </html>
+    `;
+
+    const parts = extractNormalizedParts(
+      html,
+      row,
+      'https://celuphone.com.ar/?s=modulo+redmi+13c&post_type=product&dgwt_wcas=1',
+      5,
+    );
+
+    expect(parts).toHaveLength(1);
+    expect(parts[0]).toMatchObject({
+      name: 'Modulo Xiaomi Redmi 13C/POCO C65 Negro Original',
+      sku: 'REDMI-13C-ORI',
+      price: 32990,
+      url: 'https://celuphone.com.ar/producto/modulo-xiaomi-redmi-13c-negro-original/',
     });
   });
 
