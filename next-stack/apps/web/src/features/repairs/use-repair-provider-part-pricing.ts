@@ -247,6 +247,7 @@ export function useRepairProviderPartPricing({
       searchError: search.searchError,
       partSearchQuery: search.partSearchQuery,
       visiblePartResults: search.visiblePartResults,
+      visibleSearchSuppliers: search.visibleSearchSuppliers,
       visibleSearchSummary: search.visibleSearchSummary,
       visibleFailedSupplierNames: search.visibleFailedSupplierNames,
       hiddenSmokeSupplierCount: search.hiddenSmokeSupplierCount,

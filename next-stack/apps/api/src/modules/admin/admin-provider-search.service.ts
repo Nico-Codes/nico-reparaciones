@@ -20,10 +20,26 @@ const PROVIDER_SEARCH_HEADERS = {
 
 @Injectable()
 export class AdminProviderSearchService {
+  private defaultCatalogSyncPromise: Promise<void> | null = null;
+
   constructor(
     @Inject(AdminProviderRegistryService)
     private readonly adminProviderRegistryService: AdminProviderRegistryService,
   ) {}
+
+  private async ensureDefaultProviderCatalogSynced() {
+    if (!this.defaultCatalogSyncPromise) {
+      this.defaultCatalogSyncPromise = this.adminProviderRegistryService
+        .importDefaultProviders()
+        .then(() => undefined)
+        .catch((error) => {
+          this.defaultCatalogSyncPromise = null;
+          throw error;
+        });
+    }
+
+    await this.defaultCatalogSyncPromise;
+  }
 
   private async serializeProviderSnapshot(row: SupplierRegistryRow) {
     const stats = (await this.adminProviderRegistryService.getProviderStatsMap()).get(row.id);
@@ -47,6 +63,7 @@ export class AdminProviderSearchService {
   }
 
   async probeProvider(id: string, queryRaw?: string) {
+    await this.ensureDefaultProviderCatalogSynced();
     const items = await this.adminProviderRegistryService.readSuppliersRegistry();
     const index = items.findIndex((item) => item.id === id);
     if (index < 0) throw new BadRequestException('Proveedor no encontrado');
@@ -113,6 +130,7 @@ export class AdminProviderSearchService {
   }
 
   async searchProviderParts(id: string, input: SupplierPartSearchInput) {
+    await this.ensureDefaultProviderCatalogSynced();
     const items = await this.adminProviderRegistryService.readSuppliersRegistry();
     const index = items.findIndex((item) => item.id === id);
     if (index < 0) throw new NotFoundException('Proveedor no encontrado');
@@ -180,6 +198,7 @@ export class AdminProviderSearchService {
   }
 
   async searchPartsAcrossProviders(input: SupplierPartAggregateSearchInput) {
+    await this.ensureDefaultProviderCatalogSynced();
     const registry = await this.adminProviderRegistryService.readSuppliersRegistry();
     const q = input.q.trim();
     const limitPerSupplier = clampInt(input.limitPerSupplier ?? 6, 1, 20);

@@ -67,11 +67,11 @@ const DEFAULT_SUPPLIER_CATALOG: Array<
   {
     name: 'El Reparador de PC',
     searchPriority: 60,
-    searchMode: 'html',
+    searchMode: 'json',
     searchEnabled: true,
-    searchEndpoint: 'https://www.elreparadordepc.com/search_producto?term={query}',
+    searchEndpoint: 'https://api.elreparadordepc.com/api/web/tenant/www?in_stock=false&q={query}',
     searchConfigJson:
-      '{"candidate_paths":["/producto/"],"exclude_paths":["/categoria","/carrito","/deseos"],"candidate_url_regex":"\\\\/producto\\\\/\\\\d+","context_window":12000}',
+      '{"items_path":"productos","name_path":"nombre","sku_path":"sku","price_path":"precio","availability_path":"stock"}',
   },
   {
     name: 'Tienda Movil Rosario',
@@ -80,7 +80,7 @@ const DEFAULT_SUPPLIER_CATALOG: Array<
     searchEnabled: true,
     searchEndpoint: 'https://tiendamovilrosario.com.ar/?s={query}&post_type=product',
     searchConfigJson:
-      '{"candidate_paths":["/product/"],"exclude_paths":["/product-category/","add-to-cart="],"context_window":12000}',
+      '{"profile":"xstore","candidate_paths":["/product/"],"exclude_paths":["/product-category/","add-to-cart="],"context_window":2200}',
   },
 ];
 

@@ -1,4 +1,5 @@
 import { BadGatewayException, BadRequestException } from '@nestjs/common';
+import { buildPartSearchQueryProfile, rankSupplierPart } from './admin-provider-search-ranking.js';
 import type { NormalizedSupplierPart, SupplierRegistryRow } from './admin-providers.types.js';
 import {
   cleanLabel,
@@ -28,7 +29,7 @@ export function extractNormalizedParts(
   limit: number,
 ): NormalizedSupplierPart[] {
   return row.searchMode === 'json'
-    ? extractNormalizedPartsFromJsonPayload(rawBody, row, limit)
+    ? extractNormalizedPartsFromJsonPayload(rawBody, row, limit, requestUrl)
     : extractNormalizedPartsFromHtml(rawBody, row, requestUrl, limit);
 }
 
@@ -55,6 +56,7 @@ function extractNormalizedPartsFromJsonPayload(
   rawBody: string,
   row: SupplierRegistryRow,
   limit: number,
+  requestUrl: string,
 ): NormalizedSupplierPart[] {
   let payload: unknown;
   try {
@@ -69,10 +71,36 @@ function extractNormalizedPartsFromJsonPayload(
 
   const normalized = items
     .map((item, index) => normalizeJsonPart(item, config, row, index))
-    .filter((item): item is NormalizedSupplierPart => !!item)
-    .slice(0, limit);
+    .filter((item): item is NormalizedSupplierPart => !!item);
 
-  return dedupeNormalizedParts(normalized, limit);
+  const query = extractSearchQueryFromUrl(requestUrl);
+  if (!query) {
+    return dedupeNormalizedParts(normalized, limit);
+  }
+
+  const profile = buildPartSearchQueryProfile(query);
+  const ranked = normalized
+    .map((item) => ({
+      item,
+      rank: rankSupplierPart(
+        {
+          ...item,
+          supplier: {
+            id: row.id,
+            name: row.name,
+            priority: row.searchPriority,
+            endpoint: row.searchEndpoint,
+            mode: row.searchMode,
+          },
+        },
+        profile,
+      ),
+    }))
+    .filter(({ rank }) => rank >= 0)
+    .sort((left, right) => right.rank - left.rank)
+    .map(({ item }) => item);
+
+  return dedupeNormalizedParts(ranked, limit);
 }
 
 function extractJsonItems(payload: unknown, config: Record<string, unknown>) {
@@ -108,10 +136,11 @@ function normalizeJsonPart(
     ['externalPartId', 'external_id_path', 'id_path'],
     ['id', 'productId', 'product_id', 'sku'],
   );
-  const name = findJsonString(item, config, ['name_path', 'title_path'], ['name', 'title', 'label', 'description', 'productName']);
+  const name = findJsonString(item, config, ['name_path', 'title_path'], ['name', 'title', 'label', 'description', 'productName', 'nombre', 'titulo']);
+  const normalizedName = cleanLabel(name ?? findJsonString(item, config, ['nombre_path'], ['nombre', 'titulo']));
   const sku = findJsonString(item, config, ['sku_path'], ['sku', 'code', 'barcode', 'partNumber', 'part_number']);
-  const brand = findJsonString(item, config, ['brand_path'], ['brand', 'manufacturer']);
-  const price = findJsonNumber(item, config, ['price_path'], ['price', 'salePrice', 'amount', 'finalPrice', 'unitPrice']);
+  const brand = findJsonString(item, config, ['brand_path'], ['brand', 'manufacturer', 'marca']);
+  const price = findJsonNumber(item, config, ['price_path'], ['price', 'salePrice', 'amount', 'finalPrice', 'unitPrice', 'precio']);
   const availabilityRaw = findJsonValue(
     item,
     config,
@@ -120,7 +149,6 @@ function normalizeJsonPart(
   );
   const url = normalizeUrl(findJsonString(item, config, ['url_path'], ['url', 'link', 'href']), row.searchEndpoint);
 
-  const normalizedName = cleanLabel(name);
   if (!normalizedName) return null;
 
   return {
@@ -154,6 +182,11 @@ function extractNormalizedPartsFromHtml(
     return dedupeNormalizedParts(parsedFromBlocks, limit);
   }
 
+  const singleProductPage = extractHtmlSingleProductPage(html, config, row, requestUrl, profile);
+  if (singleProductPage) {
+    return [singleProductPage];
+  }
+
   const parsedFromAnchors = extractHtmlPartsFromAnchors(html, config, row, requestUrl, limit, profile);
   return dedupeNormalizedParts(parsedFromAnchors, limit);
 }
@@ -168,6 +201,7 @@ function resolveHtmlSearchProfile(row: SupplierRegistryRow, requestUrl: string, 
   if (host.includes('evophone.com.ar')) return 'woodmart';
   if (host.includes('celuphone.com.ar')) return 'shoptimizer';
   if (host.includes('okeyrosario.com.ar') || host.includes('electrostore.com.ar')) return 'flatsome';
+  if (host.includes('tiendamovilrosario.com.ar')) return 'xstore';
   return 'generic';
 }
 
@@ -184,6 +218,7 @@ function extractHtmlPartsFromKnownProviderHtml(
     flatsome: [/<div class="product-small col has-hover product[\s\S]*?<\/div>\s*<\/div>\s*<\/div>/gi],
     shoptimizer: [/<li class="product type-product[\s\S]*?<\/li>/gi],
     wix: [/<li data-hook="product-list-grid-item">[\s\S]*?<\/li>/gi],
+    xstore: [/<li\b[^>]*class=(["'])[^"']*\bproduct\b[^"']*\btype-product\b[^"']*\1[\s\S]*?<\/li>/gi],
   };
   const regexes = blockRegexes[profile] ?? [];
   if (regexes.length === 0) return [];
@@ -235,7 +270,7 @@ function extractHtmlPartsFromBlocks(
     const normalized = normalizeHtmlPartFromSnippet(block, config, row, requestUrl, raw.length, profile, {
       url,
       name: cleanLabel(stripHtml(rawName || block)),
-      price: parseMoneyValue(rawPrice || block),
+      price: rawPrice ? parseMoneyValue(rawPrice) : null,
     });
     if (!normalized) continue;
     raw.push(normalized);
@@ -280,7 +315,7 @@ function extractHtmlPartsFromAnchors(
     const normalized = normalizeHtmlPartFromSnippet(snippet, config, row, requestUrl, out.length, profile, {
       url: absoluteUrl,
       rawLabel: cleanLabel(stripHtml(match[3] ?? '')),
-      price: parseMoneyValue(priceRegex ? firstCapture(snippet, priceRegex) : snippet),
+      price: priceRegex ? parseMoneyValue(firstCapture(snippet, priceRegex)) : null,
     });
     if (!normalized) continue;
     out.push(normalized);
@@ -438,6 +473,8 @@ function extractProductNameFromContext(snippet: string) {
 
   const titleMatch = snippet.match(/title=(["'])(.*?)\1/i);
   if (titleMatch) return cleanLabel(titleMatch[2]);
+  const metaTitle = cleanLabel(firstCapture(snippet, /property=(["'])og:title\1[^>]*content=["'](.*?)["']/i));
+  if (metaTitle) return stripSiteSuffix(metaTitle);
   return null;
 }
 
@@ -450,6 +487,7 @@ function extractHtmlPartName(snippet: string, rawLabel: string | null, url: stri
     cleanLabel(firstCapture(snippet, /woocommerce-loop-product__title[^>]*>\s*<a[^>]*>([\s\S]*?)<\/a>/i)),
     cleanLabel(firstCapture(snippet, /class=(["'])[^"']*\bproduct-title\b[^"']*\1[^>]*>\s*<a[^>]*>([\s\S]*?)<\/a>/i)),
     cleanLabel(firstCapture(snippet, /class=(["'])[^"']*\bwoocommerce-LoopProduct-link\b[^"']*\1[^>]*>([\s\S]*?)<\/a>/i)),
+    cleanLabel(firstCapture(snippet, /<(?:h1|h2)[^>]*class=(["'])[^"']*\bproduct_title\b[^"']*\1[^>]*>([\s\S]*?)<\/(?:h1|h2)>/i)),
     cleanLabel(
       firstCapture(
         snippet,
@@ -491,23 +529,166 @@ function extractHtmlPartBrand(snippet: string, name: string | null, profile: str
 }
 
 function extractHtmlPartPrice(snippet: string, profile: string) {
-  const candidates: string[] = [];
-  if (profile === 'wix') {
-    candidates.push(...[...snippet.matchAll(/data-wix-price=(["'])(.*?)\1/gi)].map((match) => match[2] ?? ''));
+  const candidates = extractPrioritizedPriceCandidates(snippet, profile);
+  if (candidates.length === 0) return null;
+  const best = candidates.sort((left, right) => {
+    if (left.priority !== right.priority) return right.priority - left.priority;
+    if (left.position !== right.position) return right.position - left.position;
+    return right.value - left.value;
+  })[0];
+  return best?.value ?? null;
+}
+
+function extractHtmlSingleProductPage(
+  html: string,
+  config: Record<string, unknown>,
+  row: SupplierRegistryRow,
+  requestUrl: string,
+  profile: string,
+) {
+  const productJson = extractProductJsonLd(html);
+  const candidateUrl =
+    normalizeUrl(productJson?.url, requestUrl) ??
+    normalizeUrl(firstCapture(html, /<link[^>]*rel=(["'])canonical\1[^>]*href=["'](.*?)["']/i), requestUrl) ??
+    normalizeUrl(firstCapture(html, /property=(["'])og:url\1[^>]*content=["'](.*?)["']/i), requestUrl);
+  const candidatePaths = Array.isArray(config.candidate_paths)
+    ? config.candidate_paths.filter((value): value is string => typeof value === 'string')
+    : [];
+  const excludePaths = Array.isArray(config.exclude_paths)
+    ? config.exclude_paths.filter((value): value is string => typeof value === 'string')
+    : [];
+  const candidateUrlRegex = compileOptionalRegex(config.candidate_url_regex);
+
+  if (
+    !candidateUrl ||
+    !isLikelyProductUrl(candidateUrl, requestUrl, candidatePaths, excludePaths, candidateUrlRegex)
+  ) {
+    return null;
   }
 
-  candidates.push(
-    ...[...snippet.matchAll(/<span class="price">[\s\S]*?<\/span>/gi)].map((match) => stripHtml(match[0] ?? '')),
-    ...[...snippet.matchAll(/woocommerce-Price-amount[^>]*>[\s\S]*?<span[^>]*woocommerce-Price-currencySymbol[^>]*>[\s\S]*?<\/span>\s*([^<]+)/gi)].map(
-      (match) => match[1] ?? '',
-    ),
-    ...[...snippet.matchAll(/(?:\$|&#36;)\s*(?:&nbsp;|\s)*[0-9][0-9.,]*/gi)].map((match) => match[0] ?? ''),
-    ...[...snippet.matchAll(/(?:\$|&#36;)\s*[0-9][0-9.,]*/gi)].map((match) => match[0] ?? ''),
-  );
+  const name =
+    cleanLabel(productJson?.name) ??
+    cleanLabel(firstCapture(html, /<(?:h1|h2)[^>]*class=(["'])[^"']*\bproduct_title\b[^"']*\1[^>]*>([\s\S]*?)<\/(?:h1|h2)>/i)) ??
+    stripSiteSuffix(cleanLabel(firstCapture(html, /property=(["'])og:title\1[^>]*content=["'](.*?)["']/i))) ??
+    extractProductNameFromContext(html);
+  if (!isMeaningfulPartName(name, row.name)) return null;
 
-  const parsedValues = candidates.map((candidate) => parseMoneyValue(candidate)).filter((value): value is number => value != null);
-  const realistic = parsedValues.find((value) => value >= 100 && value !== 0);
-  return realistic ?? null;
+  return {
+    externalPartId: cleanLabel(productJson?.sku) || candidateUrl || `${row.id}:single:${name!.toLowerCase()}`,
+    name: name!,
+    sku: cleanLabel(productJson?.sku) ?? extractSku(html),
+    brand: cleanLabel(productJson?.brand) ?? extractHtmlPartBrand(html, name, profile),
+    price: productJson?.price ?? extractHtmlPartPrice(html, profile),
+    availability: productJson?.availability ? normalizeAvailability(productJson.availability) : extractHtmlPartAvailability(html),
+    url: candidateUrl,
+    rawLabel: name!,
+  };
+}
+
+function extractPrioritizedPriceCandidates(snippet: string, profile: string) {
+  const candidates: Array<{ value: number; priority: number; position: number }> = [];
+  const seen = new Set<string>();
+
+  const addCandidates = (matches: IterableIterator<RegExpMatchArray>, priority: number) => {
+    for (const match of matches) {
+      const raw = match[0] ?? '';
+      const value = parseMoneyValue(raw);
+      if (value == null || value < 100 || value === 0) continue;
+      const key = `${priority}:${value}:${raw}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      candidates.push({ value, priority, position: match.index ?? 0 });
+    }
+  };
+
+  if (profile === 'wix') {
+    addCandidates(snippet.matchAll(/data-wix-price=(["'])(.*?)\1/gi), 90);
+  }
+
+  addCandidates(snippet.matchAll(/<ins\b[^>]*>[\s\S]*?(?:\$|&#36;)[\s\S]*?<\/ins>/gi), 120);
+  addCandidates(
+    snippet.matchAll(
+      /<(?:span|div|p)\b[^>]*class=(["'])[^"']*\b(?:sale-price|current-price|final-price|product-price-current|price-final)\b[^"']*\1[^>]*>[\s\S]*?(?:\$|&#36;)[\s\S]*?<\/(?:span|div|p)>/gi,
+    ),
+    110,
+  );
+  addCandidates(snippet.matchAll(/<(?:span|p)\b[^>]*class=(["'])price\1[^>]*>[\s\S]*?(?:\$|&#36;)[\s\S]*?<\/(?:span|p)>/gi), 85);
+  addCandidates(snippet.matchAll(/woocommerce-Price-amount[^>]*>[\s\S]*?(?:\$|&#36;)[\s\S]*?<\/span>/gi), 75);
+  addCandidates(snippet.matchAll(/(?:\$|&#36;)\s*(?:&nbsp;|\s)*[0-9][0-9.,]*/gi), 40);
+
+  return candidates;
+}
+
+function extractProductJsonLd(html: string) {
+  const scripts = [...html.matchAll(/<script[^>]*type=(["'])application\/ld\+json\1[^>]*>([\s\S]*?)<\/script>/gi)];
+  for (const match of scripts) {
+    const parsed = parseJson<unknown>((match[2] ?? '').trim());
+    const node = findJsonLdProductNode(parsed);
+    if (!node) continue;
+    const product = node as Record<string, unknown>;
+    const offers = Array.isArray(product.offers) ? product.offers[0] : product.offers;
+    const offer = offers && typeof offers === 'object' ? (offers as Record<string, unknown>) : null;
+    const brandNode = product.brand && typeof product.brand === 'object' ? (product.brand as Record<string, unknown>) : null;
+    return {
+      name: typeof product.name === 'string' ? product.name : null,
+      url: typeof product.url === 'string' ? product.url : null,
+      sku: typeof product.sku === 'string' ? product.sku : null,
+      brand: typeof product.brand === 'string' ? product.brand : typeof brandNode?.name === 'string' ? brandNode.name : null,
+      price:
+        (offer && typeof offer.price === 'string' ? parseMoneyValue(offer.price) : null) ??
+        (offer && typeof offer.price === 'number' && Number.isFinite(offer.price) ? offer.price : null) ??
+        extractPriceFromPriceSpecification(offer),
+      availability: offer && typeof offer.availability === 'string' ? offer.availability : null,
+    };
+  }
+
+  return null;
+}
+
+function findJsonLdProductNode(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== 'object') return null;
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const node = findJsonLdProductNode(item);
+      if (node) return node;
+    }
+    return null;
+  }
+
+  const record = value as Record<string, unknown>;
+  const type = record['@type'];
+  const types = Array.isArray(type) ? type : [type];
+  if (types.some((entry) => typeof entry === 'string' && entry.toLowerCase() === 'product')) {
+    return record;
+  }
+
+  if (Array.isArray(record['@graph'])) {
+    return findJsonLdProductNode(record['@graph']);
+  }
+
+  return null;
+}
+
+function extractPriceFromPriceSpecification(offer: Record<string, unknown> | null) {
+  if (!offer) return null;
+  const priceSpecification = offer.priceSpecification;
+  const items = Array.isArray(priceSpecification) ? priceSpecification : priceSpecification ? [priceSpecification] : [];
+  for (const item of items) {
+    if (!item || typeof item !== 'object') continue;
+    const record = item as Record<string, unknown>;
+    if (typeof record.price === 'number' && Number.isFinite(record.price)) return record.price;
+    if (typeof record.price === 'string') {
+      const parsed = parseMoneyValue(record.price);
+      if (parsed != null) return parsed;
+    }
+  }
+  return null;
+}
+
+function stripSiteSuffix(value?: string | null) {
+  const label = cleanLabel(value);
+  if (!label) return null;
+  return label.replace(/\s+[|-]\s+[^|-]+$/g, '').trim() || label;
 }
 
 function extractHtmlPartAvailability(snippet: string) {
@@ -586,4 +767,20 @@ function estimateHtmlResultCount(html: string) {
 function clampContextWindow(value: number) {
   if (!Number.isFinite(value)) return 1000;
   return Math.max(240, Math.min(12000, Math.round(value)));
+}
+
+function extractSearchQueryFromUrl(value: string) {
+  try {
+    const url = new URL(value);
+    return (
+      url.searchParams.get('q') ??
+      url.searchParams.get('s') ??
+      url.searchParams.get('term') ??
+      url.searchParams.get('query') ??
+      url.searchParams.get('search') ??
+      ''
+    ).trim();
+  } catch {
+    return '';
+  }
 }

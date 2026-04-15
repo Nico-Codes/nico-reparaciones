@@ -2845,6 +2845,31 @@ pm run qa:frontend:e2e
 
 ---
 
+### 2026-04-15 - Codex
+- Alcance: corregir la busqueda agregada de repuestos para que el precio muestre el valor final visible del proveedor, sincronizar defaults persistidos de proveedores y exponer trazabilidad visible por proveedor en el flujo de reparaciones.
+- Tipo de intervencion: correccion funcional backend + ajuste UX frontend + cobertura de tests.
+- Archivos tocados:
+  - `next-stack/apps/api/src/modules/admin/{admin-provider-search.parsers.ts,admin-provider-search.parsers.test.ts,admin-provider-search.service.ts,admin-provider-registry.service.ts,admin-provider-registry.service.test.ts,admin-provider-search.text.ts}`
+  - `next-stack/apps/web/src/features/repairs/{repair-provider-part-search-results.tsx,use-repair-provider-part-pricing.ts}`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. `repairs` ahora muestra el estado de cada proveedor consultado aunque no haya resultados utilizables, `Tienda Movil Rosario` prioriza el precio final visible sobre el tachado, `El Reparador de PC` deja de raspar HTML y usa su JSON API publica, y la configuracion default de proveedores se realinea automaticamente por nombre al iniciar una busqueda o probe.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/api`
+  - `cmd /c npm run test --workspace @nico/api`
+  - `cmd /c npm run build --workspace @nico/api`
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:backend`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - `importDefaultProviders()` ahora se ejecuta en caliente desde `AdminProviderSearchService`; si la base tiene overrides manuales intencionales en endpoints/defaults, esta tarea los va a normalizar contra el catalogo canonico por nombre.
+  - El parser sigue teniendo una capa generica, pero los proveedores reportados quedaron cubiertos con pruebas especificas para evitar que vuelvan a colarse precios tachados, SKU o porcentajes como precio final.
+
+---
+
 ### 2026-04-01 - Codex
 - Alcance: cerrar el seccionado pendiente del frontend en admin general, catalogo tecnico y flujos publicos/detalle.
 - Tipo de intervencion: refactor interno seguro multi-feature para consolidar el patron `Page.tsx` orquestadora + `helpers.ts` + `sections.tsx`.

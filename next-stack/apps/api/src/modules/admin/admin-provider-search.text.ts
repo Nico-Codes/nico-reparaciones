@@ -104,8 +104,13 @@ export function extractSku(value?: string | null) {
   const raw = (value ?? '').trim();
   if (!raw) return null;
 
-  const match = raw.match(/(?:sku|data-product_sku|c[oo]d(?:igo)?|part(?: number)?)[^A-Z0-9]{0,16}([A-Z0-9._\-]{4,})/i);
-  const candidate = match?.[1]?.trim() ?? null;
+  const directMatch =
+    raw.match(/class=(["'])sku\1[^>]*>\s*([A-Z0-9._\-]{4,})\s*</i)?.[2] ??
+    raw.match(/data-product_sku=(["'])([^"']{4,})\1/i)?.[2] ??
+    stripHtml(raw).match(/(?:\bsku\b|c[oo]d(?:igo)?\b|part(?: number)?\b)[^A-Z0-9]{0,16}([A-Z0-9._\-]{4,})/i)?.[1] ??
+    null;
+
+  const candidate = directMatch?.trim() ?? null;
   if (!candidate) return null;
   if (/^(bg_img|img|jpg|jpeg|png|webp|svg|gif|image|thumbnail)$/i.test(candidate)) return null;
   return candidate;

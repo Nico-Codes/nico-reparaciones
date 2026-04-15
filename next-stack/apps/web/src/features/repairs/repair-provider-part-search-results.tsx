@@ -3,7 +3,10 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { LoadingBlock } from '@/components/ui/loading-block';
 import { StatusBadge } from '@/components/ui/status-badge';
-import type { AdminProviderAggregatePartSearchItem } from '@/features/admin/api';
+import type {
+  AdminProviderAggregatePartSearchItem,
+  AdminProviderAggregateSearchSupplierItem,
+} from '@/features/admin/api';
 import { money } from './repair-ui';
 import { availabilityLabel, availabilityTone, partKey } from './repair-provider-part-pricing-section.helpers';
 
@@ -12,6 +15,7 @@ export type RepairProviderPartPricingSearchResultsProps = {
   searchError: string;
   partSearchQuery: string;
   visiblePartResults: AdminProviderAggregatePartSearchItem[];
+  visibleSearchSuppliers: AdminProviderAggregateSearchSupplierItem[];
   visibleSearchSummary: {
     searchedSuppliers: number;
     suppliersWithResults: number;
@@ -32,6 +36,7 @@ export function RepairProviderPartSearchResults({
   searchError,
   partSearchQuery,
   visiblePartResults,
+  visibleSearchSuppliers,
   visibleSearchSummary,
   visibleFailedSupplierNames,
   hiddenSmokeSupplierCount,
@@ -61,16 +66,6 @@ export function RepairProviderPartSearchResults({
           title="Todavia no buscaste repuestos"
           description="Escribi el repuesto una vez y consulta todos los proveedores activos. Luego podras elegir la mejor opcion para el calculo."
         />
-      ) : visiblePartResults.length === 0 ? (
-        <EmptyState
-          icon={<PackageSearch className="h-5 w-5" />}
-          title="Sin resultados para esta busqueda"
-          description={
-            visibleSearchHasFailures
-              ? `No hubo resultados utilizables. ${visibleFailedSupplierNames.length} proveedor${visibleFailedSupplierNames.length === 1 ? '' : 'es'} no respondieron.`
-              : 'No encontramos un repuesto utilizable con esa consulta. Proba otra descripcion o acota a un proveedor puntual.'
-          }
-        />
       ) : (
         <div className="space-y-3">
           {visibleSearchSummary.searchedSuppliers > 0 ? (
@@ -89,6 +84,10 @@ export function RepairProviderPartSearchResults({
             </div>
           ) : null}
 
+          {visibleSearchSuppliers.length > 0 ? (
+            <RepairProviderPartSearchSupplierStatusList suppliers={visibleSearchSuppliers} />
+          ) : null}
+
           {hasTechnicalSearchDetails ? (
             <RepairProviderPartSearchTechnicalDetails
               visibleFailedSupplierNames={visibleFailedSupplierNames}
@@ -97,17 +96,75 @@ export function RepairProviderPartSearchResults({
             />
           ) : null}
 
-          {visiblePartResults.map((part) => (
-            <RepairProviderPartSearchResultRow
-              key={partKey(part)}
-              part={part}
-              selected={selectedPartKey === partKey(part)}
-              disabled={disabled}
-              onSelectPart={onSelectPart}
+          {visiblePartResults.length === 0 ? (
+            <EmptyState
+              icon={<PackageSearch className="h-5 w-5" />}
+              title="Sin resultados para esta busqueda"
+              description={
+                visibleSearchHasFailures
+                  ? `No hubo resultados utilizables. ${visibleFailedSupplierNames.length} proveedor${visibleFailedSupplierNames.length === 1 ? '' : 'es'} no respondieron.`
+                  : 'No encontramos un repuesto utilizable con esa consulta. Proba otra descripcion o acota a un proveedor puntual.'
+              }
             />
-          ))}
+          ) : (
+            visiblePartResults.map((part) => (
+              <RepairProviderPartSearchResultRow
+                key={partKey(part)}
+                part={part}
+                selected={selectedPartKey === partKey(part)}
+                disabled={disabled}
+                onSelectPart={onSelectPart}
+              />
+            ))
+          )}
         </div>
       )}
+    </div>
+  );
+}
+
+function RepairProviderPartSearchSupplierStatusList({
+  suppliers,
+}: {
+  suppliers: AdminProviderAggregateSearchSupplierItem[];
+}) {
+  return (
+    <div className="grid gap-2 lg:grid-cols-2">
+      {suppliers.map((item) => {
+        const statusLabel =
+          item.status === 'ok' ? 'Con resultados' : item.status === 'empty' ? 'Sin resultados' : 'Error';
+        const statusTone =
+          item.status === 'ok' ? 'success' : item.status === 'empty' ? 'neutral' : 'danger';
+
+        return (
+          <div
+            key={item.supplier.id}
+            className="rounded-2xl border border-zinc-200 bg-white/90 px-4 py-3 shadow-[0_10px_30px_rgba(15,23,42,0.06)]"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="text-sm font-semibold text-zinc-900">{item.supplier.name}</div>
+                <div className="mt-1 text-xs text-zinc-500">
+                  {item.total > 0 ? `${item.total} resultado${item.total === 1 ? '' : 's'} detectado${item.total === 1 ? '' : 's'}` : 'Sin coincidencias utilizables'}
+                </div>
+              </div>
+              <StatusBadge label={statusLabel} tone={statusTone} size="sm" />
+            </div>
+
+            {item.error ? <div className="mt-2 text-xs text-rose-600">{item.error}</div> : null}
+
+            {item.url ? (
+              <div className="mt-2">
+                <Button asChild variant="ghost" size="sm">
+                  <a href={item.url} target="_blank" rel="noreferrer">
+                    Abrir busqueda
+                  </a>
+                </Button>
+              </div>
+            ) : null}
+          </div>
+        );
+      })}
     </div>
   );
 }
