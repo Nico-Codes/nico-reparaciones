@@ -2976,6 +2976,29 @@ pm run qa:frontend:e2e
   - para poder regenerar Prisma Client con engine hubo que reiniciar el proceso local del API del repo y volver a levantar una instancia limpia para el smoke
 
 ### 2026-04-16 - Codex
+- Alcance: agregar un fallback visual por defecto para el fondo de login cuando `auth` todavia no tiene una imagen personalizada cargada.
+- Tipo de intervencion: ajuste full-stack puntual sobre branding/auth.
+- Archivos tocados:
+  - `next-stack/apps/api/src/modules/admin/{app-settings.registry.ts,app-settings.registry.test.ts}`
+  - `next-stack/apps/api/src/modules/store/{store.service.ts,store.service.test.ts}`
+  - `next-stack/apps/web/src/features/admin/{admin-visual-identity.helpers.ts,admin-visual-identity.helpers.test.ts}`
+  - `project-docs/{DECISIONS_LOG.md,architecture/ASSET_STRATEGY.md}`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. Cuando no existe un asset personalizado para `auth_login_background` o `auth_login_background_mobile`, `/api/store/branding` ahora devuelve `brand/logo-bg.png` como fallback, y la vista de identidad visual lo refleja como `Por defecto` en vez de dejar el login sin imagen.
+- Validaciones ejecutadas:
+  - `cmd /c npm run test --workspace @nico/api`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run typecheck --workspace @nico/api`
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/api`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:backend`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - el fallback sirve solo para comprobar que el circuito funciona; sigue siendo recomendable cargar una imagen propia desde identidad visual para desktop y mobile
+  - el overlay de `auth` sigue siendo solo una capa de contraste; el fondo editable real sale de `authPanelImages`
+
 - Alcance: corregir la resolucion del fondo de login/branding publico y mejorar la UX de carga en identidad visual.
 - Tipo de intervencion: bugfix full-stack + ajuste UX puntual en admin.
 - Archivos tocados:

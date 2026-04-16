@@ -126,8 +126,8 @@ export class StoreService {
       const raw = {
         siteTitle: map.get('business_name') || map.get('shop_name') || 'NicoReparaciones',
         logoPrincipal: map.get('brand_asset.logo_principal.path') || 'brand/logo.png',
-        authPanelImageDesktop: map.get('brand_asset.auth_login_background.path') || '',
-        authPanelImageMobile: map.get('brand_asset.auth_login_background_mobile.path') || '',
+        authPanelImageDesktop: map.get('brand_asset.auth_login_background.path') || 'brand/logo-bg.png',
+        authPanelImageMobile: map.get('brand_asset.auth_login_background_mobile.path') || 'brand/logo-bg.png',
         iconSettings: map.get('brand_asset.icon_settings.path') || 'icons/settings.svg',
         iconCarrito: map.get('brand_asset.icon_carrito.path') || 'icons/carrito.svg',
         iconLogout: map.get('brand_asset.icon_logout.path') || 'icons/logout.svg',
@@ -177,8 +177,8 @@ export class StoreService {
         siteTitle: 'NicoReparaciones',
         logoPrincipal: this.resolveHeroAssetUrl('brand/logo.png') ?? '/brand/logo.png',
         authPanelImages: {
-          desktop: null,
-          mobile: null,
+          desktop: this.resolveHeroAssetUrl('brand/logo-bg.png') ?? '/brand/logo-bg.png',
+          mobile: this.resolveHeroAssetUrl('brand/logo-bg.png') ?? '/brand/logo-bg.png',
         },
         icons: {
           settings: this.resolveHeroAssetUrl('icons/settings.svg'),

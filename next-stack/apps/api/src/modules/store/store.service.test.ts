@@ -37,4 +37,21 @@ describe('StoreService', () => {
       imageMobile: '/brand-assets/identity/store-hero-mobile.png',
     });
   });
+
+  it('falls back to the default login background when no auth branding is configured', async () => {
+    const prisma = {
+      appSetting: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+
+    const service = new StoreService(prisma as any);
+
+    await expect(service.getBrandingAssets()).resolves.toMatchObject({
+      authPanelImages: {
+        desktop: '/brand/logo-bg.png',
+        mobile: '/brand/logo-bg.png',
+      },
+    });
+  });
 });

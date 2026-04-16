@@ -31,3 +31,4 @@ La unica fuente canonica de assets visuales es:
 - los assets de branding y auth que viven en `apps/web/public` deben resolverse como rutas publicas de la web (`/brand/...`, `/brand-assets/...`, `/icons/...`, `/favicon...`)
 - `STORE_IMAGE_BASE_URL` queda reservado para assets legacy de `storage/` y no debe prefijarse sobre branding, hero ni fondos de auth
 - si un asset de identidad visual no tiene archivo configurado, la UI admin debe mostrarlo como vacio y no simular una imagen real que todavia no existe
+- el fondo de auth tiene un fallback por defecto en `brand/logo-bg.png` para que el login no quede sin imagen mientras el slot todavia no fue personalizado
