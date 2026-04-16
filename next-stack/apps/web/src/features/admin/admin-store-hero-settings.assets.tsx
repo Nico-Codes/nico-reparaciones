@@ -31,7 +31,7 @@ export function AdminStoreHeroAssetsSection({
           disabled={disabled}
           uploading={uploadingSlot === item.slot}
           selectedFile={selectedFiles[item.slot] ?? null}
-          imageUrl={brandAssetsApi.toApiAssetUrl(settingsByKey.get(item.settingKey)?.value)}
+          imageUrl={brandAssetsApi.toApiAssetUrl(settingsByKey.get(item.settingKey)?.value, settingsByKey.get(item.settingKey)?.updatedAt)}
           isCustom={Boolean((settingsByKey.get(item.settingKey)?.value ?? '').trim())}
           onSelectFile={(file) => onSelectFile(item.slot, file)}
           onUpload={() => onUpload(item.slot)}

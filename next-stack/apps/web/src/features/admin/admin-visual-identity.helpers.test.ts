@@ -28,6 +28,7 @@ describe('admin-visual-identity.helpers', () => {
     expect(resolveAssetState(item, settingsByKey)).toEqual({
       isCustom: true,
       effectivePath: 'brand-assets/custom/favicon.ico',
+      updatedAt: null,
       displayPath: 'custom/favicon.ico',
     });
   });
@@ -38,6 +39,7 @@ describe('admin-visual-identity.helpers', () => {
     expect(resolveAssetState(item, new Map())).toEqual({
       isCustom: false,
       effectivePath: item.defaultPath,
+      updatedAt: null,
       displayPath: item.filename,
     });
   });
@@ -48,6 +50,30 @@ describe('admin-visual-identity.helpers', () => {
     expect(resolveAssetState(item, new Map())).toEqual({
       isCustom: false,
       effectivePath: 'brand/logo-bg.png',
+      updatedAt: null,
+      displayPath: item.filename,
+    });
+  });
+
+  it('treats a stored default path as non-custom after reset', () => {
+    const item = AUTH_VISUAL_ASSETS[0];
+    const settingsByKey = new Map<string, AdminSettingItem>([
+      [
+        item.settingKey,
+        makeSetting({
+          key: item.settingKey,
+          value: item.defaultPath,
+          group: 'branding',
+          type: 'text',
+          updatedAt: '2026-04-16T17:45:00.000Z',
+        }),
+      ],
+    ]);
+
+    expect(resolveAssetState(item, settingsByKey)).toEqual({
+      isCustom: false,
+      effectivePath: item.defaultPath,
+      updatedAt: null,
       displayPath: item.filename,
     });
   });

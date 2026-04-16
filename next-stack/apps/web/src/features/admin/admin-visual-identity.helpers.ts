@@ -272,13 +272,16 @@ export const VISUAL_IDENTITY_SECTIONS: AssetSectionDefinition[] = [
 ];
 
 export function resolveAssetState(item: AssetCard, settingsByKey: Map<string, AdminSettingItem>) {
-  const settingValue = settingsByKey.get(item.settingKey)?.value ?? '';
-  const isCustom = settingValue.trim().length > 0;
+  const setting = settingsByKey.get(item.settingKey);
+  const settingValue = setting?.value ?? '';
+  const trimmedValue = settingValue.trim();
+  const isCustom = trimmedValue.length > 0 && trimmedValue !== item.defaultPath.trim();
   const effectivePath = isCustom ? settingValue : item.defaultPath;
 
   return {
     isCustom,
     effectivePath,
+    updatedAt: isCustom ? setting?.updatedAt ?? null : null,
     displayPath: isCustom
       ? summarizeAssetPath(effectivePath)
       : item.defaultPath.trim()

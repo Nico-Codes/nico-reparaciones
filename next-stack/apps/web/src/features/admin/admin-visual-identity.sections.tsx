@@ -117,7 +117,7 @@ export function AdminVisualIdentityResourcesSection({
                     selectedFile={selectedFile}
                     isCustom={assetState.isCustom}
                     displayPath={assetState.displayPath}
-                    imageUrl={brandAssetsApi.toApiAssetUrl(assetState.effectivePath)}
+                    imageUrl={brandAssetsApi.toApiAssetUrl(assetState.effectivePath, assetState.updatedAt)}
                     onSelectFile={(file) => onSelectFile(item.slot, file)}
                     onUpload={() => onUpload(item)}
                     onReset={() => onReset(item)}

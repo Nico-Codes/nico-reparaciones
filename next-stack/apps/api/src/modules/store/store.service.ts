@@ -62,12 +62,15 @@ export class StoreService {
         where: { key: { in: [...keys] } },
       });
       const map = new Map(settings.map((s) => [s.key, s.value ?? '']));
+      const rowsByKey = new Map(settings.map((s) => [s.key, s]));
 
       const desktop =
-        this.resolveHeroAssetUrl(map.get('store_hero_image_desktop') ?? '') ??
+        this.resolveSettingAssetUrl(map.get('store_hero_image_desktop') ?? '', rowsByKey.get('store_hero_image_desktop')?.updatedAt) ??
         this.resolveHeroAssetUrl('brand/logo.png') ??
         '/brand/logo.png';
-      const mobile = this.resolveHeroAssetUrl(map.get('store_hero_image_mobile') ?? '') ?? desktop;
+      const mobile =
+        this.resolveSettingAssetUrl(map.get('store_hero_image_mobile') ?? '', rowsByKey.get('store_hero_image_mobile')?.updatedAt) ??
+        desktop;
 
       return {
         imageDesktop: desktop,
@@ -123,6 +126,7 @@ export class StoreService {
 
       const rows = await this.prisma.appSetting.findMany({ where: { key: { in: [...keys] } } });
       const map = new Map(rows.map((r) => [r.key, r.value ?? '']));
+      const rowsByKey = new Map(rows.map((row) => [row.key, row]));
       const raw = {
         siteTitle: map.get('business_name') || map.get('shop_name') || 'NicoReparaciones',
         logoPrincipal: map.get('brand_asset.logo_principal.path') || 'brand/logo.png',
@@ -147,28 +151,28 @@ export class StoreService {
 
       return {
         siteTitle: raw.siteTitle.trim() || 'NicoReparaciones',
-        logoPrincipal: this.resolveHeroAssetUrl(raw.logoPrincipal) ?? '/brand/logo.png',
+        logoPrincipal: this.resolveSettingAssetUrl(raw.logoPrincipal, rowsByKey.get('brand_asset.logo_principal.path')?.updatedAt) ?? '/brand/logo.png',
         authPanelImages: {
-          desktop: this.resolveHeroAssetUrl(raw.authPanelImageDesktop),
-          mobile: this.resolveHeroAssetUrl(raw.authPanelImageMobile),
+          desktop: this.resolveSettingAssetUrl(raw.authPanelImageDesktop, rowsByKey.get('brand_asset.auth_login_background.path')?.updatedAt),
+          mobile: this.resolveSettingAssetUrl(raw.authPanelImageMobile, rowsByKey.get('brand_asset.auth_login_background_mobile.path')?.updatedAt),
         },
         icons: {
-          settings: this.resolveHeroAssetUrl(raw.iconSettings),
-          carrito: this.resolveHeroAssetUrl(raw.iconCarrito),
-          logout: this.resolveHeroAssetUrl(raw.iconLogout),
-          consultarReparacion: this.resolveHeroAssetUrl(raw.iconConsultarReparacion),
-          misPedidos: this.resolveHeroAssetUrl(raw.iconMisPedidos),
-          misReparaciones: this.resolveHeroAssetUrl(raw.iconMisReparaciones),
-          dashboard: this.resolveHeroAssetUrl(raw.iconDashboard),
-          tienda: this.resolveHeroAssetUrl(raw.iconTienda),
+          settings: this.resolveSettingAssetUrl(raw.iconSettings, rowsByKey.get('brand_asset.icon_settings.path')?.updatedAt),
+          carrito: this.resolveSettingAssetUrl(raw.iconCarrito, rowsByKey.get('brand_asset.icon_carrito.path')?.updatedAt),
+          logout: this.resolveSettingAssetUrl(raw.iconLogout, rowsByKey.get('brand_asset.icon_logout.path')?.updatedAt),
+          consultarReparacion: this.resolveSettingAssetUrl(raw.iconConsultarReparacion, rowsByKey.get('brand_asset.icon_consultar_reparacion.path')?.updatedAt),
+          misPedidos: this.resolveSettingAssetUrl(raw.iconMisPedidos, rowsByKey.get('brand_asset.icon_mis_pedidos.path')?.updatedAt),
+          misReparaciones: this.resolveSettingAssetUrl(raw.iconMisReparaciones, rowsByKey.get('brand_asset.icon_mis_reparaciones.path')?.updatedAt),
+          dashboard: this.resolveSettingAssetUrl(raw.iconDashboard, rowsByKey.get('brand_asset.icon_dashboard.path')?.updatedAt),
+          tienda: this.resolveSettingAssetUrl(raw.iconTienda, rowsByKey.get('brand_asset.icon_tienda.path')?.updatedAt),
         },
         favicons: {
-          faviconIco: this.resolveHeroAssetUrl(raw.faviconIco),
-          favicon16: this.resolveHeroAssetUrl(raw.favicon16),
-          favicon32: this.resolveHeroAssetUrl(raw.favicon32),
-          android192: this.resolveHeroAssetUrl(raw.android192),
-          android512: this.resolveHeroAssetUrl(raw.android512),
-          appleTouch: this.resolveHeroAssetUrl(raw.appleTouch),
+          faviconIco: this.resolveSettingAssetUrl(raw.faviconIco, rowsByKey.get('brand_asset.favicon_ico.path')?.updatedAt),
+          favicon16: this.resolveSettingAssetUrl(raw.favicon16, rowsByKey.get('brand_asset.favicon_16.path')?.updatedAt),
+          favicon32: this.resolveSettingAssetUrl(raw.favicon32, rowsByKey.get('brand_asset.favicon_32.path')?.updatedAt),
+          android192: this.resolveSettingAssetUrl(raw.android192, rowsByKey.get('brand_asset.android_192.path')?.updatedAt),
+          android512: this.resolveSettingAssetUrl(raw.android512, rowsByKey.get('brand_asset.android_512.path')?.updatedAt),
+          appleTouch: this.resolveSettingAssetUrl(raw.appleTouch, rowsByKey.get('brand_asset.apple_touch.path')?.updatedAt),
           manifest: this.resolveHeroAssetUrl(raw.manifest),
         },
       };
@@ -377,6 +381,25 @@ export class StoreService {
 
     return normalized;
   }
+
+  private resolveSettingAssetUrl(rawValue?: string | null, updatedAt?: Date | string | null) {
+    const resolvedUrl = this.resolveHeroAssetUrl(rawValue);
+    if (!resolvedUrl) return null;
+
+    const version = this.buildAssetVersion(updatedAt);
+    if (!version) return resolvedUrl;
+
+    return `${resolvedUrl}${resolvedUrl.includes('?') ? '&' : '?'}v=${version}`;
+  }
+
+  private buildAssetVersion(updatedAt?: Date | string | null) {
+    if (!updatedAt) return null;
+    if (updatedAt instanceof Date) return updatedAt.getTime();
+
+    const parsed = Date.parse(updatedAt);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
   private parseIntSetting(value: string | undefined, fallback: number) {
     const n = Number((value ?? '').trim());
     return Number.isFinite(n) ? Math.round(n) : fallback;

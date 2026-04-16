@@ -11,14 +11,15 @@ describe('StoreService', () => {
 
   it('returns branding and hero assets as web-public paths instead of storage base URLs', async () => {
     process.env.STORE_IMAGE_BASE_URL = 'http://127.0.0.1:8000';
+    const updatedAt = new Date('2026-04-16T17:40:00.000Z');
 
     const prisma = {
       appSetting: {
         findMany: vi.fn().mockResolvedValue([
-          { key: 'brand_asset.auth_login_background.path', value: 'brand-assets/identity/auth-login-background.png' },
-          { key: 'brand_asset.auth_login_background_mobile.path', value: 'brand-assets/identity/auth-login-background-mobile.png' },
-          { key: 'store_hero_image_desktop', value: 'brand-assets/identity/store-hero-desktop.png' },
-          { key: 'store_hero_image_mobile', value: 'brand-assets/identity/store-hero-mobile.png' },
+          { key: 'brand_asset.auth_login_background.path', value: 'brand-assets/identity/auth-login-background.png', updatedAt },
+          { key: 'brand_asset.auth_login_background_mobile.path', value: 'brand-assets/identity/auth-login-background-mobile.png', updatedAt },
+          { key: 'store_hero_image_desktop', value: 'brand-assets/identity/store-hero-desktop.png', updatedAt },
+          { key: 'store_hero_image_mobile', value: 'brand-assets/identity/store-hero-mobile.png', updatedAt },
         ]),
       },
     };
@@ -27,14 +28,14 @@ describe('StoreService', () => {
 
     await expect(service.getBrandingAssets()).resolves.toMatchObject({
       authPanelImages: {
-        desktop: '/brand-assets/identity/auth-login-background.png',
-        mobile: '/brand-assets/identity/auth-login-background-mobile.png',
+        desktop: `/brand-assets/identity/auth-login-background.png?v=${updatedAt.getTime()}`,
+        mobile: `/brand-assets/identity/auth-login-background-mobile.png?v=${updatedAt.getTime()}`,
       },
     });
 
     await expect(service.getHeroConfig()).resolves.toMatchObject({
-      imageDesktop: '/brand-assets/identity/store-hero-desktop.png',
-      imageMobile: '/brand-assets/identity/store-hero-mobile.png',
+      imageDesktop: `/brand-assets/identity/store-hero-desktop.png?v=${updatedAt.getTime()}`,
+      imageMobile: `/brand-assets/identity/store-hero-mobile.png?v=${updatedAt.getTime()}`,
     });
   });
 

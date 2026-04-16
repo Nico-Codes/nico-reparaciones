@@ -31,10 +31,12 @@ export const brandAssetsApi = {
     return data as BrandAssetUploadResult;
   },
 
-  toApiAssetUrl(pathValue?: string | null) {
+  toApiAssetUrl(pathValue?: string | null, updatedAt?: string | null) {
     const raw = (pathValue ?? '').trim();
     if (!raw) return null;
-    if (/^https?:\/\//i.test(raw)) return raw;
-    return `/${raw.replace(/^\/+/, '')}`;
+    const normalizedUrl = /^https?:\/\//i.test(raw) ? raw : `/${raw.replace(/^\/+/, '')}`;
+    const version = Date.parse((updatedAt ?? '').trim());
+    if (!Number.isFinite(version)) return normalizedUrl;
+    return `${normalizedUrl}${normalizedUrl.includes('?') ? '&' : '?'}v=${version}`;
   },
 };

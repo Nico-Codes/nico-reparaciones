@@ -2976,6 +2976,28 @@ pm run qa:frontend:e2e
   - para poder regenerar Prisma Client con engine hubo que reiniciar el proceso local del API del repo y volver a levantar una instancia limpia para el smoke
 
 ### 2026-04-16 - Codex
+- Alcance: corregir el cache de imagenes publicas de branding/auth para que los reemplazos desde identidad visual se reflejen enseguida en login y previews.
+- Tipo de intervencion: bugfix full-stack sobre branding publico + consistencia UX en admin.
+- Archivos tocados:
+  - `next-stack/apps/api/src/modules/store/{store.service.ts,store.service.test.ts}`
+  - `next-stack/apps/web/src/features/admin/{brandAssetsApi.ts,admin-visual-identity.helpers.ts,admin-visual-identity.helpers.test.ts,admin-visual-identity.sections.tsx,admin-store-hero-settings.assets.tsx}`
+  - `project-docs/{DECISIONS_LOG.md,architecture/ASSET_STRATEGY.md}`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. Los assets publicos personalizados de branding ahora salen con `?v=<updatedAt>` para invalidar cache del navegador cuando se reemplaza el archivo manteniendo el mismo nombre. En admin, un setting cuyo valor coincide con el `defaultPath` vuelve a mostrarse como `Por defecto` en vez de `Personalizado`.
+- Validaciones ejecutadas:
+  - `cmd /c npm run test --workspace @nico/api`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run typecheck --workspace @nico/api`
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/api`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:backend`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - el problema real no era `auth-visual__overlay`; era la combinacion de filename estable + cache del navegador
+  - el circuito sigue priorizando la imagen personalizada; el fallback `brand/logo-bg.png` solo cubre el estado sin configuracion real
+
 - Alcance: agregar un fallback visual por defecto para el fondo de login cuando `auth` todavia no tiene una imagen personalizada cargada.
 - Tipo de intervencion: ajuste full-stack puntual sobre branding/auth.
 - Archivos tocados:
