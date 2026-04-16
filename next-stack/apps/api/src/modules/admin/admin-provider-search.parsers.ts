@@ -648,6 +648,7 @@ function extractPrioritizedPriceCandidates(snippet: string, profile: string) {
     ),
     110,
   );
+  addCandidates(snippet.matchAll(/<bdi\b[^>]*>[\s\S]*?(?:\$|&#0?36;)[\s\S]*?[0-9][0-9.,]*[\s\S]*?<\/bdi>/gi), 92);
   addCandidates(snippet.matchAll(/<(?:span|p)\b[^>]*class=(["'])price\1[^>]*>[\s\S]*?(?:\$|&#36;)[\s\S]*?<\/(?:span|p)>/gi), 85);
   addCandidates(snippet.matchAll(/woocommerce-Price-amount[^>]*>[\s\S]*?(?:\$|&#36;)[\s\S]*?<\/span>/gi), 75);
   addCandidates(snippet.matchAll(/(?:\$|&#36;)\s*(?:&nbsp;|\s)*[0-9][0-9.,]*/gi), 40);

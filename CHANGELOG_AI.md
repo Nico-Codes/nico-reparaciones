@@ -13,6 +13,25 @@
 ---
 
 ### 2026-04-16 - Codex
+- Alcance: corregir la extraccion de precio para Celuphone en la busqueda de repuestos y documentar la limitacion actual de PuntoCell.
+- Tipo de intervencion: ajuste backend puntual sobre parser HTML WooCommerce con validacion sobre HTML real del proveedor.
+- Archivos tocados:
+  - `next-stack/apps/api/src/modules/admin/admin-provider-search.parsers.ts`
+  - `next-stack/apps/api/src/modules/admin/admin-provider-search.parsers.test.ts`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. Celuphone ahora levanta correctamente precios visibles en cards WooCommerce con moneda dentro de `bdi/span` anidados. PuntoCell sigue sin precio numerico porque el sitio publico expone `Consultar Precio` y `0.0` oculto, no un valor real de venta parseable.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/api`
+  - `cmd /c npm run test --workspace @nico/api`
+  - `cmd /c npm run build --workspace @nico/api`
+  - verificacion manual contra HTML real de `https://celuphone.com.ar/?s=modulo+a13&post_type=product&dgwt_wcas=1`
+- Riesgos / notas:
+  - para PuntoCell no hay fix confiable sin otra fuente de datos, sesion autenticada o endpoint interno con precio real
+  - el cambio se concentro en el parser; no modifica ranking ni contratos del flujo de repuestos
+
+---
+
+### 2026-04-16 - Codex
 - Alcance: pulir la busqueda de repuestos en reparaciones para que priorice precio mas bajo, bloquee seleccion de items sin stock y haga mas clara la carga visual.
 - Tipo de intervencion: mejora funcional full-stack sobre ranking de resultados en backend y UX del flujo de repuestos en frontend.
 - Archivos tocados:

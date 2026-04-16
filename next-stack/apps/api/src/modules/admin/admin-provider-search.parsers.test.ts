@@ -181,6 +181,7 @@ describe('admin-provider-search parsers', () => {
     expect(parts).toHaveLength(1);
     expect(parts[0]).toMatchObject({
       name: 'MODULO SAMSUNG A13 A135',
+      price: 16500,
       url: 'https://celuphone.com.ar/producto/modulo-samsung-a13-a135/',
     });
   });
