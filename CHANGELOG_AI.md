@@ -13,6 +13,38 @@
 ---
 
 ### 2026-04-16 - Codex
+- Alcance: agregar Sign in with Apple para clientes reutilizando el patron de Google y hacer visible la disponibilidad real de providers sociales desde el backend.
+- Tipo de intervencion: cambio funcional full-stack sobre auth social, modelo `User`, callbacks OAuth y login web.
+- Archivos tocados:
+  - `next-stack/apps/api/src/modules/auth/{auth.controller.ts,auth.service.ts,auth.service.test.ts,users.service.ts}`
+  - `next-stack/apps/api/src/main.ts`
+  - `next-stack/apps/api/prisma/{schema.prisma,migrations/20260416120000_add_apple_subject_to_user/migration.sql}`
+  - `next-stack/packages/contracts/src/index.ts`
+  - `next-stack/apps/web/src/features/auth/{api.ts,AppleAuthCallbackPage.tsx,GoogleAuthCallbackPage.tsx,LoginPage.tsx,google-auth.helpers.ts,google-auth.helpers.test.ts}`
+  - `next-stack/apps/web/src/{App.tsx,app/routing/route-pages.tsx}`
+  - `next-stack/.env.example`
+  - `next-stack/.env.production.example`
+  - `project-docs/{DECISIONS_LOG.md,backend/BACKEND_MAP.md,frontend/FRONTEND_MAP.md}`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. `LoginPage` ya no muestra Google por defecto: consulta `/api/auth/social/providers` y presenta Google y/o Apple solo si el backend los tiene realmente configurados. El backend suma `Sign in with Apple` para cuentas `USER`, con vinculo por email, creacion de cuenta cliente nueva y rechazo explicito para `ADMIN`.
+- Validaciones ejecutadas:
+  - `cmd /c npm run db:generate --workspace @nico/api`
+  - `cmd /c npm run db:migrate --workspace @nico/api`
+  - `cmd /c npm run typecheck --workspace @nico/api`
+  - `cmd /c npm run test --workspace @nico/api`
+  - `cmd /c npm run build --workspace @nico/api`
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:backend`
+  - `cmd /c npm run smoke:web`
+- Riesgos / notas:
+  - el flujo real con Apple requiere credenciales `APPLE_*` validas en el entorno; los tests cubren firma, callback y linking, pero no reemplazan una pasada manual con un Service ID real
+  - el runtime backend quedo nuevamente con Prisma engine local despues de regenerar el cliente en modo normal; no dejar `engine=none` para ejecucion real
+
+---
+
+### 2026-04-16 - Codex
 - Alcance: corregir la extraccion de precio para Celuphone en la busqueda de repuestos y documentar la limitacion actual de PuntoCell.
 - Tipo de intervencion: ajuste backend puntual sobre parser HTML WooCommerce con validacion sobre HTML real del proveedor.
 - Archivos tocados:

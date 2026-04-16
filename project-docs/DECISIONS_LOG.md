@@ -20,6 +20,20 @@ Registrar decisiones tecnicas confirmadas para evitar dependencia de memoria ora
 
 ---
 
+### [DL-0107]
+- Fecha: 2026-04-16
+- Estado: aceptada
+- Tema: agregar Sign in with Apple para cuentas cliente sin abrir un modelo generico de identidades sociales
+- Contexto: el login web ya habia incorporado Google solo para `USER`, con redirect OAuth resuelto en backend, callback frontend y canje de un `result token` corto antes de persistir sesion. El siguiente pedido fue sumar Apple manteniendo el mismo criterio de seguridad y sin abrir un refactor mayor de auth social.
+- Decision: agregar `appleSubject` en `User` y montar `Sign in with Apple` en paralelo al flujo de Google. El backend expone discovery publico de providers (`/api/auth/social/providers`) y nuevos endpoints `start/callback/complete` para Apple, aceptando `form_post` como camino principal. La vinculacion se mantiene limitada a `USER`: si el email coincide con un usuario existente se enlaza, si coincide con `ADMIN` se rechaza, y si no existe se crea una cuenta cliente nueva con `passwordHash = null` y email verificado. Si Apple no devuelve email en el primer acceso y no existe `appleSubject` previo, el login falla explicitamente.
+- Impacto: login puede mostrar Google y Apple solo cuando el backend los tiene realmente configurados. Se preserva el flujo local y 2FA admin sin cambios, y se evita introducir un modelo `socialIdentities` mas amplio antes de que haga falta.
+- Alternativas consideradas: generalizar de inmediato a un sistema abstracto de proveedores sociales o permitir Apple tambien para `ADMIN`; descartado por mayor superficie de cambio, mas riesgo en auth y por no alinearse con el alcance pedido.
+- Archivos / modulos afectados: `next-stack/apps/api/src/modules/auth/*`, `next-stack/apps/api/prisma/{schema.prisma,migrations/*}`, `next-stack/apps/api/src/main.ts`, `next-stack/packages/contracts/src/index.ts`, `next-stack/apps/web/src/features/auth/*`, `next-stack/apps/web/src/{App.tsx,app/routing/route-pages.tsx}`, `next-stack/.env*.example`, `project-docs/{backend/BACKEND_MAP.md,frontend/FRONTEND_MAP.md}`, `CHANGELOG_AI.md`.
+- Validacion requerida: `db:generate --workspace @nico/api`, `db:migrate --workspace @nico/api`, `typecheck --workspace @nico/api`, `test --workspace @nico/api`, `build --workspace @nico/api`, `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:backend`, `smoke:web`, `git diff --check`.
+- Responsable: Codex + operador humano
+
+---
+
 ### [DL-0106]
 - Fecha: 2026-04-14
 - Estado: aceptada

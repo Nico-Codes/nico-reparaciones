@@ -17,6 +17,11 @@ export const authApi = {
       body: JSON.stringify(input),
     });
   },
+  socialProviders() {
+    return publicJsonRequest<{ google: boolean; apple: boolean }>('/auth/social/providers', {
+      method: 'GET',
+    });
+  },
   googleStartUrl(returnTo?: string) {
     const url = new URL('/api/auth/google/start', apiOrigin);
     url.searchParams.set('returnTo', resolvePostAuthReturnTo(returnTo));
@@ -24,6 +29,17 @@ export const authApi = {
   },
   googleComplete(resultToken: string) {
     return publicJsonRequest<AuthResponse>('/auth/google/complete', {
+      method: 'POST',
+      body: JSON.stringify({ resultToken }),
+    });
+  },
+  appleStartUrl(returnTo?: string) {
+    const url = new URL('/api/auth/apple/start', apiOrigin);
+    url.searchParams.set('returnTo', resolvePostAuthReturnTo(returnTo));
+    return url.toString();
+  },
+  appleComplete(resultToken: string) {
+    return publicJsonRequest<AuthResponse>('/auth/apple/complete', {
       method: 'POST',
       body: JSON.stringify({ resultToken }),
     });

@@ -5,10 +5,10 @@ import { SectionCard } from '@/components/ui/section-card';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { AuthLayout } from './AuthLayout';
 import { authApi } from './api';
-import { authStorage } from './storage';
 import { consumeSocialReturnTo, readSocialCallbackHash } from './google-auth.helpers';
+import { authStorage } from './storage';
 
-export function GoogleAuthCallbackPage() {
+export function AppleAuthCallbackPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const [error, setError] = useState('');
@@ -33,14 +33,14 @@ export function GoogleAuthCallbackPage() {
 
       if (!resultToken) {
         if (!cancelled) {
-          setError('No recibimos una respuesta valida desde Google');
+          setError('No recibimos una respuesta valida desde Apple');
           consumeSocialReturnTo();
         }
         return;
       }
 
       try {
-        const response = await authApi.googleComplete(resultToken);
+        const response = await authApi.appleComplete(resultToken);
         authStorage.setSession(response.user, response.tokens);
         const returnTo = consumeSocialReturnTo('/store');
         if (!cancelled) {
@@ -48,7 +48,7 @@ export function GoogleAuthCallbackPage() {
         }
       } catch (authError) {
         if (!cancelled) {
-          setError((authError as { message?: string })?.message ?? 'No pudimos completar el ingreso con Google');
+          setError((authError as { message?: string })?.message ?? 'No pudimos completar el ingreso con Apple');
           consumeSocialReturnTo();
         }
       }
@@ -64,7 +64,7 @@ export function GoogleAuthCallbackPage() {
   return (
     <AuthLayout
       eyebrow="Acceso social"
-      title="Ingresando con Google"
+      title="Ingresando con Apple"
       subtitle={
         error
           ? 'No pudimos completar el acceso social. Puedes volver al login y reintentar.'
@@ -78,7 +78,7 @@ export function GoogleAuthCallbackPage() {
         title={error ? 'Acceso no completado' : 'Procesando acceso'}
         description={
           error
-            ? 'Google devolvio una respuesta que no pudimos usar para abrir tu cuenta.'
+            ? 'Apple devolvio una respuesta que no pudimos usar para abrir tu cuenta.'
             : 'Este paso valida la respuesta del proveedor y abre tu sesion sin pedir contrasena local.'
         }
       >
@@ -86,7 +86,7 @@ export function GoogleAuthCallbackPage() {
           <div className="space-y-4">
             <div className="ui-alert ui-alert--danger">
               <div>
-                <span className="ui-alert__title">No pudimos ingresar con Google.</span>
+                <span className="ui-alert__title">No pudimos ingresar con Apple.</span>
                 <div className="ui-alert__text">{error}</div>
               </div>
             </div>
@@ -103,7 +103,7 @@ export function GoogleAuthCallbackPage() {
         ) : (
           <div className="space-y-4">
             <p className="text-sm leading-relaxed text-zinc-700">
-              Estamos verificando tu cuenta con Google y armando la sesion. Este paso deberia tardar solo unos segundos.
+              Estamos verificando tu cuenta con Apple y armando la sesion. Este paso deberia tardar solo unos segundos.
             </p>
             <div className="ui-alert ui-alert--success">
               <div>

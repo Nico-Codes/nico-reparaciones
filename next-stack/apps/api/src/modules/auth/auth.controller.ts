@@ -17,6 +17,7 @@ import {
 import type {
   AccountPasswordUpdateInput,
   AccountUpdateInput,
+  AppleAuthCompleteInput,
   BootstrapAdminInput,
   ForgotPasswordInput,
   GoogleAuthCompleteInput,
@@ -29,6 +30,7 @@ import type {
 import {
   accountPasswordUpdateSchema,
   accountUpdateSchema,
+  appleAuthCompleteSchema,
   bootstrapAdminSchema,
   forgotPasswordSchema,
   googleAuthCompleteSchema,
@@ -62,6 +64,11 @@ export class AuthController {
   @UsePipes(new ZodValidationPipe(loginSchema))
   async login(@Body() input: LoginInput) {
     return this.authService.login(input);
+  }
+
+  @Get('social/providers')
+  async socialProviders() {
+    return this.authService.getAvailableSocialProviders();
   }
 
   @Get('google/start')
@@ -99,6 +106,61 @@ export class AuthController {
   @UsePipes(new ZodValidationPipe(googleAuthCompleteSchema))
   async googleComplete(@Body() input: GoogleAuthCompleteInput) {
     return this.authService.completeGoogleLogin(input);
+  }
+
+  @Get('apple/start')
+  async appleStart(@Query('returnTo') returnTo: string | undefined, @Res() res: any) {
+    try {
+      const redirectUrl = await this.authService.createAppleAuthorizationUrl(returnTo);
+      return res.redirect(redirectUrl);
+    } catch (error) {
+      const message = (error as { message?: string })?.message ?? 'No pudimos iniciar el acceso con Apple';
+      const fallbackUrl = await this.authService.buildAppleFrontendErrorRedirect(message);
+      return res.redirect(fallbackUrl);
+    }
+  }
+
+  @Get('apple/callback')
+  async appleCallbackGet(
+    @Query('code') code: string | undefined,
+    @Query('state') state: string | undefined,
+    @Query('error') error: string | undefined,
+    @Res() res: any,
+  ) {
+    try {
+      const redirectUrl = await this.authService.handleAppleCallback({ code, state, error });
+      return res.redirect(redirectUrl);
+    } catch (callbackError) {
+      const message = (callbackError as { message?: string })?.message ?? 'No pudimos completar el acceso con Apple';
+      const fallbackUrl = await this.authService.buildAppleFrontendErrorRedirect(message);
+      return res.redirect(fallbackUrl);
+    }
+  }
+
+  @Post('apple/callback')
+  async appleCallbackPost(
+    @Body('code') code: string | undefined,
+    @Body('state') state: string | undefined,
+    @Body('error') error: string | undefined,
+    @Body('user') user: unknown,
+    @Res() res: any,
+  ) {
+    try {
+      const redirectUrl = await this.authService.handleAppleCallback({ code, state, error, user });
+      return res.redirect(redirectUrl);
+    } catch (callbackError) {
+      const message = (callbackError as { message?: string })?.message ?? 'No pudimos completar el acceso con Apple';
+      const fallbackUrl = await this.authService.buildAppleFrontendErrorRedirect(message);
+      return res.redirect(fallbackUrl);
+    }
+  }
+
+  @Post('apple/complete')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @HttpCode(HttpStatus.OK)
+  @UsePipes(new ZodValidationPipe(appleAuthCompleteSchema))
+  async appleComplete(@Body() input: AppleAuthCompleteInput) {
+    return this.authService.completeAppleLogin(input);
   }
 
   @Post('refresh')

@@ -1,4 +1,4 @@
-const GOOGLE_RETURN_TO_KEY = 'nico_google_return_to';
+const SOCIAL_RETURN_TO_KEY = 'nico_social_return_to';
 
 export function resolvePostAuthReturnTo(raw: string | null | undefined, fallback = '/store') {
   const value = (raw ?? '').trim();
@@ -7,19 +7,19 @@ export function resolvePostAuthReturnTo(raw: string | null | undefined, fallback
   return value || fallback;
 }
 
-export function rememberGoogleReturnTo(returnTo: string) {
+export function rememberSocialReturnTo(returnTo: string) {
   if (typeof window === 'undefined') return;
-  window.sessionStorage.setItem(GOOGLE_RETURN_TO_KEY, resolvePostAuthReturnTo(returnTo));
+  window.sessionStorage.setItem(SOCIAL_RETURN_TO_KEY, resolvePostAuthReturnTo(returnTo));
 }
 
-export function consumeGoogleReturnTo(fallback = '/store') {
+export function consumeSocialReturnTo(fallback = '/store') {
   if (typeof window === 'undefined') return fallback;
-  const value = window.sessionStorage.getItem(GOOGLE_RETURN_TO_KEY);
-  window.sessionStorage.removeItem(GOOGLE_RETURN_TO_KEY);
+  const value = window.sessionStorage.getItem(SOCIAL_RETURN_TO_KEY);
+  window.sessionStorage.removeItem(SOCIAL_RETURN_TO_KEY);
   return resolvePostAuthReturnTo(value, fallback);
 }
 
-export function readGoogleCallbackHash(hash: string) {
+export function readSocialCallbackHash(hash: string) {
   const normalized = hash.startsWith('#') ? hash.slice(1) : hash;
   const params = new URLSearchParams(normalized);
   return {
@@ -27,3 +27,7 @@ export function readGoogleCallbackHash(hash: string) {
     error: params.get('error')?.trim() ?? '',
   };
 }
+
+export const rememberGoogleReturnTo = rememberSocialReturnTo;
+export const consumeGoogleReturnTo = consumeSocialReturnTo;
+export const readGoogleCallbackHash = readSocialCallbackHash;

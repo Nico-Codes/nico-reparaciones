@@ -76,6 +76,12 @@ function assertProductionSafeEnv() {
   const googleClientId = env('GOOGLE_CLIENT_ID');
   const googleClientSecret = env('GOOGLE_CLIENT_SECRET');
   const googleRedirectUri = env('GOOGLE_OAUTH_REDIRECT_URI');
+  const appleEnabled = isTruthy(env('APPLE_SIGNIN_ENABLED'));
+  const appleClientId = env('APPLE_CLIENT_ID');
+  const appleTeamId = env('APPLE_TEAM_ID');
+  const appleKeyId = env('APPLE_KEY_ID');
+  const applePrivateKey = env('APPLE_PRIVATE_KEY');
+  const appleRedirectUri = env('APPLE_SIGNIN_REDIRECT_URI');
 
   if (jwtAccess.length < 32) errors.push('JWT_ACCESS_SECRET demasiado corto (mínimo recomendado: 32)');
   if (jwtRefresh.length < 32) errors.push('JWT_REFRESH_SECRET demasiado corto (mínimo recomendado: 32)');
@@ -89,6 +95,13 @@ function assertProductionSafeEnv() {
   if (googleEnabled && !googleClientSecret) errors.push('GOOGLE_CLIENT_SECRET es obligatorio cuando GOOGLE_OAUTH_ENABLED=1');
   if (googleEnabled && googleRedirectUri && !isHttpsUrl(googleRedirectUri)) {
     errors.push('GOOGLE_OAUTH_REDIRECT_URI debe ser HTTPS en producción');
+  }
+  if (appleEnabled && !appleClientId) errors.push('APPLE_CLIENT_ID es obligatorio cuando APPLE_SIGNIN_ENABLED=1');
+  if (appleEnabled && !appleTeamId) errors.push('APPLE_TEAM_ID es obligatorio cuando APPLE_SIGNIN_ENABLED=1');
+  if (appleEnabled && !appleKeyId) errors.push('APPLE_KEY_ID es obligatorio cuando APPLE_SIGNIN_ENABLED=1');
+  if (appleEnabled && !applePrivateKey) errors.push('APPLE_PRIVATE_KEY es obligatorio cuando APPLE_SIGNIN_ENABLED=1');
+  if (appleEnabled && appleRedirectUri && !isHttpsUrl(appleRedirectUri)) {
+    errors.push('APPLE_SIGNIN_REDIRECT_URI debe ser HTTPS en producción');
   }
 
   if (errors.length) {

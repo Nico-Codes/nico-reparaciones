@@ -8,6 +8,7 @@ import { JwtService } from '@nestjs/jwt';
 import type {
   AccountPasswordUpdateInput,
   AccountUpdateInput,
+  AppleAuthCompleteInput,
   BootstrapAdminInput,
   ForgotPasswordInput,
   GoogleAuthCompleteInput,
@@ -15,10 +16,20 @@ import type {
   RefreshTokenInput,
   RegisterInput,
   ResetPasswordInput,
+  SocialAuthProvidersResponse,
   VerifyEmailInput,
 } from '@nico/contracts';
 import * as bcrypt from 'bcryptjs';
-import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
+import {
+  createHash,
+  createHmac,
+  createPrivateKey,
+  createPublicKey,
+  randomBytes,
+  sign,
+  timingSafeEqual,
+  verify,
+} from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { UsersService } from './users.service.js';
 import { MailService } from '../mail/mail.service.js';
@@ -45,6 +56,37 @@ type GoogleUserinfo = {
   email?: string;
   email_verified?: boolean;
   name?: string;
+};
+
+type AppleOauthStatePayload = {
+  purpose: 'apple-oauth-state';
+  returnTo: string;
+};
+
+type AppleOauthResultPayload = {
+  purpose: 'apple-login-result';
+  sub: string;
+  returnTo: string;
+};
+
+type AppleTokenResponse = {
+  id_token?: string;
+  error?: string;
+};
+
+type AppleIdTokenHeader = {
+  alg?: string;
+  kid?: string;
+};
+
+type AppleIdTokenClaims = {
+  iss?: string;
+  aud?: string | string[];
+  exp?: number;
+  iat?: number;
+  sub?: string;
+  email?: string;
+  email_verified?: string | boolean;
 };
 
 @Injectable()
@@ -127,6 +169,13 @@ export class AuthService {
     };
   }
 
+  getAvailableSocialProviders(): SocialAuthProvidersResponse {
+    return {
+      google: this.isGoogleOauthAvailable(),
+      apple: this.isAppleSignInAvailable(),
+    };
+  }
+
   async createGoogleAuthorizationUrl(returnTo?: string) {
     const config = this.getGoogleOauthConfig();
     const stateToken = await this.buildGoogleStateToken(returnTo);
@@ -177,6 +226,63 @@ export class AuthService {
 
   async buildGoogleFrontendErrorRedirect(message: string) {
     return this.buildGoogleFrontendCallbackUrl({ error: message });
+  }
+
+  async createAppleAuthorizationUrl(returnTo?: string) {
+    const config = this.getAppleSignInConfig();
+    const stateToken = await this.buildAppleStateToken(returnTo);
+    const url = new URL('https://appleid.apple.com/auth/authorize');
+    url.searchParams.set('client_id', config.clientId);
+    url.searchParams.set('redirect_uri', config.redirectUri);
+    url.searchParams.set('response_type', 'code');
+    url.searchParams.set('response_mode', 'form_post');
+    url.searchParams.set('scope', 'name email');
+    url.searchParams.set('state', stateToken);
+    return url.toString();
+  }
+
+  async handleAppleCallback(params: { code?: string; state?: string; error?: string; user?: unknown }) {
+    const config = this.getAppleSignInConfig();
+    const returnTo = await this.verifyAppleStateToken(params.state ?? '');
+
+    if (params.error?.trim()) {
+      throw new BadRequestException(this.resolveAppleCallbackError(params.error));
+    }
+
+    const code = (params.code ?? '').trim();
+    if (!code) {
+      throw new BadRequestException('No recibimos un codigo valido de Apple');
+    }
+
+    const idToken = await this.exchangeAppleCode(code, config);
+    const callbackUser = this.parseAppleCallbackUser(params.user);
+    const profile = await this.verifyAppleIdToken(idToken, config.clientId);
+    const user = await this.resolveAppleUser({
+      sub: profile.sub,
+      email: profile.email,
+      name: callbackUser.name ?? this.normalizeSocialDisplayName('', profile.email),
+    });
+    const resultToken = await this.buildAppleResultToken(user.id, returnTo);
+    return this.buildAppleFrontendCallbackUrl({ resultToken });
+  }
+
+  async completeAppleLogin(input: AppleAuthCompleteInput) {
+    this.getAppleSignInConfig();
+    const payload = await this.verifyAppleResultToken(input.resultToken);
+    const user = await this.usersService.findById(payload.sub);
+    if (!user || user.role !== 'USER') {
+      throw new UnauthorizedException('Resultado de login Apple invalido');
+    }
+
+    const tokens = await this.issueTokens(user.id, user.email, user.role);
+    return {
+      user: this.usersService.toPublicUser(user),
+      tokens,
+    };
+  }
+
+  async buildAppleFrontendErrorRedirect(message: string) {
+    return this.buildAppleFrontendCallbackUrl({ error: message });
   }
 
   async me(accessToken: string) {
@@ -545,8 +651,15 @@ export class AuthService {
     return this.verifyTotpCode(secret, code);
   }
 
+  private isGoogleOauthAvailable() {
+    const enabled = this.isTruthy(process.env.GOOGLE_OAUTH_ENABLED ?? '');
+    const clientId = (process.env.GOOGLE_CLIENT_ID ?? '').trim();
+    const clientSecret = (process.env.GOOGLE_CLIENT_SECRET ?? '').trim();
+    return enabled && Boolean(clientId) && Boolean(clientSecret);
+  }
+
   private getGoogleOauthConfig() {
-    if (!this.isTruthy(process.env.GOOGLE_OAUTH_ENABLED ?? '')) {
+    if (!this.isGoogleOauthAvailable()) {
       throw new BadRequestException('El acceso con Google no esta disponible');
     }
 
@@ -561,6 +674,39 @@ export class AuthService {
     return {
       clientId,
       clientSecret,
+      redirectUri,
+    };
+  }
+
+  private isAppleSignInAvailable() {
+    const enabled = this.isTruthy(process.env.APPLE_SIGNIN_ENABLED ?? '');
+    const clientId = (process.env.APPLE_CLIENT_ID ?? '').trim();
+    const teamId = (process.env.APPLE_TEAM_ID ?? '').trim();
+    const keyId = (process.env.APPLE_KEY_ID ?? '').trim();
+    const privateKey = this.normalizeApplePrivateKey(process.env.APPLE_PRIVATE_KEY ?? '');
+    return enabled && Boolean(clientId) && Boolean(teamId) && Boolean(keyId) && Boolean(privateKey);
+  }
+
+  private getAppleSignInConfig() {
+    if (!this.isAppleSignInAvailable()) {
+      throw new BadRequestException('El acceso con Apple no esta disponible');
+    }
+
+    const clientId = (process.env.APPLE_CLIENT_ID ?? '').trim();
+    const teamId = (process.env.APPLE_TEAM_ID ?? '').trim();
+    const keyId = (process.env.APPLE_KEY_ID ?? '').trim();
+    const privateKey = this.normalizeApplePrivateKey(process.env.APPLE_PRIVATE_KEY ?? '');
+    const redirectUri = ((process.env.APPLE_SIGNIN_REDIRECT_URI ?? '').trim() || `${this.getApiBaseUrl()}/api/auth/apple/callback`).replace(/\/$/, '');
+
+    if (!clientId || !teamId || !keyId || !privateKey) {
+      throw new BadRequestException('Falta configurar Sign in with Apple en el servidor');
+    }
+
+    return {
+      clientId,
+      teamId,
+      keyId,
+      privateKey,
       redirectUri,
     };
   }
@@ -618,6 +764,62 @@ export class AuthService {
       };
     } catch {
       throw new UnauthorizedException('El resultado del acceso con Google es invalido o expiro');
+    }
+  }
+
+  private async buildAppleStateToken(returnTo?: string) {
+    const payload: AppleOauthStatePayload = {
+      purpose: 'apple-oauth-state',
+      returnTo: this.resolveSafeReturnTo(returnTo),
+    };
+
+    return this.jwtService.signAsync(payload, {
+      secret: this.getAppleFlowSecret(),
+      expiresIn: '10m',
+    });
+  }
+
+  private async verifyAppleStateToken(token: string) {
+    try {
+      const payload = await this.jwtService.verifyAsync<AppleOauthStatePayload>(token, {
+        secret: this.getAppleFlowSecret(),
+      });
+      if (payload.purpose !== 'apple-oauth-state') {
+        throw new Error('unexpected-purpose');
+      }
+      return this.resolveSafeReturnTo(payload.returnTo);
+    } catch {
+      throw new BadRequestException('El estado del acceso con Apple es invalido o expiro');
+    }
+  }
+
+  private async buildAppleResultToken(userId: string, returnTo: string) {
+    const payload: AppleOauthResultPayload = {
+      purpose: 'apple-login-result',
+      sub: userId,
+      returnTo: this.resolveSafeReturnTo(returnTo),
+    };
+
+    return this.jwtService.signAsync(payload, {
+      secret: this.getAppleFlowSecret(),
+      expiresIn: '5m',
+    });
+  }
+
+  private async verifyAppleResultToken(token: string) {
+    try {
+      const payload = await this.jwtService.verifyAsync<AppleOauthResultPayload>(token, {
+        secret: this.getAppleFlowSecret(),
+      });
+      if (payload.purpose !== 'apple-login-result' || !payload.sub) {
+        throw new Error('unexpected-purpose');
+      }
+      return {
+        ...payload,
+        returnTo: this.resolveSafeReturnTo(payload.returnTo),
+      };
+    } catch {
+      throw new UnauthorizedException('El resultado del acceso con Apple es invalido o expiro');
     }
   }
 
@@ -717,6 +919,180 @@ export class AuthService {
     });
   }
 
+  private async exchangeAppleCode(code: string, config: ReturnType<AuthService['getAppleSignInConfig']>) {
+    const response = await fetch('https://appleid.apple.com/auth/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        client_id: config.clientId,
+        client_secret: this.buildAppleClientSecret(config),
+        code,
+        grant_type: 'authorization_code',
+        redirect_uri: config.redirectUri,
+      }),
+    });
+
+    const data = (await response.json().catch(() => ({}))) as AppleTokenResponse;
+    if (!response.ok || !data.id_token) {
+      throw new BadRequestException('No pudimos validar el acceso con Apple');
+    }
+
+    return data.id_token;
+  }
+
+  private async verifyAppleIdToken(idToken: string, clientId: string) {
+    const [headerPart, payloadPart, signaturePart] = idToken.split('.');
+    if (!headerPart || !payloadPart || !signaturePart) {
+      throw new BadRequestException('Apple devolvio un token invalido');
+    }
+
+    const header = this.decodeJwtJson<AppleIdTokenHeader>(headerPart);
+    const claims = this.decodeJwtJson<AppleIdTokenClaims>(payloadPart);
+    if (header.alg !== 'RS256' || !header.kid) {
+      throw new BadRequestException('Apple devolvio un token con firma invalida');
+    }
+
+    const jwksResponse = await fetch('https://appleid.apple.com/auth/keys');
+    const jwksData = (await jwksResponse.json().catch(() => ({}))) as {
+      keys?: Array<Record<string, string>>;
+    };
+    if (!jwksResponse.ok || !Array.isArray(jwksData.keys)) {
+      throw new BadRequestException('No pudimos validar la identidad devuelta por Apple');
+    }
+
+    const matchingKey = jwksData.keys.find((item) => item.kid === header.kid && item.kty === 'RSA');
+    if (!matchingKey) {
+      throw new BadRequestException('No encontramos una clave valida para verificar Apple');
+    }
+
+    const publicKey = createPublicKey({
+      key: {
+        kty: 'RSA',
+        kid: matchingKey.kid,
+        use: matchingKey.use,
+        alg: matchingKey.alg,
+        n: matchingKey.n,
+        e: matchingKey.e,
+      },
+      format: 'jwk',
+    });
+
+    const verified = verify(
+      'RSA-SHA256',
+      Buffer.from(`${headerPart}.${payloadPart}`),
+      publicKey,
+      this.decodeBase64Url(signaturePart),
+    );
+
+    if (!verified) {
+      throw new BadRequestException('La firma del token de Apple no es valida');
+    }
+
+    if (claims.iss !== 'https://appleid.apple.com') {
+      throw new BadRequestException('Apple devolvio un emisor invalido');
+    }
+
+    const audiences = Array.isArray(claims.aud) ? claims.aud : [claims.aud ?? ''];
+    if (!audiences.includes(clientId)) {
+      throw new BadRequestException('Apple devolvio un token para otra aplicacion');
+    }
+
+    if (!claims.sub?.trim()) {
+      throw new BadRequestException('Apple no devolvio un identificador valido para la cuenta');
+    }
+
+    if (typeof claims.exp !== 'number' || claims.exp * 1000 <= Date.now()) {
+      throw new BadRequestException('El token de Apple ya expiro');
+    }
+
+    const normalizedEmail = typeof claims.email === 'string' && claims.email.trim()
+      ? claims.email.trim().toLowerCase()
+      : '';
+    if (normalizedEmail && !this.isVerifiedSocialEmail(claims.email_verified)) {
+      throw new BadRequestException('Apple no devolvio un email verificado para esta cuenta');
+    }
+
+    return {
+      sub: claims.sub.trim(),
+      email: normalizedEmail,
+    };
+  }
+
+  private parseAppleCallbackUser(raw: unknown) {
+    if (typeof raw !== 'string' || !raw.trim()) {
+      return { name: '' };
+    }
+
+    try {
+      const parsed = JSON.parse(raw) as {
+        name?: { firstName?: string; lastName?: string };
+      };
+      const firstName = typeof parsed.name?.firstName === 'string' ? parsed.name.firstName.trim() : '';
+      const lastName = typeof parsed.name?.lastName === 'string' ? parsed.name.lastName.trim() : '';
+      return {
+        name: [firstName, lastName].filter(Boolean).join(' ').trim(),
+      };
+    } catch {
+      return { name: '' };
+    }
+  }
+
+  private async resolveAppleUser(profile: { sub: string; email: string; name: string }) {
+    const byAppleSubject = await this.usersService.findByAppleSubject(profile.sub);
+    if (byAppleSubject) {
+      if (byAppleSubject.role !== 'USER') {
+        throw new UnauthorizedException('Las cuentas admin deben ingresar con el acceso local');
+      }
+
+      if (!byAppleSubject.emailVerified) {
+        return this.prisma.user.update({
+          where: { id: byAppleSubject.id },
+          data: {
+            emailVerified: true,
+            emailVerifiedAt: byAppleSubject.emailVerifiedAt ?? new Date(),
+          },
+        });
+      }
+
+      return byAppleSubject;
+    }
+
+    if (!profile.email) {
+      throw new BadRequestException('Apple no devolvio un email para vincular esta cuenta');
+    }
+
+    const existingByEmail = await this.usersService.findByEmail(profile.email);
+    if (existingByEmail) {
+      if (existingByEmail.role !== 'USER') {
+        throw new UnauthorizedException('Las cuentas admin deben ingresar con el acceso local');
+      }
+      if (existingByEmail.appleSubject && existingByEmail.appleSubject !== profile.sub) {
+        throw new UnauthorizedException('La cuenta ya esta vinculada a otro acceso de Apple');
+      }
+
+      return this.prisma.user.update({
+        where: { id: existingByEmail.id },
+        data: {
+          appleSubject: profile.sub,
+          emailVerified: true,
+          emailVerifiedAt: existingByEmail.emailVerifiedAt ?? new Date(),
+        },
+      });
+    }
+
+    return this.usersService.create({
+      name: profile.name,
+      email: profile.email,
+      role: 'USER',
+      passwordHash: null,
+      appleSubject: profile.sub,
+      emailVerified: true,
+      emailVerifiedAt: new Date(),
+    });
+  }
+
   private buildGoogleFrontendCallbackUrl(params: { resultToken?: string; error?: string }) {
     const url = new URL('/auth/google/callback', this.getWebBaseUrl());
     const fragment = new URLSearchParams();
@@ -734,6 +1110,26 @@ export class AuthService {
   }
 
   private normalizeGoogleDisplayName(nameRaw: string | undefined, email: string) {
+    return this.normalizeSocialDisplayName(nameRaw, email);
+  }
+
+  private buildAppleFrontendCallbackUrl(params: { resultToken?: string; error?: string }) {
+    const url = new URL('/auth/apple/callback', this.getWebBaseUrl());
+    const fragment = new URLSearchParams();
+    if (params.resultToken) fragment.set('result', params.resultToken);
+    if (params.error) fragment.set('error', params.error);
+    const hash = fragment.toString();
+    return hash ? `${url.toString()}#${hash}` : url.toString();
+  }
+
+  private resolveAppleCallbackError(errorCode: string) {
+    if (errorCode === 'access_denied') {
+      return 'Cancelaste el acceso con Apple antes de completarlo';
+    }
+    return 'No pudimos completar el acceso con Apple';
+  }
+
+  private normalizeSocialDisplayName(nameRaw: string | undefined, email: string) {
     const name = (nameRaw ?? '').trim();
     if (name) return name;
     const localPart = email.split('@')[0] ?? 'Usuario';
@@ -758,6 +1154,72 @@ export class AuthService {
   private getGoogleFlowSecret() {
     const baseSecret = (process.env.JWT_ACCESS_SECRET ?? 'dev-access-secret-change-me').trim();
     return `${baseSecret}:google-oauth`;
+  }
+
+  private getAppleFlowSecret() {
+    const baseSecret = (process.env.JWT_ACCESS_SECRET ?? 'dev-access-secret-change-me').trim();
+    return `${baseSecret}:apple-oauth`;
+  }
+
+  private buildAppleClientSecret(config: ReturnType<AuthService['getAppleSignInConfig']>) {
+    const issuedAt = Math.floor(Date.now() / 1000);
+    const expiresAt = issuedAt + 60 * 10;
+    const header = this.encodeJwtPart({
+      alg: 'ES256',
+      kid: config.keyId,
+      typ: 'JWT',
+    });
+    const payload = this.encodeJwtPart({
+      iss: config.teamId,
+      iat: issuedAt,
+      exp: expiresAt,
+      aud: 'https://appleid.apple.com',
+      sub: config.clientId,
+    });
+    const signingInput = `${header}.${payload}`;
+    const privateKey = createPrivateKey(config.privateKey);
+    const signature = sign('sha256', Buffer.from(signingInput), {
+      key: privateKey,
+      dsaEncoding: 'ieee-p1363',
+    });
+    return `${signingInput}.${this.encodeBase64Url(signature)}`;
+  }
+
+  private normalizeApplePrivateKey(raw: string) {
+    return raw.trim().replace(/\\n/g, '\n');
+  }
+
+  private decodeJwtJson<T>(part: string) {
+    try {
+      const json = this.decodeBase64Url(part).toString('utf8');
+      return JSON.parse(json) as T;
+    } catch {
+      throw new BadRequestException('No pudimos leer la respuesta firmada del proveedor');
+    }
+  }
+
+  private encodeJwtPart(value: Record<string, unknown>) {
+    return this.encodeBase64Url(Buffer.from(JSON.stringify(value)));
+  }
+
+  private encodeBase64Url(value: Buffer) {
+    return value
+      .toString('base64')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/g, '');
+  }
+
+  private decodeBase64Url(value: string) {
+    const normalized = value.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), '=');
+    return Buffer.from(padded, 'base64');
+  }
+
+  private isVerifiedSocialEmail(value: string | boolean | undefined) {
+    if (typeof value === 'boolean') return value;
+    const normalized = (value ?? '').trim().toLowerCase();
+    return normalized === 'true';
   }
 
   private isTruthy(value: string) {

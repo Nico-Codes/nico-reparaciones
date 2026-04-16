@@ -22,6 +22,7 @@ export class UsersService {
     passwordHash?: string | null;
     role?: UserRole;
     googleSubject?: string | null;
+    appleSubject?: string | null;
     emailVerified?: boolean;
     emailVerifiedAt?: Date | null;
   }) {
@@ -32,6 +33,7 @@ export class UsersService {
         passwordHash: data.passwordHash ?? null,
         role: data.role ?? 'USER',
         googleSubject: data.googleSubject ?? null,
+        appleSubject: data.appleSubject ?? null,
         emailVerified: data.emailVerified ?? false,
         emailVerifiedAt: data.emailVerifiedAt ?? null,
       },
@@ -41,6 +43,12 @@ export class UsersService {
   findByGoogleSubject(googleSubject: string) {
     return this.prisma.user.findUnique({
       where: { googleSubject },
+    });
+  }
+
+  findByAppleSubject(appleSubject: string) {
+    return this.prisma.user.findUnique({
+      where: { appleSubject },
     });
   }
 

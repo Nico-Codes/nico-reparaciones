@@ -27,6 +27,7 @@ import {
   AdminAlertsPage,
   AdminAutoReportsPage,
   AdminBusinessSettingsPage,
+  AppleAuthCallbackPage,
   AdminCalculationsHubPage,
   AdminCategoriesPage,
   AdminDashboardPage,
@@ -101,6 +102,7 @@ export default function App() {
         <Route path="/api/auth/*" element={<ApiAuthAliasRedirect />} />
         <Route path="/api/*" element={<RootEntryRedirect />} />
         <Route path="/auth/login" element={withSuspense(<LoginPage />)} />
+        <Route path="/auth/apple/callback" element={withSuspense(<AppleAuthCallbackPage />)} />
         <Route path="/auth/google/callback" element={withSuspense(<GoogleAuthCallbackPage />)} />
         <Route path="/auth/register" element={withSuspense(<RegisterPage />)} />
         <Route path="/auth/verify-email" element={withSuspense(<VerifyEmailPage />)} />

@@ -55,6 +55,19 @@ export const googleAuthCompleteSchema = z.object({
 
 export type GoogleAuthCompleteInput = z.infer<typeof googleAuthCompleteSchema>;
 
+export const appleAuthCompleteSchema = z.object({
+  resultToken: z.string().min(20).max(2000),
+});
+
+export type AppleAuthCompleteInput = z.infer<typeof appleAuthCompleteSchema>;
+
+export const socialAuthProvidersResponseSchema = z.object({
+  google: z.boolean(),
+  apple: z.boolean(),
+});
+
+export type SocialAuthProvidersResponse = z.infer<typeof socialAuthProvidersResponseSchema>;
+
 export const bootstrapAdminSchema = z.object({
   setupKey: z.string().min(6),
   name: z.string().trim().min(2).max(120),

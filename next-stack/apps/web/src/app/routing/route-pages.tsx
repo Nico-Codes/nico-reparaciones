@@ -37,6 +37,7 @@ export const AdminUsersPage = lazyPage(() => import('@/features/admin/AdminUsers
 export const AdminVisualIdentityPage = lazyPage(() => import('@/features/admin/AdminVisualIdentityPage'), 'AdminVisualIdentityPage');
 export const AdminWhatsappOrdersPage = lazyPage(() => import('@/features/admin/AdminWhatsappOrdersPage'), 'AdminWhatsappOrdersPage');
 export const AdminWhatsappPage = lazyPage(() => import('@/features/admin/AdminWhatsappPage'), 'AdminWhatsappPage');
+export const AppleAuthCallbackPage = lazyPage(() => import('@/features/auth/AppleAuthCallbackPage'), 'AppleAuthCallbackPage');
 export const BootstrapAdminPage = lazyPage(() => import('@/features/auth/BootstrapAdminPage'), 'BootstrapAdminPage');
 export const ForgotPasswordPage = lazyPage(() => import('@/features/auth/ForgotPasswordPage'), 'ForgotPasswordPage');
 export const GoogleAuthCallbackPage = lazyPage(() => import('@/features/auth/GoogleAuthCallbackPage'), 'GoogleAuthCallbackPage');

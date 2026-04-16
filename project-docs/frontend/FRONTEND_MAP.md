@@ -113,6 +113,7 @@ Rutas legacy alias relevantes:
 ## Rutas auth
 
 - `/auth/login`
+- `/auth/apple/callback`
 - `/auth/google/callback`
 - `/auth/register`
 - `/auth/verify-email`
@@ -122,8 +123,9 @@ Rutas legacy alias relevantes:
 
 Nota importante:
 
-- el router nuevo expone `/auth/google/callback` como frontera publica para completar el redirect de Google login.
+- el router nuevo expone `/auth/google/callback` y `/auth/apple/callback` como fronteras publicas para completar redirects de auth social.
 - el boton social vive solo en `LoginPage.tsx`; `register` sigue sin CTA social propio.
+- `LoginPage.tsx` ya no decide por hardcode si muestra Google o Apple: consulta `/api/auth/social/providers` y renderiza solo los providers habilitados de verdad por el backend.
 
 ## Rutas de usuario autenticado
 
@@ -161,6 +163,7 @@ Principales grupos detectados:
 Auth:
 
 - `LoginPage.tsx`
+- `AppleAuthCallbackPage.tsx`
 - `GoogleAuthCallbackPage.tsx`
 - `RegisterPage.tsx`
 - `ForgotPasswordPage.tsx`
@@ -733,7 +736,7 @@ En la ola de refinamiento final del 2026-04-13 se cerraron los hotspots internos
   - `admin-store-hero-settings.form.tsx`
 
 Con este cierre, lo que queda grande en frontend ya no son paginas o `sections.tsx` monoliticos pendientes, sino paneles finales u orquestadores deliberados del dominio.
-- el router nuevo vuelve a exponer `/auth/google/callback` para cerrar el redirect de Google login.
+- el router nuevo vuelve a exponer `/auth/google/callback` y `/auth/apple/callback` para cerrar redirects sociales.
 - el auth social queda acotado a `LoginPage.tsx` y solo para cuentas `USER`.
 
 ## Repairs: busqueda de repuestos
