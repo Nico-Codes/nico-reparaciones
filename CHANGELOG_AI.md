@@ -12,6 +12,33 @@
 
 ---
 
+### 2026-04-16 - Codex
+- Alcance: pulir la busqueda de repuestos en reparaciones para que priorice precio mas bajo, bloquee seleccion de items sin stock y haga mas clara la carga visual.
+- Tipo de intervencion: mejora funcional full-stack sobre ranking de resultados en backend y UX del flujo de repuestos en frontend.
+- Archivos tocados:
+  - `next-stack/apps/api/src/modules/admin/admin-provider-search.service.ts`
+  - `next-stack/apps/web/src/features/repairs/use-repair-provider-part-search.ts`
+  - `next-stack/apps/web/src/features/repairs/use-repair-provider-part-pricing.ts`
+  - `next-stack/apps/web/src/features/repairs/repair-provider-part-search-results.tsx`
+  - `next-stack/apps/web/src/styles/admin.css`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. Los resultados de repuestos ahora se ordenan de menor precio a mayor, los items sin stock ya no se pueden elegir y la busqueda muestra un estado de progreso propio en lugar del loading generico. Tambien se redujo la altura visual de cada resultado para densificar la lista.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/api`
+  - `cmd /c npm run test --workspace @nico/api`
+  - `cmd /c npm run build --workspace @nico/api`
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:backend`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - el progreso de busqueda es una estimacion visual del proceso y no un porcentaje exacto por proveedor
+  - los repuestos sin precio siguen quedando al final de la lista para no falsear el orden por costo real
+
+---
+
 ### 2026-04-14 - Codex
 - Alcance: normalizar el alta y edicion rapida del catalogo tecnico a mayusculas y pulir el modal de alta rapida del scope con animacion y backdrop global.
 - Tipo de intervencion: mejora funcional full-stack sobre `admin/calculos/reparaciones` y persistencia canonica en backend.

@@ -244,6 +244,7 @@ export function useRepairProviderPartPricing({
     },
     searchResultsProps: {
       searchLoading: search.searchLoading,
+      searchProgress: search.searchProgress,
       searchError: search.searchError,
       partSearchQuery: search.partSearchQuery,
       visiblePartResults: search.visiblePartResults,

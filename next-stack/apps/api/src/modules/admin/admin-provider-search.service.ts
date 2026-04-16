@@ -288,14 +288,14 @@ export class AdminProviderSearchService {
       .map((item) => ({ item, rank: rankSupplierPart(item, queryProfile) }))
       .filter(({ rank }) => rank >= 0)
       .sort((left, right) => {
-        if (left.rank !== right.rank) return right.rank - left.rank;
+        const leftPrice = left.item.price == null ? Number.POSITIVE_INFINITY : left.item.price;
+        const rightPrice = right.item.price == null ? Number.POSITIVE_INFINITY : right.item.price;
+        if (leftPrice !== rightPrice) return leftPrice - rightPrice;
 
         const availabilityDiff = availabilityOrder(left.item.availability) - availabilityOrder(right.item.availability);
         if (availabilityDiff !== 0) return availabilityDiff;
 
-        const leftPrice = left.item.price == null ? Number.POSITIVE_INFINITY : left.item.price;
-        const rightPrice = right.item.price == null ? Number.POSITIVE_INFINITY : right.item.price;
-        if (leftPrice !== rightPrice) return leftPrice - rightPrice;
+        if (left.rank !== right.rank) return right.rank - left.rank;
 
         if (left.item.supplier.priority !== right.item.supplier.priority) {
           return left.item.supplier.priority - right.item.supplier.priority;
@@ -395,14 +395,14 @@ export class AdminProviderSearchService {
         );
       })
       .sort((left, right) => {
-        if (left.rank !== right.rank) return right.rank - left.rank;
+        const leftPrice = left.item.price == null ? Number.POSITIVE_INFINITY : left.item.price;
+        const rightPrice = right.item.price == null ? Number.POSITIVE_INFINITY : right.item.price;
+        if (leftPrice !== rightPrice) return leftPrice - rightPrice;
 
         const availabilityDiff = availabilityOrder(left.item.availability) - availabilityOrder(right.item.availability);
         if (availabilityDiff !== 0) return availabilityDiff;
 
-        const leftPrice = left.item.price == null ? Number.POSITIVE_INFINITY : left.item.price;
-        const rightPrice = right.item.price == null ? Number.POSITIVE_INFINITY : right.item.price;
-        if (leftPrice !== rightPrice) return leftPrice - rightPrice;
+        if (left.rank !== right.rank) return right.rank - left.rank;
 
         return left.item.name.localeCompare(right.item.name, 'es');
       })

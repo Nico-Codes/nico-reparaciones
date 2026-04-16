@@ -1,7 +1,6 @@
 import { AlertTriangle, PackageSearch, Truck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
-import { LoadingBlock } from '@/components/ui/loading-block';
 import { StatusBadge } from '@/components/ui/status-badge';
 import type { AdminProviderAggregatePartSearchItem } from '@/features/admin/api';
 import { money } from './repair-ui';
@@ -9,6 +8,7 @@ import { availabilityLabel, availabilityTone, partKey } from './repair-provider-
 
 export type RepairProviderPartPricingSearchResultsProps = {
   searchLoading: boolean;
+  searchProgress: number;
   searchError: string;
   partSearchQuery: string;
   visiblePartResults: AdminProviderAggregatePartSearchItem[];
@@ -19,6 +19,7 @@ export type RepairProviderPartPricingSearchResultsProps = {
 
 export function RepairProviderPartSearchResults({
   searchLoading,
+  searchProgress,
   searchError,
   partSearchQuery,
   visiblePartResults,
@@ -29,7 +30,7 @@ export function RepairProviderPartSearchResults({
   return (
     <div className="mt-4">
       {searchLoading ? (
-        <LoadingBlock label="Buscando repuestos en proveedores" lines={4} />
+        <RepairProviderPartSearchLoadingState progress={searchProgress} />
       ) : searchError ? (
         <div className="ui-alert ui-alert--danger">
           <AlertTriangle className="mt-0.5 h-4 w-4 flex-none" />
@@ -91,21 +92,24 @@ function RepairProviderPartSearchResultRow({
   onSelectPart: (key: string) => void;
 }) {
   const currentKey = partKey(part);
+  const outOfStock = part.availability === 'out_of_stock';
+  const selectionDisabled = disabled || outOfStock;
 
   return (
     <div
-      role="button"
-      tabIndex={disabled ? -1 : 0}
+      role={selectionDisabled ? undefined : 'button'}
+      tabIndex={selectionDisabled ? -1 : 0}
       aria-pressed={selected}
-      className={`admin-entity-row w-full text-left ${selected ? 'ring-2 ring-sky-300' : ''} ${
-        disabled ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'
+      aria-disabled={selectionDisabled}
+      className={`admin-entity-row provider-search-result-row w-full text-left ${selected ? 'ring-2 ring-sky-300' : ''} ${
+        selectionDisabled ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'
       }`}
       onClick={() => {
-        if (disabled) return;
+        if (selectionDisabled) return;
         onSelectPart(currentKey);
       }}
       onKeyDown={(event) => {
-        if (disabled) return;
+        if (selectionDisabled) return;
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault();
           onSelectPart(currentKey);
@@ -113,7 +117,7 @@ function RepairProviderPartSearchResultRow({
       }}
     >
       <div className="min-w-0">
-        <div className="mb-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-500">
+        <div className="provider-search-result-row__supplier">
           {part.supplier.name}
         </div>
         <div className="admin-entity-row__title flex items-center gap-2">
@@ -149,14 +153,51 @@ function RepairProviderPartSearchResultRow({
             size="sm"
             onClick={(event) => {
               event.stopPropagation();
-              if (disabled) return;
+              if (selectionDisabled) return;
               onSelectPart(currentKey);
             }}
-            disabled={disabled}
+            disabled={selectionDisabled}
           >
-            {selected ? 'Seleccionado' : 'Elegir'}
+            {outOfStock ? 'Sin stock' : selected ? 'Seleccionado' : 'Elegir'}
           </Button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function RepairProviderPartSearchLoadingState({ progress }: { progress: number }) {
+  const safeProgress = Math.max(8, Math.min(progress, 100));
+  const phaseLabel =
+    safeProgress < 35
+      ? 'Preparando consulta exacta'
+      : safeProgress < 75
+        ? 'Buscando en proveedores reales'
+        : 'Ordenando resultados por precio';
+
+  return (
+    <div className="provider-search-loading" aria-busy="true" aria-live="polite">
+      <div className="provider-search-loading__top">
+        <div>
+          <div className="provider-search-loading__title">Buscando repuestos</div>
+          <div className="provider-search-loading__hint">{phaseLabel}</div>
+        </div>
+        <Truck className="h-4 w-4 text-sky-600" />
+      </div>
+      <div
+        className="provider-search-progress"
+        role="progressbar"
+        aria-label="Progreso de busqueda de repuestos"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(safeProgress)}
+      >
+        <div className="provider-search-progress__fill" style={{ width: `${safeProgress}%` }} />
+      </div>
+      <div className="mt-3 space-y-2">
+        <div className="provider-search-loading__skeleton provider-search-loading__skeleton--wide" />
+        <div className="provider-search-loading__skeleton" />
+        <div className="provider-search-loading__skeleton provider-search-loading__skeleton--short" />
       </div>
     </div>
   );

@@ -43,6 +43,7 @@ export function useRepairProviderPartSearch({
   const [partResults, setPartResults] = useState<AdminProviderAggregatePartSearchItem[]>([]);
   const [selectedPartKey, setSelectedPartKey] = useState('');
   const [searchLoading, setSearchLoading] = useState(false);
+  const [searchProgress, setSearchProgress] = useState(0);
   const [searchError, setSearchError] = useState('');
   const [quantityInput, setQuantityInput] = useState('1');
   const [extraCostInput, setExtraCostInput] = useState('');
@@ -81,6 +82,20 @@ export function useRepairProviderPartSearch({
       mounted = false;
     };
   }, [providerReloadToken]);
+
+  useEffect(() => {
+    if (!searchLoading) return;
+
+    const timer = window.setInterval(() => {
+      setSearchProgress((current) => {
+        if (current >= 92) return current;
+        const next = current + (current < 35 ? 14 : current < 70 ? 9 : 4);
+        return Math.min(next, 92);
+      });
+    }, 220);
+
+    return () => window.clearInterval(timer);
+  }, [searchLoading]);
 
   useEffect(() => {
     setSearchError('');
@@ -164,6 +179,7 @@ export function useRepairProviderPartSearch({
     const requestId = searchRequestIdRef.current + 1;
     searchRequestIdRef.current = requestId;
     setSearchLoading(true);
+    setSearchProgress(12);
     setSearchError('');
     setPartSearchQuery(query);
     resetPreviewAndPendingRef.current();
@@ -177,14 +193,21 @@ export function useRepairProviderPartSearch({
       });
       if (requestId !== searchRequestIdRef.current) return;
       setPartResults(response.items);
-      setSelectedPartKey((current) => (current && response.items.some((item) => partKey(item) === current) ? current : ''));
+      setSelectedPartKey((current) =>
+        current && response.items.some((item) => partKey(item) === current && item.availability !== 'out_of_stock')
+          ? current
+          : '',
+      );
     } catch (error) {
       if (requestId !== searchRequestIdRef.current) return;
       setPartResults([]);
       setSelectedPartKey('');
       setSearchError(error instanceof Error ? error.message : 'No pudimos buscar repuestos en los proveedores configurados.');
     } finally {
-      if (requestId === searchRequestIdRef.current) setSearchLoading(false);
+      if (requestId === searchRequestIdRef.current) {
+        setSearchProgress(100);
+        setSearchLoading(false);
+      }
     }
   }
 
@@ -199,6 +222,7 @@ export function useRepairProviderPartSearch({
     extraCostInput,
     shippingCostInput,
     searchLoading,
+    searchProgress,
     searchError,
     partSearchQuery,
     selectedPart,
