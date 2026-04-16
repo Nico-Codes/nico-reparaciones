@@ -1,4 +1,4 @@
-import { adminApiOrigin, adminAuthFetch } from './api';
+import { adminAuthFetch } from './api';
 
 export type BrandAssetUploadResult = {
   ok: boolean;
@@ -35,6 +35,6 @@ export const brandAssetsApi = {
     const raw = (pathValue ?? '').trim();
     if (!raw) return null;
     if (/^https?:\/\//i.test(raw)) return raw;
-    return `${adminApiOrigin.replace(/\/+$/, '')}/${raw.replace(/^\/+/, '')}`;
+    return `/${raw.replace(/^\/+/, '')}`;
   },
 };

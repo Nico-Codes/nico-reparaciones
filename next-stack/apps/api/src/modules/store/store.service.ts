@@ -63,7 +63,10 @@ export class StoreService {
       });
       const map = new Map(settings.map((s) => [s.key, s.value ?? '']));
 
-      const desktop = this.resolveHeroAssetUrl(map.get('store_hero_image_desktop') ?? '') ?? this.resolveHeroAssetUrl('brand/logo.png') ?? '/brand/logo.png';
+      const desktop =
+        this.resolveHeroAssetUrl(map.get('store_hero_image_desktop') ?? '') ??
+        this.resolveHeroAssetUrl('brand/logo.png') ??
+        '/brand/logo.png';
       const mobile = this.resolveHeroAssetUrl(map.get('store_hero_image_mobile') ?? '') ?? desktop;
 
       return {
@@ -362,22 +365,17 @@ export class StoreService {
   }
 
   private resolveHeroAssetUrl(rawValue?: string | null) {
-    const base = (process.env.STORE_IMAGE_BASE_URL ?? '').trim().replace(/\/+$/, '');
     const raw = (rawValue ?? '').trim();
     if (!raw) return null;
     if (/^https?:\/\//i.test(raw)) return raw;
-    if (raw.startsWith('/brand/') || raw.startsWith('/brand-assets/')) return base ? `${base}${raw}` : raw;
-    if (raw.startsWith('/storage/')) return base ? `${base}${raw}` : raw;
-    if (raw.startsWith('/')) return raw;
-    if (raw.startsWith('brand/') || raw.startsWith('brand-assets/')) {
-      const normalized = `/${raw.replace(/^\/+/, '')}`;
+
+    const normalized = `/${raw.replace(/^\/+/, '')}`;
+    if (normalized.startsWith('/storage/')) {
+      const base = (process.env.STORE_IMAGE_BASE_URL ?? '').trim().replace(/\/+$/, '');
       return base ? `${base}${normalized}` : normalized;
     }
-    if (raw.startsWith('storage/')) {
-      const normalized = `/${raw.replace(/^\/+/, '')}`;
-      return base ? `${base}${normalized}` : normalized;
-    }
-    return `/${raw.replace(/^\/+/, '')}`;
+
+    return normalized;
   }
   private parseIntSetting(value: string | undefined, fallback: number) {
     const n = Number((value ?? '').trim());

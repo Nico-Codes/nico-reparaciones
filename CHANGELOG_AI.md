@@ -2975,6 +2975,29 @@ pm run qa:frontend:e2e
   - `Celuphone`, `Evophone`, `Okey Rosario`, `Electrostore`, `El Reparador de PC`, `Novocell` y `Tienda Movil Rosario` quedaron alineados a perfiles/endpoints mas estables, pero siguen dependiendo de HTML/APIs de terceros que pueden cambiar
   - para poder regenerar Prisma Client con engine hubo que reiniciar el proceso local del API del repo y volver a levantar una instancia limpia para el smoke
 
+### 2026-04-16 - Codex
+- Alcance: corregir la resolucion del fondo de login/branding publico y mejorar la UX de carga en identidad visual.
+- Tipo de intervencion: bugfix full-stack + ajuste UX puntual en admin.
+- Archivos tocados:
+  - `next-stack/apps/api/src/modules/store/{store.service.ts,store.service.test.ts}`
+  - `next-stack/apps/web/src/features/admin/{brandAssetsApi.ts,admin-visual-identity.helpers.ts,admin-visual-identity.helpers.test.ts,admin-visual-identity.sections.tsx}`
+  - `project-docs/{DECISIONS_LOG.md,architecture/ASSET_STRATEGY.md}`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. Los assets de branding expuestos por `/api/store/branding` dejan de resolverse contra `STORE_IMAGE_BASE_URL` y pasan a salir como rutas publicas de la web; por eso el fondo de login, hero e identidad visual quedan alineados con `apps/web/public`. En admin, los slots opcionales sin archivo ya no simulan una imagen configurada y muestran medidas recomendadas en px.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/api`
+  - `cmd /c npm run test --workspace @nico/api`
+  - `cmd /c npm run build --workspace @nico/api`
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:backend`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - los fondos de auth solo se veran en login cuando realmente exista un archivo configurado en identidad visual; si no, el backend seguira devolviendo `null`
+  - `STORE_IMAGE_BASE_URL` sigue siendo valida para `storage/` legacy, pero ya no debe usarse para branding ni auth
+
 ---
 
 ### 2026-04-01 - Codex

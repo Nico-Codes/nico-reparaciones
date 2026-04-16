@@ -8,6 +8,7 @@ export type AssetCard = {
   defaultPath: string;
   formats: string;
   maxKb: number;
+  recommendedPx?: string;
   preview: PreviewSpec;
   showReset?: boolean;
 };
@@ -112,6 +113,7 @@ export const STORE_HERO_ASSETS: AssetCard[] = [
     defaultPath: '',
     formats: 'PNG, JPG, JPEG, WEBP',
     maxKb: 6144,
+    recommendedPx: '1600 x 900 px o mayor',
     preview: { kind: 'hero' },
     showReset: true,
   },
@@ -123,6 +125,7 @@ export const STORE_HERO_ASSETS: AssetCard[] = [
     defaultPath: '',
     formats: 'PNG, JPG, JPEG, WEBP',
     maxKb: 4096,
+    recommendedPx: '1080 x 1440 px o mayor',
     preview: { kind: 'hero', mobile: true },
     showReset: true,
   },
@@ -137,6 +140,7 @@ export const AUTH_VISUAL_ASSETS: AssetCard[] = [
     defaultPath: '',
     formats: 'PNG, JPG, JPEG, WEBP',
     maxKb: 6144,
+    recommendedPx: '1800 x 1400 px o mayor',
     preview: { kind: 'hero' },
     showReset: true,
   },
@@ -148,6 +152,7 @@ export const AUTH_VISUAL_ASSETS: AssetCard[] = [
     defaultPath: '',
     formats: 'PNG, JPG, JPEG, WEBP',
     maxKb: 4096,
+    recommendedPx: '1080 x 720 px o mayor',
     preview: { kind: 'hero', mobile: true },
     showReset: true,
   },
@@ -274,7 +279,11 @@ export function resolveAssetState(item: AssetCard, settingsByKey: Map<string, Ad
   return {
     isCustom,
     effectivePath,
-    displayPath: isCustom ? summarizeAssetPath(effectivePath) : item.filename,
+    displayPath: isCustom
+      ? summarizeAssetPath(effectivePath)
+      : item.defaultPath.trim()
+        ? item.filename
+        : 'Sin archivo configurado',
   };
 }
 

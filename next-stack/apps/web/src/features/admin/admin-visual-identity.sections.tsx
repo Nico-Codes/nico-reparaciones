@@ -202,6 +202,7 @@ function AssetUploadCard({
 
       <p className="mt-2 text-xs text-zinc-500">
         Formatos: {item.formats} | Max: {item.maxKb} KB
+        {item.recommendedPx ? ` | Recomendado: ${item.recommendedPx}` : ''}
       </p>
 
       <button
@@ -249,12 +250,23 @@ function AssetImagePreview({
     return () => URL.revokeObjectURL(nextPreviewUrl);
   }, [selectedFile]);
 
+  const imageClass = item.preview.kind === 'hero' ? 'h-full w-full object-cover' : 'h-full w-full object-contain';
+  const showGeneratedPreview =
+    item.preview.kind === 'brand' || item.preview.kind === 'icon' || item.preview.kind === 'logo' || item.defaultPath.trim().length > 0;
+
   return (
     <div className="mt-3 flex h-28 items-center justify-center overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50">
       {previewUrl || imageUrl ? (
-        <img src={previewUrl ?? imageUrl ?? undefined} alt={item.title} className="h-full w-full object-contain" />
-      ) : (
+        <img src={previewUrl ?? imageUrl ?? undefined} alt={item.title} className={imageClass} />
+      ) : showGeneratedPreview ? (
         <Preview spec={item.preview} />
+      ) : (
+        <div className="flex h-full w-full flex-col items-center justify-center gap-1 px-4 text-center">
+          <p className="text-sm font-black text-zinc-800">Sin imagen configurada</p>
+          <p className="text-xs text-zinc-500">
+            {item.recommendedPx ? `Sube un archivo. Recomendado: ${item.recommendedPx}` : 'Sube un archivo para ver la previsualizacion real.'}
+          </p>
+        </div>
       )}
     </div>
   );

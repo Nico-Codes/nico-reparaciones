@@ -42,6 +42,16 @@ describe('admin-visual-identity.helpers', () => {
     });
   });
 
+  it('shows an empty-state label when an optional asset has no configured file', () => {
+    const item = AUTH_VISUAL_ASSETS[0];
+
+    expect(resolveAssetState(item, new Map())).toEqual({
+      isCustom: false,
+      effectivePath: '',
+      displayPath: 'Sin archivo configurado',
+    });
+  });
+
   it('summarizes asset path and builds accept list', () => {
     expect(summarizeAssetPath('icons/settings.svg')).toBe('icons/settings.svg');
     expect(summarizeAssetPath('')).toBe('');
@@ -53,10 +63,12 @@ describe('admin-visual-identity.helpers', () => {
     expect(AUTH_VISUAL_ASSETS[0]).toMatchObject({
       slot: 'auth_login_background',
       settingKey: 'brand_asset.auth_login_background.path',
+      recommendedPx: '1800 x 1400 px o mayor',
     });
     expect(AUTH_VISUAL_ASSETS[1]).toMatchObject({
       slot: 'auth_login_background_mobile',
       settingKey: 'brand_asset.auth_login_background_mobile.path',
+      recommendedPx: '1080 x 720 px o mayor',
     });
   });
 });
