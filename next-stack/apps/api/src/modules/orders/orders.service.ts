@@ -30,6 +30,14 @@ export class OrdersService {
     return this.ordersCheckoutService.myOrderDetail(userId, orderId);
   }
 
+  async uploadTransferProof(
+    userId: string,
+    orderId: string,
+    file?: { originalname: string; mimetype: string; size: number; buffer?: Buffer },
+  ) {
+    return this.ordersCheckoutService.uploadTransferProof(userId, orderId, file);
+  }
+
   async adminOrders(params?: AdminListInput) {
     return this.ordersAdminService.adminOrders(params);
   }

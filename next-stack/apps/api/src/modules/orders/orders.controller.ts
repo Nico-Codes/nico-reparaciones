@@ -8,8 +8,11 @@ import {
   Post,
   Query,
   UnauthorizedException,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { zodBadRequest } from '../../common/http/zod-bad-request.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
 import type { AuthenticatedUser } from '../auth/auth.types.js';
@@ -53,6 +56,17 @@ export class OrdersController {
   async myDetail(@CurrentUser() user: AuthenticatedUser | null, @Param('id') id: string) {
     if (!user) throw new UnauthorizedException('Usuario no autenticado');
     return this.ordersService.myOrderDetail(user.id, id);
+  }
+
+  @Post('my/:id/transfer-proof')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadTransferProof(
+    @CurrentUser() user: AuthenticatedUser | null,
+    @Param('id') id: string,
+    @UploadedFile() file?: { originalname: string; mimetype: string; size: number; buffer?: Buffer },
+  ) {
+    if (!user) throw new UnauthorizedException('Usuario no autenticado');
+    return this.ordersService.uploadTransferProof(user.id, id, file);
   }
 
   @Get('admin')

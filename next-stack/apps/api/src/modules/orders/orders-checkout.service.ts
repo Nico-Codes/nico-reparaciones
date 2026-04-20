@@ -127,4 +127,41 @@ export class OrdersCheckoutService {
     if (order.userId !== userId) throw new ForbiddenException('No autorizado');
     return { item: this.ordersSupportService.serializeOrder(order) };
   }
+
+  async uploadTransferProof(
+    userId: string,
+    orderId: string,
+    file?: { originalname: string; mimetype: string; size: number; buffer?: Buffer },
+  ) {
+    if (!file) {
+      throw new BadRequestException('Debes seleccionar un comprobante');
+    }
+
+    const current = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { items: { orderBy: { createdAt: 'asc' } } },
+    });
+    if (!current) throw new NotFoundException('Pedido no encontrado');
+    if (current.userId !== userId) throw new ForbiddenException('No autorizado');
+    if ((current.paymentMethod ?? '').trim().toLowerCase() !== 'transferencia') {
+      throw new BadRequestException('Solo puedes cargar comprobantes para pedidos con transferencia');
+    }
+
+    const transferProofPath = await this.ordersSupportService.replaceTransferProof(
+      current.id,
+      current.transferProofPath,
+      file,
+    );
+
+    const updated = await this.prisma.order.update({
+      where: { id: current.id },
+      data: {
+        transferProofPath,
+        transferProofUploadedAt: new Date(),
+      },
+      include: { items: { orderBy: { createdAt: 'asc' } } },
+    });
+
+    return { item: this.ordersSupportService.serializeOrder(updated) };
+  }
 }

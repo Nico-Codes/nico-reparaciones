@@ -20,6 +20,20 @@ Registrar decisiones tecnicas confirmadas para evitar dependencia de memoria ora
 
 ---
 
+### [DL-0109]
+- Fecha: 2026-04-20
+- Estado: aceptada
+- Tema: la transferencia de pedidos web se opera despues de confirmar el pedido y el comprobante queda persistido en la propia orden
+- Contexto: el checkout ya permitia elegir `transferencia` y mostrar datos bancarios antes de crear la orden. El pedido cambio el flujo: los datos de pago ya no deben aparecer en `/checkout`, sino en el detalle del pedido confirmado, donde ademas el cliente necesita adjuntar o enviar el comprobante desde la misma pantalla.
+- Decision: mantener la seleccion del medio de pago en `/checkout`, pero mover toda la operatoria de transferencia a `/orders/:id`. El detalle del pedido pasa a mostrar los datos bancarios, un enlace directo a WhatsApp usando `shop_phone` del negocio y una carga de comprobante persistida en `Order` (`transferProofPath`, `transferProofUploadedAt`). El checkout solo deja una aclaracion breve de que la informacion y el comprobante aparecen despues de confirmar.
+- Impacto: el flujo queda mas limpio y evita exponer datos de transferencia antes de registrar la orden. El comprobante deja de ser un paso externo o informal porque queda asociado al pedido y disponible para consulta posterior, mientras que WhatsApp sigue siendo un fallback operativo cuando el negocio lo prefiere.
+- Alternativas consideradas: mantener los datos visibles en checkout o resolver el comprobante solo con un link externo a WhatsApp; descartado porque la primera opcion recargaba innecesariamente el checkout y la segunda no dejaba trazabilidad persistida en el pedido.
+- Archivos / modulos afectados: `next-stack/apps/api/prisma/{schema.prisma,migrations/*}`, `next-stack/apps/api/src/modules/orders/*`, `next-stack/apps/web/src/features/orders/*`, `next-stack/apps/web/src/styles/commerce.css`, `CHANGELOG_AI.md`.
+- Validacion requerida: `db:generate --workspace @nico/api`, `db:migrate --workspace @nico/api`, `typecheck --workspace @nico/api`, `test --workspace @nico/api`, `build --workspace @nico/api`, `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:backend`, `smoke:web`, `git diff --check`.
+- Responsable: Codex + operador humano
+
+---
+
 ### [DL-0108]
 - Fecha: 2026-04-20
 - Estado: aceptada

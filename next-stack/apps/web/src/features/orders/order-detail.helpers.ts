@@ -7,7 +7,7 @@ import {
   orderStatusTone,
   paymentMethodLabel,
 } from './order-ui';
-import type { OrderItem } from './types';
+import type { CheckoutTransferDetails, OrderItem } from './types';
 
 export function resolveOrderDetailLoadError(cause: unknown) {
   return cause instanceof Error ? cause.message : 'No se pudo cargar el pedido.';
@@ -54,4 +54,30 @@ export function buildOrderDetailLinesMeta(order: OrderItem) {
     totalItems: buildOrderDetailTotalItems(order),
     total: money(order.total),
   };
+}
+
+export function buildOrderTransferWhatsappUrl(
+  order: OrderItem,
+  transferDetails: CheckoutTransferDetails | null,
+) {
+  const phone = normalizeWhatsappPhone(transferDetails?.supportWhatsappPhone);
+  if (!phone || !orderUsesTransferPayment(order.paymentMethod)) return null;
+
+  const message = [
+    'Hola, quiero enviar el comprobante de transferencia de mi pedido.',
+    `Pedido: ${orderCode(order.id)}`,
+    `Total: ${money(order.total)}`,
+  ].join('\n');
+
+  const params = new URLSearchParams({
+    phone,
+    text: message,
+  });
+  return `https://api.whatsapp.com/send?${params.toString()}`;
+}
+
+function normalizeWhatsappPhone(value?: string | null) {
+  const digits = (value ?? '').replace(/\D+/g, '');
+  if (digits.length < 10 || digits.length > 18) return null;
+  return digits;
 }

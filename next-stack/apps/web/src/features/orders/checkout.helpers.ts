@@ -15,7 +15,7 @@ export const DEFAULT_CHECKOUT_PAYMENT_OPTIONS: CheckoutPaymentMethodConfig[] = [
   {
     value: 'transferencia',
     title: 'Transferencia',
-    subtitle: 'Mira los datos bancarios antes de confirmar el pedido.',
+    subtitle: 'Confirmas el pedido y luego veras los datos para pagar.',
     iconUrl: '/icons/payment-transfer.svg',
   },
   {
@@ -37,6 +37,7 @@ export const DEFAULT_CHECKOUT_TRANSFER_DETAILS: CheckoutTransferDetails = {
   description: 'Si eliges transferencia, usa estos datos y conserva el comprobante para presentarlo al retirar.',
   note: 'Si tienes dudas, contactanos antes de confirmar el pago.',
   available: false,
+  supportWhatsappPhone: null,
   fields: [],
 };
 

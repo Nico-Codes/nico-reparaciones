@@ -2,7 +2,6 @@ import {
   AlertTriangle,
   Banknote,
   CreditCard,
-  ExternalLink,
   Landmark,
   ShieldCheck,
   WalletCards,
@@ -24,7 +23,6 @@ import {
 } from './checkout.helpers';
 import type {
   CheckoutPaymentMethodConfig,
-  CheckoutTransferDetails,
 } from './types';
 
 type CheckoutLoadingStateProps = {
@@ -44,7 +42,6 @@ type CheckoutFeedbackProps = {
 type CheckoutPaymentSectionProps = {
   paymentMethod: string;
   paymentOptions: CheckoutPaymentMethodConfig[];
-  transferDetails: CheckoutTransferDetails;
   submitting: boolean;
   onChange: (paymentMethod: string) => void;
 };
@@ -185,11 +182,10 @@ export function CheckoutFeedback({ message }: CheckoutFeedbackProps) {
 export function CheckoutPaymentSection({
   paymentMethod,
   paymentOptions,
-  transferDetails,
   submitting,
   onChange,
 }: CheckoutPaymentSectionProps) {
-  const showTransferDetails = paymentMethod === 'transferencia';
+  const showTransferHint = paymentMethod === 'transferencia';
 
   return (
     <SectionCard
@@ -226,44 +222,15 @@ export function CheckoutPaymentSection({
         })}
       </div>
 
-      {showTransferDetails ? (
-        <div className={`checkout-transfer-card ${transferDetails.available ? '' : 'is-unavailable'}`}>
-          <div className="checkout-transfer-card__top">
-            <div>
-              <div className="checkout-transfer-card__title">{transferDetails.title}</div>
-              <div className="checkout-transfer-card__description">{transferDetails.description}</div>
+      {showTransferHint ? (
+        <div className="ui-alert ui-alert--info mt-4">
+          <Landmark className="mt-0.5 h-4 w-4 flex-none" />
+          <div>
+            <span className="ui-alert__title">Transferencia: datos y comprobante despues de confirmar</span>
+            <div className="ui-alert__text">
+              El pedido se registra primero. En el detalle de tu compra veras los datos bancarios y podras cargar o enviar el comprobante por WhatsApp.
             </div>
-            <StatusBadge
-              label={transferDetails.available ? 'Datos cargados' : 'Pendiente de configurar'}
-              tone={transferDetails.available ? 'info' : 'warning'}
-              size="sm"
-            />
           </div>
-
-          {transferDetails.available ? (
-            <div className="checkout-transfer-grid">
-              {transferDetails.fields.map((field) => (
-                <div key={field.key} className="checkout-transfer-item">
-                  <div className="checkout-transfer-item__label">{field.label}</div>
-                  <div className="checkout-transfer-item__value">{field.value}</div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="ui-alert ui-alert--warning mt-4">
-              <AlertTriangle className="mt-0.5 h-4 w-4 flex-none" />
-              <div>
-                <span className="ui-alert__title">Transferencia sin datos publicados</span>
-                <div className="ui-alert__text">
-                  Todavia no hay CVU, alias u otra referencia cargada desde configuracion avanzada.
-                </div>
-              </div>
-            </div>
-          )}
-
-          {transferDetails.note ? (
-            <div className="checkout-transfer-card__note">{transferDetails.note}</div>
-          ) : null}
         </div>
       ) : null}
     </SectionCard>
@@ -371,10 +338,7 @@ export function CheckoutSummarySection({
 
       <div className="summary-box mt-4">
         <div className="summary-box__label">Importante</div>
-        <div className="summary-box__hint flex items-start gap-2">
-          <ExternalLink className="mt-0.5 h-4 w-4 flex-none text-sky-600" />
-          <span>Si eliges transferencia, revisa los datos antes de confirmar el pedido.</span>
-        </div>
+        <div className="summary-box__hint">Si eliges transferencia, los datos y el envio del comprobante aparecen despues de confirmar el pedido.</div>
       </div>
     </SectionCard>
   );

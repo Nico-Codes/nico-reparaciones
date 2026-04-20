@@ -73,6 +73,27 @@ export function paymentMethods() {
   return Object.entries(ORDER_PAYMENT_METHODS).map(([key, label]) => ({ key, label }));
 }
 
+export function normalizePhone(value?: string | null) {
+  return (value ?? '').replace(/\D+/g, '');
+}
+
+export function normalizeWhatsappPhone(value?: string | null) {
+  const digits = normalizePhone(value);
+  if (digits.length < 10 || digits.length > 18) return null;
+  return digits;
+}
+
+export function buildWhatsappManualUrl(phone?: string | null, message?: string | null) {
+  const normalizedPhone = normalizeWhatsappPhone(phone);
+  const cleanMessage = (message ?? '').trim();
+  if (!normalizedPhone || !cleanMessage) return null;
+  const params = new URLSearchParams({
+    phone: normalizedPhone,
+    text: cleanMessage,
+  });
+  return `https://api.whatsapp.com/send?${params.toString()}`;
+}
+
 export function resolveQuickSalesRange(fromRaw?: string, toRaw?: string) {
   const now = new Date();
   const fallback = now.toISOString().slice(0, 10);

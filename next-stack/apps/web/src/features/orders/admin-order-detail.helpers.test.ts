@@ -7,6 +7,8 @@ const baseOrder: OrderItem = {
   status: 'CONFIRMADO',
   total: 15000,
   paymentMethod: 'TRANSFERENCIA',
+  transferProofUrl: null,
+  transferProofUploadedAt: null,
   isQuickSale: false,
   user: {
     id: 'usr_1',

@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { PublicAssetStorageService } from '../../common/storage/public-asset-storage.service.js';
 import { AuthModule } from '../auth/auth.module.js';
 import { CartModule } from '../cart/cart.module.js';
 import { MailModule } from '../mail/mail.module.js';
@@ -20,6 +21,7 @@ import { OrdersSupportService } from './orders-support.service.js';
     OrdersCheckoutService,
     OrdersAdminService,
     OrdersQuickSalesService,
+    PublicAssetStorageService,
     OrdersService,
   ],
 })

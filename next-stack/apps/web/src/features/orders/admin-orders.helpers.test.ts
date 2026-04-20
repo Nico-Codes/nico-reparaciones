@@ -5,6 +5,8 @@ import { buildOrderStatusCounts, buildOrderTotals, buildWhatsappCounters, hasOrd
 function makeOrder(input: Partial<OrderItem> & Pick<OrderItem, 'id' | 'status' | 'total' | 'createdAt' | 'updatedAt' | 'items'>): OrderItem {
   return {
     paymentMethod: null,
+    transferProofUrl: null,
+    transferProofUploadedAt: null,
     isQuickSale: false,
     ...input,
   };

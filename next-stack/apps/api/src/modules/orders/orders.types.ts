@@ -29,6 +29,7 @@ export type CheckoutConfig = {
     note: string;
     fields: CheckoutTransferField[];
     available: boolean;
+    supportWhatsappPhone: string | null;
   };
 };
 

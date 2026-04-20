@@ -1,4 +1,4 @@
-import { AlertTriangle, ArrowLeft, PackageCheck, ShoppingBag } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, ExternalLink, MessageCircle, PackageCheck, ReceiptText, ShoppingBag, Upload } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -76,9 +76,23 @@ export function OrderDetailEmpty({ error }: { error: string }) {
 export function OrderDetailLayout({
   order,
   transferDetails,
+  transferWhatsappUrl,
+  proofFile,
+  proofUploading,
+  proofFeedback,
+  proofFeedbackTone,
+  onProofFileChange,
+  onProofUpload,
 }: {
   order: OrderItem;
   transferDetails: CheckoutTransferDetails | null;
+  transferWhatsappUrl: string | null;
+  proofFile: File | null;
+  proofUploading: boolean;
+  proofFeedback: string;
+  proofFeedbackTone: 'success' | 'warning';
+  onProofFileChange: (file: File | null) => void;
+  onProofUpload: () => void;
 }) {
   const status = buildOrderDetailStatusMeta(order);
   const summaryFacts = buildOrderDetailSummaryFacts(order);
@@ -157,7 +171,7 @@ export function OrderDetailLayout({
           {showTransferDetails ? (
             <SectionCard
               title="Pago por transferencia"
-              description="Estos datos quedan disponibles tambien despues de confirmar el pedido."
+              description="Aqui ves los datos para pagar y el envio del comprobante una vez registrado el pedido."
               actions={
                 <StatusBadge
                   tone={transferDetails?.available ? 'info' : 'warning'}
@@ -185,6 +199,7 @@ export function OrderDetailLayout({
                   {transferDetails.note ? (
                     <div className="checkout-transfer-card__note">{transferDetails.note}</div>
                   ) : null}
+
                 </>
               ) : (
                 <div className="ui-alert ui-alert--warning">
@@ -198,6 +213,104 @@ export function OrderDetailLayout({
                   </div>
                 </div>
               )}
+
+              <div className="order-transfer-actions">
+                <div className="order-transfer-proof-card">
+                  <div className="order-transfer-proof-card__header">
+                    <div>
+                      <div className="order-transfer-proof-card__title">Comprobante</div>
+                      <div className="order-transfer-proof-card__description">
+                        Sube una imagen o PDF del pago para dejarlo adjunto al pedido.
+                      </div>
+                    </div>
+                    <StatusBadge
+                      tone={order.transferProofUrl ? 'success' : 'neutral'}
+                      size="sm"
+                      label={order.transferProofUrl ? 'Comprobante cargado' : 'Pendiente'}
+                    />
+                  </div>
+
+                  <div className="order-transfer-proof-card__controls">
+                    <label className="order-transfer-proof-picker">
+                      <input
+                        type="file"
+                        accept=".png,.jpg,.jpeg,.webp,.pdf"
+                        onChange={(event) => onProofFileChange(event.target.files?.[0] ?? null)}
+                        disabled={proofUploading}
+                      />
+                      <span>{proofFile ? proofFile.name : 'Elegir comprobante'}</span>
+                    </label>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={onProofUpload}
+                      disabled={!proofFile || proofUploading}
+                    >
+                      <Upload className="h-4 w-4" />
+                      {proofUploading ? 'Subiendo...' : 'Subir comprobante'}
+                    </Button>
+                    {order.transferProofUrl ? (
+                      <Button asChild variant="outline" size="sm">
+                        <a href={order.transferProofUrl} target="_blank" rel="noreferrer">
+                          <ReceiptText className="h-4 w-4" />
+                          Ver comprobante
+                        </a>
+                      </Button>
+                    ) : null}
+                  </div>
+
+                  {order.transferProofUploadedAt ? (
+                    <div className="order-transfer-proof-card__meta">
+                      Ultima carga: {new Date(order.transferProofUploadedAt).toLocaleString('es-AR')}
+                    </div>
+                  ) : null}
+
+                  {proofFeedback ? (
+                    <div className={`ui-alert ui-alert--${proofFeedbackTone}`}>
+                      <AlertTriangle className="mt-0.5 h-4 w-4 flex-none" />
+                      <div>
+                        <div className="ui-alert__text">{proofFeedback}</div>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className="order-transfer-proof-card">
+                  <div className="order-transfer-proof-card__header">
+                    <div>
+                      <div className="order-transfer-proof-card__title">Enviar por WhatsApp</div>
+                      <div className="order-transfer-proof-card__description">
+                        Si prefieres, manda el comprobante directamente al WhatsApp del local.
+                      </div>
+                    </div>
+                    <StatusBadge
+                      tone={transferWhatsappUrl ? 'info' : 'warning'}
+                      size="sm"
+                      label={transferWhatsappUrl ? 'WhatsApp disponible' : 'WhatsApp no configurado'}
+                    />
+                  </div>
+
+                  {transferWhatsappUrl ? (
+                    <Button asChild variant="outline">
+                      <a href={transferWhatsappUrl} target="_blank" rel="noreferrer">
+                        <MessageCircle className="h-4 w-4" />
+                        Enviar comprobante por WhatsApp
+                        <ExternalLink className="h-4 w-4" />
+                      </a>
+                    </Button>
+                  ) : (
+                    <div className="ui-alert ui-alert--warning">
+                      <AlertTriangle className="mt-0.5 h-4 w-4 flex-none" />
+                      <div>
+                        <span className="ui-alert__title">WhatsApp del local no configurado</span>
+                        <div className="ui-alert__text">
+                          Completa el telefono del local desde configuracion del negocio para habilitar este enlace.
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </SectionCard>
           ) : null}
         </div>

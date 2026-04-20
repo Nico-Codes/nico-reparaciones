@@ -1,12 +1,16 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { PublicAssetStorageService, type BufferedUploadFile } from '../../common/storage/public-asset-storage.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { ORDER_CHECKOUT_PAYMENT_METHODS, ORDER_WALKIN_EMAIL } from './orders.helpers.js';
 import type { CheckoutConfig, CheckoutPaymentMethodKey, SerializableOrder } from './orders.types.js';
 
 @Injectable()
 export class OrdersSupportService {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(PublicAssetStorageService) private readonly assetStorage: PublicAssetStorageService,
+  ) {}
 
   async getCheckoutConfig(): Promise<CheckoutConfig> {
     const keys = [
@@ -29,6 +33,7 @@ export class OrdersSupportService {
       'checkout_transfer_extra_label',
       'checkout_transfer_extra_value',
       'checkout_transfer_note',
+      'shop_phone',
     ] as const;
 
     const rows = await this.prisma.appSetting.findMany({
@@ -50,7 +55,7 @@ export class OrdersSupportService {
       this.buildCheckoutPaymentMethod(
         'transferencia',
         ORDER_CHECKOUT_PAYMENT_METHODS.transferencia,
-        'Mira los datos bancarios antes de confirmar el pedido.',
+        'Confirmas el pedido y luego veras los datos para pagar.',
         map.get('brand_asset.checkout_payment_transfer.path'),
         rowsByKey.get('brand_asset.checkout_payment_transfer.path')?.updatedAt,
       ),
@@ -91,6 +96,7 @@ export class OrdersSupportService {
           'Si tienes dudas, contactanos antes de confirmar el pago.',
         fields,
         available: fields.length > 0,
+        supportWhatsappPhone: (map.get('shop_phone') || '').trim() || null,
       },
     };
   }
@@ -101,6 +107,8 @@ export class OrdersSupportService {
       status: order.status,
       total: Number(order.total),
       paymentMethod: order.paymentMethod,
+      transferProofUrl: this.assetStorage.toPublicUrl(order.transferProofPath),
+      transferProofUploadedAt: order.transferProofUploadedAt?.toISOString() ?? null,
       isQuickSale: order.isQuickSale,
       quickSaleAdminId: order.quickSaleAdminId,
       createdAt: order.createdAt.toISOString(),
@@ -121,6 +129,24 @@ export class OrdersSupportService {
         lineTotal: Number(item.lineTotal),
       })),
     };
+  }
+
+  async replaceTransferProof(
+    orderId: string,
+    currentPath: string | null | undefined,
+    file: BufferedUploadFile,
+  ) {
+    const { ext, buffer } = this.assetStorage.validateUpload(
+      file,
+      ['png', 'jpg', 'jpeg', 'webp', 'pdf'],
+      6144,
+    );
+    const nextPath = `order-transfer-proofs/${orderId}-${Date.now().toString(36)}.${ext}`;
+    await this.assetStorage.writePublicAsset(nextPath, buffer);
+    if (currentPath && currentPath !== nextPath) {
+      await this.assetStorage.deletePublicAsset(currentPath);
+    }
+    return nextPath;
   }
 
   async getOrCreateWalkinUser() {

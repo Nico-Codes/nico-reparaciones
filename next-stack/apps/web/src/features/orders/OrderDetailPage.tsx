@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { ordersApi } from './api';
 import {
+  buildOrderTransferWhatsappUrl,
   orderUsesTransferPayment,
   resolveOrderDetailLoadError,
 } from './order-detail.helpers';
@@ -14,6 +15,10 @@ export function OrderDetailPage() {
   const [transferDetails, setTransferDetails] = useState<CheckoutTransferDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [proofFile, setProofFile] = useState<File | null>(null);
+  const [proofUploading, setProofUploading] = useState(false);
+  const [proofFeedback, setProofFeedback] = useState('');
+  const [proofFeedbackTone, setProofFeedbackTone] = useState<'success' | 'warning'>('success');
 
   useEffect(() => {
     let active = true;
@@ -27,6 +32,9 @@ export function OrderDetailPage() {
 
         const nextOrder = orderResult.value.item;
         setOrder(nextOrder);
+        setProofFile(null);
+        setProofFeedback('');
+        setProofFeedbackTone('success');
 
         if (
           orderUsesTransferPayment(nextOrder.paymentMethod) &&
@@ -45,7 +53,42 @@ export function OrderDetailPage() {
     };
   }, [id]);
 
+  const transferWhatsappUrl = useMemo(() => {
+    if (!order) return null;
+    return buildOrderTransferWhatsappUrl(order, transferDetails);
+  }, [order, transferDetails]);
+
+  async function uploadTransferProof() {
+    if (!order || !proofFile) return;
+    setProofUploading(true);
+    setProofFeedback('');
+    try {
+      const response = await ordersApi.uploadTransferProof(order.id, proofFile);
+      setOrder(response.item);
+      setProofFile(null);
+      setProofFeedback('Comprobante cargado correctamente.');
+      setProofFeedbackTone('success');
+    } catch (cause) {
+      setProofFeedback(cause instanceof Error ? cause.message : 'No pudimos cargar el comprobante.');
+      setProofFeedbackTone('warning');
+    } finally {
+      setProofUploading(false);
+    }
+  }
+
   if (loading) return <OrderDetailLoading />;
   if (error || !order) return <OrderDetailEmpty error={error} />;
-  return <OrderDetailLayout order={order} transferDetails={transferDetails} />;
+  return (
+    <OrderDetailLayout
+      order={order}
+      transferDetails={transferDetails}
+      transferWhatsappUrl={transferWhatsappUrl}
+      proofFile={proofFile}
+      proofUploading={proofUploading}
+      proofFeedback={proofFeedback}
+      proofFeedbackTone={proofFeedbackTone}
+      onProofFileChange={setProofFile}
+      onProofUpload={() => void uploadTransferProof()}
+    />
+  );
 }

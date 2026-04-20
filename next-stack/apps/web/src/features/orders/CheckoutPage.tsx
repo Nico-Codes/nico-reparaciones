@@ -9,7 +9,6 @@ import {
   buildValidCheckoutLines,
   hasInvalidCheckoutItems,
   resolveCheckoutPaymentMethods,
-  resolveCheckoutTransferDetails,
   resolveSelectedPayment,
   sameCartItems,
 } from './checkout.helpers';
@@ -89,7 +88,6 @@ export function CheckoutPage() {
   const validCheckoutItems = useMemo(() => buildCheckoutItems(validItems), [validItems]);
   const hasInvalidItems = useMemo(() => hasInvalidCheckoutItems(quote?.items ?? []), [quote]);
   const paymentOptions = useMemo(() => resolveCheckoutPaymentMethods(checkoutConfig), [checkoutConfig]);
-  const transferDetails = useMemo(() => resolveCheckoutTransferDetails(checkoutConfig), [checkoutConfig]);
   const canConfirm = !loading && !submitting && validCheckoutItems.length > 0;
   const selectedPayment = useMemo(
     () => resolveSelectedPayment(paymentMethod, paymentOptions),
@@ -151,7 +149,6 @@ export function CheckoutPage() {
           <CheckoutPaymentSection
             paymentMethod={paymentMethod}
             paymentOptions={paymentOptions}
-            transferDetails={transferDetails}
             submitting={submitting}
             onChange={setPaymentMethod}
           />

@@ -13,6 +13,35 @@
 ---
 
 ### 2026-04-20 - Codex
+- Alcance: mover la operatoria de transferencia fuera de `/checkout` y concentrarla en el detalle del pedido confirmado, con carga de comprobante y enlace a WhatsApp del local.
+- Tipo de intervencion: cambio funcional full-stack en `orders`.
+- Archivos tocados:
+  - `next-stack/apps/api/prisma/{schema.prisma,migrations/20260420153000_add_order_transfer_proof_fields/migration.sql}`
+  - `next-stack/apps/api/src/modules/orders/{orders.controller.ts,orders-checkout.service.ts,orders-support.service.ts,orders.helpers.ts,orders.helpers.test.ts,orders.module.ts,orders.service.ts,orders.types.ts}`
+  - `next-stack/apps/web/src/features/orders/{api.ts,types.ts,checkout.helpers.ts,checkout.sections.tsx,CheckoutPage.tsx,OrderDetailPage.tsx,order-detail.helpers.ts,order-detail.helpers.test.ts,order-detail.sections.tsx,admin-order-detail.helpers.test.ts,admin-orders.helpers.test.ts}`
+  - `next-stack/apps/web/src/styles/commerce.css`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. `/checkout` ya no expone datos bancarios de transferencia; despues de confirmar, `/orders/:id` muestra los datos para pagar, permite subir un comprobante persistido al pedido y ofrece un enlace directo a WhatsApp usando el telefono del local configurado.
+- Validaciones ejecutadas:
+  - `cmd /c npm run db:generate --workspace @nico/api`
+  - `cmd /c npm run db:migrate --workspace @nico/api`
+  - `cmd /c npm run typecheck --workspace @nico/api`
+  - `cmd /c npm run test --workspace @nico/api -- orders.helpers.test.ts`
+  - `cmd /c npm run build --workspace @nico/api`
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web -- order-detail.helpers.test.ts admin-order-detail.helpers.test.ts admin-orders.helpers.test.ts checkout.helpers.test.ts`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `cmd /c npm run smoke:backend` con API local levantada en segundo plano
+  - `git diff --check`
+- Riesgos / notas:
+  - el enlace a WhatsApp depende de `shop_phone`; si el telefono del local no esta cargado, el pedido muestra advertencia y no inventa destino
+  - el comprobante se reemplaza por archivo al volver a subir; no se mantiene historial de versiones
+
+---
+
+### 2026-04-20 - Codex
 - Alcance: extender el flujo de transferencia para que los datos sigan visibles en el detalle del pedido confirmado y suavizar el estilo visual por defecto de los iconos de pago.
 - Tipo de intervencion: ajuste funcional y visual puntual en frontend `orders/checkout`.
 - Archivos tocados:

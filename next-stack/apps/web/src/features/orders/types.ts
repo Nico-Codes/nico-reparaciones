@@ -12,6 +12,8 @@ export type OrderItem = {
   status: string;
   total: number;
   paymentMethod: string | null;
+  transferProofUrl: string | null;
+  transferProofUploadedAt: string | null;
   isQuickSale: boolean;
   quickSaleAdminId?: string | null;
   user?: {
@@ -53,6 +55,7 @@ export type CheckoutTransferDetails = {
   description: string;
   note: string;
   available: boolean;
+  supportWhatsappPhone: string | null;
   fields: CheckoutTransferField[];
 };
 

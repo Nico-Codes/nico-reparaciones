@@ -1,6 +1,16 @@
-import { authJsonRequest } from '@/features/auth/http';
+import { authFetch, authJsonRequest } from '@/features/auth/http';
 import type { CartLocalItem } from '@/features/cart/types';
 import type { CheckoutConfig, OrderItem, QuickSaleHistoryItem } from './types';
+
+async function authMultipartRequest<T>(path: string, form: FormData): Promise<T> {
+  const res = await authFetch(path, {
+    method: 'POST',
+    body: form,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error((data?.message as string) || `Error ${res.status}`);
+  return data as T;
+}
 
 export const ordersApi = {
   checkoutConfig() {
@@ -17,6 +27,11 @@ export const ordersApi = {
   },
   myOrder(id: string) {
     return authJsonRequest<{ item: OrderItem }>('/orders/my/' + encodeURIComponent(id), { method: 'GET' });
+  },
+  uploadTransferProof(id: string, file: File) {
+    const form = new FormData();
+    form.append('file', file);
+    return authMultipartRequest<{ item: OrderItem }>(`/orders/my/${encodeURIComponent(id)}/transfer-proof`, form);
   },
   adminOrders(params?: { status?: string; q?: string }) {
     const qs = new URLSearchParams();

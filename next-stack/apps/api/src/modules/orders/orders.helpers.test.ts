@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
   assertValidOrderStatusTransition,
+  buildWhatsappManualUrl,
   normalizeCheckoutPaymentMethod,
   normalizeOrderStatus,
   normalizePaymentMethod,
+  normalizeWhatsappPhone,
   resolveQuickSalesRange,
 } from './orders.helpers.js';
 
@@ -33,5 +35,11 @@ describe('orders.helpers', () => {
     const range = resolveQuickSalesRange('2026-03-10', '2026-03-05');
     expect(range.from).toBe('2026-03-05');
     expect(range.to).toBe('2026-03-10');
+  });
+
+  it('normalizes whatsapp numbers and builds manual url', () => {
+    expect(normalizeWhatsappPhone('+54 9 341 555 1212')).toBe('5493415551212');
+    expect(buildWhatsappManualUrl('+54 9 341 555 1212', 'Hola')).toContain('phone=5493415551212');
+    expect(buildWhatsappManualUrl('123', 'Hola')).toBeNull();
   });
 });

@@ -167,6 +167,8 @@ model Order {
   status           OrderStatus @default(PENDIENTE)
   total            Decimal     @db.Decimal(12, 2)
   paymentMethod    String?
+  transferProofPath String?
+  transferProofUploadedAt DateTime?
   isQuickSale      Boolean     @default(false)
   quickSaleAdminId String?
   createdAt        DateTime    @default(now())
