@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Boxes,
@@ -32,7 +32,7 @@ type AdminVisualIdentityResourcesSectionProps = {
   loading: boolean;
   uploadingSlot: string | null;
   selectedFiles: Record<string, File | null>;
-  onSelectFile: (slot: string, file: File | null) => void;
+  onSelectFile: (item: AssetCard, file: File | null) => void;
   onUpload: (item: AssetCard) => void;
   onReset: (item: AssetCard) => void;
 };
@@ -118,7 +118,7 @@ export function AdminVisualIdentityResourcesSection({
                     isCustom={assetState.isCustom}
                     displayPath={assetState.displayPath}
                     imageUrl={brandAssetsApi.toApiAssetUrl(assetState.effectivePath, assetState.updatedAt)}
-                    onSelectFile={(file) => onSelectFile(item.slot, file)}
+                    onSelectFile={(file) => onSelectFile(item, file)}
                     onUpload={() => onUpload(item)}
                     onReset={() => onReset(item)}
                   />
@@ -200,19 +200,33 @@ function AssetUploadCard({
         />
       </label>
 
+      {selectedFile ? (
+        <div className="mt-2 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-900">
+          {uploading
+            ? `Subiendo ${selectedFile.name}...`
+            : `Archivo seleccionado: ${selectedFile.name}. Si la subida fallo, puedes reintentarlo.`}
+        </div>
+      ) : null}
+
       <p className="mt-2 text-xs text-zinc-500">
         Formatos: {item.formats} | Max: {item.maxKb} KB
         {item.recommendedPx ? ` | Recomendado: ${item.recommendedPx}` : ''}
       </p>
 
-      <button
-        type="button"
-        disabled={loading || uploading || !selectedFile}
-        onClick={onUpload}
-        className="mt-3 h-11 w-full rounded-2xl bg-zinc-300 px-4 text-base font-black text-white disabled:opacity-80"
-      >
-        {uploading ? 'Subiendo...' : 'Subir archivo'}
-      </button>
+      {selectedFile ? (
+        <button
+          type="button"
+          disabled={loading || uploading}
+          onClick={onUpload}
+          className="mt-3 h-11 w-full rounded-2xl bg-zinc-300 px-4 text-base font-black text-white disabled:opacity-80"
+        >
+          {uploading ? 'Subiendo...' : 'Reintentar subida'}
+        </button>
+      ) : (
+        <div className="mt-3 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-600">
+          El archivo se sube apenas lo eliges.
+        </div>
+      )}
 
       {item.showReset ? (
         <button
@@ -237,34 +251,25 @@ function AssetImagePreview({
   selectedFile: File | null;
   imageUrl: string | null;
 }) {
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!selectedFile) {
-      setPreviewUrl(null);
-      return undefined;
-    }
-
-    const nextPreviewUrl = URL.createObjectURL(selectedFile);
-    setPreviewUrl(nextPreviewUrl);
-    return () => URL.revokeObjectURL(nextPreviewUrl);
-  }, [selectedFile]);
-
   const imageClass = item.preview.kind === 'hero' ? 'h-full w-full object-cover' : 'h-full w-full object-contain';
   const showGeneratedPreview =
     item.preview.kind === 'brand' || item.preview.kind === 'icon' || item.preview.kind === 'logo' || item.defaultPath.trim().length > 0;
 
   return (
     <div className="mt-3 flex h-28 items-center justify-center overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50">
-      {previewUrl || imageUrl ? (
-        <img src={previewUrl ?? imageUrl ?? undefined} alt={item.title} className={imageClass} />
+      {imageUrl ? (
+        <img src={imageUrl} alt={item.title} className={imageClass} />
       ) : showGeneratedPreview ? (
         <Preview spec={item.preview} />
       ) : (
         <div className="flex h-full w-full flex-col items-center justify-center gap-1 px-4 text-center">
           <p className="text-sm font-black text-zinc-800">Sin imagen configurada</p>
           <p className="text-xs text-zinc-500">
-            {item.recommendedPx ? `Sube un archivo. Recomendado: ${item.recommendedPx}` : 'Sube un archivo para ver la previsualizacion real.'}
+            {selectedFile
+              ? `Archivo seleccionado: ${selectedFile.name}. La previsualizacion cambia cuando queda guardado.`
+              : item.recommendedPx
+                ? `Sube un archivo. Recomendado: ${item.recommendedPx}`
+                : 'Sube un archivo para ver la previsualizacion real.'}
           </p>
         </div>
       )}

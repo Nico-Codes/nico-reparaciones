@@ -35,8 +35,8 @@ export function AdminVisualIdentityPage() {
     }
   }
 
-  async function uploadAsset(item: AssetCard) {
-    const file = selectedFiles[item.slot];
+  async function uploadAsset(item: AssetCard, explicitFile?: File | null) {
+    const file = explicitFile ?? selectedFiles[item.slot];
     if (!file) return;
     setUploadingSlot(item.slot);
     setError('');
@@ -51,6 +51,12 @@ export function AdminVisualIdentityPage() {
     } finally {
       setUploadingSlot(null);
     }
+  }
+
+  async function handleSelectFile(item: AssetCard, file: File | null) {
+    setSelectedFiles((current) => ({ ...current, [item.slot]: file }));
+    if (!file) return;
+    await uploadAsset(item, file);
   }
 
   async function resetAsset(item: AssetCard) {
@@ -78,7 +84,7 @@ export function AdminVisualIdentityPage() {
         loading={loading}
         uploadingSlot={uploadingSlot}
         selectedFiles={selectedFiles}
-        onSelectFile={(slot, file) => setSelectedFiles((current) => ({ ...current, [slot]: file }))}
+        onSelectFile={(item, file) => void handleSelectFile(item, file)}
         onUpload={(item) => void uploadAsset(item)}
         onReset={(item) => void resetAsset(item)}
       />

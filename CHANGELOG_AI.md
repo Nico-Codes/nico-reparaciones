@@ -3069,3 +3069,22 @@ pm run qa:frontend:e2e
   - lo que sigue grande en el arbol son mayormente pantallas ya seccionadas o archivos `sections.tsx` deliberadamente densos, no nuevos hotspots sin estructura
 
 ---
+### 2026-04-20 - Codex
+- Alcance: corregir la UX de carga de assets en identidad visual para evitar que la previsualizacion simule persistencia antes de guardar.
+- Tipo de intervencion: ajuste funcional de frontend en admin.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/admin/AdminVisualIdentityPage.tsx`
+  - `next-stack/apps/web/src/features/admin/admin-visual-identity.sections.tsx`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. Elegir un archivo en identidad visual ahora dispara la subida real de inmediato; la previsualizacion muestra solo la imagen persistida y no un blob temporal local. Si la subida falla, queda un estado explicito para reintento.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - el boton `Reintentar subida` solo queda visible si hubo seleccion de archivo y la subida automatica no termino bien
+  - la imagen de auth sigue dependiendo del slot correcto (`desktop` o `mobile`) segun el viewport real del login
+
+---
