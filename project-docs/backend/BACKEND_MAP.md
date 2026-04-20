@@ -101,3 +101,14 @@ No existe ya backend legacy dentro del repo. Todo comportamiento servidor activo
   - sin aliases
   - sin expansion por grupo/modelo
   - si no hay match exacto util, se prefiere `0 resultados`
+
+## Repairs: WhatsApp al cliente
+
+- `RepairsNotificationsService` concentra la construccion del mensaje WhatsApp por estado de reparacion y ahora sirve tanto para:
+  - dispatch `cloud` por cambio de estado
+  - borrador `manual` para apertura asistida desde admin
+- `RepairsController` expone dos endpoints admin nuevos:
+  - `GET /api/repairs/admin/:id/whatsapp-draft`
+  - `POST /api/repairs/admin/:id/whatsapp-manual-log`
+- `WhatsappService` suma `createManualLog()` para guardar trazabilidad manual sin intentar dispatch por Meta.
+- La separacion `manual` vs `cloud` se guarda en `meta.deliveryMode`; no hay migracion ni columna nueva en `WhatsAppLog`.

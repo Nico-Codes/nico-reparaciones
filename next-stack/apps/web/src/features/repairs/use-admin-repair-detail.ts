@@ -11,7 +11,7 @@ import {
 } from './admin-repair-detail.helpers';
 import { buildRepairPricingInput, formatSuggestedPriceInput } from './repair-pricing';
 import { repairCode, repairStatusLabel, repairStatusSummary, repairStatusTone } from './repair-ui';
-import type { RepairItem, RepairPricingSnapshotItem, RepairTimelineEvent } from './types';
+import type { RepairItem, RepairPricingSnapshotItem, RepairTimelineEvent, RepairWhatsappDraft } from './types';
 
 type UseAdminRepairDetailParams = {
   id: string;
@@ -21,6 +21,7 @@ type UseAdminRepairDetailParams = {
 export function useAdminRepairDetail({ id, initialNotice }: UseAdminRepairDetailParams) {
   const detailRequestIdRef = useRef(0);
   const pricingRequestIdRef = useRef(0);
+  const whatsappRequestIdRef = useRef(0);
 
   const [item, setItem] = useState<RepairItem | null>(null);
   const [timeline, setTimeline] = useState<RepairTimelineEvent[]>([]);
@@ -37,6 +38,10 @@ export function useAdminRepairDetail({ id, initialNotice }: UseAdminRepairDetail
   const [notice, setNotice] = useState(initialNotice);
   const [fieldErrors, setFieldErrors] = useState<AdminRepairDetailFormErrors>({});
   const [pendingPricingSnapshotDraft, setPendingPricingSnapshotDraft] = useState<RepairPricingSnapshotDraft | null>(null);
+  const [whatsappDraft, setWhatsappDraft] = useState<RepairWhatsappDraft | null>(null);
+  const [whatsappLoading, setWhatsappLoading] = useState(false);
+  const [whatsappError, setWhatsappError] = useState('');
+  const [whatsappOpening, setWhatsappOpening] = useState(false);
   const [status, setStatus] = useState('RECEIVED');
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
@@ -70,6 +75,8 @@ export function useAdminRepairDetail({ id, initialNotice }: UseAdminRepairDetail
     const requestId = ++detailRequestIdRef.current;
     if (options?.showLoading !== false) setLoading(true);
     setLoadError('');
+    setWhatsappDraft(null);
+    setWhatsappError('');
     try {
       const res = await repairsApi.adminDetail(repairId);
       if (requestId !== detailRequestIdRef.current) return;
@@ -77,12 +84,31 @@ export function useAdminRepairDetail({ id, initialNotice }: UseAdminRepairDetail
       setTimeline(res.timeline ?? []);
       setPricingSnapshots(res.pricingSnapshots ?? []);
       hydrateForm(res.item);
+      void loadWhatsappDraft(res.item.id);
     } catch (cause) {
       if (requestId !== detailRequestIdRef.current) return;
       setLoadError(cause instanceof Error ? cause.message : 'No se pudo cargar la reparacion.');
+      setWhatsappDraft(null);
     } finally {
       if (requestId !== detailRequestIdRef.current) return;
       setLoading(false);
+    }
+  }
+
+  async function loadWhatsappDraft(repairId: string) {
+    const requestId = ++whatsappRequestIdRef.current;
+    setWhatsappLoading(true);
+    setWhatsappError('');
+    try {
+      const response = await repairsApi.adminWhatsappDraft(repairId);
+      if (requestId !== whatsappRequestIdRef.current) return;
+      setWhatsappDraft(response.item);
+    } catch (cause) {
+      if (requestId !== whatsappRequestIdRef.current) return;
+      setWhatsappDraft(null);
+      setWhatsappError(cause instanceof Error ? cause.message : 'No pudimos preparar el mensaje de WhatsApp.');
+    } finally {
+      if (requestId === whatsappRequestIdRef.current) setWhatsappLoading(false);
     }
   }
 
@@ -248,6 +274,27 @@ export function useAdminRepairDetail({ id, initialNotice }: UseAdminRepairDetail
     }
   }
 
+  async function openManualWhatsapp() {
+    if (!item || !whatsappDraft?.openUrl || !whatsappDraft.canSend || whatsappOpening) return;
+
+    setWhatsappError('');
+    const popup = window.open(whatsappDraft.openUrl, '_blank', 'noopener,noreferrer');
+    if (!popup) {
+      setWhatsappError('No pudimos abrir WhatsApp. Revisa si el navegador bloqueo la ventana emergente.');
+      return;
+    }
+
+    setWhatsappOpening(true);
+    try {
+      await repairsApi.adminCreateWhatsappManualLog(item.id);
+      await loadWhatsappDraft(item.id);
+    } catch (cause) {
+      setWhatsappError(cause instanceof Error ? cause.message : 'Abrimos WhatsApp, pero no pudimos registrar la accion.');
+    } finally {
+      setWhatsappOpening(false);
+    }
+  }
+
   const statusLabel = item ? repairStatusLabel(item.status) : '';
   const statusTone = item ? repairStatusTone(item.status) : 'neutral';
   const statusSummary = item ? repairStatusSummary(item.status) : '';
@@ -290,6 +337,10 @@ export function useAdminRepairDetail({ id, initialNotice }: UseAdminRepairDetail
     statusSummary,
     code,
     deviceLabel,
+    whatsappDraft,
+    whatsappLoading,
+    whatsappError,
+    whatsappOpening,
     formValues,
     normalizedDraft,
     pendingPricingSnapshotDraft,
@@ -304,6 +355,7 @@ export function useAdminRepairDetail({ id, initialNotice }: UseAdminRepairDetail
     setNotes,
     reload: (options?: { showLoading?: boolean }) => void loadDetail(id, options),
     save: () => void saveChanges(),
+    openManualWhatsapp: () => void openManualWhatsapp(),
     recalculateSuggestedPrice: () => void recalculateSuggestedPrice(),
     useSuggestedPrice,
     providerPartProps: item

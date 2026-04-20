@@ -86,6 +86,20 @@ export class RepairsController {
     return this.repairsService.adminDetail(id);
   }
 
+  @Get('admin/:id/whatsapp-draft')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  adminWhatsappDraft(@Param('id') id: string) {
+    return this.repairsService.adminWhatsappDraft(id);
+  }
+
+  @Post('admin/:id/whatsapp-manual-log')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  adminCreateWhatsappManualLog(@Param('id') id: string) {
+    return this.repairsService.adminCreateWhatsappManualLog(id);
+  }
+
   @Post('admin')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')

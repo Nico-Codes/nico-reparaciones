@@ -86,3 +86,18 @@ export type QuoteApprovalTokenPayload = {
   type: 'repair_quote';
   repairId: string;
 };
+
+export type RepairWhatsappDraft = {
+  repairId: string;
+  templateKey: string;
+  statusKey: string;
+  statusLabel: string;
+  phone: string | null;
+  normalizedPhone: string | null;
+  message: string;
+  openUrl: string | null;
+  canSend: boolean;
+  reason: string | null;
+  deliveryMode: 'manual';
+  cloudStatus: 'configured' | 'unavailable';
+};

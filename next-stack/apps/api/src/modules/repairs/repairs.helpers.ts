@@ -31,6 +31,23 @@ export function maskPhone(phone: string) {
   return `${'*'.repeat(Math.max(0, digits.length - 4))}${digits.slice(-4)}`;
 }
 
+export function normalizeWhatsappPhone(value?: string | null) {
+  const digits = normalizePhone(value);
+  if (digits.length < 10 || digits.length > 18) return null;
+  return digits;
+}
+
+export function buildWhatsappManualUrl(phone?: string | null, message?: string | null) {
+  const normalizedPhone = normalizeWhatsappPhone(phone);
+  const cleanMessage = (message ?? '').trim();
+  if (!normalizedPhone || !cleanMessage) return null;
+  const params = new URLSearchParams({
+    phone: normalizedPhone,
+    text: cleanMessage,
+  });
+  return `https://api.whatsapp.com/send?${params.toString()}`;
+}
+
 export function roundMoney(value: number) {
   return Math.round(value * 100) / 100;
 }

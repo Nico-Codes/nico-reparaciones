@@ -13,6 +13,12 @@ type CreateAndDispatchLogInput = {
   meta?: Record<string, unknown> | null;
 };
 
+type CreateManualLogInput = CreateAndDispatchLogInput & {
+  provider?: string | null;
+  providerStatus?: string | null;
+  status?: string | null;
+};
+
 type WebhookVerificationResult =
   | { ok: true; challenge: string }
   | { ok: false; error: 'not_configured' | 'invalid_request' | 'forbidden' };
@@ -52,6 +58,32 @@ export class WhatsappService {
 
     const item = await this.dispatchLog(row.id);
     return { item };
+  }
+
+  async createManualLog(input: CreateManualLogInput) {
+    const now = new Date();
+    const row = await this.prisma.whatsAppLog.create({
+      data: {
+        channel: (input.channel ?? '').trim() || 'general',
+        templateKey: this.cleanNullable(input.templateKey),
+        targetType: this.cleanNullable(input.targetType),
+        targetId: this.cleanNullable(input.targetId),
+        phone: this.cleanNullable(input.phone),
+        recipient: this.cleanNullable(input.recipient),
+        provider: this.cleanNullable(input.provider) ?? 'manual_whatsapp',
+        status: this.cleanNullable(input.status) ?? 'MANUAL',
+        providerStatus: this.cleanNullable(input.providerStatus) ?? 'manual_opened',
+        message: this.cleanNullable(input.message),
+        metaJson: input.meta ? JSON.stringify(input.meta) : null,
+        lastAttemptAt: now,
+      },
+    });
+
+    return { item: this.serializeLog(row) };
+  }
+
+  isCloudConfigured() {
+    return this.getCloudConfig().enabled;
   }
 
   async dispatchLog(logId: string) {

@@ -3144,3 +3144,28 @@ pm run qa:frontend:e2e
   - el panel visual sigue usando sombra suave de texto para legibilidad, pero sin tapar la imagen con una capa oscura fija
 
 ---
+### 2026-04-20 - Codex
+- Alcance: agregar fallback oficial de WhatsApp manual asistido por reparacion mientras Cloud API sigue en preparacion.
+- Tipo de intervencion: ajuste funcional full-stack en `repairs` + `whatsapp`.
+- Archivos tocados:
+  - `next-stack/apps/api/src/modules/{repairs/{repairs.controller.ts,repairs.service.ts,repairs-admin.service.ts,repairs-notifications.service.ts,repairs.helpers.ts,repairs.helpers.test.ts,repairs.types.ts},whatsapp/whatsapp.service.ts}`
+  - `next-stack/apps/web/src/features/repairs/{api.ts,types.ts,use-admin-repair-detail.ts,admin-repair-detail.sections.tsx,admin-repair-detail-sidebar.tsx,AdminRepairDetailPage.tsx}`
+  - `next-stack/apps/web/src/styles/repairs.css`
+  - `project-docs/{DECISIONS_LOG.md,backend/BACKEND_MAP.md,frontend/FRONTEND_MAP.md}`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. El detalle admin de reparacion ahora muestra un bloque `WhatsApp cliente` con preview del mensaje, telefono normalizado y boton `Abrir WhatsApp`, aun cuando Meta Cloud este apagado. Backend agrega borrador admin y registro manual de log sin dispatch.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/api`
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/api`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/api`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:backend`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - el fallback manual abre WhatsApp con el telefono guardado tal como se normaliza hoy a digitos; si el dato maestro del cliente viene sin codigo de pais, la apertura puede seguir siendo limitada
+  - la automatizacion real de produccion sigue pendiente de migrar a templates oficiales de Meta; esta etapa no cambia eso
+
+---

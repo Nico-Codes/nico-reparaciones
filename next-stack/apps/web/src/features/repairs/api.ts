@@ -5,6 +5,7 @@ import type {
   RepairItem,
   RepairPricingSnapshotItem,
   RepairTimelineEvent,
+  RepairWhatsappDraft,
 } from './types';
 
 export type AdminRepairCreateInput = {
@@ -234,6 +235,20 @@ export const repairsApi = {
   },
   adminDetail(id: string) {
     return authJsonRequest<AdminRepairDetailResponse>(`/repairs/admin/${encodeURIComponent(id)}`);
+  },
+  adminWhatsappDraft(id: string) {
+    return authJsonRequest<{ item: RepairWhatsappDraft }>(`/repairs/admin/${encodeURIComponent(id)}/whatsapp-draft`);
+  },
+  adminCreateWhatsappManualLog(id: string) {
+    return authJsonRequest<{
+      item: {
+        id: string;
+        status: string;
+        providerStatus: string | null;
+      };
+    }>(`/repairs/admin/${encodeURIComponent(id)}/whatsapp-manual-log`, {
+      method: 'POST',
+    });
   },
   adminCreate(input: AdminRepairCreateInput) {
     return authJsonRequest<RepairItem>('/repairs/admin', {

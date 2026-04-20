@@ -12,7 +12,7 @@ import {
   type AdminRepairDetailFormValues,
 } from './admin-repair-detail.helpers';
 import { money } from './repair-ui';
-import type { RepairItem, RepairTimelineEvent } from './types';
+import type { RepairItem, RepairTimelineEvent, RepairWhatsappDraft } from './types';
 import { AdminRepairDetailSuggestedPricingSection } from './admin-repair-detail-pricing-panels';
 import { AdminRepairDetailSidebar } from './admin-repair-detail-sidebar';
 import { AdminRepairDetailStatusSection } from './admin-repair-detail-status-panels';
@@ -68,6 +68,11 @@ type SidebarProps = {
   code: string;
   statusLabel: string;
   timeline: RepairTimelineEvent[];
+  whatsappDraft: RepairWhatsappDraft | null;
+  whatsappLoading: boolean;
+  whatsappError: string;
+  whatsappOpening: boolean;
+  onOpenManualWhatsapp: () => void;
 };
 
 export function AdminRepairDetailStatsGrid({ summary }: StatsGridProps) {

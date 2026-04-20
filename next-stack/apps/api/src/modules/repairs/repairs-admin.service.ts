@@ -197,6 +197,24 @@ export class RepairsAdminService {
     };
   }
 
+  async adminWhatsappDraft(id: string) {
+    const repair = await this.prisma.repair.findUnique({ where: { id } });
+    if (!repair) throw new NotFoundException('Reparacion no encontrada');
+    return { item: await this.repairsNotificationsService.buildRepairWhatsappDraft(repair) };
+  }
+
+  async adminCreateWhatsappManualLog(id: string) {
+    const repair = await this.prisma.repair.findUnique({ where: { id } });
+    if (!repair) throw new NotFoundException('Reparacion no encontrada');
+
+    const draft = await this.repairsNotificationsService.buildRepairWhatsappDraft(repair);
+    if (!draft.canSend) {
+      throw new BadRequestException(draft.reason || 'No hay un telefono valido para abrir WhatsApp.');
+    }
+
+    return this.repairsNotificationsService.createRepairManualWhatsappLog(repair);
+  }
+
   async adminUpdateStatus(id: string, statusRaw: string, finalPrice?: number | null, notes?: string | null) {
     const previous = await this.prisma.repair.findUnique({ where: { id } });
     if (!previous) throw new NotFoundException('Reparacion no encontrada');

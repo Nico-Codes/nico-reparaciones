@@ -42,6 +42,14 @@ export class RepairsService {
     return this.repairsAdminService.adminDetail(id);
   }
 
+  async adminWhatsappDraft(id: string) {
+    return this.repairsAdminService.adminWhatsappDraft(id);
+  }
+
+  async adminCreateWhatsappManualLog(id: string) {
+    return this.repairsAdminService.adminCreateWhatsappManualLog(id);
+  }
+
   async adminUpdateStatus(id: string, statusRaw: string, finalPrice?: number | null, notes?: string | null) {
     return this.repairsAdminService.adminUpdateStatus(id, statusRaw, finalPrice, notes);
   }

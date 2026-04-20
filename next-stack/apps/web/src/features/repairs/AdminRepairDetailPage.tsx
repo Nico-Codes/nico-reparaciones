@@ -227,6 +227,11 @@ export function AdminRepairDetailPage() {
           code={detail.code}
           statusLabel={detail.statusLabel}
           timeline={detail.timeline}
+          whatsappDraft={detail.whatsappDraft}
+          whatsappLoading={detail.whatsappLoading}
+          whatsappError={detail.whatsappError}
+          whatsappOpening={detail.whatsappOpening}
+          onOpenManualWhatsapp={detail.openManualWhatsapp}
         />
       </div>
     </PageShell>

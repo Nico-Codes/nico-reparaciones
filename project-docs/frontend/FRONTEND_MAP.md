@@ -763,6 +763,18 @@ Con este cierre, lo que queda grande en frontend ya no son paginas o `sections.t
   - `Incluir en busqueda de reparaciones`: entra o no al agregado del flujo de repuestos
 - Esto evita que filas dummy/historicas contaminen el buscador de `repairs` aunque sigan existiendo en el registry para auditoria o pruebas puntuales.
 
+## Repairs: WhatsApp manual asistido
+
+- `AdminRepairDetailPage.tsx` ahora muestra un bloque `WhatsApp cliente` dentro del sidebar del caso.
+- `use-admin-repair-detail.ts` hidrata un borrador server-side desde `GET /api/repairs/admin/:id/whatsapp-draft` y expone la accion `openManualWhatsapp()`.
+- `admin-repair-detail-sidebar.tsx` muestra:
+  - telefono destino
+  - telefono normalizado
+  - templateKey/status
+  - preview del mensaje
+  - CTA `Abrir WhatsApp`
+- El flujo del detalle no depende de Meta Cloud para operar: si Cloud esta incompleto, la UI sigue funcionando con fallback manual y solo cambia el badge de estado tecnico.
+
 ### Evidencia funcional
 - `npm run smoke:web` OK
 - `npm run qa:route-parity` OK

@@ -2,10 +2,12 @@ import { Prisma, type Repair } from '@prisma/client';
 import { describe, expect, it } from 'vitest';
 import {
   assertValidRepairStatusTransition,
+  buildWhatsappManualUrl,
   buildCreatedAtRange,
   detectChangedFields,
   maskPhone,
   normalizeRepairStatus,
+  normalizeWhatsappPhone,
 } from './repairs.helpers.js';
 
 function makeRepair(overrides: Partial<Repair> = {}): Repair {
@@ -64,5 +66,13 @@ describe('repairs.helpers', () => {
 
   it('masks phone keeping only the last digits', () => {
     expect(maskPhone('3411234567')).toBe('******4567');
+  });
+
+  it('normalizes whatsapp phones and builds a manual send url', () => {
+    expect(normalizeWhatsappPhone('+54 9 341 123 4567')).toBe('5493411234567');
+    expect(normalizeWhatsappPhone('12345')).toBeNull();
+    expect(buildWhatsappManualUrl('+54 9 341 123 4567', 'Hola Nico')).toBe(
+      'https://api.whatsapp.com/send?phone=5493411234567&text=Hola+Nico',
+    );
   });
 });

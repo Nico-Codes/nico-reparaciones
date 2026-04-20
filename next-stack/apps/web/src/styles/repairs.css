@@ -98,3 +98,41 @@
   justify-content: flex-end;
 }
 
+.repair-whatsapp-preview {
+  border-radius: 1.1rem;
+  border: 1px solid rgba(226, 232, 240, 0.92);
+  background: rgba(248, 250, 252, 0.86);
+  padding: 0.9rem 1rem;
+}
+
+.repair-whatsapp-preview__label {
+  font-size: 0.74rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--nr-text-muted);
+}
+
+.repair-whatsapp-preview__hint {
+  margin-top: 0.45rem;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--nr-text-body);
+}
+
+.repair-whatsapp-preview__body {
+  margin-top: 0.7rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 0.86rem;
+  line-height: 1.6;
+  color: var(--nr-text-body);
+  font-family:
+    "IBM Plex Mono",
+    "SFMono-Regular",
+    Consolas,
+    "Liberation Mono",
+    Menlo,
+    monospace;
+}
+
