@@ -59,7 +59,9 @@ export type StoreBrandingAssets = {
     eyebrow: string;
     title: string;
     description: string;
-    textColor: string;
+    eyebrowColor: string;
+    titleColor: string;
+    descriptionColor: string;
   };
   icons: {
     settings: string | null;

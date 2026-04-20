@@ -114,15 +114,19 @@ export function AuthLayout({
     eyebrow: 'Cuenta web',
     title: 'Acceso claro y ordenado.',
     description: 'Tu cuenta Nico para entrar, seguir pedidos y consultar reparaciones sin friccion.',
-    textColor: '#FFFFFF',
+    eyebrowColor: '#FFFFFF',
+    titleColor: '#FFFFFF',
+    descriptionColor: '#FFFFFF',
   };
   const hideGuestLoginCta = !authUser && location.pathname === '/auth/login';
   const authVisualStyle = useMemo(
     () =>
       ({
-        '--auth-visual-text-color': resolveAuthTextColor(authVisualContent.textColor),
+        '--auth-visual-eyebrow-color': resolveAuthTextColor(authVisualContent.eyebrowColor),
+        '--auth-visual-title-color': resolveAuthTextColor(authVisualContent.titleColor),
+        '--auth-visual-description-color': resolveAuthTextColor(authVisualContent.descriptionColor),
       }) as CSSProperties,
-    [authVisualContent.textColor],
+    [authVisualContent.descriptionColor, authVisualContent.eyebrowColor, authVisualContent.titleColor],
   );
 
   const desktopLinks = useMemo(

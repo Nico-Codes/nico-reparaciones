@@ -112,6 +112,9 @@ export class StoreService {
         'auth_panel_title',
         'auth_panel_description',
         'auth_panel_text_color',
+        'auth_panel_eyebrow_color',
+        'auth_panel_title_color',
+        'auth_panel_description_color',
         'brand_asset.icon_settings.path',
         'brand_asset.icon_carrito.path',
         'brand_asset.icon_logout.path',
@@ -131,6 +134,7 @@ export class StoreService {
       const rows = await this.prisma.appSetting.findMany({ where: { key: { in: [...keys] } } });
       const map = new Map(rows.map((r) => [r.key, r.value ?? '']));
       const rowsByKey = new Map(rows.map((row) => [row.key, row]));
+      const legacyAuthTextColor = (map.get('auth_panel_text_color') || '#FFFFFF').trim() || '#FFFFFF';
       const raw = {
         siteTitle: map.get('business_name') || map.get('shop_name') || 'NicoReparaciones',
         logoPrincipal: map.get('brand_asset.logo_principal.path') || 'brand/logo.png',
@@ -166,7 +170,9 @@ export class StoreService {
           description:
             (map.get('auth_panel_description') || 'Tu cuenta Nico para entrar, seguir pedidos y consultar reparaciones sin friccion.').trim() ||
             'Tu cuenta Nico para entrar, seguir pedidos y consultar reparaciones sin friccion.',
-          textColor: (map.get('auth_panel_text_color') || '#FFFFFF').trim() || '#FFFFFF',
+          eyebrowColor: (map.get('auth_panel_eyebrow_color') || legacyAuthTextColor).trim() || '#FFFFFF',
+          titleColor: (map.get('auth_panel_title_color') || legacyAuthTextColor).trim() || '#FFFFFF',
+          descriptionColor: (map.get('auth_panel_description_color') || legacyAuthTextColor).trim() || '#FFFFFF',
         },
         icons: {
           settings: this.resolveSettingAssetUrl(raw.iconSettings, rowsByKey.get('brand_asset.icon_settings.path')?.updatedAt),
@@ -200,7 +206,9 @@ export class StoreService {
           eyebrow: 'Cuenta web',
           title: 'Acceso claro y ordenado.',
           description: 'Tu cuenta Nico para entrar, seguir pedidos y consultar reparaciones sin friccion.',
-          textColor: '#FFFFFF',
+          eyebrowColor: '#FFFFFF',
+          titleColor: '#FFFFFF',
+          descriptionColor: '#FFFFFF',
         },
         icons: {
           settings: this.resolveHeroAssetUrl('icons/settings.svg'),

@@ -60,6 +60,18 @@ Registrar decisiones tecnicas confirmadas para evitar dependencia de memoria ora
 - Validacion requerida: `typecheck --workspace @nico/api`, `test --workspace @nico/api`, `build --workspace @nico/api`, `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `git diff --check`.
 - Responsable: Codex + operador humano
 
+### [DL-0106]
+- Fecha: 2026-04-20
+- Estado: aceptada
+- Tema: el panel visual de auth usa colores independientes para eyebrow, titulo y descripcion
+- Contexto: la primera version editable de branding para auth habia resuelto el copy y habia movido el color a configuracion, pero seguia usando un solo `auth_panel_text_color` para los tres textos. Eso limitaba demasiado el ajuste visual y hacia que un cambio menor en el eyebrow o en la descripcion arrastrara todo el bloque.
+- Decision: mantener el circuito de branding ya creado, pero dividir el color en tres settings especificos: `auth_panel_eyebrow_color`, `auth_panel_title_color` y `auth_panel_description_color`. `StoreService` expone los tres colores en `/api/store/branding`; `AuthLayout` los aplica por separado con variables CSS independientes; y `AdminVisualIdentityPage` agrega tres campos + pickers dedicados. Para no romper instalaciones existentes, si esos tres settings todavia no existen se usa `auth_panel_text_color` como fallback legacy.
+- Impacto: el operador puede ajustar la jerarquia visual del panel izquierdo de auth con mas precision, sin perder compatibilidad con configuraciones previas. El cambio no afecta rutas ni contratos publicos fuera del bloque `authPanelContent` de branding.
+- Alternativas consideradas: mantener un solo color y resolver diferencias con opacidad CSS, o agregar presets cerrados; descartado porque ambas opciones dejan el branding atado a combinaciones fijas que no cubren el caso real del usuario.
+- Archivos / modulos afectados: `next-stack/apps/api/src/modules/{admin/app-settings.registry.ts,store/store.service.ts,store/store.service.test.ts}`, `next-stack/apps/web/src/features/{auth/AuthLayout.tsx,admin/{AdminVisualIdentityPage.tsx,admin-visual-identity.helpers.ts,admin-visual-identity.helpers.test.ts,admin-visual-identity.sections.tsx},store/types.ts}`, `next-stack/apps/web/src/styles/auth.css`, `project-docs/{DECISIONS_LOG.md,architecture/ARCHITECTURE.md,frontend/FRONTEND_MAP.md}`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/api`, `test --workspace @nico/api`, `build --workspace @nico/api`, `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:backend`, `smoke:web`, `git diff --check`.
+- Responsable: Codex + operador humano
+
 ---
 
 ### [DL-0104]

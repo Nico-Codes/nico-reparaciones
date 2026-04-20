@@ -159,7 +159,7 @@ export function AdminVisualIdentityAuthCopySection({
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-xl font-black tracking-tight text-zinc-900">Textos de acceso</h2>
-            <p className="mt-1 text-sm text-zinc-600">Controla el copy y el color del texto que aparece sobre la imagen del panel izquierdo de auth.</p>
+            <p className="mt-1 text-sm text-zinc-600">Controla el copy y los colores del panel izquierdo de auth sin tocar codigo.</p>
           </div>
           <span className="inline-flex h-7 items-center rounded-full border border-zinc-200 bg-zinc-50 px-3 text-sm font-black text-zinc-800">
             /auth/login
@@ -195,37 +195,87 @@ export function AdminVisualIdentityAuthCopySection({
               hint="Se usa en login, registro, reset y demas pantallas que heredan AuthLayout."
             />
 
-            <TextField
-              label="Color del texto"
-              value={form.textColor}
-              maxLength={7}
-              disabled={disabled}
-              onChange={(event) => onChange('textColor', event.target.value.toUpperCase())}
-              hint="Usa formato HEX. Ejemplo: #FFFFFF"
-              trailing={
-                <input
-                  type="color"
-                  aria-label="Elegir color del texto"
-                  value={normalizeHexColor(form.textColor)}
-                  disabled={disabled}
-                  className="h-8 w-8 cursor-pointer rounded-full border border-zinc-200 bg-transparent p-0"
-                  onChange={(event) => onChange('textColor', event.target.value.toUpperCase())}
-                />
-              }
-            />
+            <div className="grid gap-4 md:grid-cols-3">
+              <TextField
+                label="Color texto superior"
+                value={form.eyebrowColor}
+                maxLength={7}
+                disabled={disabled}
+                onChange={(event) => onChange('eyebrowColor', event.target.value.toUpperCase())}
+                hint="HEX. Ejemplo: #FFFFFF"
+                trailing={
+                  <input
+                    type="color"
+                    aria-label="Elegir color del texto superior"
+                    value={normalizeHexColor(form.eyebrowColor)}
+                    disabled={disabled}
+                    className="h-8 w-8 cursor-pointer rounded-full border border-zinc-200 bg-transparent p-0"
+                    onChange={(event) => onChange('eyebrowColor', event.target.value.toUpperCase())}
+                  />
+                }
+              />
+
+              <TextField
+                label="Color titulo"
+                value={form.titleColor}
+                maxLength={7}
+                disabled={disabled}
+                onChange={(event) => onChange('titleColor', event.target.value.toUpperCase())}
+                hint="HEX. Ejemplo: #FFFFFF"
+                trailing={
+                  <input
+                    type="color"
+                    aria-label="Elegir color del titulo"
+                    value={normalizeHexColor(form.titleColor)}
+                    disabled={disabled}
+                    className="h-8 w-8 cursor-pointer rounded-full border border-zinc-200 bg-transparent p-0"
+                    onChange={(event) => onChange('titleColor', event.target.value.toUpperCase())}
+                  />
+                }
+              />
+
+              <TextField
+                label="Color descripcion"
+                value={form.descriptionColor}
+                maxLength={7}
+                disabled={disabled}
+                onChange={(event) => onChange('descriptionColor', event.target.value.toUpperCase())}
+                hint="HEX. Ejemplo: #FFFFFF"
+                trailing={
+                  <input
+                    type="color"
+                    aria-label="Elegir color de la descripcion"
+                    value={normalizeHexColor(form.descriptionColor)}
+                    disabled={disabled}
+                    className="h-8 w-8 cursor-pointer rounded-full border border-zinc-200 bg-transparent p-0"
+                    onChange={(event) => onChange('descriptionColor', event.target.value.toUpperCase())}
+                  />
+                }
+              />
+            </div>
           </div>
 
           <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
             <p className="text-sm font-black text-zinc-900">Preview de copy</p>
             <div
               className="mt-3 rounded-2xl bg-zinc-950 px-4 py-5 shadow-sm"
-              style={{ color: normalizeHexColor(form.textColor) }}
             >
-              <div className="text-[11px] font-black uppercase tracking-[0.16em] opacity-80">{form.eyebrow || DEFAULT_AUTH_VISUAL_FORM_STATE.eyebrow}</div>
-              <div className="mt-2 text-2xl font-black leading-none tracking-tight">
+              <div
+                className="text-[11px] font-black uppercase tracking-[0.16em] opacity-80"
+                style={{ color: normalizeHexColor(form.eyebrowColor) }}
+              >
+                {form.eyebrow || DEFAULT_AUTH_VISUAL_FORM_STATE.eyebrow}
+              </div>
+              <div
+                className="mt-2 text-2xl font-black leading-none tracking-tight"
+                style={{ color: normalizeHexColor(form.titleColor) }}
+              >
                 {form.title || DEFAULT_AUTH_VISUAL_FORM_STATE.title}
               </div>
-              <p className="mt-3 text-sm leading-6 opacity-90">
+              <p
+                className="mt-3 text-sm leading-6 opacity-90"
+                style={{ color: normalizeHexColor(form.descriptionColor) }}
+              >
                 {form.description || DEFAULT_AUTH_VISUAL_FORM_STATE.description}
               </p>
             </div>

@@ -114,7 +114,9 @@ describe('admin-visual-identity.helpers', () => {
     expect(form).toEqual({
       ...DEFAULT_AUTH_VISUAL_FORM_STATE,
       eyebrow: 'Bienvenido',
-      textColor: '#ABC123',
+      eyebrowColor: '#ABC123',
+      titleColor: '#ABC123',
+      descriptionColor: '#ABC123',
     });
   });
 
@@ -130,7 +132,9 @@ describe('admin-visual-identity.helpers', () => {
         eyebrow: 'Cuenta',
         title: 'Orden total',
         description: 'Texto nuevo',
-        textColor: '#112233',
+        eyebrowColor: '#112233',
+        titleColor: '#334455',
+        descriptionColor: '#556677',
       },
     );
 
@@ -141,7 +145,9 @@ describe('admin-visual-identity.helpers', () => {
       label: 'Titulo actual',
       type: 'textarea',
     });
-    expect(payload.find((item) => item.key === 'auth_panel_text_color')?.value).toBe('#112233');
+    expect(payload.find((item) => item.key === 'auth_panel_eyebrow_color')?.value).toBe('#112233');
+    expect(payload.find((item) => item.key === 'auth_panel_title_color')?.value).toBe('#334455');
+    expect(payload.find((item) => item.key === 'auth_panel_description_color')?.value).toBe('#556677');
   });
 
   it('patches and normalizes auth visual color values', () => {

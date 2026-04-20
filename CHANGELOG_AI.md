@@ -3089,6 +3089,34 @@ pm run qa:frontend:e2e
 
 ---
 ### 2026-04-20 - Codex
+- Alcance: permitir colores independientes para cada uno de los tres textos del panel visual de auth.
+- Tipo de intervencion: ajuste funcional full-stack liviano sobre branding/auth.
+- Archivos tocados:
+  - `next-stack/apps/api/src/modules/admin/app-settings.registry.ts`
+  - `next-stack/apps/api/src/modules/store/{store.service.ts,store.service.test.ts}`
+  - `next-stack/apps/web/src/features/auth/AuthLayout.tsx`
+  - `next-stack/apps/web/src/features/admin/{AdminVisualIdentityPage.tsx,admin-visual-identity.helpers.ts,admin-visual-identity.helpers.test.ts,admin-visual-identity.sections.tsx}`
+  - `next-stack/apps/web/src/features/store/types.ts`
+  - `next-stack/apps/web/src/styles/auth.css`
+  - `project-docs/{DECISIONS_LOG.md,architecture/ARCHITECTURE.md,frontend/FRONTEND_MAP.md}`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. El panel izquierdo de auth ya no usa un color unico para eyebrow, titulo y descripcion; ahora cada texto tiene su propio setting y `auth_panel_text_color` queda solo como fallback legacy.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/api`
+  - `cmd /c npm run test --workspace @nico/api`
+  - `cmd /c npm run build --workspace @nico/api`
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:backend`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - si una instalacion todavia no guarda los tres colores nuevos, el backend cae al viejo `auth_panel_text_color`
+  - los tres colores siguen normalizandose a HEX de 6 digitos; un valor invalido cae a `#FFFFFF`
+
+---
+### 2026-04-20 - Codex
 - Alcance: hacer configurable el bloque visual izquierdo de auth desde identidad visual y sacar la superposicion oscura fija sobre la imagen.
 - Tipo de intervencion: ajuste funcional full-stack liviano sobre branding/auth.
 - Archivos tocados:

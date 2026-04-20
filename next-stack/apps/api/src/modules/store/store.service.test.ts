@@ -21,7 +21,9 @@ describe('StoreService', () => {
           { key: 'auth_panel_eyebrow', value: 'Ingresa', updatedAt },
           { key: 'auth_panel_title', value: 'Todo en orden', updatedAt },
           { key: 'auth_panel_description', value: 'Descripcion de prueba', updatedAt },
-          { key: 'auth_panel_text_color', value: '#ABCDEF', updatedAt },
+          { key: 'auth_panel_eyebrow_color', value: '#ABCDEF', updatedAt },
+          { key: 'auth_panel_title_color', value: '#FEDCBA', updatedAt },
+          { key: 'auth_panel_description_color', value: '#CCDDEE', updatedAt },
           { key: 'store_hero_image_desktop', value: 'brand-assets/identity/store-hero-desktop.png', updatedAt },
           { key: 'store_hero_image_mobile', value: 'brand-assets/identity/store-hero-mobile.png', updatedAt },
         ]),
@@ -39,7 +41,9 @@ describe('StoreService', () => {
         eyebrow: 'Ingresa',
         title: 'Todo en orden',
         description: 'Descripcion de prueba',
-        textColor: '#ABCDEF',
+        eyebrowColor: '#ABCDEF',
+        titleColor: '#FEDCBA',
+        descriptionColor: '#CCDDEE',
       },
     });
 
@@ -67,7 +71,29 @@ describe('StoreService', () => {
         eyebrow: 'Cuenta web',
         title: 'Acceso claro y ordenado.',
         description: 'Tu cuenta Nico para entrar, seguir pedidos y consultar reparaciones sin friccion.',
-        textColor: '#FFFFFF',
+        eyebrowColor: '#FFFFFF',
+        titleColor: '#FFFFFF',
+        descriptionColor: '#FFFFFF',
+      },
+    });
+  });
+
+  it('falls back to the legacy single auth text color when separate colors are not configured', async () => {
+    const prisma = {
+      appSetting: {
+        findMany: vi.fn().mockResolvedValue([
+          { key: 'auth_panel_text_color', value: '#AB12CD', updatedAt: new Date('2026-04-20T12:00:00.000Z') },
+        ]),
+      },
+    };
+
+    const service = new StoreService(prisma as any);
+
+    await expect(service.getBrandingAssets()).resolves.toMatchObject({
+      authPanelContent: {
+        eyebrowColor: '#AB12CD',
+        titleColor: '#AB12CD',
+        descriptionColor: '#AB12CD',
       },
     });
   });
