@@ -203,19 +203,16 @@ function AdminRepairRow({ repair }: { repair: RepairItem }) {
         </div>
       </div>
 
-      <div className="mt-4 detail-grid">
-        <div className="detail-stack">
-          <div className="detail-panel">
-            <div className="detail-panel__label">Equipo</div>
-            <div className="detail-panel__value">{getRepairDeviceLabel(repair)}</div>
-          </div>
-          <div className="detail-panel">
-            <div className="detail-panel__label">Estado comercial</div>
-            <div className="detail-panel__value">{getRepairCommercialStatusLabel(repair)}</div>
-          </div>
+      <div className="admin-repair-row__details">
+        <div className="detail-panel detail-panel--compact">
+          <div className="detail-panel__label">Equipo</div>
+          <div className="detail-panel__value">{getRepairDeviceLabel(repair)}</div>
         </div>
-
-        <div className="detail-panel">
+        <div className="detail-panel detail-panel--compact">
+          <div className="detail-panel__label">Estado comercial</div>
+          <div className="detail-panel__value">{getRepairCommercialStatusLabel(repair)}</div>
+        </div>
+        <div className="detail-panel detail-panel--compact">
           <div className="detail-panel__label">Falla reportada</div>
           <div className="detail-panel__value">{getRepairIssueLabel(repair)}</div>
         </div>

@@ -3169,3 +3169,20 @@ pm run qa:frontend:e2e
   - la automatizacion real de produccion sigue pendiente de migrar a templates oficiales de Meta; esta etapa no cambia eso
 
 ---
+### 2026-04-20 - Codex
+- Alcance: compactar la fila de resumen del listado admin de reparaciones para que equipo, estado comercial y falla reportada compartan una sola linea horizontal.
+- Tipo de intervencion: ajuste visual puntual en frontend (`mesa operativa` de reparaciones).
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/repairs/admin-repairs-list.sections.tsx`
+  - `next-stack/apps/web/src/styles/admin.css`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si, solo a nivel visual. Cada `admin-entity-row` de `/admin/repairs` reduce altura al mostrar `Equipo`, `Estado comercial` y `Falla reportada` en una grilla unica de tres columnas en desktop, con paneles mas compactos.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - `cmd /c npm run build --workspace @nico/web` fallo una vez por `EPERM` al limpiar `dist/apple-touch-icon.png`, pero `smoke:web` reconstruyo correctamente y valido rutas sin error
+  - en mobile la fila sigue apilando los tres bloques para no romper legibilidad
+
+---
