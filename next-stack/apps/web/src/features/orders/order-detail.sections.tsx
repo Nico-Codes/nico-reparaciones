@@ -9,11 +9,12 @@ import { ProgressSteps } from '@/components/ui/progress-steps';
 import { SectionCard } from '@/components/ui/section-card';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { money, orderProgressSteps } from './order-ui';
-import type { OrderItem } from './types';
+import type { CheckoutTransferDetails, OrderItem } from './types';
 import {
   buildOrderDetailLinesMeta,
   buildOrderDetailStatusMeta,
   buildOrderDetailSummaryFacts,
+  orderUsesTransferPayment,
   resolveOrderDetailAlertTone,
 } from './order-detail.helpers';
 
@@ -72,10 +73,17 @@ export function OrderDetailEmpty({ error }: { error: string }) {
   );
 }
 
-export function OrderDetailLayout({ order }: { order: OrderItem }) {
+export function OrderDetailLayout({
+  order,
+  transferDetails,
+}: {
+  order: OrderItem;
+  transferDetails: CheckoutTransferDetails | null;
+}) {
   const status = buildOrderDetailStatusMeta(order);
   const summaryFacts = buildOrderDetailSummaryFacts(order);
   const linesMeta = buildOrderDetailLinesMeta(order);
+  const showTransferDetails = orderUsesTransferPayment(order.paymentMethod);
 
   return (
     <PageShell context="account">
@@ -145,6 +153,53 @@ export function OrderDetailLayout({ order }: { order: OrderItem }) {
               ))}
             </div>
           </SectionCard>
+
+          {showTransferDetails ? (
+            <SectionCard
+              title="Pago por transferencia"
+              description="Estos datos quedan disponibles tambien despues de confirmar el pedido."
+              actions={
+                <StatusBadge
+                  tone={transferDetails?.available ? 'info' : 'warning'}
+                  size="sm"
+                  label={transferDetails?.available ? 'Datos publicados' : 'Datos pendientes'}
+                />
+              }
+            >
+              {transferDetails?.available ? (
+                <>
+                  <div className="summary-box">
+                    <div className="summary-box__label">{transferDetails.title}</div>
+                    <div className="summary-box__hint">{transferDetails.description}</div>
+                  </div>
+
+                  <div className="checkout-transfer-grid mt-4">
+                    {transferDetails.fields.map((field) => (
+                      <div key={field.key} className="checkout-transfer-item">
+                        <div className="checkout-transfer-item__label">{field.label}</div>
+                        <div className="checkout-transfer-item__value">{field.value}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {transferDetails.note ? (
+                    <div className="checkout-transfer-card__note">{transferDetails.note}</div>
+                  ) : null}
+                </>
+              ) : (
+                <div className="ui-alert ui-alert--warning">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 flex-none" />
+                  <div>
+                    <span className="ui-alert__title">Transferencia sin datos visibles</span>
+                    <div className="ui-alert__text">
+                      El pedido quedo marcado como transferencia, pero el negocio todavia no
+                      publico alias, CVU u otros datos bancarios.
+                    </div>
+                  </div>
+                </div>
+              )}
+            </SectionCard>
+          ) : null}
         </div>
 
         <aside className="account-stack account-sticky">

@@ -13,6 +13,27 @@
 ---
 
 ### 2026-04-20 - Codex
+- Alcance: extender el flujo de transferencia para que los datos sigan visibles en el detalle del pedido confirmado y suavizar el estilo visual por defecto de los iconos de pago.
+- Tipo de intervencion: ajuste funcional y visual puntual en frontend `orders/checkout`.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/orders/{OrderDetailPage.tsx,order-detail.sections.tsx,order-detail.helpers.ts,order-detail.helpers.test.ts}`
+  - `next-stack/apps/web/src/styles/commerce.css`
+  - `next-stack/apps/web/public/icons/{payment-local.svg,payment-transfer.svg,payment-debit.svg,payment-credit.svg}`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. Los pedidos confirmados con `transferencia` ahora muestran nuevamente los datos bancarios en `/orders/:id`, y los iconos default de medios de pago pasan a un estilo lineal mas minimalista.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web -- order-detail.helpers.test.ts`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - el detalle del pedido reutiliza la misma `checkout-config`; si el bloque de transferencia queda vacio en admin, la pantalla muestra advertencia y no inventa datos
+  - los iconos siguen siendo totalmente reemplazables desde identidad visual; solo cambian los defaults del sistema
+
+---
+
+### 2026-04-20 - Codex
 - Alcance: hacer configurable el bloque de pagos del checkout y sumar una pantalla avanzada para editar los datos de transferencia.
 - Tipo de intervencion: cambio funcional full-stack sobre `orders`, `admin/settings` e `identidad visual`.
 - Archivos tocados:

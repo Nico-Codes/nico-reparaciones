@@ -13,6 +13,10 @@ export function resolveOrderDetailLoadError(cause: unknown) {
   return cause instanceof Error ? cause.message : 'No se pudo cargar el pedido.';
 }
 
+export function orderUsesTransferPayment(method: string | null | undefined) {
+  return (method ?? '').trim().toLowerCase() === 'transferencia';
+}
+
 export function buildOrderDetailTotalItems(order: OrderItem | null) {
   return order?.items.reduce((accumulator, line) => accumulator + line.quantity, 0) ?? 0;
 }

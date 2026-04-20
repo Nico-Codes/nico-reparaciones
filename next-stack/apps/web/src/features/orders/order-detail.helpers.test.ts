@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { buildOrderDetailLinesMeta, buildOrderDetailSummaryFacts, resolveOrderDetailAlertTone } from './order-detail.helpers';
+import {
+  buildOrderDetailLinesMeta,
+  buildOrderDetailSummaryFacts,
+  orderUsesTransferPayment,
+  resolveOrderDetailAlertTone,
+} from './order-detail.helpers';
 
 describe('order-detail.helpers', () => {
   const order = {
@@ -27,5 +32,10 @@ describe('order-detail.helpers', () => {
 
   it('arma el resumen del sidebar', () => {
     expect(buildOrderDetailSummaryFacts(order)).toHaveLength(6);
+  });
+
+  it('detecta pago por transferencia', () => {
+    expect(orderUsesTransferPayment('transferencia')).toBe(true);
+    expect(orderUsesTransferPayment('efectivo')).toBe(false);
   });
 });
