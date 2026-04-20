@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest';
 import {
   acceptFromFormats,
   AUTH_VISUAL_ASSETS,
+  buildAuthVisualFormState,
+  buildAuthVisualSettingsPayload,
+  DEFAULT_AUTH_VISUAL_FORM_STATE,
   FAVICON_ASSETS,
+  normalizeHexColor,
+  patchAuthVisualSetting,
   resolveAssetState,
   summarizeAssetPath,
 } from './admin-visual-identity.helpers';
@@ -97,6 +102,59 @@ describe('admin-visual-identity.helpers', () => {
       settingKey: 'brand_asset.auth_login_background_mobile.path',
       defaultPath: 'brand/logo-bg.png',
       recommendedPx: '1080 x 720 px o mayor',
+    });
+  });
+
+  it('hydrates auth visual copy settings with defaults', () => {
+    const form = buildAuthVisualFormState([
+      makeSetting({ key: 'auth_panel_eyebrow', value: 'Bienvenido', group: 'branding', type: 'text' }),
+      makeSetting({ key: 'auth_panel_text_color', value: 'abc123', group: 'branding', type: 'text' }),
+    ]);
+
+    expect(form).toEqual({
+      ...DEFAULT_AUTH_VISUAL_FORM_STATE,
+      eyebrow: 'Bienvenido',
+      textColor: '#ABC123',
+    });
+  });
+
+  it('builds auth visual payload preserving metadata', () => {
+    const payload = buildAuthVisualSettingsPayload(
+      new Map([
+        [
+          'auth_panel_title',
+          makeSetting({ key: 'auth_panel_title', value: '', group: 'branding', type: 'textarea', label: 'Titulo actual' }),
+        ],
+      ]),
+      {
+        eyebrow: 'Cuenta',
+        title: 'Orden total',
+        description: 'Texto nuevo',
+        textColor: '#112233',
+      },
+    );
+
+    expect(payload.find((item) => item.key === 'auth_panel_title')).toEqual({
+      key: 'auth_panel_title',
+      value: 'Orden total',
+      group: 'branding',
+      label: 'Titulo actual',
+      type: 'textarea',
+    });
+    expect(payload.find((item) => item.key === 'auth_panel_text_color')?.value).toBe('#112233');
+  });
+
+  it('patches and normalizes auth visual color values', () => {
+    expect(normalizeHexColor('abc123')).toBe('#ABC123');
+    expect(normalizeHexColor('zzz')).toBe('#FFFFFF');
+    expect(
+      patchAuthVisualSetting(undefined, 'auth_panel_eyebrow', 'Cuenta', 'Texto superior auth', 'text'),
+    ).toEqual({
+      key: 'auth_panel_eyebrow',
+      value: 'Cuenta',
+      group: 'branding',
+      label: 'Texto superior auth',
+      type: 'text',
     });
   });
 });

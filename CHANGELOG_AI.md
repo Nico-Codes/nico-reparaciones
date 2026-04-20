@@ -3088,3 +3088,31 @@ pm run qa:frontend:e2e
   - la imagen de auth sigue dependiendo del slot correcto (`desktop` o `mobile`) segun el viewport real del login
 
 ---
+### 2026-04-20 - Codex
+- Alcance: hacer configurable el bloque visual izquierdo de auth desde identidad visual y sacar la superposicion oscura fija sobre la imagen.
+- Tipo de intervencion: ajuste funcional full-stack liviano sobre branding/auth.
+- Archivos tocados:
+  - `next-stack/apps/api/src/modules/admin/app-settings.registry.ts`
+  - `next-stack/apps/api/src/modules/store/{store.service.ts,store.service.test.ts}`
+  - `next-stack/apps/web/src/features/auth/AuthLayout.tsx`
+  - `next-stack/apps/web/src/features/admin/{AdminVisualIdentityPage.tsx,admin-visual-identity.helpers.ts,admin-visual-identity.helpers.test.ts,admin-visual-identity.sections.tsx}`
+  - `next-stack/apps/web/src/features/store/types.ts`
+  - `next-stack/apps/web/src/styles/auth.css`
+  - `project-docs/{DECISIONS_LOG.md,architecture/ARCHITECTURE.md,frontend/FRONTEND_MAP.md}`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. El panel izquierdo de auth ya no renderiza overlay oscuro fijo, consume `eyebrow`, `titulo`, `descripcion` y `color` desde `/api/store/branding`, y esos valores ahora se editan desde `AdminVisualIdentityPage`.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/api`
+  - `cmd /c npm run test --workspace @nico/api`
+  - `cmd /c npm run build --workspace @nico/api`
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:backend`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - el color del texto de auth se normaliza a HEX de 6 digitos; si se guarda un valor invalido, el frontend cae a `#FFFFFF`
+  - el panel visual sigue usando sombra suave de texto para legibilidad, pero sin tapar la imagen con una capa oscura fija
+
+---

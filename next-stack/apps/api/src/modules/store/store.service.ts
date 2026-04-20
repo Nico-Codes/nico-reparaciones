@@ -108,6 +108,10 @@ export class StoreService {
         'brand_asset.logo_principal.path',
         'brand_asset.auth_login_background.path',
         'brand_asset.auth_login_background_mobile.path',
+        'auth_panel_eyebrow',
+        'auth_panel_title',
+        'auth_panel_description',
+        'auth_panel_text_color',
         'brand_asset.icon_settings.path',
         'brand_asset.icon_carrito.path',
         'brand_asset.icon_logout.path',
@@ -156,6 +160,14 @@ export class StoreService {
           desktop: this.resolveSettingAssetUrl(raw.authPanelImageDesktop, rowsByKey.get('brand_asset.auth_login_background.path')?.updatedAt),
           mobile: this.resolveSettingAssetUrl(raw.authPanelImageMobile, rowsByKey.get('brand_asset.auth_login_background_mobile.path')?.updatedAt),
         },
+        authPanelContent: {
+          eyebrow: (map.get('auth_panel_eyebrow') || 'Cuenta web').trim() || 'Cuenta web',
+          title: (map.get('auth_panel_title') || 'Acceso claro y ordenado.').trim() || 'Acceso claro y ordenado.',
+          description:
+            (map.get('auth_panel_description') || 'Tu cuenta Nico para entrar, seguir pedidos y consultar reparaciones sin friccion.').trim() ||
+            'Tu cuenta Nico para entrar, seguir pedidos y consultar reparaciones sin friccion.',
+          textColor: (map.get('auth_panel_text_color') || '#FFFFFF').trim() || '#FFFFFF',
+        },
         icons: {
           settings: this.resolveSettingAssetUrl(raw.iconSettings, rowsByKey.get('brand_asset.icon_settings.path')?.updatedAt),
           carrito: this.resolveSettingAssetUrl(raw.iconCarrito, rowsByKey.get('brand_asset.icon_carrito.path')?.updatedAt),
@@ -183,6 +195,12 @@ export class StoreService {
         authPanelImages: {
           desktop: this.resolveHeroAssetUrl('brand/logo-bg.png') ?? '/brand/logo-bg.png',
           mobile: this.resolveHeroAssetUrl('brand/logo-bg.png') ?? '/brand/logo-bg.png',
+        },
+        authPanelContent: {
+          eyebrow: 'Cuenta web',
+          title: 'Acceso claro y ordenado.',
+          description: 'Tu cuenta Nico para entrar, seguir pedidos y consultar reparaciones sin friccion.',
+          textColor: '#FFFFFF',
         },
         icons: {
           settings: this.resolveHeroAssetUrl('icons/settings.svg'),

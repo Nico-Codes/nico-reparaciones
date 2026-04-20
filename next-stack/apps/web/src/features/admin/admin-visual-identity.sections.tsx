@@ -10,13 +10,19 @@ import {
   Store,
   Wrench,
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { TextAreaField } from '@/components/ui/textarea-field';
+import { TextField } from '@/components/ui/text-field';
 import { brandAssetsApi } from './brandAssetsApi';
 import {
   acceptFromFormats,
+  DEFAULT_AUTH_VISUAL_FORM_STATE,
+  normalizeHexColor,
   resolveAssetState,
   VISUAL_IDENTITY_SECTIONS,
   type AssetCard,
   type AssetSectionDefinition,
+  type AuthVisualFormState,
   type PreviewSpec,
   type VisualIconName,
 } from './admin-visual-identity.helpers';
@@ -37,6 +43,14 @@ type AdminVisualIdentityResourcesSectionProps = {
   onReset: (item: AssetCard) => void;
 };
 
+type AdminVisualIdentityAuthCopySectionProps = {
+  form: AuthVisualFormState;
+  disabled: boolean;
+  saving: boolean;
+  onChange: <K extends keyof AuthVisualFormState>(field: K, value: AuthVisualFormState[K]) => void;
+  onSave: () => void;
+};
+
 const ICONS_BY_NAME: Record<VisualIconName, ReactNode> = {
   settings: <Settings className="h-7 w-7" />,
   cart: <ShoppingCart className="h-7 w-7" />,
@@ -54,7 +68,7 @@ export function AdminVisualIdentityHeader() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-black tracking-tight text-zinc-900">Identidad visual</h1>
-          <p className="mt-1 text-sm text-zinc-600">Sube y administra logos, iconos, favicons y fondos visuales del sitio, incluido el acceso web en desktop y mobile.</p>
+          <p className="mt-1 text-sm text-zinc-600">Sube y administra logos, iconos, favicons, fondos visuales y el copy del panel de acceso web en desktop y mobile.</p>
         </div>
         <Link to="/admin/configuraciones" className="btn-outline !h-10 !rounded-xl px-5 text-sm font-bold">
           Volver a configuracion
@@ -126,6 +140,100 @@ export function AdminVisualIdentityResourcesSection({
               }}
             />
           ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export function AdminVisualIdentityAuthCopySection({
+  form,
+  disabled,
+  saving,
+  onChange,
+  onSave,
+}: AdminVisualIdentityAuthCopySectionProps) {
+  return (
+    <section className="card overflow-hidden">
+      <div className="card-body space-y-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-black tracking-tight text-zinc-900">Textos de acceso</h2>
+            <p className="mt-1 text-sm text-zinc-600">Controla el copy y el color del texto que aparece sobre la imagen del panel izquierdo de auth.</p>
+          </div>
+          <span className="inline-flex h-7 items-center rounded-full border border-zinc-200 bg-zinc-50 px-3 text-sm font-black text-zinc-800">
+            /auth/login
+          </span>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
+          <div className="grid gap-4">
+            <TextField
+              label="Texto superior"
+              value={form.eyebrow}
+              maxLength={80}
+              disabled={disabled}
+              onChange={(event) => onChange('eyebrow', event.target.value)}
+              hint="Linea corta arriba del titulo principal."
+            />
+
+            <TextField
+              label="Titulo principal"
+              value={form.title}
+              maxLength={120}
+              disabled={disabled}
+              onChange={(event) => onChange('title', event.target.value)}
+            />
+
+            <TextAreaField
+              label="Descripcion"
+              value={form.description}
+              maxLength={220}
+              rows={4}
+              disabled={disabled}
+              onChange={(event) => onChange('description', event.target.value)}
+              hint="Se usa en login, registro, reset y demas pantallas que heredan AuthLayout."
+            />
+
+            <TextField
+              label="Color del texto"
+              value={form.textColor}
+              maxLength={7}
+              disabled={disabled}
+              onChange={(event) => onChange('textColor', event.target.value.toUpperCase())}
+              hint="Usa formato HEX. Ejemplo: #FFFFFF"
+              trailing={
+                <input
+                  type="color"
+                  aria-label="Elegir color del texto"
+                  value={normalizeHexColor(form.textColor)}
+                  disabled={disabled}
+                  className="h-8 w-8 cursor-pointer rounded-full border border-zinc-200 bg-transparent p-0"
+                  onChange={(event) => onChange('textColor', event.target.value.toUpperCase())}
+                />
+              }
+            />
+          </div>
+
+          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+            <p className="text-sm font-black text-zinc-900">Preview de copy</p>
+            <div
+              className="mt-3 rounded-2xl bg-zinc-950 px-4 py-5 shadow-sm"
+              style={{ color: normalizeHexColor(form.textColor) }}
+            >
+              <div className="text-[11px] font-black uppercase tracking-[0.16em] opacity-80">{form.eyebrow || DEFAULT_AUTH_VISUAL_FORM_STATE.eyebrow}</div>
+              <div className="mt-2 text-2xl font-black leading-none tracking-tight">
+                {form.title || DEFAULT_AUTH_VISUAL_FORM_STATE.title}
+              </div>
+              <p className="mt-3 text-sm leading-6 opacity-90">
+                {form.description || DEFAULT_AUTH_VISUAL_FORM_STATE.description}
+              </p>
+            </div>
+
+            <Button type="button" variant="default" className="mt-4 w-full" disabled={disabled} onClick={onSave}>
+              {saving ? 'Guardando...' : 'Guardar textos'}
+            </Button>
+          </div>
         </div>
       </div>
     </section>

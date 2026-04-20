@@ -467,6 +467,7 @@ En la ola de simplificacion del 2026-03-30 quedaron confirmados estos limites in
 - el archivo principal de identidad visual queda centrado en:
   - fetch de settings
   - upload/reset de assets
+  - guardado del copy y color del panel visual de auth
   - sync del archivo seleccionado por slot
   - composicion de alertas y secciones
 - `AdminBusinessSettingsPage.tsx` ahora delega defaults, payloads y estado dirty en:

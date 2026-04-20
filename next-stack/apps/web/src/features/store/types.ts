@@ -55,6 +55,12 @@ export type StoreBrandingAssets = {
     desktop: string | null;
     mobile: string | null;
   };
+  authPanelContent?: {
+    eyebrow: string;
+    title: string;
+    description: string;
+    textColor: string;
+  };
   icons: {
     settings: string | null;
     carrito: string | null;

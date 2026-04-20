@@ -35,6 +35,20 @@ export type AssetSectionDefinition = {
   columns: 'one' | 'two' | 'three';
 };
 
+export type AuthVisualFormState = {
+  eyebrow: string;
+  title: string;
+  description: string;
+  textColor: string;
+};
+
+export const DEFAULT_AUTH_VISUAL_FORM_STATE: AuthVisualFormState = {
+  eyebrow: 'Cuenta web',
+  title: 'Acceso claro y ordenado.',
+  description: 'Tu cuenta Nico para entrar, seguir pedidos y consultar reparaciones sin friccion.',
+  textColor: '#FFFFFF',
+};
+
 export const FAVICON_ASSETS: AssetCard[] = [
   {
     title: 'Favicon .ico',
@@ -312,4 +326,63 @@ export function acceptFromFormats(formats: string) {
     .map((format) => map[format.trim().toUpperCase()])
     .filter(Boolean)
     .join(',');
+}
+
+export function buildAuthVisualFormState(items: AdminSettingItem[]): AuthVisualFormState {
+  const valueByKey = new Map(items.map((item) => [item.key, item.value]));
+
+  return {
+    eyebrow: (valueByKey.get('auth_panel_eyebrow') ?? DEFAULT_AUTH_VISUAL_FORM_STATE.eyebrow).trim() || DEFAULT_AUTH_VISUAL_FORM_STATE.eyebrow,
+    title: (valueByKey.get('auth_panel_title') ?? DEFAULT_AUTH_VISUAL_FORM_STATE.title).trim() || DEFAULT_AUTH_VISUAL_FORM_STATE.title,
+    description:
+      (valueByKey.get('auth_panel_description') ?? DEFAULT_AUTH_VISUAL_FORM_STATE.description).trim() ||
+      DEFAULT_AUTH_VISUAL_FORM_STATE.description,
+    textColor: normalizeHexColor(valueByKey.get('auth_panel_text_color') ?? DEFAULT_AUTH_VISUAL_FORM_STATE.textColor),
+  };
+}
+
+export function buildAuthVisualSettingsPayload(
+  settingsByKey: Map<string, AdminSettingItem>,
+  form: AuthVisualFormState,
+): Array<Pick<AdminSettingItem, 'key' | 'value' | 'group' | 'label' | 'type'>> {
+  return [
+    patchAuthVisualSetting(settingsByKey.get('auth_panel_eyebrow'), 'auth_panel_eyebrow', form.eyebrow, 'Texto superior auth', 'text'),
+    patchAuthVisualSetting(settingsByKey.get('auth_panel_title'), 'auth_panel_title', form.title, 'Titulo panel visual auth', 'text'),
+    patchAuthVisualSetting(
+      settingsByKey.get('auth_panel_description'),
+      'auth_panel_description',
+      form.description,
+      'Descripcion panel visual auth',
+      'textarea',
+    ),
+    patchAuthVisualSetting(
+      settingsByKey.get('auth_panel_text_color'),
+      'auth_panel_text_color',
+      normalizeHexColor(form.textColor),
+      'Color texto panel visual auth',
+      'text',
+    ),
+  ];
+}
+
+export function patchAuthVisualSetting(
+  existing: AdminSettingItem | undefined,
+  key: string,
+  value: string,
+  label: string,
+  type: string,
+) {
+  return {
+    key,
+    value,
+    group: existing?.group ?? 'branding',
+    label: existing?.label ?? label,
+    type: existing?.type ?? type,
+  };
+}
+
+export function normalizeHexColor(value: string) {
+  const trimmed = value.trim();
+  const normalized = trimmed.startsWith('#') ? trimmed.toUpperCase() : `#${trimmed.toUpperCase()}`;
+  return /^#([0-9A-F]{6})$/.test(normalized) ? normalized : DEFAULT_AUTH_VISUAL_FORM_STATE.textColor;
 }

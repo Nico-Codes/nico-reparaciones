@@ -2,19 +2,28 @@ import { useEffect, useMemo, useState } from 'react';
 import { brandAssetsApi } from './brandAssetsApi';
 import {
   AdminVisualIdentityAlerts,
+  AdminVisualIdentityAuthCopySection,
   AdminVisualIdentityHeader,
   AdminVisualIdentityResourcesSection,
 } from './admin-visual-identity.sections';
-import type { AssetCard } from './admin-visual-identity.helpers';
+import {
+  buildAuthVisualFormState,
+  buildAuthVisualSettingsPayload,
+  DEFAULT_AUTH_VISUAL_FORM_STATE,
+  type AssetCard,
+  type AuthVisualFormState,
+} from './admin-visual-identity.helpers';
 import { adminSettingsApi, type AdminSettingItem } from './settingsApi';
 
 export function AdminVisualIdentityPage() {
   const [settings, setSettings] = useState<AdminSettingItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [savingCopy, setSavingCopy] = useState(false);
   const [uploadingSlot, setUploadingSlot] = useState<string | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<Record<string, File | null>>({});
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [authForm, setAuthForm] = useState<AuthVisualFormState>(DEFAULT_AUTH_VISUAL_FORM_STATE);
 
   const settingsByKey = useMemo(() => new Map(settings.map((setting) => [setting.key, setting])), [settings]);
 
@@ -28,6 +37,7 @@ export function AdminVisualIdentityPage() {
     try {
       const res = await adminSettingsApi.list();
       setSettings(res.items);
+      setAuthForm(buildAuthVisualFormState(res.items));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error cargando identidad visual');
     } finally {
@@ -75,6 +85,25 @@ export function AdminVisualIdentityPage() {
     }
   }
 
+  async function saveAuthCopy() {
+    setSavingCopy(true);
+    setError('');
+    setSuccess('');
+    try {
+      await adminSettingsApi.save(buildAuthVisualSettingsPayload(settingsByKey, authForm));
+      setSuccess('Textos de acceso actualizados');
+      await loadSettings();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error guardando textos de acceso');
+    } finally {
+      setSavingCopy(false);
+    }
+  }
+
+  function patchAuthForm<K extends keyof AuthVisualFormState>(field: K, value: AuthVisualFormState[K]) {
+    setAuthForm((current) => ({ ...current, [field]: value }));
+  }
+
   return (
     <div className="store-shell space-y-5">
       <AdminVisualIdentityHeader />
@@ -87,6 +116,13 @@ export function AdminVisualIdentityPage() {
         onSelectFile={(item, file) => void handleSelectFile(item, file)}
         onUpload={(item) => void uploadAsset(item)}
         onReset={(item) => void resetAsset(item)}
+      />
+      <AdminVisualIdentityAuthCopySection
+        form={authForm}
+        disabled={loading || savingCopy || Boolean(uploadingSlot)}
+        saving={savingCopy}
+        onChange={patchAuthForm}
+        onSave={() => void saveAuthCopy()}
       />
     </div>
   );

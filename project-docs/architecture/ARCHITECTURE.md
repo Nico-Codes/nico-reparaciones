@@ -291,6 +291,7 @@ Confirmado por codigo:
 - la pagina principal queda centrada en:
   - fetch de settings
   - upload y reset de assets
+  - edicion del copy del panel visual de auth
   - sync del archivo seleccionado por slot
   - composicion del layout visual
 - la logica de paths, accept list y previews queda fuera del render principal

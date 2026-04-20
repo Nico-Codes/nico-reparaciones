@@ -18,6 +18,10 @@ describe('StoreService', () => {
         findMany: vi.fn().mockResolvedValue([
           { key: 'brand_asset.auth_login_background.path', value: 'brand-assets/identity/auth-login-background.png', updatedAt },
           { key: 'brand_asset.auth_login_background_mobile.path', value: 'brand-assets/identity/auth-login-background-mobile.png', updatedAt },
+          { key: 'auth_panel_eyebrow', value: 'Ingresa', updatedAt },
+          { key: 'auth_panel_title', value: 'Todo en orden', updatedAt },
+          { key: 'auth_panel_description', value: 'Descripcion de prueba', updatedAt },
+          { key: 'auth_panel_text_color', value: '#ABCDEF', updatedAt },
           { key: 'store_hero_image_desktop', value: 'brand-assets/identity/store-hero-desktop.png', updatedAt },
           { key: 'store_hero_image_mobile', value: 'brand-assets/identity/store-hero-mobile.png', updatedAt },
         ]),
@@ -30,6 +34,12 @@ describe('StoreService', () => {
       authPanelImages: {
         desktop: `/brand-assets/identity/auth-login-background.png?v=${updatedAt.getTime()}`,
         mobile: `/brand-assets/identity/auth-login-background-mobile.png?v=${updatedAt.getTime()}`,
+      },
+      authPanelContent: {
+        eyebrow: 'Ingresa',
+        title: 'Todo en orden',
+        description: 'Descripcion de prueba',
+        textColor: '#ABCDEF',
       },
     });
 
@@ -52,6 +62,12 @@ describe('StoreService', () => {
       authPanelImages: {
         desktop: '/brand/logo-bg.png',
         mobile: '/brand/logo-bg.png',
+      },
+      authPanelContent: {
+        eyebrow: 'Cuenta web',
+        title: 'Acceso claro y ordenado.',
+        description: 'Tu cuenta Nico para entrar, seguir pedidos y consultar reparaciones sin friccion.',
+        textColor: '#FFFFFF',
       },
     });
   });

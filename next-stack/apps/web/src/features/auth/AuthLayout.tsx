@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, Wrench } from 'lucide-react';
 import { useCartCount } from '@/features/cart/useCart';
@@ -17,6 +17,12 @@ import {
 import { lockScroll, unlockScroll } from '@/layouts/app-shell/utils';
 import { PageShell } from '@/components/ui/page-shell';
 import { StatusBadge } from '@/components/ui/status-badge';
+
+function resolveAuthTextColor(value?: string | null) {
+  const trimmed = (value ?? '').trim().toUpperCase();
+  const normalized = trimmed.startsWith('#') ? trimmed : `#${trimmed}`;
+  return /^#([0-9A-F]{6})$/.test(normalized) ? normalized : '#FFFFFF';
+}
 
 export function AuthLayout({
   eyebrow = 'Cuenta',
@@ -104,7 +110,20 @@ export function AuthLayout({
   const display = deriveAppShellDisplay(authUser, branding);
   const authPanelImageDesktopUrl = branding?.authPanelImages?.desktop || null;
   const authPanelImageMobileUrl = branding?.authPanelImages?.mobile || authPanelImageDesktopUrl;
+  const authVisualContent = branding?.authPanelContent ?? {
+    eyebrow: 'Cuenta web',
+    title: 'Acceso claro y ordenado.',
+    description: 'Tu cuenta Nico para entrar, seguir pedidos y consultar reparaciones sin friccion.',
+    textColor: '#FFFFFF',
+  };
   const hideGuestLoginCta = !authUser && location.pathname === '/auth/login';
+  const authVisualStyle = useMemo(
+    () =>
+      ({
+        '--auth-visual-text-color': resolveAuthTextColor(authVisualContent.textColor),
+      }) as CSSProperties,
+    [authVisualContent.textColor],
+  );
 
   const desktopLinks = useMemo(
     () => buildDesktopLinks(location.pathname, display.isAdmin),
@@ -281,7 +300,7 @@ export function AuthLayout({
 
       <div className="container-page auth-stage">
         <div className="auth-scene">
-          <aside className="auth-visual">
+          <aside className="auth-visual" style={authVisualStyle}>
             {authPanelImageDesktopUrl || authPanelImageMobileUrl ? (
               <picture className="auth-visual__picture" aria-hidden="true">
                 {authPanelImageMobileUrl ? <source media="(max-width: 1023.98px)" srcSet={authPanelImageMobileUrl} /> : null}
@@ -292,7 +311,6 @@ export function AuthLayout({
                 />
               </picture>
             ) : null}
-            <span className="auth-visual__overlay" aria-hidden="true" />
 
             <div className="auth-visual__content">
               <div className="auth-visual__brand-chip">
@@ -308,9 +326,9 @@ export function AuthLayout({
                 <span className="auth-visual__brand-title">{display.brandTitle}</span>
               </div>
 
-              <span className="auth-visual__eyebrow">Cuenta web</span>
-              <h2 className="auth-visual__title">Acceso claro y ordenado.</h2>
-              <p className="auth-visual__copy">Tu cuenta Nico para entrar, seguir pedidos y consultar reparaciones sin friccion.</p>
+              <span className="auth-visual__eyebrow">{authVisualContent.eyebrow}</span>
+              <h2 className="auth-visual__title">{authVisualContent.title}</h2>
+              <p className="auth-visual__copy">{authVisualContent.description}</p>
             </div>
           </aside>
 
