@@ -191,53 +191,67 @@ function AdminProductRow({
   onPatchProduct: (id: string, patch: Record<string, unknown>) => void;
 }) {
   const { cost, sale, marginValue, marginPercent } = buildAdminProductPriceSummary(product);
+  const imageSrc = product.imageUrl?.trim() || product.imagePath?.trim() || null;
+  const imageFallback = product.name.trim().charAt(0).toUpperCase() || 'P';
 
   return (
-    <article className="admin-entity-row">
-      <div className="admin-entity-row__top">
-        <div className="admin-entity-row__heading">
-          <div className="admin-entity-row__title-row">
-            <div className="admin-entity-row__title">{product.name}</div>
-            <StatusBadge tone={product.active ? 'success' : 'neutral'} size="sm" label={product.active ? 'Activo' : 'Inactivo'} />
-            {product.featured ? <StatusBadge tone="accent" size="sm" label="Destacado" /> : null}
-            <StatusBadge tone={getAdminProductStockTone(product.stock)} size="sm" label={product.stock > 0 ? `Stock ${product.stock}` : 'Sin stock'} />
-          </div>
-          <div className="admin-entity-row__meta">
-            <span>{product.category?.name || 'Sin categoria'}</span>
-            <span>{product.supplier?.name || 'Sin proveedor'}</span>
-            <span>SKU: {product.sku || 'No informado'}</span>
-            <span>Codigo: {product.barcode || 'No informado'}</span>
-          </div>
+    <article className="admin-entity-row admin-product-row">
+      <div className="admin-product-row__main">
+        <div className="admin-product-row__media">
+          {imageSrc ? (
+            <img src={imageSrc} alt={product.name} loading="lazy" />
+          ) : (
+            <div className="admin-product-row__media-placeholder">{imageFallback}</div>
+          )}
         </div>
 
-        <div className="admin-entity-row__aside">
-          <span className="admin-entity-row__eyebrow">Venta</span>
-          <div className="admin-entity-row__value">{formatAdminProductMoney(sale)}</div>
-        </div>
-      </div>
+        <div className="admin-product-row__body">
+          <div className="admin-entity-row__top admin-product-row__top">
+            <div className="admin-entity-row__heading">
+              <div className="admin-entity-row__title-row">
+                <div className="admin-entity-row__title">{product.name}</div>
+                <StatusBadge tone={product.active ? 'success' : 'neutral'} size="sm" label={product.active ? 'Activo' : 'Inactivo'} />
+                {product.featured ? <StatusBadge tone="accent" size="sm" label="Destacado" /> : null}
+                <StatusBadge tone={getAdminProductStockTone(product.stock)} size="sm" label={product.stock > 0 ? `Stock ${product.stock}` : 'Sin stock'} />
+              </div>
+              <div className="admin-entity-row__meta admin-product-row__meta">
+                <span>{product.category?.name || 'Sin categoria'}</span>
+                <span>{product.supplier?.name || 'Sin proveedor'}</span>
+                <span>SKU: {product.sku || 'No informado'}</span>
+                <span>Codigo: {product.barcode || 'No informado'}</span>
+              </div>
+            </div>
 
-      <div className="mt-4 detail-grid">
-        <div className="detail-stack">
-          <div className="detail-panel">
-            <div className="detail-panel__label">Costo</div>
-            <div className="detail-panel__value">{formatAdminProductMoney(cost)}</div>
+            <div className="admin-entity-row__aside admin-product-row__aside">
+              <span className="admin-entity-row__eyebrow">Venta</span>
+              <div className="admin-entity-row__value">{formatAdminProductMoney(sale)}</div>
+            </div>
           </div>
-          <div className="detail-panel">
-            <div className="detail-panel__label">Margen</div>
-            <div className="detail-panel__value">
-              {marginPercent >= 0 ? '+' : ''}
-              {marginPercent}% · {formatAdminProductMoney(marginValue)}
+
+          <div className="admin-product-row__summary">
+            <div className="admin-product-row__facts">
+              <div className="admin-product-row__fact">
+                <span className="admin-product-row__fact-label">Costo</span>
+                <span className="admin-product-row__fact-value">{formatAdminProductMoney(cost)}</span>
+              </div>
+              <div className="admin-product-row__fact">
+                <span className="admin-product-row__fact-label">Margen</span>
+                <span className="admin-product-row__fact-value">
+                  {marginPercent >= 0 ? '+' : ''}
+                  {marginPercent}% | {formatAdminProductMoney(marginValue)}
+                </span>
+              </div>
+            </div>
+
+            <div className="admin-product-row__description">
+              <span className="admin-product-row__description-label">Descripcion</span>
+              <span className="admin-product-row__description-value">{product.description?.trim() || 'Sin descripcion cargada.'}</span>
             </div>
           </div>
         </div>
-
-        <div className="detail-panel">
-          <div className="detail-panel__label">Descripcion comercial</div>
-          <div className="detail-panel__value">{product.description?.trim() || 'Sin descripcion cargada.'}</div>
-        </div>
       </div>
 
-      <div className="admin-entity-row__actions">
+      <div className="admin-entity-row__actions admin-product-row__actions">
         <div className="flex flex-wrap items-center gap-2">
           <ProductsQuickStockEditor
             disabled={pending}

@@ -12,6 +12,25 @@
 
 ---
 
+### 2026-04-20 - Codex
+- Alcance: compactar el listado de `Catalogo operativo` en `/admin/productos` para que cada producto ocupe menos altura y tenga una presentacion mas cercana a tienda.
+- Tipo de intervencion: ajuste visual puntual en frontend del subdominio `catalogAdmin`.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/catalogAdmin/admin-products-panels.tsx`
+  - `next-stack/apps/web/src/styles/admin.css`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si, solo a nivel visual. Cada producto ahora muestra miniatura, resumen compacto de costo/margen y descripcion acotada, manteniendo intactas las acciones rapidas y la edicion de stock.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - la miniatura usa `imageUrl` o `imagePath` si existe; si no, muestra placeholder con la inicial del producto
+  - el layout se compacta fuerte en desktop y conserva apilado controlado en mobile para no romper legibilidad
+
+---
+
 ### 2026-04-16 - Codex
 - Alcance: agregar Sign in with Apple para clientes reutilizando el patron de Google y hacer visible la disponibilidad real de providers sociales desde el backend.
 - Tipo de intervencion: cambio funcional full-stack sobre auth social, modelo `User`, callbacks OAuth y login web.
