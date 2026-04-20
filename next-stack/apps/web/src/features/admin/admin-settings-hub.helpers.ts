@@ -3,6 +3,7 @@ import {
   BarChart3,
   Building2,
   Calculator,
+  CreditCard,
   FileText,
   HelpCircle,
   ImageIcon,
@@ -56,6 +57,14 @@ export const ADMIN_SETTINGS_SECTIONS: ConfigSectionDef[] = [
         tag: 'Base',
         to: '/admin/configuracion/negocio',
         icon: Building2,
+        tone: 'info',
+      },
+      {
+        title: 'Checkout y pagos',
+        description: 'Datos de transferencia y presentacion de medios de pago en el checkout.',
+        tag: 'Modulo',
+        to: '/admin/configuracion/checkoutpagos',
+        icon: CreditCard,
         tone: 'info',
       },
       {

@@ -2,6 +2,7 @@
 import { OrdersAdminService } from './orders-admin.service.js';
 import { OrdersCheckoutService } from './orders-checkout.service.js';
 import { OrdersQuickSalesService } from './orders-quick-sales.service.js';
+import { OrdersSupportService } from './orders-support.service.js';
 import type { AdminListInput, CheckoutInput, QuickSaleConfirmInput, QuickSalesHistoryInput } from './orders.types.js';
 
 @Injectable()
@@ -10,10 +11,15 @@ export class OrdersService {
     @Inject(OrdersCheckoutService) private readonly ordersCheckoutService: OrdersCheckoutService,
     @Inject(OrdersAdminService) private readonly ordersAdminService: OrdersAdminService,
     @Inject(OrdersQuickSalesService) private readonly ordersQuickSalesService: OrdersQuickSalesService,
+    @Inject(OrdersSupportService) private readonly ordersSupportService: OrdersSupportService,
   ) {}
 
   async checkout(input: CheckoutInput) {
     return this.ordersCheckoutService.checkout(input);
+  }
+
+  async checkoutConfig() {
+    return this.ordersSupportService.getCheckoutConfig();
   }
 
   async myOrders(userId: string) {

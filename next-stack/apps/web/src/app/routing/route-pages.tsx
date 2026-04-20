@@ -18,6 +18,7 @@ export const AdminAlertsPage = lazyPage(() => import('@/features/admin/AdminAler
 export const AdminAutoReportsPage = lazyPage(() => import('@/features/admin/AdminAutoReportsPage'), 'AdminAutoReportsPage');
 export const AdminBusinessSettingsPage = lazyPage(() => import('@/features/admin/AdminBusinessSettingsPage'), 'AdminBusinessSettingsPage');
 export const AdminCalculationsHubPage = lazyPage(() => import('@/features/admin/AdminCalculationsHubPage'), 'AdminCalculationsHubPage');
+export const AdminCheckoutSettingsPage = lazyPage(() => import('@/features/admin/AdminCheckoutSettingsPage'), 'AdminCheckoutSettingsPage');
 export const AdminRepairCalculationsHubPage = lazyPage(() => import('@/features/admin/AdminRepairCalculationsHubPage'), 'AdminRepairCalculationsHubPage');
 export const AdminDashboardPage = lazyPage(() => import('@/features/admin/AdminDashboardPage'), 'AdminDashboardPage');
 export const AdminDeviceTypesPage = lazyPage(() => import('@/features/admin/AdminDeviceTypesPage'), 'AdminDeviceTypesPage');

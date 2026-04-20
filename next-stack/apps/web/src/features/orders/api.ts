@@ -1,8 +1,11 @@
 import { authJsonRequest } from '@/features/auth/http';
 import type { CartLocalItem } from '@/features/cart/types';
-import type { OrderItem, QuickSaleHistoryItem } from './types';
+import type { CheckoutConfig, OrderItem, QuickSaleHistoryItem } from './types';
 
 export const ordersApi = {
+  checkoutConfig() {
+    return authJsonRequest<CheckoutConfig>('/orders/checkout-config', { method: 'GET' });
+  },
   checkout(input: { items: CartLocalItem[]; paymentMethod: string }) {
     return authJsonRequest<OrderItem>('/orders/checkout', {
       method: 'POST',

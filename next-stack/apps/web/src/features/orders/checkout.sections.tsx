@@ -1,4 +1,12 @@
-import { AlertTriangle, CreditCard, ShieldCheck } from 'lucide-react';
+import {
+  AlertTriangle,
+  Banknote,
+  CreditCard,
+  ExternalLink,
+  Landmark,
+  ShieldCheck,
+  WalletCards,
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -11,10 +19,13 @@ import type { AuthUser } from '@/features/auth/types';
 import type { CartQuoteLine, CartQuoteResponse } from '@/features/cart/types';
 import {
   buildCheckoutEmptyState,
-  CHECKOUT_PAYMENT_OPTIONS,
   emailVerificationTone,
   formatCheckoutMoney,
 } from './checkout.helpers';
+import type {
+  CheckoutPaymentMethodConfig,
+  CheckoutTransferDetails,
+} from './types';
 
 type CheckoutLoadingStateProps = {
   message: string;
@@ -32,6 +43,8 @@ type CheckoutFeedbackProps = {
 
 type CheckoutPaymentSectionProps = {
   paymentMethod: string;
+  paymentOptions: CheckoutPaymentMethodConfig[];
+  transferDetails: CheckoutTransferDetails;
   submitting: boolean;
   onChange: (paymentMethod: string) => void;
 };
@@ -50,7 +63,35 @@ type CheckoutSummarySectionProps = {
   quote: CartQuoteResponse | null;
   items: CartQuoteLine[];
   paymentTitle: string;
+  paymentSubtitle: string;
 };
+
+function CheckoutPaymentIcon({ option }: { option: CheckoutPaymentMethodConfig }) {
+  const fallback =
+    option.value === 'efectivo'
+      ? Banknote
+      : option.value === 'transferencia'
+        ? Landmark
+        : option.value === 'debito'
+          ? CreditCard
+          : WalletCards;
+
+  const FallbackIcon = fallback;
+
+  if (option.iconUrl) {
+    return (
+      <img
+        className="checkout-option__icon"
+        src={option.iconUrl}
+        alt=""
+        aria-hidden="true"
+        loading="lazy"
+      />
+    );
+  }
+
+  return <FallbackIcon className="h-5 w-5" aria-hidden="true" />;
+}
 
 export function CheckoutLoadingState({ message }: CheckoutLoadingStateProps) {
   return (
@@ -59,7 +100,7 @@ export function CheckoutLoadingState({ message }: CheckoutLoadingStateProps) {
         context="store"
         eyebrow="Compra"
         title="Preparando checkout"
-        subtitle="Estamos validando stock y resumen antes de mostrar la confirmación."
+        subtitle="Estamos validando stock y resumen antes de mostrar la confirmacion."
         actions={<StatusBadge label="Preparando" tone="info" />}
       />
       <SectionCard>
@@ -69,7 +110,11 @@ export function CheckoutLoadingState({ message }: CheckoutLoadingStateProps) {
   );
 }
 
-export function CheckoutEmptyState({ hasCartItems, hasInvalidItems, message }: CheckoutEmptyStateProps) {
+export function CheckoutEmptyState({
+  hasCartItems,
+  hasInvalidItems,
+  message,
+}: CheckoutEmptyStateProps) {
   const emptyState = buildCheckoutEmptyState(hasCartItems);
 
   return (
@@ -96,7 +141,9 @@ export function CheckoutEmptyState({ hasCartItems, hasInvalidItems, message }: C
           <AlertTriangle className="mt-0.5 h-4 w-4 flex-none" />
           <div>
             <span className="ui-alert__title">Hay productos con cambios de stock o cantidad.</span>
-            <div className="ui-alert__text">Revisá el carrito antes de continuar para evitar un pedido incompleto.</div>
+            <div className="ui-alert__text">
+              Revisa el carrito antes de continuar para evitar un pedido incompleto.
+            </div>
           </div>
         </div>
       ) : null}
@@ -137,16 +184,20 @@ export function CheckoutFeedback({ message }: CheckoutFeedbackProps) {
 
 export function CheckoutPaymentSection({
   paymentMethod,
+  paymentOptions,
+  transferDetails,
   submitting,
   onChange,
 }: CheckoutPaymentSectionProps) {
+  const showTransferDetails = paymentMethod === 'transferencia';
+
   return (
     <SectionCard
       title="Pago"
-      description="Elegí cómo querés completar la compra. El retiro siempre es en el local."
+      description="Elige como quieres completar la compra. El retiro siempre es en el local."
     >
       <div className="checkout-option-grid">
-        {CHECKOUT_PAYMENT_OPTIONS.map((option) => {
+        {paymentOptions.map((option) => {
           const active = paymentMethod === option.value;
           return (
             <label key={option.value} className="block cursor-pointer">
@@ -160,13 +211,61 @@ export function CheckoutPaymentSection({
                 disabled={submitting}
               />
               <div className={`checkout-option ${active ? 'is-active' : ''}`}>
-                <div className="checkout-option__title">{option.title}</div>
-                <div className="checkout-option__subtitle">{option.subtitle}</div>
+                <div className="checkout-option__header">
+                  <span className="checkout-option__icon-shell">
+                    <CheckoutPaymentIcon option={option} />
+                  </span>
+                  <div className="checkout-option__content">
+                    <div className="checkout-option__title">{option.title}</div>
+                    <div className="checkout-option__subtitle">{option.subtitle}</div>
+                  </div>
+                </div>
               </div>
             </label>
           );
         })}
       </div>
+
+      {showTransferDetails ? (
+        <div className={`checkout-transfer-card ${transferDetails.available ? '' : 'is-unavailable'}`}>
+          <div className="checkout-transfer-card__top">
+            <div>
+              <div className="checkout-transfer-card__title">{transferDetails.title}</div>
+              <div className="checkout-transfer-card__description">{transferDetails.description}</div>
+            </div>
+            <StatusBadge
+              label={transferDetails.available ? 'Datos cargados' : 'Pendiente de configurar'}
+              tone={transferDetails.available ? 'info' : 'warning'}
+              size="sm"
+            />
+          </div>
+
+          {transferDetails.available ? (
+            <div className="checkout-transfer-grid">
+              {transferDetails.fields.map((field) => (
+                <div key={field.key} className="checkout-transfer-item">
+                  <div className="checkout-transfer-item__label">{field.label}</div>
+                  <div className="checkout-transfer-item__value">{field.value}</div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="ui-alert ui-alert--warning mt-4">
+              <AlertTriangle className="mt-0.5 h-4 w-4 flex-none" />
+              <div>
+                <span className="ui-alert__title">Transferencia sin datos publicados</span>
+                <div className="ui-alert__text">
+                  Todavia no hay CVU, alias u otra referencia cargada desde configuracion avanzada.
+                </div>
+              </div>
+            </div>
+          )}
+
+          {transferDetails.note ? (
+            <div className="checkout-transfer-card__note">{transferDetails.note}</div>
+          ) : null}
+        </div>
+      ) : null}
     </SectionCard>
   );
 }
@@ -206,7 +305,12 @@ export function CheckoutAccountSection({ user }: CheckoutAccountSectionProps) {
 export function CheckoutActions({ canConfirm, submitting, onConfirm }: CheckoutActionsProps) {
   return (
     <div className="grid gap-2 sm:flex sm:flex-row">
-      <Button type="button" className="w-full sm:w-auto" onClick={onConfirm} disabled={!canConfirm}>
+      <Button
+        type="button"
+        className="w-full sm:w-auto"
+        onClick={onConfirm}
+        disabled={!canConfirm}
+      >
         <CreditCard className="h-4 w-4" />
         {submitting ? 'Procesando...' : 'Confirmar pedido'}
       </Button>
@@ -221,16 +325,18 @@ export function CheckoutSummarySection({
   quote,
   items,
   paymentTitle,
+  paymentSubtitle,
 }: CheckoutSummarySectionProps) {
   return (
     <SectionCard
       className="commerce-sticky"
       title="Resumen del pedido"
-      description="Control final de productos, método de pago y total estimado."
+      description="Control final de productos, metodo de pago y total estimado."
     >
       <div className="summary-box">
         <div className="summary-box__label">Pago seleccionado</div>
         <div className="summary-box__value">{paymentTitle}</div>
+        <div className="summary-box__hint">{paymentSubtitle}</div>
       </div>
 
       <div className="mt-4 line-list">
@@ -239,7 +345,7 @@ export function CheckoutSummarySection({
             <div className="line-item__main">
               <div className="line-item__title">{line.name}</div>
               <div className="line-item__meta">
-                {line.quantity} × {formatCheckoutMoney(line.unitPrice)}
+                {line.quantity} x {formatCheckoutMoney(line.unitPrice)}
               </div>
             </div>
             <div className="line-item__total">{formatCheckoutMoney(line.lineTotal)}</div>
@@ -256,7 +362,18 @@ export function CheckoutSummarySection({
         <ShieldCheck className="mt-0.5 h-4 w-4 flex-none" />
         <div>
           <span className="ui-alert__title">Compra con retiro en local</span>
-          <div className="ui-alert__text">Una vez confirmado, el pedido aparecerá en tu cuenta y el equipo del local podrá continuar con la gestión.</div>
+          <div className="ui-alert__text">
+            Una vez confirmado, el pedido aparecera en tu cuenta y el equipo del local podra
+            continuar con la gestion.
+          </div>
+        </div>
+      </div>
+
+      <div className="summary-box mt-4">
+        <div className="summary-box__label">Importante</div>
+        <div className="summary-box__hint flex items-start gap-2">
+          <ExternalLink className="mt-0.5 h-4 w-4 flex-none text-sky-600" />
+          <span>Si eliges transferencia, revisa los datos antes de confirmar el pedido.</span>
         </div>
       </div>
     </SectionCard>

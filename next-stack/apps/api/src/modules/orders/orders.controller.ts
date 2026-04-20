@@ -24,6 +24,12 @@ import { OrdersService } from './orders.service.js';
 export class OrdersController {
   constructor(@Inject(OrdersService) private readonly ordersService: OrdersService) {}
 
+  @Get('checkout-config')
+  async checkoutConfig(@CurrentUser() user: AuthenticatedUser | null) {
+    if (!user) throw new UnauthorizedException('Usuario no autenticado');
+    return this.ordersService.checkoutConfig();
+  }
+
   @Post('checkout')
   async checkout(@CurrentUser() user: AuthenticatedUser | null, @Body() body: unknown) {
     const parsed = checkoutSchema.safeParse(body);

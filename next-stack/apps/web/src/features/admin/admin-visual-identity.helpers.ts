@@ -27,7 +27,11 @@ export type VisualIconName =
   | 'myOrders'
   | 'myRepairs'
   | 'dashboard'
-  | 'store';
+  | 'store'
+  | 'paymentLocal'
+  | 'paymentTransfer'
+  | 'paymentDebit'
+  | 'paymentCredit';
 
 export type AssetSectionDefinition = {
   title: string;
@@ -267,6 +271,57 @@ export const NAV_ICON_ASSETS: AssetCard[] = [
   },
 ];
 
+export const CHECKOUT_ICON_ASSETS: AssetCard[] = [
+  {
+    title: 'Icono pago en local',
+    filename: 'icons/payment-local.svg',
+    slot: 'checkout_payment_local',
+    settingKey: 'brand_asset.checkout_payment_local.path',
+    defaultPath: 'icons/payment-local.svg',
+    formats: 'SVG, PNG, JPG, JPEG, WEBP',
+    maxKb: 2048,
+    recommendedPx: '128 x 128 px o mayor',
+    preview: { kind: 'icon', icon: 'paymentLocal', tint: 'text-emerald-600' },
+    showReset: true,
+  },
+  {
+    title: 'Icono transferencia',
+    filename: 'icons/payment-transfer.svg',
+    slot: 'checkout_payment_transfer',
+    settingKey: 'brand_asset.checkout_payment_transfer.path',
+    defaultPath: 'icons/payment-transfer.svg',
+    formats: 'SVG, PNG, JPG, JPEG, WEBP',
+    maxKb: 2048,
+    recommendedPx: '128 x 128 px o mayor',
+    preview: { kind: 'icon', icon: 'paymentTransfer', tint: 'text-sky-600' },
+    showReset: true,
+  },
+  {
+    title: 'Icono tarjeta debito',
+    filename: 'icons/payment-debit.svg',
+    slot: 'checkout_payment_debit',
+    settingKey: 'brand_asset.checkout_payment_debit.path',
+    defaultPath: 'icons/payment-debit.svg',
+    formats: 'SVG, PNG, JPG, JPEG, WEBP',
+    maxKb: 2048,
+    recommendedPx: '128 x 128 px o mayor',
+    preview: { kind: 'icon', icon: 'paymentDebit', tint: 'text-blue-600' },
+    showReset: true,
+  },
+  {
+    title: 'Icono tarjeta credito',
+    filename: 'icons/payment-credit.svg',
+    slot: 'checkout_payment_credit',
+    settingKey: 'brand_asset.checkout_payment_credit.path',
+    defaultPath: 'icons/payment-credit.svg',
+    formats: 'SVG, PNG, JPG, JPEG, WEBP',
+    maxKb: 2048,
+    recommendedPx: '128 x 128 px o mayor',
+    preview: { kind: 'icon', icon: 'paymentCredit', tint: 'text-violet-600' },
+    showReset: true,
+  },
+];
+
 export const LOGO_ASSETS: AssetCard[] = [
   {
     title: 'Logo principal',
@@ -285,6 +340,7 @@ export const VISUAL_IDENTITY_SECTIONS: AssetSectionDefinition[] = [
   { title: 'Favicons e iconos de app', items: FAVICON_ASSETS, columns: 'three' },
   { title: 'Portada de tienda', items: STORE_HERO_ASSETS, columns: 'two' },
   { title: 'Acceso y auth', items: AUTH_VISUAL_ASSETS, columns: 'one' },
+  { title: 'Checkout y pagos', items: CHECKOUT_ICON_ASSETS, columns: 'two' },
   { title: 'Iconos de navegacion', items: NAV_ICON_ASSETS, columns: 'three' },
   { title: 'Logos', items: LOGO_ASSETS, columns: 'one' },
 ];

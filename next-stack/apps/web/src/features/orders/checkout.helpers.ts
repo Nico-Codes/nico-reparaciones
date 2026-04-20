@@ -1,13 +1,44 @@
 import type { CartLocalItem, CartQuoteLine } from '@/features/cart/types';
+import type {
+  CheckoutConfig,
+  CheckoutPaymentMethodConfig,
+  CheckoutTransferDetails,
+} from './types';
 
-export const CHECKOUT_PAYMENT_OPTIONS = [
-  { value: 'efectivo', title: 'Pago en el local', subtitle: 'Pagás al retirar.' },
-  { value: 'transferencia', title: 'Transferencia', subtitle: 'Te enviamos los datos después de confirmar.' },
-  { value: 'debito', title: 'Débito', subtitle: 'Pagás al retirar con tarjeta.' },
-  { value: 'credito', title: 'Crédito', subtitle: 'Pagás al retirar con tarjeta.' },
-] as const;
+export const DEFAULT_CHECKOUT_PAYMENT_OPTIONS: CheckoutPaymentMethodConfig[] = [
+  {
+    value: 'efectivo',
+    title: 'Pago en el local',
+    subtitle: 'Pagas al retirar en el local.',
+    iconUrl: '/icons/payment-local.svg',
+  },
+  {
+    value: 'transferencia',
+    title: 'Transferencia',
+    subtitle: 'Mira los datos bancarios antes de confirmar el pedido.',
+    iconUrl: '/icons/payment-transfer.svg',
+  },
+  {
+    value: 'debito',
+    title: 'Tarjeta debito',
+    subtitle: 'Pagas al retirar con tarjeta de debito.',
+    iconUrl: '/icons/payment-debit.svg',
+  },
+  {
+    value: 'credito',
+    title: 'Tarjeta credito',
+    subtitle: 'Pagas al retirar con tarjeta de credito.',
+    iconUrl: '/icons/payment-credit.svg',
+  },
+];
 
-type PaymentOption = (typeof CHECKOUT_PAYMENT_OPTIONS)[number];
+export const DEFAULT_CHECKOUT_TRANSFER_DETAILS: CheckoutTransferDetails = {
+  title: 'Datos para transferencia',
+  description: 'Si eliges transferencia, usa estos datos y conserva el comprobante para presentarlo al retirar.',
+  note: 'Si tienes dudas, contactanos antes de confirmar el pago.',
+  available: false,
+  fields: [],
+};
 
 export type BadgeTone = 'neutral' | 'info' | 'accent' | 'success' | 'warning' | 'danger';
 
@@ -38,22 +69,34 @@ export function hasInvalidCheckoutItems(items: CartQuoteLine[]) {
   return items.some((item) => !item.valid);
 }
 
-export function resolveSelectedPayment(paymentMethod: string): PaymentOption {
-  return CHECKOUT_PAYMENT_OPTIONS.find((option) => option.value === paymentMethod) ?? CHECKOUT_PAYMENT_OPTIONS[0];
+export function resolveCheckoutPaymentMethods(config?: CheckoutConfig | null) {
+  return config?.paymentMethods?.length ? config.paymentMethods : DEFAULT_CHECKOUT_PAYMENT_OPTIONS;
+}
+
+export function resolveCheckoutTransferDetails(config?: CheckoutConfig | null) {
+  return config?.transferDetails ?? DEFAULT_CHECKOUT_TRANSFER_DETAILS;
+}
+
+export function resolveSelectedPayment(
+  paymentMethod: string,
+  options?: CheckoutPaymentMethodConfig[],
+) {
+  const source = options?.length ? options : DEFAULT_CHECKOUT_PAYMENT_OPTIONS;
+  return source.find((option) => option.value === paymentMethod) ?? source[0];
 }
 
 export function buildCheckoutEmptyState(hasCartItems: boolean) {
   if (hasCartItems) {
     return {
       title: 'Hay productos para revisar',
-      description: 'Volvé al carrito para ajustar cantidades o quitar productos sin stock antes de confirmar la compra.',
-      subtitle: 'Todavía no podemos confirmar el pedido con el stock actual.',
+      description: 'Volve al carrito para ajustar cantidades o quitar productos sin stock antes de confirmar la compra.',
+      subtitle: 'Todavia no podemos confirmar el pedido con el stock actual.',
     };
   }
 
   return {
-    title: 'Tu carrito está vacío',
-    description: 'Necesitás productos válidos en el carrito para confirmar la compra.',
-    subtitle: 'Necesitás productos válidos en el carrito para confirmar la compra.',
+    title: 'Tu carrito esta vacio',
+    description: 'Necesitas productos validos en el carrito para confirmar la compra.',
+    subtitle: 'Necesitas productos validos en el carrito para confirmar la compra.',
   };
 }

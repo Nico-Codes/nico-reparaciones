@@ -1,65 +1,28 @@
 import { describe, expect, it } from 'vitest';
 import {
-  buildCheckoutEmptyState,
-  buildCheckoutItems,
-  buildValidCheckoutLines,
-  emailVerificationTone,
-  formatCheckoutMoney,
-  hasInvalidCheckoutItems,
+  DEFAULT_CHECKOUT_TRANSFER_DETAILS,
+  resolveCheckoutPaymentMethods,
+  resolveCheckoutTransferDetails,
   resolveSelectedPayment,
-  sameCartItems,
 } from './checkout.helpers';
 
 describe('checkout.helpers', () => {
-  it('builds valid checkout lines and payload items', () => {
-    const lines = buildValidCheckoutLines([
-      { productId: 'p-1', quantity: 2, valid: true, reason: null, name: 'Modulo', unitPrice: 100, lineTotal: 200, stockAvailable: 3, active: true, category: null },
-      { productId: 'p-2', quantity: 1, valid: false, reason: 'sin stock', name: 'Bateria', unitPrice: 50, lineTotal: 50, stockAvailable: 0, active: true, category: null },
+  it('falls back to default payment methods and transfer details', () => {
+    expect(resolveCheckoutPaymentMethods()).toHaveLength(4);
+    expect(resolveCheckoutTransferDetails()).toEqual(DEFAULT_CHECKOUT_TRANSFER_DETAILS);
+  });
+
+  it('resolves the selected payment against configured methods', () => {
+    const payment = resolveSelectedPayment('transferencia', [
+      {
+        value: 'transferencia',
+        title: 'Transferencia',
+        subtitle: 'Datos bancarios antes de confirmar.',
+        iconUrl: '/icons/payment-transfer.svg',
+      },
     ]);
 
-    expect(lines).toHaveLength(1);
-    expect(buildCheckoutItems(lines)).toEqual([{ productId: 'p-1', quantity: 2 }]);
-    expect(hasInvalidCheckoutItems([...lines, {
-      productId: 'p-2',
-      quantity: 1,
-      valid: false,
-      reason: 'sin stock',
-      name: 'Bateria',
-      unitPrice: 50,
-      lineTotal: 50,
-      stockAvailable: 0,
-      active: true,
-      category: null,
-    }])).toBe(true);
-  });
-
-  it('compares local cart items by order and quantity', () => {
-    expect(
-      sameCartItems(
-        [{ productId: 'p-1', quantity: 2 }],
-        [{ productId: 'p-1', quantity: 2 }],
-      ),
-    ).toBe(true);
-
-    expect(
-      sameCartItems(
-        [{ productId: 'p-1', quantity: 2 }],
-        [{ productId: 'p-1', quantity: 1 }],
-      ),
-    ).toBe(false);
-  });
-
-  it('builds empty state, money formatting and payment resolution', () => {
-    expect(buildCheckoutEmptyState(true).title).toBe('Hay productos para revisar');
-    expect(buildCheckoutEmptyState(false).title).toBe('Tu carrito está vacío');
-    expect(formatCheckoutMoney(12345)).toBe('$ 12.345');
-    expect(resolveSelectedPayment('transferencia').title).toBe('Transferencia');
-    expect(resolveSelectedPayment('desconocido').value).toBe('efectivo');
-  });
-
-  it('maps email verification to badge tone', () => {
-    expect(emailVerificationTone(true)).toBe('success');
-    expect(emailVerificationTone(false)).toBe('warning');
-    expect(emailVerificationTone(undefined)).toBe('warning');
+    expect(payment.value).toBe('transferencia');
+    expect(payment.title).toBe('Transferencia');
   });
 });

@@ -13,6 +13,36 @@
 ---
 
 ### 2026-04-20 - Codex
+- Alcance: hacer configurable el bloque de pagos del checkout y sumar una pantalla avanzada para editar los datos de transferencia.
+- Tipo de intervencion: cambio funcional full-stack sobre `orders`, `admin/settings` e `identidad visual`.
+- Archivos tocados:
+  - `next-stack/apps/api/src/modules/admin/app-settings.registry.ts`
+  - `next-stack/apps/api/src/modules/orders/{orders.controller.ts,orders.service.ts,orders-support.service.ts,orders.types.ts}`
+  - `next-stack/apps/web/src/features/orders/{api.ts,types.ts,checkout.helpers.ts,checkout.helpers.test.ts,checkout.sections.tsx,CheckoutPage.tsx}`
+  - `next-stack/apps/web/src/features/admin/{AdminCheckoutSettingsPage.tsx,admin-checkout-settings.helpers.ts,admin-checkout-settings.helpers.test.ts,admin-checkout-settings.sections.tsx,admin-settings-hub.helpers.ts,admin-visual-identity.helpers.ts,admin-visual-identity.sections.tsx}`
+  - `next-stack/apps/web/src/app/routing/route-pages.tsx`
+  - `next-stack/apps/web/src/App.tsx`
+  - `next-stack/apps/web/src/styles/commerce.css`
+  - `next-stack/apps/web/public/icons/{payment-local.svg,payment-transfer.svg,payment-debit.svg,payment-credit.svg}`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. `/checkout` ahora muestra cuatro metodos de pago con iconos configurables desde identidad visual, y al elegir `transferencia` despliega los datos bancarios editados desde una nueva vista avanzada en `/admin/configuracion/checkoutpagos`.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/api`
+  - `cmd /c npm run build --workspace @nico/api`
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web -- admin-checkout-settings.helpers.test.ts checkout.helpers.test.ts admin-visual-identity.helpers.test.ts admin-settings-hub.helpers.test.ts`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:backend`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - los cuatro metodos de pago quedan fijos por decision de producto; esta tarea hace configurable la presentacion, no un ABM abierto de metodos
+  - si el operador deja vacio el bloque de transferencia, checkout sigue permitiendo elegir el metodo pero avisa que faltan datos bancarios
+
+---
+
+### 2026-04-20 - Codex
 - Alcance: compactar el listado de `Catalogo operativo` en `/admin/productos` para que cada producto ocupe menos altura y tenga una presentacion mas cercana a tienda.
 - Tipo de intervencion: ajuste visual puntual en frontend del subdominio `catalogAdmin`.
 - Archivos tocados:

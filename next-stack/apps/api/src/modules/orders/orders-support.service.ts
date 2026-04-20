@@ -1,12 +1,99 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { ORDER_WALKIN_EMAIL } from './orders.helpers.js';
-import type { SerializableOrder } from './orders.types.js';
+import { ORDER_CHECKOUT_PAYMENT_METHODS, ORDER_WALKIN_EMAIL } from './orders.helpers.js';
+import type { CheckoutConfig, CheckoutPaymentMethodKey, SerializableOrder } from './orders.types.js';
 
 @Injectable()
 export class OrdersSupportService {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+
+  async getCheckoutConfig(): Promise<CheckoutConfig> {
+    const keys = [
+      'brand_asset.checkout_payment_local.path',
+      'brand_asset.checkout_payment_transfer.path',
+      'brand_asset.checkout_payment_debit.path',
+      'brand_asset.checkout_payment_credit.path',
+      'checkout_transfer_title',
+      'checkout_transfer_description',
+      'checkout_transfer_holder_label',
+      'checkout_transfer_holder_value',
+      'checkout_transfer_bank_label',
+      'checkout_transfer_bank_value',
+      'checkout_transfer_alias_label',
+      'checkout_transfer_alias_value',
+      'checkout_transfer_cvu_label',
+      'checkout_transfer_cvu_value',
+      'checkout_transfer_tax_id_label',
+      'checkout_transfer_tax_id_value',
+      'checkout_transfer_extra_label',
+      'checkout_transfer_extra_value',
+      'checkout_transfer_note',
+    ] as const;
+
+    const rows = await this.prisma.appSetting.findMany({
+      where: { key: { in: [...keys] } },
+      select: { key: true, value: true, updatedAt: true },
+    });
+
+    const map = new Map(rows.map((row) => [row.key, row.value ?? '']));
+    const rowsByKey = new Map(rows.map((row) => [row.key, row]));
+
+    const paymentMethods: CheckoutConfig['paymentMethods'] = [
+      this.buildCheckoutPaymentMethod(
+        'efectivo',
+        ORDER_CHECKOUT_PAYMENT_METHODS.efectivo,
+        'Pagas al retirar en el local.',
+        map.get('brand_asset.checkout_payment_local.path'),
+        rowsByKey.get('brand_asset.checkout_payment_local.path')?.updatedAt,
+      ),
+      this.buildCheckoutPaymentMethod(
+        'transferencia',
+        ORDER_CHECKOUT_PAYMENT_METHODS.transferencia,
+        'Mira los datos bancarios antes de confirmar el pedido.',
+        map.get('brand_asset.checkout_payment_transfer.path'),
+        rowsByKey.get('brand_asset.checkout_payment_transfer.path')?.updatedAt,
+      ),
+      this.buildCheckoutPaymentMethod(
+        'debito',
+        'Tarjeta debito',
+        'Pagas al retirar con tarjeta de debito.',
+        map.get('brand_asset.checkout_payment_debit.path'),
+        rowsByKey.get('brand_asset.checkout_payment_debit.path')?.updatedAt,
+      ),
+      this.buildCheckoutPaymentMethod(
+        'credito',
+        'Tarjeta credito',
+        'Pagas al retirar con tarjeta de credito.',
+        map.get('brand_asset.checkout_payment_credit.path'),
+        rowsByKey.get('brand_asset.checkout_payment_credit.path')?.updatedAt,
+      ),
+    ];
+
+    const fields = [
+      this.buildCheckoutTransferField('holder', map.get('checkout_transfer_holder_label'), map.get('checkout_transfer_holder_value'), 'Titular'),
+      this.buildCheckoutTransferField('bank', map.get('checkout_transfer_bank_label'), map.get('checkout_transfer_bank_value'), 'Banco'),
+      this.buildCheckoutTransferField('alias', map.get('checkout_transfer_alias_label'), map.get('checkout_transfer_alias_value'), 'Alias'),
+      this.buildCheckoutTransferField('cvu', map.get('checkout_transfer_cvu_label'), map.get('checkout_transfer_cvu_value'), 'CVU / CBU'),
+      this.buildCheckoutTransferField('taxId', map.get('checkout_transfer_tax_id_label'), map.get('checkout_transfer_tax_id_value'), 'CUIT / CUIL'),
+      this.buildCheckoutTransferField('extra', map.get('checkout_transfer_extra_label'), map.get('checkout_transfer_extra_value'), 'Referencia'),
+    ].filter((item) => item.value.trim().length > 0);
+
+    return {
+      paymentMethods,
+      transferDetails: {
+        title: (map.get('checkout_transfer_title') || 'Datos para transferencia').trim() || 'Datos para transferencia',
+        description:
+          (map.get('checkout_transfer_description') || 'Si eliges transferencia, usa estos datos y conserva el comprobante para presentarlo al retirar.').trim() ||
+          'Si eliges transferencia, usa estos datos y conserva el comprobante para presentarlo al retirar.',
+        note:
+          (map.get('checkout_transfer_note') || 'Si tienes dudas, contactanos antes de confirmar el pago.').trim() ||
+          'Si tienes dudas, contactanos antes de confirmar el pago.',
+        fields,
+        available: fields.length > 0,
+      },
+    };
+  }
 
   serializeOrder(order: SerializableOrder) {
     return {
@@ -102,5 +189,52 @@ export class OrdersSupportService {
     const legacy = map.get('product_pricing.block_negative_margin');
     if (legacy) return legacy !== '0';
     return true;
+  }
+
+  private buildCheckoutPaymentMethod(
+    value: CheckoutPaymentMethodKey,
+    title: string,
+    subtitle: string,
+    iconPath?: string | null,
+    updatedAt?: Date | null,
+  ) {
+    const defaultPaths: Record<CheckoutPaymentMethodKey, string> = {
+      efectivo: 'icons/payment-local.svg',
+      transferencia: 'icons/payment-transfer.svg',
+      debito: 'icons/payment-debit.svg',
+      credito: 'icons/payment-credit.svg',
+    };
+
+    return {
+      value,
+      title,
+      subtitle,
+      iconUrl: this.resolvePublicAssetUrl(iconPath || defaultPaths[value], updatedAt),
+    };
+  }
+
+  private buildCheckoutTransferField(key: string, labelRaw: string | undefined, valueRaw: string | undefined, fallbackLabel: string) {
+    return {
+      key,
+      label: (labelRaw || fallbackLabel).trim() || fallbackLabel,
+      value: (valueRaw || '').trim(),
+    };
+  }
+
+  private resolvePublicAssetUrl(rawValue?: string | null, updatedAt?: Date | string | null) {
+    const raw = (rawValue ?? '').trim();
+    if (!raw) return null;
+
+    const normalizedUrl = /^https?:\/\//i.test(raw) ? raw : `/${raw.replace(/^\/+/, '')}`;
+    const version = this.buildAssetVersion(updatedAt);
+    if (!version) return normalizedUrl;
+    return `${normalizedUrl}${normalizedUrl.includes('?') ? '&' : '?'}v=${version}`;
+  }
+
+  private buildAssetVersion(updatedAt?: Date | string | null) {
+    if (!updatedAt) return null;
+    if (updatedAt instanceof Date) return updatedAt.getTime();
+    const parsed = Date.parse(updatedAt);
+    return Number.isFinite(parsed) ? parsed : null;
   }
 }

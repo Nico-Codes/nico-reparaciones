@@ -32,3 +32,31 @@ export type QuickSaleHistoryItem = OrderItem & {
     email: string;
   } | null;
 };
+
+export type CheckoutPaymentMethodKey = 'efectivo' | 'transferencia' | 'debito' | 'credito';
+
+export type CheckoutPaymentMethodConfig = {
+  value: CheckoutPaymentMethodKey;
+  title: string;
+  subtitle: string;
+  iconUrl: string | null;
+};
+
+export type CheckoutTransferField = {
+  key: string;
+  label: string;
+  value: string;
+};
+
+export type CheckoutTransferDetails = {
+  title: string;
+  description: string;
+  note: string;
+  available: boolean;
+  fields: CheckoutTransferField[];
+};
+
+export type CheckoutConfig = {
+  paymentMethods: CheckoutPaymentMethodConfig[];
+  transferDetails: CheckoutTransferDetails;
+};

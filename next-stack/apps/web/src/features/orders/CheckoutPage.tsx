@@ -8,6 +8,8 @@ import {
   buildCheckoutItems,
   buildValidCheckoutLines,
   hasInvalidCheckoutItems,
+  resolveCheckoutPaymentMethods,
+  resolveCheckoutTransferDetails,
   resolveSelectedPayment,
   sameCartItems,
 } from './checkout.helpers';
@@ -24,10 +26,12 @@ import { PageHeader } from '@/components/ui/page-header';
 import { PageShell } from '@/components/ui/page-shell';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { ordersApi } from './api';
+import type { CheckoutConfig } from './types';
 
 export function CheckoutPage() {
   const navigate = useNavigate();
   const [quote, setQuote] = useState<CartQuoteResponse | null>(null);
+  const [checkoutConfig, setCheckoutConfig] = useState<CheckoutConfig | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<string>('efectivo');
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -42,22 +46,34 @@ export function CheckoutPage() {
     setLoading(true);
     setMessage('');
 
-    quoteCart(localItems)
-      .then((response) => {
+    Promise.allSettled([quoteCart(localItems), ordersApi.checkoutConfig()])
+      .then(([quoteResult, configResult]) => {
         if (!active) return;
-        setQuote(response);
+        if (quoteResult.status === 'fulfilled') {
+          const response = quoteResult.value;
+          setQuote(response);
 
-        if (response.items.length) {
-          const normalized = buildCheckoutItems(buildValidCheckoutLines(response.items));
-          const current = cartStorage.getItems();
-          if (!sameCartItems(normalized, current)) {
-            cartStorage.setItems(normalized);
+          if (response.items.length) {
+            const normalized = buildCheckoutItems(buildValidCheckoutLines(response.items));
+            const current = cartStorage.getItems();
+            if (!sameCartItems(normalized, current)) {
+              cartStorage.setItems(normalized);
+            }
           }
+
+          if (configResult.status === 'fulfilled') {
+            setCheckoutConfig(configResult.value);
+          } else {
+            setCheckoutConfig(null);
+          }
+          return;
         }
-      })
-      .catch((cause) => {
-        if (!active) return;
-        setMessage(cause instanceof Error ? cause.message : 'Error preparando el checkout');
+
+        setMessage(
+          quoteResult.reason instanceof Error
+            ? quoteResult.reason.message
+            : 'Error preparando el checkout',
+        );
       })
       .finally(() => {
         if (!active) return;
@@ -72,8 +88,19 @@ export function CheckoutPage() {
   const validItems = useMemo(() => buildValidCheckoutLines(quote?.items ?? []), [quote]);
   const validCheckoutItems = useMemo(() => buildCheckoutItems(validItems), [validItems]);
   const hasInvalidItems = useMemo(() => hasInvalidCheckoutItems(quote?.items ?? []), [quote]);
+  const paymentOptions = useMemo(() => resolveCheckoutPaymentMethods(checkoutConfig), [checkoutConfig]);
+  const transferDetails = useMemo(() => resolveCheckoutTransferDetails(checkoutConfig), [checkoutConfig]);
   const canConfirm = !loading && !submitting && validCheckoutItems.length > 0;
-  const selectedPayment = useMemo(() => resolveSelectedPayment(paymentMethod), [paymentMethod]);
+  const selectedPayment = useMemo(
+    () => resolveSelectedPayment(paymentMethod, paymentOptions),
+    [paymentMethod, paymentOptions],
+  );
+
+  useEffect(() => {
+    if (!paymentOptions.some((option) => option.value === paymentMethod) && paymentOptions.length) {
+      setPaymentMethod(paymentOptions[0].value);
+    }
+  }, [paymentMethod, paymentOptions]);
 
   async function confirmOrder() {
     if (!canConfirm) return;
@@ -123,6 +150,8 @@ export function CheckoutPage() {
         <div className="commerce-stack">
           <CheckoutPaymentSection
             paymentMethod={paymentMethod}
+            paymentOptions={paymentOptions}
+            transferDetails={transferDetails}
             submitting={submitting}
             onChange={setPaymentMethod}
           />
@@ -134,6 +163,7 @@ export function CheckoutPage() {
           quote={quote}
           items={validItems}
           paymentTitle={selectedPayment.title}
+          paymentSubtitle={selectedPayment.subtitle}
         />
       </div>
     </PageShell>

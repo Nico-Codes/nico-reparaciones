@@ -27,6 +27,7 @@ import {
   AdminAlertsPage,
   AdminAutoReportsPage,
   AdminBusinessSettingsPage,
+  AdminCheckoutSettingsPage,
   AppleAuthCallbackPage,
   AdminCalculationsHubPage,
   AdminCategoriesPage,
@@ -169,6 +170,8 @@ export default function App() {
         <Route path="/admin/configuracion/mail" element={<RequireAdmin>{withShellSuspense(<AdminSmtpSettingsPage />)}</RequireAdmin>} />
         <Route path="/admin/configuracion/reportes" element={<RequireAdmin>{withShellSuspense(<AdminAutoReportsPage />)}</RequireAdmin>} />
         <Route path="/admin/configuracion/negocio" element={<RequireAdmin>{withShellSuspense(<AdminBusinessSettingsPage />)}</RequireAdmin>} />
+        <Route path="/admin/configuracion/checkoutpagos" element={<RequireAdmin>{withShellSuspense(<AdminCheckoutSettingsPage />)}</RequireAdmin>} />
+        <Route path="/admin/configuracion/checkout-pagos" element={<RequireAdmin><Navigate to="/admin/configuracion/checkoutpagos" replace /></RequireAdmin>} />
         <Route path="/admin/configuracion/identidadvisual" element={<RequireAdmin>{withShellSuspense(<AdminVisualIdentityPage />)}</RequireAdmin>} />
         <Route path="/admin/configuracion/identidad-visual" element={<RequireAdmin><Navigate to="/admin/configuracion/identidadvisual" replace /></RequireAdmin>} />
         <Route path="/admin/configuracion/portadatienda" element={<RequireAdmin>{withShellSuspense(<AdminStoreHeroSettingsPage />)}</RequireAdmin>} />

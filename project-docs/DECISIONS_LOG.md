@@ -20,6 +20,20 @@ Registrar decisiones tecnicas confirmadas para evitar dependencia de memoria ora
 
 ---
 
+### [DL-0108]
+- Fecha: 2026-04-20
+- Estado: aceptada
+- Tema: checkout usa configuracion separada para metodos de pago e informacion de transferencia, combinando identidad visual y settings avanzados
+- Contexto: el checkout ya confirmaba pedidos, pero los metodos de pago estaban hardcodeados, sin iconos editables ni bloque configurable de transferencia. El pedido fue mostrar cuatro metodos fijos (`pago en el local`, `transferencia`, `tarjeta debito`, `tarjeta credito`), con iconos administrables desde identidad visual y datos bancarios editables desde una vista propia de configuracion avanzada.
+- Decision: mantener los cuatro metodos de pago como set fijo del checkout, pero desacoplar su presentacion del codigo. Los iconos pasan a `brand_asset.checkout_payment_*` dentro de identidad visual, mientras que el contenido del bloque de transferencia vive en `appSetting` del grupo `checkout` y se administra desde una nueva pantalla `/admin/configuracion/checkoutpagos`. El frontend de `/checkout` consume una config agregada propia de `orders` (`GET /orders/checkout-config`) para no mezclar este subdominio con branding publico general.
+- Impacto: el checkout queda mas flexible sin abrir un CMS de metodos de pago completo. El operador puede cambiar iconos y texto operativo sin tocar codigo, y el flujo de compra muestra los datos de transferencia antes de confirmar cuando corresponde. La estructura interna preserva un limite claro: branding visual en identidad visual, contenido operativo en configuracion avanzada.
+- Alternativas consideradas: guardar todo en branding, o resolver todo desde settings planos sin endpoint agregado; descartado porque la primera opcion mezclaba copy operativo con assets visuales y la segunda dejaba demasiado wiring repetido en frontend.
+- Archivos / modulos afectados: `next-stack/apps/api/src/modules/{admin/app-settings.registry.ts,orders/{orders.controller.ts,orders.service.ts,orders-support.service.ts,orders.types.ts}}`, `next-stack/apps/web/src/features/{orders/*,admin/{AdminCheckoutSettingsPage.tsx,admin-checkout-settings.*,admin-settings-hub.helpers.ts,admin-visual-identity.*}}`, `next-stack/apps/web/src/{App.tsx,app/routing/route-pages.tsx,styles/commerce.css}`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/api`, `build --workspace @nico/api`, `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:backend`, `smoke:web`, `git diff --check`.
+- Responsable: Codex + operador humano
+
+---
+
 ### [DL-0107]
 - Fecha: 2026-04-16
 - Estado: aceptada
