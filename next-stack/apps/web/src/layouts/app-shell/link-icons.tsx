@@ -1,4 +1,4 @@
-import { Boxes, HelpCircle, MailCheck, Package, ReceiptText, Settings, ShoppingBag, User, Wrench, WrenchIcon } from 'lucide-react';
+import { Boxes, HelpCircle, Package, ReceiptText, Settings, ShoppingBag, User, Wrench, WrenchIcon } from 'lucide-react';
 import { WarnIcon } from './primitives';
 
 export function renderSidebarNavIcon(label: string) {
@@ -23,7 +23,7 @@ export function renderAccountLinkIcon(label: string) {
     case 'Mi cuenta':
       return <User className="h-4 w-4 text-zinc-500" />;
     case 'Verificar correo':
-      return <MailCheck className="h-4 w-4 text-amber-700" />;
+      return <WarnIcon />;
     default:
       return <WarnIcon />;
   }

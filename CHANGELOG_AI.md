@@ -13,6 +13,25 @@
 ---
 
 ### 2026-04-21 - Codex
+- Alcance: restaurar el icono visual previo de `Verificar correo` manteniendo su slot editable en Identidad visual.
+- Tipo de intervencion: ajuste visual puntual en frontend.
+- Archivos tocados:
+  - `next-stack/apps/web/public/icons/verificar-correo.svg`
+  - `next-stack/apps/web/src/features/admin/admin-visual-identity.sections.tsx`
+  - `next-stack/apps/web/src/layouts/app-shell/link-icons.tsx`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No. El asset sigue siendo editable desde Identidad visual; solo vuelve la silueta default/fallback anterior.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web -- helpers.test.ts`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `git diff --check`
+- Riesgos / notas:
+  - no se modifica el slot `brand_asset.icon_verificar_correo.path`; si el usuario sube un icono personalizado, sigue teniendo prioridad.
+
+---
+
+### 2026-04-21 - Codex
 - Alcance: completar la cobertura de iconos globales editables desde Identidad visual.
 - Tipo de intervencion: ajuste funcional de branding compartido entre API y frontend.
 - Archivos tocados:
