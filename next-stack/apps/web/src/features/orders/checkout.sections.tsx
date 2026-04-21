@@ -196,7 +196,7 @@ export function CheckoutPaymentSection({
         {paymentOptions.map((option) => {
           const active = paymentMethod === option.value;
           return (
-            <label key={option.value} className="block cursor-pointer">
+            <label key={option.value} className="checkout-option-wrapper cursor-pointer">
               <input
                 className="sr-only peer"
                 type="radio"

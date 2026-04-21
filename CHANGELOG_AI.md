@@ -13,6 +13,24 @@
 ---
 
 ### 2026-04-21 - Codex
+- Alcance: alinear las tarjetas de metodo de pago en checkout.
+- Tipo de intervencion: ajuste visual puntual en frontend.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/orders/checkout.sections.tsx`
+  - `next-stack/apps/web/src/styles/commerce.css`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No. Los cuatro medios de pago conservan el mismo comportamiento, pero sus contenedores ahora llenan la fila y mantienen una altura minima comun.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - el ajuste queda acotado a las opciones de pago del checkout mediante `checkout-option-wrapper` y no toca otros cards.
+
+---
+
+### 2026-04-21 - Codex
 - Alcance: mostrar proporcion y tamano recomendado en todas las cards de Identidad visual.
 - Tipo de intervencion: mejora de metadata y validacion en frontend admin.
 - Archivos tocados:

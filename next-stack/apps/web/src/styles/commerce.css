@@ -556,6 +556,8 @@
 
 .checkout-option-grid {
   display: grid;
+  align-items: stretch;
+  grid-auto-rows: 1fr;
   gap: 0.75rem;
 }
 
@@ -565,8 +567,16 @@
   }
 }
 
+.checkout-option-wrapper {
+  display: flex;
+  min-width: 0;
+}
+
 .checkout-option {
-  display: block;
+  display: flex;
+  min-height: 5.15rem;
+  width: 100%;
+  align-items: center;
   border-radius: 1rem;
   border: 1px solid rgba(226, 232, 240, 0.92);
   background: #fff;
@@ -587,6 +597,7 @@
 
 .checkout-option__header {
   display: flex;
+  width: 100%;
   gap: 0.85rem;
   align-items: center;
 }
