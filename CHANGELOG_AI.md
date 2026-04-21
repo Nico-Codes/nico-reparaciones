@@ -13,6 +13,23 @@
 ---
 
 ### 2026-04-21 - Codex
+- Alcance: igualar la altura visible de las cuatro tarjetas de pago del checkout.
+- Tipo de intervencion: ajuste visual puntual en frontend.
+- Archivos tocados:
+  - `next-stack/apps/web/src/styles/commerce.css`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No. Solo se aumenta la altura minima comun para que la fila inferior no quede mas baja que la superior.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - ajuste acotado a `.checkout-option`; no cambia el comportamiento de seleccion ni confirmacion del pedido.
+
+---
+
+### 2026-04-21 - Codex
 - Alcance: alinear las tarjetas de metodo de pago en checkout.
 - Tipo de intervencion: ajuste visual puntual en frontend.
 - Archivos tocados:
