@@ -13,6 +13,24 @@
 ---
 
 ### 2026-04-21 - Codex
+- Alcance: mostrar proporcion y tamano recomendado en todas las cards de Identidad visual.
+- Tipo de intervencion: mejora de metadata y validacion en frontend admin.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/admin/admin-visual-identity.helpers.ts`
+  - `next-stack/apps/web/src/features/admin/admin-visual-identity.helpers.test.ts`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. Todas las cards de recursos visuales muestran ahora una recomendacion de proporcion/tamano para SVG, iconos, favicons, fondos y logo.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web -- admin-visual-identity.helpers.test.ts`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `git diff --check`
+- Riesgos / notas:
+  - no cambia la logica de subida, descarga ni reset; solo completa la informacion visible y agrega una prueba para evitar cards sin recomendacion.
+
+---
+
+### 2026-04-21 - Codex
 - Alcance: restaurar el icono visual previo de `Verificar correo` manteniendo su slot editable en Identidad visual.
 - Tipo de intervencion: ajuste visual puntual en frontend.
 - Archivos tocados:

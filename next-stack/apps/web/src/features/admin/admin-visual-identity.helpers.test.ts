@@ -11,6 +11,7 @@ import {
   patchAuthVisualSetting,
   resolveAssetState,
   summarizeAssetPath,
+  VISUAL_IDENTITY_SECTIONS,
 } from './admin-visual-identity.helpers';
 import type { AdminSettingItem } from './settingsApi';
 
@@ -103,14 +104,24 @@ describe('admin-visual-identity.helpers', () => {
       slot: 'auth_login_background',
       settingKey: 'brand_asset.auth_login_background.path',
       defaultPath: 'brand/logo-bg.png',
-      recommendedPx: '1800 x 1400 px o mayor',
+      recommendedPx: '9:7 - 1800 x 1400 px o mayor',
     });
     expect(AUTH_VISUAL_ASSETS[1]).toMatchObject({
       slot: 'auth_login_background_mobile',
       settingKey: 'brand_asset.auth_login_background_mobile.path',
       defaultPath: 'brand/logo-bg.png',
-      recommendedPx: '1080 x 720 px o mayor',
+      recommendedPx: '3:2 - 1080 x 720 px o mayor',
     });
+  });
+
+  it('shows recommended proportions for every visual identity asset card', () => {
+    const missingRecommendations = VISUAL_IDENTITY_SECTIONS.flatMap((section) =>
+      section.items
+        .filter((item) => !item.recommendedPx?.trim())
+        .map((item) => `${section.title}: ${item.title}`),
+    );
+
+    expect(missingRecommendations).toEqual([]);
   });
 
   it('hydrates auth visual copy settings with defaults', () => {
