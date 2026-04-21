@@ -47,24 +47,28 @@ const PAYMENT_METHOD_CARDS = [
     title: 'Pago en el local',
     description: 'Se muestra como retiro en local y usa icono configurable desde identidad visual.',
     icon: Banknote,
+    toggleField: null,
   },
   {
     key: 'transferencia',
     title: 'Transferencia',
     description: 'Muestra los datos bancarios configurados en esta pantalla antes de confirmar.',
     icon: Landmark,
+    toggleField: null,
   },
   {
     key: 'debito',
     title: 'Tarjeta debito',
-    description: 'Metodo presencial al retirar. Icono editable desde identidad visual.',
+    description: 'Metodo presencial al retirar. Activala cuando quieras ofrecer pagos con debito.',
     icon: CreditCard,
+    toggleField: 'debitEnabled',
   },
   {
     key: 'credito',
     title: 'Tarjeta credito',
-    description: 'Metodo presencial al retirar. Icono editable desde identidad visual.',
+    description: 'Metodo presencial al retirar. Activala cuando quieras ofrecer pagos con credito.',
     icon: WalletCards,
+    toggleField: 'creditEnabled',
   },
 ] as const;
 
@@ -114,7 +118,7 @@ export function AdminCheckoutSettingsMain({
     <div className="space-y-6">
       <SectionCard
         title="Metodos de pago visibles"
-        description="Checkout siempre muestra cuatro metodos fijos. Aqui configuras solo el bloque de transferencia; los iconos se editan en identidad visual."
+        description="Efectivo y transferencia quedan activos. Debito y credito quedan deshabilitados hasta que los actives desde esta pantalla."
         actions={<StatusBadge tone="info" size="sm" label="Checkout" />}
       >
         <div className="ui-alert ui-alert--info mb-4">
@@ -122,8 +126,8 @@ export function AdminCheckoutSettingsMain({
           <div>
             <span className="ui-alert__title">Iconos editables</span>
             <div className="ui-alert__text">
-              Los iconos de efectivo, transferencia, debito y credito se cambian desde
-              Configuracion &gt; Identidad visual &gt; Checkout y pagos.
+              Los iconos se cambian desde Configuracion &gt; Identidad visual &gt; Checkout y pagos.
+              La disponibilidad de debito y credito se cambia aca.
             </div>
           </div>
         </div>
@@ -131,14 +135,33 @@ export function AdminCheckoutSettingsMain({
         <div className="choice-grid">
           {PAYMENT_METHOD_CARDS.map((item) => {
             const Icon = item.icon;
+            const toggleField = item.toggleField;
+            const enabled = toggleField ? form[toggleField] : true;
             return (
-              <div key={item.key} className="choice-card is-active">
+              <label
+                key={item.key}
+                className={`choice-card ${enabled ? 'is-active' : 'is-disabled'}`}
+              >
+                {toggleField ? (
+                  <input
+                    type="checkbox"
+                    checked={enabled}
+                    onChange={(event) => onChange(toggleField, event.target.checked)}
+                  />
+                ) : null}
                 <Icon className="mt-0.5 h-4 w-4 flex-none text-sky-600" />
                 <div>
-                  <div className="choice-card__title">{item.title}</div>
+                  <div className="choice-card__title">
+                    {item.title}
+                    {toggleField ? (
+                      <span className="ml-2 text-[0.72rem] font-black uppercase tracking-[0.14em] text-slate-500">
+                        {enabled ? 'Activo' : 'Deshabilitado'}
+                      </span>
+                    ) : null}
+                  </div>
                   <div className="choice-card__hint">{item.description}</div>
                 </div>
-              </div>
+              </label>
             );
           })}
         </div>
@@ -340,7 +363,8 @@ export function AdminCheckoutSettingsSidebar({
             <div>
               <div className="choice-card__title">Metodos fijos</div>
               <div className="choice-card__hint">
-                Efectivo, transferencia, debito y credito siempre quedan disponibles.
+                Efectivo y transferencia quedan disponibles. Debito y credito dependen de los
+                switches de la pantalla principal.
               </div>
             </div>
           </div>

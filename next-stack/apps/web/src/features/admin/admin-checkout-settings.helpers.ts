@@ -1,6 +1,8 @@
 import type { AdminSettingItem } from './settingsApi';
 
 export type CheckoutSettingsForm = {
+  debitEnabled: boolean;
+  creditEnabled: boolean;
   transferTitle: string;
   transferDescription: string;
   holderLabel: string;
@@ -19,6 +21,8 @@ export type CheckoutSettingsForm = {
 };
 
 export const DEFAULT_CHECKOUT_SETTINGS_FORM: CheckoutSettingsForm = {
+  debitEnabled: false,
+  creditEnabled: false,
   transferTitle: 'Datos para transferencia',
   transferDescription:
     'Si eliges transferencia, usa estos datos y conserva el comprobante para presentarlo al retirar.',
@@ -43,6 +47,16 @@ const CHECKOUT_SETTING_META: Record<
   CheckoutSettingKey,
   { key: string; label: string; type: 'text' | 'textarea' }
 > = {
+  debitEnabled: {
+    key: 'checkout_payment_debit_enabled',
+    label: 'Habilitar tarjeta debito',
+    type: 'text',
+  },
+  creditEnabled: {
+    key: 'checkout_payment_credit_enabled',
+    label: 'Habilitar tarjeta credito',
+    type: 'text',
+  },
   transferTitle: {
     key: 'checkout_transfer_title',
     label: 'Titulo bloque transferencia',
@@ -128,10 +142,32 @@ function getCheckoutSetting(
   return map.get(key)?.value ?? fallback;
 }
 
+function getCheckoutBooleanSetting(
+  map: Map<string, AdminSettingItem>,
+  key: string,
+  fallback = false,
+) {
+  const value = map.get(key)?.value;
+  if (value === undefined || value === null || value.trim() === '') return fallback;
+  return ['1', 'true', 'si', 'sí', 'yes', 'on', 'enabled'].includes(
+    value.trim().toLowerCase(),
+  );
+}
+
 export function buildCheckoutSettingsForm(
   map: Map<string, AdminSettingItem>,
 ): CheckoutSettingsForm {
   return {
+    debitEnabled: getCheckoutBooleanSetting(
+      map,
+      CHECKOUT_SETTING_META.debitEnabled.key,
+      DEFAULT_CHECKOUT_SETTINGS_FORM.debitEnabled,
+    ),
+    creditEnabled: getCheckoutBooleanSetting(
+      map,
+      CHECKOUT_SETTING_META.creditEnabled.key,
+      DEFAULT_CHECKOUT_SETTINGS_FORM.creditEnabled,
+    ),
     transferTitle: getCheckoutSetting(
       map,
       CHECKOUT_SETTING_META.transferTitle.key,
@@ -215,7 +251,7 @@ export function buildCheckoutSettingsPayload(form: CheckoutSettingsForm) {
     [CheckoutSettingKey, (typeof CHECKOUT_SETTING_META)[CheckoutSettingKey]]
   >).map(([field, meta]) => ({
     key: meta.key,
-    value: form[field],
+    value: typeof form[field] === 'boolean' ? (form[field] ? '1' : '0') : form[field],
     group: 'checkout',
     label: meta.label,
     type: meta.type,

@@ -11,24 +11,28 @@ export const DEFAULT_CHECKOUT_PAYMENT_OPTIONS: CheckoutPaymentMethodConfig[] = [
     title: 'Pago en el local',
     subtitle: 'Pagas al retirar en el local.',
     iconUrl: '/icons/payment-local.svg',
+    enabled: true,
   },
   {
     value: 'transferencia',
     title: 'Transferencia',
     subtitle: 'Confirmas el pedido y luego veras los datos para pagar.',
     iconUrl: '/icons/payment-transfer.svg',
+    enabled: true,
   },
   {
     value: 'debito',
     title: 'Tarjeta debito',
     subtitle: 'Pagas al retirar con tarjeta de debito.',
     iconUrl: '/icons/payment-debit.svg',
+    enabled: false,
   },
   {
     value: 'credito',
     title: 'Tarjeta credito',
     subtitle: 'Pagas al retirar con tarjeta de credito.',
     iconUrl: '/icons/payment-credit.svg',
+    enabled: false,
   },
 ];
 
@@ -72,6 +76,10 @@ export function hasInvalidCheckoutItems(items: CartQuoteLine[]) {
 
 export function resolveCheckoutPaymentMethods(config?: CheckoutConfig | null) {
   return config?.paymentMethods?.length ? config.paymentMethods : DEFAULT_CHECKOUT_PAYMENT_OPTIONS;
+}
+
+export function enabledCheckoutPaymentMethods(options: CheckoutPaymentMethodConfig[]) {
+  return options.filter((option) => option.enabled);
 }
 
 export function resolveCheckoutTransferDetails(config?: CheckoutConfig | null) {

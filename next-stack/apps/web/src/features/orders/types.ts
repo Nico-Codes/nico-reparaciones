@@ -42,6 +42,7 @@ export type CheckoutPaymentMethodConfig = {
   title: string;
   subtitle: string;
   iconUrl: string | null;
+  enabled: boolean;
 };
 
 export type CheckoutTransferField = {

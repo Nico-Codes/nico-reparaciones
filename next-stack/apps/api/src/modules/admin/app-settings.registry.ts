@@ -49,6 +49,8 @@ export const APP_SETTING_DEFINITIONS = [
   { key: 'mail_from_address', group: 'email', label: 'Email remitente', type: 'email', defaultValue: '', owner: 'email' },
   { key: 'checkout_transfer_title', group: 'checkout', label: 'Titulo bloque transferencia checkout', type: 'text', defaultValue: 'Datos para transferencia', owner: 'operations' },
   { key: 'checkout_transfer_description', group: 'checkout', label: 'Descripcion bloque transferencia checkout', type: 'textarea', defaultValue: 'Si eliges transferencia, usa estos datos y conserva el comprobante para presentarlo al retirar.', owner: 'operations' },
+  { key: 'checkout_payment_debit_enabled', group: 'checkout', label: 'Habilitar tarjeta debito en checkout', type: 'text', defaultValue: '0', owner: 'operations' },
+  { key: 'checkout_payment_credit_enabled', group: 'checkout', label: 'Habilitar tarjeta credito en checkout', type: 'text', defaultValue: '0', owner: 'operations' },
   { key: 'checkout_transfer_holder_label', group: 'checkout', label: 'Label titular transferencia', type: 'text', defaultValue: 'Titular', owner: 'operations' },
   { key: 'checkout_transfer_holder_value', group: 'checkout', label: 'Valor titular transferencia', type: 'text', defaultValue: '', owner: 'operations' },
   { key: 'checkout_transfer_bank_label', group: 'checkout', label: 'Label banco transferencia', type: 'text', defaultValue: 'Banco', owner: 'operations' },

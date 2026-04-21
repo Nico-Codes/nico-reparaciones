@@ -195,8 +195,12 @@ export function CheckoutPaymentSection({
       <div className="checkout-option-grid">
         {paymentOptions.map((option) => {
           const active = paymentMethod === option.value;
+          const disabled = submitting || !option.enabled;
           return (
-            <label key={option.value} className="checkout-option-wrapper cursor-pointer">
+            <label
+              key={option.value}
+              className={`checkout-option-wrapper ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+            >
               <input
                 className="sr-only peer"
                 type="radio"
@@ -204,15 +208,20 @@ export function CheckoutPaymentSection({
                 value={option.value}
                 checked={active}
                 onChange={() => onChange(option.value)}
-                disabled={submitting}
+                disabled={disabled}
               />
-              <div className={`checkout-option ${active ? 'is-active' : ''}`}>
+              <div
+                className={`checkout-option ${active ? 'is-active' : ''} ${!option.enabled ? 'is-disabled' : ''}`}
+              >
                 <div className="checkout-option__header">
                   <span className="checkout-option__icon-shell">
                     <CheckoutPaymentIcon option={option} />
                   </span>
                   <div className="checkout-option__content">
-                    <div className="checkout-option__title">{option.title}</div>
+                    <div className="checkout-option__title-row">
+                      <div className="checkout-option__title">{option.title}</div>
+                      {!option.enabled ? <StatusBadge tone="neutral" size="sm" label="No disponible" /> : null}
+                    </div>
                     <div className="checkout-option__subtitle">{option.subtitle}</div>
                   </div>
                 </div>

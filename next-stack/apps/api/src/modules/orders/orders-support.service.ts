@@ -18,6 +18,8 @@ export class OrdersSupportService {
       'brand_asset.checkout_payment_transfer.path',
       'brand_asset.checkout_payment_debit.path',
       'brand_asset.checkout_payment_credit.path',
+      'checkout_payment_debit_enabled',
+      'checkout_payment_credit_enabled',
       'checkout_transfer_title',
       'checkout_transfer_description',
       'checkout_transfer_holder_label',
@@ -51,6 +53,7 @@ export class OrdersSupportService {
         'Pagas al retirar en el local.',
         map.get('brand_asset.checkout_payment_local.path'),
         rowsByKey.get('brand_asset.checkout_payment_local.path')?.updatedAt,
+        true,
       ),
       this.buildCheckoutPaymentMethod(
         'transferencia',
@@ -58,6 +61,7 @@ export class OrdersSupportService {
         'Confirmas el pedido y luego veras los datos para pagar.',
         map.get('brand_asset.checkout_payment_transfer.path'),
         rowsByKey.get('brand_asset.checkout_payment_transfer.path')?.updatedAt,
+        true,
       ),
       this.buildCheckoutPaymentMethod(
         'debito',
@@ -65,6 +69,7 @@ export class OrdersSupportService {
         'Pagas al retirar con tarjeta de debito.',
         map.get('brand_asset.checkout_payment_debit.path'),
         rowsByKey.get('brand_asset.checkout_payment_debit.path')?.updatedAt,
+        this.isEnabledSetting(map.get('checkout_payment_debit_enabled')),
       ),
       this.buildCheckoutPaymentMethod(
         'credito',
@@ -72,6 +77,7 @@ export class OrdersSupportService {
         'Pagas al retirar con tarjeta de credito.',
         map.get('brand_asset.checkout_payment_credit.path'),
         rowsByKey.get('brand_asset.checkout_payment_credit.path')?.updatedAt,
+        this.isEnabledSetting(map.get('checkout_payment_credit_enabled')),
       ),
     ];
 
@@ -223,6 +229,7 @@ export class OrdersSupportService {
     subtitle: string,
     iconPath?: string | null,
     updatedAt?: Date | null,
+    enabled = true,
   ) {
     const defaultPaths: Record<CheckoutPaymentMethodKey, string> = {
       efectivo: 'icons/payment-local.svg',
@@ -236,7 +243,14 @@ export class OrdersSupportService {
       title,
       subtitle,
       iconUrl: this.resolvePublicAssetUrl(iconPath || defaultPaths[value], updatedAt),
+      enabled,
     };
+  }
+
+  private isEnabledSetting(rawValue?: string | null) {
+    return ['1', 'true', 'si', 'sí', 'yes', 'on', 'enabled'].includes(
+      (rawValue ?? '').trim().toLowerCase(),
+    );
   }
 
   private buildCheckoutTransferField(key: string, labelRaw: string | undefined, valueRaw: string | undefined, fallbackLabel: string) {

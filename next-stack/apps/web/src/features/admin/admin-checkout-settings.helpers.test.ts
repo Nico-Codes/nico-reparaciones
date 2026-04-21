@@ -39,11 +39,14 @@ describe('admin-checkout-settings.helpers', () => {
 
     expect(form.aliasValue).toBe('NICO.REPARACIONES');
     expect(form.transferTitle).toBe(DEFAULT_CHECKOUT_SETTINGS_FORM.transferTitle);
+    expect(form.debitEnabled).toBe(false);
+    expect(form.creditEnabled).toBe(false);
   });
 
   it('builds payload and counts configured transfer values', () => {
     const form = {
       ...DEFAULT_CHECKOUT_SETTINGS_FORM,
+      debitEnabled: true,
       aliasValue: 'NICO.REPARACIONES',
       cvuValue: '0000000000000000000000',
     };
@@ -52,6 +55,12 @@ describe('admin-checkout-settings.helpers', () => {
 
     expect(payload.find((item) => item.key === 'checkout_transfer_alias_value')?.value).toBe(
       'NICO.REPARACIONES',
+    );
+    expect(payload.find((item) => item.key === 'checkout_payment_debit_enabled')?.value).toBe(
+      '1',
+    );
+    expect(payload.find((item) => item.key === 'checkout_payment_credit_enabled')?.value).toBe(
+      '0',
     );
     expect(countConfiguredTransferFields(form)).toBe(2);
     expect(hasCheckoutSettingsChanges(form, DEFAULT_CHECKOUT_SETTINGS_FORM)).toBe(true);

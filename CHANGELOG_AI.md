@@ -13,6 +13,41 @@
 ---
 
 ### 2026-04-21 - Codex
+- Alcance: deshabilitar temporalmente pagos con tarjeta de debito y credito en checkout con activacion desde admin.
+- Tipo de intervencion: cambio funcional en configuracion de checkout, frontend y validacion backend.
+- Archivos tocados:
+  - `next-stack/apps/api/src/modules/admin/app-settings.registry.ts`
+  - `next-stack/apps/api/src/modules/orders/orders-checkout.service.ts`
+  - `next-stack/apps/api/src/modules/orders/orders-support.service.ts`
+  - `next-stack/apps/api/src/modules/orders/orders.types.ts`
+  - `next-stack/apps/web/src/features/admin/admin-checkout-settings.helpers.ts`
+  - `next-stack/apps/web/src/features/admin/admin-checkout-settings.helpers.test.ts`
+  - `next-stack/apps/web/src/features/admin/admin-checkout-settings.sections.tsx`
+  - `next-stack/apps/web/src/features/orders/CheckoutPage.tsx`
+  - `next-stack/apps/web/src/features/orders/checkout.helpers.ts`
+  - `next-stack/apps/web/src/features/orders/checkout.helpers.test.ts`
+  - `next-stack/apps/web/src/features/orders/checkout.sections.tsx`
+  - `next-stack/apps/web/src/features/orders/types.ts`
+  - `next-stack/apps/web/src/styles/commerce.css`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. Debito y credito quedan deshabilitados por defecto, no se pueden seleccionar ni enviar al backend, y se reactivan desde Configuracion > Checkout y pagos.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run typecheck --workspace @nico/api`
+  - `cmd /c npm run test --workspace @nico/web -- admin-checkout-settings.helpers.test.ts checkout.helpers.test.ts`
+  - `cmd /c npm run test --workspace @nico/api -- app-settings.registry.test.ts orders.helpers.test.ts`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/api`
+  - `cmd /c npm run smoke:web`
+  - `cmd /c npm run smoke:backend`
+  - `git diff --check`
+- Riesgos / notas:
+  - efectivo y transferencia siguen siempre activos para evitar checkout sin medio de pago disponible.
+  - si se quiere volver a aceptar tarjetas, activar los switches de debito y credito en la configuracion avanzada de checkout.
+
+---
+
+### 2026-04-21 - Codex
 - Alcance: igualar la altura visible de las cuatro tarjetas de pago del checkout.
 - Tipo de intervencion: ajuste visual puntual en frontend.
 - Archivos tocados:
