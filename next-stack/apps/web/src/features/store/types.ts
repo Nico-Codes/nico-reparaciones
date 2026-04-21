@@ -72,6 +72,13 @@ export type StoreBrandingAssets = {
     misReparaciones: string | null;
     dashboard: string | null;
     tienda: string | null;
+    ayuda: string | null;
+    miCuenta: string | null;
+    verificarCorreo: string | null;
+    adminPedidos: string | null;
+    adminReparaciones: string | null;
+    adminVentaRapida: string | null;
+    adminProductos: string | null;
   };
   favicons: {
     faviconIco: string | null;

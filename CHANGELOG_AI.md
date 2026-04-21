@@ -13,6 +13,41 @@
 ---
 
 ### 2026-04-21 - Codex
+- Alcance: completar la cobertura de iconos globales editables desde Identidad visual.
+- Tipo de intervencion: ajuste funcional de branding compartido entre API y frontend.
+- Archivos tocados:
+  - `next-stack/apps/api/src/modules/admin/app-settings.registry.ts`
+  - `next-stack/apps/api/src/modules/store/store.service.ts`
+  - `next-stack/apps/web/src/features/admin/admin-visual-identity.helpers.ts`
+  - `next-stack/apps/web/src/features/admin/admin-visual-identity.sections.tsx`
+  - `next-stack/apps/web/src/features/auth/AuthLayout.tsx`
+  - `next-stack/apps/web/src/features/store/types.ts`
+  - `next-stack/apps/web/src/layouts/AppShell.tsx`
+  - `next-stack/apps/web/src/layouts/app-shell/account-menu.tsx`
+  - `next-stack/apps/web/src/layouts/app-shell/helpers.ts`
+  - `next-stack/apps/web/src/layouts/app-shell/helpers.test.ts`
+  - `next-stack/apps/web/src/layouts/app-shell/link-icons.tsx`
+  - `next-stack/apps/web/src/layouts/app-shell/use-app-shell.ts`
+  - `next-stack/apps/web/public/icons/*`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. `Verificar correo`, `Ayuda`, `Mi cuenta` y accesos admin principales ahora tienen slots propios en Identidad visual y se consumen desde el branding publico con fallback interno.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run typecheck --workspace @nico/api`
+  - `cmd /c npm run test --workspace @nico/web -- helpers.test.ts`
+  - `cmd /c npm run test --workspace @nico/api`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/api`
+  - `cmd /c npm run smoke:web`
+  - `cmd /c npm run smoke:backend`
+  - `git diff --check`
+- Riesgos / notas:
+  - el alcance cubre iconos globales de navegacion/cuenta/admin; los iconos decorativos internos de formularios y cards no se convierten en branding para evitar ruido operativo.
+
+---
+
+### 2026-04-21 - Codex
 - Alcance: sumar descarga directa de recursos en Identidad visual para iconos, logos, favicons y fondos configurados.
 - Tipo de intervencion: ajuste funcional puntual en frontend admin.
 - Archivos tocados:

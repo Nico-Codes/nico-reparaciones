@@ -28,6 +28,13 @@ export type VisualIconName =
   | 'myRepairs'
   | 'dashboard'
   | 'store'
+  | 'help'
+  | 'account'
+  | 'verifyEmail'
+  | 'adminOrders'
+  | 'adminRepairs'
+  | 'quickSale'
+  | 'products'
   | 'paymentLocal'
   | 'paymentTransfer'
   | 'paymentDebit'
@@ -267,6 +274,90 @@ export const NAV_ICON_ASSETS: AssetCard[] = [
     formats: 'SVG, PNG, JPG, JPEG, WEBP',
     maxKb: 2048,
     preview: { kind: 'icon', icon: 'store', tint: 'text-sky-600' },
+    showReset: true,
+  },
+  {
+    title: 'Icono ayuda',
+    filename: 'icons/ayuda.svg',
+    slot: 'icon_ayuda',
+    settingKey: 'brand_asset.icon_ayuda.path',
+    defaultPath: 'icons/ayuda.svg',
+    formats: 'SVG, PNG, JPG, JPEG, WEBP',
+    maxKb: 2048,
+    recommendedPx: '128 x 128 px o mayor',
+    preview: { kind: 'icon', icon: 'help', tint: 'text-zinc-700' },
+    showReset: true,
+  },
+  {
+    title: 'Icono mi cuenta',
+    filename: 'icons/mi-cuenta.svg',
+    slot: 'icon_mi_cuenta',
+    settingKey: 'brand_asset.icon_mi_cuenta.path',
+    defaultPath: 'icons/mi-cuenta.svg',
+    formats: 'SVG, PNG, JPG, JPEG, WEBP',
+    maxKb: 2048,
+    recommendedPx: '128 x 128 px o mayor',
+    preview: { kind: 'icon', icon: 'account', tint: 'text-zinc-700' },
+    showReset: true,
+  },
+  {
+    title: 'Icono verificar correo',
+    filename: 'icons/verificar-correo.svg',
+    slot: 'icon_verificar_correo',
+    settingKey: 'brand_asset.icon_verificar_correo.path',
+    defaultPath: 'icons/verificar-correo.svg',
+    formats: 'SVG, PNG, JPG, JPEG, WEBP',
+    maxKb: 2048,
+    recommendedPx: '128 x 128 px o mayor',
+    preview: { kind: 'icon', icon: 'verifyEmail', tint: 'text-amber-700' },
+    showReset: true,
+  },
+  {
+    title: 'Icono admin pedidos',
+    filename: 'icons/admin-pedidos.svg',
+    slot: 'icon_admin_pedidos',
+    settingKey: 'brand_asset.icon_admin_pedidos.path',
+    defaultPath: 'icons/admin-pedidos.svg',
+    formats: 'SVG, PNG, JPG, JPEG, WEBP',
+    maxKb: 2048,
+    recommendedPx: '128 x 128 px o mayor',
+    preview: { kind: 'icon', icon: 'adminOrders', tint: 'text-slate-600' },
+    showReset: true,
+  },
+  {
+    title: 'Icono admin reparaciones',
+    filename: 'icons/admin-reparaciones.svg',
+    slot: 'icon_admin_reparaciones',
+    settingKey: 'brand_asset.icon_admin_reparaciones.path',
+    defaultPath: 'icons/admin-reparaciones.svg',
+    formats: 'SVG, PNG, JPG, JPEG, WEBP',
+    maxKb: 2048,
+    recommendedPx: '128 x 128 px o mayor',
+    preview: { kind: 'icon', icon: 'adminRepairs', tint: 'text-slate-600' },
+    showReset: true,
+  },
+  {
+    title: 'Icono venta rapida',
+    filename: 'icons/admin-venta-rapida.svg',
+    slot: 'icon_admin_venta_rapida',
+    settingKey: 'brand_asset.icon_admin_venta_rapida.path',
+    defaultPath: 'icons/admin-venta-rapida.svg',
+    formats: 'SVG, PNG, JPG, JPEG, WEBP',
+    maxKb: 2048,
+    recommendedPx: '128 x 128 px o mayor',
+    preview: { kind: 'icon', icon: 'quickSale', tint: 'text-slate-600' },
+    showReset: true,
+  },
+  {
+    title: 'Icono admin productos',
+    filename: 'icons/admin-productos.svg',
+    slot: 'icon_admin_productos',
+    settingKey: 'brand_asset.icon_admin_productos.path',
+    defaultPath: 'icons/admin-productos.svg',
+    formats: 'SVG, PNG, JPG, JPEG, WEBP',
+    maxKb: 2048,
+    recommendedPx: '128 x 128 px o mayor',
+    preview: { kind: 'icon', icon: 'products', tint: 'text-slate-600' },
     showReset: true,
   },
 ];

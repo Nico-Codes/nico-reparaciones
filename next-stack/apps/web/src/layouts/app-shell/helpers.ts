@@ -8,6 +8,9 @@ type BuildAccountLinksOptions = {
   pathname: string;
   iconOrdersUrl: string | null;
   iconRepairsUrl: string | null;
+  iconHelpUrl: string | null;
+  iconAccountUrl: string | null;
+  iconVerifyEmailUrl: string | null;
 };
 
 type BuildAdminLinksOptions = {
@@ -15,6 +18,10 @@ type BuildAdminLinksOptions = {
   isAdmin: boolean;
   iconDashboardUrl: string | null;
   iconSettingsUrl: string | null;
+  iconAdminOrdersUrl: string | null;
+  iconAdminRepairsUrl: string | null;
+  iconAdminQuickSaleUrl: string | null;
+  iconAdminProductsUrl: string | null;
 };
 
 type BuildSidebarNavLinksOptions = {
@@ -41,6 +48,13 @@ export function deriveAppShellDisplay(authUser: AuthUser | null, branding: Store
     iconRepairsUrl: branding?.icons.misReparaciones || null,
     iconDashboardUrl: branding?.icons.dashboard || null,
     iconStoreUrl: branding?.icons.tienda || null,
+    iconHelpUrl: branding?.icons.ayuda || null,
+    iconAccountUrl: branding?.icons.miCuenta || null,
+    iconVerifyEmailUrl: branding?.icons.verificarCorreo || null,
+    iconAdminOrdersUrl: branding?.icons.adminPedidos || null,
+    iconAdminRepairsUrl: branding?.icons.adminReparaciones || null,
+    iconAdminQuickSaleUrl: branding?.icons.adminVentaRapida || null,
+    iconAdminProductsUrl: branding?.icons.adminProductos || null,
     needsEmailVerification: !!authUser && !authUser.emailVerified,
     emailStatusText: authUser?.emailVerified ? 'Correo verificado' : 'Correo pendiente de verificacion',
     userInitial: authUser?.name?.trim()?.charAt(0)?.toUpperCase() || 'U',
@@ -60,14 +74,17 @@ export function buildAccountLinks({
   pathname,
   iconOrdersUrl,
   iconRepairsUrl,
+  iconHelpUrl,
+  iconAccountUrl,
+  iconVerifyEmailUrl,
 }: BuildAccountLinksOptions): LinkItem[] {
   if (!authUser) return [];
 
   return [
     { label: 'Mis pedidos', to: '/orders', active: isActiveGroup(pathname, ['/orders']), icon: iconOrdersUrl },
     { label: 'Mis reparaciones', to: '/repairs', active: isActiveGroup(pathname, ['/repairs']), icon: iconRepairsUrl },
-    { label: 'Ayuda', to: '/help', active: isActiveGroup(pathname, ['/help']) },
-    { label: 'Mi cuenta', to: '/mi-cuenta', active: isActiveGroup(pathname, ['/mi-cuenta']) },
+    { label: 'Ayuda', to: '/help', active: isActiveGroup(pathname, ['/help']), icon: iconHelpUrl },
+    { label: 'Mi cuenta', to: '/mi-cuenta', active: isActiveGroup(pathname, ['/mi-cuenta']), icon: iconAccountUrl },
     ...(!authUser.emailVerified
       ? [
           {
@@ -75,6 +92,7 @@ export function buildAccountLinks({
             to: '/auth/verify-email',
             active: isActiveGroup(pathname, ['/auth/verify-email']),
             highlight: 'warning' as const,
+            icon: iconVerifyEmailUrl,
           },
         ]
       : []),
@@ -86,15 +104,19 @@ export function buildAdminLinks({
   isAdmin,
   iconDashboardUrl,
   iconSettingsUrl,
+  iconAdminOrdersUrl,
+  iconAdminRepairsUrl,
+  iconAdminQuickSaleUrl,
+  iconAdminProductsUrl,
 }: BuildAdminLinksOptions): LinkItem[] {
   if (!isAdmin) return [];
 
   return [
     { label: 'Panel admin', to: '/admin', active: pathname === '/admin', icon: iconDashboardUrl },
-    { label: 'Pedidos', to: '/admin/orders', active: isActiveGroup(pathname, ['/admin/orders']) },
-    { label: 'Reparaciones', to: '/admin/repairs', active: isActiveGroup(pathname, ['/admin/repairs']) },
-    { label: 'Venta rapida', to: '/admin/ventas-rapidas', active: isActiveGroup(pathname, ['/admin/ventas-rapidas']) },
-    { label: 'Productos', to: '/admin/productos', active: isActiveGroup(pathname, ['/admin/productos']) },
+    { label: 'Pedidos', to: '/admin/orders', active: isActiveGroup(pathname, ['/admin/orders']), icon: iconAdminOrdersUrl },
+    { label: 'Reparaciones', to: '/admin/repairs', active: isActiveGroup(pathname, ['/admin/repairs']), icon: iconAdminRepairsUrl },
+    { label: 'Venta rapida', to: '/admin/ventas-rapidas', active: isActiveGroup(pathname, ['/admin/ventas-rapidas']), icon: iconAdminQuickSaleUrl },
+    { label: 'Productos', to: '/admin/productos', active: isActiveGroup(pathname, ['/admin/productos']), icon: iconAdminProductsUrl },
     {
       label: 'Configuracion',
       to: '/admin/configuraciones',

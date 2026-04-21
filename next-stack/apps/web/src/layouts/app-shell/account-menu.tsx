@@ -14,6 +14,7 @@ type AccountMenuProps = {
   accountMenuRef: RefObject<HTMLDivElement | null>;
   accountLinks: LinkItem[];
   emailStatusText: string;
+  iconAccountUrl: string | null;
   iconLogoutUrl: string | null;
   onButtonClick: () => void;
   onButtonKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void;
@@ -33,6 +34,7 @@ export function AccountMenu({
   accountMenuRef,
   accountLinks,
   emailStatusText,
+  iconAccountUrl,
   iconLogoutUrl,
   onButtonClick,
   onButtonKeyDown,
@@ -62,7 +64,7 @@ export function AccountMenu({
         onKeyDown={onButtonKeyDown}
       >
         <span className="sm:hidden">
-          <User className="h-5 w-5" />
+          {iconAccountUrl ? <img src={iconAccountUrl} alt="" className="h-5 w-5 object-contain" /> : <User className="h-5 w-5" />}
         </span>
         <span className="hidden max-w-[12rem] truncate sm:inline">{authUser.name || 'Cuenta'}</span>
         <ChevronDown className="hidden h-4 w-4 text-zinc-500 sm:inline-block" />

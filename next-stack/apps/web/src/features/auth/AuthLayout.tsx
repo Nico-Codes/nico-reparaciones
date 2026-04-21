@@ -141,8 +141,19 @@ export function AuthLayout({
         pathname: location.pathname,
         iconOrdersUrl: display.iconOrdersUrl,
         iconRepairsUrl: display.iconRepairsUrl,
+        iconHelpUrl: display.iconHelpUrl,
+        iconAccountUrl: display.iconAccountUrl,
+        iconVerifyEmailUrl: display.iconVerifyEmailUrl,
       }),
-    [authUser, display.iconOrdersUrl, display.iconRepairsUrl, location.pathname],
+    [
+      authUser,
+      display.iconAccountUrl,
+      display.iconHelpUrl,
+      display.iconOrdersUrl,
+      display.iconRepairsUrl,
+      display.iconVerifyEmailUrl,
+      location.pathname,
+    ],
   );
 
   const adminLinks = useMemo(
@@ -152,8 +163,21 @@ export function AuthLayout({
         isAdmin: display.isAdmin,
         iconDashboardUrl: display.iconDashboardUrl,
         iconSettingsUrl: display.iconSettingsUrl,
+        iconAdminOrdersUrl: display.iconAdminOrdersUrl,
+        iconAdminRepairsUrl: display.iconAdminRepairsUrl,
+        iconAdminQuickSaleUrl: display.iconAdminQuickSaleUrl,
+        iconAdminProductsUrl: display.iconAdminProductsUrl,
       }),
-    [display.iconDashboardUrl, display.iconSettingsUrl, display.isAdmin, location.pathname],
+    [
+      display.iconAdminOrdersUrl,
+      display.iconAdminProductsUrl,
+      display.iconAdminQuickSaleUrl,
+      display.iconAdminRepairsUrl,
+      display.iconDashboardUrl,
+      display.iconSettingsUrl,
+      display.isAdmin,
+      location.pathname,
+    ],
   );
 
   const sidebarNavLinks = useMemo(
@@ -256,7 +280,7 @@ export function AuthLayout({
                     Correo sin verificar
                   </Link>
                   <Link to="/auth/verify-email" className="icon-btn text-amber-700 sm:hidden" aria-label="Correo sin verificar" title="Correo sin verificar">
-                    <WarnIcon />
+                    {display.iconVerifyEmailUrl ? <img src={display.iconVerifyEmailUrl} alt="" className="h-5 w-5 object-contain" /> : <WarnIcon />}
                   </Link>
                 </>
               ) : null}

@@ -120,8 +120,19 @@ export function useAppShell() {
         pathname: location.pathname,
         iconOrdersUrl: display.iconOrdersUrl,
         iconRepairsUrl: display.iconRepairsUrl,
+        iconHelpUrl: display.iconHelpUrl,
+        iconAccountUrl: display.iconAccountUrl,
+        iconVerifyEmailUrl: display.iconVerifyEmailUrl,
       }),
-    [authUser, display.iconOrdersUrl, display.iconRepairsUrl, location.pathname],
+    [
+      authUser,
+      display.iconAccountUrl,
+      display.iconHelpUrl,
+      display.iconOrdersUrl,
+      display.iconRepairsUrl,
+      display.iconVerifyEmailUrl,
+      location.pathname,
+    ],
   );
 
   const adminLinks = useMemo(
@@ -131,8 +142,21 @@ export function useAppShell() {
         isAdmin: display.isAdmin,
         iconDashboardUrl: display.iconDashboardUrl,
         iconSettingsUrl: display.iconSettingsUrl,
+        iconAdminOrdersUrl: display.iconAdminOrdersUrl,
+        iconAdminRepairsUrl: display.iconAdminRepairsUrl,
+        iconAdminQuickSaleUrl: display.iconAdminQuickSaleUrl,
+        iconAdminProductsUrl: display.iconAdminProductsUrl,
       }),
-    [display.iconDashboardUrl, display.iconSettingsUrl, display.isAdmin, location.pathname],
+    [
+      display.iconAdminOrdersUrl,
+      display.iconAdminProductsUrl,
+      display.iconAdminQuickSaleUrl,
+      display.iconAdminRepairsUrl,
+      display.iconDashboardUrl,
+      display.iconSettingsUrl,
+      display.isAdmin,
+      location.pathname,
+    ],
   );
 
   const sidebarNavLinks = useMemo(

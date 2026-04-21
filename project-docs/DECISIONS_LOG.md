@@ -20,6 +20,20 @@ Registrar decisiones tecnicas confirmadas para evitar dependencia de memoria ora
 
 ---
 
+### [DL-0110]
+- Fecha: 2026-04-21
+- Estado: aceptada
+- Tema: los iconos globales de navegacion, cuenta y accesos admin pertenecen a Identidad visual
+- Contexto: Identidad visual ya permitia editar carrito, tienda, dashboard y algunos accesos, pero otros iconos visibles del shell como `Verificar correo`, `Ayuda`, `Mi cuenta` y entradas admin seguian saliendo de fallbacks internos de `lucide`. Eso dejaba una mezcla dificil de auditar y generaba iconos no personalizables en la web.
+- Decision: tratar los iconos globales del shell publico/autenticado como assets de branding administrables. El backend publica esos assets desde `/store/branding`, el admin los gestiona como slots `brand_asset.icon_*`, y el frontend usa la imagen configurada antes del fallback SVG interno. Los iconos puramente funcionales o decorativos de pantallas internas no entran en esta decision salvo que pasen a formar parte de la identidad global.
+- Impacto: el operador puede subir, resetear y descargar los iconos globales desde Identidad visual sin tocar codigo. El shell mantiene fallbacks seguros si falta un asset, pero los accesos visibles quedan alineados al mismo circuito de branding.
+- Alternativas consideradas: hacer configurable todo icono `lucide` del sistema o mantener solo los slots existentes; descartado porque configurar iconos decorativos internos agregaria ruido operativo, y mantener la cobertura parcial seguia dejando inconsistencias visibles.
+- Archivos / modulos afectados: `next-stack/apps/api/src/modules/{admin/app-settings.registry.ts,store/store.service.ts}`, `next-stack/apps/web/src/features/{admin,store}`, `next-stack/apps/web/src/layouts`, `next-stack/apps/web/public/icons`, `CHANGELOG_AI.md`.
+- Validacion requerida: `typecheck --workspace @nico/api`, `test --workspace @nico/api`, `build --workspace @nico/api`, `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:backend`, `smoke:web`, `git diff --check`.
+- Responsable: Codex + operador humano
+
+---
+
 ### [DL-0109]
 - Fecha: 2026-04-20
 - Estado: aceptada

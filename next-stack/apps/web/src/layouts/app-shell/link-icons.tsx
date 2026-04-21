@@ -1,4 +1,4 @@
-import { HelpCircle, Package, Settings, User, Wrench, WrenchIcon } from 'lucide-react';
+import { Boxes, HelpCircle, MailCheck, Package, ReceiptText, Settings, ShoppingBag, User, Wrench, WrenchIcon } from 'lucide-react';
 import { WarnIcon } from './primitives';
 
 export function renderSidebarNavIcon(label: string) {
@@ -22,15 +22,26 @@ export function renderAccountLinkIcon(label: string) {
       return <HelpCircle className="h-4 w-4 text-zinc-700" />;
     case 'Mi cuenta':
       return <User className="h-4 w-4 text-zinc-500" />;
+    case 'Verificar correo':
+      return <MailCheck className="h-4 w-4 text-amber-700" />;
     default:
       return <WarnIcon />;
   }
 }
 
 export function renderAdminLinkIcon(label: string) {
-  if (label === 'Panel admin') {
-    return <Settings className="h-4 w-4 text-zinc-500" />;
+  switch (label) {
+    case 'Panel admin':
+      return <Settings className="h-4 w-4 text-zinc-500" />;
+    case 'Pedidos':
+      return <ShoppingBag className="h-4 w-4 text-zinc-500" />;
+    case 'Reparaciones':
+      return <WrenchIcon className="h-4 w-4 text-zinc-500" />;
+    case 'Venta rapida':
+      return <ReceiptText className="h-4 w-4 text-zinc-500" />;
+    case 'Productos':
+      return <Boxes className="h-4 w-4 text-zinc-500" />;
+    default:
+      return <Wrench className="h-4 w-4 text-zinc-500" />;
   }
-
-  return <Wrench className="h-4 w-4 text-zinc-500" />;
 }

@@ -27,6 +27,8 @@ export function AppShell({ children }: AppShellProps) {
     brandHomeTo,
     iconCartUrl,
     iconLogoutUrl,
+    iconAccountUrl,
+    iconVerifyEmailUrl,
     emailStatusText,
     userInitial,
     needsEmailVerification,
@@ -109,7 +111,7 @@ export function AppShell({ children }: AppShellProps) {
                     Correo sin verificar
                   </Link>
                   <Link to="/auth/verify-email" className="icon-btn text-amber-700 sm:hidden" aria-label="Correo sin verificar" title="Correo sin verificar">
-                    <WarnIcon />
+                    {iconVerifyEmailUrl ? <img src={iconVerifyEmailUrl} alt="" className="h-5 w-5 object-contain" /> : <WarnIcon />}
                   </Link>
                 </>
               ) : null}
@@ -141,6 +143,7 @@ export function AppShell({ children }: AppShellProps) {
                   accountMenuRef={accountMenuRef}
                   accountLinks={accountLinks}
                   emailStatusText={emailStatusText}
+                  iconAccountUrl={iconAccountUrl}
                   iconLogoutUrl={iconLogoutUrl}
                   onButtonClick={toggleAccount}
                   onButtonKeyDown={handleAccountButtonKeyDown}
