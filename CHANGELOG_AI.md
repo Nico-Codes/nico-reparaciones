@@ -13,6 +13,26 @@
 ---
 
 ### 2026-04-21 - Codex
+- Alcance: unificar el icono de carrito de la navbar para evitar el cambio visual entre fallback y branding cargado.
+- Tipo de intervencion: ajuste visual puntual en frontend e identidad visual.
+- Archivos tocados:
+  - `next-stack/apps/web/public/icons/carrito.svg`
+  - `next-stack/apps/web/src/layouts/app-shell/primitives.tsx`
+  - `next-stack/apps/web/src/features/admin/admin-visual-identity.helpers.ts`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No. El carrito mantiene el mismo comportamiento; el icono default pasa a negro y el fallback usa la misma silueta para evitar parpadeo de version/color.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web -- admin-visual-identity.helpers.test.ts`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - si en una instalacion existe un icono de carrito personalizado cargado desde identidad visual, ese override sigue teniendo prioridad sobre el default.
+
+---
+
+### 2026-04-21 - Codex
 - Alcance: corregir el overflow responsive de las tarjetas de comprobante y WhatsApp en el detalle del pedido.
 - Tipo de intervencion: ajuste visual puntual en frontend `orders`.
 - Archivos tocados:

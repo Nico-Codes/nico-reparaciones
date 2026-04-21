@@ -200,7 +200,7 @@ export const NAV_ICON_ASSETS: AssetCard[] = [
     defaultPath: 'icons/carrito.svg',
     formats: 'SVG, PNG, JPG, JPEG, WEBP',
     maxKb: 2048,
-    preview: { kind: 'icon', icon: 'cart', tint: 'text-amber-500' },
+    preview: { kind: 'icon', icon: 'cart', tint: 'text-zinc-900' },
     showReset: true,
   },
   {
