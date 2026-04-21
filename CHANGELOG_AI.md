@@ -13,6 +13,26 @@
 ---
 
 ### 2026-04-21 - Codex
+- Alcance: sumar descarga directa de recursos en Identidad visual para iconos, logos, favicons y fondos configurados.
+- Tipo de intervencion: ajuste funcional puntual en frontend admin.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/admin/admin-visual-identity.helpers.ts`
+  - `next-stack/apps/web/src/features/admin/admin-visual-identity.helpers.test.ts`
+  - `next-stack/apps/web/src/features/admin/admin-visual-identity.sections.tsx`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. Cada card con archivo efectivo muestra un boton pequeno de descarga que apunta al asset actual, sea default o personalizado.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web -- admin-visual-identity.helpers.test.ts`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - las cards sin archivo real configurado no muestran descarga para evitar enlaces vacios; no cambia upload ni reset.
+
+---
+
+### 2026-04-21 - Codex
 - Alcance: corregir la silueta del icono de carrito para conservar la version negra original, no un carrito solido alternativo.
 - Tipo de intervencion: ajuste visual puntual en frontend.
 - Archivos tocados:

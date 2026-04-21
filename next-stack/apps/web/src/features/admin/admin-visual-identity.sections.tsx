@@ -4,6 +4,7 @@ import {
   Boxes,
   Banknote,
   CreditCard,
+  Download,
   Landmark,
   LayoutDashboard,
   LogOut,
@@ -20,6 +21,7 @@ import { TextField } from '@/components/ui/text-field';
 import { brandAssetsApi } from './brandAssetsApi';
 import {
   acceptFromFormats,
+  buildAssetDownloadName,
   DEFAULT_AUTH_VISUAL_FORM_STATE,
   normalizeHexColor,
   resolveAssetState,
@@ -129,6 +131,7 @@ export function AdminVisualIdentityResourcesSection({
               renderCard={(item) => {
                 const selectedFile = selectedFiles[item.slot] ?? null;
                 const assetState = resolveAssetState(item, settingsByKey);
+                const imageUrl = brandAssetsApi.toApiAssetUrl(assetState.effectivePath, assetState.updatedAt);
 
                 return (
                   <AssetUploadCard
@@ -139,7 +142,8 @@ export function AdminVisualIdentityResourcesSection({
                     selectedFile={selectedFile}
                     isCustom={assetState.isCustom}
                     displayPath={assetState.displayPath}
-                    imageUrl={brandAssetsApi.toApiAssetUrl(assetState.effectivePath, assetState.updatedAt)}
+                    imageUrl={imageUrl}
+                    downloadName={buildAssetDownloadName(item, assetState.effectivePath)}
                     onSelectFile={(file) => onSelectFile(item, file)}
                     onUpload={() => onUpload(item)}
                     onReset={() => onReset(item)}
@@ -328,6 +332,7 @@ function AssetUploadCard({
   isCustom,
   displayPath,
   imageUrl,
+  downloadName,
   onSelectFile,
   onUpload,
   onReset,
@@ -339,6 +344,7 @@ function AssetUploadCard({
   isCustom: boolean;
   displayPath: string;
   imageUrl: string | null;
+  downloadName: string;
   onSelectFile: (file: File | null) => void;
   onUpload: () => void;
   onReset: () => void;
@@ -350,7 +356,17 @@ function AssetUploadCard({
           <h4 className="truncate text-xl font-black tracking-tight text-zinc-900">{item.title}</h4>
           <p className="truncate text-sm text-zinc-500">{displayPath}</p>
         </div>
-        <StatusBadge status={isCustom ? 'Personalizado' : 'Por defecto'} />
+        <div className="flex shrink-0 flex-col items-end gap-2">
+          <StatusBadge status={isCustom ? 'Personalizado' : 'Por defecto'} />
+          {imageUrl ? (
+            <Button asChild variant="outline" size="sm" className="!h-8 !rounded-xl px-3 text-xs">
+              <a href={imageUrl} download={downloadName} aria-label={`Descargar ${item.title}`}>
+                <Download className="h-3.5 w-3.5" />
+                Descargar
+              </a>
+            </Button>
+          ) : null}
+        </div>
       </div>
 
       <AssetImagePreview item={item} selectedFile={selectedFile} imageUrl={imageUrl} />

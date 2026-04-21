@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   acceptFromFormats,
   AUTH_VISUAL_ASSETS,
+  buildAssetDownloadName,
   buildAuthVisualFormState,
   buildAuthVisualSettingsPayload,
   DEFAULT_AUTH_VISUAL_FORM_STATE,
@@ -88,6 +89,13 @@ describe('admin-visual-identity.helpers', () => {
     expect(summarizeAssetPath('')).toBe('');
     expect(acceptFromFormats('PNG, JPG, SVG')).toBe('.png,.jpg,.svg');
     expect(acceptFromFormats('ICO')).toBe('.ico');
+  });
+
+  it('builds a download filename from the effective asset path', () => {
+    const item = FAVICON_ASSETS[0];
+
+    expect(buildAssetDownloadName(item, 'brand-assets/custom/favicon.ico?v=123')).toBe('favicon.ico');
+    expect(buildAssetDownloadName(item, '')).toBe('favicon.ico');
   });
 
   it('exposes the auth visual asset in the branding catalog', () => {

@@ -371,6 +371,13 @@ export function summarizeAssetPath(path: string) {
   return parts.slice(-2).join('/') || trimmed;
 }
 
+export function buildAssetDownloadName(item: AssetCard, effectivePath: string) {
+  const rawPath = effectivePath.trim() || item.filename.trim() || item.defaultPath.trim();
+  const cleanPath = rawPath.split(/[?#]/)[0] ?? '';
+  const filename = cleanPath.split('/').filter(Boolean).at(-1);
+  return filename || item.slot;
+}
+
 export function acceptFromFormats(formats: string) {
   const map: Record<string, string> = {
     PNG: '.png',
