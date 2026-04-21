@@ -13,6 +13,25 @@
 ---
 
 ### 2026-04-21 - Codex
+- Alcance: corregir la silueta del icono de carrito para conservar la version negra original, no un carrito solido alternativo.
+- Tipo de intervencion: ajuste visual puntual en frontend.
+- Archivos tocados:
+  - `next-stack/apps/web/public/icons/carrito.svg`
+  - `next-stack/apps/web/src/layouts/app-shell/primitives.tsx`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No. El carrito mantiene el mismo comportamiento; se restaura la silueta original en negro para que coincida con la version esperada.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web -- admin-visual-identity.helpers.test.ts`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - el cambio corrige el default y el fallback; un icono personalizado cargado desde identidad visual sigue teniendo prioridad.
+
+---
+
+### 2026-04-21 - Codex
 - Alcance: unificar el icono de carrito de la navbar para evitar el cambio visual entre fallback y branding cargado.
 - Tipo de intervencion: ajuste visual puntual en frontend e identidad visual.
 - Archivos tocados:
