@@ -12,6 +12,23 @@
 
 ---
 
+### 2026-04-21 - Codex
+- Alcance: corregir el overflow responsive de las tarjetas de comprobante y WhatsApp en el detalle del pedido.
+- Tipo de intervencion: ajuste visual puntual en frontend `orders`.
+- Archivos tocados:
+  - `next-stack/apps/web/src/styles/commerce.css`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No. Se mantiene el mismo flujo; las tarjetas ahora limitan correctamente botones, badges y selector de archivo dentro del contenedor en desktop y mobile.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - cambio encapsulado a las clases de transferencia del detalle del pedido; no modifica botones globales.
+
+---
+
 ### 2026-04-20 - Codex
 - Alcance: mover la operatoria de transferencia fuera de `/checkout` y concentrarla en el detalle del pedido confirmado, con carga de comprobante y enlace a WhatsApp del local.
 - Tipo de intervencion: cambio funcional full-stack en `orders`.
