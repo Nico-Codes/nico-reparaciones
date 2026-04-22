@@ -13,6 +13,23 @@
 ---
 
 ### 2026-04-22 - Codex
+- Alcance: quitar indicador de stock de articulos publicos de tienda.
+- Tipo de intervencion: limpieza visual en cards de productos y CSS asociado.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/store/store-page.sections.tsx`
+  - `next-stack/apps/web/src/styles/store.css`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No. El stock sigue validandose internamente para el boton de carrito, pero ya no se muestra como badge en la card.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - la tienda publica ya filtra productos sin stock desde backend, por lo que el badge era redundante.
+
+---
+
+### 2026-04-22 - Codex
 - Alcance: compactar articulos de tienda en modo movil.
 - Tipo de intervencion: ajuste responsive de grilla y cards publicas de productos.
 - Archivos tocados:

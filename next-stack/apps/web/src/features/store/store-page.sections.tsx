@@ -316,10 +316,6 @@ function StoreGridCard({ product }: { product: StoreProduct }) {
           <div className="product-price">$ {product.price.toLocaleString('es-AR')}</div>
 
           <div className="product-actions">
-            <span className={`badge-stock ${hasStock ? 'is-in' : 'is-out'}`}>
-              {hasStock ? `Stock: ${product.stock}` : 'Sin stock'}
-            </span>
-
             <button
               type="button"
               className={`btn-cart ${hasStock ? '' : 'is-disabled'}`}

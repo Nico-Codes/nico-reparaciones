@@ -750,20 +750,6 @@ textarea:focus-visible {
   flex-wrap: nowrap;
 }
 
-.product-card-featured .product-actions .badge-stock {
-  flex: 0 1 auto;
-  white-space: nowrap;
-  max-width: calc(100% - 44px);
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-@media (max-width: 640px) {
-  .product-card-featured .product-actions .badge-stock {
-    display: none;
-  }
-}
-
 .product-card-featured .product-actions .btn-cart {
   margin-left: auto;
   flex: 0 0 auto;
@@ -817,34 +803,8 @@ textarea:focus-visible {
   display: flex;
   width: 100%;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 8px;
-}
-
-.badge-stock {
-  display: inline-flex;
-  align-items: center;
-  border-radius: 999px;
-  min-height: 1.65rem;
-  padding: 0.15rem 0.65rem;
-  font-size: 0.67rem;
-  font-weight: 800;
-  border: 1px solid rgba(228, 231, 236, 0.96);
-  background: rgba(248, 250, 252, 0.94);
-  color: #475467;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
-}
-
-.badge-stock.is-in {
-  border-color: #bbf7d0;
-  background: #f0fdf4;
-  color: #166534;
-}
-
-.badge-stock.is-out {
-  border-color: #fecaca;
-  background: #fef2f2;
-  color: #991b1b;
 }
 
 .btn-cart {
@@ -928,16 +888,6 @@ textarea:focus-visible {
 
   .product-card-grid .product-actions {
     gap: 0.35rem;
-  }
-
-  .product-card-grid .badge-stock {
-    min-height: 1.35rem;
-    max-width: calc(100% - 2.35rem);
-    padding: 0.08rem 0.45rem;
-    font-size: 0.58rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
 
   .product-card-grid .btn-cart,
