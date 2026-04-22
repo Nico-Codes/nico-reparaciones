@@ -53,6 +53,73 @@ describe('StoreService', () => {
     });
   });
 
+  it('counts only categories with public products in stock', async () => {
+    const prisma = {
+      category: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+
+    const service = new StoreService(prisma as any);
+
+    await service.listCategories();
+
+    expect(prisma.category.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        select: expect.objectContaining({
+          _count: {
+            select: {
+              products: {
+                where: { active: true, stock: { gt: 0 } },
+              },
+            },
+          },
+        }),
+      }),
+    );
+  });
+
+  it('hides out-of-stock products from public listing and detail lookups', async () => {
+    const prisma = {
+      product: {
+        findMany: vi.fn().mockResolvedValue([]),
+        count: vi.fn().mockResolvedValue(0),
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
+    };
+
+    const service = new StoreService(prisma as any);
+
+    await service.listProducts({});
+
+    expect(prisma.product.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          active: true,
+          stock: { gt: 0 },
+        }),
+      }),
+    );
+    expect(prisma.product.count).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        active: true,
+        stock: { gt: 0 },
+      }),
+    });
+
+    await service.getProductBySlug('producto-agotado');
+
+    expect(prisma.product.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          slug: 'producto-agotado',
+          active: true,
+          stock: { gt: 0 },
+        }),
+      }),
+    );
+  });
+
   it('falls back to the default login background when no auth branding is configured', async () => {
     const prisma = {
       appSetting: {

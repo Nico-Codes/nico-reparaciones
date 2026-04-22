@@ -13,6 +13,26 @@
 ---
 
 ### 2026-04-22 - Codex
+- Alcance: ocultar productos sin stock en la tienda publica.
+- Tipo de intervencion: ajuste funcional backend en consultas publicas de tienda y cobertura de pruebas.
+- Archivos tocados:
+  - `next-stack/apps/api/src/modules/store/store.service.ts`
+  - `next-stack/apps/api/src/modules/store/store.service.test.ts`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. La tienda publica, los conteos de categorias y el detalle por slug solo exponen productos activos con stock mayor a cero.
+- Validaciones ejecutadas:
+  - `cmd /c npm run test --workspace @nico/api -- store.service.test.ts`
+  - `cmd /c npm run typecheck --workspace @nico/api`
+  - `cmd /c npm run build --workspace @nico/api`
+  - `cmd /c npm run smoke:web`
+  - `cmd /c npm run smoke:backend`
+  - `git diff --check`
+- Riesgos / notas:
+  - los productos agotados siguen disponibles para gestion interna/admin, pero dejan de resolverse desde URLs publicas de tienda.
+
+---
+
+### 2026-04-22 - Codex
 - Alcance: eliminar debito y credito como medios de pago del checkout.
 - Tipo de intervencion: limpieza funcional en backend, frontend, configuracion e identidad visual.
 - Archivos tocados:

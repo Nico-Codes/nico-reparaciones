@@ -25,7 +25,7 @@ export class StoreService {
           _count: {
             select: {
               products: {
-                where: { active: true },
+                where: { active: true, stock: { gt: 0 } },
               },
             },
           },
@@ -272,6 +272,7 @@ export class StoreService {
     try {
       const where = {
         active: true,
+        stock: { gt: 0 },
         ...(categorySlug
           ? {
               category: {
@@ -372,6 +373,7 @@ export class StoreService {
         where: {
           slug,
           active: true,
+          stock: { gt: 0 },
           ...(slug ? {} : { id: '__never__' }),
         },
         include: {
