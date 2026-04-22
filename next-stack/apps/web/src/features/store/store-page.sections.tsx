@@ -258,7 +258,7 @@ export function StoreResultsSection({
 }: StoreResultsSectionProps) {
   if (products.length > 0) {
     return (
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-5">
+      <div className="store-products-grid grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-5">
         {products.map((product) => (
           <StoreGridCard key={product.id} product={product} />
         ))}

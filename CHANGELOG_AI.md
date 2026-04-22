@@ -13,6 +13,23 @@
 ---
 
 ### 2026-04-22 - Codex
+- Alcance: compactar articulos de tienda en modo movil.
+- Tipo de intervencion: ajuste responsive de grilla y cards publicas de productos.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/store/store-page.sections.tsx`
+  - `next-stack/apps/web/src/styles/store.css`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No. Cambia la presentacion movil para reducir altura y mantener dimensiones parejas entre articulos.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - el recorte de imagen movil pasa a una proporcion mas compacta para reducir espacio vertical.
+
+---
+
+### 2026-04-22 - Codex
 - Alcance: ocultar productos sin stock en la tienda publica.
 - Tipo de intervencion: ajuste funcional backend en consultas publicas de tienda y cobertura de pruebas.
 - Archivos tocados:
