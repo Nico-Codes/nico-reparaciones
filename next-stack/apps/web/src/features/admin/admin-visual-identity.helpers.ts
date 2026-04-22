@@ -36,9 +36,7 @@ export type VisualIconName =
   | 'quickSale'
   | 'products'
   | 'paymentLocal'
-  | 'paymentTransfer'
-  | 'paymentDebit'
-  | 'paymentCredit';
+  | 'paymentTransfer';
 
 export type AssetSectionDefinition = {
   title: string;
@@ -401,30 +399,6 @@ export const CHECKOUT_ICON_ASSETS: AssetCard[] = [
     maxKb: 2048,
     recommendedPx: ICON_RECOMMENDED_SIZE,
     preview: { kind: 'icon', icon: 'paymentTransfer', tint: 'text-sky-600' },
-    showReset: true,
-  },
-  {
-    title: 'Icono tarjeta debito',
-    filename: 'icons/payment-debit.svg',
-    slot: 'checkout_payment_debit',
-    settingKey: 'brand_asset.checkout_payment_debit.path',
-    defaultPath: 'icons/payment-debit.svg',
-    formats: 'SVG, PNG, JPG, JPEG, WEBP',
-    maxKb: 2048,
-    recommendedPx: ICON_RECOMMENDED_SIZE,
-    preview: { kind: 'icon', icon: 'paymentDebit', tint: 'text-blue-600' },
-    showReset: true,
-  },
-  {
-    title: 'Icono tarjeta credito',
-    filename: 'icons/payment-credit.svg',
-    slot: 'checkout_payment_credit',
-    settingKey: 'brand_asset.checkout_payment_credit.path',
-    defaultPath: 'icons/payment-credit.svg',
-    formats: 'SVG, PNG, JPG, JPEG, WEBP',
-    maxKb: 2048,
-    recommendedPx: ICON_RECOMMENDED_SIZE,
-    preview: { kind: 'icon', icon: 'paymentCredit', tint: 'text-violet-600' },
     showReset: true,
   },
 ];

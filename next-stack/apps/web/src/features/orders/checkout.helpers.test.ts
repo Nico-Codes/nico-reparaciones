@@ -9,9 +9,8 @@ import {
 describe('checkout.helpers', () => {
   it('falls back to default payment methods and transfer details', () => {
     const methods = resolveCheckoutPaymentMethods();
-    expect(methods).toHaveLength(4);
-    expect(methods.find((item) => item.value === 'debito')?.enabled).toBe(false);
-    expect(methods.find((item) => item.value === 'credito')?.enabled).toBe(false);
+    expect(methods).toHaveLength(2);
+    expect(methods.map((item) => item.value)).toEqual(['efectivo', 'transferencia']);
     expect(resolveCheckoutTransferDetails()).toEqual(DEFAULT_CHECKOUT_TRANSFER_DETAILS);
   });
 
@@ -22,7 +21,6 @@ describe('checkout.helpers', () => {
         title: 'Transferencia',
         subtitle: 'Datos bancarios antes de confirmar.',
         iconUrl: '/icons/payment-transfer.svg',
-        enabled: true,
       },
     ]);
 

@@ -6,14 +6,13 @@ export type CheckoutInput = {
   paymentMethod?: string | null;
 };
 
-export type CheckoutPaymentMethodKey = 'efectivo' | 'transferencia' | 'debito' | 'credito';
+export type CheckoutPaymentMethodKey = 'efectivo' | 'transferencia';
 
 export type CheckoutPaymentMethodConfig = {
   value: CheckoutPaymentMethodKey;
   title: string;
   subtitle: string;
   iconUrl: string | null;
-  enabled: boolean;
 };
 
 export type CheckoutTransferField = {

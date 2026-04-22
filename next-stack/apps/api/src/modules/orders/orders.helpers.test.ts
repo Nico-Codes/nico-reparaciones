@@ -22,7 +22,8 @@ describe('orders.helpers', () => {
 
   it('normalizes checkout payment aliases', () => {
     expect(normalizeCheckoutPaymentMethod('cash')).toBe('efectivo');
-    expect(normalizeCheckoutPaymentMethod('credito')).toBe('credito');
+    expect(normalizeCheckoutPaymentMethod('transfer')).toBe('transferencia');
+    expect(normalizeCheckoutPaymentMethod('otro')).toBeNull();
     expect(normalizeCheckoutPaymentMethod('crypto')).toBeNull();
   });
 

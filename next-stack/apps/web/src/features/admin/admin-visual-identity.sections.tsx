@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import {
   Boxes,
   Banknote,
-  CreditCard,
   Download,
   HelpCircle,
   Landmark,
@@ -18,7 +17,6 @@ import {
   TriangleAlert,
   User,
   Wrench,
-  WalletCards,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { TextAreaField } from '@/components/ui/textarea-field';
@@ -80,8 +78,6 @@ const ICONS_BY_NAME: Record<VisualIconName, ReactNode> = {
   products: <Boxes className="h-7 w-7" />,
   paymentLocal: <Banknote className="h-7 w-7" />,
   paymentTransfer: <Landmark className="h-7 w-7" />,
-  paymentDebit: <CreditCard className="h-7 w-7" />,
-  paymentCredit: <WalletCards className="h-7 w-7" />,
 };
 
 export function AdminVisualIdentityHeader() {

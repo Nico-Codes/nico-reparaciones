@@ -12,6 +12,50 @@
 
 ---
 
+### 2026-04-22 - Codex
+- Alcance: eliminar debito y credito como medios de pago del checkout.
+- Tipo de intervencion: limpieza funcional en backend, frontend, configuracion e identidad visual.
+- Archivos tocados:
+  - `next-stack/apps/api/src/modules/admin/app-settings.registry.ts`
+  - `next-stack/apps/api/src/modules/orders/orders-checkout.service.ts`
+  - `next-stack/apps/api/src/modules/orders/orders-support.service.ts`
+  - `next-stack/apps/api/src/modules/orders/orders.helpers.ts`
+  - `next-stack/apps/api/src/modules/orders/orders.helpers.test.ts`
+  - `next-stack/apps/api/src/modules/orders/orders.types.ts`
+  - `next-stack/apps/web/public/icons/payment-credit.svg`
+  - `next-stack/apps/web/public/icons/payment-debit.svg`
+  - `next-stack/apps/web/src/features/admin/AdminCheckoutSettingsPage.tsx`
+  - `next-stack/apps/web/src/features/admin/admin-checkout-settings.helpers.ts`
+  - `next-stack/apps/web/src/features/admin/admin-checkout-settings.helpers.test.ts`
+  - `next-stack/apps/web/src/features/admin/admin-checkout-settings.sections.tsx`
+  - `next-stack/apps/web/src/features/admin/admin-settings-hub.helpers.ts`
+  - `next-stack/apps/web/src/features/admin/admin-visual-identity.helpers.ts`
+  - `next-stack/apps/web/src/features/admin/admin-visual-identity.sections.tsx`
+  - `next-stack/apps/web/src/features/orders/CheckoutPage.tsx`
+  - `next-stack/apps/web/src/features/orders/checkout.helpers.ts`
+  - `next-stack/apps/web/src/features/orders/checkout.helpers.test.ts`
+  - `next-stack/apps/web/src/features/orders/checkout.sections.tsx`
+  - `next-stack/apps/web/src/features/orders/order-ui.ts`
+  - `next-stack/apps/web/src/features/orders/types.ts`
+  - `next-stack/apps/web/src/styles/commerce.css`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. Checkout y backend aceptan solo `efectivo` y `transferencia`; se eliminan las opciones, toggles e iconos default de tarjeta.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run typecheck --workspace @nico/api`
+  - `cmd /c npm run test --workspace @nico/web -- admin-checkout-settings.helpers.test.ts checkout.helpers.test.ts admin-visual-identity.helpers.test.ts admin-settings-hub.helpers.test.ts`
+  - `cmd /c npm run test --workspace @nico/api -- app-settings.registry.test.ts orders.helpers.test.ts`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/api`
+  - `cmd /c npm run smoke:web`
+  - `cmd /c npm run smoke:backend`
+  - Pendiente: `git diff --check`
+- Riesgos / notas:
+  - pedidos historicos con metodos desconocidos ya no muestran el texto bruto del metodo y quedan como `A definir`.
+  - uploads no versionados bajo `brand-assets/identity/` no se eliminan para no borrar archivos cargados por configuracion.
+
+---
+
 ### 2026-04-21 - Codex
 - Alcance: deshabilitar temporalmente pagos con tarjeta de debito y credito en checkout con activacion desde admin.
 - Tipo de intervencion: cambio funcional en configuracion de checkout, frontend y validacion backend.

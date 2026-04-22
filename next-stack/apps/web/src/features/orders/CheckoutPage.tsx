@@ -7,7 +7,6 @@ import { authStorage } from '@/features/auth/storage';
 import {
   buildCheckoutItems,
   buildValidCheckoutLines,
-  enabledCheckoutPaymentMethods,
   hasInvalidCheckoutItems,
   resolveCheckoutPaymentMethods,
   resolveSelectedPayment,
@@ -89,24 +88,17 @@ export function CheckoutPage() {
   const validCheckoutItems = useMemo(() => buildCheckoutItems(validItems), [validItems]);
   const hasInvalidItems = useMemo(() => hasInvalidCheckoutItems(quote?.items ?? []), [quote]);
   const paymentOptions = useMemo(() => resolveCheckoutPaymentMethods(checkoutConfig), [checkoutConfig]);
-  const enabledPaymentOptions = useMemo(
-    () => enabledCheckoutPaymentMethods(paymentOptions),
-    [paymentOptions],
-  );
+  const canConfirm = !loading && !submitting && validCheckoutItems.length > 0;
   const selectedPayment = useMemo(
     () => resolveSelectedPayment(paymentMethod, paymentOptions),
     [paymentMethod, paymentOptions],
   );
-  const canConfirm = !loading && !submitting && validCheckoutItems.length > 0 && selectedPayment.enabled;
 
   useEffect(() => {
-    if (
-      !enabledPaymentOptions.some((option) => option.value === paymentMethod) &&
-      enabledPaymentOptions.length
-    ) {
-      setPaymentMethod(enabledPaymentOptions[0].value);
+    if (!paymentOptions.some((option) => option.value === paymentMethod) && paymentOptions.length) {
+      setPaymentMethod(paymentOptions[0].value);
     }
-  }, [enabledPaymentOptions, paymentMethod]);
+  }, [paymentMethod, paymentOptions]);
 
   async function confirmOrder() {
     if (!canConfirm) return;

@@ -536,12 +536,6 @@
   box-shadow: 0 16px 24px -26px rgba(59, 130, 246, 0.48);
 }
 
-.choice-card.is-disabled {
-  border-color: rgba(226, 232, 240, 0.74);
-  background: rgba(248, 250, 252, 0.7);
-  opacity: 0.72;
-}
-
 .choice-card input[type="checkbox"] {
   margin-top: 0.15rem;
   accent-color: #2563eb;
@@ -601,18 +595,6 @@
   box-shadow: 0 18px 28px -28px rgba(59, 130, 246, 0.44);
 }
 
-.checkout-option.is-disabled {
-  border-color: rgba(226, 232, 240, 0.72);
-  background: rgba(248, 250, 252, 0.72);
-  opacity: 0.62;
-}
-
-.checkout-option.is-disabled:hover {
-  border-color: rgba(226, 232, 240, 0.72);
-  background: rgba(248, 250, 252, 0.72);
-  box-shadow: none;
-}
-
 .checkout-option__header {
   display: flex;
   width: 100%;
@@ -642,13 +624,6 @@
 
 .checkout-option__content {
   min-width: 0;
-}
-
-.checkout-option__title-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.45rem;
 }
 
 .checkout-option__title {

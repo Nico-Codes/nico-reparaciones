@@ -111,7 +111,7 @@ export function AdminCheckoutSettingsPage() {
         context="admin"
         eyebrow="Configuracion"
         title="Checkout y pagos"
-        subtitle="Define como se presenta el bloque de transferencia y deja listos los cuatro metodos de pago del checkout."
+        subtitle="Define como se presenta transferencia y mantiene el checkout enfocado en pago en local o transferencia."
         actions={<AdminCheckoutSettingsPageActions isDirty={isDirty} />}
       />
 

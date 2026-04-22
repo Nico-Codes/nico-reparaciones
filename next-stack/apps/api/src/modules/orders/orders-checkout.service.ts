@@ -25,14 +25,7 @@ export class OrdersCheckoutService {
       throw new BadRequestException('Metodo de pago invalido para checkout');
     }
 
-    const checkoutConfig = await this.ordersSupportService.getCheckoutConfig();
     const selectedPaymentMethod = normalizedPaymentMethod ?? 'efectivo';
-    const paymentMethodConfig = checkoutConfig.paymentMethods.find(
-      (item) => item.value === selectedPaymentMethod,
-    );
-    if (!paymentMethodConfig?.enabled) {
-      throw new BadRequestException('El metodo de pago seleccionado no esta disponible');
-    }
 
     if (!validLines.length) {
       throw new BadRequestException('No hay items validos para generar pedido');

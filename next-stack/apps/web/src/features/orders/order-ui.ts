@@ -23,10 +23,6 @@ export const ORDER_STATUS_LABELS: Record<string, string> = {
 const PAYMENT_LABELS: Record<string, string> = {
   EFECTIVO: 'Pago en el local',
   TRANSFERENCIA: 'Transferencia',
-  DEBITO: 'Débito',
-  DEBIT: 'Débito',
-  CREDITO: 'Crédito',
-  CREDIT: 'Crédito',
 };
 
 export function normalizeOrderStatus(status: string) {
@@ -143,7 +139,7 @@ export function orderCode(id: string) {
 
 export function paymentMethodLabel(method: string | null | undefined) {
   if (!method) return 'A definir';
-  return PAYMENT_LABELS[method.trim().toUpperCase()] ?? method;
+  return PAYMENT_LABELS[method.trim().toUpperCase()] ?? 'A definir';
 }
 
 export function money(value: number) {

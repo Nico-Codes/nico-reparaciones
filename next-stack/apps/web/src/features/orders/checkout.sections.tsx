@@ -1,10 +1,8 @@
 import {
   AlertTriangle,
   Banknote,
-  CreditCard,
   Landmark,
   ShieldCheck,
-  WalletCards,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -64,16 +62,7 @@ type CheckoutSummarySectionProps = {
 };
 
 function CheckoutPaymentIcon({ option }: { option: CheckoutPaymentMethodConfig }) {
-  const fallback =
-    option.value === 'efectivo'
-      ? Banknote
-      : option.value === 'transferencia'
-        ? Landmark
-        : option.value === 'debito'
-          ? CreditCard
-          : WalletCards;
-
-  const FallbackIcon = fallback;
+  const FallbackIcon = option.value === 'efectivo' ? Banknote : Landmark;
 
   if (option.iconUrl) {
     return (
@@ -195,11 +184,10 @@ export function CheckoutPaymentSection({
       <div className="checkout-option-grid">
         {paymentOptions.map((option) => {
           const active = paymentMethod === option.value;
-          const disabled = submitting || !option.enabled;
           return (
             <label
               key={option.value}
-              className={`checkout-option-wrapper ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+              className="checkout-option-wrapper cursor-pointer"
             >
               <input
                 className="sr-only peer"
@@ -208,20 +196,15 @@ export function CheckoutPaymentSection({
                 value={option.value}
                 checked={active}
                 onChange={() => onChange(option.value)}
-                disabled={disabled}
+                disabled={submitting}
               />
-              <div
-                className={`checkout-option ${active ? 'is-active' : ''} ${!option.enabled ? 'is-disabled' : ''}`}
-              >
+              <div className={`checkout-option ${active ? 'is-active' : ''}`}>
                 <div className="checkout-option__header">
                   <span className="checkout-option__icon-shell">
                     <CheckoutPaymentIcon option={option} />
                   </span>
                   <div className="checkout-option__content">
-                    <div className="checkout-option__title-row">
-                      <div className="checkout-option__title">{option.title}</div>
-                      {!option.enabled ? <StatusBadge tone="neutral" size="sm" label="No disponible" /> : null}
-                    </div>
+                    <div className="checkout-option__title">{option.title}</div>
                     <div className="checkout-option__subtitle">{option.subtitle}</div>
                   </div>
                 </div>
@@ -287,7 +270,7 @@ export function CheckoutActions({ canConfirm, submitting, onConfirm }: CheckoutA
         onClick={onConfirm}
         disabled={!canConfirm}
       >
-        <CreditCard className="h-4 w-4" />
+        <ShieldCheck className="h-4 w-4" />
         {submitting ? 'Procesando...' : 'Confirmar pedido'}
       </Button>
       <Button asChild variant="outline" className="w-full justify-center sm:w-auto">
