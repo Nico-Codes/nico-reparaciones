@@ -13,6 +13,22 @@
 ---
 
 ### 2026-04-22 - Codex
+- Alcance: ajustar alineacion vertical entre categoria y precio en cards moviles de tienda.
+- Tipo de intervencion: ajuste CSS puntual sobre el bloque de compra de productos.
+- Archivos tocados:
+  - `next-stack/apps/web/src/styles/store.css`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No. Solo compacta visualmente categoria, precio y boton de carrito.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - el precio se alinea arriba con el boton de carrito para evitar el hueco visual generado por el centrado vertical.
+
+---
+
+### 2026-04-22 - Codex
 - Alcance: eliminar hueco entre categoria y precio en cards publicas de tienda.
 - Tipo de intervencion: ajuste estructural liviano y CSS en cards de productos.
 - Archivos tocados:
