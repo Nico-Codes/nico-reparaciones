@@ -310,22 +310,24 @@ function StoreGridCard({ product }: { product: StoreProduct }) {
           {product.name}
         </Link>
 
-        <div className="product-meta">{product.category?.name ?? 'Producto general'}</div>
+        <div className="product-purchase-block">
+          <div className="product-meta">{product.category?.name ?? 'Producto general'}</div>
 
-        <div className="product-row">
-          <div className="product-price">$ {product.price.toLocaleString('es-AR')}</div>
+          <div className="product-row">
+            <div className="product-price">$ {product.price.toLocaleString('es-AR')}</div>
 
-          <div className="product-actions">
-            <button
-              type="button"
-              className={`btn-cart ${hasStock ? '' : 'is-disabled'}`}
-              disabled={!hasStock}
-              aria-label="Agregar al carrito"
-              title={hasStock ? 'Agregar al carrito' : 'Sin stock'}
-              onClick={() => cartStorage.add(product.id, 1, { productName: product.name })}
-            >
-              <ShoppingCart className="h-4 w-4" />
-            </button>
+            <div className="product-actions">
+              <button
+                type="button"
+                className={`btn-cart ${hasStock ? '' : 'is-disabled'}`}
+                disabled={!hasStock}
+                aria-label="Agregar al carrito"
+                title={hasStock ? 'Agregar al carrito' : 'Sin stock'}
+                onClick={() => cartStorage.add(product.id, 1, { productName: product.name })}
+              >
+                <ShoppingCart className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         </div>
       </div>

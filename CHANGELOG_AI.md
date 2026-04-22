@@ -13,6 +13,23 @@
 ---
 
 ### 2026-04-22 - Codex
+- Alcance: eliminar hueco entre categoria y precio en cards publicas de tienda.
+- Tipo de intervencion: ajuste estructural liviano y CSS en cards de productos.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/store/store-page.sections.tsx`
+  - `next-stack/apps/web/src/styles/store.css`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No. Solo agrupa categoria, precio y carrito para controlar el espaciado visual.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - el bloque de compra queda encapsulado para no depender de reglas genericas de filas.
+
+---
+
+### 2026-04-22 - Codex
 - Alcance: reducir espacio entre categoria y precio en articulos publicos de tienda.
 - Tipo de intervencion: ajuste visual CSS en cards de productos.
 - Archivos tocados:

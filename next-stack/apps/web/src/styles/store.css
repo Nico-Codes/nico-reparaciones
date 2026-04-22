@@ -712,6 +712,13 @@ textarea:focus-visible {
   padding: 0.85rem;
 }
 
+.product-card-grid .product-purchase-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.14rem;
+  margin-top: 0;
+}
+
 .product-card-grid .product-row {
   margin-top: 0;
   padding-top: 0;
@@ -881,6 +888,10 @@ textarea:focus-visible {
   .product-card-grid .product-body {
     padding: 0.6rem 0.62rem 0.64rem;
     gap: 0.22rem;
+  }
+
+  .product-card-grid .product-purchase-block {
+    gap: 0.08rem;
   }
 
   .product-card-grid .product-title {
