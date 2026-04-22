@@ -13,6 +13,22 @@
 ---
 
 ### 2026-04-22 - Codex
+- Alcance: ajustar separacion entre categoria y precio en cards moviles de tienda.
+- Tipo de intervencion: ajuste CSS puntual en el bloque de compra de productos.
+- Archivos tocados:
+  - `next-stack/apps/web/src/styles/store.css`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No. Solo aumenta levemente la separacion visual entre categoria y precio.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - el ajuste mantiene la card compacta, pero evita que categoria y precio queden demasiado pegados.
+
+---
+
+### 2026-04-22 - Codex
 - Alcance: ajustar alineacion vertical entre categoria y precio en cards moviles de tienda.
 - Tipo de intervencion: ajuste CSS puntual sobre el bloque de compra de productos.
 - Archivos tocados:
