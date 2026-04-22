@@ -13,6 +13,22 @@
 ---
 
 ### 2026-04-22 - Codex
+- Alcance: alinear precio y boton de carrito en articulos publicos de tienda.
+- Tipo de intervencion: ajuste visual CSS en cards de productos.
+- Archivos tocados:
+  - `next-stack/apps/web/src/styles/store.css`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No. Solo cambia la disposicion visual del precio y accion de carrito.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - el ajuste queda acotado a cards de grilla de tienda para no afectar detalle ni admin.
+
+---
+
+### 2026-04-22 - Codex
 - Alcance: quitar indicador de stock de articulos publicos de tienda.
 - Tipo de intervencion: limpieza visual en cards de productos y CSS asociado.
 - Archivos tocados:
