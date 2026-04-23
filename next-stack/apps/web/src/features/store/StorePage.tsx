@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { PageShell } from '@/components/ui/page-shell';
 import { storeApi } from './api';
+import { setStoreBrandingCache } from './branding-cache';
 import {
   buildStoreFallbackHero,
   buildStoreHeroVisualVars,
@@ -34,6 +35,7 @@ export function StorePage() {
   const mobileSortTriggerRef = useRef<HTMLButtonElement | null>(null);
   const bodyOverflowRef = useRef('');
   const bodyPaddingRightRef = useRef('');
+  const metadataLoadedRef = useRef(false);
 
   const q = searchParams.get('q') ?? '';
   const category = searchParams.get('category');
@@ -42,33 +44,41 @@ export function StorePage() {
 
   useEffect(() => {
     let active = true;
-    Promise.all([storeApi.hero(), storeApi.categories()])
-      .then(([heroRes, categoriesRes]) => {
-        if (!active) return;
-        setHeroConfig(heroRes);
-        setCategories(categoriesRes.items);
-      })
-      .catch((err) => {
-        if (!active) return;
-        setError((prev) => prev || (err instanceof Error ? err.message : 'No se pudo cargar la tienda.'));
-      });
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    let active = true;
     setLoading(true);
     setError('');
+    const isDefaultHomeQuery = !q && !category && sort === 'relevance';
 
-    storeApi
-      .products({ q, category, sort, page: 1, pageSize: 24 })
-      .then((productsRes) => {
+    async function loadStoreFront() {
+      if (isDefaultHomeQuery) {
+        const home = await storeApi.home();
         if (!active) return;
-        setProductsData(productsRes);
-      })
+        setHeroConfig(home.hero);
+        setCategories(home.categories);
+        setProductsData(home.products);
+        setStoreBrandingCache(home.branding);
+        metadataLoadedRef.current = true;
+        return;
+      }
+
+      const metadataPromise = metadataLoadedRef.current
+        ? Promise.resolve(null)
+        : Promise.all([storeApi.hero(), storeApi.categories()]);
+      const [metadata, productsRes] = await Promise.all([
+        metadataPromise,
+        storeApi.products({ q, category, sort, page: 1, pageSize: 24 }),
+      ]);
+
+      if (!active) return;
+      if (metadata) {
+        const [heroRes, categoriesRes] = metadata;
+        setHeroConfig(heroRes);
+        setCategories(categoriesRes.items);
+        metadataLoadedRef.current = true;
+      }
+      setProductsData(productsRes);
+    }
+
+    loadStoreFront()
       .catch((err) => {
         if (!active) return;
         setError(err instanceof Error ? err.message : 'No se pudo cargar la tienda.');

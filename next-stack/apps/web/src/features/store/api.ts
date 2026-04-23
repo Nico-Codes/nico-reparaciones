@@ -1,4 +1,11 @@
-import type { StoreBrandingAssets, StoreCategory, StoreHeroConfig, StoreProduct, StoreProductsResponse } from './types';
+import type {
+  StoreBrandingAssets,
+  StoreCategory,
+  StoreHeroConfig,
+  StoreHomeResponse,
+  StoreProduct,
+  StoreProductsResponse,
+} from './types';
 import { publicJsonRequest } from '@/features/auth/http';
 
 async function request<T>(path: string): Promise<T> {
@@ -6,6 +13,9 @@ async function request<T>(path: string): Promise<T> {
 }
 
 export const storeApi = {
+  home() {
+    return request<StoreHomeResponse>('/store/home');
+  },
   hero() {
     return request<StoreHeroConfig>('/store/hero');
   },

@@ -20,6 +20,20 @@ Registrar decisiones tecnicas confirmadas para evitar dependencia de memoria ora
 
 ---
 
+### [DL-0128]
+- Fecha: 2026-04-23
+- Estado: aceptada
+- Tema: optimizacion web por cache compartido, CSS contextual y agregado publico de tienda
+- Contexto: el frontend ya tenia lazy loading por ruta, pero seguia duplicando `/store/branding`, cargando todo el CSS de auth/admin/store/commerce en el bundle global y resolviendo la home de tienda con varios requests independientes.
+- Decision: introducir un cache/provider unico para branding publico, agregar `GET /api/store/home` como agregado inicial de tienda, cargar CSS contextual desde los modulos lazy y declarar headers de cache explicitos para assets publicos servidos por API. Las imagenes no se reemplazan en esta fase.
+- Impacto: baja la carga inicial efectiva, reduce roundtrips de `/store`, evita fetches redundantes de branding y deja una medicion operativa `qa:performance` para vigilar requests y transferencia JS/CSS.
+- Alternativas consideradas: migrar a SSR o agregar dependencias de performance/Lighthouse; descartado por ser demasiado grande para el problema actual y porque Playwright ya cubre una medicion inicial suficiente.
+- Archivos / modulos afectados: `next-stack/apps/api/src/modules/store/*`, `next-stack/apps/api/src/main.ts`, `next-stack/apps/web/src/{app,components,features,layouts}`, `next-stack/scripts/qa/qa-performance.mjs`, `project-docs/*`, `CHANGELOG_AI.md`.
+- Validacion requerida: typecheck/test/build de API y web, `smoke:backend`, `smoke:web`, `qa:performance`, `git diff --check`.
+- Responsable: Codex + operador humano
+
+---
+
 ### [DL-0127]
 - Fecha: 2026-04-23
 - Estado: aceptada

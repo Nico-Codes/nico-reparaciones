@@ -56,6 +56,17 @@ Ubicacion:
   - `RepairsModule` para `pricingRulesList`
 - `AdminModule` ahora tambien expone `DELETE /api/admin/device-types/:id` para permitir borrado real del tipo cuando no existan marcas, fallas, reparaciones ni reglas asociadas
 
+## Store publico
+
+- `StoreModule` expone endpoints publicos separados para compatibilidad:
+  - `GET /api/store/hero`
+  - `GET /api/store/branding`
+  - `GET /api/store/categories`
+  - `GET /api/store/products`
+  - `GET /api/store/products/:slug`
+- `GET /api/store/home` es el agregado recomendado para la carga inicial de `/store`; devuelve hero, branding, categorias y primera pagina de productos con defaults publicos.
+- Los assets de `apps/web/public` servidos por API tienen headers de cache explicitos: largo para defaults versionables y corto/revalidable para `brand-assets/*` administrables.
+
 ## Observacion clave
 
 No existe ya backend legacy dentro del repo. Todo comportamiento servidor activo parte de `next-stack/apps/api`.

@@ -96,3 +96,17 @@ No es bloqueante para esta fase, pero puede evaluarse más adelante:
 - optimización de imágenes de hero / branding
 - revisar si algún módulo admin muy pesado merece sub-splitting adicional
 - solo introducir `manualChunks` si reaparece un hotspot real que no se resuelva bien con lazy loading por ruta
+
+## Hardening 2026-04-23
+
+Se agrego una segunda etapa de optimizacion sin modificar imagenes:
+
+- `BrandingHeadSync`, `AppShell` y `AuthLayout` consumen branding desde un cache/provider compartido para evitar requests duplicados a `/store/branding`.
+- `/store` usa `GET /api/store/home` en la carga inicial sin filtros; el endpoint agrega hero, branding, categorias y primera pagina de productos.
+- `styles.css` queda con base/layout/componentes globales; los estilos de `store`, `auth`, `admin`, `commerce` y `repairs` se cargan junto al chunk lazy de cada ruta.
+- la API agrega `Cache-Control` explicito para assets publicos de `apps/web/public`.
+- `npm run qa:performance` mide requests, transferencia JS/CSS/img y `domcontentloaded` de rutas clave usando Playwright.
+
+Pendiente intencional:
+
+- no se comprimieron ni reemplazaron imagenes grandes; el operador las cambiara luego desde Identidad visual.

@@ -3,8 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, Wrench } from 'lucide-react';
 import { useCartCount } from '@/features/cart/useCart';
 import { authStorage } from './storage';
-import { storeApi } from '@/features/store/api';
-import type { StoreBrandingAssets } from '@/features/store/types';
+import { useStoreBranding } from '@/features/store/branding-cache';
 import { MobileSidebar } from '@/layouts/app-shell/mobile-sidebar';
 import { BrandWordmark, CartGlyph, WarnIcon } from '@/layouts/app-shell/primitives';
 import {
@@ -42,30 +41,13 @@ export function AuthLayout({
   const location = useLocation();
   const navigate = useNavigate();
   const cartCount = useCartCount();
-  const [branding, setBranding] = useState<StoreBrandingAssets | null>(null);
+  const branding = useStoreBranding();
   const [authUser, setAuthUser] = useState(() => authStorage.getUser());
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [adminSectionOpen, setAdminSectionOpen] = useState(false);
   const [isDesktop, setIsDesktop] = useState(() =>
     typeof window !== 'undefined' ? window.matchMedia('(min-width: 768px)').matches : true,
   );
-
-  useEffect(() => {
-    let cancelled = false;
-
-    void storeApi
-      .branding()
-      .then((data) => {
-        if (!cancelled) setBranding(data);
-      })
-      .catch(() => {
-        if (!cancelled) setBranding(null);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   useEffect(() => {
     const sync = () => setAuthUser(authStorage.getUser());

@@ -3,8 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { authStorage } from '@/features/auth/storage';
 import type { AuthUser } from '@/features/auth/types';
 import { useCartCount } from '@/features/cart/useCart';
-import { storeApi } from '@/features/store/api';
-import type { StoreBrandingAssets } from '@/features/store/types';
+import { useStoreBranding } from '@/features/store/branding-cache';
 import { buildAccountLinks, buildAdminLinks, buildDesktopLinks, buildSidebarNavLinks, deriveAppShellDisplay } from './helpers';
 import { lockScroll, resolveShellContext, unlockScroll } from './utils';
 
@@ -19,7 +18,7 @@ export function useAppShell() {
     typeof window !== 'undefined' ? window.matchMedia('(min-width: 768px)').matches : true,
   );
   const [authUser, setAuthUser] = useState<AuthUser | null>(() => authStorage.getUser());
-  const [branding, setBranding] = useState<StoreBrandingAssets | null>(null);
+  const branding = useStoreBranding();
   const [adminSectionOpen, setAdminSectionOpen] = useState(false);
   const accountRef = useRef<HTMLDivElement | null>(null);
   const accountButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -34,23 +33,6 @@ export function useAppShell() {
       window.removeEventListener('storage', sync);
       window.removeEventListener('focus', sync);
       window.removeEventListener('nico:auth-changed', sync);
-    };
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    void storeApi
-      .branding()
-      .then((data) => {
-        if (!cancelled) setBranding(data);
-      })
-      .catch(() => {
-        if (!cancelled) setBranding(null);
-      });
-
-    return () => {
-      cancelled = true;
     };
   }, []);
 

@@ -79,6 +79,31 @@ describe('StoreService', () => {
     );
   });
 
+  it('builds store home with hero, branding, categories and default first product page', async () => {
+    const service = new StoreService({} as any);
+    const hero = { imageDesktop: '/hero.jpg', imageMobile: '/hero-mobile.jpg' };
+    const branding = { siteTitle: 'NicoReparaciones' };
+    const categories = [{ id: 'cat_1', name: 'Cables', slug: 'cables', productsCount: 2 }];
+    const products = { items: [], meta: { total: 0, page: 1, pageSize: 24, totalPages: 1, q: '', category: null, sort: 'relevance' } };
+
+    const heroSpy = vi.spyOn(service, 'getHeroConfig').mockResolvedValue(hero as any);
+    const brandingSpy = vi.spyOn(service, 'getBrandingAssets').mockResolvedValue(branding as any);
+    const categoriesSpy = vi.spyOn(service, 'listCategories').mockResolvedValue(categories as any);
+    const productsSpy = vi.spyOn(service, 'listProducts').mockResolvedValue(products as any);
+
+    await expect(service.getHome()).resolves.toEqual({
+      hero,
+      branding,
+      categories,
+      products,
+    });
+
+    expect(heroSpy).toHaveBeenCalledOnce();
+    expect(brandingSpy).toHaveBeenCalledOnce();
+    expect(categoriesSpy).toHaveBeenCalledOnce();
+    expect(productsSpy).toHaveBeenCalledWith({ page: 1, pageSize: 24, sort: 'relevance' });
+  });
+
   it('hides out-of-stock products from public listing and detail lookups', async () => {
     const prisma = {
       product: {

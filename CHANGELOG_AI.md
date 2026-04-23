@@ -13,6 +13,35 @@
 ---
 
 ### 2026-04-23 - Codex
+- Alcance: optimizacion de velocidad web sin tocar imagenes.
+- Tipo de intervencion: cache compartido frontend, endpoint agregado backend, CSS contextual, cache headers y QA de performance.
+- Archivos tocados:
+  - `next-stack/apps/api/src/main.ts`
+  - `next-stack/apps/api/src/modules/store/*`
+  - `next-stack/apps/web/src/{app,components,features,layouts}`
+  - `next-stack/scripts/qa/qa-performance.mjs`
+  - `next-stack/package.json`
+  - `project-docs/*`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. `/store` inicial usa un agregado, branding se cachea una vez por carga, assets publicos tienen cache headers y el CSS contextual carga junto a rutas lazy.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/api`
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/api`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/api`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:backend`
+  - `cmd /c npm run smoke:web`
+  - `cmd /c npm run qa:performance`
+  - `git diff --check`
+- Riesgos / notas:
+  - No se modificaron ni comprimieron imagenes; quedan para reemplazo manual desde Identidad visual.
+  - `qa:performance` queda como baseline no bloqueante con warnings operativos.
+
+---
+
+### 2026-04-23 - Codex
 - Alcance: hardening operativo de proveedores, WhatsApp manual, assets runtime y documentacion viva.
 - Tipo de intervencion: ajustes backend/frontend, pruebas unitarias y limpieza documental.
 - Archivos tocados:

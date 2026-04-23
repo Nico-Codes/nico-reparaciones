@@ -62,6 +62,30 @@ function resolveWebPublicDir() {
   return candidates.find((p) => existsSync(p)) ?? null;
 }
 
+function setWebPublicAssetCacheHeaders(publicDir: string, res: { setHeader: (name: string, value: string) => void }, filePath: string) {
+  const relativePath = path.relative(publicDir, filePath).replace(/\\/g, '/');
+  if (!relativePath || relativePath.startsWith('..')) return;
+
+  if (relativePath.startsWith('brand-assets/')) {
+    res.setHeader('Cache-Control', 'public, max-age=300, must-revalidate');
+    return;
+  }
+
+  if (
+    relativePath.startsWith('brand/') ||
+    relativePath.startsWith('icons/') ||
+    /^favicon(?:-|\.|$)/i.test(relativePath) ||
+    /^android-chrome-/i.test(relativePath) ||
+    relativePath === 'apple-touch-icon.png' ||
+    relativePath === 'site.webmanifest'
+  ) {
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    return;
+  }
+
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+}
+
 function assertProductionSafeEnv() {
   if (!isProductionLike()) return;
 
@@ -177,7 +201,10 @@ async function bootstrap() {
   }
   const webPublicDir = resolveWebPublicDir();
   if (webPublicDir) {
-    app.useStaticAssets(webPublicDir, { index: false });
+    app.useStaticAssets(webPublicDir, {
+      index: false,
+      setHeaders: (res, filePath) => setWebPublicAssetCacheHeaders(webPublicDir, res, filePath),
+    });
   }
   if (expressApp?.set && isTruthy(env('TRUST_PROXY'))) {
     expressApp.set('trust proxy', 1);

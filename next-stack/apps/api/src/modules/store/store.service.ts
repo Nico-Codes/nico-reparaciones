@@ -261,6 +261,22 @@ export class StoreService {
     }
   }
 
+  async getHome() {
+    const [hero, branding, categories, products] = await Promise.all([
+      this.getHeroConfig(),
+      this.getBrandingAssets(),
+      this.listCategories(),
+      this.listProducts({ page: 1, pageSize: 24, sort: 'relevance' }),
+    ]);
+
+    return {
+      hero,
+      branding,
+      categories,
+      products,
+    };
+  }
+
   async listProducts(params: ListProductsParams) {
     const q = (params.q ?? '').trim();
     const categorySlug = (params.category ?? '').trim();

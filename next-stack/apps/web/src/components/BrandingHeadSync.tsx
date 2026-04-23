@@ -1,7 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { storeApi } from '@/features/store/api';
-import type { StoreBrandingAssets } from '@/features/store/types';
+import { useStoreBranding } from '@/features/store/branding-cache';
 
 function upsertLink(id: string, rel: string, href: string, attrs?: Record<string, string>) {
   let link = document.getElementById(id) as HTMLLinkElement | null;
@@ -28,22 +27,7 @@ function removeLink(id: string) {
 
 export function BrandingHeadSync() {
   const location = useLocation();
-  const [branding, setBranding] = useState<StoreBrandingAssets | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    void storeApi
-      .branding()
-      .then((data) => {
-        if (!cancelled) setBranding(data);
-      })
-      .catch(() => {
-        if (!cancelled) setBranding(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const branding = useStoreBranding();
 
   useEffect(() => {
     const siteTitle = (branding?.siteTitle ?? 'NicoReparaciones').trim() || 'NicoReparaciones';
@@ -90,4 +74,3 @@ export function BrandingHeadSync() {
 
   return null;
 }
-

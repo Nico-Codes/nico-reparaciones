@@ -35,6 +35,13 @@ export type StoreProductsResponse = {
   };
 };
 
+export type StoreHomeResponse = {
+  hero: StoreHeroConfig;
+  branding: StoreBrandingAssets;
+  categories: StoreCategory[];
+  products: StoreProductsResponse;
+};
+
 export type StoreHeroConfig = {
   imageDesktop: string;
   imageMobile: string;

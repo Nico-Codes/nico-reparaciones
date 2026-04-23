@@ -21,6 +21,11 @@ export class StoreController {
     return this.storeService.getBrandingAssets();
   }
 
+  @Get('home')
+  async home() {
+    return this.storeService.getHome();
+  }
+
   @Get('products')
   async products(
     @Query('q') q?: string,
