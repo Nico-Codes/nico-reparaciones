@@ -108,6 +108,7 @@ export class OrdersSupportService {
         id: item.id,
         productId: item.productId,
         name: item.nameSnapshot,
+        fulfillmentMode: item.fulfillmentModeSnapshot,
         unitPrice: Number(item.unitPrice),
         quantity: item.quantity,
         lineTotal: Number(item.lineTotal),
@@ -153,8 +154,10 @@ export class OrdersSupportService {
 
   async decrementProductStockOrThrow(
     tx: Prisma.TransactionClient,
-    input: { productId: string; quantity: number; name: string },
+    input: { productId: string; quantity: number; name: string; fulfillmentMode?: 'INVENTORY' | 'SPECIAL_ORDER' },
   ) {
+    if (input.fulfillmentMode === 'SPECIAL_ORDER') return;
+
     const updated = await tx.product.updateMany({
       where: {
         id: input.productId,

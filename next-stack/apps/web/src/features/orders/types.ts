@@ -2,6 +2,7 @@ export type OrderLine = {
   id: string;
   productId: string | null;
   name: string;
+  fulfillmentMode: 'INVENTORY' | 'SPECIAL_ORDER';
   unitPrice: number;
   quantity: number;
   lineTotal: number;

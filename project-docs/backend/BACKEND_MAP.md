@@ -33,9 +33,10 @@ Ubicacion:
 - `OrdersModule`
   - facade principal en `orders.service.ts`
   - subservicios activos para checkout/mis pedidos, flujo admin, ventas rapidas, notificaciones y soporte/serializacion
+  - el checkout y soporte de orden ahora distinguen `INVENTORY` vs `SPECIAL_ORDER`; las lineas por encargue no validan ni descuentan stock local y guardan snapshot de fulfillment en `OrderItem`
 - `CatalogAdminModule`
   - facade principal en `catalog-admin.service.ts`
-  - subservicios activos para categorias, productos, pricing de productos y soporte compartido
+  - subservicios activos para categorias, productos, pricing de productos, importacion de encargues y soporte compartido
 
 ## Seguridad
 
@@ -65,7 +66,35 @@ Ubicacion:
   - `GET /api/store/products`
   - `GET /api/store/products/:slug`
 - `GET /api/store/home` es el agregado recomendado para la carga inicial de `/store`; devuelve hero, branding, categorias y primera pagina de productos con defaults publicos.
+- La visibilidad publica de productos ahora depende tambien de `fulfillmentMode`:
+  - `INVENTORY`: visible solo si `active=true` y `stock > 0`
+  - `SPECIAL_ORDER`: visible si `active=true` y `supplierAvailability != OUT_OF_STOCK`
 - Los assets de `apps/web/public` servidos por API tienen headers de cache explicitos: largo para defaults versionables y corto/revalidable para `brand-assets/*` administrables.
+
+## Catalogo comercial: encargues
+
+- `Product` ahora soporta dos modos de cumplimiento:
+  - `INVENTORY`
+  - `SPECIAL_ORDER`
+- El circuito de importacion por encargue se apoya en:
+  - `SpecialOrderImportProfile` para configuracion reusable por proveedor/listado
+  - `SpecialOrderImportBatch` para auditoria del texto importado y su resumen
+  - `specialOrderProfileId + specialOrderSourceKey` como clave de upsert
+- `CatalogAdminController` expone endpoints admin nuevos:
+  - `GET /api/catalog-admin/special-order-profiles`
+  - `POST /api/catalog-admin/special-order-profiles`
+  - `PATCH /api/catalog-admin/special-order-profiles/:id`
+  - `POST /api/catalog-admin/special-order-imports/preview`
+  - `POST /api/catalog-admin/special-order-imports/apply`
+- El parser de listados:
+  - detecta encabezados de seccion `*Marca*`/`*Categoria*`
+  - extrae precios USD y estados `Sin Stock`
+  - ignora ruido operativo como fechas, links y cabeceras repetidas
+- La aplicacion del batch:
+  - crea categorias faltantes cuando el mapping asi lo define
+  - crea/actualiza productos `SPECIAL_ORDER` sin tocar slug ni retoques manuales como imagen/descripcion
+  - marca `OUT_OF_STOCK` si el item sigue viniendo pero sin stock
+  - desactiva automaticamente productos del perfil que ya no aparecen en el listado nuevo
 
 ## Observacion clave
 
@@ -79,6 +108,7 @@ No existe ya backend legacy dentro del repo. Todo comportamiento servidor activo
   - `searchPartsAcrossProviders()` para agregado del flujo de reparaciones, filtrado solo a proveedores con `searchInRepairs=true`
   - `filterProviderSearchItems()` como gating comun de matching exacto + ranking
 - `catalog-admin.service.ts` ya bajo a una fachada chica y el modulo quedo separado por categorias, productos y pricing.
+- `catalog-admin-special-order.service.ts` absorbe la orquestacion del preview/apply de encargues para no volver a engordar la fachada principal.
 - El siguiente hotspot backend por servicio pasa a ser `admin-provider-registry.service.ts`; a nivel helper tecnico, `admin-provider-search.parsers.ts` sigue siendo el bloque de scraping mas pesado.
 - El hotspot mas grande del repo completo sigue estando en frontend: `RepairProviderPartPricingSection.tsx`.
 - Recomendacion prioritaria: si seguimos bajando complejidad del backend, conviene decidir entre partir `admin-provider-registry.service.ts` o pasar al hotspot grande de frontend en `repairs`.

@@ -1,4 +1,4 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 type CartQuoteItemInput = {
@@ -16,11 +16,11 @@ export class CartService {
     }
 
     const normalized = items
-      .map((i) => ({
-        productId: String(i.productId ?? '').trim(),
-        quantity: Math.max(1, Math.min(999, Number(i.quantity) || 1)),
+      .map((item) => ({
+        productId: String(item.productId ?? '').trim(),
+        quantity: Math.max(1, Math.min(999, Number(item.quantity) || 1)),
       }))
-      .filter((i) => i.productId)
+      .filter((item) => item.productId)
       .reduce<Array<{ productId: string; quantity: number }>>((accumulator, item) => {
         const existing = accumulator.find((entry) => entry.productId === item.productId);
         if (existing) {
@@ -31,24 +31,23 @@ export class CartService {
         return accumulator;
       }, []);
 
-    const ids = [...new Set(normalized.map((i) => i.productId))];
+    const ids = [...new Set(normalized.map((item) => item.productId))];
     const products = await this.prisma.product.findMany({
-      where: {
-        id: { in: ids },
-      },
+      where: { id: { in: ids } },
       include: {
         category: { select: { id: true, name: true, slug: true, active: true } },
       },
     });
 
-    const byId = new Map(products.map((p) => [p.id, p]));
+    const byId = new Map(products.map((product) => [product.id, product]));
 
     let subtotal = 0;
     let itemsCount = 0;
-    const lines = normalized.map((row) => {
-      const p = byId.get(row.productId);
 
-      if (!p) {
+    const lines = normalized.map((row) => {
+      const product = byId.get(row.productId);
+
+      if (!product) {
         return {
           productId: row.productId,
           quantity: row.quantity,
@@ -58,35 +57,56 @@ export class CartService {
           unitPrice: 0,
           lineTotal: 0,
           stockAvailable: 0,
+          fulfillmentMode: 'INVENTORY' as const,
+          supplierAvailability: 'UNKNOWN' as const,
           active: false,
           category: null,
         };
       }
 
-      const categoryActive = p.category ? p.category.active : true;
-      const valid = p.active && categoryActive && p.stock > 0;
-      const adjustedQty = Math.max(1, Math.min(row.quantity, Math.max(1, p.stock)));
-      const unitPrice = Number(p.price);
-      const lineTotal = valid ? unitPrice * adjustedQty : 0;
+      const categoryActive = product.category ? product.category.active : true;
+      const isSpecialOrder = product.fulfillmentMode === 'SPECIAL_ORDER';
+      const valid = isSpecialOrder
+        ? product.active && categoryActive && product.supplierAvailability !== 'OUT_OF_STOCK'
+        : product.active && categoryActive && product.stock > 0;
+      const quantity = isSpecialOrder
+        ? Math.max(1, Math.min(row.quantity, 999))
+        : Math.max(1, Math.min(row.quantity, Math.max(1, product.stock)));
+      const unitPrice = Number(product.price);
+      const lineTotal = valid ? unitPrice * quantity : 0;
 
       if (valid) {
         subtotal += lineTotal;
-        itemsCount += adjustedQty;
+        itemsCount += quantity;
       }
 
+      const reason = !product.active
+        ? 'Producto inactivo'
+        : !categoryActive
+          ? 'Categoria inactiva'
+          : isSpecialOrder
+            ? product.supplierAvailability === 'OUT_OF_STOCK'
+              ? 'Sin stock en proveedor'
+              : null
+            : product.stock <= 0
+              ? 'Sin stock'
+              : null;
+
       return {
-        productId: p.id,
-        quantity: adjustedQty,
+        productId: product.id,
+        quantity,
         requestedQuantity: row.quantity,
         valid,
-        reason: !p.active ? 'Producto inactivo' : !categoryActive ? 'Categoría inactiva' : p.stock <= 0 ? 'Sin stock' : null,
-        name: p.name,
-        slug: p.slug,
+        reason,
+        name: product.name,
+        slug: product.slug,
         unitPrice,
         lineTotal,
-        stockAvailable: p.stock,
-        active: p.active,
-        category: p.category ? { id: p.category.id, name: p.category.name, slug: p.category.slug } : null,
+        stockAvailable: isSpecialOrder ? 0 : product.stock,
+        fulfillmentMode: product.fulfillmentMode,
+        supplierAvailability: product.supplierAvailability,
+        active: product.active,
+        category: product.category ? { id: product.category.id, name: product.category.name, slug: product.category.slug } : null,
       };
     });
 

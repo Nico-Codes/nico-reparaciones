@@ -10,6 +10,8 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import {
   clampCartQuantity,
   formatCartMoney,
+  getCartLineAvailabilityLabel,
+  isCartSpecialOrderLine,
   resolveCartStockTone,
 } from './cart.helpers';
 import type { CartQuoteLine } from './types';
@@ -64,24 +66,24 @@ export function CartEmptyState({ hasItems }: CartEmptyStateProps) {
         title="Carrito"
         subtitle={
           hasItems
-            ? 'Tu seleccion queda lista para continuar cuando el stock vuelva a estar disponible.'
+            ? 'Tu seleccion queda lista para continuar cuando los productos vuelvan a estar disponibles.'
             : 'Tu seleccion queda lista para continuar cuando sumes productos.'
         }
-        actions={(
+        actions={
           <Button asChild variant="outline" size="sm">
             <Link to="/store">Ir a la tienda</Link>
           </Button>
-        )}
+        }
       />
       <SectionCard>
         <EmptyState
           title="Tu carrito esta vacio"
           description="Agrega productos desde la tienda para ver el resumen y continuar con la compra."
-          actions={(
+          actions={
             <Button asChild>
               <Link to="/store">Explorar productos</Link>
             </Button>
-          )}
+          }
         />
       </SectionCard>
     </PageShell>
@@ -114,7 +116,7 @@ export function CartLinesSection({
   return (
     <SectionCard
       title="Productos seleccionados"
-      description="El carrito se actualiza con stock y precios reales del catalogo."
+      description="El carrito se actualiza con precios y disponibilidad real del catalogo."
       actions={<StatusBadge label={`${validCount} validos`} tone={hasStockIssue ? 'warning' : 'success'} />}
     >
       {loading && !hasQuote ? (
@@ -122,22 +124,24 @@ export function CartLinesSection({
       ) : (
         <div className="line-list">
           {lines.map((line) => {
-            const isOut = line.stockAvailable <= 0;
-            const clampedQuantity = clampCartQuantity(line.quantity, line.stockAvailable);
+            const isSpecialOrder = isCartSpecialOrderLine(line);
+            const isOut = !isSpecialOrder && line.stockAvailable <= 0;
+            const disableQuantity = !line.valid || isOut;
+            const clampedQuantity = clampCartQuantity(line.quantity, line.stockAvailable, line.fulfillmentMode);
+
             return (
               <article key={line.productId} className="line-item">
                 <div className="line-item__main flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <div className="line-item__title">{line.name || 'Producto'}</div>
                     <StatusBadge
-                      label={isOut ? 'Sin stock' : `Stock ${line.stockAvailable}`}
-                      tone={resolveCartStockTone(line.valid, line.stockAvailable)}
+                      label={getCartLineAvailabilityLabel(line)}
+                      tone={resolveCartStockTone(line.valid, line.stockAvailable, line.fulfillmentMode)}
                       size="sm"
                     />
-                    {!line.valid && line.reason ? (
-                      <StatusBadge label="Requiere ajuste" tone="danger" size="sm" />
-                    ) : null}
+                    {!line.valid && line.reason ? <StatusBadge label="Requiere ajuste" tone="danger" size="sm" /> : null}
                   </div>
+
                   <div className="line-item__meta">
                     {line.slug ? (
                       <Link to={`/store/${line.slug}`} className="font-semibold text-sky-700 hover:text-sky-800">
@@ -145,6 +149,7 @@ export function CartLinesSection({
                       </Link>
                     ) : null}
                     {line.slug ? ' · ' : ''}
+                    {isSpecialOrder ? 'Modalidad por encargue · ' : ''}
                     Precio unitario {formatCartMoney(line.unitPrice)}
                   </div>
 
@@ -164,12 +169,14 @@ export function CartLinesSection({
                         type="button"
                         className="quantity-stepper__button"
                         onClick={() => onUpdate(line.productId, Math.max(1, line.quantity - 1))}
-                        disabled={isOut || line.quantity <= 1}
+                        disabled={disableQuantity || line.quantity <= 1}
                         aria-label="Restar"
                       >
                         -
                       </button>
-                      <label className="sr-only" htmlFor={`qty_${line.productId}`}>Cantidad</label>
+                      <label className="sr-only" htmlFor={`qty_${line.productId}`}>
+                        Cantidad
+                      </label>
                       <input
                         id={`qty_${line.productId}`}
                         type="number"
@@ -177,15 +184,20 @@ export function CartLinesSection({
                         max={clampedQuantity}
                         inputMode="numeric"
                         value={line.quantity}
-                        onChange={(event) => onUpdate(line.productId, clampCartQuantity(Number(event.target.value), line.stockAvailable))}
+                        onChange={(event) =>
+                          onUpdate(
+                            line.productId,
+                            clampCartQuantity(Number(event.target.value), line.stockAvailable, line.fulfillmentMode),
+                          )
+                        }
                         className="quantity-stepper__input"
-                        disabled={isOut}
+                        disabled={disableQuantity}
                       />
                       <button
                         type="button"
                         className="quantity-stepper__button"
                         onClick={() => onUpdate(line.productId, Math.min(clampedQuantity, line.quantity + 1))}
-                        disabled={isOut || line.quantity >= clampedQuantity}
+                        disabled={disableQuantity || line.quantity >= clampedQuantity}
                         aria-label="Sumar"
                       >
                         +
@@ -224,7 +236,7 @@ export function CartSummarySection({
     <SectionCard
       className="commerce-sticky"
       title="Resumen"
-      description="Cuando el stock es valido podes confirmar el pedido en el checkout."
+      description="Cuando todas las lineas son validas podes confirmar el pedido en el checkout."
     >
       <div className="summary-box">
         <div className="summary-box__label">Total estimado</div>
@@ -236,18 +248,13 @@ export function CartSummarySection({
           <AlertTriangle className="mt-0.5 h-4 w-4 flex-none" />
           <div>
             <span className="ui-alert__title">Hay productos para revisar</span>
-            <div className="ui-alert__text">Ajusta las cantidades o quita los items sin stock antes de continuar.</div>
+            <div className="ui-alert__text">Ajusta las cantidades o quita los items invalidos antes de continuar.</div>
           </div>
         </div>
       ) : null}
 
       <div className="mt-4 grid gap-2">
-        <Button
-          type="button"
-          className="w-full justify-center"
-          disabled={!canCheckout}
-          onClick={onCheckout}
-        >
+        <Button type="button" className="w-full justify-center" disabled={!canCheckout} onClick={onCheckout}>
           Finalizar compra
         </Button>
         <Button type="button" variant="outline" className="w-full justify-center" onClick={onClear}>

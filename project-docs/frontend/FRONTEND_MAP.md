@@ -146,6 +146,7 @@ Principales grupos detectados:
 - reparaciones
 - hub de calculo de reparaciones en `/admin/calculos/reparaciones`
 - productos y categorias
+- importacion de listados por encargue en `/admin/productos/encargues/nuevo`
 - usuarios
 - configuraciones
 - seguridad 2FA
@@ -191,6 +192,14 @@ Store y carrito:
 - `checkout.helpers.ts`
 - `checkout.sections.tsx`
 
+Notas operativas del subdominio:
+
+- la tienda publica sigue siendo una sola, pero ahora mezcla dos modos:
+  - `Stock real` para inventario local
+  - `Por encargue` para productos importados desde listados de proveedor
+- los productos `Por encargue` muestran badge/copy especifico y CTA `Encargar`
+- carrito y checkout permiten esos items aunque el stock local sea `0`; la restriccion pasa por `supplierAvailability`
+
 Pedidos:
 
 - `MyOrdersPage.tsx`
@@ -209,6 +218,11 @@ Pedidos:
 - `admin-quick-sales.helpers.ts`
 - `admin-quick-sales.sections.tsx`
 - `AdminQuickSalesHistoryPage.tsx`
+
+Notas operativas del subdominio:
+
+- detalle de pedido, checkout admin y resumenes de linea distinguen items `Por encargue`
+- ventas rapidas quedan limitadas a inventario real; no usan productos `SPECIAL_ORDER`
 
 Reparaciones:
 
@@ -289,6 +303,7 @@ Admin general:
 Catalogo comercial:
 
 - `AdminProductsPage.tsx`
+- `AdminSpecialOrderImportPage.tsx`
 - `admin-products.helpers.ts`
 - `admin-products.sections.tsx`
 - `AdminProductCreatePage.tsx`
@@ -302,6 +317,17 @@ Catalogo comercial:
 - `admin-product-form.helpers.ts`
 - `admin-product-form.controls.tsx`
 - `admin-product-edit.sections.tsx`
+
+Notas operativas del subdominio:
+
+- `/admin/productos` ahora ofrece el CTA `Nuevo listado de encargue`
+- la grilla/listado admin distingue `Stock real` vs `Por encargue`, muestra disponibilidad de proveedor y evita mezclar esos items en metricas de stock critico
+- `/admin/productos/encargues/nuevo` concentra:
+  - seleccion/alta de perfil de importacion
+  - carga de texto o `.txt`
+  - preview por seccion con remapeo a categorias
+  - exclusion de filas conflictivas
+  - resumen de `nuevos`, `actualizados`, `sin cambios`, `sin stock proveedor` y `desactivados`
 
 Catalogo tecnico y pricing:
 

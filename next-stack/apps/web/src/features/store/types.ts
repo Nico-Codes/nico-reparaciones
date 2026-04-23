@@ -14,6 +14,8 @@ export type StoreProduct = {
   imagePath?: string | null;
   price: number;
   stock: number;
+  fulfillmentMode: 'INVENTORY' | 'SPECIAL_ORDER';
+  supplierAvailability: 'IN_STOCK' | 'OUT_OF_STOCK' | 'UNKNOWN';
   featured: boolean;
   active: boolean;
   sku: string | null;

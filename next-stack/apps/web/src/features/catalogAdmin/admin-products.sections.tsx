@@ -17,6 +17,7 @@ export function AdminProductsFilters(props: {
   activeFilter: string;
   featuredFilter: string;
   stockFilter: string;
+  fulfillmentFilter: string;
   hasFilters: boolean;
   loading: boolean;
   categoryOptions: ProductSelectOption[];
@@ -25,6 +26,7 @@ export function AdminProductsFilters(props: {
   onActiveFilterChange: (value: string) => void;
   onFeaturedFilterChange: (value: string) => void;
   onStockFilterChange: (value: string) => void;
+  onFulfillmentFilterChange: (value: string) => void;
   onClear: () => void;
   onReload: () => void;
 }) {

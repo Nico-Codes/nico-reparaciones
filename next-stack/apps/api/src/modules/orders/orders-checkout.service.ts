@@ -45,7 +45,7 @@ export class OrdersCheckoutService {
       const productIds = validLines.map((line) => line.productId);
       const products = await tx.product.findMany({
         where: { id: { in: productIds } },
-        select: { id: true, stock: true, active: true, price: true, name: true },
+        select: { id: true, stock: true, active: true, price: true, name: true, fulfillmentMode: true },
       });
       const byId = new Map(products.map((product) => [product.id, product]));
 
@@ -54,7 +54,7 @@ export class OrdersCheckoutService {
         if (!product || !product.active) {
           throw new BadRequestException(`Producto invalido en checkout: ${line.name}`);
         }
-        if (product.stock < line.quantity) {
+        if (product.fulfillmentMode === 'INVENTORY' && product.stock < line.quantity) {
           throw new BadRequestException(`Stock insuficiente para ${line.name}`);
         }
       }
@@ -69,6 +69,7 @@ export class OrdersCheckoutService {
             create: validLines.map((line) => ({
               productId: line.productId,
               nameSnapshot: line.name,
+              fulfillmentModeSnapshot: line.fulfillmentMode,
               unitPrice: new Prisma.Decimal(line.unitPrice),
               quantity: line.quantity,
               lineTotal: new Prisma.Decimal(line.lineTotal),

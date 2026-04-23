@@ -17,12 +17,17 @@ function makeProduct(input: Partial<AdminProduct> & Pick<AdminProduct, 'id' | 'n
     imagePath: null,
     imageUrl: null,
     costPrice: null,
+    fulfillmentMode: 'INVENTORY',
+    supplierAvailability: 'IN_STOCK',
+    sourcePriceUsd: null,
     sku: null,
     barcode: null,
     categoryId: null,
     category: null,
     supplierId: null,
     supplier: null,
+    specialOrderProfile: null,
+    lastImportedAt: null,
     createdAt: null,
     updatedAt: null,
     ...input,
@@ -35,17 +40,29 @@ describe('admin-products.helpers', () => {
       makeProduct({ id: '1', name: 'A', slug: 'a', price: 100, stock: 5, active: true, featured: true }),
       makeProduct({ id: '2', name: 'B', slug: 'b', price: 50, stock: 0, active: false, featured: false }),
       makeProduct({ id: '3', name: 'C', slug: 'c', price: 20, stock: 2, active: true, featured: false }),
+      makeProduct({
+        id: '4',
+        name: 'D',
+        slug: 'd',
+        price: 300,
+        stock: 0,
+        active: true,
+        featured: false,
+        fulfillmentMode: 'SPECIAL_ORDER',
+      }),
     ];
 
     expect(buildAdminProductsStats(products)).toEqual({
-      total: 3,
-      active: 2,
+      total: 4,
+      active: 3,
       featured: 1,
       lowStock: 1,
       noStock: 1,
+      specialOrder: 1,
     });
-    expect(filterAdminProducts(products, '1', '')).toHaveLength(1);
-    expect(filterAdminProducts(products, '', 'empty')).toHaveLength(1);
+    expect(filterAdminProducts(products, '1', '', '')).toHaveLength(1);
+    expect(filterAdminProducts(products, '', 'empty', '')).toHaveLength(1);
+    expect(filterAdminProducts(products, '', '', 'SPECIAL_ORDER')).toHaveLength(1);
   });
 
   it('builds category options and detects active filters', () => {
@@ -64,6 +81,7 @@ describe('admin-products.helpers', () => {
         activeFilter: '',
         featuredFilter: '',
         stockFilter: '',
+        fulfillmentFilter: '',
       }),
     ).toBe(false);
     expect(
@@ -73,6 +91,7 @@ describe('admin-products.helpers', () => {
         activeFilter: '',
         featuredFilter: '',
         stockFilter: '',
+        fulfillmentFilter: '',
       }),
     ).toBe(true);
   });

@@ -7,6 +7,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { FilterBar } from '@/components/ui/filter-bar';
 import { LoadingBlock } from '@/components/ui/loading-block';
 import { SectionCard } from '@/components/ui/section-card';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { TextField } from '@/components/ui/text-field';
 import { CustomSelect } from '@/components/ui/custom-select';
 import { cartStorage } from '@/features/cart/storage';
@@ -293,7 +294,9 @@ export function StoreResultsSection({
 }
 
 function StoreGridCard({ product }: { product: StoreProduct }) {
-  const hasStock = product.stock > 0;
+  const isSpecialOrder = product.fulfillmentMode === 'SPECIAL_ORDER';
+  const canPurchase = isSpecialOrder ? product.supplierAvailability !== 'OUT_OF_STOCK' : product.stock > 0;
+  const actionLabel = isSpecialOrder ? 'Encargar' : 'Agregar al carrito';
 
   return (
     <div className="product-card product-card-grid">
@@ -310,6 +313,8 @@ function StoreGridCard({ product }: { product: StoreProduct }) {
           {product.name}
         </Link>
 
+        {isSpecialOrder ? <StatusBadge tone="accent" size="sm" label="Por encargue" /> : null}
+
         <div className="product-purchase-block">
           <div className="product-meta">{product.category?.name ?? 'Producto general'}</div>
 
@@ -319,10 +324,10 @@ function StoreGridCard({ product }: { product: StoreProduct }) {
             <div className="product-actions">
               <button
                 type="button"
-                className={`btn-cart ${hasStock ? '' : 'is-disabled'}`}
-                disabled={!hasStock}
-                aria-label="Agregar al carrito"
-                title={hasStock ? 'Agregar al carrito' : 'Sin stock'}
+                className={`btn-cart ${canPurchase ? '' : 'is-disabled'}`}
+                disabled={!canPurchase}
+                aria-label={actionLabel}
+                title={canPurchase ? actionLabel : 'Sin stock'}
                 onClick={() => cartStorage.add(product.id, 1, { productName: product.name })}
               >
                 <ShoppingCart className="h-4 w-4" />

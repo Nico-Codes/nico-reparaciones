@@ -3,6 +3,13 @@ import { StoreService } from './store.service.js';
 
 describe('StoreService', () => {
   const originalStoreImageBaseUrl = process.env.STORE_IMAGE_BASE_URL;
+  const expectedPublicWhere = {
+    active: true,
+    OR: [
+      { fulfillmentMode: 'INVENTORY', stock: { gt: 0 } },
+      { fulfillmentMode: 'SPECIAL_ORDER', supplierAvailability: { not: 'OUT_OF_STOCK' } },
+    ],
+  };
 
   afterEach(() => {
     if (originalStoreImageBaseUrl === undefined) delete process.env.STORE_IMAGE_BASE_URL;
@@ -53,7 +60,7 @@ describe('StoreService', () => {
     });
   });
 
-  it('counts only categories with public products in stock', async () => {
+  it('counts only categories with public products visible in store', async () => {
     const prisma = {
       category: {
         findMany: vi.fn().mockResolvedValue([]),
@@ -66,11 +73,12 @@ describe('StoreService', () => {
 
     expect(prisma.category.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
+        where: { active: true },
         select: expect.objectContaining({
           _count: {
             select: {
               products: {
-                where: { active: true, stock: { gt: 0 } },
+                where: expectedPublicWhere,
               },
             },
           },
@@ -119,17 +127,11 @@ describe('StoreService', () => {
 
     expect(prisma.product.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({
-          active: true,
-          stock: { gt: 0 },
-        }),
+        where: expectedPublicWhere,
       }),
     );
     expect(prisma.product.count).toHaveBeenCalledWith({
-      where: expect.objectContaining({
-        active: true,
-        stock: { gt: 0 },
-      }),
+      where: expectedPublicWhere,
     });
 
     await service.getProductBySlug('producto-agotado');
@@ -139,7 +141,7 @@ describe('StoreService', () => {
         where: expect.objectContaining({
           slug: 'producto-agotado',
           active: true,
-          stock: { gt: 0 },
+          OR: expectedPublicWhere.OR,
         }),
       }),
     );

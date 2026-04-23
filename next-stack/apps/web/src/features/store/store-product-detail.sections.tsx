@@ -10,8 +10,10 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import {
   clampStoreProductQuantity,
   formatStoreProductMoney,
+  getStoreProductCtaLabel,
   getStoreProductAvailabilityLabel,
   getStoreProductFallbackDescription,
+  isStoreProductSpecialOrder,
   resolveStoreProductStockTone,
 } from './store-product-detail.helpers';
 import type { StoreProduct } from './types';
@@ -30,7 +32,7 @@ type StoreProductBreadcrumbProps = {
 
 type StoreProductHeaderActionsProps = {
   item: StoreProduct;
-  hasStock: boolean;
+  canPurchase: boolean;
 };
 
 type StoreProductMediaSectionProps = {
@@ -39,7 +41,7 @@ type StoreProductMediaSectionProps = {
 
 type StoreProductPurchaseSectionProps = {
   item: StoreProduct;
-  hasStock: boolean;
+  canPurchase: boolean;
   qty: number;
   maxQty: number;
   onQtyChange: (value: number) => void;
@@ -48,7 +50,7 @@ type StoreProductPurchaseSectionProps = {
 
 type StoreProductMetaSectionProps = {
   item: StoreProduct;
-  hasStock: boolean;
+  canPurchase: boolean;
 };
 
 export function StoreProductLoadingState({ message }: StoreProductLoadingStateProps) {
@@ -111,11 +113,12 @@ export function StoreProductBreadcrumb({ item }: StoreProductBreadcrumbProps) {
   );
 }
 
-export function StoreProductHeaderActions({ item, hasStock }: StoreProductHeaderActionsProps) {
+export function StoreProductHeaderActions({ item, canPurchase }: StoreProductHeaderActionsProps) {
+  const isSpecialOrder = isStoreProductSpecialOrder(item);
   return (
     <>
       <StatusBadge
-        label={hasStock ? `Stock ${item.stock}` : 'Sin stock'}
+        label={isSpecialOrder ? 'Por encargue' : canPurchase ? `Stock ${item.stock}` : 'Sin stock'}
         tone={resolveStoreProductStockTone(item)}
       />
       {item.featured ? <StatusBadge label="Destacado" tone="accent" /> : null}
@@ -147,23 +150,30 @@ export function StoreProductMediaSection({ item }: StoreProductMediaSectionProps
 
 export function StoreProductPurchaseSection({
   item,
-  hasStock,
+  canPurchase,
   qty,
   maxQty,
   onQtyChange,
   onAddToCart,
 }: StoreProductPurchaseSectionProps) {
+  const isSpecialOrder = isStoreProductSpecialOrder(item);
+  const actionLabel = getStoreProductCtaLabel(item);
+
   return (
     <SectionCard
       title="Compra rapida"
-      description="Elegi la cantidad y agrega el producto al carrito con el precio actualizado."
+      description={
+        isSpecialOrder
+          ? 'Elegi la cantidad y sumalo al pedido por encargue con el precio actualizado.'
+          : 'Elegi la cantidad y agrega el producto al carrito con el precio actualizado.'
+      }
     >
       <div className="summary-box">
         <div className="summary-box__label">Precio</div>
         <div className="summary-box__value">{formatStoreProductMoney(item.price)}</div>
       </div>
 
-      {!hasStock ? (
+      {!canPurchase ? (
         <div className="ui-alert ui-alert--warning mt-4">
           <ShieldCheck className="mt-0.5 h-4 w-4 flex-none" />
           <div>
@@ -186,7 +196,7 @@ export function StoreProductPurchaseSection({
                 type="button"
                 className="quantity-stepper__button"
                 onClick={() => onQtyChange(Math.max(1, qty - 1))}
-                disabled={!hasStock || qty <= 1}
+                disabled={!canPurchase || qty <= 1}
                 aria-label="Restar cantidad"
               >
                 -
@@ -197,16 +207,16 @@ export function StoreProductPurchaseSection({
                 value={qty}
                 min={1}
                 max={maxQty}
-                onChange={(event) => onQtyChange(clampStoreProductQuantity(Number(event.target.value), item.stock))}
+                onChange={(event) => onQtyChange(clampStoreProductQuantity(Number(event.target.value), item.stock, item.fulfillmentMode))}
                 className="quantity-stepper__input"
                 inputMode="numeric"
-                disabled={!hasStock}
+                disabled={!canPurchase}
               />
               <button
                 type="button"
                 className="quantity-stepper__button"
                 onClick={() => onQtyChange(Math.min(maxQty, qty + 1))}
-                disabled={!hasStock || qty >= maxQty}
+                disabled={!canPurchase || qty >= maxQty}
                 aria-label="Sumar cantidad"
               >
                 +
@@ -214,9 +224,9 @@ export function StoreProductPurchaseSection({
             </div>
           </div>
 
-          <Button type="button" className="w-full justify-center" onClick={onAddToCart} disabled={!hasStock}>
+          <Button type="button" className="w-full justify-center" onClick={onAddToCart} disabled={!canPurchase}>
             <ShoppingCart className="h-4 w-4" />
-            {hasStock ? 'Agregar al carrito' : 'Sin stock'}
+            {canPurchase ? actionLabel : 'Sin stock'}
           </Button>
         </div>
 
@@ -233,7 +243,7 @@ export function StoreProductPurchaseSection({
   );
 }
 
-export function StoreProductMetaSection({ item, hasStock }: StoreProductMetaSectionProps) {
+export function StoreProductMetaSection({ item }: StoreProductMetaSectionProps) {
   return (
     <SectionCard title="Informacion rapida" description="Datos utiles para compra y seguimiento del producto.">
       <div className="meta-grid">

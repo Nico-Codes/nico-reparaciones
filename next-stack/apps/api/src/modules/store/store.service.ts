@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 type ListProductsParams = {
@@ -25,7 +26,7 @@ export class StoreService {
           _count: {
             select: {
               products: {
-                where: { active: true, stock: { gt: 0 } },
+                where: this.buildPublicProductVisibilityWhere(),
               },
             },
           },
@@ -286,9 +287,8 @@ export class StoreService {
     const skip = (page - 1) * pageSize;
 
     try {
-      const where = {
-        active: true,
-        stock: { gt: 0 },
+      const where: Prisma.ProductWhereInput = {
+        ...this.buildPublicProductVisibilityWhere(),
         ...(categorySlug
           ? {
               category: {
@@ -334,6 +334,8 @@ export class StoreService {
         imageUrl: this.resolveProductImageUrl(p.imagePath, p.imageLegacy),
         price: Number(p.price),
         stock: p.stock,
+        fulfillmentMode: p.fulfillmentMode,
+        supplierAvailability: p.supplierAvailability,
         featured: p.featured,
         active: p.active,
         sku: p.sku,
@@ -388,8 +390,7 @@ export class StoreService {
       const p = await this.prisma.product.findFirst({
         where: {
           slug,
-          active: true,
-          stock: { gt: 0 },
+          ...this.buildPublicProductVisibilityWhere(),
           ...(slug ? {} : { id: '__never__' }),
         },
         include: {
@@ -408,6 +409,8 @@ export class StoreService {
         imageUrl: this.resolveProductImageUrl(p.imagePath, p.imageLegacy),
         price: Number(p.price),
         stock: p.stock,
+        fulfillmentMode: p.fulfillmentMode,
+        supplierAvailability: p.supplierAvailability,
         featured: p.featured,
         active: p.active,
         sku: p.sku,
@@ -493,6 +496,22 @@ export class StoreService {
     if (sort === 'name_desc') return [{ name: 'desc' as const }, { createdAt: 'desc' as const }];
     if (sort === 'stock_desc') return [{ stock: 'desc' as const }, { featured: 'desc' as const }, { createdAt: 'desc' as const }];
     return [{ featured: 'desc' as const }, { createdAt: 'desc' as const }];
+  }
+
+  private buildPublicProductVisibilityWhere(): Prisma.ProductWhereInput {
+    return {
+      active: true,
+      OR: [
+        {
+          fulfillmentMode: 'INVENTORY',
+          stock: { gt: 0 },
+        },
+        {
+          fulfillmentMode: 'SPECIAL_ORDER',
+          supplierAvailability: { not: 'OUT_OF_STOCK' },
+        },
+      ],
+    };
   }
 
   private relevanceScore(

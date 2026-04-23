@@ -13,7 +13,9 @@ import { TextField } from '@/components/ui/text-field';
 import {
   ADMIN_PRODUCTS_ACTIVE_OPTIONS,
   ADMIN_PRODUCTS_FEATURED_OPTIONS,
+  ADMIN_PRODUCTS_FULFILLMENT_OPTIONS,
   ADMIN_PRODUCTS_STOCK_OPTIONS,
+  getAdminProductFulfillmentLabel,
   buildAdminProductPriceSummary,
   formatAdminProductMoney,
   getAdminProductMarginTone,
@@ -29,7 +31,8 @@ export function AdminProductsStatsPanel({ stats }: { stats: AdminProductsStats }
       <ProductMetricCard label="Catalogo visible" value={String(stats.total)} meta="Productos cargados en esta vista operativa" />
       <ProductMetricCard label="Activos" value={String(stats.active)} meta="Items disponibles para publicar y vender" />
       <ProductMetricCard label="Destacados" value={String(stats.featured)} meta="Productos reforzados en la tienda" />
-      <ProductMetricCard label="Stock critico" value={String(stats.lowStock + stats.noStock)} meta="Items con poco stock o agotados" />
+      <ProductMetricCard label="Por encargue" value={String(stats.specialOrder)} meta="Catalogo publicado sin stock local" />
+      <ProductMetricCard label="Stock critico" value={String(stats.lowStock + stats.noStock)} meta="Solo inventario real con poco stock o agotado" />
     </section>
   );
 }
@@ -40,6 +43,7 @@ export function AdminProductsFiltersPanel({
   activeFilter,
   featuredFilter,
   stockFilter,
+  fulfillmentFilter,
   hasFilters,
   loading,
   categoryOptions,
@@ -48,6 +52,7 @@ export function AdminProductsFiltersPanel({
   onActiveFilterChange,
   onFeaturedFilterChange,
   onStockFilterChange,
+  onFulfillmentFilterChange,
   onClear,
   onReload,
 }: {
@@ -56,6 +61,7 @@ export function AdminProductsFiltersPanel({
   activeFilter: string;
   featuredFilter: string;
   stockFilter: string;
+  fulfillmentFilter: string;
   hasFilters: boolean;
   loading: boolean;
   categoryOptions: ProductSelectOption[];
@@ -64,6 +70,7 @@ export function AdminProductsFiltersPanel({
   onActiveFilterChange: (value: string) => void;
   onFeaturedFilterChange: (value: string) => void;
   onStockFilterChange: (value: string) => void;
+  onFulfillmentFilterChange: (value: string) => void;
   onClear: () => void;
   onReload: () => void;
 }) {
@@ -93,6 +100,13 @@ export function AdminProductsFiltersPanel({
       <ProductsSelectField label="Categoria" value={categoryId} onChange={onCategoryIdChange} options={categoryOptions} ariaLabel="Filtrar por categoria" />
       <ProductsSelectField label="Estado" value={activeFilter} onChange={onActiveFilterChange} options={ADMIN_PRODUCTS_ACTIVE_OPTIONS} ariaLabel="Filtrar por estado" />
       <ProductsSelectField label="Destacado" value={featuredFilter} onChange={onFeaturedFilterChange} options={ADMIN_PRODUCTS_FEATURED_OPTIONS} ariaLabel="Filtrar por destacado" />
+      <ProductsSelectField
+        label="Modalidad"
+        value={fulfillmentFilter}
+        onChange={onFulfillmentFilterChange}
+        options={ADMIN_PRODUCTS_FULFILLMENT_OPTIONS}
+        ariaLabel="Filtrar por modalidad"
+      />
       <ProductsSelectField label="Stock" value={stockFilter} onChange={onStockFilterChange} options={ADMIN_PRODUCTS_STOCK_OPTIONS} ariaLabel="Filtrar por stock" />
     </FilterBar>
   );
@@ -193,6 +207,13 @@ function AdminProductRow({
   const { cost, sale, marginValue, marginPercent } = buildAdminProductPriceSummary(product);
   const imageSrc = product.imageUrl?.trim() || product.imagePath?.trim() || null;
   const imageFallback = product.name.trim().charAt(0).toUpperCase() || 'P';
+  const isSpecialOrder = product.fulfillmentMode === 'SPECIAL_ORDER';
+  const supplierTone =
+    product.supplierAvailability === 'OUT_OF_STOCK'
+      ? 'warning'
+      : product.supplierAvailability === 'IN_STOCK'
+        ? 'success'
+        : 'neutral';
 
   return (
     <article className="admin-entity-row admin-product-row">
@@ -212,13 +233,33 @@ function AdminProductRow({
                 <div className="admin-entity-row__title">{product.name}</div>
                 <StatusBadge tone={product.active ? 'success' : 'neutral'} size="sm" label={product.active ? 'Activo' : 'Inactivo'} />
                 {product.featured ? <StatusBadge tone="accent" size="sm" label="Destacado" /> : null}
-                <StatusBadge tone={getAdminProductStockTone(product.stock)} size="sm" label={product.stock > 0 ? `Stock ${product.stock}` : 'Sin stock'} />
+                <StatusBadge
+                  tone={isSpecialOrder ? 'accent' : 'info'}
+                  size="sm"
+                  label={getAdminProductFulfillmentLabel(product)}
+                />
+                {isSpecialOrder ? (
+                  <StatusBadge
+                    tone={supplierTone}
+                    size="sm"
+                    label={
+                      product.supplierAvailability === 'OUT_OF_STOCK'
+                        ? 'Proveedor sin stock'
+                        : product.supplierAvailability === 'IN_STOCK'
+                          ? 'Proveedor disponible'
+                          : 'Proveedor a confirmar'
+                    }
+                  />
+                ) : (
+                  <StatusBadge tone={getAdminProductStockTone(product.stock)} size="sm" label={product.stock > 0 ? `Stock ${product.stock}` : 'Sin stock'} />
+                )}
               </div>
               <div className="admin-entity-row__meta admin-product-row__meta">
                 <span>{product.category?.name || 'Sin categoria'}</span>
                 <span>{product.supplier?.name || 'Sin proveedor'}</span>
                 <span>SKU: {product.sku || 'No informado'}</span>
                 <span>Codigo: {product.barcode || 'No informado'}</span>
+                {isSpecialOrder && product.lastImportedAt ? <span>Listado: {new Date(product.lastImportedAt).toLocaleString('es-AR')}</span> : null}
               </div>
             </div>
 
@@ -241,6 +282,14 @@ function AdminProductRow({
                   {marginPercent}% | {formatAdminProductMoney(marginValue)}
                 </span>
               </div>
+              {isSpecialOrder ? (
+                <div className="admin-product-row__fact">
+                  <span className="admin-product-row__fact-label">Proveedor USD</span>
+                  <span className="admin-product-row__fact-value">
+                    {product.sourcePriceUsd != null ? `US$ ${product.sourcePriceUsd.toLocaleString('es-AR')}` : 'Sin precio'}
+                  </span>
+                </div>
+              ) : null}
             </div>
 
             <div className="admin-product-row__description">
@@ -253,11 +302,15 @@ function AdminProductRow({
 
       <div className="admin-entity-row__actions admin-product-row__actions">
         <div className="flex flex-wrap items-center gap-2">
-          <ProductsQuickStockEditor
-            disabled={pending}
-            value={product.stock}
-            onSave={(nextValue) => onPatchProduct(product.id, { stock: Math.max(0, Math.trunc(nextValue)) })}
-          />
+          {isSpecialOrder ? (
+            <StatusBadge tone="info" size="sm" label="No usa stock local" />
+          ) : (
+            <ProductsQuickStockEditor
+              disabled={pending}
+              value={product.stock}
+              onSave={(nextValue) => onPatchProduct(product.id, { stock: Math.max(0, Math.trunc(nextValue)) })}
+            />
+          )}
           <StatusBadge
             tone={getAdminProductMarginTone(marginValue)}
             size="sm"

@@ -20,6 +20,20 @@ Registrar decisiones tecnicas confirmadas para evitar dependencia de memoria ora
 
 ---
 
+### [DL-0129]
+- Fecha: 2026-04-23
+- Estado: aceptada
+- Tema: importar productos por encargue desde listados de proveedor dentro del catalogo comercial
+- Contexto: el catalogo de productos ya permitia altas manuales y pricing por reglas, pero el operador recibe listados extensos en texto desde proveedores externos con precios en USD, disponibilidad cambiante y secciones que equivalen a categorias. Cargar eso uno por uno era demasiado costoso y, ademas, esos items no deben comportarse igual que el inventario real.
+- Decision: introducir un segundo modo de cumplimiento en `Product`: `SPECIAL_ORDER`, separado de `INVENTORY`. El alta masiva se resuelve con perfiles de importacion + batches auditables, un parser de listados por seccion y un flujo admin de `preview -> apply` en `/admin/productos/encargues/nuevo`. La identidad de sincronizacion queda fijada por `specialOrderProfileId + specialOrderSourceKey`, el precio final se calcula sobre el costo USD importado usando la regla actual de pricing de producto/categoria o un margen fallback del perfil, y los faltantes del batch nuevo se desactivan automaticamente.
+- Impacto: la tienda publica sigue siendo una sola, pero ahora puede vender productos `Por encargue` sin stock local. `Store`, `Cart`, `Checkout` y `Orders` distinguen `SPECIAL_ORDER` para no exigir ni descontar stock interno, mientras dashboard y ventas rapidas ignoran esos items en flujos pensados solo para inventario real.
+- Alternativas consideradas: crear una segunda tienda separada para encargues, seguir con carga manual producto por producto, o sincronizar por nombre/slug visible; descartado porque duplica UX, no reduce el trabajo operativo o hace fragil la reimportacion cuando cambia el texto comercial del listado.
+- Archivos / modulos afectados: `next-stack/apps/api/prisma/*`, `next-stack/apps/api/src/modules/{catalog-admin,store,cart,orders,admin}/*`, `next-stack/apps/web/src/features/{catalogAdmin,store,cart,orders,admin}/*`, `project-docs/{backend/BACKEND_MAP.md,frontend/FRONTEND_MAP.md}`, `CHANGELOG_AI.md`.
+- Validacion requerida: `db:migrate --workspace @nico/api`, `typecheck --workspace @nico/api`, `test --workspace @nico/api`, `build --workspace @nico/api`, `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `git diff --check`.
+- Responsable: Codex + operador humano
+
+---
+
 ### [DL-0128]
 - Fecha: 2026-04-23
 - Estado: aceptada

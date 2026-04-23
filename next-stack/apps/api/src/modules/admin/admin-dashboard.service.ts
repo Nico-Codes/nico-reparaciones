@@ -27,8 +27,8 @@ export class AdminDashboardService {
     ] = await Promise.all([
       this.prisma.product.count(),
       this.prisma.product.count({ where: { active: true } }),
-      this.prisma.product.count({ where: { active: true, stock: { gt: 0, lte: 5 } } }),
-      this.prisma.product.count({ where: { active: true, stock: { lte: 0 } } }),
+      this.prisma.product.count({ where: { active: true, fulfillmentMode: 'INVENTORY', stock: { gt: 0, lte: 5 } } }),
+      this.prisma.product.count({ where: { active: true, fulfillmentMode: 'INVENTORY', stock: { lte: 0 } } }),
       this.prisma.repair.count({ where: { status: { in: [...OPEN_REPAIR_STATUSES] } } }),
       this.prisma.repair.count({ where: { status: 'READY_PICKUP' } }),
       this.prisma.repair.count({ where: { createdAt: { gte: startToday } } }),

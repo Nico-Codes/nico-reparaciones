@@ -7,6 +7,7 @@ import { CatalogAdminCategoriesService } from './catalog-admin-categories.servic
 import { CatalogAdminController } from './catalog-admin.controller.js';
 import { CatalogAdminPricingService } from './catalog-admin-pricing.service.js';
 import { CatalogAdminProductsService } from './catalog-admin-products.service.js';
+import { CatalogAdminSpecialOrderService } from './catalog-admin-special-order.service.js';
 import { CatalogAdminService } from './catalog-admin.service.js';
 import { CatalogAdminSupportService } from './catalog-admin-support.service.js';
 
@@ -19,6 +20,7 @@ import { CatalogAdminSupportService } from './catalog-admin-support.service.js';
     CatalogAdminCategoriesService,
     CatalogAdminPricingService,
     CatalogAdminProductsService,
+    CatalogAdminSpecialOrderService,
     CatalogAdminService,
     JwtAuthGuard,
     RolesGuard,

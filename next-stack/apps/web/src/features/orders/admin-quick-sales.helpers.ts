@@ -33,7 +33,7 @@ export function validateQuickSalePhone(value: string) {
 }
 
 export function isQuickSaleProductAvailable(product: AdminProduct) {
-  return product.active && product.stock > 0;
+  return product.active && product.fulfillmentMode === 'INVENTORY' && product.stock > 0;
 }
 
 export function filterQuickSaleProducts(products: AdminProduct[]) {

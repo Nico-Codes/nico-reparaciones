@@ -48,6 +48,7 @@ import {
   AdminProductPricingRulesPage,
   AdminRepairCalculationsHubPage,
   AdminProductsPage,
+  AdminSpecialOrderImportPage,
   AdminProvidersPage,
   AdminQuickSalesHistoryPage,
   AdminQuickSalesPage,
@@ -158,6 +159,7 @@ export default function App() {
         <Route path="/admin/products/:id/label" element={<RequireAdmin><AdminProductLabelAliasRedirect /></RequireAdmin>} />
         <Route path="/admin/productos" element={<RequireAdmin>{withShellSuspense(<AdminProductsPage />)}</RequireAdmin>} />
         <Route path="/admin/productos/crear" element={<RequireAdmin>{withShellSuspense(<AdminProductCreatePage />)}</RequireAdmin>} />
+        <Route path="/admin/productos/encargues/nuevo" element={<RequireAdmin>{withShellSuspense(<AdminSpecialOrderImportPage />)}</RequireAdmin>} />
         <Route path="/admin/productos/:id/editar" element={<RequireAdmin>{withShellSuspense(<AdminProductEditPage />)}</RequireAdmin>} />
         <Route path="/admin/productos/:id/etiqueta" element={<RequireAdmin>{withSuspense(<AdminProductLabelPage />)}</RequireAdmin>} />
         <Route path="/admin/categorias" element={<RequireAdmin>{withShellSuspense(<AdminCategoriesPage />)}</RequireAdmin>} />

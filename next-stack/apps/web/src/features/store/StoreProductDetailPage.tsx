@@ -3,7 +3,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { PageShell } from '@/components/ui/page-shell';
 import { cartStorage } from '@/features/cart/storage';
 import { storeApi } from './api';
-import { clampStoreProductQuantity } from './store-product-detail.helpers';
+import { canPurchaseStoreProduct, clampStoreProductQuantity, isStoreProductSpecialOrder } from './store-product-detail.helpers';
 import {
   StoreProductBreadcrumb,
   StoreProductEmptyState,
@@ -51,14 +51,17 @@ export function StoreProductDetailPage() {
 
   useEffect(() => {
     if (!item) return;
-    setQty((current) => clampStoreProductQuantity(current, item.stock));
-  }, [item?.id, item?.stock]);
+    setQty((current) => clampStoreProductQuantity(current, item.stock, item.fulfillmentMode));
+  }, [item?.id, item?.stock, item?.fulfillmentMode]);
 
-  const hasStock = (item?.stock ?? 0) > 0;
-  const maxQty = useMemo(() => Math.max(1, item?.stock ?? 1), [item?.stock]);
+  const canPurchase = canPurchaseStoreProduct(item);
+  const maxQty = useMemo(
+    () => (item?.fulfillmentMode === 'SPECIAL_ORDER' ? 999 : Math.max(1, item?.stock ?? 1)),
+    [item?.fulfillmentMode, item?.stock],
+  );
 
   function addToCart() {
-    if (!item || !hasStock) return;
+    if (!item || !canPurchase) return;
     cartStorage.add(item.id, qty, { productName: item.name });
   }
 
@@ -78,8 +81,12 @@ export function StoreProductDetailPage() {
         context="store"
         eyebrow={item.category?.name || 'Producto'}
         title={item.name}
-        subtitle="Compra directa con retiro en local y stock validado desde el panel administrativo."
-        actions={<StoreProductHeaderActions item={item} hasStock={hasStock} />}
+        subtitle={
+          isStoreProductSpecialOrder(item)
+            ? 'Disponible por encargue con confirmacion contra proveedor y retiro en local.'
+            : 'Compra directa con retiro en local y stock validado desde el panel administrativo.'
+        }
+        actions={<StoreProductHeaderActions item={item} canPurchase={canPurchase} />}
       />
 
       <div className="commerce-layout commerce-layout--product">
@@ -88,13 +95,13 @@ export function StoreProductDetailPage() {
         <div className="commerce-stack commerce-sticky">
           <StoreProductPurchaseSection
             item={item}
-            hasStock={hasStock}
+            canPurchase={canPurchase}
             qty={qty}
             maxQty={maxQty}
             onQtyChange={setQty}
             onAddToCart={addToCart}
           />
-          <StoreProductMetaSection item={item} hasStock={hasStock} />
+          <StoreProductMetaSection item={item} canPurchase={canPurchase} />
           <StoreProductHelpSection />
         </div>
       </div>

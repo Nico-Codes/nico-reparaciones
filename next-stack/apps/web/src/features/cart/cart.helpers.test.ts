@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { CartQuoteLine } from './types';
 import {
   buildQuotedCartItems,
   buildValidCartLines,
@@ -9,22 +10,34 @@ import {
   sameCartItems,
 } from './cart.helpers';
 
+function makeLine(
+  input: Partial<CartQuoteLine> & Pick<CartQuoteLine, 'productId' | 'quantity' | 'valid' | 'name' | 'unitPrice' | 'lineTotal' | 'stockAvailable'>,
+): CartQuoteLine {
+  return {
+    requestedQuantity: input.requestedQuantity ?? input.quantity,
+    reason: input.reason ?? null,
+    slug: input.slug,
+    fulfillmentMode: input.fulfillmentMode ?? 'INVENTORY',
+    supplierAvailability: input.supplierAvailability ?? 'IN_STOCK',
+    active: input.active ?? true,
+    category: input.category ?? null,
+    ...input,
+  };
+}
+
 describe('cart.helpers', () => {
   it('builds valid cart lines and normalized quoted items', () => {
     const lines = [
-      {
+      makeLine({
         productId: 'p-1',
         quantity: 2,
         valid: true,
-        reason: null,
         name: 'Modulo',
         unitPrice: 100,
         lineTotal: 200,
         stockAvailable: 4,
-        active: true,
-        category: null,
-      },
-      {
+      }),
+      makeLine({
         productId: 'p-2',
         quantity: 1,
         valid: false,
@@ -33,9 +46,7 @@ describe('cart.helpers', () => {
         unitPrice: 50,
         lineTotal: 50,
         stockAvailable: 0,
-        active: true,
-        category: null,
-      },
+      }),
     ];
 
     expect(buildValidCartLines(lines)).toHaveLength(1);
@@ -45,20 +56,32 @@ describe('cart.helpers', () => {
   it('detects stock issues and compares local cart items by order', () => {
     expect(
       hasCartStockIssue([
-        {
+        makeLine({
           productId: 'p-1',
           quantity: 3,
           valid: true,
-          reason: null,
           name: 'Modulo',
           unitPrice: 100,
           lineTotal: 300,
           stockAvailable: 2,
-          active: true,
-          category: null,
-        },
+        }),
       ]),
     ).toBe(true);
+
+    expect(
+      hasCartStockIssue([
+        makeLine({
+          productId: 'p-3',
+          quantity: 5,
+          valid: true,
+          name: 'iPhone 13',
+          unitPrice: 100,
+          lineTotal: 500,
+          stockAvailable: 0,
+          fulfillmentMode: 'SPECIAL_ORDER',
+        }),
+      ]),
+    ).toBe(false);
 
     expect(
       sameCartItems(
@@ -77,11 +100,14 @@ describe('cart.helpers', () => {
 
   it('formats money, resolves stock tones and clamps quantities safely', () => {
     expect(formatCartMoney(12345)).toBe('$ 12.345');
-    expect(resolveCartStockTone(false, 5)).toBe('danger');
-    expect(resolveCartStockTone(true, 2)).toBe('warning');
-    expect(resolveCartStockTone(true, 8)).toBe('success');
-    expect(clampCartQuantity(0, 5)).toBe(1);
-    expect(clampCartQuantity(99, 3)).toBe(3);
-    expect(clampCartQuantity(4, 0)).toBe(1);
+    expect(resolveCartStockTone(false, 5, 'INVENTORY')).toBe('danger');
+    expect(resolveCartStockTone(true, 2, 'INVENTORY')).toBe('warning');
+    expect(resolveCartStockTone(true, 8, 'INVENTORY')).toBe('success');
+    expect(resolveCartStockTone(true, 0, 'SPECIAL_ORDER')).toBe('accent');
+    expect(resolveCartStockTone(false, 0, 'SPECIAL_ORDER')).toBe('warning');
+    expect(clampCartQuantity(0, 5, 'INVENTORY')).toBe(1);
+    expect(clampCartQuantity(99, 3, 'INVENTORY')).toBe(3);
+    expect(clampCartQuantity(4, 0, 'INVENTORY')).toBe(1);
+    expect(clampCartQuantity(2000, 0, 'SPECIAL_ORDER')).toBe(999);
   });
 });

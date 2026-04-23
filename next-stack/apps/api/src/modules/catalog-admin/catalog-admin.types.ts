@@ -16,6 +16,7 @@ export type ProductListParams = {
   q?: string;
   categoryId?: string;
   active?: string;
+  fulfillmentMode?: string;
 };
 
 export type ProductCreateInput = {
@@ -48,6 +49,36 @@ export type ProductUpdateInput = {
   barcode?: string | null;
   supplierId?: string | null;
   categoryId?: string | null;
+};
+
+export type SpecialOrderProfileCreateInput = {
+  supplierId: string;
+  name: string;
+  active?: boolean;
+  defaultUsdRate: number;
+  defaultShippingUsd: number;
+  fallbackMarginPercent: number;
+};
+
+export type SpecialOrderProfileUpdateInput = Partial<SpecialOrderProfileCreateInput>;
+
+export type SpecialOrderSectionMappingInput = {
+  sectionKey: string;
+  categoryId?: string | null;
+  createCategoryName?: string | null;
+};
+
+export type SpecialOrderImportPreviewInput = {
+  profileId: string;
+  rawText: string;
+  usdRate?: number | null;
+  shippingUsd?: number | null;
+  sectionMappings?: SpecialOrderSectionMappingInput[];
+  excludedRowIds?: string[];
+};
+
+export type SpecialOrderImportApplyInput = SpecialOrderImportPreviewInput & {
+  createdBy?: string | null;
 };
 
 export type ProductImageUpload = {
@@ -85,6 +116,7 @@ export type ProductWithRelations = Prisma.ProductGetPayload<{
   include: {
     category: { select: { id: true; name: true; slug: true } };
     supplier: { select: { id: true; name: true } };
+    specialOrderProfile: { select: { id: true; name: true } };
   };
 }>;
 
@@ -92,5 +124,11 @@ export type ProductPricingRuleWithRelations = Prisma.ProductPricingRuleGetPayloa
   include: {
     category: { select: { id: true; name: true } };
     product: { select: { id: true; name: true } };
+  };
+}>;
+
+export type SpecialOrderImportProfileWithRelations = Prisma.SpecialOrderImportProfileGetPayload<{
+  include: {
+    supplier: { select: { id: true; name: true } };
   };
 }>;

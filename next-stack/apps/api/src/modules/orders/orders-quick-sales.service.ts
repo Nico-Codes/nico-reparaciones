@@ -50,7 +50,7 @@ export class OrdersQuickSalesService {
       const productIds = validLines.map((line) => line.productId);
       const products = await tx.product.findMany({
         where: { id: { in: productIds } },
-        select: { id: true, stock: true, active: true, price: true, name: true },
+        select: { id: true, stock: true, active: true, price: true, name: true, fulfillmentMode: true },
       });
       const byId = new Map(products.map((product) => [product.id, product]));
 
@@ -58,6 +58,9 @@ export class OrdersQuickSalesService {
         const product = byId.get(line.productId);
         if (!product || !product.active) {
           throw new BadRequestException(`Producto invalido en venta rapida: ${line.name}`);
+        }
+        if (product.fulfillmentMode === 'SPECIAL_ORDER') {
+          throw new BadRequestException(`La venta rapida solo admite productos con stock real: ${line.name}`);
         }
         if (product.stock < line.quantity) {
           throw new BadRequestException(`Stock insuficiente para ${line.name}`);
@@ -76,6 +79,7 @@ export class OrdersQuickSalesService {
             create: validLines.map((line) => ({
               productId: line.productId,
               nameSnapshot: line.name,
+              fulfillmentModeSnapshot: line.fulfillmentMode,
               unitPrice: new Prisma.Decimal(line.unitPrice),
               quantity: line.quantity,
               lineTotal: new Prisma.Decimal(line.lineTotal),

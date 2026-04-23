@@ -13,6 +13,33 @@
 ---
 
 ### 2026-04-23 - Codex
+- Alcance: importador semiautomatico de listados por encargue para catalogo comercial.
+- Tipo de intervencion: migracion Prisma, nuevos endpoints admin, parser de listados, UI de preview/aplicacion y ajuste transversal de store/cart/checkout/pedidos para `SPECIAL_ORDER`.
+- Archivos tocados:
+  - `next-stack/apps/api/prisma/{schema.prisma,migrations/20260423113000_add_special_order_imports/*}`
+  - `next-stack/apps/api/src/modules/{catalog-admin,store,cart,orders,admin}/*`
+  - `next-stack/apps/web/src/{App.tsx,app/routing/route-pages.tsx}`
+  - `next-stack/apps/web/src/features/{catalogAdmin,store,cart,orders,warranties,admin}/*`
+  - `project-docs/{DECISIONS_LOG.md,backend/BACKEND_MAP.md,frontend/FRONTEND_MAP.md}`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. Admin puede importar listados por encargue con preview y sincronizacion por perfil; la tienda publica muestra productos `Por encargue`; carrito/checkout aceptan esos items sin usar stock local; pedidos y admin distinguen `Stock real` vs `Por encargue`.
+- Validaciones ejecutadas:
+  - `cmd /c npm run db:migrate --workspace @nico/api`
+  - `cmd /c npm run typecheck --workspace @nico/api`
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/api`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/api`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - `smoke:backend` sigue bloqueado por el entorno local actual de Prisma/API (`DATABASE_URL` proxy y `start` apuntando a un output distinto), no por la feature nueva.
+  - V1 no importa imagenes del listado ni toca retoques manuales existentes del producto.
+
+---
+
+### 2026-04-23 - Codex
 - Alcance: optimizacion de velocidad web sin tocar imagenes.
 - Tipo de intervencion: cache compartido frontend, endpoint agregado backend, CSS contextual, cache headers y QA de performance.
 - Archivos tocados:

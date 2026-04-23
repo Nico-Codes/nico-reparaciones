@@ -3,12 +3,14 @@ import {
   buildOrderDetailLinesMeta,
   buildOrderDetailSummaryFacts,
   buildOrderTransferWhatsappUrl,
+  orderHasSpecialOrderLines,
   orderUsesTransferPayment,
   resolveOrderDetailAlertTone,
 } from './order-detail.helpers';
+import type { OrderItem } from './types';
 
 describe('order-detail.helpers', () => {
-  const order = {
+  const order: OrderItem = {
     id: 'ord_1',
     status: 'LISTO_RETIRO',
     total: 30,
@@ -19,8 +21,8 @@ describe('order-detail.helpers', () => {
     createdAt: '2026-04-01T10:00:00.000Z',
     updatedAt: '2026-04-01T11:00:00.000Z',
     items: [
-      { id: 'line_1', productId: 'prod_1', name: 'Modulo', quantity: 2, unitPrice: 10, lineTotal: 20 },
-      { id: 'line_2', productId: 'prod_2', name: 'Bateria', quantity: 1, unitPrice: 10, lineTotal: 10 },
+      { id: 'line_1', productId: 'prod_1', name: 'Modulo', fulfillmentMode: 'INVENTORY', quantity: 2, unitPrice: 10, lineTotal: 20 },
+      { id: 'line_2', productId: 'prod_2', name: 'Bateria', fulfillmentMode: 'SPECIAL_ORDER', quantity: 1, unitPrice: 10, lineTotal: 10 },
     ],
   };
 
@@ -40,6 +42,16 @@ describe('order-detail.helpers', () => {
   it('detecta pago por transferencia', () => {
     expect(orderUsesTransferPayment('transferencia')).toBe(true);
     expect(orderUsesTransferPayment('efectivo')).toBe(false);
+  });
+
+  it('detecta lineas por encargue', () => {
+    expect(orderHasSpecialOrderLines(order as never)).toBe(true);
+    expect(
+      orderHasSpecialOrderLines({
+        ...order,
+        items: [{ ...order.items[0], fulfillmentMode: 'INVENTORY' }],
+      } as never),
+    ).toBe(false);
   });
 
   it('arma link de whatsapp para comprobante de transferencia', () => {

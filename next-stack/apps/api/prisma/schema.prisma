@@ -45,6 +45,17 @@ enum RepairPricingSnapshotStatus {
   DISCARDED
 }
 
+enum ProductFulfillmentMode {
+  INVENTORY
+  SPECIAL_ORDER
+}
+
+enum SupplierAvailability {
+  IN_STOCK
+  OUT_OF_STOCK
+  UNKNOWN
+}
+
 model User {
   id                      String                   @id @default(cuid())
   name                    String
@@ -126,6 +137,12 @@ model Product {
   costPrice   Decimal?    @db.Decimal(12, 2)
   purchaseReference String? @map("purchase_reference")
   stock       Int         @default(0)
+  fulfillmentMode ProductFulfillmentMode @default(INVENTORY)
+  supplierAvailability SupplierAvailability @default(UNKNOWN)
+  specialOrderProfileId String?
+  specialOrderSourceKey String?
+  sourcePriceUsd Decimal? @db.Decimal(12, 2)
+  lastImportedAt DateTime?
   active      Boolean     @default(true)
   featured    Boolean     @default(false)
   sku         String?     @unique
@@ -136,10 +153,14 @@ model Product {
   updatedAt   DateTime    @updatedAt
   category    Category?   @relation(fields: [categoryId], references: [id])
   supplier    Supplier?   @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  specialOrderProfile SpecialOrderImportProfile? @relation(fields: [specialOrderProfileId], references: [id], onDelete: SetNull)
   orderItems  OrderItem[]
   productPricingRules ProductPricingRule[]
 
   @@index([supplierId])
+  @@index([fulfillmentMode, active])
+  @@index([specialOrderProfileId])
+  @@unique([specialOrderProfileId, specialOrderSourceKey])
 }
 
 model ProductPricingRule {
@@ -182,6 +203,7 @@ model OrderItem {
   orderId      String
   productId    String?
   nameSnapshot String
+  fulfillmentModeSnapshot ProductFulfillmentMode @default(INVENTORY)
   unitPrice    Decimal  @db.Decimal(12, 2)
   quantity     Int
   lineTotal    Decimal  @db.Decimal(12, 2)
@@ -419,10 +441,44 @@ model Supplier {
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
   products         Product[]
+  specialOrderProfiles SpecialOrderImportProfile[]
   repairPricingSnapshots RepairPricingSnapshot[]
   incidents        WarrantyIncident[]
 
   @@index([active, searchPriority])
+}
+
+model SpecialOrderImportProfile {
+  id                    String    @id @default(cuid())
+  supplierId            String
+  name                  String
+  active                Boolean   @default(true)
+  defaultUsdRate        Decimal   @db.Decimal(12, 4)
+  defaultShippingUsd    Decimal   @db.Decimal(12, 4)
+  fallbackMarginPercent Decimal   @default(0) @db.Decimal(7, 2)
+  sectionCategoryMapJson String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  supplier              Supplier  @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  products              Product[]
+  batches               SpecialOrderImportBatch[]
+
+  @@index([active, supplierId])
+  @@unique([supplierId, name])
+}
+
+model SpecialOrderImportBatch {
+  id          String    @id @default(cuid())
+  profileId    String
+  rawText      String
+  usdRate      Decimal   @db.Decimal(12, 4)
+  shippingUsd  Decimal   @db.Decimal(12, 4)
+  summaryJson  String?
+  createdBy    String?
+  createdAt    DateTime  @default(now())
+  profile      SpecialOrderImportProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId, createdAt])
 }
 
 model WarrantyIncident {

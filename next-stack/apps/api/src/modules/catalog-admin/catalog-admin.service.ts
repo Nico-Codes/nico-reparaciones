@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { CatalogAdminCategoriesService } from './catalog-admin-categories.service.js';
 import { CatalogAdminPricingService } from './catalog-admin-pricing.service.js';
 import { CatalogAdminProductsService } from './catalog-admin-products.service.js';
+import { CatalogAdminSpecialOrderService } from './catalog-admin-special-order.service.js';
 import type {
   CategoryCreateInput,
   CategoryUpdateInput,
@@ -11,6 +12,10 @@ import type {
   ProductPricingRuleCreateInput,
   ProductPricingRuleUpdateInput,
   ProductPricingSettingsInput,
+  SpecialOrderImportApplyInput,
+  SpecialOrderImportPreviewInput,
+  SpecialOrderProfileCreateInput,
+  SpecialOrderProfileUpdateInput,
   ProductUpdateInput,
   ResolveProductPricingInput,
 } from './catalog-admin.types.js';
@@ -24,6 +29,8 @@ export class CatalogAdminService {
     private readonly productsService: CatalogAdminProductsService,
     @Inject(CatalogAdminPricingService)
     private readonly pricingService: CatalogAdminPricingService,
+    @Inject(CatalogAdminSpecialOrderService)
+    private readonly specialOrderService: CatalogAdminSpecialOrderService,
   ) {}
 
   async categories() {
@@ -92,5 +99,25 @@ export class CatalogAdminService {
 
   async resolveRecommendedProductPrice(input: ResolveProductPricingInput) {
     return this.pricingService.resolveRecommendedProductPrice(input);
+  }
+
+  async specialOrderProfiles() {
+    return this.specialOrderService.profiles();
+  }
+
+  async createSpecialOrderProfile(input: SpecialOrderProfileCreateInput) {
+    return this.specialOrderService.createProfile(input);
+  }
+
+  async updateSpecialOrderProfile(id: string, input: SpecialOrderProfileUpdateInput) {
+    return this.specialOrderService.updateProfile(id, input);
+  }
+
+  async previewSpecialOrderImport(input: SpecialOrderImportPreviewInput) {
+    return this.specialOrderService.previewImport(input);
+  }
+
+  async applySpecialOrderImport(input: SpecialOrderImportApplyInput) {
+    return this.specialOrderService.applyImport(input);
   }
 }

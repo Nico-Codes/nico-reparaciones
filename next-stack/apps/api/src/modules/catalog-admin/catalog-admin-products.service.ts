@@ -28,9 +28,13 @@ export class CatalogAdminProductsService {
     const q = (params?.q ?? '').trim();
     const categoryId = (params?.categoryId ?? '').trim();
     const activeFilter = (params?.active ?? '').trim().toLowerCase();
+    const fulfillmentModeFilter = (params?.fulfillmentMode ?? '').trim().toUpperCase();
     const where: Prisma.ProductWhereInput = {
       ...(categoryId ? { categoryId } : {}),
       ...(activeFilter === '1' ? { active: true } : activeFilter === '0' ? { active: false } : {}),
+      ...(fulfillmentModeFilter === 'INVENTORY' || fulfillmentModeFilter === 'SPECIAL_ORDER'
+        ? { fulfillmentMode: fulfillmentModeFilter }
+        : {}),
       ...(q
         ? {
             OR: [
@@ -47,6 +51,7 @@ export class CatalogAdminProductsService {
       include: {
         category: { select: { id: true, name: true, slug: true } },
         supplier: { select: { id: true, name: true } },
+        specialOrderProfile: { select: { id: true, name: true } },
       },
       orderBy: [{ active: 'desc' }, { updatedAt: 'desc' }],
       take: 200,
@@ -62,6 +67,7 @@ export class CatalogAdminProductsService {
       include: {
         category: { select: { id: true, name: true, slug: true } },
         supplier: { select: { id: true, name: true } },
+        specialOrderProfile: { select: { id: true, name: true } },
       },
     });
     if (!item) throw new NotFoundException('Producto no encontrado');
@@ -113,6 +119,7 @@ export class CatalogAdminProductsService {
         include: {
           category: { select: { id: true, name: true, slug: true } },
           supplier: { select: { id: true, name: true } },
+          specialOrderProfile: { select: { id: true, name: true } },
         },
       });
       return { item: this.serializeProduct(item) };
@@ -187,6 +194,7 @@ export class CatalogAdminProductsService {
         include: {
           category: { select: { id: true, name: true, slug: true } },
           supplier: { select: { id: true, name: true } },
+          specialOrderProfile: { select: { id: true, name: true } },
         },
       });
       return { item: this.serializeProduct(item) };
@@ -216,6 +224,7 @@ export class CatalogAdminProductsService {
       include: {
         category: { select: { id: true, name: true, slug: true } },
         supplier: { select: { id: true, name: true } },
+        specialOrderProfile: { select: { id: true, name: true } },
       },
     });
 
@@ -234,6 +243,7 @@ export class CatalogAdminProductsService {
       include: {
         category: { select: { id: true, name: true, slug: true } },
         supplier: { select: { id: true, name: true } },
+        specialOrderProfile: { select: { id: true, name: true } },
       },
     });
     if (!current) throw new NotFoundException('Producto no encontrado');
@@ -248,6 +258,7 @@ export class CatalogAdminProductsService {
       include: {
         category: { select: { id: true, name: true, slug: true } },
         supplier: { select: { id: true, name: true } },
+        specialOrderProfile: { select: { id: true, name: true } },
       },
     });
     return { item: this.serializeProduct(item) };
@@ -265,6 +276,9 @@ export class CatalogAdminProductsService {
       price: Number(product.price),
       costPrice: product.costPrice != null ? Number(product.costPrice) : null,
       stock: product.stock,
+      fulfillmentMode: product.fulfillmentMode,
+      supplierAvailability: product.supplierAvailability,
+      sourcePriceUsd: product.sourcePriceUsd != null ? Number(product.sourcePriceUsd) : null,
       active: product.active,
       featured: product.featured,
       sku: product.sku ?? null,
@@ -273,6 +287,10 @@ export class CatalogAdminProductsService {
       category: product.category ?? null,
       supplierId: product.supplierId ?? null,
       supplier: product.supplier ? { id: product.supplier.id, name: product.supplier.name } : null,
+      specialOrderProfile: product.specialOrderProfile
+        ? { id: product.specialOrderProfile.id, name: product.specialOrderProfile.name }
+        : null,
+      lastImportedAt: product.lastImportedAt?.toISOString?.() ?? null,
       createdAt: product.createdAt?.toISOString?.() ?? null,
       updatedAt: product.updatedAt?.toISOString?.() ?? null,
     };

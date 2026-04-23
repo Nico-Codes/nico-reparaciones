@@ -14,6 +14,8 @@ export type CartQuoteLine = {
   unitPrice: number;
   lineTotal: number;
   stockAvailable: number;
+  fulfillmentMode: 'INVENTORY' | 'SPECIAL_ORDER';
+  supplierAvailability: 'IN_STOCK' | 'OUT_OF_STOCK' | 'UNKNOWN';
   active: boolean;
   category: { id: string; name: string; slug: string } | null;
 };

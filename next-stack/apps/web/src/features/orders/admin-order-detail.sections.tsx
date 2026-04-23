@@ -207,7 +207,12 @@ export function AdminOrderDetailBody({
             {item.items.map((line) => (
               <div key={line.id} className="line-item">
                 <div className="line-item__main">
-                  <div className="line-item__title">{line.name}</div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="line-item__title">{line.name}</div>
+                    {line.fulfillmentMode === 'SPECIAL_ORDER' ? (
+                      <StatusBadge tone="accent" size="sm" label="Por encargue" />
+                    ) : null}
+                  </div>
                   <div className="line-item__meta">
                     {line.quantity} × {money(line.unitPrice)}
                   </div>

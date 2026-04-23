@@ -6,7 +6,12 @@ export function formatCartMoney(value: number) {
   return `$ ${value.toLocaleString('es-AR')}`;
 }
 
-export function resolveCartStockTone(valid: boolean, stockAvailable: number): BadgeTone {
+export function isCartSpecialOrderLine(item: Pick<CartQuoteLine, 'fulfillmentMode'>) {
+  return item.fulfillmentMode === 'SPECIAL_ORDER';
+}
+
+export function resolveCartStockTone(valid: boolean, stockAvailable: number, fulfillmentMode: CartQuoteLine['fulfillmentMode']): BadgeTone {
+  if (fulfillmentMode === 'SPECIAL_ORDER') return valid ? 'accent' : 'warning';
   if (!valid || stockAvailable <= 0) return 'danger';
   if (stockAvailable <= 3) return 'warning';
   return 'success';
@@ -31,10 +36,25 @@ export function sameCartItems(left: CartLocalItem[], right: CartLocalItem[]) {
 }
 
 export function hasCartStockIssue(items: CartQuoteLine[]) {
-  return items.some((item) => !item.valid || item.quantity > Math.max(0, item.stockAvailable));
+  return items.some(
+    (item) =>
+      !item.valid ||
+      (item.fulfillmentMode === 'INVENTORY' && item.quantity > Math.max(0, item.stockAvailable)),
+  );
 }
 
-export function clampCartQuantity(rawValue: number, stockAvailable: number) {
-  const maxQty = stockAvailable > 0 ? stockAvailable : 1;
+export function clampCartQuantity(
+  rawValue: number,
+  stockAvailable: number,
+  fulfillmentMode: CartQuoteLine['fulfillmentMode'],
+) {
+  const maxQty = fulfillmentMode === 'SPECIAL_ORDER' ? 999 : stockAvailable > 0 ? stockAvailable : 1;
   return Math.min(maxQty, Math.max(1, Number(rawValue) || 1));
+}
+
+export function getCartLineAvailabilityLabel(item: CartQuoteLine) {
+  if (item.fulfillmentMode === 'SPECIAL_ORDER') {
+    return item.supplierAvailability === 'OUT_OF_STOCK' ? 'Proveedor sin stock' : 'Por encargue';
+  }
+  return item.stockAvailable > 0 ? `Stock ${item.stockAvailable}` : 'Sin stock';
 }

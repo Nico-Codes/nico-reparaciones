@@ -12,6 +12,7 @@ import { money, orderProgressSteps } from './order-ui';
 import type { CheckoutTransferDetails, OrderItem } from './types';
 import {
   buildOrderDetailLinesMeta,
+  orderHasSpecialOrderLines,
   buildOrderDetailStatusMeta,
   buildOrderDetailSummaryFacts,
   orderUsesTransferPayment,
@@ -98,6 +99,7 @@ export function OrderDetailLayout({
   const summaryFacts = buildOrderDetailSummaryFacts(order);
   const linesMeta = buildOrderDetailLinesMeta(order);
   const showTransferDetails = orderUsesTransferPayment(order.paymentMethod);
+  const hasSpecialOrderLines = orderHasSpecialOrderLines(order);
 
   return (
     <PageShell context="account">
@@ -137,6 +139,16 @@ export function OrderDetailLayout({
                   </div>
                 </div>
 
+                {hasSpecialOrderLines ? (
+                  <div className="ui-alert ui-alert--info">
+                    <PackageCheck className="mt-0.5 h-4 w-4 flex-none" />
+                    <div>
+                      <span className="ui-alert__title">Incluye productos por encargue</span>
+                      <div className="ui-alert__text">Al menos una linea del pedido se gestiona por proveedor y no descuenta stock local.</div>
+                    </div>
+                  </div>
+                ) : null}
+
                 <div className={`ui-alert ui-alert--${resolveOrderDetailAlertTone(order.status)}`}>
                   <PackageCheck className="mt-0.5 h-4 w-4 flex-none" />
                   <div>
@@ -157,7 +169,12 @@ export function OrderDetailLayout({
               {order.items.map((line) => (
                 <div key={line.id} className="line-item">
                   <div className="line-item__main">
-                    <div className="line-item__title">{line.name}</div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="line-item__title">{line.name}</div>
+                      {line.fulfillmentMode === 'SPECIAL_ORDER' ? (
+                        <StatusBadge tone="accent" size="sm" label="Por encargue" />
+                      ) : null}
+                    </div>
                     <div className="line-item__meta">
                       {line.quantity} × {money(line.unitPrice)}
                     </div>

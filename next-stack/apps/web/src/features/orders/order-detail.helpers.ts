@@ -21,6 +21,10 @@ export function buildOrderDetailTotalItems(order: OrderItem | null) {
   return order?.items.reduce((accumulator, line) => accumulator + line.quantity, 0) ?? 0;
 }
 
+export function orderHasSpecialOrderLines(order: OrderItem | null) {
+  return order?.items.some((line) => line.fulfillmentMode === 'SPECIAL_ORDER') ?? false;
+}
+
 export function resolveOrderDetailAlertTone(status: string) {
   if (status === 'CANCELADO') return 'danger';
   if (status === 'LISTO_RETIRO') return 'success';

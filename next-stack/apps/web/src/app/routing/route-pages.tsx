@@ -82,6 +82,7 @@ export const AdminProductCreatePage = adminPage(() => import('@/features/catalog
 export const AdminProductEditPage = adminPage(() => import('@/features/catalogAdmin/AdminProductEditPage'), 'AdminProductEditPage');
 export const AdminProductLabelPage = adminPage(() => import('@/features/catalogAdmin/AdminProductLabelPage'), 'AdminProductLabelPage');
 export const AdminProductsPage = adminPage(() => import('@/features/catalogAdmin/AdminProductsPage'), 'AdminProductsPage');
+export const AdminSpecialOrderImportPage = adminPage(() => import('@/features/catalogAdmin/AdminSpecialOrderImportPage'), 'AdminSpecialOrderImportPage');
 export const AdminDeviceCatalogPage = adminPage(() => import('@/features/deviceCatalog/AdminDeviceCatalogPage'), 'AdminDeviceCatalogPage');
 export const HelpPage = lazyPage(() => import('@/features/help/HelpPage'), 'HelpPage');
 export const AdminOrderDetailPage = adminPage(() => import('@/features/orders/AdminOrderDetailPage'), 'AdminOrderDetailPage');

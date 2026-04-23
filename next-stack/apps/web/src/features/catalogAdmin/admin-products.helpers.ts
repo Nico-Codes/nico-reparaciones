@@ -8,6 +8,7 @@ export type AdminProductsStats = {
   featured: number;
   lowStock: number;
   noStock: number;
+  specialOrder: number;
 };
 
 export type AdminProductsStockTone = 'success' | 'warning' | 'danger';
@@ -31,6 +32,12 @@ export const ADMIN_PRODUCTS_STOCK_OPTIONS: ProductSelectOption[] = [
   { value: 'empty', label: 'Sin stock' },
 ];
 
+export const ADMIN_PRODUCTS_FULFILLMENT_OPTIONS: ProductSelectOption[] = [
+  { value: '', label: 'Todo el catalogo' },
+  { value: 'INVENTORY', label: 'Stock real' },
+  { value: 'SPECIAL_ORDER', label: 'Por encargue' },
+];
+
 export function formatAdminProductMoney(value: number) {
   return money(value);
 }
@@ -48,20 +55,30 @@ export function getAdminProductStockTone(stock: number): AdminProductsStockTone 
 }
 
 export function buildAdminProductsStats(products: AdminProduct[]): AdminProductsStats {
+  const inventoryProducts = products.filter((product) => product.fulfillmentMode === 'INVENTORY');
   return {
     total: products.length,
     active: products.filter((product) => product.active).length,
     featured: products.filter((product) => product.featured).length,
-    lowStock: products.filter((product) => product.stock > 0 && product.stock <= 3).length,
-    noStock: products.filter((product) => product.stock <= 0).length,
+    lowStock: inventoryProducts.filter((product) => product.stock > 0 && product.stock <= 3).length,
+    noStock: inventoryProducts.filter((product) => product.stock <= 0).length,
+    specialOrder: products.filter((product) => product.fulfillmentMode === 'SPECIAL_ORDER').length,
   };
 }
 
-export function filterAdminProducts(products: AdminProduct[], featuredFilter: string, stockFilter: string) {
+export function filterAdminProducts(
+  products: AdminProduct[],
+  featuredFilter: string,
+  stockFilter: string,
+  fulfillmentFilter: string,
+) {
   return products
     .filter((product) => {
       if (featuredFilter === '1' && !product.featured) return false;
       if (featuredFilter === '0' && product.featured) return false;
+      if (fulfillmentFilter === 'INVENTORY' && product.fulfillmentMode !== 'INVENTORY') return false;
+      if (fulfillmentFilter === 'SPECIAL_ORDER' && product.fulfillmentMode !== 'SPECIAL_ORDER') return false;
+      if (stockFilter && product.fulfillmentMode === 'SPECIAL_ORDER') return false;
       if (stockFilter === 'with' && product.stock <= 0) return false;
       if (stockFilter === 'empty' && product.stock > 0) return false;
       return true;
@@ -75,13 +92,15 @@ export function hasAdminProductFilters(filters: {
   activeFilter: string;
   featuredFilter: string;
   stockFilter: string;
+  fulfillmentFilter: string;
 }) {
   return Boolean(
     filters.q.trim() ||
       filters.categoryId ||
       filters.activeFilter ||
       filters.featuredFilter ||
-      filters.stockFilter,
+      filters.stockFilter ||
+      filters.fulfillmentFilter,
   );
 }
 
@@ -101,4 +120,12 @@ export function buildAdminProductPriceSummary(product: AdminProduct) {
     marginValue,
     marginPercent,
   };
+}
+
+export function getAdminProductFulfillmentLabel(product: AdminProduct) {
+  if (product.fulfillmentMode === 'SPECIAL_ORDER') {
+    if (product.supplierAvailability === 'OUT_OF_STOCK') return 'Encargue sin stock proveedor';
+    return 'Por encargue';
+  }
+  return 'Stock real';
 }

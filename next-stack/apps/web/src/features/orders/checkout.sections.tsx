@@ -286,6 +286,8 @@ export function CheckoutSummarySection({
   paymentTitle,
   paymentSubtitle,
 }: CheckoutSummarySectionProps) {
+  const hasSpecialOrderLines = items.some((line) => line.fulfillmentMode === 'SPECIAL_ORDER');
+
   return (
     <SectionCard
       className="commerce-sticky"
@@ -302,7 +304,12 @@ export function CheckoutSummarySection({
         {items.map((line) => (
           <div key={line.productId} className="line-item">
             <div className="line-item__main">
-              <div className="line-item__title">{line.name}</div>
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="line-item__title">{line.name}</div>
+                {line.fulfillmentMode === 'SPECIAL_ORDER' ? (
+                  <StatusBadge tone="accent" size="sm" label="Por encargue" />
+                ) : null}
+              </div>
               <div className="line-item__meta">
                 {line.quantity} x {formatCheckoutMoney(line.unitPrice)}
               </div>
@@ -311,6 +318,18 @@ export function CheckoutSummarySection({
           </div>
         ))}
       </div>
+
+      {hasSpecialOrderLines ? (
+        <div className="ui-alert ui-alert--info mt-4">
+          <ShieldCheck className="mt-0.5 h-4 w-4 flex-none" />
+          <div>
+            <span className="ui-alert__title">Incluye productos por encargue</span>
+            <div className="ui-alert__text">
+              Estas lineas se confirman contra proveedor y no dependen del stock local del negocio.
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <div className="summary-box mt-4">
         <div className="summary-box__label">Total</div>

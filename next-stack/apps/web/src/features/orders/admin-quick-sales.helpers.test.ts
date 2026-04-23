@@ -19,6 +19,9 @@ function makeProduct(input: Partial<AdminProduct> & Pick<AdminProduct, 'id' | 'n
     imagePath: input.imagePath ?? null,
     imageUrl: input.imageUrl ?? null,
     costPrice: input.costPrice ?? null,
+    fulfillmentMode: input.fulfillmentMode ?? 'INVENTORY',
+    supplierAvailability: input.supplierAvailability ?? 'IN_STOCK',
+    sourcePriceUsd: input.sourcePriceUsd ?? null,
     active: input.active ?? true,
     featured: input.featured ?? false,
     sku: input.sku ?? null,
@@ -27,6 +30,8 @@ function makeProduct(input: Partial<AdminProduct> & Pick<AdminProduct, 'id' | 'n
     category: input.category ?? null,
     supplierId: input.supplierId ?? null,
     supplier: input.supplier ?? null,
+    specialOrderProfile: input.specialOrderProfile ?? null,
+    lastImportedAt: input.lastImportedAt ?? null,
     createdAt: input.createdAt ?? null,
     updatedAt: input.updatedAt ?? null,
     ...input,
@@ -46,6 +51,7 @@ describe('admin-quick-sales helpers', () => {
       makeProduct({ id: 'a', name: 'Pinza', price: 100, stock: 3, sku: 'ABC-1' }),
       makeProduct({ id: 'b', name: 'Cable', price: 50, stock: 0, barcode: '999' }),
       makeProduct({ id: 'c', name: 'Mouse', price: 80, stock: 2, active: false, barcode: '111' }),
+      makeProduct({ id: 'd', name: 'iPhone 13', price: 1000, stock: 0, fulfillmentMode: 'SPECIAL_ORDER' }),
     ];
 
     expect(filterQuickSaleProducts(items).map((product) => product.id)).toEqual(['a']);

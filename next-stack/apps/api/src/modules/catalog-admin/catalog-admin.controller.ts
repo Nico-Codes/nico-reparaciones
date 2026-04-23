@@ -1,6 +1,8 @@
-import { BadRequestException, Body, Controller, Delete, Get, Inject, Patch, Post, Query, Param, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Inject, Patch, Post, Query, Param, UnauthorizedException, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { z } from 'zod';
+import { CurrentUser } from '../auth/current-user.decorator.js';
+import type { AuthenticatedUser } from '../auth/auth.types.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { Roles } from '../auth/roles.decorator.js';
 import { RolesGuard } from '../auth/roles.guard.js';
@@ -29,6 +31,31 @@ const productCreateSchema = z.object({
   categoryId: z.string().trim().max(191).optional().nullable(),
 });
 const productPatchSchema = productCreateSchema.partial();
+
+const specialOrderProfileSchema = z.object({
+  supplierId: z.string().trim().min(1).max(191),
+  name: z.string().trim().min(2).max(120),
+  active: z.boolean().optional(),
+  defaultUsdRate: z.number().nonnegative().max(999999),
+  defaultShippingUsd: z.number().nonnegative().max(999999),
+  fallbackMarginPercent: z.number().min(0).max(500),
+});
+const specialOrderProfilePatchSchema = specialOrderProfileSchema.partial();
+
+const specialOrderSectionMappingSchema = z.object({
+  sectionKey: z.string().trim().min(1).max(190),
+  categoryId: z.string().trim().max(191).optional().nullable(),
+  createCategoryName: z.string().trim().max(120).optional().nullable(),
+});
+
+const specialOrderImportSchema = z.object({
+  profileId: z.string().trim().min(1).max(191),
+  rawText: z.string().min(1).max(500000),
+  usdRate: z.number().nonnegative().max(999999).optional().nullable(),
+  shippingUsd: z.number().nonnegative().max(999999).optional().nullable(),
+  sectionMappings: z.array(specialOrderSectionMappingSchema).max(500).optional(),
+  excludedRowIds: z.array(z.string().trim().min(1).max(260)).max(5000).optional(),
+});
 
 const productPricingSettingsSchema = z.object({
   defaultMarginPercent: z.number().min(0).max(500),
@@ -85,8 +112,13 @@ export class CatalogAdminController {
   }
 
   @Get('products')
-  products(@Query('q') q?: string, @Query('categoryId') categoryId?: string, @Query('active') active?: string) {
-    return this.service.products({ q, categoryId, active });
+  products(
+    @Query('q') q?: string,
+    @Query('categoryId') categoryId?: string,
+    @Query('active') active?: string,
+    @Query('fulfillmentMode') fulfillmentMode?: string,
+  ) {
+    return this.service.products({ q, categoryId, active, fulfillmentMode });
   }
 
   @Get('products/:id')
@@ -168,5 +200,42 @@ export class CatalogAdminController {
     }).safeParse({ categoryId, costPrice, productId });
     if (!parsed.success) throw zodBadRequest(parsed);
     return this.service.resolveRecommendedProductPrice(parsed.data);
+  }
+
+  @Get('special-order-profiles')
+  specialOrderProfiles() {
+    return this.service.specialOrderProfiles();
+  }
+
+  @Post('special-order-profiles')
+  createSpecialOrderProfile(@Body() body: unknown) {
+    const parsed = specialOrderProfileSchema.safeParse(body);
+    if (!parsed.success) throw zodBadRequest(parsed);
+    return this.service.createSpecialOrderProfile(parsed.data);
+  }
+
+  @Patch('special-order-profiles/:id')
+  updateSpecialOrderProfile(@Param('id') id: string, @Body() body: unknown) {
+    const parsed = specialOrderProfilePatchSchema.safeParse(body);
+    if (!parsed.success) throw zodBadRequest(parsed);
+    return this.service.updateSpecialOrderProfile(id, parsed.data);
+  }
+
+  @Post('special-order-imports/preview')
+  previewSpecialOrderImport(@Body() body: unknown) {
+    const parsed = specialOrderImportSchema.safeParse(body);
+    if (!parsed.success) throw zodBadRequest(parsed);
+    return this.service.previewSpecialOrderImport(parsed.data);
+  }
+
+  @Post('special-order-imports/apply')
+  applySpecialOrderImport(@CurrentUser() user: AuthenticatedUser | null, @Body() body: unknown) {
+    if (!user) throw new UnauthorizedException('Usuario no autenticado');
+    const parsed = specialOrderImportSchema.safeParse(body);
+    if (!parsed.success) throw zodBadRequest(parsed);
+    return this.service.applySpecialOrderImport({
+      ...parsed.data,
+      createdBy: user.id,
+    });
   }
 }
