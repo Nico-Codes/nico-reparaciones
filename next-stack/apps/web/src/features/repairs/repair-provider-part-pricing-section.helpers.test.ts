@@ -4,6 +4,7 @@ import {
   buildProviderPricingStatusBadge,
   buildProviderFilterOptions,
   buildVisibleProviderSearchState,
+  isSelectableProviderPart,
   parseOptionalMoney,
   parsePositiveInteger,
   partKey,
@@ -36,6 +37,13 @@ describe('repair-provider-part-pricing-section helpers', () => {
     ).toContain('sup-1');
     expect(availabilityLabel('in_stock')).toBe('Disponible');
     expect(snapshotStatusLabel({ id: 'snap-1', status: 'APPLIED' } as any, 'snap-1')).toBe('Activo');
+  });
+
+  it('only allows selecting parts with usable price and stock state', () => {
+    expect(isSelectableProviderPart({ availability: 'in_stock', price: 15000 } as any)).toBe(true);
+    expect(isSelectableProviderPart({ availability: 'unknown', price: 15000 } as any)).toBe(true);
+    expect(isSelectableProviderPart({ availability: 'out_of_stock', price: 15000 } as any)).toBe(false);
+    expect(isSelectableProviderPart({ availability: 'in_stock', price: null } as any)).toBe(false);
   });
 
   it('adds the historical provider option when missing from active providers', () => {

@@ -63,6 +63,93 @@ describe('admin-provider-search parsers', () => {
     expect(parts[0]?.name).toMatch(/A13/i);
   });
 
+  it('deduplicates current xstore grid cards by URL and keeps the final visible price', () => {
+    const row = createSupplierRow({
+      name: 'Tienda Movil Rosario',
+      searchEndpoint: 'https://tiendamovilrosario.com.ar/?s={query}&post_type=product',
+      searchConfigJson:
+        '{"profile":"xstore","candidate_paths":["/product/"],"exclude_paths":["/product-category/"],"context_window":2200}',
+    });
+
+    const html = `
+      <div class="etheme-product-grid">
+        <div class="etheme-product-grid-item product type-product instock sale">
+          <div class="etheme-product-grid-image">
+            <a href="https://tiendamovilrosario.com.ar/product/modulo-cvt-sam-a13-4g-original-grado-b/">
+              <img alt="MODULO CVT SAM A13 4G" />
+            </a>
+          </div>
+          <div class="etheme-product-grid-content">
+            <h2 class="woocommerce-loop-product__title etheme-product-grid-title">
+              <a href="https://tiendamovilrosario.com.ar/product/modulo-cvt-sam-a13-4g-original-grado-b/">MODULO CVT SAM A13 4G</a>
+            </h2>
+            <span class="price">
+              <del><span class="woocommerce-Price-amount amount"><bdi><span class="woocommerce-Price-currencySymbol">&#36;</span>&nbsp;13.978</bdi></span></del>
+              <ins><span class="woocommerce-Price-amount amount"><bdi><span class="woocommerce-Price-currencySymbol">&#36;</span>&nbsp;13.279</bdi></span></ins>
+            </span>
+            <div class="stock-status"><p class="stock in-stock">10 disponibles</p></div>
+          </div>
+        </div>
+        <div class="etheme-product-grid-item product type-product instock">
+          <h2 class="woocommerce-loop-product__title etheme-product-grid-title">
+            <a href="https://tiendamovilrosario.com.ar/product/modulo-samsung-a14/">MODULO SAMSUNG A14</a>
+          </h2>
+          <span class="price"><span class="woocommerce-Price-amount amount"><bdi>&#36;&nbsp;15.000</bdi></span></span>
+        </div>
+      </div>
+    `;
+
+    const parts = extractNormalizedParts(
+      html,
+      row,
+      'https://tiendamovilrosario.com.ar/?s=modulo+a13&post_type=product',
+      8,
+    );
+
+    const a13Matches = parts.filter((part) => part.url?.includes('modulo-cvt-sam-a13-4g'));
+
+    expect(a13Matches).toHaveLength(1);
+    expect(a13Matches[0]).toMatchObject({
+      name: 'MODULO CVT SAM A13 4G',
+      price: 13279,
+      availability: 'in_stock',
+      url: 'https://tiendamovilrosario.com.ar/product/modulo-cvt-sam-a13-4g-original-grado-b/',
+    });
+  });
+
+  it('keeps PuntoCell public search results without inventing hidden prices', () => {
+    const row = createSupplierRow({
+      name: 'PuntoCell',
+      searchEndpoint: 'https://www.puntocell.com.ar/shop?search={query}',
+      searchConfigJson:
+        '{"item_regex":"<div class=\\"oe_product[\\\\s\\\\S]*?<\\\\/form>\\\\s*<\\\\/div>","name_regex":"o_wsale_products_item_title[\\\\s\\\\S]*?<a[^>]*>(.*?)<\\\\/a>","price_regex":"(?:\\\\$|ARS)[^0-9]{0,120}([0-9\\\\.,]+)","url_regex":"href=\\"([^\\"]*\\\\/shop\\\\/\\\\d+\\\\-[^\\"]+)\\"","context_window":12000}',
+    });
+
+    const html = `
+      <div class="oe_product g-col-6" data-name="Producto">
+        <form action="/shop/cart/update" method="post" class="oe_product_cart">
+          <h6 class="o_wsale_products_item_title">
+            <a itemprop="name" href="/shop/17397-modulo-samsung-a13-4g-crown-s-marco-a135f-a137-7260?search=Modulo+A13">MODULO SAMSUNG A13 4G CROWN® S/ MARCO (A135F/A137)</a>
+          </h6>
+          <div class="product_price">
+            <span class="h6 mb-0">Consultar Precio</span>
+            <span itemprop="price" style="display:none;">0.0</span>
+            <span itemprop="priceCurrency" style="display:none;">ARS</span>
+          </div>
+        </form>
+      </div>
+    `;
+
+    const parts = extractNormalizedParts(html, row, 'https://www.puntocell.com.ar/shop?search=Modulo+A13', 5);
+
+    expect(parts).toHaveLength(1);
+    expect(parts[0]).toMatchObject({
+      name: 'MODULO SAMSUNG A13 4G CROWN® S/ MARCO (A135F/A137)',
+      price: null,
+      url: 'https://www.puntocell.com.ar/shop/17397-modulo-samsung-a13-4g-crown-s-marco-a135f-a137-7260?search=Modulo+A13',
+    });
+  });
+
   it('extracts single-product pages from JSON-LD when search redirects to product detail', () => {
     const row = createSupplierRow({
       name: 'Okey Rosario',

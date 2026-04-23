@@ -19,6 +19,7 @@ Thumbs.db
 /next-stack/node_modules/
 /next-stack/apps/api/dist/
 /next-stack/apps/web/dist/
+/next-stack/apps/web/public/brand-assets/identity/*
 /next-stack/.dev-logs/
 /next-stack/artifacts/
 /next-stack/.api-restart*.log

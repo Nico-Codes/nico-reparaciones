@@ -13,6 +13,34 @@
 ---
 
 ### 2026-04-23 - Codex
+- Alcance: hardening operativo de proveedores, WhatsApp manual, assets runtime y documentacion viva.
+- Tipo de intervencion: ajustes backend/frontend, pruebas unitarias y limpieza documental.
+- Archivos tocados:
+  - `next-stack/apps/api/src/modules/admin/admin-provider-search.parsers.ts`
+  - `next-stack/apps/api/src/modules/admin/admin-provider-search.parsers.test.ts`
+  - `next-stack/apps/web/src/features/repairs/*`
+  - `.gitignore`
+  - `project-docs/DECISIONS_LOG.md`
+  - `project-docs/plans/REPAIR_PROVIDER_PART_PRICING_PLAN.md`
+  - `project-docs/operations/WHATSAPP_CLOUD_API_INTEGRATION.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. Tienda Movil deduplica cards por articulo/precio final, repuestos sin precio quedan no seleccionables y los uploads runtime de identidad visual dejan de ensuciar Git.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/api`
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/api`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/api`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:backend`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - PuntoCell no expone precio publico real en las paginas auditadas; se conserva el resultado como referencia, pero no se inventa precio ni se habilita para calculo.
+
+---
+
+### 2026-04-23 - Codex
 - Alcance: centrar verticalmente el precio en las cards publicas de tienda.
 - Tipo de intervencion: ajuste CSS puntual en la fila de compra de productos.
 - Archivos tocados:

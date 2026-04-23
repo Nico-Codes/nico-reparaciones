@@ -1,5 +1,5 @@
 import { BadGatewayException, BadRequestException } from '@nestjs/common';
-import { buildPartSearchQueryProfile, rankSupplierPart } from './admin-provider-search-ranking.js';
+import { availabilityOrder, buildPartSearchQueryProfile, rankSupplierPart } from './admin-provider-search-ranking.js';
 import type { NormalizedSupplierPart, SupplierRegistryRow } from './admin-providers.types.js';
 import {
   cleanLabel,
@@ -219,7 +219,10 @@ function extractHtmlPartsFromKnownProviderHtml(
     flatsome: [/<div class="product-small col has-hover product[\s\S]*?<\/div>\s*<\/div>\s*<\/div>/gi],
     shoptimizer: [/<li class="product type-product[\s\S]*?<\/li>/gi],
     wix: [/<li data-hook="product-list-grid-item">[\s\S]*?<\/li>/gi],
-    xstore: [/<li\b[^>]*class=(["'])[^"']*\bproduct\b[^"']*\btype-product\b[^"']*\1[\s\S]*?<\/li>/gi],
+    xstore: [
+      /<li\b[^>]*class=(["'])[^"']*\bproduct\b[^"']*\btype-product\b[^"']*\1[\s\S]*?<\/li>/gi,
+      /<div\b[^>]*class=["'][^"']*\betheme-product-grid-item\b[^"']*\bproduct\b[^"']*["'][\s\S]*?(?=<div\b[^>]*class=["'][^"']*\betheme-product-grid-item\b[^"']*\bproduct\b[^"']*["']|<\/div>\s*<\/div>\s*<\/div>\s*<\/div>|$)/gi,
+    ],
   };
   const regexes = blockRegexes[profile] ?? [];
   if (regexes.length === 0) return [];
@@ -341,7 +344,7 @@ function normalizeHtmlPartFromSnippet(
 ): NormalizedSupplierPart | null {
   const url =
     preferred?.url ??
-    normalizeUrl(firstCapture(snippet, /href=(["'])([^"']*(?:\/producto\/|\/product-page\/)[^"']*)\1/i), requestUrl);
+    normalizeUrl(firstCapture(snippet, /href=(["'])([^"']*(?:\/producto\/|\/product\/|\/product-page\/)[^"']*)\1/i), requestUrl);
   const name =
     cleanLabel(preferred?.name) ??
     extractHtmlPartName(snippet, preferred?.rawLabel ?? null, url, profile) ??
@@ -365,18 +368,51 @@ function normalizeHtmlPartFromSnippet(
 }
 
 function dedupeNormalizedParts(items: NormalizedSupplierPart[], limit: number) {
-  const seen = new Set<string>();
+  const indexByKey = new Map<string, number>();
   const result: NormalizedSupplierPart[] = [];
 
   for (const item of items) {
-    const key = `${item.externalPartId}::${normalizeSearchText(item.name)}::${item.price ?? 'na'}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
+    const key = buildNormalizedPartDedupeKey(item);
+    const existingIndex = indexByKey.get(key);
+    if (existingIndex != null) {
+      result[existingIndex] = mergeDuplicateNormalizedPart(result[existingIndex]!, item);
+      continue;
+    }
+    indexByKey.set(key, result.length);
     result.push(item);
     if (result.length >= limit) break;
   }
 
   return result;
+}
+
+function buildNormalizedPartDedupeKey(item: NormalizedSupplierPart) {
+  const urlKey = (item.url ?? '').trim().toLowerCase();
+  if (urlKey) return `url:${urlKey}`;
+
+  const skuKey = (item.sku ?? '').trim().toLowerCase();
+  if (skuKey) return `sku:${skuKey}`;
+
+  return `name:${normalizeSearchText(item.name)}`;
+}
+
+function mergeDuplicateNormalizedPart(current: NormalizedSupplierPart, next: NormalizedSupplierPart) {
+  const currentPrice = current.price == null ? Number.POSITIVE_INFINITY : current.price;
+  const nextPrice = next.price == null ? Number.POSITIVE_INFINITY : next.price;
+  const preferred = nextPrice < currentPrice ? next : current;
+  const fallback = preferred === current ? next : current;
+
+  return {
+    ...preferred,
+    sku: preferred.sku ?? fallback.sku,
+    brand: preferred.brand ?? fallback.brand,
+    price: Number.isFinite(Math.min(currentPrice, nextPrice)) ? Math.min(currentPrice, nextPrice) : null,
+    availability:
+      availabilityOrder(preferred.availability) <= availabilityOrder(fallback.availability)
+        ? preferred.availability
+        : fallback.availability,
+    rawLabel: preferred.rawLabel ?? fallback.rawLabel,
+  };
 }
 
 function shouldIgnoreJsonPart(item: unknown, config: Record<string, unknown>) {
@@ -432,7 +468,7 @@ function isLikelyProductUrl(
   const pathname = safePathname(absoluteUrl);
   if (!pathname) return false;
   if (/\/(?:categoria-producto|product-category|search|tienda|shop)\/?$/i.test(pathname)) return false;
-  if (/\/(?:producto|product-page)\//i.test(pathname)) return true;
+  if (/\/(?:producto|product|product-page)\//i.test(pathname)) return true;
   return candidatePaths.length > 0;
 }
 

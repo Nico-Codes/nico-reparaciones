@@ -896,3 +896,13 @@ Y dejar mas abajo:
 - resultados genericos
 - modelos cercanos pero no exactos (`A10E`, `A10S`) si no superan al match exacto
 - precios basura producto de markup ambiguo
+
+## Estado actual despues del hardening operativo 2026-04-23
+
+Se mantiene la politica de busqueda exacta y el orden final por menor precio, pero se reforzaron estos puntos:
+
+- `Tienda Movil Rosario` soporta el markup actual de cards XStore/Elementor y deduplica el mismo articulo por URL, conservando el precio final visible mas bajo cuando aparece precio tachado + oferta.
+- `Celuphone` queda cubierto con fixture de precio visible real y sigue devolviendo precio desde el HTML publico actual.
+- `PuntoCell` se trata de forma conservadora: si la web publica muestra `Consultar Precio` y `0.0` oculto, el sistema no inventa precio y el resultado no queda seleccionable para calculo.
+- en la UI de reparaciones, los resultados sin stock o sin precio quedan bloqueados para seleccion; siguen pudiendo verse como referencia cuando el proveedor devuelve un articulo real.
+- la comparacion de resultados sigue centrada en elegir un repuesto utilizable, no en auditar proveedores consultados.

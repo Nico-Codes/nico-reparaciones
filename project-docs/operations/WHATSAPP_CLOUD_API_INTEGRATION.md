@@ -133,3 +133,18 @@ Conclusion operativa:
 
 - el sistema **ya esta listo tecnicamente** para usar Meta Cloud API
 - todavia **no puede declararse validado contra Meta real** porque faltan credenciales reales y webhook publico en el entorno actual
+
+## Modo manual asistido en reparaciones
+
+Estado al 2026-04-23:
+
+- cada detalle admin de reparacion puede obtener un borrador de WhatsApp renderizado con las plantillas editables del canal `repairs`;
+- el backend devuelve telefono normalizado, mensaje final, `openUrl`, `canSend`, modo `manual` y estado de Cloud;
+- al abrir el CTA manual se puede registrar un log con `meta.deliveryMode = manual`;
+- este fallback es el modo operativo recomendado mientras Cloud API siga sin credenciales reales o sin templates oficiales aprobados por Meta.
+
+Regla operativa:
+
+- Cloud API queda como preparacion tecnica;
+- el producto diario no debe depender de Cloud para avisar al cliente;
+- la automatizacion final requiere templates oficiales de Meta por estado.

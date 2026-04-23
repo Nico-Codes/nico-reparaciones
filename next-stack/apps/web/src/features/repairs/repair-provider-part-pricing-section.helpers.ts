@@ -118,6 +118,10 @@ export function availabilityTone(value: 'in_stock' | 'out_of_stock' | 'unknown' 
   return 'neutral' as const;
 }
 
+export function isSelectableProviderPart(part: Pick<AdminProviderAggregatePartSearchItem, 'availability' | 'price'>) {
+  return part.availability !== 'out_of_stock' && part.price != null;
+}
+
 export function isSmokeSupplierName(name: string | null | undefined) {
   return (name ?? '').trim().toLowerCase().startsWith('smoke supplier');
 }

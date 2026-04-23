@@ -9,6 +9,7 @@ import {
   buildHydratedPart,
   buildProviderFilterOptions,
   buildVisibleProviderSearchState,
+  isSelectableProviderPart,
   normalizeNullable,
   parseOptionalMoney,
   parsePositiveInteger,
@@ -194,7 +195,7 @@ export function useRepairProviderPartSearch({
       if (requestId !== searchRequestIdRef.current) return;
       setPartResults(response.items);
       setSelectedPartKey((current) =>
-        current && response.items.some((item) => partKey(item) === current && item.availability !== 'out_of_stock')
+        current && response.items.some((item) => partKey(item) === current && isSelectableProviderPart(item))
           ? current
           : '',
       );

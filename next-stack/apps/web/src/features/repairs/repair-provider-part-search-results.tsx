@@ -4,7 +4,12 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { StatusBadge } from '@/components/ui/status-badge';
 import type { AdminProviderAggregatePartSearchItem } from '@/features/admin/api';
 import { money } from './repair-ui';
-import { availabilityLabel, availabilityTone, partKey } from './repair-provider-part-pricing-section.helpers';
+import {
+  availabilityLabel,
+  availabilityTone,
+  isSelectableProviderPart,
+  partKey,
+} from './repair-provider-part-pricing-section.helpers';
 
 export type RepairProviderPartPricingSearchResultsProps = {
   searchLoading: boolean;
@@ -93,7 +98,8 @@ function RepairProviderPartSearchResultRow({
 }) {
   const currentKey = partKey(part);
   const outOfStock = part.availability === 'out_of_stock';
-  const selectionDisabled = disabled || outOfStock;
+  const missingPrice = part.price == null;
+  const selectionDisabled = disabled || !isSelectableProviderPart(part);
 
   return (
     <div
@@ -158,7 +164,7 @@ function RepairProviderPartSearchResultRow({
             }}
             disabled={selectionDisabled}
           >
-            {outOfStock ? 'Sin stock' : selected ? 'Seleccionado' : 'Elegir'}
+            {outOfStock ? 'Sin stock' : missingPrice ? 'Sin precio' : selected ? 'Seleccionado' : 'Elegir'}
           </Button>
         </div>
       </div>
