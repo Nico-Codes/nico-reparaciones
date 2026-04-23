@@ -12,6 +12,22 @@
 
 ---
 
+### 2026-04-23 - Codex
+- Alcance: centrar verticalmente el precio en las cards publicas de tienda.
+- Tipo de intervencion: ajuste CSS puntual en la fila de compra de productos.
+- Archivos tocados:
+  - `next-stack/apps/web/src/styles/store.css`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No. Solo centra el texto del precio dentro de su contenedor padre.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - el ajuste conserva la separacion categoria-precio y centra precio/carrito dentro de la misma fila.
+
+---
+
 ### 2026-04-22 - Codex
 - Alcance: ajustar separacion entre categoria y precio en cards moviles de tienda.
 - Tipo de intervencion: ajuste CSS puntual en el bloque de compra de productos.
