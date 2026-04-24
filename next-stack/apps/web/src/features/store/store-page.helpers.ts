@@ -12,6 +12,13 @@ export type StoreSortOption = {
   label: string;
 };
 
+export type StoreCategorySelection = {
+  activeCategory: StoreCategory | null;
+  activeParent: StoreCategory | null;
+  activeChild: StoreCategory | null;
+  subcategories: StoreCategory[];
+};
+
 const STORE_HERO_FALLBACK: StoreHeroConfig = {
   imageDesktop: '/brand/logo.png',
   imageMobile: '/brand/logo.png',
@@ -82,9 +89,70 @@ export function buildStoreHeroVisualVars(hero: StoreHeroConfig): CSSProperties {
   } as CSSProperties;
 }
 
+export function buildStoreCategoryPathLabel(category: {
+  name: string;
+  pathLabel?: string;
+  parentName?: string | null;
+  parent?: { name: string } | null;
+}) {
+  if (category.pathLabel) return category.pathLabel;
+  const parentName = category.parentName ?? category.parent?.name ?? null;
+  return parentName ? `${parentName} / ${category.name}` : category.name;
+}
+
+export function findStoreCategoryBySlug(categories: StoreCategory[], slug: string | null) {
+  if (!slug) return null;
+  for (const category of categories) {
+    if (category.slug === slug) return category;
+    const child = category.children.find((item) => item.slug === slug);
+    if (child) return child;
+  }
+  return null;
+}
+
+export function resolveStoreCategorySelection(categories: StoreCategory[], slug: string | null): StoreCategorySelection {
+  if (!slug) {
+    return {
+      activeCategory: null,
+      activeParent: null,
+      activeChild: null,
+      subcategories: [],
+    };
+  }
+
+  for (const category of categories) {
+    if (category.slug === slug) {
+      return {
+        activeCategory: category,
+        activeParent: category,
+        activeChild: null,
+        subcategories: category.children,
+      };
+    }
+
+    const child = category.children.find((item) => item.slug === slug);
+    if (child) {
+      return {
+        activeCategory: child,
+        activeParent: category,
+        activeChild: child,
+        subcategories: category.children,
+      };
+    }
+  }
+
+  return {
+    activeCategory: null,
+    activeParent: null,
+    activeChild: null,
+    subcategories: [],
+  };
+}
+
 export function getSelectedStoreCategoryLabel(categories: StoreCategory[], category: string | null) {
-  if (!category) return 'Todas las categorias';
-  return categories.find((item) => item.slug === category)?.name ?? 'Categoria actual';
+  const selection = resolveStoreCategorySelection(categories, category);
+  if (!selection.activeCategory) return category ? 'Categoria actual' : 'Todas las categorias';
+  return buildStoreCategoryPathLabel(selection.activeCategory);
 }
 
 export function getStoreSortLabel(sort: string) {

@@ -9,7 +9,7 @@ import { Link, useParams } from 'react-router-dom';
 import { catalogAdminApi, type AdminCategory, type AdminProduct } from './api';
 import { productPricingApi } from './productPricingApi';
 import { AdminProductEditFeedback, AdminProductEditFormLayout, AdminProductEditHeaderActions, AdminProductEditMissingState } from './admin-product-edit.sections';
-import { buildNamedOptions, buildProductMarginStats, slugify } from './admin-product-form.helpers';
+import { buildHierarchicalCategoryOptions, buildNamedOptions, buildProductMarginStats, slugify } from './admin-product-form.helpers';
 
 export function AdminProductEditPage() {
   const { id = '' } = useParams();
@@ -166,7 +166,7 @@ export function AdminProductEditPage() {
   }, [id, categoryId, costPrice]);
 
   const finalSlug = useMemo(() => slugify(slug.trim() || name.trim()), [name, slug]);
-  const categoryOptions = useMemo(() => buildNamedOptions(categories, 'Sin categoria'), [categories]);
+  const categoryOptions = useMemo(() => buildHierarchicalCategoryOptions(categories, 'Sin categoria'), [categories]);
   const supplierOptions = useMemo(() => buildNamedOptions(suppliers, 'Sin proveedor'), [suppliers]);
   const marginStats = useMemo(() => buildProductMarginStats(costPrice, price), [costPrice, price]);
 

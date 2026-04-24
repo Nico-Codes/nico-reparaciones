@@ -39,9 +39,12 @@ describe('CatalogAdminPricingService', () => {
       appSetting: {
         findUnique: vi.fn(async () => null),
       },
+      category: {
+        findUnique: vi.fn(async () => ({ id: 'cat-1', parentId: 'cat-root' })),
+      },
       productPricingRule: {
         findMany: vi.fn(async () => [
-          createRule({ id: 'rule-category', name: 'Categoria', categoryId: 'cat-1', marginPercent: new Prisma.Decimal(40), priority: 10 }),
+          createRule({ id: 'rule-parent', name: 'Categoria padre', categoryId: 'cat-root', marginPercent: new Prisma.Decimal(40), priority: 10 }),
           createRule({
             id: 'rule-product',
             name: 'Producto especifico',
@@ -69,6 +72,37 @@ describe('CatalogAdminPricingService', () => {
     });
   });
 
+  it('falls back from child category to parent category before global rules', async () => {
+    const prisma = {
+      appSetting: {
+        findUnique: vi.fn(async () => null),
+      },
+      category: {
+        findUnique: vi.fn(async () => ({ id: 'cat-child', parentId: 'cat-root' })),
+      },
+      productPricingRule: {
+        findMany: vi.fn(async () => [
+          createRule({ id: 'rule-global', name: 'Global', categoryId: null, marginPercent: new Prisma.Decimal(20), priority: 50 }),
+          createRule({ id: 'rule-parent', name: 'Padre', categoryId: 'cat-root', marginPercent: new Prisma.Decimal(35), priority: 5 }),
+        ]),
+      },
+    } as never;
+
+    const service = new CatalogAdminPricingService(prisma, createSupport());
+    const result = await service.resolveRecommendedProductPrice({
+      categoryId: 'cat-child',
+      costPrice: 2000,
+      productId: null,
+    });
+
+    expect(result).toMatchObject({
+      ok: true,
+      recommendedPrice: 2700,
+      marginPercent: 35,
+      rule: { id: 'rule-parent', name: 'Padre' },
+    });
+  });
+
   it('falls back to default settings when no rule matches', async () => {
     const prisma = {
       appSetting: {
@@ -77,6 +111,9 @@ describe('CatalogAdminPricingService', () => {
           if (where.key === 'product_prevent_negative_margin') return { value: '1' };
           return null;
         }),
+      },
+      category: {
+        findUnique: vi.fn(async () => ({ id: 'cat-1', parentId: null })),
       },
       productPricingRule: {
         findMany: vi.fn(async () => []),

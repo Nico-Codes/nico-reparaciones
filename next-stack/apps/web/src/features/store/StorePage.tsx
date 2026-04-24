@@ -9,6 +9,7 @@ import {
   buildStoreSearchParams,
   buildStoreSortOptions,
   getSelectedStoreCategoryLabel,
+  resolveStoreCategorySelection,
   getStoreSortLabel,
   hasStoreActiveFilters,
   type StoreQueryPatch,
@@ -135,6 +136,7 @@ export function StorePage() {
     () => getSelectedStoreCategoryLabel(categories, category),
     [categories, category],
   );
+  const categorySelection = useMemo(() => resolveStoreCategorySelection(categories, category), [categories, category]);
   const hasActiveFilters = hasStoreActiveFilters(q, category, sort);
 
   const products = productsData?.items ?? [];
@@ -173,6 +175,9 @@ export function StorePage() {
       <StoreCategoriesSection
         categories={categories}
         activeCategory={category}
+        activeParentSlug={categorySelection.activeParent?.slug ?? null}
+        activeChildSlug={categorySelection.activeChild?.slug ?? null}
+        subcategories={categorySelection.subcategories}
         onSelectCategory={(value) => applyQuery({ category: value })}
       />
 

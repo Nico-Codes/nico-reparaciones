@@ -255,7 +255,7 @@ function AdminProductRow({
                 )}
               </div>
               <div className="admin-entity-row__meta admin-product-row__meta">
-                <span>{product.category?.name || 'Sin categoria'}</span>
+                <span>{product.category?.pathLabel || 'Sin categoria'}</span>
                 <span>{product.supplier?.name || 'Sin proveedor'}</span>
                 <span>SKU: {product.sku || 'No informado'}</span>
                 <span>Codigo: {product.barcode || 'No informado'}</span>

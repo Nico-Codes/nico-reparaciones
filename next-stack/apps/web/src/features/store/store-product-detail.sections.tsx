@@ -16,6 +16,7 @@ import {
   isStoreProductSpecialOrder,
   resolveStoreProductStockTone,
 } from './store-product-detail.helpers';
+import { buildStoreCategoryPathLabel } from './store-page.helpers';
 import type { StoreProduct } from './types';
 
 type StoreProductLoadingStateProps = {
@@ -96,14 +97,25 @@ export function StoreProductEmptyState({ message }: StoreProductEmptyStateProps)
 }
 
 export function StoreProductBreadcrumb({ item }: StoreProductBreadcrumbProps) {
+  const parentCategory = item.category?.parent ?? null;
+  const category = item.category ?? null;
+
   return (
     <nav className="product-detail-breadcrumb" aria-label="Breadcrumb">
       <Link to="/store" className="font-black">Tienda</Link>
       <span className="mx-2">/</span>
-      {item.category ? (
+      {parentCategory ? (
         <>
-          <Link to={`/store?category=${encodeURIComponent(item.category.slug)}`} className="font-black">
-            {item.category.name}
+          <Link to={`/store?category=${encodeURIComponent(parentCategory.slug)}`} className="font-black">
+            {parentCategory.name}
+          </Link>
+          <span className="mx-2">/</span>
+        </>
+      ) : null}
+      {category ? (
+        <>
+          <Link to={`/store?category=${encodeURIComponent(category.slug)}`} className="font-black">
+            {category.name}
           </Link>
           <span className="mx-2">/</span>
         </>
@@ -249,7 +261,7 @@ export function StoreProductMetaSection({ item }: StoreProductMetaSectionProps) 
       <div className="meta-grid">
         <div className="meta-tile">
           <div className="meta-tile__label">Categoria</div>
-          <div className="meta-tile__value">{item.category?.name || 'Sin categoria'}</div>
+          <div className="meta-tile__value">{item.category ? buildStoreCategoryPathLabel(item.category) : 'Sin categoria'}</div>
         </div>
         <div className="meta-tile">
           <div className="meta-tile__label">Disponibilidad</div>

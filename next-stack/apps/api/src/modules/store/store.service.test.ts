@@ -37,7 +37,7 @@ describe('StoreService', () => {
       },
     };
 
-    const service = new StoreService(prisma as any);
+    const service = new StoreService(prisma as never);
 
     await expect(service.getBrandingAssets()).resolves.toMatchObject({
       authPanelImages: {
@@ -60,44 +60,94 @@ describe('StoreService', () => {
     });
   });
 
-  it('counts only categories with public products visible in store', async () => {
+  it('returns a category tree and counts only public products visible in store', async () => {
     const prisma = {
       category: {
-        findMany: vi.fn().mockResolvedValue([]),
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: 'root',
+            name: 'Accesorios',
+            slug: 'accesorios',
+            parentId: null,
+            _count: { products: 2 },
+            children: [
+              {
+                id: 'child',
+                name: 'Cables',
+                slug: 'cables',
+                parentId: 'root',
+                _count: { products: 3 },
+              },
+            ],
+          },
+        ]),
       },
     };
 
-    const service = new StoreService(prisma as any);
+    const service = new StoreService(prisma as never);
 
-    await service.listCategories();
+    await expect(service.listCategories()).resolves.toEqual([
+      {
+        id: 'root',
+        name: 'Accesorios',
+        slug: 'accesorios',
+        parentId: null,
+        parentSlug: null,
+        parentName: null,
+        productsCount: 5,
+        children: [
+          {
+            id: 'child',
+            name: 'Cables',
+            slug: 'cables',
+            parentId: 'root',
+            parentSlug: 'accesorios',
+            parentName: 'Accesorios',
+            productsCount: 3,
+            children: [],
+          },
+        ],
+      },
+    ]);
 
-    expect(prisma.category.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { active: true },
-        select: expect.objectContaining({
-          _count: {
-            select: {
-              products: {
-                where: expectedPublicWhere,
-              },
+    expect(prisma.category.findMany).toHaveBeenCalledWith({
+      where: { active: true, parentId: null },
+      orderBy: { name: 'asc' },
+      select: expect.objectContaining({
+        _count: {
+          select: {
+            products: {
+              where: expectedPublicWhere,
             },
           },
+        },
+        children: expect.objectContaining({
+          where: { active: true },
+          select: expect.objectContaining({
+            _count: {
+              select: {
+                products: {
+                  where: expectedPublicWhere,
+                },
+              },
+            },
+          }),
         }),
       }),
-    );
+    });
   });
 
   it('builds store home with hero, branding, categories and default first product page', async () => {
-    const service = new StoreService({} as any);
+    const service = new StoreService({} as never);
     const hero = { imageDesktop: '/hero.jpg', imageMobile: '/hero-mobile.jpg' };
     const branding = { siteTitle: 'NicoReparaciones' };
-    const categories = [{ id: 'cat_1', name: 'Cables', slug: 'cables', productsCount: 2 }];
+    const categories = [{ id: 'cat_1', name: 'Cables', slug: 'cables', parentId: null, parentSlug: null, parentName: null, productsCount: 2, children: [] }];
     const products = { items: [], meta: { total: 0, page: 1, pageSize: 24, totalPages: 1, q: '', category: null, sort: 'relevance' } };
 
-    const heroSpy = vi.spyOn(service, 'getHeroConfig').mockResolvedValue(hero as any);
-    const brandingSpy = vi.spyOn(service, 'getBrandingAssets').mockResolvedValue(branding as any);
-    const categoriesSpy = vi.spyOn(service, 'listCategories').mockResolvedValue(categories as any);
-    const productsSpy = vi.spyOn(service, 'listProducts').mockResolvedValue(products as any);
+    const heroSpy = vi.spyOn(service, 'getHeroConfig').mockResolvedValue(hero as never);
+    const brandingSpy = vi.spyOn(service, 'getBrandingAssets').mockResolvedValue(branding as never);
+    const categoriesSpy = vi.spyOn(service, 'listCategories').mockResolvedValue(categories as never);
+    const productsSpy = vi.spyOn(service, 'listProducts').mockResolvedValue(products as never);
 
     await expect(service.getHome()).resolves.toEqual({
       hero,
@@ -112,6 +162,34 @@ describe('StoreService', () => {
     expect(productsSpy).toHaveBeenCalledWith({ page: 1, pageSize: 24, sort: 'relevance' });
   });
 
+  it('expands parent category filters to include child categories in public listing', async () => {
+    const prisma = {
+      category: {
+        findFirst: vi.fn().mockResolvedValue({
+          id: 'root',
+          slug: 'accesorios',
+          parentId: null,
+          children: [{ id: 'child-1' }, { id: 'child-2' }],
+        }),
+      },
+      product: {
+        findMany: vi.fn().mockResolvedValue([]),
+        count: vi.fn().mockResolvedValue(0),
+      },
+    };
+
+    const service = new StoreService(prisma as never);
+    await service.listProducts({ category: 'accesorios' });
+
+    expect(prisma.product.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          categoryId: { in: ['root', 'child-1', 'child-2'] },
+        }),
+      }),
+    );
+  });
+
   it('hides out-of-stock products from public listing and detail lookups', async () => {
     const prisma = {
       product: {
@@ -121,7 +199,7 @@ describe('StoreService', () => {
       },
     };
 
-    const service = new StoreService(prisma as any);
+    const service = new StoreService(prisma as never);
 
     await service.listProducts({});
 
@@ -154,7 +232,7 @@ describe('StoreService', () => {
       },
     };
 
-    const service = new StoreService(prisma as any);
+    const service = new StoreService(prisma as never);
 
     await expect(service.getBrandingAssets()).resolves.toMatchObject({
       authPanelImages: {
@@ -181,7 +259,7 @@ describe('StoreService', () => {
       },
     };
 
-    const service = new StoreService(prisma as any);
+    const service = new StoreService(prisma as never);
 
     await expect(service.getBrandingAssets()).resolves.toMatchObject({
       authPanelContent: {

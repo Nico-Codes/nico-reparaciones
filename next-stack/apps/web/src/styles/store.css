@@ -204,6 +204,26 @@
   -webkit-overflow-scrolling: touch;
 }
 
+.store-categories__subrail {
+  display: flex;
+  gap: 0.55rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  padding-top: 0.65rem;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.store-categories__subrail::-webkit-scrollbar {
+  display: none;
+}
+
+.store-categories__subrail .nav-pill {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  scroll-snap-align: start;
+}
+
 .store-categories__rail::-webkit-scrollbar {
   display: none;
 }
@@ -241,6 +261,11 @@
   }
 
   .store-categories__rail {
+    flex-wrap: wrap;
+    overflow: visible;
+  }
+
+  .store-categories__subrail {
     flex-wrap: wrap;
     overflow: visible;
   }
@@ -536,6 +561,13 @@
     margin-inline: -0.05rem;
     padding-inline: 0.05rem;
     scroll-padding-inline: 0.1rem;
+  }
+
+  .store-categories__subrail {
+    gap: 0.45rem;
+    margin-inline: -0.05rem;
+    padding-top: 0.58rem;
+    padding-inline: 0.05rem;
   }
 
   .store-categories .nav-pill {

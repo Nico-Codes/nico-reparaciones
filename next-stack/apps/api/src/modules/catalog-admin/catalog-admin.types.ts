@@ -3,12 +3,14 @@ import { Prisma } from '@prisma/client';
 export type CategoryCreateInput = {
   name: string;
   slug: string;
+  parentId?: string | null;
   active?: boolean;
 };
 
 export type CategoryUpdateInput = {
   name?: string;
   slug?: string;
+  parentId?: string | null;
   active?: boolean;
 };
 
@@ -114,7 +116,15 @@ export type ResolveProductPricingInput = {
 
 export type ProductWithRelations = Prisma.ProductGetPayload<{
   include: {
-    category: { select: { id: true; name: true; slug: true } };
+    category: {
+      select: {
+        id: true;
+        name: true;
+        slug: true;
+        parentId: true;
+        parent: { select: { id: true; name: true; slug: true } };
+      };
+    };
     supplier: { select: { id: true; name: true } };
     specialOrderProfile: { select: { id: true; name: true } };
   };
@@ -122,8 +132,24 @@ export type ProductWithRelations = Prisma.ProductGetPayload<{
 
 export type ProductPricingRuleWithRelations = Prisma.ProductPricingRuleGetPayload<{
   include: {
-    category: { select: { id: true; name: true } };
+    category: {
+      select: {
+        id: true;
+        name: true;
+        slug: true;
+        parentId: true;
+        parent: { select: { id: true; name: true; slug: true } };
+      };
+    };
     product: { select: { id: true; name: true } };
+  };
+}>;
+
+export type CategoryWithRelations = Prisma.CategoryGetPayload<{
+  include: {
+    parent: { select: { id: true; name: true; slug: true } };
+    children: { select: { id: true } };
+    _count: { select: { products: true } };
   };
 }>;
 

@@ -50,7 +50,14 @@ type ExistingImportedProduct = {
   specialOrderSourceKey: string | null;
   createdAt: Date;
   updatedAt: Date;
-  category: { id: string; name: string; slug: string } | null;
+  category: {
+    id: string;
+    name: string;
+    slug: string;
+    parentId: string | null;
+    parent: { id: string; name: string; slug: string } | null;
+    pathLabel: string;
+  } | null;
 };
 
 @Injectable()
@@ -310,13 +317,27 @@ export class CatalogAdminSpecialOrderService {
 
     const [categories, existingProducts] = await Promise.all([
       this.prisma.category.findMany({
-        select: { id: true, name: true, slug: true },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          parentId: true,
+          parent: { select: { id: true, name: true, slug: true } },
+        },
         orderBy: { name: 'asc' },
       }),
       this.prisma.product.findMany({
         where: { specialOrderProfileId: profile.id },
         include: {
-          category: { select: { id: true, name: true, slug: true } },
+          category: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              parentId: true,
+              parent: { select: { id: true, name: true, slug: true } },
+            },
+          },
         },
         orderBy: [{ active: 'desc' }, { updatedAt: 'desc' }],
       }),
@@ -436,7 +457,11 @@ export class CatalogAdminSpecialOrderService {
         sourceKey: product.specialOrderSourceKey ?? '',
         title: product.name,
         status: 'missing_deactivate' as const,
-        categoryName: product.category?.name ?? null,
+        categoryName: product.category
+          ? product.category.parent
+            ? `${product.category.parent.name} / ${product.category.name}`
+            : product.category.name
+          : null,
       }));
 
     const summary = {
@@ -468,7 +493,13 @@ export class CatalogAdminSpecialOrderService {
     sections: ParsedSpecialOrderSection[];
     inputMappings: Array<{ sectionKey: string; categoryId?: string | null; createCategoryName?: string | null }>;
     profileMapJson?: string | null;
-    categories: Array<{ id: string; name: string; slug: string }>;
+    categories: Array<{
+      id: string;
+      name: string;
+      slug: string;
+      parentId: string | null;
+      parent: { id: string; name: string; slug: string } | null;
+    }>;
   }) {
     const inputMappings = new Map(
       input.inputMappings
@@ -520,7 +551,11 @@ export class CatalogAdminSpecialOrderService {
         sectionKey: section.sectionKey,
         sectionName: section.sectionName,
         categoryId: referencedCategory?.id ?? null,
-        categoryName: referencedCategory?.name ?? createCategoryName ?? section.sectionName,
+        categoryName: referencedCategory
+          ? referencedCategory.parent
+            ? `${referencedCategory.parent.name} / ${referencedCategory.name}`
+            : referencedCategory.name
+          : createCategoryName ?? section.sectionName,
         createCategoryName,
         willCreateCategory: !referencedCategory && Boolean(createCategoryName),
         mappingSource: entrySource,
@@ -620,7 +655,13 @@ export class CatalogAdminSpecialOrderService {
     specialOrderSourceKey: string | null;
     createdAt: Date;
     updatedAt: Date;
-    category?: { id: string; name: string; slug: string } | null;
+    category?: {
+      id: string;
+      name: string;
+      slug: string;
+      parentId: string | null;
+      parent: { id: string; name: string; slug: string } | null;
+    } | null;
   }): ExistingImportedProduct {
     return {
       id: product.id,
@@ -637,7 +678,24 @@ export class CatalogAdminSpecialOrderService {
       specialOrderSourceKey: product.specialOrderSourceKey,
       createdAt: product.createdAt,
       updatedAt: product.updatedAt,
-      category: product.category ?? null,
+      category: product.category
+        ? {
+            id: product.category.id,
+            name: product.category.name,
+            slug: product.category.slug,
+            parentId: product.category.parentId ?? null,
+            parent: product.category.parent
+              ? {
+                  id: product.category.parent.id,
+                  name: product.category.parent.name,
+                  slug: product.category.parent.slug,
+                }
+              : null,
+            pathLabel: product.category.parent
+              ? `${product.category.parent.name} / ${product.category.name}`
+              : product.category.name,
+          }
+        : null,
     };
   }
 

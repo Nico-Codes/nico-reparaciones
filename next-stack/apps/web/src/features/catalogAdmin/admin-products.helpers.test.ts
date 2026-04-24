@@ -10,7 +10,9 @@ import {
 } from './admin-products.helpers';
 import type { AdminCategory, AdminProduct } from './api';
 
-function makeProduct(input: Partial<AdminProduct> & Pick<AdminProduct, 'id' | 'name' | 'slug' | 'price' | 'stock' | 'active' | 'featured'>): AdminProduct {
+function makeProduct(
+  input: Partial<AdminProduct> & Pick<AdminProduct, 'id' | 'name' | 'slug' | 'price' | 'stock' | 'active' | 'featured'>,
+): AdminProduct {
   return {
     description: null,
     purchaseReference: null,
@@ -65,14 +67,42 @@ describe('admin-products.helpers', () => {
     expect(filterAdminProducts(products, '', '', 'SPECIAL_ORDER')).toHaveLength(1);
   });
 
-  it('builds category options and detects active filters', () => {
+  it('builds hierarchical category options and detects active filters', () => {
     const categories: AdminCategory[] = [
-      { id: 'c1', name: 'Fundas', slug: 'fundas', active: true, productsCount: 1 },
+      {
+        id: 'root',
+        name: 'Accesorios',
+        slug: 'accesorios',
+        parentId: null,
+        parent: null,
+        depth: 0,
+        active: true,
+        directProductsCount: 1,
+        totalProductsCount: 2,
+        productsCount: 2,
+        childrenCount: 1,
+        pathLabel: 'Accesorios',
+      },
+      {
+        id: 'child',
+        name: 'Fundas',
+        slug: 'fundas',
+        parentId: 'root',
+        parent: { id: 'root', name: 'Accesorios', slug: 'accesorios' },
+        depth: 1,
+        active: true,
+        directProductsCount: 1,
+        totalProductsCount: 1,
+        productsCount: 1,
+        childrenCount: 0,
+        pathLabel: 'Accesorios / Fundas',
+      },
     ];
 
     expect(buildAdminProductCategoryOptions(categories)).toEqual([
       { value: '', label: 'Todas las categorias' },
-      { value: 'c1', label: 'Fundas' },
+      { value: 'root', label: 'Accesorios' },
+      { value: 'child', label: 'Accesorios / Fundas' },
     ]);
     expect(
       hasAdminProductFilters({

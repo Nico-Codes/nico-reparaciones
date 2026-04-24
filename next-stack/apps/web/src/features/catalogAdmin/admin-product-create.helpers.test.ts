@@ -17,7 +17,7 @@ describe('admin-product-create.helpers', () => {
         },
         true,
       ),
-    ).toBe('Completá un nombre válido para generar el producto.');
+    ).toBe('Completa un nombre valido para generar el producto.');
 
     expect(
       validateAdminProductCreateDraft(
@@ -29,7 +29,7 @@ describe('admin-product-create.helpers', () => {
         },
         true,
       ),
-    ).toBe('El precio de venta no puede quedar por debajo del costo mientras el guard de margen esté activo.');
+    ).toBe('El precio de venta no puede quedar por debajo del costo mientras el guard de margen este activo.');
 
     expect(
       validateAdminProductCreateDraft(
@@ -88,13 +88,28 @@ describe('admin-product-create.helpers', () => {
           price: '10000',
         },
         'modulo',
-        [{ id: 'cat-1', name: 'Repuestos', slug: 'repuestos', active: true, productsCount: 1 }],
+        [
+          {
+            id: 'cat-1',
+            name: 'Repuestos',
+            slug: 'repuestos',
+            parentId: null,
+            parent: null,
+            depth: 0,
+            active: true,
+            directProductsCount: 1,
+            totalProductsCount: 1,
+            productsCount: 1,
+            childrenCount: 0,
+            pathLabel: 'Repuestos',
+          },
+        ],
         [{ id: 'sup-1', name: 'Proveedor Uno' }],
       ),
     ).toEqual([
       { label: 'Nombre', value: 'Modulo' },
       { label: 'Slug final', value: 'modulo' },
-      { label: 'Categoría', value: 'Repuestos' },
+      { label: 'Categoria', value: 'Repuestos' },
       { label: 'Proveedor', value: 'Proveedor Uno' },
       { label: 'Venta', value: '$ 10.000', tone: 'money' },
     ]);

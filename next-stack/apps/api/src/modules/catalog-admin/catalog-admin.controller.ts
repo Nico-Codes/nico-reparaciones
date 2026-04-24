@@ -11,6 +11,7 @@ import { CatalogAdminService } from './catalog-admin.service.js';
 const categoryCreateSchema = z.object({
   name: z.string().trim().min(2).max(120),
   slug: z.string().trim().min(2).max(120),
+  parentId: z.string().trim().max(191).optional().nullable(),
   active: z.boolean().optional(),
 });
 const categoryPatchSchema = categoryCreateSchema.partial();

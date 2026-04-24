@@ -5,6 +5,7 @@ import type {
   ProductPricingSimulationResult,
   ProductRuleRow,
 } from './admin-product-pricing-rules.helpers';
+import { buildProductOptions, categoryNameById, filterProductsByCategory } from './admin-product-pricing-rules.helpers';
 import {
   ProductPricingEditableInput,
   ProductPricingEditableSelect,
@@ -228,7 +229,7 @@ export function ProductPricingRulesListPanel({
   onSaveRule: (rule: ProductRuleRow) => void;
   onRemoveRule: (id: string) => void;
 }) {
-  const categoryLookup = new Map(categories.map((category) => [category.id, category.name]));
+  const categoryLookup = new Map(categories.map((category) => [category.id, categoryNameById(categories, category.id)]));
   const productLookup = new Map(products.map((product) => [product.id, product.name]));
 
   return (
@@ -248,6 +249,7 @@ export function ProductPricingRulesListPanel({
               key={rule.id}
               rule={rule}
               products={products}
+              categories={categories}
               categoryOptions={categoryOptions}
               categoryName={categoryLookup.get(rule.categoryId ?? '') ?? 'Todas'}
               productName={productLookup.get(rule.productId ?? '') ?? 'Todos'}
@@ -267,6 +269,7 @@ export function ProductPricingRulesListPanel({
 function ProductPricingRuleCard({
   rule,
   products,
+  categories,
   categoryOptions,
   categoryName,
   productName,
@@ -278,6 +281,7 @@ function ProductPricingRuleCard({
 }: {
   rule: ProductRuleRow;
   products: AdminProduct[];
+  categories: AdminCategory[];
   categoryOptions: Array<{ value: string; label: string }>;
   categoryName: string;
   productName: string;
@@ -287,6 +291,9 @@ function ProductPricingRuleCard({
   onSave: () => void;
   onDelete: () => void;
 }) {
+  const filteredProducts = filterProductsByCategory(products, categories, rule.categoryId ?? '');
+  const productOptions = buildProductOptions(filteredProducts, 'Todos');
+
   return (
     <div className="rounded-2xl border border-zinc-200 bg-white p-3">
       <div className="grid gap-3 md:grid-cols-[1.6fr_0.9fr_0.9fr_0.7fr_0.8fr_0.8fr_0.8fr]">
@@ -301,12 +308,7 @@ function ProductPricingRuleCard({
           label="Producto"
           value={rule.productId ?? ''}
           onChange={(value) => onPatch({ productId: value || null })}
-          options={[
-            { value: '', label: 'Todos' },
-            ...products
-              .filter((product) => !rule.categoryId || product.categoryId === rule.categoryId)
-              .map((product) => ({ value: product.id, label: product.name })),
-          ]}
+          options={productOptions}
         />
         <ProductPricingEditableInput label="%" value={rule.marginPercent} onChange={(value) => onPatch({ marginPercent: value })} />
         <ProductPricingEditableInput label="Min" value={rule.costMin} onChange={(value) => onPatch({ costMin: value })} />

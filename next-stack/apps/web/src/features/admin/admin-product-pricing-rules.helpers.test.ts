@@ -14,11 +14,19 @@ import {
   toUpdateRuleInput,
 } from './admin-product-pricing-rules.helpers';
 
-function makeCategory(input: Partial<AdminCategory> & Pick<AdminCategory, 'id' | 'name'>): AdminCategory {
+function makeCategory(
+  input: Partial<AdminCategory> & Pick<AdminCategory, 'id' | 'name' | 'slug'>,
+): AdminCategory {
   return {
-    slug: input.slug ?? input.name.toLowerCase(),
+    parentId: input.parentId ?? null,
+    parent: input.parent ?? null,
+    depth: input.depth ?? 0,
     active: input.active ?? true,
+    directProductsCount: input.directProductsCount ?? 0,
+    totalProductsCount: input.totalProductsCount ?? 0,
     productsCount: input.productsCount ?? 0,
+    childrenCount: input.childrenCount ?? 0,
+    pathLabel: input.pathLabel ?? (input.parent?.name ? `${input.parent.name} / ${input.name}` : input.name),
     ...input,
   };
 }
@@ -117,28 +125,46 @@ describe('admin-product-pricing-rules helpers', () => {
     });
   });
 
-  it('builds filtered options and scope labels', () => {
-    const categories = [makeCategory({ id: 'c1', name: 'Cables' }), makeCategory({ id: 'c2', name: 'Mouse' })];
+  it('builds hierarchical category options and filters products by parent category', () => {
+    const categories = [
+      makeCategory({ id: 'c-root', name: 'Accesorios', slug: 'accesorios', depth: 0 }),
+      makeCategory({
+        id: 'c-child',
+        name: 'Cables',
+        slug: 'cables',
+        depth: 1,
+        parentId: 'c-root',
+        parent: { id: 'c-root', name: 'Accesorios', slug: 'accesorios' },
+      }),
+      makeCategory({ id: 'c-other', name: 'Mouse', slug: 'mouse', depth: 0 }),
+    ];
     const products = [
-      makeProduct({ id: 'p1', name: 'USB-C', categoryId: 'c1', price: 100, stock: 5 }),
-      makeProduct({ id: 'p2', name: 'Inalambrico', categoryId: 'c2', price: 200, stock: 3 }),
+      makeProduct({ id: 'p1', name: 'USB-C', categoryId: 'c-child', price: 100, stock: 5, category: categories[1] }),
+      makeProduct({ id: 'p2', name: 'Cargador rapido', categoryId: 'c-root', price: 200, stock: 3, category: categories[0] }),
+      makeProduct({ id: 'p3', name: 'Inalambrico', categoryId: 'c-other', price: 300, stock: 2, category: categories[2] }),
     ];
 
     expect(buildCategoryOptions(categories, 'Seleccionar')).toEqual([
       { value: '', label: 'Seleccionar' },
-      { value: 'c1', label: 'Cables' },
-      { value: 'c2', label: 'Mouse' },
+      { value: 'c-root', label: 'Accesorios' },
+      { value: 'c-child', label: 'Accesorios / Cables' },
+      { value: 'c-other', label: 'Mouse' },
     ]);
-    expect(buildProductOptions(filterProductsByCategory(products, 'c1'))).toEqual([
+    expect(buildProductOptions(filterProductsByCategory(products, categories, 'c-root'))).toEqual([
+      { value: '', label: 'Todos' },
+      { value: 'p1', label: 'USB-C' },
+      { value: 'p2', label: 'Cargador rapido' },
+    ]);
+    expect(buildProductOptions(filterProductsByCategory(products, categories, 'c-child'))).toEqual([
       { value: '', label: 'Todos' },
       { value: 'p1', label: 'USB-C' },
     ]);
-    expect(categoryNameById(categories, 'c2')).toBe('Mouse');
+    expect(categoryNameById(categories, 'c-child')).toBe('Accesorios / Cables');
     expect(productNameById(products, 'missing')).toBe('Todos');
   });
 
   it('builds the simulator text for each state', () => {
-    expect(productPricingSimulationText('', false, null)).toBe('Seleccioná una categoría para simular.');
+    expect(productPricingSimulationText('', false, null)).toBe('Selecciona una categoria para simular.');
     expect(productPricingSimulationText('c1', true, null)).toBe('Simulando...');
     expect(productPricingSimulationText('c1', false, null)).toBe('No se pudo calcular en este momento.');
     expect(

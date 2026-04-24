@@ -11,7 +11,12 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { TextField } from '@/components/ui/text-field';
 import { CustomSelect } from '@/components/ui/custom-select';
 import { cartStorage } from '@/features/cart/storage';
-import { STORE_SORT_OPTIONS, type StoreSortOption, type StoreSortValue } from './store-page.helpers';
+import {
+  buildStoreCategoryPathLabel,
+  STORE_SORT_OPTIONS,
+  type StoreSortOption,
+  type StoreSortValue,
+} from './store-page.helpers';
 import type { StoreCategory, StoreProduct } from './types';
 
 type StoreToolbarSectionProps = {
@@ -40,6 +45,9 @@ type StoreMobileSortSheetProps = {
 type StoreCategoriesSectionProps = {
   categories: StoreCategory[];
   activeCategory: string | null;
+  activeParentSlug: string | null;
+  activeChildSlug: string | null;
+  subcategories: StoreCategory[];
   onSelectCategory: (category: string | null) => void;
 };
 
@@ -202,7 +210,14 @@ export function StoreMobileSortSheet({
   );
 }
 
-export function StoreCategoriesSection({ categories, activeCategory, onSelectCategory }: StoreCategoriesSectionProps) {
+export function StoreCategoriesSection({
+  categories,
+  activeCategory,
+  activeParentSlug,
+  activeChildSlug,
+  subcategories,
+  onSelectCategory,
+}: StoreCategoriesSectionProps) {
   if (categories.length === 0) return null;
 
   return (
@@ -220,12 +235,33 @@ export function StoreCategoriesSection({ categories, activeCategory, onSelectCat
             key={category.id}
             type="button"
             onClick={() => onSelectCategory(category.slug)}
-            className={`nav-pill shrink-0 whitespace-nowrap ${activeCategory === category.slug ? 'nav-pill-active' : ''}`}
+            className={`nav-pill shrink-0 whitespace-nowrap ${activeParentSlug === category.slug ? 'nav-pill-active' : ''}`}
           >
             {category.name}
           </button>
         ))}
       </div>
+      {subcategories.length > 0 && activeParentSlug ? (
+        <div className="store-categories__subrail" aria-label="Subcategorias">
+          <button
+            type="button"
+            onClick={() => onSelectCategory(activeParentSlug)}
+            className={`nav-pill nav-pill--sub shrink-0 whitespace-nowrap ${activeCategory === activeParentSlug ? 'nav-pill-active' : ''}`}
+          >
+            Todo en {categories.find((category) => category.slug === activeParentSlug)?.name ?? 'la categoria'}
+          </button>
+          {subcategories.map((category) => (
+            <button
+              key={category.id}
+              type="button"
+              onClick={() => onSelectCategory(category.slug)}
+              className={`nav-pill nav-pill--sub shrink-0 whitespace-nowrap ${activeChildSlug === category.slug ? 'nav-pill-active' : ''}`}
+            >
+              {category.name}
+            </button>
+          ))}
+        </div>
+      ) : null}
     </SectionCard>
   );
 }
@@ -316,7 +352,7 @@ function StoreGridCard({ product }: { product: StoreProduct }) {
         {isSpecialOrder ? <StatusBadge tone="accent" size="sm" label="Por encargue" /> : null}
 
         <div className="product-purchase-block">
-          <div className="product-meta">{product.category?.name ?? 'Producto general'}</div>
+          <div className="product-meta">{product.category ? buildStoreCategoryPathLabel(product.category) : 'Producto general'}</div>
 
           <div className="product-row">
             <div className="product-price">$ {product.price.toLocaleString('es-AR')}</div>

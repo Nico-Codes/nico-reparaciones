@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildStoreCategoryPathLabel,
   buildStoreFallbackHero,
   buildStoreHeroVisualVars,
   buildStoreSearchParams,
   getSelectedStoreCategoryLabel,
   getStoreSortLabel,
   hasStoreActiveFilters,
+  resolveStoreCategorySelection,
 } from './store-page.helpers';
 
 describe('store-page.helpers', () => {
@@ -35,18 +37,45 @@ describe('store-page.helpers', () => {
     expect(vars['--hero-fade-mid-alpha' as keyof typeof vars]).toBe('1');
   });
 
-  it('derives category labels, sort labels and active filters', () => {
+  it('derives parent and child category labels', () => {
     const categories = [
-      { id: '1', name: 'Displays', slug: 'displays', productsCount: 10 },
-      { id: '2', name: 'Baterias', slug: 'baterias', productsCount: 8 },
+      {
+        id: '1',
+        name: 'Accesorios',
+        slug: 'accesorios',
+        parentId: null,
+        parentSlug: null,
+        parentName: null,
+        productsCount: 10,
+        children: [
+          {
+            id: '2',
+            name: 'Cables',
+            slug: 'cables',
+            parentId: '1',
+            parentSlug: 'accesorios',
+            parentName: 'Accesorios',
+            productsCount: 4,
+            children: [],
+          },
+        ],
+      },
     ];
 
+    expect(buildStoreCategoryPathLabel({ name: 'Cables', parentName: 'Accesorios' })).toBe('Accesorios / Cables');
     expect(getSelectedStoreCategoryLabel(categories, null)).toBe('Todas las categorias');
-    expect(getSelectedStoreCategoryLabel(categories, 'displays')).toBe('Displays');
+    expect(getSelectedStoreCategoryLabel(categories, 'accesorios')).toBe('Accesorios');
+    expect(getSelectedStoreCategoryLabel(categories, 'cables')).toBe('Accesorios / Cables');
     expect(getSelectedStoreCategoryLabel(categories, 'missing')).toBe('Categoria actual');
+
+    expect(resolveStoreCategorySelection(categories, 'cables')).toMatchObject({
+      activeParent: { slug: 'accesorios' },
+      activeChild: { slug: 'cables' },
+    });
+    expect(resolveStoreCategorySelection(categories, 'accesorios').subcategories).toHaveLength(1);
     expect(getStoreSortLabel('price_asc')).toBe('Menor precio');
     expect(hasStoreActiveFilters('', null, 'relevance')).toBe(false);
     expect(hasStoreActiveFilters('iphone', null, 'relevance')).toBe(true);
-    expect(hasStoreActiveFilters('', 'displays', 'relevance')).toBe(true);
+    expect(hasStoreActiveFilters('', 'accesorios', 'relevance')).toBe(true);
   });
 });

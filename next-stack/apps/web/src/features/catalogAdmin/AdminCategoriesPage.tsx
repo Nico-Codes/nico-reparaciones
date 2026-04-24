@@ -12,6 +12,7 @@ import {
 } from './admin-categories.sections';
 import {
   buildCategoryStats,
+  buildCategoryParentOptions,
   filterCategories,
   hasCategoryDraftChanges,
   normalizeCategoryDraft,
@@ -37,6 +38,7 @@ export function AdminCategoriesPage() {
 
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
+  const [parentId, setParentId] = useState('');
   const [active, setActive] = useState(true);
   const [slugAuto, setSlugAuto] = useState(true);
 
@@ -67,14 +69,16 @@ export function AdminCategoriesPage() {
   );
   const filteredItems = useMemo(() => filterCategories(items, query), [items, query]);
   const stats = useMemo(() => buildCategoryStats(items), [items]);
-  const draft = { name, slug, active };
+  const draft = { name, slug, parentId, active };
   const normalizedDraft = normalizeCategoryDraft(draft);
   const hasChanges = hasCategoryDraftChanges(editingItem, draft);
+  const parentOptions = useMemo(() => buildCategoryParentOptions(items, editId), [items, editId]);
 
   useEffect(() => {
     if (editingItem) {
       setName(editingItem.name);
       setSlug(editingItem.slug);
+      setParentId(editingItem.parentId ?? '');
       setActive(editingItem.active);
       setSlugAuto(false);
       setNotice('');
@@ -84,6 +88,7 @@ export function AdminCategoriesPage() {
     if (!editId || isCreateRoute) {
       setName('');
       setSlug('');
+      setParentId('');
       setActive(true);
       setSlugAuto(true);
       setNotice('');
@@ -100,6 +105,7 @@ export function AdminCategoriesPage() {
   function clearForm() {
     setName('');
     setSlug('');
+    setParentId('');
     setActive(true);
     setSlugAuto(true);
     navigate('/admin/categorias/crear');
@@ -228,6 +234,7 @@ export function AdminCategoriesPage() {
           editId={editId}
           editingItem={editingItem}
           draft={draft}
+          parentOptions={parentOptions}
           slugAuto={slugAuto}
           saving={saving}
           hasChanges={hasChanges}
@@ -236,6 +243,7 @@ export function AdminCategoriesPage() {
             setSlug(value);
             setSlugAuto(false);
           }}
+          onParentChange={setParentId}
           onActiveChange={setActive}
           onSubmit={onSubmit}
           onClear={clearForm}

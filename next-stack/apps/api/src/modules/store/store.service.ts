@@ -17,12 +17,13 @@ export class StoreService {
   async listCategories() {
     try {
       const categories = await this.prisma.category.findMany({
-        where: { active: true },
-        orderBy: [{ name: 'asc' }],
+        where: { active: true, parentId: null },
+        orderBy: { name: 'asc' },
         select: {
           id: true,
           name: true,
           slug: true,
+          parentId: true,
           _count: {
             select: {
               products: {
@@ -30,15 +31,49 @@ export class StoreService {
               },
             },
           },
+          children: {
+            where: { active: true },
+            orderBy: { name: 'asc' },
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              parentId: true,
+              _count: {
+                select: {
+                  products: {
+                    where: this.buildPublicProductVisibilityWhere(),
+                  },
+                },
+              },
+            },
+          },
         },
       });
 
-      return categories.map((c) => ({
-        id: c.id,
-        name: c.name,
-        slug: c.slug,
-        productsCount: c._count.products,
-      }));
+      return categories.map((category) => {
+        const children = category.children.map((child) => ({
+          id: child.id,
+          name: child.name,
+          slug: child.slug,
+          parentId: child.parentId ?? null,
+          parentSlug: category.slug,
+          parentName: category.name,
+          productsCount: child._count.products,
+          children: [],
+        }));
+
+        return {
+          id: category.id,
+          name: category.name,
+          slug: category.slug,
+          parentId: category.parentId ?? null,
+          parentSlug: null,
+          parentName: null,
+          productsCount: category._count.products + children.reduce((sum, child) => sum + child.productsCount, 0),
+          children,
+        };
+      });
     } catch {
       return [];
     }
@@ -287,18 +322,10 @@ export class StoreService {
     const skip = (page - 1) * pageSize;
 
     try {
+      const categoryFilter = categorySlug ? await this.buildStoreCategoryFilter(categorySlug) : null;
       const where: Prisma.ProductWhereInput = {
         ...this.buildPublicProductVisibilityWhere(),
-        ...(categorySlug
-          ? {
-              category: {
-                is: {
-                  slug: categorySlug,
-                  active: true,
-                },
-              },
-            }
-          : {}),
+        ...(categoryFilter ?? {}),
         ...(q
           ? {
               OR: [
@@ -318,7 +345,15 @@ export class StoreService {
           skip,
           take: pageSize,
           include: {
-            category: { select: { id: true, name: true, slug: true } },
+            category: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+                parentId: true,
+                parent: { select: { id: true, name: true, slug: true } },
+              },
+            },
           },
           orderBy: this.orderBy(sort),
         }),
@@ -340,7 +375,22 @@ export class StoreService {
         active: p.active,
         sku: p.sku,
         barcode: p.barcode,
-        category: p.category,
+        category: p.category
+          ? {
+              id: p.category.id,
+              name: p.category.name,
+              slug: p.category.slug,
+              parentId: p.category.parentId ?? null,
+              parent: p.category.parent
+                ? {
+                    id: p.category.parent.id,
+                    name: p.category.parent.name,
+                    slug: p.category.parent.slug,
+                  }
+                : null,
+              pathLabel: p.category.parent ? `${p.category.parent.name} / ${p.category.name}` : p.category.name,
+            }
+          : null,
         createdAt: p.createdAt.toISOString(),
       }));
 
@@ -394,7 +444,15 @@ export class StoreService {
           ...(slug ? {} : { id: '__never__' }),
         },
         include: {
-          category: { select: { id: true, name: true, slug: true } },
+          category: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              parentId: true,
+              parent: { select: { id: true, name: true, slug: true } },
+            },
+          },
         },
       });
 
@@ -415,7 +473,22 @@ export class StoreService {
         active: p.active,
         sku: p.sku,
         barcode: p.barcode,
-        category: p.category,
+        category: p.category
+          ? {
+              id: p.category.id,
+              name: p.category.name,
+              slug: p.category.slug,
+              parentId: p.category.parentId ?? null,
+              parent: p.category.parent
+                ? {
+                    id: p.category.parent.id,
+                    name: p.category.parent.name,
+                    slug: p.category.parent.slug,
+                  }
+                : null,
+              pathLabel: p.category.parent ? `${p.category.parent.name} / ${p.category.name}` : p.category.name,
+            }
+          : null,
         createdAt: p.createdAt.toISOString(),
       };
     } catch {
@@ -511,6 +584,53 @@ export class StoreService {
           supplierAvailability: { not: 'OUT_OF_STOCK' },
         },
       ],
+    };
+  }
+
+  private async buildStoreCategoryFilter(categorySlug: string): Promise<Prisma.ProductWhereInput> {
+    const category = await this.prisma.category.findFirst({
+      where: { slug: categorySlug, active: true },
+      select: {
+        id: true,
+        slug: true,
+        parentId: true,
+        children: {
+          where: { active: true },
+          select: { id: true },
+        },
+      },
+    });
+
+    if (!category) {
+      return {
+        category: {
+          is: {
+            slug: '__missing__',
+          },
+        },
+      };
+    }
+
+    if (category.parentId) {
+      return {
+        category: {
+          is: {
+            id: category.id,
+            active: true,
+          },
+        },
+      };
+    }
+
+    return {
+      category: {
+        is: {
+          active: true,
+        },
+      },
+      categoryId: {
+        in: [category.id, ...category.children.map((child) => child.id)],
+      },
     };
   }
 

@@ -29,8 +29,9 @@ export class CatalogAdminProductsService {
     const categoryId = (params?.categoryId ?? '').trim();
     const activeFilter = (params?.active ?? '').trim().toLowerCase();
     const fulfillmentModeFilter = (params?.fulfillmentMode ?? '').trim().toUpperCase();
+    const categoryFilter = categoryId ? await this.buildCategoryFilter(categoryId) : null;
     const where: Prisma.ProductWhereInput = {
-      ...(categoryId ? { categoryId } : {}),
+      ...(categoryFilter ? categoryFilter : {}),
       ...(activeFilter === '1' ? { active: true } : activeFilter === '0' ? { active: false } : {}),
       ...(fulfillmentModeFilter === 'INVENTORY' || fulfillmentModeFilter === 'SPECIAL_ORDER'
         ? { fulfillmentMode: fulfillmentModeFilter }
@@ -49,7 +50,15 @@ export class CatalogAdminProductsService {
     const items = await this.prisma.product.findMany({
       where,
       include: {
-        category: { select: { id: true, name: true, slug: true } },
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            parentId: true,
+            parent: { select: { id: true, name: true, slug: true } },
+          },
+        },
         supplier: { select: { id: true, name: true } },
         specialOrderProfile: { select: { id: true, name: true } },
       },
@@ -65,7 +74,15 @@ export class CatalogAdminProductsService {
     const item = await this.prisma.product.findUnique({
       where: { id },
       include: {
-        category: { select: { id: true, name: true, slug: true } },
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            parentId: true,
+            parent: { select: { id: true, name: true, slug: true } },
+          },
+        },
         supplier: { select: { id: true, name: true } },
         specialOrderProfile: { select: { id: true, name: true } },
       },
@@ -117,7 +134,15 @@ export class CatalogAdminProductsService {
       const item = await this.prisma.product.create({
         data,
         include: {
-          category: { select: { id: true, name: true, slug: true } },
+          category: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              parentId: true,
+              parent: { select: { id: true, name: true, slug: true } },
+            },
+          },
           supplier: { select: { id: true, name: true } },
           specialOrderProfile: { select: { id: true, name: true } },
         },
@@ -192,7 +217,15 @@ export class CatalogAdminProductsService {
         where: { id },
         data,
         include: {
-          category: { select: { id: true, name: true, slug: true } },
+          category: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              parentId: true,
+              parent: { select: { id: true, name: true, slug: true } },
+            },
+          },
           supplier: { select: { id: true, name: true } },
           specialOrderProfile: { select: { id: true, name: true } },
         },
@@ -222,7 +255,15 @@ export class CatalogAdminProductsService {
       where: { id },
       data: { imagePath: relPath },
       include: {
-        category: { select: { id: true, name: true, slug: true } },
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            parentId: true,
+            parent: { select: { id: true, name: true, slug: true } },
+          },
+        },
         supplier: { select: { id: true, name: true } },
         specialOrderProfile: { select: { id: true, name: true } },
       },
@@ -241,7 +282,15 @@ export class CatalogAdminProductsService {
     const current = await this.prisma.product.findUnique({
       where: { id },
       include: {
-        category: { select: { id: true, name: true, slug: true } },
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            parentId: true,
+            parent: { select: { id: true, name: true, slug: true } },
+          },
+        },
         supplier: { select: { id: true, name: true } },
         specialOrderProfile: { select: { id: true, name: true } },
       },
@@ -256,7 +305,15 @@ export class CatalogAdminProductsService {
       where: { id },
       data: { imagePath: null },
       include: {
-        category: { select: { id: true, name: true, slug: true } },
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            parentId: true,
+            parent: { select: { id: true, name: true, slug: true } },
+          },
+        },
         supplier: { select: { id: true, name: true } },
         specialOrderProfile: { select: { id: true, name: true } },
       },
@@ -284,7 +341,24 @@ export class CatalogAdminProductsService {
       sku: product.sku ?? null,
       barcode: product.barcode ?? null,
       categoryId: product.categoryId ?? null,
-      category: product.category ?? null,
+      category: product.category
+        ? {
+            id: product.category.id,
+            name: product.category.name,
+            slug: product.category.slug,
+            parentId: product.category.parentId ?? null,
+            parent: product.category.parent
+              ? {
+                  id: product.category.parent.id,
+                  name: product.category.parent.name,
+                  slug: product.category.parent.slug,
+                }
+              : null,
+            pathLabel: product.category.parent
+              ? `${product.category.parent.name} / ${product.category.name}`
+              : product.category.name,
+          }
+        : null,
       supplierId: product.supplierId ?? null,
       supplier: product.supplier ? { id: product.supplier.id, name: product.supplier.name } : null,
       specialOrderProfile: product.specialOrderProfile
@@ -294,5 +368,20 @@ export class CatalogAdminProductsService {
       createdAt: product.createdAt?.toISOString?.() ?? null,
       updatedAt: product.updatedAt?.toISOString?.() ?? null,
     };
+  }
+
+  private async buildCategoryFilter(categoryId: string): Promise<Prisma.ProductWhereInput> {
+    const category = await this.prisma.category.findUnique({
+      where: { id: categoryId },
+      select: { id: true, parentId: true, children: { select: { id: true } } },
+    });
+    if (!category) {
+      throw new NotFoundException('Categoria no encontrada');
+    }
+    if (category.parentId) {
+      return { categoryId: category.id };
+    }
+    const categoryIds = [category.id, ...category.children.map((child) => child.id)];
+    return { categoryId: { in: categoryIds } };
   }
 }

@@ -15,7 +15,7 @@ import {
   buildAdminProductCreateSummary,
   validateAdminProductCreateDraft,
 } from './admin-product-create.helpers';
-import { buildNamedOptions, buildProductMarginStats, slugify } from './admin-product-form.helpers';
+import { buildHierarchicalCategoryOptions, buildNamedOptions, buildProductMarginStats, slugify } from './admin-product-form.helpers';
 import { productPricingApi } from './productPricingApi';
 
 export function AdminProductCreatePage() {
@@ -139,7 +139,7 @@ export function AdminProductCreatePage() {
   }, [categoryId, costPrice]);
 
   const finalSlug = useMemo(() => slugify(slug.trim() || name.trim()), [name, slug]);
-  const categoryOptions = useMemo(() => buildNamedOptions(categories, 'Sin categoria'), [categories]);
+  const categoryOptions = useMemo(() => buildHierarchicalCategoryOptions(categories, 'Sin categoria'), [categories]);
   const supplierOptions = useMemo(() => buildNamedOptions(suppliers, 'Sin proveedor'), [suppliers]);
   const marginStats = useMemo(() => buildProductMarginStats(costPrice, price), [costPrice, price]);
   const summary = useMemo(

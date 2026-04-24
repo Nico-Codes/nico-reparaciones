@@ -2,7 +2,11 @@ export type StoreCategory = {
   id: string;
   name: string;
   slug: string;
+  parentId?: string | null;
+  parentSlug?: string | null;
+  parentName?: string | null;
   productsCount: number;
+  children: StoreCategory[];
 };
 
 export type StoreProduct = {
@@ -20,7 +24,14 @@ export type StoreProduct = {
   active: boolean;
   sku: string | null;
   barcode: string | null;
-  category: { id: string; name: string; slug: string } | null;
+  category: {
+    id: string;
+    name: string;
+    slug: string;
+    parentId: string | null;
+    parent: { id: string; name: string; slug: string } | null;
+    pathLabel: string;
+  } | null;
   createdAt: string;
 };
 

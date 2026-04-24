@@ -1,4 +1,5 @@
 import type { AdminCategory, AdminProduct } from '@/features/catalogAdmin/api';
+import { buildCategoryPathLabel, buildHierarchicalCategoryOptions } from '../catalogAdmin/admin-product-form.helpers';
 import type { ProductPricingRuleItem } from '@/features/catalogAdmin/productPricingApi';
 
 export type ProductRuleRow = {
@@ -59,12 +60,23 @@ export function fromApiRule(item: ProductPricingRuleItem): ProductRuleRow {
   };
 }
 
-export function filterProductsByCategory(products: AdminProduct[], categoryId: string) {
-  return categoryId ? products.filter((product) => product.categoryId === categoryId) : products;
+export function filterProductsByCategory(products: AdminProduct[], categories: AdminCategory[], categoryId: string) {
+  if (!categoryId) return products;
+  const category = categories.find((item) => item.id === categoryId);
+  if (!category) return products.filter((product) => product.categoryId === categoryId);
+
+  if (category.depth > 0) {
+    return products.filter((product) => product.categoryId === categoryId);
+  }
+
+  return products.filter((product) => {
+    if (product.categoryId === categoryId) return true;
+    return product.category?.parentId === categoryId;
+  });
 }
 
 export function buildCategoryOptions(categories: AdminCategory[], emptyLabel = 'Todas') {
-  return [{ value: '', label: emptyLabel }, ...categories.map((category) => ({ value: category.id, label: category.name }))];
+  return buildHierarchicalCategoryOptions(categories, emptyLabel);
 }
 
 export function buildProductOptions(products: AdminProduct[], emptyLabel = 'Todos') {
@@ -102,7 +114,7 @@ export function productPricingSimulationText(
   loading: boolean,
   result: ProductPricingSimulationResult | null,
 ) {
-  if (!categoryId) return 'Seleccioná una categoría para simular.';
+  if (!categoryId) return 'Selecciona una categoria para simular.';
   if (loading) return 'Simulando...';
   if (!result) return 'No se pudo calcular en este momento.';
   const prefix = result.ruleName ? `Regla: ${result.ruleName} - ` : '';
@@ -110,7 +122,8 @@ export function productPricingSimulationText(
 }
 
 export function categoryNameById(categories: AdminCategory[], id: string | null) {
-  return categories.find((category) => category.id === id)?.name ?? 'Todas';
+  const category = categories.find((item) => item.id === id);
+  return category ? buildCategoryPathLabel(category) : 'Todas';
 }
 
 export function productNameById(products: AdminProduct[], id: string | null) {

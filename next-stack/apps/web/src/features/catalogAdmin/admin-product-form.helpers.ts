@@ -37,6 +37,56 @@ export function buildNamedOptions<T extends NamedOptionItem>(items: T[], emptyLa
   return [{ value: '', label: emptyLabel }, ...items.map((item) => ({ value: item.id, label: item.name }))];
 }
 
+export function buildCategoryPathLabel(category: {
+  name: string;
+  parent?: { name: string } | null;
+  pathLabel?: string;
+}) {
+  if (category.pathLabel) return category.pathLabel;
+  if (category.parent?.name) return `${category.parent.name} / ${category.name}`;
+  return category.name;
+}
+
+export function buildHierarchicalCategoryOptions<
+  T extends {
+    id: string;
+    name: string;
+    depth: number;
+    parent?: { name: string } | null;
+    pathLabel?: string;
+  },
+>(items: T[], emptyLabel: string): ProductSelectOption[] {
+  return [{ value: '', label: emptyLabel }, ...items.map((item) => ({ value: item.id, label: buildCategoryPathLabel(item) }))];
+}
+
+export function buildTopLevelCategoryOptions<
+  T extends {
+    id: string;
+    name: string;
+    depth: number;
+  },
+>(items: T[], emptyLabel: string, currentId?: string | null): ProductSelectOption[] {
+  return [
+    { value: '', label: emptyLabel },
+    ...items
+      .filter((item) => item.depth === 0 && item.id !== currentId)
+      .map((item) => ({ value: item.id, label: item.name })),
+  ];
+}
+
+export function findCategoryPathLabel<
+  T extends {
+    id: string;
+    name: string;
+    parent?: { name: string } | null;
+    pathLabel?: string;
+  },
+>(items: T[], categoryId: string, fallback = 'Sin categoria') {
+  if (!categoryId) return fallback;
+  const found = items.find((item) => item.id === categoryId);
+  return found ? buildCategoryPathLabel(found) : fallback;
+}
+
 export function buildProductMarginStats(costPrice: string, price: string): ProductMarginStats {
   const cost = Number(costPrice || 0);
   const sale = Number(price || 0);

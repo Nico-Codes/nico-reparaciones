@@ -10,7 +10,14 @@ export type ProductPricingRuleItem = {
   marginPercent: number;
   priority: number;
   active: boolean;
-  category: { id: string; name: string } | null;
+  category: {
+    id: string;
+    name: string;
+    slug: string;
+    parentId: string | null;
+    parent: { id: string; name: string; slug: string } | null;
+    pathLabel: string;
+  } | null;
   product: { id: string; name: string } | null;
   createdAt: string;
   updatedAt: string;

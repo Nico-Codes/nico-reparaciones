@@ -70,30 +70,18 @@ export function AdminProductPricingRulesPage() {
   }, []);
 
   const productOptions = useMemo(
-    () => filterProductsByCategory(products, form.categoryId),
-    [products, form.categoryId],
+    () => filterProductsByCategory(products, categories, form.categoryId),
+    [products, categories, form.categoryId],
   );
   const simProductOptions = useMemo(
-    () => filterProductsByCategory(products, simCategoryId),
-    [products, simCategoryId],
+    () => filterProductsByCategory(products, categories, simCategoryId),
+    [products, categories, simCategoryId],
   );
 
-  const categorySelectOptions = useMemo(
-    () => buildCategoryOptions(categories, 'Todas'),
-    [categories],
-  );
-  const simCategoryOptions = useMemo(
-    () => buildCategoryOptions(categories, 'Seleccionar categoría...'),
-    [categories],
-  );
-  const simProductSelectOptions = useMemo(
-    () => buildProductOptions(simProductOptions, 'Todos'),
-    [simProductOptions],
-  );
-  const formProductOptions = useMemo(
-    () => buildProductOptions(productOptions, 'Todos'),
-    [productOptions],
-  );
+  const categorySelectOptions = useMemo(() => buildCategoryOptions(categories, 'Todas'), [categories]);
+  const simCategoryOptions = useMemo(() => buildCategoryOptions(categories, 'Seleccionar categoria...'), [categories]);
+  const simProductSelectOptions = useMemo(() => buildProductOptions(simProductOptions, 'Todos'), [simProductOptions]);
+  const formProductOptions = useMemo(() => buildProductOptions(productOptions, 'Todos'), [productOptions]);
 
   useEffect(() => {
     const costNumber = Number(simCost || 0);
@@ -203,9 +191,7 @@ export function AdminProductPricingRulesPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-black tracking-tight text-zinc-900">Reglas de productos (costo -&gt; venta)</h1>
-            <p className="mt-1 text-sm text-zinc-600">
-              Definí margen por categoría o producto. El sistema aplica la mejor coincidencia.
-            </p>
+            <p className="mt-1 text-sm text-zinc-600">Define margen por categoria o producto. El sistema aplica la mejor coincidencia.</p>
           </div>
           <AdminProductPricingHeaderActions />
         </div>

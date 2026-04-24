@@ -12,6 +12,34 @@
 
 ---
 
+### 2026-04-24 - Codex
+- Alcance: jerarquia de categorias padre/subcategoria para catalogo, pricing y tienda publica.
+- Tipo de intervencion: migracion Prisma, ajuste backend de categorias/store/pricing, UI admin jerarquica, filtro publico por padre/hija y pruebas actualizadas.
+- Archivos tocados:
+  - `next-stack/apps/api/prisma/{schema.prisma,seed.ts,migrations/20260424110000_add_category_hierarchy/*}`
+  - `next-stack/apps/api/src/modules/{catalog-admin,store}/*`
+  - `next-stack/apps/web/src/features/{catalogAdmin,store,admin}/*`
+  - `next-stack/apps/web/src/styles/store.css`
+  - `project-docs/{DECISIONS_LOG.md,backend/BACKEND_MAP.md,frontend/FRONTEND_MAP.md}`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. Las categorias dejan de ser planas, el admin permite padre/subcategoria, la tienda filtra por padre incluyendo hijas y el pricing de productos resuelve fallback categoria exacta -> padre -> global.
+- Validaciones ejecutadas:
+  - `cmd /c npm run db:migrate --workspace @nico/api`
+  - `cmd /c npm run db:generate --workspace @nico/api`
+  - `cmd /c npm run typecheck --workspace @nico/api`
+  - `cmd /c npm run test --workspace @nico/api`
+  - `cmd /c npm run build --workspace @nico/api`
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - La jerarquia queda limitada a un solo nivel por decision de dominio.
+  - La migracion inicial solo reubica `Cables`, `Cargadores` y `Templados` dentro de `Accesorios` si esas categorias existen; el resto sigue top-level hasta ordenarlo desde admin.
+
+---
+
 ### 2026-04-23 - Codex
 - Alcance: importador semiautomatico de listados por encargue para catalogo comercial.
 - Tipo de intervencion: migracion Prisma, nuevos endpoints admin, parser de listados, UI de preview/aplicacion y ajuste transversal de store/cart/checkout/pedidos para `SPECIAL_ORDER`.

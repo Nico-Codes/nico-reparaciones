@@ -1,5 +1,9 @@
 import type { AdminProduct } from './api';
-import { buildNamedOptions, money, type ProductSelectOption } from './admin-product-form.helpers';
+import {
+  buildHierarchicalCategoryOptions,
+  money,
+  type ProductSelectOption,
+} from './admin-product-form.helpers';
 import type { AdminCategory } from './api';
 
 export type AdminProductsStats = {
@@ -105,7 +109,7 @@ export function hasAdminProductFilters(filters: {
 }
 
 export function buildAdminProductCategoryOptions(categories: AdminCategory[]) {
-  return buildNamedOptions(categories, 'Todas las categorias');
+  return buildHierarchicalCategoryOptions(categories, 'Todas las categorias');
 }
 
 export function buildAdminProductPriceSummary(product: AdminProduct) {

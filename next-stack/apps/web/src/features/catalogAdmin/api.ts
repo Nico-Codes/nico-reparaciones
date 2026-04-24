@@ -14,8 +14,15 @@ export type AdminCategory = {
   id: string;
   name: string;
   slug: string;
+  parentId: string | null;
+  parent: { id: string; name: string; slug: string } | null;
+  depth: number;
   active: boolean;
+  directProductsCount: number;
+  totalProductsCount: number;
   productsCount: number;
+  childrenCount: number;
+  pathLabel: string;
 };
 
 export type AdminProduct = {
@@ -37,7 +44,14 @@ export type AdminProduct = {
   sku: string | null;
   barcode: string | null;
   categoryId: string | null;
-  category: { id: string; name: string; slug: string } | null;
+  category: {
+    id: string;
+    name: string;
+    slug: string;
+    parentId: string | null;
+    parent: { id: string; name: string; slug: string } | null;
+    pathLabel: string;
+  } | null;
   supplierId: string | null;
   supplier: { id: string; name: string } | null;
   specialOrderProfile: { id: string; name: string } | null;
@@ -105,7 +119,14 @@ export type SpecialOrderPreviewItem = {
     price: number;
     costPrice: number | null;
     supplierAvailability: 'IN_STOCK' | 'OUT_OF_STOCK' | 'UNKNOWN';
-    category: { id: string; name: string; slug: string } | null;
+    category: {
+      id: string;
+      name: string;
+      slug: string;
+      parentId: string | null;
+      parent: { id: string; name: string; slug: string } | null;
+      pathLabel: string;
+    } | null;
   } | null;
 };
 
@@ -144,10 +165,10 @@ export const catalogAdminApi = {
   categories() {
     return authJsonRequest<{ items: AdminCategory[] }>('/catalog-admin/categories');
   },
-  createCategory(input: { name: string; slug: string; active?: boolean }) {
+  createCategory(input: { name: string; slug: string; parentId?: string | null; active?: boolean }) {
     return authJsonRequest<{ item: AdminCategory }>('/catalog-admin/categories', { method: 'POST', body: JSON.stringify(input) });
   },
-  updateCategory(id: string, input: Partial<{ name: string; slug: string; active: boolean }>) {
+  updateCategory(id: string, input: Partial<{ name: string; slug: string; parentId: string | null; active: boolean }>) {
     return authJsonRequest<{ item: AdminCategory }>(`/catalog-admin/categories/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(input) });
   },
   deleteCategory(id: string) {

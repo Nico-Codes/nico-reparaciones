@@ -20,6 +20,20 @@ Registrar decisiones tecnicas confirmadas para evitar dependencia de memoria ora
 
 ---
 
+### [DL-0130]
+- Fecha: 2026-04-24
+- Estado: aceptada
+- Tema: jerarquia de categorias comerciales limitada a un nivel con fallback de pricing por padre
+- Contexto: el catalogo comercial estaba organizado con categorias planas. Eso dejaba desorden visual en tienda y admin porque familias relacionadas como `Cables`, `Cargadores` y `Templados` quedaban al mismo nivel que categorias mas amplias. Ademas, el pricing por categoria no podia heredar reglas desde una familia superior.
+- Decision: extender `Category` con una relacion jerarquica simple `parentId`, limitada a un solo nivel (`padre -> subcategoria`). El producto sigue apuntando a una sola categoria, pero ahora puede colgar de una subcategoria. La tienda interpreta `category=` asi: si el slug es de una categoria padre incluye productos directos del padre y de sus hijas; si es de una hija, filtra exacto. En pricing de productos, la resolucion por categoria pasa a priorizar categoria exacta, luego categoria padre y finalmente reglas globales.
+- Impacto: el admin puede ordenar mejor el catalogo sin abrir un arbol libre mas complejo. La tienda publica gana navegacion por padres y subcategorias, y el pricing evita duplicar reglas cuando una familia completa comparte comportamiento.
+- Alternativas consideradas: mantener categorias planas y resolver agrupacion solo por naming/copy, o abrir un arbol arbitrario de multiples niveles; descartado porque la primera no resolvia el problema operativo y la segunda agregaba complejidad innecesaria para el caso real.
+- Archivos / modulos afectados: `next-stack/apps/api/prisma/*`, `next-stack/apps/api/src/modules/{catalog-admin,store}/*`, `next-stack/apps/web/src/features/{catalogAdmin,store,admin}/*`, `next-stack/apps/web/src/styles/store.css`, `project-docs/{backend/BACKEND_MAP.md,frontend/FRONTEND_MAP.md}`, `CHANGELOG_AI.md`.
+- Validacion requerida: `db:migrate --workspace @nico/api`, `db:generate --workspace @nico/api`, `typecheck --workspace @nico/api`, `test --workspace @nico/api`, `build --workspace @nico/api`, `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `smoke:web`, `git diff --check`.
+- Responsable: Codex + operador humano
+
+---
+
 ### [DL-0129]
 - Fecha: 2026-04-23
 - Estado: aceptada

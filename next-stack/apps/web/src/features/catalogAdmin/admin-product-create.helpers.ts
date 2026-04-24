@@ -1,5 +1,5 @@
 import type { AdminCategory } from './api';
-import { money, slugify } from './admin-product-form.helpers';
+import { findCategoryPathLabel, money, slugify } from './admin-product-form.helpers';
 
 export type AdminProductCreateDraft = {
   name: string;
@@ -35,13 +35,13 @@ export function validateAdminProductCreateDraft(
   const trimmedName = draft.name.trim();
   const nextSlug = slugify(draft.slug.trim() || trimmedName);
   if (!trimmedName || nextSlug.length < 2) {
-    return 'Completá un nombre válido para generar el producto.';
+    return 'Completa un nombre valido para generar el producto.';
   }
 
   const nextCost = Number(draft.costPrice || 0);
   const nextPrice = Number(draft.price || 0);
   if (preventNegativeMargin && Number.isFinite(nextCost) && Number.isFinite(nextPrice) && nextPrice < nextCost) {
-    return 'El precio de venta no puede quedar por debajo del costo mientras el guard de margen esté activo.';
+    return 'El precio de venta no puede quedar por debajo del costo mientras el guard de margen este activo.';
   }
 
   return null;
@@ -82,8 +82,8 @@ export function buildAdminProductCreateSummary(
       value: finalSlug || 'Sin generar',
     },
     {
-      label: 'Categoría',
-      value: categories.find((category) => category.id === draft.categoryId)?.name || 'Sin categoría',
+      label: 'Categoria',
+      value: findCategoryPathLabel(categories, draft.categoryId, 'Sin categoria'),
     },
     {
       label: 'Proveedor',

@@ -62,7 +62,15 @@ export class CatalogAdminPricingService {
   async productPricingRules() {
     const items = await this.prisma.productPricingRule.findMany({
       include: {
-        category: { select: { id: true, name: true } },
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            parentId: true,
+            parent: { select: { id: true, name: true, slug: true } },
+          },
+        },
         product: { select: { id: true, name: true } },
       },
       orderBy: [{ active: 'desc' }, { priority: 'desc' }, { id: 'asc' }],
@@ -84,7 +92,15 @@ export class CatalogAdminPricingService {
         active: input.active ?? true,
       },
       include: {
-        category: { select: { id: true, name: true } },
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            parentId: true,
+            parent: { select: { id: true, name: true, slug: true } },
+          },
+        },
         product: { select: { id: true, name: true } },
       },
     });
@@ -114,7 +130,15 @@ export class CatalogAdminPricingService {
         ...(input.active !== undefined ? { active: input.active } : {}),
       },
       include: {
-        category: { select: { id: true, name: true } },
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            parentId: true,
+            parent: { select: { id: true, name: true, slug: true } },
+          },
+        },
         product: { select: { id: true, name: true } },
       },
     });
@@ -129,16 +153,22 @@ export class CatalogAdminPricingService {
   async resolveRecommendedProductPrice(input: ResolveProductPricingInput) {
     const categoryId = await this.support.validateCategoryId(input.categoryId);
     if (!categoryId) throw new BadRequestException('Categoria requerida');
+    const category = await this.prisma.category.findUnique({
+      where: { id: categoryId },
+      select: { id: true, parentId: true },
+    });
+    if (!category) throw new BadRequestException('Categoria requerida');
 
     const costPrice = Math.max(0, Math.trunc(Number(input.costPrice ?? 0)));
     const productId = this.support.nullable(input.productId);
     const settings = await this.resolveProductPricingSettings();
+    const categoryScopeIds = [category.id, ...(category.parentId ? [category.parentId] : [])];
 
     const rules = await this.prisma.productPricingRule.findMany({
       where: {
         active: true,
         AND: [
-          { OR: [{ categoryId: null }, { categoryId }] },
+          { OR: [{ categoryId: null }, { categoryId: { in: categoryScopeIds } }] },
           productId ? { OR: [{ productId: null }, { productId }] } : { productId: null },
           { OR: [{ costMin: null }, { costMin: { lte: costPrice } }] },
           { OR: [{ costMax: null }, { costMax: { gte: costPrice } }] },
@@ -150,10 +180,17 @@ export class CatalogAdminPricingService {
     let best: ProductPricingRule | null = null;
     let bestScore = -1;
     let bestPriority = -999999;
+    let bestCategoryRank = -1;
     for (const rule of rules) {
+      const categoryRank = this.productPricingCategoryRank(rule.categoryId, category.id, category.parentId);
       const score = this.productPricingRuleScore(rule);
-      if (score > bestScore || (score === bestScore && rule.priority > bestPriority)) {
+      if (
+        categoryRank > bestCategoryRank ||
+        (categoryRank === bestCategoryRank && score > bestScore) ||
+        (categoryRank === bestCategoryRank && score === bestScore && rule.priority > bestPriority)
+      ) {
         best = rule;
+        bestCategoryRank = categoryRank;
         bestScore = score;
         bestPriority = rule.priority;
       }
@@ -185,6 +222,12 @@ export class CatalogAdminPricingService {
     if (rule.costMin != null) score += 2;
     if (rule.costMax != null) score += 1;
     return score;
+  }
+
+  private productPricingCategoryRank(categoryId: string | null, selectedCategoryId: string, parentCategoryId: string | null) {
+    if (categoryId === selectedCategoryId) return 2;
+    if (categoryId != null && parentCategoryId != null && categoryId === parentCategoryId) return 1;
+    return 0;
   }
 
   private async resolveProductPricingSettings() {
@@ -246,7 +289,24 @@ export class CatalogAdminPricingService {
       marginPercent: Number(rule.marginPercent),
       priority: rule.priority,
       active: rule.active,
-      category: rule.category ? { id: rule.category.id, name: rule.category.name } : null,
+      category: rule.category
+        ? {
+            id: rule.category.id,
+            name: rule.category.name,
+            slug: rule.category.slug,
+            parentId: rule.category.parentId ?? null,
+            parent: rule.category.parent
+              ? {
+                  id: rule.category.parent.id,
+                  name: rule.category.parent.name,
+                  slug: rule.category.parent.slug,
+                }
+              : null,
+            pathLabel: rule.category.parent
+              ? `${rule.category.parent.name} / ${rule.category.name}`
+              : rule.category.name,
+          }
+        : null,
       product: rule.product ? { id: rule.product.id, name: rule.product.name } : null,
       createdAt: rule.createdAt.toISOString(),
       updatedAt: rule.updatedAt.toISOString(),

@@ -35,9 +35,10 @@ function slugify(input: string) {
 
 async function seedCategoriesAndProducts() {
   const categories = [
-    { name: 'Cables', slug: 'cables' },
-    { name: 'Cargadores', slug: 'cargadores' },
-    { name: 'Parlantes', slug: 'parlantes' },
+    { name: 'Accesorios', slug: 'accesorios', parentSlug: null as string | null },
+    { name: 'Cables', slug: 'cables', parentSlug: 'accesorios' },
+    { name: 'Cargadores', slug: 'cargadores', parentSlug: 'accesorios' },
+    { name: 'Parlantes', slug: 'parlantes', parentSlug: null },
   ];
 
   for (const c of categories) {
@@ -50,6 +51,13 @@ async function seedCategoriesAndProducts() {
 
   const allCategories = await prisma.category.findMany({ select: { id: true, slug: true } });
   const catBySlug = new Map<string, string>(allCategories.map((c: { id: string; slug: string }) => [c.slug, c.id]));
+
+  for (const c of categories) {
+    await prisma.category.update({
+      where: { slug: c.slug },
+      data: { parentId: c.parentSlug ? catBySlug.get(c.parentSlug) ?? null : null },
+    });
+  }
 
   const products = [
     {

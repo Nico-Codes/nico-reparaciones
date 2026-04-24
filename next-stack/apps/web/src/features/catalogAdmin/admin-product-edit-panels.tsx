@@ -6,7 +6,13 @@ import { TextAreaField } from '@/components/ui/textarea-field';
 import { TextField } from '@/components/ui/text-field';
 import type { AdminCategory, AdminProduct } from './api';
 import { BooleanChoice, SelectField } from './admin-product-form.controls';
-import { formatDateTime, money, type ProductMarginStats, type ProductSelectOption } from './admin-product-form.helpers';
+import {
+  findCategoryPathLabel,
+  formatDateTime,
+  money,
+  type ProductMarginStats,
+  type ProductSelectOption,
+} from './admin-product-form.helpers';
 
 export type AdminProductEditFormLayoutProps = {
   product: AdminProduct;
@@ -316,7 +322,7 @@ function AdminProductEditAsidePanels({
           </div>
           <div className="fact-row">
             <span className="fact-label">Categoria</span>
-            <span className="fact-value fact-value--text">{categories.find((category) => category.id === categoryId)?.name || 'Sin categoria'}</span>
+            <span className="fact-value fact-value--text">{findCategoryPathLabel(categories, categoryId, 'Sin categoria')}</span>
           </div>
           <div className="fact-row">
             <span className="fact-label">Proveedor</span>

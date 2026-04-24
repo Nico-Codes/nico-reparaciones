@@ -197,8 +197,29 @@ Notas operativas del subdominio:
 - la tienda publica sigue siendo una sola, pero ahora mezcla dos modos:
   - `Stock real` para inventario local
   - `Por encargue` para productos importados desde listados de proveedor
+- las categorias publicas ahora soportan un nivel de jerarquia:
+  - rail principal con categorias padre
+  - segunda fila opcional con subcategorias cuando la categoria activa tiene hijas
+  - el filtro por una subcategoria mantiene visible tambien su categoria padre activa
+- cards y detalle de producto muestran `pathLabel` cuando el item pertenece a una subcategoria
 - los productos `Por encargue` muestran badge/copy especifico y CTA `Encargar`
 - carrito y checkout permiten esos items aunque el stock local sea `0`; la restriccion pasa por `supplierAvailability`
+
+Catalogo admin:
+
+- `AdminProductsPage.tsx`
+- `AdminProductCreatePage.tsx`
+- `AdminProductEditPage.tsx`
+- `AdminCategoriesPage.tsx`
+- `admin-product-form.helpers.ts`
+- `admin-products.helpers.ts`
+- `admin-categories.helpers.ts`
+
+Notas operativas del subdominio:
+
+- `/admin/categorias` pasa a ser el gestor jerarquico de `padre -> subcategoria`
+- los selects de categoria en productos, pricing e importador de encargues muestran el path completo cuando la categoria es hija
+- el filtro de categoria en `/admin/productos` mantiene la misma UI, pero si eliges una categoria padre incluye tambien productos de sus hijas
 
 Pedidos:
 

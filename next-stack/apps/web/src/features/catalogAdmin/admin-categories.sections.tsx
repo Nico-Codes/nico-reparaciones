@@ -9,6 +9,7 @@ import { SectionCard } from '@/components/ui/section-card';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { TextField } from '@/components/ui/text-field';
 import { cn } from '@/lib/utils';
+import type { ProductSelectOption } from './admin-product-form.helpers';
 import { getCategoryTone, type AdminCategoryDraft, type AdminCategoryStats } from './admin-categories.helpers';
 import type { AdminCategory } from './api';
 
@@ -41,11 +42,13 @@ type AdminCategoriesFormSectionProps = {
   editId: string | null;
   editingItem: AdminCategory | null;
   draft: AdminCategoryDraft;
+  parentOptions: ProductSelectOption[];
   slugAuto: boolean;
   saving: boolean;
   hasChanges: boolean;
   onNameChange: (value: string) => void;
   onSlugChange: (value: string) => void;
+  onParentChange: (value: string) => void;
   onActiveChange: (value: boolean) => void;
   onSubmit: (event: FormEvent) => void;
   onClear: () => void;
@@ -68,6 +71,16 @@ export function AdminCategoriesStatsGrid({ stats }: AdminCategoriesStatsGridProp
         <div className="nr-stat-card__label">Inactivas</div>
         <div className="nr-stat-card__value">{stats.inactive}</div>
         <div className="nr-stat-card__meta">Reservadas o fuera de uso.</div>
+      </div>
+      <div className="nr-stat-card">
+        <div className="nr-stat-card__label">Padres</div>
+        <div className="nr-stat-card__value">{stats.parents}</div>
+        <div className="nr-stat-card__meta">Categorias raiz del catalogo.</div>
+      </div>
+      <div className="nr-stat-card">
+        <div className="nr-stat-card__label">Subcategorias</div>
+        <div className="nr-stat-card__value">{stats.children}</div>
+        <div className="nr-stat-card__meta">Categorias hijas de un nivel.</div>
       </div>
     </div>
   );
@@ -154,24 +167,28 @@ export function AdminCategoriesListSection({
       ) : (
         <div className="space-y-3">
           {items.map((item) => (
-            <article key={item.id} className={cn('admin-entity-row', editId === item.id && 'is-active')}>
+            <article key={item.id} className={cn('admin-entity-row', editId === item.id && 'is-active', item.depth > 0 && 'ml-4')}>
               <div className="admin-entity-row__top">
                 <div className="admin-entity-row__heading">
                   <div className="admin-entity-row__title-row">
                     <Link to={`/admin/categorias/${encodeURIComponent(item.id)}/editar`} className="admin-entity-row__title">
-                      {item.name}
+                      {item.depth > 0 ? `↳ ${item.name}` : item.name}
                     </Link>
                     <StatusBadge label={item.active ? 'Activa' : 'Inactiva'} tone={getCategoryTone(item.active)} size="sm" />
+                    {item.depth > 0 ? <StatusBadge label="Subcategoria" tone="accent" size="sm" /> : <StatusBadge label="Padre" tone="info" size="sm" />}
                   </div>
                   <div className="admin-entity-row__meta">
                     <span>Slug: /{item.slug}</span>
-                    <span>{item.productsCount} productos asociados</span>
+                    <span>{item.pathLabel}</span>
+                    <span>{item.directProductsCount} directos</span>
+                    <span>{item.totalProductsCount} totales</span>
+                    {item.childrenCount > 0 ? <span>{item.childrenCount} subcategorias</span> : null}
                   </div>
                 </div>
 
                 <div className="admin-entity-row__aside">
-                  <span className="admin-entity-row__eyebrow">Productos vinculados</span>
-                  <div className="admin-entity-row__value">{item.productsCount}</div>
+                  <span className="admin-entity-row__eyebrow">Productos totales</span>
+                  <div className="admin-entity-row__value">{item.totalProductsCount}</div>
                 </div>
               </div>
 
@@ -193,8 +210,14 @@ export function AdminCategoriesListSection({
                   variant="danger"
                   size="sm"
                   onClick={() => onRemove(item)}
-                  disabled={item.productsCount > 0 || pendingActionId === item.id}
-                  title={item.productsCount > 0 ? 'No se puede eliminar mientras tenga productos asociados.' : 'Eliminar categoria'}
+                  disabled={item.directProductsCount > 0 || item.childrenCount > 0 || pendingActionId === item.id}
+                  title={
+                    item.directProductsCount > 0
+                      ? 'No se puede eliminar mientras tenga productos directos asociados.'
+                      : item.childrenCount > 0
+                        ? 'No se puede eliminar mientras tenga subcategorias.'
+                        : 'Eliminar categoria'
+                  }
                 >
                   {pendingActionId === item.id ? 'Procesando...' : 'Eliminar'}
                 </Button>
@@ -211,11 +234,13 @@ export function AdminCategoriesFormSection({
   editId,
   editingItem,
   draft,
+  parentOptions,
   slugAuto,
   saving,
   hasChanges,
   onNameChange,
   onSlugChange,
+  onParentChange,
   onActiveChange,
   onSubmit,
   onClear,
@@ -269,6 +294,25 @@ export function AdminCategoriesFormSection({
             }
             required
           />
+
+          <label className="ui-field">
+            <span className="ui-field__label">Categoria padre</span>
+            <span className="ui-field__control">
+              <select
+                className="ui-input"
+                value={draft.parentId}
+                onChange={(event) => onParentChange(event.target.value)}
+                disabled={saving}
+              >
+                {parentOptions.map((option) => (
+                  <option key={option.value || '__root__'} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </span>
+            <span className="ui-field__hint">Si eliges una padre, esta categoria pasa a ser subcategoria.</span>
+          </label>
 
           <div className="space-y-2">
             <div className="ui-field__label">Estado</div>

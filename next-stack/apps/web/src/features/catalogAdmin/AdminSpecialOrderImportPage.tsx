@@ -29,6 +29,7 @@ import {
   type SpecialOrderProfile,
   type SpecialOrderSectionMappingInput,
 } from './api';
+import { buildCategoryPathLabel } from './admin-product-form.helpers';
 
 type ProfileDraft = {
   supplierId: string;
@@ -83,10 +84,7 @@ export function AdminSpecialOrderImportPage() {
     [providers],
   );
 
-  const sortedCategories = useMemo(
-    () => [...categories].sort((left, right) => left.name.localeCompare(right.name, 'es')),
-    [categories],
-  );
+  const sortedCategories = useMemo(() => [...categories], [categories]);
 
   useEffect(() => {
     async function loadInitialData() {
@@ -728,7 +726,7 @@ export function AdminSpecialOrderImportPage() {
                                 <option value={NEW_CATEGORY_VALUE}>Crear categoria nueva</option>
                                 {sortedCategories.map((category) => (
                                   <option key={category.id} value={category.id}>
-                                    {category.name}
+                                  {buildCategoryPathLabel(category)}
                                   </option>
                                 ))}
                               </select>
