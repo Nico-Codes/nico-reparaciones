@@ -31,6 +31,23 @@ function sortTargetsByViewportPosition(targets: HTMLElement[]) {
   });
 }
 
+function isNearViewport(el: HTMLElement) {
+  const rect = el.getBoundingClientRect();
+  const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+  const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+  if (rect.width <= 0 || rect.height <= 0) return false;
+
+  const verticalPadding = Math.max(120, viewportHeight * 0.12);
+  const horizontalPadding = Math.max(40, viewportWidth * 0.05);
+
+  return (
+    rect.bottom >= -verticalPadding &&
+    rect.top <= viewportHeight + verticalPadding &&
+    rect.right >= -horizontalPadding &&
+    rect.left <= viewportWidth + horizontalPadding
+  );
+}
+
 export function GlobalVisualEnhancements() {
   const location = useLocation();
 
@@ -86,7 +103,13 @@ export function GlobalVisualEnhancements() {
 
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          orderedTargets.forEach((el) => io.observe(el));
+          orderedTargets.forEach((el) => {
+            if (isNearViewport(el)) {
+              el.classList.add('is-visible');
+              return;
+            }
+            io.observe(el);
+          });
         });
       });
     };
