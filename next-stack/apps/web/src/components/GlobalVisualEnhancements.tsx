@@ -70,7 +70,7 @@ export function GlobalVisualEnhancements() {
                 observer?.unobserve(el);
               });
             },
-            { rootMargin: '0px 0px -8% 0px', threshold: 0.12 },
+            { rootMargin: '0px 0px -4% 0px', threshold: 0.01 },
           )
         : null;
 
