@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent,
 import {
   ArrowLeft,
   CheckCircle2,
+  ChevronDown,
+  ChevronUp,
   FileText,
   Layers3,
   Loader2,
@@ -72,7 +74,11 @@ export function AdminSpecialOrderImportPage() {
   const [preview, setPreview] = useState<SpecialOrderImportPreview | null>(null);
   const [previewDirty, setPreviewDirty] = useState(false);
   const [sectionMappings, setSectionMappings] = useState<Record<string, SectionMappingDraft>>({});
-  const [excludedRowIds, setExcludedRowIds] = useState<string[]>([]);
+  const [excludedSectionKeys, setExcludedSectionKeys] = useState<string[] | null>(null);
+  const [excludedSourceKeys, setExcludedSourceKeys] = useState<string[] | null>(null);
+  const [excludedRowIds, setExcludedRowIds] = useState<string[] | null>(null);
+  const [rememberExclusions, setRememberExclusions] = useState(false);
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
 
   const selectedProfile = useMemo(
     () => profiles.find((profile) => profile.id === selectedProfileId) ?? null,
@@ -139,8 +145,53 @@ export function AdminSpecialOrderImportPage() {
   }, [profileMode, selectedProfile]);
 
   const hasPreview = Boolean(preview);
-  const includedItems = preview?.items.filter((item) => item.included) ?? [];
+  const effectiveExcludedSectionKeySet = useMemo(
+    () => new Set(excludedSectionKeys ?? preview?.selection.excludedSectionKeys ?? []),
+    [excludedSectionKeys, preview],
+  );
+  const effectiveExcludedSourceKeySet = useMemo(
+    () => new Set(excludedSourceKeys ?? preview?.selection.excludedSourceKeys ?? []),
+    [excludedSourceKeys, preview],
+  );
+  const effectiveExcludedRowIdSet = useMemo(
+    () => new Set(excludedRowIds ?? preview?.selection.excludedRowIds ?? []),
+    [excludedRowIds, preview],
+  );
+  const rememberedSectionKeySet = useMemo(
+    () => new Set(preview?.selection.rememberedSectionKeys ?? []),
+    [preview],
+  );
+  const rememberedSourceKeySet = useMemo(
+    () => new Set(preview?.selection.rememberedSourceKeys ?? []),
+    [preview],
+  );
+  const duplicateCountBySourceKey = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const item of preview?.items ?? []) {
+      counts.set(item.sourceKey, (counts.get(item.sourceKey) ?? 0) + 1);
+    }
+    return counts;
+  }, [preview]);
+  const itemsBySection = useMemo(() => {
+    const grouped = new Map<string, SpecialOrderPreviewItem[]>();
+    for (const item of preview?.items ?? []) {
+      const bucket = grouped.get(item.sectionKey);
+      if (bucket) {
+        bucket.push(item);
+      } else {
+        grouped.set(item.sectionKey, [item]);
+      }
+    }
+    return grouped;
+  }, [preview]);
+  const includedItems =
+    preview?.items.filter((item) =>
+      isPreviewItemIncluded(item, effectiveExcludedSectionKeySet, effectiveExcludedSourceKeySet, effectiveExcludedRowIdSet),
+    ) ?? [];
   const conflictItems = includedItems.filter((item) => item.status === 'conflict');
+  const currentExcludedCount = (preview?.items.length ?? 0) - includedItems.length;
+  const rememberedSelectionCount =
+    (preview?.selection.rememberedSectionKeys.length ?? 0) + (preview?.selection.rememberedSourceKeys.length ?? 0);
 
   function markPreviewDirty() {
     setPreviewDirty(true);
@@ -150,7 +201,11 @@ export function AdminSpecialOrderImportPage() {
     setPreview(null);
     setPreviewDirty(false);
     setSectionMappings({});
-    setExcludedRowIds([]);
+    setExcludedSectionKeys(null);
+    setExcludedSourceKeys(null);
+    setExcludedRowIds(null);
+    setExpandedSections({});
+    setRememberExclusions(false);
   }
 
   function handleProfileSelection(nextProfileId: string) {
@@ -233,14 +288,28 @@ export function AdminSpecialOrderImportPage() {
   }
 
   function buildPreviewPayload() {
-    return {
+    const payload: {
+      profileId: string;
+      rawText: string;
+      usdRate: number | null;
+      shippingUsd: number | null;
+      sectionMappings: SpecialOrderSectionMappingInput[];
+      excludedSectionKeys?: string[];
+      excludedSourceKeys?: string[];
+      excludedRowIds?: string[];
+      rememberExclusions: boolean;
+    } = {
       profileId: selectedProfileId,
       rawText,
       usdRate: parseOptionalNumber(usdRate),
       shippingUsd: parseOptionalNumber(shippingUsd),
       sectionMappings: serializeSectionMappings(sectionMappings),
-      excludedRowIds,
+      rememberExclusions,
     };
+    if (excludedSectionKeys !== null) payload.excludedSectionKeys = excludedSectionKeys;
+    if (excludedSourceKeys !== null) payload.excludedSourceKeys = excludedSourceKeys;
+    if (excludedRowIds !== null) payload.excludedRowIds = excludedRowIds;
+    return payload;
   }
 
   async function runPreview() {
@@ -261,7 +330,9 @@ export function AdminSpecialOrderImportPage() {
       const response = await catalogAdminApi.previewSpecialOrderImport(buildPreviewPayload());
       setPreview(response);
       setPreviewDirty(false);
-      setExcludedRowIds(response.items.filter((item) => !item.included).map((item) => item.rowId));
+      setExcludedSectionKeys(response.selection.excludedSectionKeys);
+      setExcludedSourceKeys(response.selection.excludedSourceKeys);
+      setExcludedRowIds(response.selection.excludedRowIds);
       setSectionMappings(
         Object.fromEntries(
           response.sections.map((section) => [
@@ -273,7 +344,9 @@ export function AdminSpecialOrderImportPage() {
           ]),
         ),
       );
-      setNotice(`Preview listo: ${response.summary.newCount} nuevos, ${response.summary.updatedCount} actualizados y ${response.summary.deactivatedCount} a desactivar.`);
+      setNotice(
+        `Preview listo: ${response.summary.newCount} nuevos, ${response.summary.updatedCount} actualizados y ${response.summary.deactivatedCount} a desactivar.`,
+      );
     } catch (cause) {
       setPreview(null);
       setPreviewDirty(false);
@@ -344,10 +417,37 @@ export function AdminSpecialOrderImportPage() {
 
   function toggleRowExclusion(rowId: string) {
     setExcludedRowIds((current) => {
-      if (current.includes(rowId)) return current.filter((value) => value !== rowId);
-      return [...current, rowId];
+      const base = current ?? preview?.selection.excludedRowIds ?? [];
+      return toggleKey(base, rowId);
     });
     markPreviewDirty();
+  }
+
+  function toggleSectionExclusion(sectionKey: string) {
+    setExcludedSectionKeys((current) => toggleKey(current ?? preview?.selection.excludedSectionKeys ?? [], sectionKey));
+    markPreviewDirty();
+  }
+
+  function toggleSourceExclusion(sourceKey: string) {
+    setExcludedSourceKeys((current) => toggleKey(current ?? preview?.selection.excludedSourceKeys ?? [], sourceKey));
+    markPreviewDirty();
+  }
+
+  function toggleItemExclusion(item: SpecialOrderPreviewItem) {
+    const duplicateCount = duplicateCountBySourceKey.get(item.sourceKey) ?? 0;
+    const currentlySourceExcluded = effectiveExcludedSourceKeySet.has(item.sourceKey);
+    if (duplicateCount > 1 && !currentlySourceExcluded) {
+      toggleRowExclusion(item.rowId);
+      return;
+    }
+    toggleSourceExclusion(item.sourceKey);
+  }
+
+  function toggleSectionExpanded(sectionKey: string) {
+    setExpandedSections((current) => ({
+      ...current,
+      [sectionKey]: !current[sectionKey],
+    }));
   }
 
   return (
@@ -391,19 +491,15 @@ export function AdminSpecialOrderImportPage() {
             />
             <InfoPill
               icon={<PackageSearch className="h-4 w-4" />}
-              title="3. Sincronizas"
-              description="Crea o actualiza productos por encargue y desactiva los faltantes del perfil."
+              title="3. Seleccionas y sincronizas"
+              description="Activas solo lo que te interesa y, si quieres, recuerdas esa decision para futuras corridas."
             />
           </div>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
           <MetricTile label="Scope" value={selectedProfile?.name ?? 'Sin perfil'} tone="accent" />
-          <MetricTile
-            label="Proveedor"
-            value={selectedProfile?.supplier.name ?? 'Definir perfil'}
-            tone="neutral"
-          />
+          <MetricTile label="Proveedor" value={selectedProfile?.supplier.name ?? 'Definir perfil'} tone="neutral" />
         </div>
       </SectionCard>
 
@@ -636,7 +732,10 @@ export function AdminSpecialOrderImportPage() {
 
           <div className="space-y-6">
             {!preview ? (
-              <SectionCard title="Preview pendiente" description="Analiza el listado para ver nuevas altas, actualizaciones, faltantes y conflictos antes de aplicar.">
+              <SectionCard
+                title="Preview pendiente"
+                description="Analiza el listado para ver nuevas altas, actualizaciones, faltantes y conflictos antes de aplicar."
+              >
                 <EmptyState
                   title="Todavia no hay preview"
                   description="Cuando analices el texto, aca vas a ver el resumen del lote, el mapping por secciones y los productos detectados."
@@ -659,9 +758,18 @@ export function AdminSpecialOrderImportPage() {
                     <MetricTile label="Nuevos" value={String(preview.summary.newCount)} tone="success" />
                     <MetricTile label="Actualizados" value={String(preview.summary.updatedCount)} tone="accent" />
                     <MetricTile label="Sin cambios" value={String(preview.summary.unchangedCount)} tone="neutral" />
-                    <MetricTile label="Sin stock proveedor" value={String(preview.summary.supplierOutOfStockCount)} tone="warning" />
+                    <MetricTile
+                      label="Sin stock proveedor"
+                      value={String(preview.summary.supplierOutOfStockCount)}
+                      tone="warning"
+                    />
                     <MetricTile label="A desactivar" value={String(preview.summary.deactivatedCount)} tone="danger" />
-                    <MetricTile label="Conflictos" value={String(preview.summary.conflictCount)} tone={preview.summary.conflictCount > 0 ? 'danger' : 'neutral'} />
+                    <MetricTile
+                      label="Conflictos"
+                      value={String(preview.summary.conflictCount)}
+                      tone={preview.summary.conflictCount > 0 ? 'danger' : 'neutral'}
+                    />
+                    <MetricTile label="Excluidos" value={String(currentExcludedCount)} tone="info" />
                   </div>
 
                   <div className="mt-4 flex flex-wrap gap-3">
@@ -692,7 +800,10 @@ export function AdminSpecialOrderImportPage() {
                       const createNew = !mapping.categoryId;
 
                       return (
-                        <div key={section.sectionKey} className="grid gap-4 rounded-3xl border border-zinc-200 p-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1fr)_minmax(0,1fr)]">
+                        <div
+                          key={section.sectionKey}
+                          className="grid gap-4 rounded-3xl border border-zinc-200 p-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1fr)_minmax(0,1fr)]"
+                        >
                           <div className="space-y-2">
                             <div className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Seccion detectada</div>
                             <div className="text-base font-semibold text-zinc-900">{section.sectionName}</div>
@@ -717,16 +828,14 @@ export function AdminSpecialOrderImportPage() {
                                   updateMapping(section.sectionKey, {
                                     categoryId: value === NEW_CATEGORY_VALUE ? '' : value,
                                     createCategoryName:
-                                      value === NEW_CATEGORY_VALUE
-                                        ? mapping.createCategoryName || section.sectionName
-                                        : '',
+                                      value === NEW_CATEGORY_VALUE ? mapping.createCategoryName || section.sectionName : '',
                                   });
                                 }}
                               >
                                 <option value={NEW_CATEGORY_VALUE}>Crear categoria nueva</option>
                                 {sortedCategories.map((category) => (
                                   <option key={category.id} value={category.id}>
-                                  {buildCategoryPathLabel(category)}
+                                    {buildCategoryPathLabel(category)}
                                   </option>
                                 ))}
                               </select>
@@ -747,12 +856,16 @@ export function AdminSpecialOrderImportPage() {
                 </SectionCard>
 
                 <SectionCard
-                  title="Productos detectados"
-                  description="Puedes excluir filas conflictivas o lineas que no quieras sincronizar. Luego reanaliza para recalcular el lote."
+                  title="Seleccion por secciones"
+                  description="Decides primero por marca o tipo. Si necesitas afinar, despliegas la seccion y excluyes productos puntuales."
                   actions={
                     <div className="flex flex-wrap gap-2">
-                      {conflictItems.length > 0 ? <StatusBadge tone="danger" size="sm" label={`${conflictItems.length} conflictivos`} /> : null}
-                      {excludedRowIds.length > 0 ? <StatusBadge tone="warning" size="sm" label={`${excludedRowIds.length} excluidos`} /> : null}
+                      {conflictItems.length > 0 ? (
+                        <StatusBadge tone="danger" size="sm" label={`${conflictItems.length} conflictivos`} />
+                      ) : null}
+                      {currentExcludedCount > 0 ? (
+                        <StatusBadge tone="warning" size="sm" label={`${currentExcludedCount} excluidos`} />
+                      ) : null}
                     </div>
                   }
                 >
@@ -762,78 +875,226 @@ export function AdminSpecialOrderImportPage() {
                       description="Revisa el formato del listado o confirma que las lineas incluyan secciones validas y precios en USD."
                     />
                   ) : (
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full border-separate border-spacing-y-2 text-sm">
-                        <thead>
-                          <tr className="text-left text-xs uppercase tracking-[0.16em] text-zinc-500">
-                            <th className="px-3 py-2">Incluye</th>
-                            <th className="px-3 py-2">Producto</th>
-                            <th className="px-3 py-2">Precio origen</th>
-                            <th className="px-3 py-2">Precio final</th>
-                            <th className="px-3 py-2">Estado</th>
-                            <th className="px-3 py-2">Categoria</th>
-                            <th className="px-3 py-2">Regla</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {preview.items.map((item) => {
-                            const excluded = excludedRowIds.includes(item.rowId);
-                            return (
-                              <tr key={item.rowId} className={`rounded-3xl bg-white shadow-sm ring-1 ${rowRingClass(item, excluded)}`}>
-                                <td className="px-3 py-3 align-top">
-                                  <label className="flex items-center gap-2 text-xs font-semibold text-zinc-600">
-                                    <input
-                                      type="checkbox"
-                                      checked={!excluded}
-                                      onChange={() => toggleRowExclusion(item.rowId)}
-                                    />
-                                    {!excluded ? 'Incluido' : 'Excluido'}
-                                  </label>
-                                </td>
-                                <td className="px-3 py-3 align-top">
-                                  <div className="font-semibold text-zinc-900">{item.title}</div>
-                                  <div className="mt-1 flex flex-wrap gap-2 text-xs text-zinc-500">
-                                    <span>{item.sectionName}</span>
-                                    <span>Linea {item.lineNumber}</span>
-                                    {item.existingProduct ? <span>Existe como {item.existingProduct.name}</span> : null}
-                                  </div>
-                                  {item.existingProduct ? (
-                                    <div className="mt-2 text-xs text-zinc-500">
-                                      Actual: ${item.existingProduct.price.toLocaleString('es-AR')} ·{' '}
-                                      {availabilityLabel(item.existingProduct.supplierAvailability)}
-                                    </div>
-                                  ) : null}
-                                </td>
-                                <td className="px-3 py-3 align-top text-zinc-700">
-                                  {item.sourcePriceUsd == null ? 'Sin precio' : `USD ${item.sourcePriceUsd.toLocaleString('es-AR')}`}
-                                  <div className="mt-1 text-xs text-zinc-500">Costo ARS $ {item.nextCostPrice.toLocaleString('es-AR')}</div>
-                                </td>
-                                <td className="px-3 py-3 align-top font-semibold text-zinc-900">
-                                  $ {item.nextPrice.toLocaleString('es-AR')}
-                                  <div className="mt-1 text-xs font-medium text-zinc-500">Margen {item.marginPercent.toLocaleString('es-AR')}%</div>
-                                </td>
-                                <td className="px-3 py-3 align-top">
-                                  <div className="flex flex-col gap-2">
-                                    <StatusBadge size="sm" tone={statusTone(item.status)} label={statusLabel(item.status)} />
+                    <div className="space-y-4">
+                      <div className="rounded-3xl border border-zinc-200 bg-zinc-50/80 p-4">
+                        <label className="flex flex-wrap items-center gap-3 text-sm font-semibold text-zinc-800">
+                          <input
+                            type="checkbox"
+                            checked={rememberExclusions}
+                            onChange={(event) => setRememberExclusions(event.target.checked)}
+                          />
+                          Recordar esta seleccion para proximos listados de este perfil
+                        </label>
+                        <div className="mt-2 text-xs leading-relaxed text-zinc-600">
+                          Si lo activas al aplicar, la web volvera a dejar desmarcadas estas secciones y productos en la proxima corrida.
+                        </div>
+                        {rememberedSelectionCount > 0 ? (
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {preview.selection.rememberedSectionKeys.length > 0 ? (
+                              <StatusBadge
+                                tone="info"
+                                size="sm"
+                                label={`${preview.selection.rememberedSectionKeys.length} secciones recordadas`}
+                              />
+                            ) : null}
+                            {preview.selection.rememberedSourceKeys.length > 0 ? (
+                              <StatusBadge
+                                tone="info"
+                                size="sm"
+                                label={`${preview.selection.rememberedSourceKeys.length} productos recordados`}
+                              />
+                            ) : null}
+                          </div>
+                        ) : null}
+                      </div>
+
+                      <div className="space-y-3">
+                        {preview.sections.map((section) => {
+                          const sectionItems = itemsBySection.get(section.sectionKey) ?? [];
+                          const sectionExcluded = effectiveExcludedSectionKeySet.has(section.sectionKey);
+                          const includedCount = sectionItems.filter((item) =>
+                            isPreviewItemIncluded(item, effectiveExcludedSectionKeySet, effectiveExcludedSourceKeySet, effectiveExcludedRowIdSet),
+                          ).length;
+                          const sectionExcludedCount = sectionItems.length - includedCount;
+                          const sectionHasConflict = sectionItems.some(
+                            (item) =>
+                              isPreviewItemIncluded(
+                                item,
+                                effectiveExcludedSectionKeySet,
+                                effectiveExcludedSourceKeySet,
+                                effectiveExcludedRowIdSet,
+                              ) && item.status === 'conflict',
+                          );
+                          const sectionRememberedProductCount = sectionItems.filter((item) =>
+                            rememberedSourceKeySet.has(item.sourceKey),
+                          ).length;
+                          const expanded = expandedSections[section.sectionKey] ?? false;
+
+                          return (
+                            <div key={section.sectionKey} className="overflow-hidden rounded-3xl border border-zinc-200 bg-white">
+                              <div className="flex flex-wrap items-start justify-between gap-4 px-4 py-4">
+                                <div className="min-w-0 flex-1 space-y-2">
+                                  <div className="text-base font-semibold text-zinc-900">{section.sectionName}</div>
+                                  <div className="flex flex-wrap gap-2">
                                     <StatusBadge
                                       size="sm"
-                                      tone={item.supplierAvailability === 'OUT_OF_STOCK' ? 'warning' : 'success'}
-                                      label={availabilityLabel(item.supplierAvailability)}
+                                      tone={sectionExcluded ? 'warning' : 'success'}
+                                      label={sectionExcluded ? 'Seccion excluida' : `${includedCount}/${sectionItems.length} incluidos`}
                                     />
+                                    <StatusBadge
+                                      size="sm"
+                                      tone={section.mappingSource === 'new' ? 'warning' : section.mappingSource === 'input' ? 'accent' : 'info'}
+                                      label={mappingSourceLabel(section.mappingSource)}
+                                    />
+                                    {rememberedSectionKeySet.has(section.sectionKey) ? (
+                                      <StatusBadge size="sm" tone="info" label="Exclusion recordada" />
+                                    ) : null}
+                                    {sectionRememberedProductCount > 0 ? (
+                                      <StatusBadge
+                                        size="sm"
+                                        tone="info"
+                                        label={`${sectionRememberedProductCount} productos recordados`}
+                                      />
+                                    ) : null}
+                                    {sectionHasConflict ? <StatusBadge size="sm" tone="danger" label="Conflictos" /> : null}
+                                    {section.willCreateCategory ? <StatusBadge size="sm" tone="accent" label="Crea categoria" /> : null}
                                   </div>
-                                </td>
-                                <td className="px-3 py-3 align-top text-zinc-700">
-                                  <div>{item.categoryName ?? item.createCategoryName ?? 'Sin categoria'}</div>
-                                  {item.willCreateCategory ? <div className="mt-1 text-xs text-zinc-500">Se crea al aplicar</div> : null}
-                                </td>
-                                <td className="px-3 py-3 align-top text-zinc-700">
-                                  {item.appliedRuleName ?? 'Fallback del perfil'}
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
+                                  <div className="text-xs text-zinc-500">
+                                    Categoria: {section.categoryName ?? section.createCategoryName ?? 'Sin categoria'} ·{' '}
+                                    {sectionExcludedCount} excluidos
+                                  </div>
+                                </div>
+
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <label className="flex items-center gap-2 rounded-2xl border border-zinc-200 px-3 py-2 text-xs font-semibold text-zinc-700">
+                                    <input
+                                      type="checkbox"
+                                      checked={!sectionExcluded}
+                                      onChange={() => toggleSectionExclusion(section.sectionKey)}
+                                    />
+                                    {!sectionExcluded ? 'Incluir seccion' : 'Seccion fuera'}
+                                  </label>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => toggleSectionExpanded(section.sectionKey)}
+                                  >
+                                    {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                                    {expanded ? 'Ocultar productos' : `Ver productos (${sectionItems.length})`}
+                                  </Button>
+                                </div>
+                              </div>
+
+                              {expanded ? (
+                                <div className="border-t border-zinc-200 bg-zinc-50/60 px-4 py-4">
+                                  <div className="space-y-3">
+                                    {sectionItems.map((item) => {
+                                      const itemIncluded = isPreviewItemIncluded(
+                                        item,
+                                        effectiveExcludedSectionKeySet,
+                                        effectiveExcludedSourceKeySet,
+                                        effectiveExcludedRowIdSet,
+                                      );
+                                      const duplicateCount = duplicateCountBySourceKey.get(item.sourceKey) ?? 0;
+                                      const rowExcluded = effectiveExcludedRowIdSet.has(item.rowId);
+                                      const sourceExcluded = effectiveExcludedSourceKeySet.has(item.sourceKey);
+                                      const useRowToggle = duplicateCount > 1 && !sourceExcluded;
+                                      const toggleLabel = sectionExcluded
+                                        ? 'Hereda exclusion de la seccion'
+                                        : useRowToggle
+                                          ? rowExcluded
+                                            ? 'Fila excluida'
+                                            : 'Excluir solo esta fila'
+                                          : itemIncluded
+                                            ? 'Producto incluido'
+                                            : 'Producto excluido';
+
+                                      return (
+                                        <div
+                                          key={item.rowId}
+                                          className={`rounded-3xl border bg-white p-4 ${rowRingClass(item, !itemIncluded)}`}
+                                        >
+                                          <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                                            <div className="min-w-0 flex-1">
+                                              <label className="flex items-start gap-3">
+                                                <input
+                                                  type="checkbox"
+                                                  checked={itemIncluded}
+                                                  disabled={sectionExcluded}
+                                                  onChange={() => toggleItemExclusion(item)}
+                                                />
+                                                <div className="min-w-0">
+                                                  <div className="font-semibold text-zinc-900">{item.title}</div>
+                                                  <div className="mt-1 flex flex-wrap gap-2 text-xs text-zinc-500">
+                                                    <span>Linea {item.lineNumber}</span>
+                                                    <span>{toggleLabel}</span>
+                                                    {duplicateCount > 1 ? <span>Duplicado x{duplicateCount}</span> : null}
+                                                    {item.existingProduct ? <span>Existe como {item.existingProduct.name}</span> : null}
+                                                  </div>
+                                                  {item.existingProduct ? (
+                                                    <div className="mt-2 text-xs text-zinc-500">
+                                                      Actual: ${item.existingProduct.price.toLocaleString('es-AR')} ·{' '}
+                                                      {availabilityLabel(item.existingProduct.supplierAvailability)}
+                                                    </div>
+                                                  ) : null}
+                                                </div>
+                                              </label>
+                                            </div>
+
+                                            <div className="grid min-w-0 gap-3 text-sm text-zinc-700 sm:grid-cols-2 xl:min-w-[22rem]">
+                                              <div>
+                                                <div className="text-[11px] font-black uppercase tracking-[0.16em] text-zinc-500">
+                                                  Origen
+                                                </div>
+                                                <div className="mt-1 font-semibold text-zinc-900">
+                                                  {item.sourcePriceUsd == null ? 'Sin precio' : `USD ${item.sourcePriceUsd.toLocaleString('es-AR')}`}
+                                                </div>
+                                                <div className="mt-1 text-xs text-zinc-500">
+                                                  Costo ARS $ {item.nextCostPrice.toLocaleString('es-AR')}
+                                                </div>
+                                              </div>
+                                              <div>
+                                                <div className="text-[11px] font-black uppercase tracking-[0.16em] text-zinc-500">
+                                                  Venta
+                                                </div>
+                                                <div className="mt-1 font-semibold text-zinc-900">
+                                                  $ {item.nextPrice.toLocaleString('es-AR')}
+                                                </div>
+                                                <div className="mt-1 text-xs text-zinc-500">
+                                                  Margen {item.marginPercent.toLocaleString('es-AR')}%
+                                                </div>
+                                              </div>
+                                              <div className="sm:col-span-2 flex flex-wrap gap-2">
+                                                <StatusBadge size="sm" tone={statusTone(item.status)} label={statusLabel(item.status)} />
+                                                <StatusBadge
+                                                  size="sm"
+                                                  tone={item.supplierAvailability === 'OUT_OF_STOCK' ? 'warning' : 'success'}
+                                                  label={availabilityLabel(item.supplierAvailability)}
+                                                />
+                                                {rememberedSourceKeySet.has(item.sourceKey) ? (
+                                                  <StatusBadge size="sm" tone="info" label="Producto recordado" />
+                                                ) : null}
+                                                {rowExcluded ? (
+                                                  <StatusBadge size="sm" tone="warning" label="Exclusion por fila" />
+                                                ) : null}
+                                              </div>
+                                              <div className="sm:col-span-2 text-xs text-zinc-500">
+                                                Categoria: {item.categoryName ?? item.createCategoryName ?? 'Sin categoria'} ·{' '}
+                                                {item.appliedRuleName ?? 'Fallback del perfil'}
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              ) : null}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
                 </SectionCard>
@@ -851,7 +1112,10 @@ export function AdminSpecialOrderImportPage() {
                   ) : (
                     <div className="space-y-3">
                       {preview.missing.map((item) => (
-                        <div key={item.productId} className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-amber-200 bg-amber-50 px-4 py-3">
+                        <div
+                          key={item.productId}
+                          className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-amber-200 bg-amber-50 px-4 py-3"
+                        >
                           <div>
                             <div className="font-semibold text-zinc-900">{item.title}</div>
                             <div className="text-xs text-zinc-500">{item.categoryName ?? 'Sin categoria'}</div>
@@ -972,6 +1236,19 @@ function serializeSectionMappings(mappings: Record<string, SectionMappingDraft>)
     categoryId: mapping.categoryId.trim() || null,
     createCategoryName: mapping.categoryId.trim() ? null : mapping.createCategoryName.trim() || null,
   }));
+}
+
+function toggleKey(current: string[], value: string) {
+  return current.includes(value) ? current.filter((entry) => entry !== value) : [...current, value];
+}
+
+function isPreviewItemIncluded(
+  item: SpecialOrderPreviewItem,
+  excludedSectionKeys: Set<string>,
+  excludedSourceKeys: Set<string>,
+  excludedRowIds: Set<string>,
+) {
+  return !excludedSectionKeys.has(item.sectionKey) && !excludedSourceKeys.has(item.sourceKey) && !excludedRowIds.has(item.rowId);
 }
 
 function statusLabel(status: SpecialOrderPreviewItem['status']) {

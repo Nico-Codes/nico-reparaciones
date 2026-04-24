@@ -25,6 +25,11 @@ type SectionCategoryMapEntry = {
   createCategoryName?: string | null;
 };
 
+type RememberedSpecialOrderSelections = {
+  sectionKeys: string[];
+  sourceKeys: string[];
+};
+
 type ResolvedSectionMapping = {
   sectionKey: string;
   sectionName: string;
@@ -254,11 +259,21 @@ export class CatalogAdminSpecialOrderService {
         });
       }
 
+      const profileUpdateData: Prisma.SpecialOrderImportProfileUncheckedUpdateInput = {
+        sectionCategoryMapJson: JSON.stringify(persistedMapping),
+      };
+      if (input.rememberExclusions) {
+        profileUpdateData.rememberedExcludedSectionKeysJson = this.stringifyStringArray(
+          preview.selection.excludedSectionKeys,
+        );
+        profileUpdateData.rememberedExcludedSourceKeysJson = this.stringifyStringArray(
+          preview.selection.excludedSourceKeys,
+        );
+      }
+
       await tx.specialOrderImportProfile.update({
         where: { id: preview.profile.id },
-        data: {
-          sectionCategoryMapJson: JSON.stringify(persistedMapping),
-        },
+        data: profileUpdateData,
       });
 
       const batch = await tx.specialOrderImportBatch.create({
@@ -313,6 +328,19 @@ export class CatalogAdminSpecialOrderService {
       Number(profile.defaultShippingUsd),
     );
     const parsed = parseSpecialOrderListing(input.rawText ?? '');
+    const rememberedSelections = this.parseRememberedSelections(profile);
+    const rememberedSectionKeys = new Set(rememberedSelections.sectionKeys);
+    const rememberedSourceKeys = new Set(rememberedSelections.sourceKeys);
+    const effectiveExcludedSectionKeys = new Set(
+      input.excludedSectionKeys === undefined
+        ? rememberedSelections.sectionKeys
+        : this.normalizeStringArray(input.excludedSectionKeys),
+    );
+    const effectiveExcludedSourceKeys = new Set(
+      input.excludedSourceKeys === undefined
+        ? rememberedSelections.sourceKeys
+        : this.normalizeStringArray(input.excludedSourceKeys),
+    );
     const excludedRowIds = new Set((input.excludedRowIds ?? []).map((value) => value.trim()).filter(Boolean));
 
     const [categories, existingProducts] = await Promise.all([
@@ -352,7 +380,13 @@ export class CatalogAdminSpecialOrderService {
 
     const includedCounts = new Map<string, number>();
     for (const row of parsed.rows) {
-      if (excludedRowIds.has(row.rowId)) continue;
+      if (
+        excludedRowIds.has(row.rowId) ||
+        effectiveExcludedSectionKeys.has(row.sectionKey) ||
+        effectiveExcludedSourceKeys.has(row.sourceKey)
+      ) {
+        continue;
+      }
       includedCounts.set(row.sourceKey, (includedCounts.get(row.sourceKey) ?? 0) + 1);
     }
 
@@ -369,7 +403,10 @@ export class CatalogAdminSpecialOrderService {
           throw new BadRequestException(`No se pudo resolver la categoria para la seccion ${row.sectionName}`);
         }
 
-        const included = !excludedRowIds.has(row.rowId);
+        const excludedBySection = effectiveExcludedSectionKeys.has(row.sectionKey);
+        const excludedBySource = effectiveExcludedSourceKeys.has(row.sourceKey);
+        const excludedByRow = excludedRowIds.has(row.rowId);
+        const included = !excludedBySection && !excludedBySource && !excludedByRow;
         const conflict = included && (includedCounts.get(row.sourceKey) ?? 0) > 1;
         const existing = existingBySourceKey.get(row.sourceKey) ?? null;
         const effectiveSourcePriceUsd = row.sourcePriceUsd ?? existing?.sourcePriceUsd ?? null;
@@ -411,6 +448,11 @@ export class CatalogAdminSpecialOrderService {
           rowId: row.rowId,
           lineNumber: row.lineNumber,
           included,
+          excludedBySection,
+          excludedBySource,
+          excludedByRow,
+          rememberedExcludedBySection: rememberedSectionKeys.has(row.sectionKey),
+          rememberedExcludedBySource: rememberedSourceKeys.has(row.sourceKey),
           resolvedStatus,
           status,
           sourceKey: row.sourceKey,
@@ -475,6 +517,7 @@ export class CatalogAdminSpecialOrderService {
       updatedCount: items.filter((item) => item.included && (item.status === 'price_update' || item.status === 'availability_update')).length,
       parsedCount: parsed.rows.length,
       includedCount: items.filter((item) => item.included).length,
+      excludedCount: items.filter((item) => !item.included).length,
     };
 
     return {
@@ -482,7 +525,18 @@ export class CatalogAdminSpecialOrderService {
       usdRate,
       shippingUsd,
       blocked: summary.conflictCount > 0,
-      sections: Array.from(mappings.values()),
+      selection: {
+        excludedSectionKeys: Array.from(effectiveExcludedSectionKeys),
+        excludedSourceKeys: Array.from(effectiveExcludedSourceKeys),
+        excludedRowIds: Array.from(excludedRowIds),
+        rememberedSectionKeys: rememberedSelections.sectionKeys,
+        rememberedSourceKeys: rememberedSelections.sourceKeys,
+      },
+      sections: Array.from(mappings.values()).map((section) => ({
+        ...section,
+        included: !effectiveExcludedSectionKeys.has(section.sectionKey),
+        rememberedExcluded: rememberedSectionKeys.has(section.sectionKey),
+      })),
       items,
       missing,
       summary,
@@ -708,6 +762,42 @@ export class CatalogAdminSpecialOrderService {
     } catch {
       return {};
     }
+  }
+
+  private parseRememberedSelections(profile: {
+    rememberedExcludedSectionKeysJson?: string | null;
+    rememberedExcludedSourceKeysJson?: string | null;
+  }): RememberedSpecialOrderSelections {
+    return {
+      sectionKeys: this.parseStringArray(profile.rememberedExcludedSectionKeysJson),
+      sourceKeys: this.parseStringArray(profile.rememberedExcludedSourceKeysJson),
+    };
+  }
+
+  private parseStringArray(rawValue?: string | null) {
+    const normalized = (rawValue ?? '').trim();
+    if (!normalized) return [];
+    try {
+      const parsed = JSON.parse(normalized);
+      return Array.isArray(parsed) ? this.normalizeStringArray(parsed) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  private normalizeStringArray(values: unknown[]) {
+    return Array.from(
+      new Set(
+        values
+          .map((value) => (typeof value === 'string' ? value.trim() : ''))
+          .filter(Boolean),
+      ),
+    );
+  }
+
+  private stringifyStringArray(values: string[]) {
+    const normalized = this.normalizeStringArray(values);
+    return normalized.length > 0 ? JSON.stringify(normalized) : null;
   }
 
   private async createCategoryIfMissing(tx: Prisma.TransactionClient, rawName: string) {

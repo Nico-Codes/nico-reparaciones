@@ -55,7 +55,10 @@ const specialOrderImportSchema = z.object({
   usdRate: z.number().nonnegative().max(999999).optional().nullable(),
   shippingUsd: z.number().nonnegative().max(999999).optional().nullable(),
   sectionMappings: z.array(specialOrderSectionMappingSchema).max(500).optional(),
+  excludedSectionKeys: z.array(z.string().trim().min(1).max(190)).max(500).optional(),
+  excludedSourceKeys: z.array(z.string().trim().min(1).max(260)).max(5000).optional(),
   excludedRowIds: z.array(z.string().trim().min(1).max(260)).max(5000).optional(),
+  rememberExclusions: z.boolean().optional(),
 });
 
 const productPricingSettingsSchema = z.object({

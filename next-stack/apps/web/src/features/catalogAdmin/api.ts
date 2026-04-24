@@ -87,12 +87,19 @@ export type SpecialOrderPreviewSection = {
   createCategoryName: string | null;
   willCreateCategory: boolean;
   mappingSource: 'input' | 'profile' | 'existing' | 'new';
+  included: boolean;
+  rememberedExcluded: boolean;
 };
 
 export type SpecialOrderPreviewItem = {
   rowId: string;
   lineNumber: number;
   included: boolean;
+  excludedBySection: boolean;
+  excludedBySource: boolean;
+  excludedByRow: boolean;
+  rememberedExcludedBySection: boolean;
+  rememberedExcludedBySource: boolean;
   resolvedStatus: 'new' | 'price_update' | 'availability_update' | 'unchanged' | 'missing_deactivate' | 'conflict';
   status: 'new' | 'price_update' | 'availability_update' | 'unchanged' | 'missing_deactivate' | 'conflict';
   sourceKey: string;
@@ -144,6 +151,13 @@ export type SpecialOrderImportPreview = {
   usdRate: number;
   shippingUsd: number;
   blocked: boolean;
+  selection: {
+    excludedSectionKeys: string[];
+    excludedSourceKeys: string[];
+    excludedRowIds: string[];
+    rememberedSectionKeys: string[];
+    rememberedSourceKeys: string[];
+  };
   sections: SpecialOrderPreviewSection[];
   items: SpecialOrderPreviewItem[];
   missing: SpecialOrderPreviewMissingItem[];
@@ -158,6 +172,7 @@ export type SpecialOrderImportPreview = {
     updatedCount: number;
     parsedCount: number;
     includedCount: number;
+    excludedCount: number;
   };
 };
 
@@ -243,7 +258,10 @@ export const catalogAdminApi = {
     usdRate?: number | null;
     shippingUsd?: number | null;
     sectionMappings?: SpecialOrderSectionMappingInput[];
+    excludedSectionKeys?: string[];
+    excludedSourceKeys?: string[];
     excludedRowIds?: string[];
+    rememberExclusions?: boolean;
   }) {
     return authJsonRequest<SpecialOrderImportPreview>('/catalog-admin/special-order-imports/preview', {
       method: 'POST',
@@ -256,7 +274,10 @@ export const catalogAdminApi = {
     usdRate?: number | null;
     shippingUsd?: number | null;
     sectionMappings?: SpecialOrderSectionMappingInput[];
+    excludedSectionKeys?: string[];
+    excludedSourceKeys?: string[];
     excludedRowIds?: string[];
+    rememberExclusions?: boolean;
   }) {
     return authJsonRequest<{
       ok: boolean;

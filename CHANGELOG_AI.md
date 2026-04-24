@@ -3810,3 +3810,25 @@ pm run qa:frontend:e2e
   - en mobile la fila sigue apilando los tres bloques para no romper legibilidad
 
 ---
+### 2026-04-24 - Codex
+- Alcance: permitir seleccionar por seccion y por producto dentro del importador de listados por encargue, con memoria opcional por perfil.
+- Tipo de intervencion: ajuste funcional full-stack sobre `catalog-admin` y schema Prisma.
+- Archivos tocados:
+  - `next-stack/apps/api/prisma/{schema.prisma,migrations/20260424143000_add_special_order_profile_remembered_exclusions/migration.sql}`
+  - `next-stack/apps/api/src/modules/catalog-admin/{catalog-admin.controller.ts,catalog-admin-special-order.service.ts,catalog-admin.types.ts}`
+  - `next-stack/apps/web/src/features/catalogAdmin/{AdminSpecialOrderImportPage.tsx,api.ts}`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. El preview del importador ya no obliga a revisar una tabla plana: ahora permite excluir secciones completas, desplegar cada seccion para excluir productos puntuales y recordar esa seleccion para proximas corridas del mismo perfil. Las exclusiones persistentes se guardan por `sectionKey` y `sourceKey`; los duplicados siguen pudiendo excluirse temporalmente por `rowId`.
+- Validaciones ejecutadas:
+  - `cmd /c npx dotenv -e ../../.env -- prisma generate --no-engine` desde `next-stack/apps/api`
+  - `cmd /c npm run db:migrate --workspace @nico/api`
+  - `cmd /c npm run typecheck --workspace @nico/api`
+  - `cmd /c npm run test --workspace @nico/api`
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+- Riesgos / notas:
+  - `npm run db:generate --workspace @nico/api` siguio chocando con un lock del engine de Prisma porque el API local estaba corriendo; para validar tipos se uso `prisma generate --no-engine`, que actualiza el cliente sin intentar reemplazar el binario bloqueado
+  - la memoria persistente solo guarda exclusiones de seccion y producto; las exclusiones por fila siguen siendo temporales y se usan para resolver duplicados sin contaminar futuras corridas
+
+---

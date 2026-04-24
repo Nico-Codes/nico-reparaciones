@@ -76,7 +76,10 @@ export type SpecialOrderImportPreviewInput = {
   usdRate?: number | null;
   shippingUsd?: number | null;
   sectionMappings?: SpecialOrderSectionMappingInput[];
+  excludedSectionKeys?: string[];
+  excludedSourceKeys?: string[];
   excludedRowIds?: string[];
+  rememberExclusions?: boolean;
 };
 
 export type SpecialOrderImportApplyInput = SpecialOrderImportPreviewInput & {
