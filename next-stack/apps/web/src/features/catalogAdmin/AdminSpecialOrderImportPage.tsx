@@ -287,7 +287,11 @@ export function AdminSpecialOrderImportPage() {
     }
   }
 
-  function buildPreviewPayload() {
+  function buildPreviewPayload(overrides?: {
+    excludedSectionKeys?: string[] | null;
+    excludedSourceKeys?: string[] | null;
+    excludedRowIds?: string[] | null;
+  }) {
     const payload: {
       profileId: string;
       rawText: string;
@@ -306,13 +310,20 @@ export function AdminSpecialOrderImportPage() {
       sectionMappings: serializeSectionMappings(sectionMappings),
       rememberExclusions,
     };
-    if (excludedSectionKeys !== null) payload.excludedSectionKeys = excludedSectionKeys;
-    if (excludedSourceKeys !== null) payload.excludedSourceKeys = excludedSourceKeys;
-    if (excludedRowIds !== null) payload.excludedRowIds = excludedRowIds;
+    const nextExcludedSectionKeys = overrides?.excludedSectionKeys ?? excludedSectionKeys;
+    const nextExcludedSourceKeys = overrides?.excludedSourceKeys ?? excludedSourceKeys;
+    const nextExcludedRowIds = overrides?.excludedRowIds ?? excludedRowIds;
+    if (nextExcludedSectionKeys !== null) payload.excludedSectionKeys = nextExcludedSectionKeys;
+    if (nextExcludedSourceKeys !== null) payload.excludedSourceKeys = nextExcludedSourceKeys;
+    if (nextExcludedRowIds !== null) payload.excludedRowIds = nextExcludedRowIds;
     return payload;
   }
 
-  async function runPreview() {
+  async function runPreview(overrides?: {
+    excludedSectionKeys?: string[] | null;
+    excludedSourceKeys?: string[] | null;
+    excludedRowIds?: string[] | null;
+  }) {
     setError('');
     setNotice('');
 
@@ -327,12 +338,21 @@ export function AdminSpecialOrderImportPage() {
 
     setPreviewLoading(true);
     try {
-      const response = await catalogAdminApi.previewSpecialOrderImport(buildPreviewPayload());
+      const response = await catalogAdminApi.previewSpecialOrderImport(buildPreviewPayload(overrides));
       setPreview(response);
       setPreviewDirty(false);
       setExcludedSectionKeys(response.selection.excludedSectionKeys);
       setExcludedSourceKeys(response.selection.excludedSourceKeys);
       setExcludedRowIds(response.selection.excludedRowIds);
+      const conflictSectionKeys = new Set(
+        response.items.filter((item) => item.included && item.status === 'conflict').map((item) => item.sectionKey),
+      );
+      setExpandedSections((current) => {
+        if (conflictSectionKeys.size === 0) return current;
+        const next = { ...current };
+        for (const sectionKey of conflictSectionKeys) next[sectionKey] = true;
+        return next;
+      });
       setSectionMappings(
         Object.fromEntries(
           response.sections.map((section) => [
@@ -448,6 +468,34 @@ export function AdminSpecialOrderImportPage() {
       ...current,
       [sectionKey]: !current[sectionKey],
     }));
+  }
+
+  async function resolveConflictsAutomatically() {
+    if (!preview) return;
+    const nextExcludedRowIds = new Set(excludedRowIds ?? preview.selection.excludedRowIds ?? []);
+    const keptBySourceKey = new Set<string>();
+
+    for (const item of preview.items) {
+      if (!isPreviewItemIncluded(item, effectiveExcludedSectionKeySet, effectiveExcludedSourceKeySet, effectiveExcludedRowIdSet)) {
+        continue;
+      }
+      if (item.status !== 'conflict') continue;
+      if (!keptBySourceKey.has(item.sourceKey)) {
+        keptBySourceKey.add(item.sourceKey);
+        continue;
+      }
+      nextExcludedRowIds.add(item.rowId);
+    }
+
+    if (nextExcludedRowIds.size === (excludedRowIds ?? preview.selection.excludedRowIds ?? []).length) {
+      setError('No encontramos filas extra para excluir automaticamente. Revisa las secciones marcadas con conflicto.');
+      return;
+    }
+
+    await runPreview({
+      excludedRowIds: Array.from(nextExcludedRowIds),
+    });
+    setNotice('Duplicados conflictivos resueltos automaticamente. Revisa el preview actualizado.');
   }
 
   return (
@@ -772,11 +820,29 @@ export function AdminSpecialOrderImportPage() {
                     <MetricTile label="Excluidos" value={String(currentExcludedCount)} tone="info" />
                   </div>
 
+                  {preview.summary.conflictCount > 0 ? (
+                    <div className="mt-4 rounded-3xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+                      Hay duplicados con el mismo producto dentro del listado activo. Puedes abrir las secciones marcadas con conflicto o usar{' '}
+                      <span className="font-semibold">Resolver duplicados</span> para dejar solo la primera aparicion incluida de cada uno.
+                    </div>
+                  ) : null}
+
                   <div className="mt-4 flex flex-wrap gap-3">
                     <Button type="button" onClick={() => void handleApply()} disabled={applying || preview.blocked || previewDirty}>
                       {applying ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                       Aplicar importacion
                     </Button>
+                    {preview.summary.conflictCount > 0 ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => void resolveConflictsAutomatically()}
+                        disabled={previewLoading || applying}
+                      >
+                        <CheckCircle2 className="h-4 w-4" />
+                        Resolver duplicados
+                      </Button>
+                    ) : null}
                     <Button type="button" variant="outline" onClick={() => void runPreview()} disabled={previewLoading}>
                       <RefreshCcw className="h-4 w-4" />
                       Reanalizar
