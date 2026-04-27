@@ -159,6 +159,7 @@ model Product {
   category    Category?   @relation(fields: [categoryId], references: [id])
   supplier    Supplier?   @relation(fields: [supplierId], references: [id], onDelete: SetNull)
   specialOrderProfile SpecialOrderImportProfile? @relation(fields: [specialOrderProfileId], references: [id], onDelete: SetNull)
+  colorVariants ProductColorVariant[]
   orderItems  OrderItem[]
   productPricingRules ProductPricingRule[]
 
@@ -207,6 +208,8 @@ model OrderItem {
   id           String   @id @default(cuid())
   orderId      String
   productId    String?
+  selectedColorVariantId String?
+  selectedColorLabelSnapshot String?
   nameSnapshot String
   fulfillmentModeSnapshot ProductFulfillmentMode @default(INVENTORY)
   unitPrice    Decimal  @db.Decimal(12, 2)
@@ -215,6 +218,25 @@ model OrderItem {
   createdAt    DateTime @default(now())
   order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product      Product? @relation(fields: [productId], references: [id])
+}
+
+model ProductColorVariant {
+  id                   String               @id @default(cuid())
+  productId            String
+  label                String
+  normalizedLabel      String
+  supplierAvailability SupplierAvailability @default(UNKNOWN)
+  active               Boolean              @default(true)
+  lastImportedAt       DateTime?
+  sourceSheetRow       Int?
+  sourceSheetKey       String?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  product              Product              @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, active])
+  @@unique([productId, normalizedLabel])
+  @@unique([productId, sourceSheetKey])
 }
 
 model Repair {
@@ -461,6 +483,8 @@ model SpecialOrderImportProfile {
   defaultUsdRate        Decimal   @db.Decimal(12, 4)
   defaultShippingUsd    Decimal   @db.Decimal(12, 4)
   fallbackMarginPercent Decimal   @default(0) @db.Decimal(7, 2)
+  defaultColorSheetUrl  String?
+  rememberColorSheet    Boolean   @default(false)
   sectionCategoryMapJson String?
   rememberedExcludedSectionKeysJson String?
   rememberedExcludedSourceKeysJson String?

@@ -45,7 +45,9 @@ type StoreProductPurchaseSectionProps = {
   canPurchase: boolean;
   qty: number;
   maxQty: number;
+  selectedColorId: string | null;
   onQtyChange: (value: number) => void;
+  onSelectColor: (value: string) => void;
   onAddToCart: () => void;
 };
 
@@ -165,11 +167,15 @@ export function StoreProductPurchaseSection({
   canPurchase,
   qty,
   maxQty,
+  selectedColorId,
   onQtyChange,
+  onSelectColor,
   onAddToCart,
 }: StoreProductPurchaseSectionProps) {
   const isSpecialOrder = isStoreProductSpecialOrder(item);
   const actionLabel = getStoreProductCtaLabel(item);
+  const requiresColorSelection = isSpecialOrder && item.hasColorOptions;
+  const canSubmit = canPurchase && (!requiresColorSelection || Boolean(selectedColorId));
 
   return (
     <SectionCard
@@ -198,6 +204,39 @@ export function StoreProductPurchaseSection({
       <div className="mt-4 whitespace-pre-line text-sm leading-relaxed text-zinc-700">
         {getStoreProductFallbackDescription(item)}
       </div>
+
+      {requiresColorSelection ? (
+        <div className="mt-4 space-y-3">
+          <div className="ui-field__label">Color disponible</div>
+          <div className="flex flex-wrap gap-2">
+            {item.colorOptions.map((option) => {
+              const disabled = !option.active || option.supplierAvailability !== 'IN_STOCK';
+              const selected = selectedColorId === option.id;
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  className={`rounded-2xl border px-3 py-2 text-sm font-semibold transition ${
+                    selected
+                      ? 'border-sky-500 bg-sky-50 text-sky-900'
+                      : disabled
+                        ? 'border-zinc-200 bg-zinc-100 text-zinc-400'
+                        : 'border-zinc-200 bg-white text-zinc-800 hover:border-zinc-300'
+                  }`}
+                  disabled={disabled}
+                  onClick={() => onSelectColor(option.id)}
+                >
+                  {option.label}
+                  {disabled ? ' · Sin stock' : ''}
+                </button>
+              );
+            })}
+          </div>
+          {!selectedColorId ? (
+            <div className="text-xs text-zinc-500">Selecciona un color disponible para poder encargarlo.</div>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="mt-5 grid gap-3">
         <div className="grid gap-3 sm:grid-cols-[auto_1fr] sm:items-end">
@@ -236,9 +275,9 @@ export function StoreProductPurchaseSection({
             </div>
           </div>
 
-          <Button type="button" className="w-full justify-center" onClick={onAddToCart} disabled={!canPurchase}>
+          <Button type="button" className="w-full justify-center" onClick={onAddToCart} disabled={!canSubmit}>
             <ShoppingCart className="h-4 w-4" />
-            {canPurchase ? actionLabel : 'Sin stock'}
+            {canSubmit ? actionLabel : requiresColorSelection && canPurchase ? 'Elegir color' : 'Sin stock'}
           </Button>
         </div>
 

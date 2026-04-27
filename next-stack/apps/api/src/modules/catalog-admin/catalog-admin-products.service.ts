@@ -61,6 +61,19 @@ export class CatalogAdminProductsService {
         },
         supplier: { select: { id: true, name: true } },
         specialOrderProfile: { select: { id: true, name: true } },
+        colorVariants: {
+          select: {
+            id: true,
+            label: true,
+            normalizedLabel: true,
+            supplierAvailability: true,
+            active: true,
+            lastImportedAt: true,
+            sourceSheetRow: true,
+            sourceSheetKey: true,
+          },
+          orderBy: [{ active: 'desc' }, { label: 'asc' }],
+        },
       },
       orderBy: [{ active: 'desc' }, { updatedAt: 'desc' }],
       take: 200,
@@ -85,6 +98,19 @@ export class CatalogAdminProductsService {
         },
         supplier: { select: { id: true, name: true } },
         specialOrderProfile: { select: { id: true, name: true } },
+        colorVariants: {
+          select: {
+            id: true,
+            label: true,
+            normalizedLabel: true,
+            supplierAvailability: true,
+            active: true,
+            lastImportedAt: true,
+            sourceSheetRow: true,
+            sourceSheetKey: true,
+          },
+          orderBy: [{ active: 'desc' }, { label: 'asc' }],
+        },
       },
     });
     if (!item) throw new NotFoundException('Producto no encontrado');
@@ -145,6 +171,19 @@ export class CatalogAdminProductsService {
           },
           supplier: { select: { id: true, name: true } },
           specialOrderProfile: { select: { id: true, name: true } },
+          colorVariants: {
+            select: {
+              id: true,
+              label: true,
+              normalizedLabel: true,
+              supplierAvailability: true,
+              active: true,
+              lastImportedAt: true,
+              sourceSheetRow: true,
+              sourceSheetKey: true,
+            },
+            orderBy: [{ active: 'desc' }, { label: 'asc' }],
+          },
         },
       });
       return { item: this.serializeProduct(item) };
@@ -228,6 +267,19 @@ export class CatalogAdminProductsService {
           },
           supplier: { select: { id: true, name: true } },
           specialOrderProfile: { select: { id: true, name: true } },
+          colorVariants: {
+            select: {
+              id: true,
+              label: true,
+              normalizedLabel: true,
+              supplierAvailability: true,
+              active: true,
+              lastImportedAt: true,
+              sourceSheetRow: true,
+              sourceSheetKey: true,
+            },
+            orderBy: [{ active: 'desc' }, { label: 'asc' }],
+          },
         },
       });
       return { item: this.serializeProduct(item) };
@@ -266,6 +318,19 @@ export class CatalogAdminProductsService {
         },
         supplier: { select: { id: true, name: true } },
         specialOrderProfile: { select: { id: true, name: true } },
+        colorVariants: {
+          select: {
+            id: true,
+            label: true,
+            normalizedLabel: true,
+            supplierAvailability: true,
+            active: true,
+            lastImportedAt: true,
+            sourceSheetRow: true,
+            sourceSheetKey: true,
+          },
+          orderBy: [{ active: 'desc' }, { label: 'asc' }],
+        },
       },
     });
 
@@ -293,6 +358,19 @@ export class CatalogAdminProductsService {
         },
         supplier: { select: { id: true, name: true } },
         specialOrderProfile: { select: { id: true, name: true } },
+        colorVariants: {
+          select: {
+            id: true,
+            label: true,
+            normalizedLabel: true,
+            supplierAvailability: true,
+            active: true,
+            lastImportedAt: true,
+            sourceSheetRow: true,
+            sourceSheetKey: true,
+          },
+          orderBy: [{ active: 'desc' }, { label: 'asc' }],
+        },
       },
     });
     if (!current) throw new NotFoundException('Producto no encontrado');
@@ -316,6 +394,19 @@ export class CatalogAdminProductsService {
         },
         supplier: { select: { id: true, name: true } },
         specialOrderProfile: { select: { id: true, name: true } },
+        colorVariants: {
+          select: {
+            id: true,
+            label: true,
+            normalizedLabel: true,
+            supplierAvailability: true,
+            active: true,
+            lastImportedAt: true,
+            sourceSheetRow: true,
+            sourceSheetKey: true,
+          },
+          orderBy: [{ active: 'desc' }, { label: 'asc' }],
+        },
       },
     });
     return { item: this.serializeProduct(item) };
@@ -364,6 +455,13 @@ export class CatalogAdminProductsService {
       specialOrderProfile: product.specialOrderProfile
         ? { id: product.specialOrderProfile.id, name: product.specialOrderProfile.name }
         : null,
+      hasColorOptions: product.colorVariants.some((variant) => variant.active),
+      colorOptions: product.colorVariants.map((variant) => ({
+        id: variant.id,
+        label: variant.label,
+        supplierAvailability: variant.supplierAvailability,
+        active: variant.active,
+      })),
       lastImportedAt: product.lastImportedAt?.toISOString?.() ?? null,
       createdAt: product.createdAt?.toISOString?.() ?? null,
       updatedAt: product.updatedAt?.toISOString?.() ?? null,

@@ -253,11 +253,24 @@ function AdminProductRow({
                 ) : (
                   <StatusBadge tone={getAdminProductStockTone(product.stock)} size="sm" label={product.stock > 0 ? `Stock ${product.stock}` : 'Sin stock'} />
                 )}
+                {isSpecialOrder && product.hasColorOptions ? (
+                  <StatusBadge tone="info" size="sm" label={`${product.colorOptions.filter((item) => item.active).length} colores`} />
+                ) : null}
               </div>
               <div className="admin-entity-row__meta admin-product-row__meta">
                 <span>{product.category?.pathLabel || 'Sin categoria'}</span>
                 <span>{product.supplier?.name || 'Sin proveedor'}</span>
                 <span>SKU: {product.sku || 'No informado'}</span>
+                {isSpecialOrder && product.hasColorOptions ? (
+                  <span>
+                    {product.colorOptions
+                      .filter((item) => item.active)
+                      .map((item) => item.label)
+                      .slice(0, 3)
+                      .join(', ')}
+                    {product.colorOptions.filter((item) => item.active).length > 3 ? '...' : ''}
+                  </span>
+                ) : null}
                 <span>Codigo: {product.barcode || 'No informado'}</span>
                 {isSpecialOrder && product.lastImportedAt ? <span>Listado: {new Date(product.lastImportedAt).toLocaleString('es-AR')}</span> : null}
               </div>

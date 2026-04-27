@@ -60,6 +60,8 @@ export type SpecialOrderProfileCreateInput = {
   defaultUsdRate: number;
   defaultShippingUsd: number;
   fallbackMarginPercent: number;
+  defaultColorSheetUrl?: string | null;
+  rememberColorSheet?: boolean;
 };
 
 export type SpecialOrderProfileUpdateInput = Partial<SpecialOrderProfileCreateInput>;
@@ -75,6 +77,8 @@ export type SpecialOrderImportPreviewInput = {
   rawText: string;
   usdRate?: number | null;
   shippingUsd?: number | null;
+  colorSheetUrl?: string | null;
+  colorCsvText?: string | null;
   sectionMappings?: SpecialOrderSectionMappingInput[];
   excludedSectionKeys?: string[];
   excludedSourceKeys?: string[];
@@ -130,6 +134,19 @@ export type ProductWithRelations = Prisma.ProductGetPayload<{
     };
     supplier: { select: { id: true; name: true } };
     specialOrderProfile: { select: { id: true; name: true } };
+    colorVariants: {
+      select: {
+        id: true;
+        label: true;
+        normalizedLabel: true;
+        supplierAvailability: true;
+        active: true;
+        lastImportedAt: true;
+        sourceSheetRow: true;
+        sourceSheetKey: true;
+      };
+      orderBy: [{ active: 'desc' }, { label: 'asc' }];
+    };
   };
 }>;
 

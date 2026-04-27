@@ -3832,3 +3832,26 @@ pm run qa:frontend:e2e
   - la memoria persistente solo guarda exclusiones de seccion y producto; las exclusiones por fila siguen siendo temporales y se usan para resolver duplicados sin contaminar futuras corridas
 
 ---
+### 2026-04-27 - Codex
+- Alcance: agregar importacion opcional de colores por Google Sheets/CSV para productos por encargue y corregir la lectura del CSV real del proveedor.
+- Tipo de intervencion: ajuste funcional full-stack sobre `catalog-admin`, tienda, carrito, checkout y pedidos.
+- Archivos tocados:
+  - `next-stack/apps/api/prisma/{schema.prisma,migrations/20260424190000_add_special_order_color_variants/migration.sql}`
+  - `next-stack/apps/api/src/modules/{catalog-admin,store,cart,orders}`
+  - `next-stack/apps/web/src/features/{catalogAdmin,store,cart,orders}`
+  - `project-docs/{DECISIONS_LOG.md,backend/BACKEND_MAP.md,frontend/FRONTEND_MAP.md,architecture/BUSINESS_RULES.md}`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. El importador de encargues ahora acepta una fuente opcional de colores por link publico de Google Sheets o CSV manual, muestra preview de colores vinculados/warnings y al aplicar crea o actualiza `ProductColorVariant`. En tienda, los productos por encargue con colores obligan a elegir un color disponible; carrito, checkout y pedidos preservan esa seleccion.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/api`
+  - `cmd /c npm run test --workspace @nico/api`
+  - `cmd /c npm run build --workspace @nico/api`
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - lectura real del Google Sheet publico del proveedor: 5 secciones y 232 filas parseadas
+- Riesgos / notas:
+  - `cmd /c npm run build --workspace @nico/web` fallo una vez por `EPERM` al limpiar `dist/assets`; `smoke:web` reejecuto el build web completo y paso correctamente
+  - las filas del sheet sin match no bloquean la importacion; quedan como warnings y no crean productos base
+
+---

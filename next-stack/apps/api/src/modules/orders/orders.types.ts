@@ -2,7 +2,7 @@ import type { Prisma } from '@prisma/client';
 
 export type CheckoutInput = {
   userId: string;
-  items: Array<{ productId: string; quantity: number }>;
+  items: Array<{ productId: string; variantId?: string | null; quantity: number }>;
   paymentMethod?: string | null;
 };
 

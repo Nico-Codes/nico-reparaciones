@@ -29,6 +29,8 @@ function makeProduct(
     supplierId: null,
     supplier: null,
     specialOrderProfile: null,
+    hasColorOptions: false,
+    colorOptions: [],
     lastImportedAt: null,
     createdAt: null,
     updatedAt: null,

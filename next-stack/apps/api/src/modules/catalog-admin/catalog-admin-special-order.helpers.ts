@@ -15,6 +15,17 @@ export type ParsedSpecialOrderRow = {
   rawLine: string;
 };
 
+export type ParsedSpecialOrderColorRow = {
+  rowId: string;
+  rowNumber: number;
+  sectionKey: string;
+  sectionName: string;
+  title: string;
+  normalizedTitle: string;
+  supplierAvailability: 'IN_STOCK' | 'OUT_OF_STOCK' | 'UNKNOWN';
+  rawLine: string;
+};
+
 export type SpecialOrderPreviewStatus =
   | 'new'
   | 'price_update'
@@ -119,10 +130,68 @@ export function parseSpecialOrderListing(rawText: string) {
   return { sections, rows };
 }
 
+export function parseSpecialOrderColorCsv(rawCsv: string) {
+  const extractedLines = extractCsvMeaningfulLines(rawCsv);
+  return parseSpecialOrderColorLines(extractedLines);
+}
+
+export function parseSpecialOrderColorText(rawText: string) {
+  return parseSpecialOrderColorLines(rawText.split(/\r?\n/));
+}
+
+export function googleSheetUrlToCsvExportUrl(rawUrl: string) {
+  const url = new URL(rawUrl.trim());
+  const match = url.pathname.match(/\/spreadsheets\/d\/([^/]+)/i);
+  if (!match?.[1]) {
+    throw new Error('La URL de Google Sheets no es valida');
+  }
+  const gid = url.searchParams.get('gid')?.trim() || '0';
+  return `https://docs.google.com/spreadsheets/d/${match[1]}/export?format=csv&gid=${encodeURIComponent(gid)}`;
+}
+
+export function buildSpecialOrderColorSourceKey(productSourceKey: string, colorLabel: string) {
+  return `${productSourceKey}::${normalizeSpecialOrderText(colorLabel)}`;
+}
+
+export function extractSpecialOrderColorLabel(input: {
+  rowTitle: string;
+  normalizedRowTitle: string;
+  productTitle: string;
+  productSectionName: string;
+}) {
+  const rawRow = cleanColorRowLabel(input.rowTitle);
+  const rawBaseCandidates = [
+    input.productTitle.trim(),
+    `${input.productSectionName} ${input.productTitle}`.trim(),
+  ].filter(Boolean);
+
+  for (const rawBase of rawBaseCandidates) {
+    if (startsWithInsensitive(rawRow, rawBase)) {
+      const remainder = cleanColorRowLabel(rawRow.slice(rawBase.length));
+      if (remainder) return remainder;
+    }
+  }
+
+  const normalizedBaseCandidates = [
+    normalizeSpecialOrderText(input.productTitle),
+    normalizeSpecialOrderText(`${input.productSectionName} ${input.productTitle}`),
+  ].filter(Boolean);
+
+  for (const normalizedBase of normalizedBaseCandidates) {
+    if (input.normalizedRowTitle === normalizedBase) continue;
+    if (input.normalizedRowTitle.startsWith(`${normalizedBase} `)) {
+      const remainder = input.normalizedRowTitle.slice(normalizedBase.length).trim();
+      if (remainder) return humanizeNormalizedColorLabel(remainder);
+    }
+  }
+
+  return null;
+}
+
 export function resolveSpecialOrderPreviewStatus(
   existing: ExistingSpecialOrderSnapshot | null,
   next: NextSpecialOrderSnapshot,
-) : SpecialOrderPreviewStatus {
+): SpecialOrderPreviewStatus {
   if (!existing) return 'new';
 
   const availabilityChanged =
@@ -186,8 +255,162 @@ function parseProductRow(
   };
 }
 
+function parseSpecialOrderColorLines(rawLines: string[]) {
+  const sections: ParsedSpecialOrderSection[] = [];
+  const rows: ParsedSpecialOrderColorRow[] = [];
+  const sectionIndex = new Map<string, ParsedSpecialOrderSection>();
+  let currentSection: ParsedSpecialOrderSection | null = null;
+
+  rawLines.forEach((rawLine, index) => {
+    const line = rawLine.replace(/\u00a0/g, ' ').trim();
+    if (!line) return;
+
+    if (isIgnorableColorLine(line)) return;
+
+    if (isColorSectionLine(line)) {
+      const sectionName = cleanSectionLabel(line);
+      const sectionKey = slugifySpecialOrderLabel(sectionName);
+      const section =
+        sectionIndex.get(sectionKey) ??
+        (() => {
+          const nextSection = { sectionKey, sectionName };
+          sectionIndex.set(sectionKey, nextSection);
+          sections.push(nextSection);
+          return nextSection;
+        })();
+      currentSection = section;
+      return;
+    }
+
+    if (!currentSection) return;
+
+    const row = parseColorRow(line, currentSection, index + 1);
+    if (!row) return;
+    rows.push(row);
+  });
+
+  return { sections, rows };
+}
+
+function parseColorRow(rawLine: string, section: ParsedSpecialOrderSection, rowNumber: number): ParsedSpecialOrderColorRow | null {
+  const availabilityMatch = rawLine.match(/(?:\s*)(sin\s+stock|stock)\s*$/i);
+  if (!availabilityMatch) return null;
+
+  const title = cleanColorRowLabel(rawLine.slice(0, availabilityMatch.index ?? rawLine.length));
+  if (!title) return null;
+
+  return {
+    rowId: `${section.sectionKey}::${rowNumber}`,
+    rowNumber,
+    sectionKey: section.sectionKey,
+    sectionName: section.sectionName,
+    title,
+    normalizedTitle: normalizeSpecialOrderText(title),
+    supplierAvailability: /sin\s+stock/i.test(availabilityMatch[1] ?? '') ? 'OUT_OF_STOCK' : 'IN_STOCK',
+    rawLine,
+  };
+}
+
+function extractCsvMeaningfulLines(rawCsv: string) {
+  return rawCsv
+    .split(/\r?\n/)
+    .map((line) => parseCsvMeaningfulLine(line))
+    .filter((value): value is string => Boolean(value));
+}
+
+function parseCsvMeaningfulLine(line: string) {
+  if (!line.trim()) return null;
+  const commaCells = parseCsvLine(line, ',');
+  const semicolonCells = parseCsvLine(line, ';');
+  const cells = semicolonCells.length > commaCells.length ? semicolonCells : commaCells;
+  const meaningfulCells = cells
+    .map((cell) => cell.replace(/\u00a0/g, ' ').trim())
+    .filter(Boolean);
+  if (meaningfulCells.length === 0) return null;
+  return meaningfulCells.join(' ');
+}
+
+function parseCsvLine(line: string, delimiter: ',' | ';') {
+  const values: string[] = [];
+  let current = '';
+  let insideQuotes = false;
+
+  for (let index = 0; index < line.length; index += 1) {
+    const char = line[index];
+    const next = line[index + 1];
+
+    if (char === '"') {
+      if (insideQuotes && next === '"') {
+        current += '"';
+        index += 1;
+        continue;
+      }
+      insideQuotes = !insideQuotes;
+      continue;
+    }
+
+    if (char === delimiter && !insideQuotes) {
+      values.push(current);
+      current = '';
+      continue;
+    }
+
+    current += char;
+  }
+
+  values.push(current);
+  return values;
+}
+
 function cleanSectionLabel(raw: string) {
   return raw.replace(/\s+/g, ' ').trim();
+}
+
+function cleanColorRowLabel(raw: string) {
+  return raw
+    .replace(/([)\]])([A-Za-zÁÉÍÓÚÜÑáéíóúüñ])/g, '$1 $2')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function isIgnorableColorLine(rawLine: string) {
+  const normalized = normalizeSpecialOrderText(rawLine);
+  if (!normalized) return true;
+  return (
+    normalized.startsWith('http ') ||
+    normalized.startsWith('https ') ||
+    normalized.includes('docs google com') ||
+    normalized.includes('ocurrio un error en el navegador') ||
+    normalized.includes('exoneracion de responsabilidad') ||
+    normalized.includes('as cotacoes nao sao provenientes') ||
+    normalized === 'tab' ||
+    normalized === 'externos' ||
+    normalized === 'celus' ||
+    /^\d+$/.test(normalized)
+  );
+}
+
+function isColorSectionLine(rawLine: string) {
+  if (!rawLine) return false;
+  if (/(sin\s+stock|stock)\s*$/i.test(rawLine)) return false;
+  const letters = rawLine.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]/g, '').trim();
+  if (!letters) return false;
+  const words = letters.split(/\s+/).filter(Boolean);
+  if (words.length === 0 || words.length > 4) return false;
+  if (/\d/.test(rawLine)) return false;
+  return rawLine === rawLine.toUpperCase();
+}
+
+function startsWithInsensitive(value: string, prefix: string) {
+  return value.slice(0, prefix.length).localeCompare(prefix, 'es', { sensitivity: 'accent' }) === 0;
+}
+
+function humanizeNormalizedColorLabel(value: string) {
+  return value
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((token) => token.charAt(0).toUpperCase() + token.slice(1))
+    .join(' ');
 }
 
 function sameMoney(left: number | null | undefined, right: number | null | undefined) {

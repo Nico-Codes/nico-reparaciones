@@ -1,6 +1,6 @@
 import { createPortal } from 'react-dom';
 import type { RefObject } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Check, Search, ShoppingCart, SlidersHorizontal, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -330,9 +330,11 @@ export function StoreResultsSection({
 }
 
 function StoreGridCard({ product }: { product: StoreProduct }) {
+  const navigate = useNavigate();
   const isSpecialOrder = product.fulfillmentMode === 'SPECIAL_ORDER';
   const canPurchase = isSpecialOrder ? product.supplierAvailability !== 'OUT_OF_STOCK' : product.stock > 0;
-  const actionLabel = isSpecialOrder ? 'Encargar' : 'Agregar al carrito';
+  const requiresColorSelection = isSpecialOrder && product.hasColorOptions;
+  const actionLabel = requiresColorSelection ? 'Elegir color' : isSpecialOrder ? 'Encargar' : 'Agregar al carrito';
 
   return (
     <div className="product-card product-card-grid">
@@ -364,7 +366,13 @@ function StoreGridCard({ product }: { product: StoreProduct }) {
                 disabled={!canPurchase}
                 aria-label={actionLabel}
                 title={canPurchase ? actionLabel : 'Sin stock'}
-                onClick={() => cartStorage.add(product.id, 1, { productName: product.name })}
+                onClick={() => {
+                  if (requiresColorSelection) {
+                    navigate(`/store/${product.slug}`);
+                    return;
+                  }
+                  cartStorage.add(product.id, 1, { productName: product.name });
+                }}
               >
                 <ShoppingCart className="h-4 w-4" />
               </button>

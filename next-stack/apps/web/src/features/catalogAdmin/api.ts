@@ -55,6 +55,13 @@ export type AdminProduct = {
   supplierId: string | null;
   supplier: { id: string; name: string } | null;
   specialOrderProfile: { id: string; name: string } | null;
+  hasColorOptions: boolean;
+  colorOptions: Array<{
+    id: string;
+    label: string;
+    supplierAvailability: 'IN_STOCK' | 'OUT_OF_STOCK' | 'UNKNOWN';
+    active: boolean;
+  }>;
   lastImportedAt: string | null;
   createdAt: string | null;
   updatedAt: string | null;
@@ -68,6 +75,8 @@ export type SpecialOrderProfile = {
   defaultUsdRate: number;
   defaultShippingUsd: number;
   fallbackMarginPercent: number;
+  defaultColorSheetUrl: string | null;
+  rememberColorSheet: boolean;
   lastBatch: { id: string; createdAt: string } | null;
   createdAt: string;
   updatedAt: string;
@@ -160,6 +169,52 @@ export type SpecialOrderImportPreview = {
   };
   sections: SpecialOrderPreviewSection[];
   items: SpecialOrderPreviewItem[];
+  colorImport: {
+    enabled: boolean;
+    sourceKind: 'google_sheet' | 'csv' | null;
+    sourceLabel: string | null;
+    sourceUrl: string | null;
+    rowsParsed: number;
+    matchedCount: number;
+    unmatchedCount: number;
+    outOfStockCount: number;
+    newCount: number;
+    updatedCount: number;
+    unchangedCount: number;
+    deactivatedCount: number;
+    warnings: Array<{
+      rowId: string;
+      rowNumber: number;
+      sectionKey: string;
+      sectionName: string;
+      rawTitle: string;
+      reason: string;
+    }>;
+    items: Array<{
+      productSourceKey: string;
+      productTitle: string;
+      productRowId: string;
+      sectionKey: string;
+      sectionName: string;
+      items: Array<{
+        rowId: string;
+        rowNumber: number;
+        sectionKey: string;
+        sectionName: string;
+        rawTitle: string;
+        productSourceKey: string;
+        productTitle: string;
+        productRowId: string;
+        label: string;
+        normalizedLabel: string;
+        sourceSheetKey: string;
+        supplierAvailability: 'IN_STOCK' | 'OUT_OF_STOCK' | 'UNKNOWN';
+        status: 'new' | 'availability_update' | 'unchanged';
+        existingVariantId: string | null;
+        included: boolean;
+      }>;
+    }>;
+  };
   missing: SpecialOrderPreviewMissingItem[];
   summary: {
     newCount: number;
@@ -230,6 +285,8 @@ export const catalogAdminApi = {
     defaultUsdRate: number;
     defaultShippingUsd: number;
     fallbackMarginPercent: number;
+    defaultColorSheetUrl?: string | null;
+    rememberColorSheet?: boolean;
   }) {
     return authJsonRequest<{ item: SpecialOrderProfile }>('/catalog-admin/special-order-profiles', {
       method: 'POST',
@@ -245,6 +302,8 @@ export const catalogAdminApi = {
       defaultUsdRate: number;
       defaultShippingUsd: number;
       fallbackMarginPercent: number;
+      defaultColorSheetUrl: string | null;
+      rememberColorSheet: boolean;
     }>,
   ) {
     return authJsonRequest<{ item: SpecialOrderProfile }>(`/catalog-admin/special-order-profiles/${encodeURIComponent(id)}`, {
@@ -257,6 +316,8 @@ export const catalogAdminApi = {
     rawText: string;
     usdRate?: number | null;
     shippingUsd?: number | null;
+    colorSheetUrl?: string | null;
+    colorCsvText?: string | null;
     sectionMappings?: SpecialOrderSectionMappingInput[];
     excludedSectionKeys?: string[];
     excludedSourceKeys?: string[];
@@ -273,6 +334,8 @@ export const catalogAdminApi = {
     rawText: string;
     usdRate?: number | null;
     shippingUsd?: number | null;
+    colorSheetUrl?: string | null;
+    colorCsvText?: string | null;
     sectionMappings?: SpecialOrderSectionMappingInput[];
     excludedSectionKeys?: string[];
     excludedSourceKeys?: string[];

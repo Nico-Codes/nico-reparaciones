@@ -7,7 +7,27 @@ describe('StoreService', () => {
     active: true,
     OR: [
       { fulfillmentMode: 'INVENTORY', stock: { gt: 0 } },
-      { fulfillmentMode: 'SPECIAL_ORDER', supplierAvailability: { not: 'OUT_OF_STOCK' } },
+      {
+        fulfillmentMode: 'SPECIAL_ORDER',
+        OR: [
+          {
+            colorVariants: {
+              some: {
+                active: true,
+                supplierAvailability: 'IN_STOCK',
+              },
+            },
+          },
+          {
+            colorVariants: {
+              none: {
+                active: true,
+              },
+            },
+            supplierAvailability: { not: 'OUT_OF_STOCK' },
+          },
+        ],
+      },
     ],
   };
 

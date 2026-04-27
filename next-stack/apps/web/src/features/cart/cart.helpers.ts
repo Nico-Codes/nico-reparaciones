@@ -22,7 +22,11 @@ export function buildValidCartLines(items: CartQuoteLine[]) {
 }
 
 export function buildQuotedCartItems(items: CartQuoteLine[]): CartLocalItem[] {
-  return buildValidCartLines(items).map((item) => ({ productId: item.productId, quantity: item.quantity }));
+  return buildValidCartLines(items).map((item) => ({
+    productId: item.productId,
+    variantId: item.variantId ?? null,
+    quantity: item.quantity,
+  }));
 }
 
 export function sameCartItems(left: CartLocalItem[], right: CartLocalItem[]) {
@@ -30,7 +34,12 @@ export function sameCartItems(left: CartLocalItem[], right: CartLocalItem[]) {
     left.length === right.length &&
     left.every((item, index) => {
       const current = right[index];
-      return current && current.productId === item.productId && current.quantity === item.quantity;
+      return (
+        current &&
+        current.productId === item.productId &&
+        (current.variantId ?? null) === (item.variantId ?? null) &&
+        current.quantity === item.quantity
+      );
     })
   );
 }

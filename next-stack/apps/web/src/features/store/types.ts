@@ -20,6 +20,13 @@ export type StoreProduct = {
   stock: number;
   fulfillmentMode: 'INVENTORY' | 'SPECIAL_ORDER';
   supplierAvailability: 'IN_STOCK' | 'OUT_OF_STOCK' | 'UNKNOWN';
+  hasColorOptions: boolean;
+  colorOptions: Array<{
+    id: string;
+    label: string;
+    supplierAvailability: 'IN_STOCK' | 'OUT_OF_STOCK' | 'UNKNOWN';
+    active: boolean;
+  }>;
   featured: boolean;
   active: boolean;
   sku: string | null;

@@ -1,6 +1,8 @@
 export type OrderLine = {
   id: string;
   productId: string | null;
+  selectedColorVariantId: string | null;
+  selectedColorLabel: string | null;
   name: string;
   fulfillmentMode: 'INVENTORY' | 'SPECIAL_ORDER';
   unitPrice: number;

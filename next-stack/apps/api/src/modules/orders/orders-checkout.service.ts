@@ -43,9 +43,25 @@ export class OrdersCheckoutService {
 
     const order = await this.prisma.$transaction(async (tx) => {
       const productIds = validLines.map((line) => line.productId);
+      const variantIds = validLines
+        .map((line) => line.variantId)
+        .filter((value): value is string => typeof value === 'string' && value.trim().length > 0);
       const products = await tx.product.findMany({
         where: { id: { in: productIds } },
-        select: { id: true, stock: true, active: true, price: true, name: true, fulfillmentMode: true },
+        select: {
+          id: true,
+          stock: true,
+          active: true,
+          price: true,
+          name: true,
+          fulfillmentMode: true,
+          colorVariants: variantIds.length > 0
+            ? {
+                where: { id: { in: variantIds } },
+                select: { id: true, label: true, supplierAvailability: true, active: true },
+              }
+            : false,
+        },
       });
       const byId = new Map(products.map((product) => [product.id, product]));
 
@@ -56,6 +72,12 @@ export class OrdersCheckoutService {
         }
         if (product.fulfillmentMode === 'INVENTORY' && product.stock < line.quantity) {
           throw new BadRequestException(`Stock insuficiente para ${line.name}`);
+        }
+        if (product.fulfillmentMode === 'SPECIAL_ORDER' && line.variantId) {
+          const variant = product.colorVariants.find((item) => item.id === line.variantId);
+          if (!variant || !variant.active || variant.supplierAvailability !== 'IN_STOCK') {
+            throw new BadRequestException(`Color invalido o sin stock para ${line.name}`);
+          }
         }
       }
 
@@ -68,6 +90,8 @@ export class OrdersCheckoutService {
           items: {
             create: validLines.map((line) => ({
               productId: line.productId,
+              selectedColorVariantId: line.variantId ?? null,
+              selectedColorLabelSnapshot: line.selectedColorLabel ?? null,
               nameSnapshot: line.name,
               fulfillmentModeSnapshot: line.fulfillmentMode,
               unitPrice: new Prisma.Decimal(line.unitPrice),

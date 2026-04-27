@@ -34,8 +34,8 @@ type CartLinesSectionProps = {
   hasStockIssue: boolean;
   loading: boolean;
   hasQuote: boolean;
-  onUpdate: (productId: string, quantity: number) => void;
-  onRemove: (productId: string) => void;
+  onUpdate: (productId: string, quantity: number, variantId?: string | null) => void;
+  onRemove: (productId: string, variantId?: string | null) => void;
 };
 
 type CartSummarySectionProps = {
@@ -130,7 +130,7 @@ export function CartLinesSection({
             const clampedQuantity = clampCartQuantity(line.quantity, line.stockAvailable, line.fulfillmentMode);
 
             return (
-              <article key={line.productId} className="line-item">
+              <article key={`${line.productId}:${line.variantId ?? 'base'}`} className="line-item">
                 <div className="line-item__main flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <div className="line-item__title">{line.name || 'Producto'}</div>
@@ -150,6 +150,7 @@ export function CartLinesSection({
                     ) : null}
                     {line.slug ? ' · ' : ''}
                     {isSpecialOrder ? 'Modalidad por encargue · ' : ''}
+                    {line.selectedColorLabel ? `Color ${line.selectedColorLabel} · ` : ''}
                     Precio unitario {formatCartMoney(line.unitPrice)}
                   </div>
 
@@ -168,7 +169,7 @@ export function CartLinesSection({
                       <button
                         type="button"
                         className="quantity-stepper__button"
-                        onClick={() => onUpdate(line.productId, Math.max(1, line.quantity - 1))}
+                        onClick={() => onUpdate(line.productId, Math.max(1, line.quantity - 1), line.variantId)}
                         disabled={disableQuantity || line.quantity <= 1}
                         aria-label="Restar"
                       >
@@ -188,6 +189,7 @@ export function CartLinesSection({
                           onUpdate(
                             line.productId,
                             clampCartQuantity(Number(event.target.value), line.stockAvailable, line.fulfillmentMode),
+                            line.variantId,
                           )
                         }
                         className="quantity-stepper__input"
@@ -196,7 +198,7 @@ export function CartLinesSection({
                       <button
                         type="button"
                         className="quantity-stepper__button"
-                        onClick={() => onUpdate(line.productId, Math.min(clampedQuantity, line.quantity + 1))}
+                        onClick={() => onUpdate(line.productId, Math.min(clampedQuantity, line.quantity + 1), line.variantId)}
                         disabled={disableQuantity || line.quantity >= clampedQuantity}
                         aria-label="Sumar"
                       >
@@ -209,7 +211,7 @@ export function CartLinesSection({
                         <div className="summary-box__label">Subtotal</div>
                         <div className="text-lg font-black text-zinc-950">{formatCartMoney(line.lineTotal)}</div>
                       </div>
-                      <Button type="button" variant="ghost" size="sm" onClick={() => onRemove(line.productId)}>
+                      <Button type="button" variant="ghost" size="sm" onClick={() => onRemove(line.productId, line.variantId)}>
                         <Trash2 className="h-4 w-4" />
                         Quitar
                       </Button>

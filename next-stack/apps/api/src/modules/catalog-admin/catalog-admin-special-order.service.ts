@@ -4,11 +4,17 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { CatalogAdminPricingService } from './catalog-admin-pricing.service.js';
 import { CatalogAdminSupportService } from './catalog-admin-support.service.js';
 import {
+  buildSpecialOrderColorSourceKey,
+  extractSpecialOrderColorLabel,
+  googleSheetUrlToCsvExportUrl,
+  normalizeSpecialOrderText,
   parseSpecialOrderListing,
+  parseSpecialOrderColorCsv,
   resolveSpecialOrderPreviewStatus,
   slugifySpecialOrderLabel,
   type ExistingSpecialOrderSnapshot,
   type NextSpecialOrderSnapshot,
+  type ParsedSpecialOrderColorRow,
   type ParsedSpecialOrderRow,
   type ParsedSpecialOrderSection,
   type SpecialOrderPreviewStatus,
@@ -63,6 +69,83 @@ type ExistingImportedProduct = {
     parent: { id: string; name: string; slug: string } | null;
     pathLabel: string;
   } | null;
+  colorVariants: ExistingColorVariant[];
+};
+
+type ExistingColorVariant = {
+  id: string;
+  label: string;
+  normalizedLabel: string;
+  supplierAvailability: 'IN_STOCK' | 'OUT_OF_STOCK' | 'UNKNOWN';
+  active: boolean;
+  sourceSheetRow: number | null;
+  sourceSheetKey: string | null;
+};
+
+type ImportedColorSource = {
+  kind: 'google_sheet' | 'csv';
+  label: string;
+  rawText: string;
+};
+
+type ColorPreviewItem = {
+  rowId: string;
+  rowNumber: number;
+  sectionKey: string;
+  sectionName: string;
+  rawTitle: string;
+  productSourceKey: string;
+  productTitle: string;
+  productRowId: string;
+  label: string;
+  normalizedLabel: string;
+  sourceSheetKey: string;
+  supplierAvailability: 'IN_STOCK' | 'OUT_OF_STOCK' | 'UNKNOWN';
+  status: 'new' | 'availability_update' | 'unchanged';
+  existingVariantId: string | null;
+  included: boolean;
+};
+
+type ColorPreviewWarning = {
+  rowId: string;
+  rowNumber: number;
+  sectionKey: string;
+  sectionName: string;
+  rawTitle: string;
+  reason: string;
+};
+
+type ColorPreviewGroup = {
+  productSourceKey: string;
+  productTitle: string;
+  productRowId: string;
+  sectionKey: string;
+  sectionName: string;
+  items: ColorPreviewItem[];
+};
+
+type ColorPreviewResult = {
+  enabled: boolean;
+  sourceKind: 'google_sheet' | 'csv' | null;
+  sourceLabel: string | null;
+  sourceUrl: string | null;
+  rowsParsed: number;
+  matchedCount: number;
+  unmatchedCount: number;
+  outOfStockCount: number;
+  newCount: number;
+  updatedCount: number;
+  unchangedCount: number;
+  deactivatedCount: number;
+  items: ColorPreviewGroup[];
+  warnings: ColorPreviewWarning[];
+  deactivated: Array<{
+    productId: string;
+    productSourceKey: string;
+    productTitle: string;
+    variantId: string;
+    label: string;
+  }>;
 };
 
 @Injectable()
@@ -104,6 +187,8 @@ export class CatalogAdminSpecialOrderService {
           defaultUsdRate: this.decimal(this.clampDecimalInput(input.defaultUsdRate, 0, 999999, 0)),
           defaultShippingUsd: this.decimal(this.clampDecimalInput(input.defaultShippingUsd, 0, 999999, 0)),
           fallbackMarginPercent: this.decimal(this.clampDecimalInput(input.fallbackMarginPercent, 0, 500, 0)),
+          defaultColorSheetUrl: this.support.nullable(input.defaultColorSheetUrl),
+          rememberColorSheet: input.rememberColorSheet ?? false,
         },
         include: {
           supplier: { select: { id: true, name: true } },
@@ -146,6 +231,10 @@ export class CatalogAdminSpecialOrderService {
           ...(input.fallbackMarginPercent !== undefined
             ? { fallbackMarginPercent: this.decimal(this.clampDecimalInput(input.fallbackMarginPercent, 0, 500, 0)) }
             : {}),
+          ...(input.defaultColorSheetUrl !== undefined
+            ? { defaultColorSheetUrl: this.support.nullable(input.defaultColorSheetUrl) }
+            : {}),
+          ...(input.rememberColorSheet !== undefined ? { rememberColorSheet: input.rememberColorSheet } : {}),
           ...(input.supplierId !== undefined ? { supplierId } : {}),
         },
         include: {
@@ -176,6 +265,7 @@ export class CatalogAdminSpecialOrderService {
     const now = new Date();
     const includedItems = preview.items.filter((item) => item.included && item.status !== 'conflict');
     const missingItems = preview.missing;
+    const includedColorItems = preview.colorImport.items.flatMap((group) => group.items.filter((item) => item.included));
 
     const applied = await this.prisma.$transaction(async (tx) => {
       const resolvedCategoryIds = new Map<string, string | null>();
@@ -220,7 +310,7 @@ export class CatalogAdminSpecialOrderService {
         }
 
         const slug = await this.buildUniqueProductSlug(tx, item.title);
-        await tx.product.create({
+        const created = await tx.product.create({
           data: {
             name: item.title,
             slug,
@@ -243,6 +333,59 @@ export class CatalogAdminSpecialOrderService {
             lastImportedAt: now,
           },
         });
+        item.existingProductId = created.id;
+      }
+
+      if (preview.colorImport.enabled) {
+        const productIdBySourceKey = new Map(
+          includedItems
+            .filter((item) => item.existingProductId)
+            .map((item) => [item.sourceKey, item.existingProductId as string]),
+        );
+
+        for (const colorItem of includedColorItems) {
+          const productId = productIdBySourceKey.get(colorItem.productSourceKey);
+          if (!productId) continue;
+
+          if (colorItem.existingVariantId) {
+            await tx.productColorVariant.update({
+              where: { id: colorItem.existingVariantId },
+              data: {
+                label: colorItem.label,
+                normalizedLabel: colorItem.normalizedLabel,
+                supplierAvailability: colorItem.supplierAvailability,
+                active: true,
+                lastImportedAt: now,
+                sourceSheetRow: colorItem.rowNumber,
+                sourceSheetKey: colorItem.sourceSheetKey,
+              },
+            });
+            continue;
+          }
+
+          await tx.productColorVariant.create({
+            data: {
+              productId,
+              label: colorItem.label,
+              normalizedLabel: colorItem.normalizedLabel,
+              supplierAvailability: colorItem.supplierAvailability,
+              active: true,
+              lastImportedAt: now,
+              sourceSheetRow: colorItem.rowNumber,
+              sourceSheetKey: colorItem.sourceSheetKey,
+            },
+          });
+        }
+
+        if (preview.colorImport.deactivated.length > 0) {
+          await tx.productColorVariant.updateMany({
+            where: { id: { in: preview.colorImport.deactivated.map((item) => item.variantId) } },
+            data: {
+              active: false,
+              lastImportedAt: now,
+            },
+          });
+        }
       }
 
       if (missingItems.length > 0) {
@@ -270,6 +413,9 @@ export class CatalogAdminSpecialOrderService {
           preview.selection.excludedSourceKeys,
         );
       }
+      if (preview.profile.rememberColorSheet && input.colorSheetUrl !== undefined) {
+        profileUpdateData.defaultColorSheetUrl = this.support.nullable(input.colorSheetUrl);
+      }
 
       await tx.specialOrderImportProfile.update({
         where: { id: preview.profile.id },
@@ -282,7 +428,18 @@ export class CatalogAdminSpecialOrderService {
           rawText: input.rawText,
           usdRate: this.decimal(preview.usdRate),
           shippingUsd: this.decimal(preview.shippingUsd),
-          summaryJson: JSON.stringify(preview.summary),
+          summaryJson: JSON.stringify({
+            ...preview.summary,
+            colorImport: {
+              matchedCount: preview.colorImport.matchedCount,
+              unmatchedCount: preview.colorImport.unmatchedCount,
+              outOfStockCount: preview.colorImport.outOfStockCount,
+              newCount: preview.colorImport.newCount,
+              updatedCount: preview.colorImport.updatedCount,
+              unchangedCount: preview.colorImport.unchangedCount,
+              deactivatedCount: preview.colorImport.deactivatedCount,
+            },
+          }),
           createdBy: this.support.nullable(input.createdBy),
         },
       });
@@ -327,7 +484,14 @@ export class CatalogAdminSpecialOrderService {
       999999,
       Number(profile.defaultShippingUsd),
     );
+    const colorSheetUrl =
+      this.support.nullable(input.colorSheetUrl) ?? (profile.rememberColorSheet ? profile.defaultColorSheetUrl : null);
     const parsed = parseSpecialOrderListing(input.rawText ?? '');
+    const colorSource = await this.resolveColorSource({
+      colorSheetUrl,
+      colorCsvText: input.colorCsvText,
+    });
+    const parsedColors = colorSource ? parseSpecialOrderColorCsv(colorSource.rawText) : null;
     const rememberedSelections = this.parseRememberedSelections(profile);
     const rememberedSectionKeys = new Set(rememberedSelections.sectionKeys);
     const rememberedSourceKeys = new Set(rememberedSelections.sourceKeys);
@@ -365,6 +529,9 @@ export class CatalogAdminSpecialOrderService {
               parentId: true,
               parent: { select: { id: true, name: true, slug: true } },
             },
+          },
+          colorVariants: {
+            orderBy: [{ active: 'desc' }, { label: 'asc' }],
           },
         },
         orderBy: [{ active: 'desc' }, { updatedAt: 'desc' }],
@@ -506,6 +673,13 @@ export class CatalogAdminSpecialOrderService {
           : null,
       }));
 
+    const colorImport = this.buildColorPreview({
+      colorSource,
+      parsedColors,
+      items,
+      existingProducts: Array.from(existingBySourceKey.values()),
+    });
+
     const summary = {
       newCount: items.filter((item) => item.included && item.status === 'new').length,
       priceUpdatedCount: items.filter((item) => item.included && item.status === 'price_update').length,
@@ -538,6 +712,7 @@ export class CatalogAdminSpecialOrderService {
         rememberedExcluded: rememberedSectionKeys.has(section.sectionKey),
       })),
       items,
+      colorImport,
       missing,
       summary,
     };
@@ -670,6 +845,8 @@ export class CatalogAdminSpecialOrderService {
     defaultUsdRate: Prisma.Decimal | number;
     defaultShippingUsd: Prisma.Decimal | number;
     fallbackMarginPercent: Prisma.Decimal | number;
+    defaultColorSheetUrl?: string | null;
+    rememberColorSheet?: boolean;
     supplier: { id: string; name: string };
     createdAt: Date;
     updatedAt: Date;
@@ -683,6 +860,8 @@ export class CatalogAdminSpecialOrderService {
       defaultUsdRate: Number(profile.defaultUsdRate),
       defaultShippingUsd: Number(profile.defaultShippingUsd),
       fallbackMarginPercent: Number(profile.fallbackMarginPercent),
+      defaultColorSheetUrl: profile.defaultColorSheetUrl ?? null,
+      rememberColorSheet: profile.rememberColorSheet ?? false,
       lastBatch: profile.batches?.[0]
         ? {
             id: profile.batches[0].id,
@@ -716,6 +895,15 @@ export class CatalogAdminSpecialOrderService {
       parentId: string | null;
       parent: { id: string; name: string; slug: string } | null;
     } | null;
+    colorVariants?: Array<{
+      id: string;
+      label: string;
+      normalizedLabel: string;
+      supplierAvailability: 'IN_STOCK' | 'OUT_OF_STOCK' | 'UNKNOWN';
+      active: boolean;
+      sourceSheetRow: number | null;
+      sourceSheetKey: string | null;
+    }>;
   }): ExistingImportedProduct {
     return {
       id: product.id,
@@ -750,6 +938,322 @@ export class CatalogAdminSpecialOrderService {
               : product.category.name,
           }
         : null,
+      colorVariants: (product.colorVariants ?? []).map((variant) => ({
+        id: variant.id,
+        label: variant.label,
+        normalizedLabel: variant.normalizedLabel,
+        supplierAvailability: variant.supplierAvailability,
+        active: variant.active,
+        sourceSheetRow: variant.sourceSheetRow ?? null,
+        sourceSheetKey: variant.sourceSheetKey ?? null,
+      })),
+    };
+  }
+
+  private async resolveColorSource(input: {
+    colorSheetUrl?: string | null;
+    colorCsvText?: string | null;
+  }): Promise<ImportedColorSource | null> {
+    const colorCsvText = this.support.nullable(input.colorCsvText);
+    if (colorCsvText) {
+      return {
+        kind: 'csv',
+        label: 'CSV manual',
+        rawText: colorCsvText,
+      };
+    }
+
+    const colorSheetUrl = this.support.nullable(input.colorSheetUrl);
+    if (!colorSheetUrl) return null;
+
+    let exportUrl = '';
+    try {
+      exportUrl = googleSheetUrlToCsvExportUrl(colorSheetUrl);
+    } catch {
+      throw new BadRequestException('La URL de Google Sheets no es valida');
+    }
+    const rawText = await this.fetchRemoteText(exportUrl);
+    return {
+      kind: 'google_sheet',
+      label: colorSheetUrl,
+      rawText,
+    };
+  }
+
+  private async fetchRemoteText(url: string) {
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        method: 'GET',
+        headers: { 'User-Agent': 'NicoReparacionesBot/1.0' },
+      });
+    } catch {
+      throw new BadRequestException('No se pudo descargar la hoja publica de Google Sheets');
+    }
+    if (!response.ok) {
+      throw new BadRequestException(`No se pudo descargar la hoja publica (${response.status})`);
+    }
+    return response.text();
+  }
+
+  private buildColorPreview(input: {
+    colorSource: ImportedColorSource | null;
+    parsedColors: { sections: ParsedSpecialOrderSection[]; rows: ParsedSpecialOrderColorRow[] } | null;
+    items: Array<{
+      rowId: string;
+      included: boolean;
+      status: SpecialOrderPreviewStatus;
+      sectionKey: string;
+      sectionName: string;
+      sourceKey: string;
+      title: string;
+      existingProductId: string | null;
+    }>;
+    existingProducts: ExistingImportedProduct[];
+  }): ColorPreviewResult {
+    if (!input.colorSource || !input.parsedColors) {
+      return {
+        enabled: false,
+        sourceKind: null,
+        sourceLabel: null,
+        sourceUrl: null,
+        rowsParsed: 0,
+        matchedCount: 0,
+        unmatchedCount: 0,
+        outOfStockCount: 0,
+        newCount: 0,
+        updatedCount: 0,
+        unchangedCount: 0,
+        deactivatedCount: 0,
+        items: [],
+        warnings: [],
+        deactivated: [],
+      };
+    }
+
+    const baseItems = input.items.filter((item) => item.included && item.status !== 'conflict');
+    const knownSectionKeys = new Set(input.items.map((item) => item.sectionKey));
+    const candidatesBySectionKey = new Map<
+      string,
+      Array<{
+        rowId: string;
+        sourceKey: string;
+        title: string;
+        sectionName: string;
+        normalizedCandidates: string[];
+      }>
+    >();
+    const existingBySourceKey = new Map(input.existingProducts.map((product) => [product.specialOrderSourceKey ?? '', product]));
+
+    for (const item of baseItems) {
+      const bucket = candidatesBySectionKey.get(item.sectionKey) ?? [];
+      bucket.push({
+        rowId: item.rowId,
+        sourceKey: item.sourceKey,
+        title: item.title,
+        sectionName: item.sectionName,
+        normalizedCandidates: Array.from(
+          new Set([
+            normalizeSpecialOrderText(item.title),
+            normalizeSpecialOrderText(`${item.sectionName} ${item.title}`),
+          ].filter(Boolean)),
+        ),
+      });
+      candidatesBySectionKey.set(item.sectionKey, bucket);
+    }
+
+    const matchedGroups = new Map<string, ColorPreviewGroup>();
+    const warnings: ColorPreviewWarning[] = [];
+    const matchedSourceKeysByProduct = new Map<string, Set<string>>();
+
+    for (const row of input.parsedColors.rows) {
+      const sectionCandidates = candidatesBySectionKey.get(row.sectionKey) ?? [];
+      if (sectionCandidates.length === 0) {
+        if (knownSectionKeys.has(row.sectionKey)) continue;
+        warnings.push({
+          rowId: row.rowId,
+          rowNumber: row.rowNumber,
+          sectionKey: row.sectionKey,
+          sectionName: row.sectionName,
+          rawTitle: row.title,
+          reason: 'La seccion no matchea con productos incluidos del TXT',
+        });
+        continue;
+      }
+
+      const rankedMatches = sectionCandidates
+        .map((candidate) => {
+          const bestLength = Math.max(
+            ...candidate.normalizedCandidates
+              .filter((normalizedBase) => row.normalizedTitle === normalizedBase || row.normalizedTitle.startsWith(`${normalizedBase} `))
+              .map((normalizedBase) => normalizedBase.length),
+            0,
+          );
+          return { candidate, bestLength };
+        })
+        .filter((entry) => entry.bestLength > 0)
+        .sort((left, right) => right.bestLength - left.bestLength);
+
+      if (rankedMatches.length === 0) {
+        warnings.push({
+          rowId: row.rowId,
+          rowNumber: row.rowNumber,
+          sectionKey: row.sectionKey,
+          sectionName: row.sectionName,
+          rawTitle: row.title,
+          reason: 'No matchea con un producto base del TXT',
+        });
+        continue;
+      }
+
+      const topLength = rankedMatches[0]?.bestLength ?? 0;
+      const topMatches = rankedMatches.filter((entry) => entry.bestLength === topLength);
+      if (topMatches.length > 1) {
+        warnings.push({
+          rowId: row.rowId,
+          rowNumber: row.rowNumber,
+          sectionKey: row.sectionKey,
+          sectionName: row.sectionName,
+          rawTitle: row.title,
+          reason: 'Matchea con mas de un producto base',
+        });
+        continue;
+      }
+
+      const match = topMatches[0]!.candidate;
+      const colorLabel = extractSpecialOrderColorLabel({
+        rowTitle: row.title,
+        normalizedRowTitle: row.normalizedTitle,
+        productTitle: match.title,
+        productSectionName: match.sectionName,
+      });
+      if (!colorLabel) {
+        warnings.push({
+          rowId: row.rowId,
+          rowNumber: row.rowNumber,
+          sectionKey: row.sectionKey,
+          sectionName: row.sectionName,
+          rawTitle: row.title,
+          reason: 'No pudimos aislar el color de la variante',
+        });
+        continue;
+      }
+
+      const normalizedLabel = normalizeSpecialOrderText(colorLabel);
+      if (!normalizedLabel) {
+        warnings.push({
+          rowId: row.rowId,
+          rowNumber: row.rowNumber,
+          sectionKey: row.sectionKey,
+          sectionName: row.sectionName,
+          rawTitle: row.title,
+          reason: 'El color detectado quedo vacio',
+        });
+        continue;
+      }
+
+      const sourceSheetKey = buildSpecialOrderColorSourceKey(match.sourceKey, colorLabel);
+      const existingProduct = existingBySourceKey.get(match.sourceKey) ?? null;
+      const existingVariant =
+        existingProduct?.colorVariants.find(
+          (variant) => variant.sourceSheetKey === sourceSheetKey || variant.normalizedLabel === normalizedLabel,
+        ) ?? null;
+      const status: ColorPreviewItem['status'] = !existingVariant
+        ? 'new'
+        : existingVariant.supplierAvailability !== row.supplierAvailability || !existingVariant.active || existingVariant.label !== colorLabel
+          ? 'availability_update'
+          : 'unchanged';
+
+      const colorItem: ColorPreviewItem = {
+        rowId: row.rowId,
+        rowNumber: row.rowNumber,
+        sectionKey: row.sectionKey,
+        sectionName: row.sectionName,
+        rawTitle: row.title,
+        productSourceKey: match.sourceKey,
+        productTitle: match.title,
+        productRowId: match.rowId,
+        label: colorLabel,
+        normalizedLabel,
+        sourceSheetKey,
+        supplierAvailability: row.supplierAvailability,
+        status,
+        existingVariantId: existingVariant?.id ?? null,
+        included: true,
+      };
+
+      const group = matchedGroups.get(match.sourceKey) ?? {
+        productSourceKey: match.sourceKey,
+        productTitle: match.title,
+        productRowId: match.rowId,
+        sectionKey: row.sectionKey,
+        sectionName: row.sectionName,
+        items: [],
+      };
+
+      if (group.items.some((item) => item.sourceSheetKey === colorItem.sourceSheetKey)) {
+        warnings.push({
+          rowId: row.rowId,
+          rowNumber: row.rowNumber,
+          sectionKey: row.sectionKey,
+          sectionName: row.sectionName,
+          rawTitle: row.title,
+          reason: 'La hoja trae la misma variante mas de una vez',
+        });
+        continue;
+      }
+
+      group.items.push(colorItem);
+      matchedGroups.set(match.sourceKey, group);
+
+      const matchedKeys = matchedSourceKeysByProduct.get(match.sourceKey) ?? new Set<string>();
+      matchedKeys.add(colorItem.sourceSheetKey);
+      matchedSourceKeysByProduct.set(match.sourceKey, matchedKeys);
+    }
+
+    const deactivated = baseItems.flatMap((item) => {
+      const existingProduct = existingBySourceKey.get(item.sourceKey);
+      if (!existingProduct) return [];
+      const matchedKeys = matchedSourceKeysByProduct.get(item.sourceKey) ?? new Set<string>();
+      return existingProduct.colorVariants
+        .filter((variant) => variant.active)
+        .filter((variant) => {
+          const sourceKey = variant.sourceSheetKey ?? buildSpecialOrderColorSourceKey(item.sourceKey, variant.label);
+          return !matchedKeys.has(sourceKey);
+        })
+        .map((variant) => ({
+          productId: existingProduct.id,
+          productSourceKey: item.sourceKey,
+          productTitle: item.title,
+          variantId: variant.id,
+          label: variant.label,
+        }));
+    });
+
+    const groups = Array.from(matchedGroups.values())
+      .map((group) => ({
+        ...group,
+        items: group.items.sort((left, right) => left.label.localeCompare(right.label, 'es')),
+      }))
+      .sort((left, right) => left.productTitle.localeCompare(right.productTitle, 'es'));
+
+    const allItems = groups.flatMap((group) => group.items);
+    return {
+      enabled: true,
+      sourceKind: input.colorSource.kind,
+      sourceLabel: input.colorSource.label,
+      sourceUrl: input.colorSource.kind === 'google_sheet' ? input.colorSource.label : null,
+      rowsParsed: input.parsedColors.rows.length,
+      matchedCount: allItems.length,
+      unmatchedCount: warnings.length,
+      outOfStockCount: allItems.filter((item) => item.supplierAvailability === 'OUT_OF_STOCK').length,
+      newCount: allItems.filter((item) => item.status === 'new').length,
+      updatedCount: allItems.filter((item) => item.status === 'availability_update').length,
+      unchangedCount: allItems.filter((item) => item.status === 'unchanged').length,
+      deactivatedCount: deactivated.length,
+      items: groups,
+      warnings,
+      deactivated,
     };
   }
 

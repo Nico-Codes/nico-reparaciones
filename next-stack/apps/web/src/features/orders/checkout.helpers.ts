@@ -44,13 +44,22 @@ export function buildValidCheckoutLines(items: CartQuoteLine[]) {
 }
 
 export function buildCheckoutItems(lines: CartQuoteLine[]): CartLocalItem[] {
-  return lines.map((item) => ({ productId: item.productId, quantity: item.quantity }));
+  return lines.map((item) => ({
+    productId: item.productId,
+    variantId: item.variantId ?? null,
+    quantity: item.quantity,
+  }));
 }
 
 export function sameCartItems(left: CartLocalItem[], right: CartLocalItem[]) {
   return (
     left.length === right.length &&
-    left.every((item, index) => right[index]?.productId === item.productId && right[index]?.quantity === item.quantity)
+    left.every(
+      (item, index) =>
+        right[index]?.productId === item.productId &&
+        (right[index]?.variantId ?? null) === (item.variantId ?? null) &&
+        right[index]?.quantity === item.quantity,
+    )
   );
 }
 

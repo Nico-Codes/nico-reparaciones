@@ -23,6 +23,7 @@ export function StoreProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [qty, setQty] = useState(1);
+  const [selectedColorId, setSelectedColorId] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -52,6 +53,7 @@ export function StoreProductDetailPage() {
   useEffect(() => {
     if (!item) return;
     setQty((current) => clampStoreProductQuantity(current, item.stock, item.fulfillmentMode));
+    setSelectedColorId(null);
   }, [item?.id, item?.stock, item?.fulfillmentMode]);
 
   const canPurchase = canPurchaseStoreProduct(item);
@@ -62,7 +64,8 @@ export function StoreProductDetailPage() {
 
   function addToCart() {
     if (!item || !canPurchase) return;
-    cartStorage.add(item.id, qty, { productName: item.name });
+    if (item.fulfillmentMode === 'SPECIAL_ORDER' && item.hasColorOptions && !selectedColorId) return;
+    cartStorage.add(item.id, qty, { productName: item.name, variantId: selectedColorId });
   }
 
   if (loading) {
@@ -98,7 +101,9 @@ export function StoreProductDetailPage() {
             canPurchase={canPurchase}
             qty={qty}
             maxQty={maxQty}
+            selectedColorId={selectedColorId}
             onQtyChange={setQty}
+            onSelectColor={setSelectedColorId}
             onAddToCart={addToCart}
           />
           <StoreProductMetaSection item={item} canPurchase={canPurchase} />

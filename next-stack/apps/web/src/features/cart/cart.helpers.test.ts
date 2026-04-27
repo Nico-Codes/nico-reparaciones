@@ -14,13 +14,17 @@ function makeLine(
   input: Partial<CartQuoteLine> & Pick<CartQuoteLine, 'productId' | 'quantity' | 'valid' | 'name' | 'unitPrice' | 'lineTotal' | 'stockAvailable'>,
 ): CartQuoteLine {
   return {
+    variantId: input.variantId ?? null,
     requestedQuantity: input.requestedQuantity ?? input.quantity,
     reason: input.reason ?? null,
     slug: input.slug,
+    selectedColorLabel: input.selectedColorLabel ?? null,
     fulfillmentMode: input.fulfillmentMode ?? 'INVENTORY',
     supplierAvailability: input.supplierAvailability ?? 'IN_STOCK',
     active: input.active ?? true,
     category: input.category ?? null,
+    requiresColorSelection: input.requiresColorSelection ?? false,
+    colorOptions: input.colorOptions ?? [],
     ...input,
   };
 }
@@ -50,7 +54,7 @@ describe('cart.helpers', () => {
     ];
 
     expect(buildValidCartLines(lines)).toHaveLength(1);
-    expect(buildQuotedCartItems(lines)).toEqual([{ productId: 'p-1', quantity: 2 }]);
+    expect(buildQuotedCartItems(lines)).toEqual([{ productId: 'p-1', variantId: null, quantity: 2 }]);
   });
 
   it('detects stock issues and compares local cart items by order', () => {
@@ -86,14 +90,14 @@ describe('cart.helpers', () => {
     expect(
       sameCartItems(
         [{ productId: 'p-1', quantity: 2 }],
-        [{ productId: 'p-1', quantity: 2 }],
+        [{ productId: 'p-1', variantId: null, quantity: 2 }],
       ),
     ).toBe(true);
 
     expect(
       sameCartItems(
-        [{ productId: 'p-1', quantity: 2 }],
-        [{ productId: 'p-1', quantity: 1 }],
+        [{ productId: 'p-1', variantId: null, quantity: 2 }],
+        [{ productId: 'p-1', variantId: null, quantity: 1 }],
       ),
     ).toBe(false);
   });

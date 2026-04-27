@@ -203,7 +203,8 @@ Notas operativas del subdominio:
   - el filtro por una subcategoria mantiene visible tambien su categoria padre activa
 - cards y detalle de producto muestran `pathLabel` cuando el item pertenece a una subcategoria
 - los productos `Por encargue` muestran badge/copy especifico y CTA `Encargar`
-- carrito y checkout permiten esos items aunque el stock local sea `0`; la restriccion pasa por `supplierAvailability`
+- si un producto `Por encargue` tiene colores importados, el detalle publico obliga a elegir un color disponible antes de agregarlo al carrito; los colores sin stock se ven deshabilitados
+- carrito y checkout permiten esos items aunque el stock local sea `0`; la restriccion pasa por `supplierAvailability` o por la disponibilidad del color elegido
 
 Catalogo admin:
 
@@ -243,6 +244,7 @@ Pedidos:
 Notas operativas del subdominio:
 
 - detalle de pedido, checkout admin y resumenes de linea distinguen items `Por encargue`
+- detalle de pedido, checkout y resumenes de linea muestran el color elegido cuando la linea viene de un producto por encargue con variantes importadas
 - ventas rapidas quedan limitadas a inventario real; no usan productos `SPECIAL_ORDER`
 
 Reparaciones:
@@ -346,7 +348,9 @@ Notas operativas del subdominio:
 - `/admin/productos/encargues/nuevo` concentra:
   - seleccion/alta de perfil de importacion
   - carga de texto o `.txt`
+  - fuente opcional de colores por Google Sheet publico o CSV manual
   - preview por seccion con remapeo a categorias
+  - preview colapsado de colores vinculados, warnings de filas sin match y resumen de colores nuevos/actualizados/sin stock
   - exclusion de filas conflictivas
   - resumen de `nuevos`, `actualizados`, `sin cambios`, `sin stock proveedor` y `desactivados`
 

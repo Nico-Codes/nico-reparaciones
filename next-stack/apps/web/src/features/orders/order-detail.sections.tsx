@@ -177,6 +177,7 @@ export function OrderDetailLayout({
                     </div>
                     <div className="line-item__meta">
                       {line.quantity} × {money(line.unitPrice)}
+                      {line.selectedColorLabel ? ` · Color ${line.selectedColorLabel}` : ''}
                     </div>
                   </div>
                   <div className="line-item__total">{money(line.lineTotal)}</div>

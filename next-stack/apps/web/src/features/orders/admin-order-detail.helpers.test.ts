@@ -21,6 +21,8 @@ const baseOrder: OrderItem = {
     {
       id: 'line_1',
       productId: 'prod_1',
+      selectedColorVariantId: null,
+      selectedColorLabel: null,
       name: 'Bateria iPhone',
       fulfillmentMode: 'INVENTORY',
       unitPrice: 5000,
@@ -30,6 +32,8 @@ const baseOrder: OrderItem = {
     {
       id: 'line_2',
       productId: 'prod_2',
+      selectedColorVariantId: null,
+      selectedColorLabel: null,
       name: 'Modulo carga',
       fulfillmentMode: 'INVENTORY',
       unitPrice: 5000,

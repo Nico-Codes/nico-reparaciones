@@ -33,7 +33,7 @@ Ubicacion:
 - `OrdersModule`
   - facade principal en `orders.service.ts`
   - subservicios activos para checkout/mis pedidos, flujo admin, ventas rapidas, notificaciones y soporte/serializacion
-  - el checkout y soporte de orden ahora distinguen `INVENTORY` vs `SPECIAL_ORDER`; las lineas por encargue no validan ni descuentan stock local y guardan snapshot de fulfillment en `OrderItem`
+  - el checkout y soporte de orden ahora distinguen `INVENTORY` vs `SPECIAL_ORDER`; las lineas por encargue no validan ni descuentan stock local y guardan snapshot de fulfillment y color seleccionado en `OrderItem`
 - `CatalogAdminModule`
   - facade principal en `catalog-admin.service.ts`
   - subservicios activos para categorias, productos, pricing de productos, importacion de encargues y soporte compartido
@@ -73,7 +73,8 @@ Ubicacion:
   - slug de hija: filtra exacto por esa subcategoria
 - La visibilidad publica de productos ahora depende tambien de `fulfillmentMode`:
   - `INVENTORY`: visible solo si `active=true` y `stock > 0`
-  - `SPECIAL_ORDER`: visible si `active=true` y `supplierAvailability != OUT_OF_STOCK`
+  - `SPECIAL_ORDER` sin colores importados: visible si `active=true` y `supplierAvailability != OUT_OF_STOCK`
+  - `SPECIAL_ORDER` con colores importados: visible si `active=true` y al menos un color activo esta `IN_STOCK`
 - Los assets de `apps/web/public` servidos por API tienen headers de cache explicitos: largo para defaults versionables y corto/revalidable para `brand-assets/*` administrables.
 
 ## Catalogo comercial: encargues
@@ -84,6 +85,7 @@ Ubicacion:
 - El circuito de importacion por encargue se apoya en:
   - `SpecialOrderImportProfile` para configuracion reusable por proveedor/listado
   - `SpecialOrderImportBatch` para auditoria del texto importado y su resumen
+  - `ProductColorVariant` para colores/stock por color importados desde Google Sheets o CSV
   - `specialOrderProfileId + specialOrderSourceKey` como clave de upsert
 - `CatalogAdminController` expone endpoints admin nuevos:
   - `GET /api/catalog-admin/special-order-profiles`
@@ -95,11 +97,18 @@ Ubicacion:
   - detecta encabezados de seccion `*Marca*`/`*Categoria*`
   - extrae precios USD y estados `Sin Stock`
   - ignora ruido operativo como fechas, links y cabeceras repetidas
+- El parser opcional de colores:
+  - consume links publicos de Google Sheets via export CSV o CSV manual
+  - detecta secciones y filas `modelo + color + Stock/Sin Stock`
+  - soporta CSV con columnas separadas por coma o punto y coma
+  - no crea productos base; solo vincula colores contra productos del TXT del mismo preview
 - La aplicacion del batch:
   - crea categorias faltantes cuando el mapping asi lo define
   - crea/actualiza productos `SPECIAL_ORDER` sin tocar slug ni retoques manuales como imagen/descripcion
+  - crea/actualiza variantes de color cuando hay fuente de colores activa
   - marca `OUT_OF_STOCK` si el item sigue viniendo pero sin stock
   - desactiva automaticamente productos del perfil que ya no aparecen en el listado nuevo
+  - desactiva colores faltantes solo cuando esa corrida incluyo fuente de colores
 
 ## Categorias comerciales y pricing
 

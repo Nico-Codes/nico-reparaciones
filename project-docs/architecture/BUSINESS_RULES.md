@@ -81,6 +81,20 @@ Observacion:
 
 - el dominio comercial usa pricing real en backend, pero hay que seguir tratando ciertas pantallas visuales del admin como sensibles antes de refactorizar.
 
+## Productos por encargue y colores
+
+Confirmado por `Product.fulfillmentMode`:
+
+- `INVENTORY`: producto de stock local
+- `SPECIAL_ORDER`: producto importado desde listado de proveedor, sin descuento de stock interno
+
+Reglas a preservar:
+
+- el TXT de proveedor sigue siendo la fuente maestra para producto base, precio USD y disponibilidad general
+- Google Sheets/CSV de colores solo enriquece productos `SPECIAL_ORDER`; no crea productos base ni modifica precios
+- si un producto `SPECIAL_ORDER` tiene colores activos, su disponibilidad publica depende de que al menos un color este `IN_STOCK`
+- carrito y checkout deben guardar el color elegido en snapshot de orden, sin decrementar stock local
+
 ## Branding dinamico
 
 Confirmado por codigo y settings:

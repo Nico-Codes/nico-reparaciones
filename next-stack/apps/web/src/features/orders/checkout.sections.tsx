@@ -302,7 +302,7 @@ export function CheckoutSummarySection({
 
       <div className="mt-4 line-list">
         {items.map((line) => (
-          <div key={line.productId} className="line-item">
+          <div key={`${line.productId}:${line.variantId ?? 'base'}`} className="line-item">
             <div className="line-item__main">
               <div className="flex flex-wrap items-center gap-2">
                 <div className="line-item__title">{line.name}</div>
@@ -312,6 +312,7 @@ export function CheckoutSummarySection({
               </div>
               <div className="line-item__meta">
                 {line.quantity} x {formatCheckoutMoney(line.unitPrice)}
+                {line.selectedColorLabel ? ` · Color ${line.selectedColorLabel}` : ''}
               </div>
             </div>
             <div className="line-item__total">{formatCheckoutMoney(line.lineTotal)}</div>

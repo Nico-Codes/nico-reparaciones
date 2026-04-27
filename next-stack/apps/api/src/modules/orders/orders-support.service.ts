@@ -107,6 +107,8 @@ export class OrdersSupportService {
       items: (order.items ?? []).map((item) => ({
         id: item.id,
         productId: item.productId,
+        selectedColorVariantId: item.selectedColorVariantId ?? null,
+        selectedColorLabel: item.selectedColorLabelSnapshot ?? null,
         name: item.nameSnapshot,
         fulfillmentMode: item.fulfillmentModeSnapshot,
         unitPrice: Number(item.unitPrice),

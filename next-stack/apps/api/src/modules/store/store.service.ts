@@ -354,13 +354,30 @@ export class StoreService {
                 parent: { select: { id: true, name: true, slug: true } },
               },
             },
+            colorVariants: {
+              where: { active: true },
+              orderBy: [{ supplierAvailability: 'asc' }, { label: 'asc' }],
+              select: {
+                id: true,
+                label: true,
+                supplierAvailability: true,
+                active: true,
+              },
+            },
           },
           orderBy: this.orderBy(sort),
         }),
         this.prisma.product.count({ where }),
       ]);
 
-      let items = itemsRaw.map((p) => ({
+      let items = itemsRaw.map((p) => {
+        const hasColorOptions = p.colorVariants.length > 0;
+        const effectiveSupplierAvailability = hasColorOptions
+          ? p.colorVariants.some((variant) => variant.supplierAvailability === 'IN_STOCK')
+            ? 'IN_STOCK'
+            : 'OUT_OF_STOCK'
+          : p.supplierAvailability;
+        return {
         id: p.id,
         name: p.name,
         slug: p.slug,
@@ -370,7 +387,14 @@ export class StoreService {
         price: Number(p.price),
         stock: p.stock,
         fulfillmentMode: p.fulfillmentMode,
-        supplierAvailability: p.supplierAvailability,
+        supplierAvailability: effectiveSupplierAvailability,
+        hasColorOptions,
+        colorOptions: p.colorVariants.map((variant) => ({
+          id: variant.id,
+          label: variant.label,
+          supplierAvailability: variant.supplierAvailability,
+          active: variant.active,
+        })),
         featured: p.featured,
         active: p.active,
         sku: p.sku,
@@ -392,7 +416,8 @@ export class StoreService {
             }
           : null,
         createdAt: p.createdAt.toISOString(),
-      }));
+        };
+      });
 
       // Relevancia basica por texto para UX mas natural (sin full-text todavia).
       if (sort === 'relevance' && q) {
@@ -453,11 +478,27 @@ export class StoreService {
               parent: { select: { id: true, name: true, slug: true } },
             },
           },
+          colorVariants: {
+            where: { active: true },
+            orderBy: [{ supplierAvailability: 'asc' }, { label: 'asc' }],
+            select: {
+              id: true,
+              label: true,
+              supplierAvailability: true,
+              active: true,
+            },
+          },
         },
       });
 
       if (!p) return null;
 
+      const hasColorOptions = p.colorVariants.length > 0;
+      const effectiveSupplierAvailability = hasColorOptions
+        ? p.colorVariants.some((variant) => variant.supplierAvailability === 'IN_STOCK')
+          ? 'IN_STOCK'
+          : 'OUT_OF_STOCK'
+        : p.supplierAvailability;
       return {
         id: p.id,
         name: p.name,
@@ -468,7 +509,14 @@ export class StoreService {
         price: Number(p.price),
         stock: p.stock,
         fulfillmentMode: p.fulfillmentMode,
-        supplierAvailability: p.supplierAvailability,
+        supplierAvailability: effectiveSupplierAvailability,
+        hasColorOptions,
+        colorOptions: p.colorVariants.map((variant) => ({
+          id: variant.id,
+          label: variant.label,
+          supplierAvailability: variant.supplierAvailability,
+          active: variant.active,
+        })),
         featured: p.featured,
         active: p.active,
         sku: p.sku,
@@ -581,7 +629,24 @@ export class StoreService {
         },
         {
           fulfillmentMode: 'SPECIAL_ORDER',
-          supplierAvailability: { not: 'OUT_OF_STOCK' },
+          OR: [
+            {
+              colorVariants: {
+                some: {
+                  active: true,
+                  supplierAvailability: 'IN_STOCK',
+                },
+              },
+            },
+            {
+              colorVariants: {
+                none: {
+                  active: true,
+                },
+              },
+              supplierAvailability: { not: 'OUT_OF_STOCK' },
+            },
+          ],
         },
       ],
     };

@@ -8,18 +8,25 @@ export type CartAddedDetail = {
   productName: string;
 };
 
+function normalizeItem(input: Partial<CartLocalItem>) {
+  return {
+    productId: String(input.productId ?? '').trim(),
+    variantId: String(input.variantId ?? '').trim() || null,
+    quantity: Math.max(1, Math.min(999, Number(input.quantity) || 1)),
+  };
+}
+
+function sameItemKey(left: Pick<CartLocalItem, 'productId' | 'variantId'>, right: Pick<CartLocalItem, 'productId' | 'variantId'>) {
+  return left.productId === right.productId && (left.variantId ?? null) === (right.variantId ?? null);
+}
+
 function read(): CartLocalItem[] {
   try {
     const raw = localStorage.getItem(CART_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw) as CartLocalItem[];
     if (!Array.isArray(parsed)) return [];
-    return parsed
-      .map((i) => ({
-        productId: String(i.productId ?? '').trim(),
-        quantity: Math.max(1, Math.min(999, Number(i.quantity) || 1)),
-      }))
-      .filter((i) => i.productId);
+    return parsed.map(normalizeItem).filter((item) => item.productId);
   } catch {
     return [];
   }
@@ -40,33 +47,38 @@ function dispatchCartAdded(detail: CartAddedDetail) {
 export const cartStorage = {
   getItems: read,
   setItems(items: CartLocalItem[]) {
-    write(items);
+    write(items.map(normalizeItem));
   },
   clear() {
     write([]);
   },
-  add(productId: string, quantity = 1, options?: { productName?: string }) {
+  add(productId: string, quantity = 1, options?: { productName?: string; variantId?: string | null }) {
     const items = read();
-    const idx = items.findIndex((i) => i.productId === productId);
+    const target = normalizeItem({ productId, quantity, variantId: options?.variantId ?? null });
+    const idx = items.findIndex((item) => sameItemKey(item, target));
     if (idx >= 0) {
       items[idx] = { ...items[idx], quantity: Math.max(1, Math.min(999, items[idx].quantity + quantity)) };
     } else {
-      items.push({ productId, quantity: Math.max(1, Math.min(999, quantity)) });
+      items.push(target);
     }
     write(items);
     const productName = options?.productName?.trim();
     if (productName) dispatchCartAdded({ productName });
   },
-  update(productId: string, quantity: number) {
+  update(productId: string, quantity: number, variantId?: string | null) {
     const items = read()
-      .map((i) => (i.productId === productId ? { ...i, quantity: Math.max(1, Math.min(999, quantity)) } : i))
-      .filter((i) => i.quantity > 0);
+      .map((item) =>
+        sameItemKey(item, { productId, variantId: variantId ?? null })
+          ? { ...item, quantity: Math.max(1, Math.min(999, quantity)) }
+          : item,
+      )
+      .filter((item) => item.quantity > 0);
     write(items);
   },
-  remove(productId: string) {
-    write(read().filter((i) => i.productId !== productId));
+  remove(productId: string, variantId?: string | null) {
+    write(read().filter((item) => !sameItemKey(item, { productId, variantId: variantId ?? null })));
   },
   count() {
-    return read().reduce((acc, i) => acc + i.quantity, 0);
+    return read().reduce((accumulator, item) => accumulator + item.quantity, 0);
   },
 };

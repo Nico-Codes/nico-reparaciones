@@ -40,6 +40,8 @@ type ProfileDraft = {
   defaultUsdRate: string;
   defaultShippingUsd: string;
   fallbackMarginPercent: string;
+  defaultColorSheetUrl: string;
+  rememberColorSheet: boolean;
 };
 
 type SectionMappingDraft = {
@@ -51,6 +53,7 @@ const NEW_CATEGORY_VALUE = '__new__';
 
 export function AdminSpecialOrderImportPage() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const colorCsvInputRef = useRef<HTMLInputElement | null>(null);
   const requestIdRef = useRef(0);
 
   const [loading, setLoading] = useState(true);
@@ -71,6 +74,8 @@ export function AdminSpecialOrderImportPage() {
   const [rawText, setRawText] = useState('');
   const [usdRate, setUsdRate] = useState('');
   const [shippingUsd, setShippingUsd] = useState('');
+  const [colorSheetUrl, setColorSheetUrl] = useState('');
+  const [colorCsvText, setColorCsvText] = useState('');
   const [preview, setPreview] = useState<SpecialOrderImportPreview | null>(null);
   const [previewDirty, setPreviewDirty] = useState(false);
   const [sectionMappings, setSectionMappings] = useState<Record<string, SectionMappingDraft>>({});
@@ -119,6 +124,8 @@ export function AdminSpecialOrderImportPage() {
           setProfileDraft(profileToDraft(initialProfile));
           setUsdRate(formatDecimalInput(initialProfile.defaultUsdRate));
           setShippingUsd(formatDecimalInput(initialProfile.defaultShippingUsd));
+          setColorSheetUrl(initialProfile.defaultColorSheetUrl ?? '');
+          setColorCsvText('');
         } else {
           const fallbackSupplierId = providersResponse.items.find((provider) => provider.active)?.id ?? '';
           setSelectedProfileId('');
@@ -126,6 +133,8 @@ export function AdminSpecialOrderImportPage() {
           setProfileDraft(emptyProfileDraft(fallbackSupplierId));
           setUsdRate('');
           setShippingUsd('');
+          setColorSheetUrl('');
+          setColorCsvText('');
         }
       } catch (cause) {
         if (requestId !== requestIdRef.current) return;
@@ -216,6 +225,8 @@ export function AdminSpecialOrderImportPage() {
       setProfileDraft(profileToDraft(nextProfile));
       setUsdRate(formatDecimalInput(nextProfile.defaultUsdRate));
       setShippingUsd(formatDecimalInput(nextProfile.defaultShippingUsd));
+      setColorSheetUrl(nextProfile.defaultColorSheetUrl ?? '');
+      setColorCsvText('');
     }
     resetPreviewState();
     setNotice('');
@@ -226,6 +237,8 @@ export function AdminSpecialOrderImportPage() {
     const defaultSupplierId = providerOptions[0]?.id ?? '';
     setProfileMode('create');
     setProfileDraft(emptyProfileDraft(defaultSupplierId));
+    setColorSheetUrl('');
+    setColorCsvText('');
     setNotice('');
     setError('');
   }
@@ -234,6 +247,8 @@ export function AdminSpecialOrderImportPage() {
     if (!selectedProfile) return;
     setProfileMode('edit');
     setProfileDraft(profileToDraft(selectedProfile));
+    setColorSheetUrl(selectedProfile.defaultColorSheetUrl ?? '');
+    setColorCsvText('');
   }
 
   async function refreshProfilesAfterSave(nextSelectedProfileId?: string) {
@@ -247,6 +262,7 @@ export function AdminSpecialOrderImportPage() {
       setProfileDraft(profileToDraft(nextSelected));
       if (!usdRate.trim()) setUsdRate(formatDecimalInput(nextSelected.defaultUsdRate));
       if (!shippingUsd.trim()) setShippingUsd(formatDecimalInput(nextSelected.defaultShippingUsd));
+      setColorSheetUrl(nextSelected.defaultColorSheetUrl ?? '');
     }
   }
 
@@ -297,6 +313,8 @@ export function AdminSpecialOrderImportPage() {
       rawText: string;
       usdRate: number | null;
       shippingUsd: number | null;
+      colorSheetUrl: string | null;
+      colorCsvText: string | null;
       sectionMappings: SpecialOrderSectionMappingInput[];
       excludedSectionKeys?: string[];
       excludedSourceKeys?: string[];
@@ -307,6 +325,8 @@ export function AdminSpecialOrderImportPage() {
       rawText,
       usdRate: parseOptionalNumber(usdRate),
       shippingUsd: parseOptionalNumber(shippingUsd),
+      colorSheetUrl: colorSheetUrl.trim() || null,
+      colorCsvText: colorCsvText.trim() || null,
       sectionMappings: serializeSectionMappings(sectionMappings),
       rememberExclusions,
     };
@@ -418,6 +438,21 @@ export function AdminSpecialOrderImportPage() {
       setNotice(`Archivo cargado: ${file.name}`);
     } catch {
       setError('No se pudo leer el archivo seleccionado.');
+    } finally {
+      event.target.value = '';
+    }
+  }
+
+  async function handleColorCsvPicked(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      setColorCsvText(text);
+      markPreviewDirty();
+      setNotice(`CSV de colores cargado: ${file.name}`);
+    } catch {
+      setError('No se pudo leer el CSV de colores seleccionado.');
     } finally {
       event.target.value = '';
     }
@@ -666,6 +701,15 @@ export function AdminSpecialOrderImportPage() {
                     />
                   </div>
 
+                  <TextField
+                    label="Google Sheet de colores por defecto"
+                    value={profileDraft.defaultColorSheetUrl}
+                    onChange={(event) =>
+                      setProfileDraft((current) => ({ ...current, defaultColorSheetUrl: event.target.value }))
+                    }
+                    placeholder="https://docs.google.com/spreadsheets/d/.../edit?gid=0"
+                  />
+
                   <label className="flex items-center gap-3 rounded-2xl border border-zinc-200 px-4 py-3 text-sm text-zinc-700">
                     <input
                       type="checkbox"
@@ -673,6 +717,17 @@ export function AdminSpecialOrderImportPage() {
                       onChange={(event) => setProfileDraft((current) => ({ ...current, active: event.target.checked }))}
                     />
                     Perfil activo para nuevas corridas
+                  </label>
+
+                  <label className="flex items-center gap-3 rounded-2xl border border-zinc-200 px-4 py-3 text-sm text-zinc-700">
+                    <input
+                      type="checkbox"
+                      checked={profileDraft.rememberColorSheet}
+                      onChange={(event) =>
+                        setProfileDraft((current) => ({ ...current, rememberColorSheet: event.target.checked }))
+                      }
+                    />
+                    Recordar la URL de la hoja de colores en este perfil
                   </label>
 
                   <div className="flex flex-wrap gap-3">
@@ -776,6 +831,59 @@ export function AdminSpecialOrderImportPage() {
                 </div>
               </div>
             </SectionCard>
+
+            <SectionCard
+              title="Fuente de colores"
+              description="Opcional. Puedes pegar una URL publica de Google Sheets o cargar un CSV exportado para detectar colores y stock por color."
+              actions={(
+                <Button type="button" variant="outline" size="sm" onClick={() => colorCsvInputRef.current?.click()}>
+                  <Upload className="h-4 w-4" />
+                  Cargar CSV
+                </Button>
+              )}
+            >
+              <div className="grid gap-4">
+                <input
+                  ref={colorCsvInputRef}
+                  type="file"
+                  accept=".csv,text/csv"
+                  className="hidden"
+                  onChange={(event) => void handleColorCsvPicked(event)}
+                />
+
+                <TextField
+                  label="URL Google Sheet"
+                  value={colorSheetUrl}
+                  onChange={(event) => {
+                    setColorSheetUrl(event.target.value);
+                    markPreviewDirty();
+                  }}
+                  placeholder={selectedProfile?.defaultColorSheetUrl ?? 'https://docs.google.com/spreadsheets/d/.../edit?gid=0'}
+                />
+
+                <TextAreaField
+                  label="CSV cargado"
+                  value={colorCsvText}
+                  onChange={(event) => {
+                    setColorCsvText(event.target.value);
+                    markPreviewDirty();
+                  }}
+                  rows={6}
+                  placeholder="Si subes un CSV o pegas su contenido aca, tiene prioridad sobre la URL de Google Sheets."
+                  hint="Si completas ambas fuentes, se usa primero el CSV de esta corrida."
+                />
+
+                <div className="flex flex-wrap gap-2">
+                  {colorCsvText.trim() ? <StatusBadge size="sm" tone="accent" label="Fuente activa: CSV" /> : null}
+                  {!colorCsvText.trim() && colorSheetUrl.trim() ? (
+                    <StatusBadge size="sm" tone="info" label="Fuente activa: Google Sheet" />
+                  ) : null}
+                  {!colorCsvText.trim() && !colorSheetUrl.trim() ? (
+                    <StatusBadge size="sm" tone="neutral" label="Sin colores para esta corrida" />
+                  ) : null}
+                </div>
+              </div>
+            </SectionCard>
           </div>
 
           <div className="space-y-6">
@@ -819,6 +927,17 @@ export function AdminSpecialOrderImportPage() {
                     />
                     <MetricTile label="Excluidos" value={String(currentExcludedCount)} tone="info" />
                   </div>
+
+                  {preview.colorImport.enabled ? (
+                    <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                      <MetricTile label="Colores vinculados" value={String(preview.colorImport.matchedCount)} tone="accent" />
+                      <MetricTile label="Colores nuevos" value={String(preview.colorImport.newCount)} tone="success" />
+                      <MetricTile label="Colores actualizados" value={String(preview.colorImport.updatedCount)} tone="info" />
+                      <MetricTile label="Sin match" value={String(preview.colorImport.unmatchedCount)} tone="warning" />
+                      <MetricTile label="Colores sin stock" value={String(preview.colorImport.outOfStockCount)} tone="warning" />
+                      <MetricTile label="Colores a desactivar" value={String(preview.colorImport.deactivatedCount)} tone="danger" />
+                    </div>
+                  ) : null}
 
                   {preview.summary.conflictCount > 0 ? (
                     <div className="mt-4 rounded-3xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
@@ -1165,6 +1284,89 @@ export function AdminSpecialOrderImportPage() {
                   )}
                 </SectionCard>
 
+                {preview.colorImport.enabled ? (
+                  <SectionCard
+                    title="Preview de colores"
+                    description="Los colores solo enriquecen productos por encargue ya detectados en el TXT. Las filas sin match quedan como warning y no bloquean la importacion."
+                  >
+                      <div className="space-y-4">
+                        <div className="flex flex-wrap gap-2">
+                          <StatusBadge
+                            size="sm"
+                            tone={preview.colorImport.sourceKind === 'csv' ? 'accent' : 'info'}
+                            label={preview.colorImport.sourceKind === 'csv' ? 'Fuente: CSV' : 'Fuente: Google Sheet'}
+                          />
+                          <StatusBadge size="sm" tone="neutral" label={`${preview.colorImport.rowsParsed} filas leidas`} />
+                          {preview.colorImport.sourceLabel ? (
+                            <StatusBadge size="sm" tone="neutral" label={preview.colorImport.sourceLabel} />
+                          ) : null}
+                        </div>
+
+                        {preview.colorImport.warnings.length > 0 ? (
+                          <div className="rounded-3xl border border-amber-200 bg-amber-50 px-4 py-4">
+                            <div className="text-sm font-semibold text-amber-900">
+                              {preview.colorImport.warnings.length} filas del sheet no se importan
+                            </div>
+                            <div className="mt-3 space-y-2 text-sm text-amber-900">
+                              {preview.colorImport.warnings.map((warning) => (
+                                <div key={warning.rowId} className="rounded-2xl border border-amber-200 bg-white/80 px-3 py-2">
+                                  <div className="font-semibold">
+                                    Fila {warning.rowNumber} · {warning.sectionName}
+                                  </div>
+                                  <div className="text-xs text-zinc-600">{warning.rawTitle}</div>
+                                  <div className="mt-1 text-xs text-amber-800">{warning.reason}</div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
+
+                        {preview.colorImport.items.length === 0 ? (
+                          <EmptyState
+                            title="No se detectaron colores vinculables"
+                            description="Carga una hoja publica o CSV valido y revisa que el nombre base del producto coincida con el TXT."
+                          />
+                        ) : (
+                          <div className="space-y-3">
+                            {preview.colorImport.items.map((group) => (
+                              <details key={group.productSourceKey} className="rounded-3xl border border-zinc-200 bg-white px-4 py-3">
+                                <summary className="cursor-pointer list-none">
+                                  <div className="flex flex-wrap items-center justify-between gap-3">
+                                    <div>
+                                      <div className="font-semibold text-zinc-900">{group.productTitle}</div>
+                                      <div className="text-xs text-zinc-500">{group.sectionName} · {group.items.length} colores detectados</div>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                      <StatusBadge size="sm" tone="accent" label={`${group.items.length} colores`} />
+                                      {group.items.some((item) => item.supplierAvailability === 'OUT_OF_STOCK') ? (
+                                        <StatusBadge size="sm" tone="warning" label="Incluye agotados" />
+                                      ) : null}
+                                    </div>
+                                  </div>
+                                </summary>
+
+                                <div className="mt-4 space-y-2">
+                                  {group.items.map((item) => (
+                                    <div key={item.rowId} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-zinc-200 px-3 py-2">
+                                      <div>
+                                        <div className="font-semibold text-zinc-900">{item.label}</div>
+                                        <div className="text-xs text-zinc-500">{item.rawTitle}</div>
+                                      </div>
+                                      <div className="flex flex-wrap gap-2">
+                                        <StatusBadge size="sm" tone={item.status === 'new' ? 'success' : item.status === 'availability_update' ? 'info' : 'neutral'} label={item.status === 'new' ? 'Nuevo' : item.status === 'availability_update' ? 'Actualiza' : 'Sin cambios'} />
+                                        <StatusBadge size="sm" tone={item.supplierAvailability === 'OUT_OF_STOCK' ? 'warning' : 'success'} label={item.supplierAvailability === 'OUT_OF_STOCK' ? 'Sin stock' : 'Stock'} />
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </details>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                  </SectionCard>
+                ) : null}
+
                 <SectionCard
                   title="Productos a desactivar por faltante"
                   description="Estos productos existian en el perfil anterior pero ya no aparecen en el listado actual."
@@ -1255,6 +1457,8 @@ function emptyProfileDraft(supplierId = ''): ProfileDraft {
     defaultUsdRate: '',
     defaultShippingUsd: '',
     fallbackMarginPercent: '15',
+    defaultColorSheetUrl: '',
+    rememberColorSheet: false,
   };
 }
 
@@ -1270,6 +1474,8 @@ function profileToDraft(profile: SpecialOrderProfile): ProfileDraft {
     defaultUsdRate: formatDecimalInput(profile.defaultUsdRate),
     defaultShippingUsd: formatDecimalInput(profile.defaultShippingUsd),
     fallbackMarginPercent: formatDecimalInput(profile.fallbackMarginPercent),
+    defaultColorSheetUrl: profile.defaultColorSheetUrl ?? '',
+    rememberColorSheet: profile.rememberColorSheet,
   };
 }
 
@@ -1281,6 +1487,8 @@ function normalizeProfileDraft(draft: ProfileDraft) {
     defaultUsdRate: parseOptionalNumber(draft.defaultUsdRate) ?? 0,
     defaultShippingUsd: parseOptionalNumber(draft.defaultShippingUsd) ?? 0,
     fallbackMarginPercent: parseOptionalNumber(draft.fallbackMarginPercent) ?? 0,
+    defaultColorSheetUrl: draft.defaultColorSheetUrl.trim() || null,
+    rememberColorSheet: draft.rememberColorSheet,
   };
 }
 

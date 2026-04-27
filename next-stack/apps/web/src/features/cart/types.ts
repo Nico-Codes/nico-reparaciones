@@ -1,15 +1,18 @@
 export type CartLocalItem = {
   productId: string;
+  variantId?: string | null;
   quantity: number;
 };
 
 export type CartQuoteLine = {
   productId: string;
+  variantId?: string | null;
   quantity: number;
   requestedQuantity?: number;
   valid: boolean;
   reason: string | null;
   name: string;
+  selectedColorLabel: string | null;
   slug?: string;
   unitPrice: number;
   lineTotal: number;
@@ -18,6 +21,13 @@ export type CartQuoteLine = {
   supplierAvailability: 'IN_STOCK' | 'OUT_OF_STOCK' | 'UNKNOWN';
   active: boolean;
   category: { id: string; name: string; slug: string } | null;
+  requiresColorSelection: boolean;
+  colorOptions: Array<{
+    id: string;
+    label: string;
+    supplierAvailability: 'IN_STOCK' | 'OUT_OF_STOCK' | 'UNKNOWN';
+    active: boolean;
+  }>;
 };
 
 export type CartQuoteResponse = {
