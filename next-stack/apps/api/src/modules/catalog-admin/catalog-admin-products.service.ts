@@ -1,10 +1,13 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PublicAssetStorageService } from '../../common/storage/public-asset-storage.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CatalogAdminPricingService } from './catalog-admin-pricing.service.js';
 import { CatalogAdminSupportService } from './catalog-admin-support.service.js';
+import { normalizeSpecialOrderText } from './catalog-admin-special-order.helpers.js';
 import type {
+  ProductColorVariantCreateInput,
+  ProductColorVariantUpdateInput,
   ProductCreateInput,
   ProductImageUpload,
   ProductListParams,
@@ -288,6 +291,76 @@ export class CatalogAdminProductsService {
     }
   }
 
+  async createProductColorVariant(productId: string, input: ProductColorVariantCreateInput) {
+    const product = await this.prisma.product.findUnique({
+      where: { id: productId },
+      select: { id: true, fulfillmentMode: true },
+    });
+    if (!product) throw new NotFoundException('Producto no encontrado');
+    if (product.fulfillmentMode !== 'SPECIAL_ORDER') {
+      throw new BadRequestException('Los colores por proveedor solo aplican a productos por encargue');
+    }
+
+    const label = input.label.trim();
+    const normalizedLabel = normalizeSpecialOrderText(label);
+    if (!normalizedLabel) throw new BadRequestException('Etiqueta de color invalida');
+
+    try {
+      await this.prisma.productColorVariant.create({
+        data: {
+          productId,
+          label,
+          normalizedLabel,
+          supplierAvailability: input.supplierAvailability ?? 'IN_STOCK',
+          active: input.active ?? true,
+          lastImportedAt: new Date(),
+        },
+      });
+      return this.product(productId);
+    } catch (error) {
+      this.rethrowColorVariantWriteError(error);
+    }
+  }
+
+  async updateProductColorVariant(productId: string, variantId: string, input: ProductColorVariantUpdateInput) {
+    const product = await this.prisma.product.findUnique({
+      where: { id: productId },
+      select: { id: true, fulfillmentMode: true },
+    });
+    if (!product) throw new NotFoundException('Producto no encontrado');
+    if (product.fulfillmentMode !== 'SPECIAL_ORDER') {
+      throw new BadRequestException('Los colores por proveedor solo aplican a productos por encargue');
+    }
+
+    const current = await this.prisma.productColorVariant.findFirst({
+      where: { id: variantId, productId },
+      select: { id: true },
+    });
+    if (!current) throw new NotFoundException('Color del producto no encontrado');
+
+    const data: Prisma.ProductColorVariantUncheckedUpdateInput = {};
+    if (input.label !== undefined) {
+      const label = input.label.trim();
+      const normalizedLabel = normalizeSpecialOrderText(label);
+      if (!normalizedLabel) throw new BadRequestException('Etiqueta de color invalida');
+      data.label = label;
+      data.normalizedLabel = normalizedLabel;
+    }
+    if (input.supplierAvailability !== undefined) data.supplierAvailability = input.supplierAvailability;
+    if (input.active !== undefined) data.active = input.active;
+    data.lastImportedAt = new Date();
+
+    try {
+      await this.prisma.productColorVariant.update({
+        where: { id: variantId },
+        data,
+      });
+      return this.product(productId);
+    } catch (error) {
+      this.rethrowColorVariantWriteError(error);
+    }
+  }
+
   async uploadProductImage(id: string, file: ProductImageUpload) {
     const current = await this.prisma.product.findUnique({
       where: { id },
@@ -459,8 +532,12 @@ export class CatalogAdminProductsService {
       colorOptions: product.colorVariants.map((variant) => ({
         id: variant.id,
         label: variant.label,
+        normalizedLabel: variant.normalizedLabel,
         supplierAvailability: variant.supplierAvailability,
         active: variant.active,
+        lastImportedAt: variant.lastImportedAt?.toISOString?.() ?? null,
+        sourceSheetRow: variant.sourceSheetRow ?? null,
+        sourceSheetKey: variant.sourceSheetKey ?? null,
       })),
       lastImportedAt: product.lastImportedAt?.toISOString?.() ?? null,
       createdAt: product.createdAt?.toISOString?.() ?? null,
@@ -481,5 +558,17 @@ export class CatalogAdminProductsService {
     }
     const categoryIds = [category.id, ...category.children.map((child) => child.id)];
     return { categoryId: { in: categoryIds } };
+  }
+
+  private rethrowColorVariantWriteError(error: unknown): never {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === 'P2002') {
+        throw new BadRequestException('Ya existe un color con esa etiqueta para este producto');
+      }
+      if (error.code === 'P2025') {
+        throw new NotFoundException('Color del producto no encontrado');
+      }
+    }
+    throw error;
   }
 }

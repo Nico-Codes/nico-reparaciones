@@ -53,6 +53,14 @@ export type ProductUpdateInput = {
   categoryId?: string | null;
 };
 
+export type ProductColorVariantCreateInput = {
+  label: string;
+  supplierAvailability?: 'IN_STOCK' | 'OUT_OF_STOCK' | 'UNKNOWN';
+  active?: boolean;
+};
+
+export type ProductColorVariantUpdateInput = Partial<ProductColorVariantCreateInput>;
+
 export type SpecialOrderProfileCreateInput = {
   supplierId: string;
   name: string;

@@ -20,6 +20,20 @@ Registrar decisiones tecnicas confirmadas para evitar dependencia de memoria ora
 
 ---
 
+### [DL-0131]
+- Fecha: 2026-04-27
+- Estado: aceptada
+- Tema: matching y edicion de colores para productos por encargue
+- Contexto: el importador de colores desde Google Sheets/CSV leia filas, pero muchas quedaban como `sin match` sin explicar si el problema era exclusion, nombre distinto o ambiguedad. Ademas, los colores guardados no eran editables desde el producto y en tienda no quedaba suficientemente evidente que un producto por encargue podia requerir seleccion de color.
+- Decision: normalizar capacidades (`256GB` y `256 GB`), unificar productos base cuando el TXT trae hints de color finales entre parentesis, bloquear solo cuando una base unificada tiene precios USD distintos y clasificar warnings de color por motivo operativo. Los colores quedan editables desde admin producto con endpoints especificos y la tienda muestra el requisito de elegir color en card/detalle.
+- Impacto: baja el ruido de `sin match`, se evita duplicar productos por colores escritos en el TXT, el operador puede corregir variantes sin reimportar todo y el comprador entiende mejor cuando debe entrar al detalle para elegir color.
+- Alternativas consideradas: mantener matching literal y resolver manualmente cada fila, o convertir colores en productos independientes; descartado porque la primera no escala con listados reales y la segunda rompe la decision de vender un producto base con variantes de color.
+- Archivos / modulos afectados: `next-stack/apps/api/src/modules/catalog-admin/*`, `next-stack/apps/web/src/features/{catalogAdmin,store}/*`, `project-docs/{backend/BACKEND_MAP.md,frontend/FRONTEND_MAP.md,architecture/BUSINESS_RULES.md}`, `CHANGELOG_AI.md`.
+- Validacion requerida: typecheck/test/build de API y web, `smoke:web`, prueba manual con producto por encargue con colores, sin colores y con colores agotados.
+- Responsable: Codex + operador humano
+
+---
+
 ### [DL-0130]
 - Fecha: 2026-04-24
 - Estado: aceptada

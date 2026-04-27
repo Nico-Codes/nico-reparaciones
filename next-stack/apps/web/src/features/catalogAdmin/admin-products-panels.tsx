@@ -208,6 +208,9 @@ function AdminProductRow({
   const imageSrc = product.imageUrl?.trim() || product.imagePath?.trim() || null;
   const imageFallback = product.name.trim().charAt(0).toUpperCase() || 'P';
   const isSpecialOrder = product.fulfillmentMode === 'SPECIAL_ORDER';
+  const activeColorCount = product.colorOptions.filter((item) => item.active).length;
+  const availableColorCount = product.colorOptions.filter((item) => item.active && item.supplierAvailability === 'IN_STOCK').length;
+  const outOfStockColorCount = product.colorOptions.filter((item) => item.active && item.supplierAvailability === 'OUT_OF_STOCK').length;
   const supplierTone =
     product.supplierAvailability === 'OUT_OF_STOCK'
       ? 'warning'
@@ -254,7 +257,11 @@ function AdminProductRow({
                   <StatusBadge tone={getAdminProductStockTone(product.stock)} size="sm" label={product.stock > 0 ? `Stock ${product.stock}` : 'Sin stock'} />
                 )}
                 {isSpecialOrder && product.hasColorOptions ? (
-                  <StatusBadge tone="info" size="sm" label={`${product.colorOptions.filter((item) => item.active).length} colores`} />
+                  <StatusBadge
+                    tone="info"
+                    size="sm"
+                    label={`${activeColorCount} colores · ${availableColorCount} disp. · ${outOfStockColorCount} sin stock`}
+                  />
                 ) : null}
               </div>
               <div className="admin-entity-row__meta admin-product-row__meta">

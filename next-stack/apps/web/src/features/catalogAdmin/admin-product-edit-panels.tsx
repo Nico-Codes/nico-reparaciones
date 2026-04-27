@@ -1,4 +1,5 @@
-import { ImagePlus, Percent, Sparkles } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { ImagePlus, Palette, Percent, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SectionCard } from '@/components/ui/section-card';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -37,6 +38,9 @@ export type AdminProductEditFormLayoutProps = {
   imagePreview: string | null;
   imageFileName: string | null;
   saving: boolean;
+  colorSaving: boolean;
+  newColorLabel: string;
+  newColorAvailability: 'IN_STOCK' | 'OUT_OF_STOCK' | 'UNKNOWN';
   recommendedPrice: number | null;
   recommendedMarginPercent: number | null;
   recommendedRuleName: string | null;
@@ -60,6 +64,13 @@ export type AdminProductEditFormLayoutProps = {
   onApplyRecommendedPrice: () => void;
   onFileChange: (file: File | null) => void;
   onRemoveImage: () => void;
+  onNewColorLabelChange: (value: string) => void;
+  onNewColorAvailabilityChange: (value: 'IN_STOCK' | 'OUT_OF_STOCK' | 'UNKNOWN') => void;
+  onCreateColorVariant: () => void;
+  onUpdateColorVariant: (
+    variantId: string,
+    input: Partial<{ label: string; supplierAvailability: 'IN_STOCK' | 'OUT_OF_STOCK' | 'UNKNOWN'; active: boolean }>,
+  ) => void;
   onCancel: () => void;
   onSave: () => void;
 };
@@ -242,6 +253,177 @@ function AdminProductEditMainPanels({
   );
 }
 
+function AdminProductEditColorPanel({
+  product,
+  colorSaving,
+  newColorLabel,
+  newColorAvailability,
+  onNewColorLabelChange,
+  onNewColorAvailabilityChange,
+  onCreateColorVariant,
+  onUpdateColorVariant,
+}: Pick<
+  AdminProductEditFormLayoutProps,
+  | 'product'
+  | 'colorSaving'
+  | 'newColorLabel'
+  | 'newColorAvailability'
+  | 'onNewColorLabelChange'
+  | 'onNewColorAvailabilityChange'
+  | 'onCreateColorVariant'
+  | 'onUpdateColorVariant'
+>) {
+  if (product.fulfillmentMode !== 'SPECIAL_ORDER') return null;
+
+  const total = product.colorOptions.filter((option) => option.active).length;
+  const available = product.colorOptions.filter((option) => option.active && option.supplierAvailability === 'IN_STOCK').length;
+  const outOfStock = product.colorOptions.filter((option) => option.active && option.supplierAvailability === 'OUT_OF_STOCK').length;
+
+  return (
+    <SectionCard
+      tone="info"
+      title="Colores por proveedor"
+      description="Edita colores importados o agrega uno manual para que el cliente pueda elegirlo en tienda."
+      actions={<Palette className="h-4 w-4 text-sky-600" />}
+    >
+      <div className="grid gap-2 sm:grid-cols-3">
+        <ColorMetric label="Total" value={total} />
+        <ColorMetric label="Disponibles" value={available} />
+        <ColorMetric label="Sin stock" value={outOfStock} />
+      </div>
+
+      <div className="mt-4 rounded-3xl border border-zinc-200 bg-white p-3">
+        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_10rem]">
+          <TextField
+            label="Nuevo color"
+            value={newColorLabel}
+            onChange={(event) => onNewColorLabelChange(event.target.value)}
+            placeholder="Ej: Negro"
+          />
+          <label className="ui-field">
+            <span className="ui-field__label">Disponibilidad</span>
+            <span className="ui-field__control">
+              <select
+                className="ui-input"
+                value={newColorAvailability}
+                onChange={(event) =>
+                  onNewColorAvailabilityChange(event.target.value as 'IN_STOCK' | 'OUT_OF_STOCK' | 'UNKNOWN')
+                }
+              >
+                <option value="IN_STOCK">Disponible</option>
+                <option value="OUT_OF_STOCK">Sin stock</option>
+                <option value="UNKNOWN">A confirmar</option>
+              </select>
+            </span>
+          </label>
+        </div>
+        <div className="mt-3 flex justify-end">
+          <Button type="button" variant="outline" size="sm" onClick={onCreateColorVariant} disabled={colorSaving || !newColorLabel.trim()}>
+            Agregar color
+          </Button>
+        </div>
+      </div>
+
+      {product.colorOptions.length === 0 ? (
+        <div className="mt-4 rounded-3xl border border-dashed border-zinc-300 px-4 py-5 text-sm font-semibold text-zinc-500">
+          Este producto por encargue todavia no tiene colores cargados.
+        </div>
+      ) : (
+        <div className="mt-4 max-h-[34rem] space-y-3 overflow-y-auto pr-1">
+          {product.colorOptions.map((variant) => (
+            <ColorVariantEditor
+              key={variant.id}
+              variant={variant}
+              disabled={colorSaving}
+              onSave={(input) => onUpdateColorVariant(variant.id, input)}
+            />
+          ))}
+        </div>
+      )}
+    </SectionCard>
+  );
+}
+
+function ColorMetric({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-2xl border border-sky-100 bg-sky-50 px-3 py-2">
+      <div className="text-[10px] font-black uppercase tracking-[0.16em] text-sky-700">{label}</div>
+      <div className="mt-1 text-lg font-black text-zinc-950">{value}</div>
+    </div>
+  );
+}
+
+function ColorVariantEditor({
+  variant,
+  disabled,
+  onSave,
+}: {
+  variant: AdminProduct['colorOptions'][number];
+  disabled: boolean;
+  onSave: (input: Partial<{ label: string; supplierAvailability: 'IN_STOCK' | 'OUT_OF_STOCK' | 'UNKNOWN'; active: boolean }>) => void;
+}) {
+  const [label, setLabel] = useState(variant.label);
+  const [availability, setAvailability] = useState(variant.supplierAvailability);
+  const [active, setActive] = useState(variant.active);
+
+  useEffect(() => {
+    setLabel(variant.label);
+    setAvailability(variant.supplierAvailability);
+    setActive(variant.active);
+  }, [variant.id, variant.label, variant.supplierAvailability, variant.active]);
+
+  const changed =
+    label.trim() !== variant.label ||
+    availability !== variant.supplierAvailability ||
+    active !== variant.active;
+
+  return (
+    <div className={`rounded-3xl border px-3 py-3 ${active ? 'border-zinc-200 bg-white' : 'border-zinc-200 bg-zinc-50 opacity-75'}`}>
+      <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_10rem_auto] sm:items-end">
+        <TextField label="Etiqueta" value={label} onChange={(event) => setLabel(event.target.value)} />
+        <label className="ui-field">
+          <span className="ui-field__label">Estado proveedor</span>
+          <span className="ui-field__control">
+            <select
+              className="ui-input"
+              value={availability}
+              onChange={(event) => setAvailability(event.target.value as 'IN_STOCK' | 'OUT_OF_STOCK' | 'UNKNOWN')}
+              disabled={disabled}
+            >
+              <option value="IN_STOCK">Disponible</option>
+              <option value="OUT_OF_STOCK">Sin stock</option>
+              <option value="UNKNOWN">A confirmar</option>
+            </select>
+          </span>
+        </label>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={disabled || !changed || !label.trim()}
+          onClick={() => onSave({ label: label.trim(), supplierAvailability: availability, active })}
+        >
+          Guardar
+        </Button>
+      </div>
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+        <label className="flex items-center gap-2 text-xs font-semibold text-zinc-600">
+          <input type="checkbox" checked={active} onChange={(event) => setActive(event.target.checked)} disabled={disabled} />
+          Activo en tienda
+        </label>
+        <div className="flex flex-wrap gap-2">
+          <StatusBadge tone={active ? 'success' : 'neutral'} size="sm" label={active ? 'Activo' : 'Inactivo'} />
+          <StatusBadge
+            tone={availability === 'IN_STOCK' ? 'success' : availability === 'OUT_OF_STOCK' ? 'warning' : 'neutral'}
+            size="sm"
+            label={availability === 'IN_STOCK' ? 'Disponible' : availability === 'OUT_OF_STOCK' ? 'Sin stock' : 'A confirmar'}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AdminProductEditAsidePanels({
   product,
   categories,
@@ -252,8 +434,15 @@ function AdminProductEditAsidePanels({
   imagePreview,
   imageFileName,
   saving,
+  colorSaving,
+  newColorLabel,
+  newColorAvailability,
   onFileChange,
   onRemoveImage,
+  onNewColorLabelChange,
+  onNewColorAvailabilityChange,
+  onCreateColorVariant,
+  onUpdateColorVariant,
   onCancel,
   onSave,
 }: Pick<
@@ -267,8 +456,15 @@ function AdminProductEditAsidePanels({
   | 'imagePreview'
   | 'imageFileName'
   | 'saving'
+  | 'colorSaving'
+  | 'newColorLabel'
+  | 'newColorAvailability'
   | 'onFileChange'
   | 'onRemoveImage'
+  | 'onNewColorLabelChange'
+  | 'onNewColorAvailabilityChange'
+  | 'onCreateColorVariant'
+  | 'onUpdateColorVariant'
   | 'onCancel'
   | 'onSave'
 >) {
@@ -305,6 +501,17 @@ function AdminProductEditAsidePanels({
           </div>
         </div>
       </SectionCard>
+
+      <AdminProductEditColorPanel
+        product={product}
+        colorSaving={colorSaving}
+        newColorLabel={newColorLabel}
+        newColorAvailability={newColorAvailability}
+        onNewColorLabelChange={onNewColorLabelChange}
+        onNewColorAvailabilityChange={onNewColorAvailabilityChange}
+        onCreateColorVariant={onCreateColorVariant}
+        onUpdateColorVariant={onUpdateColorVariant}
+      />
 
       <SectionCard
         title="Resumen y control"

@@ -345,12 +345,13 @@ Notas operativas del subdominio:
 
 - `/admin/productos` ahora ofrece el CTA `Nuevo listado de encargue`
 - la grilla/listado admin distingue `Stock real` vs `Por encargue`, muestra disponibilidad de proveedor y evita mezclar esos items en metricas de stock critico
+- el editor de producto por encargue incluye panel `Colores por proveedor` para agregar colores manuales, editar etiqueta, activar/desactivar y cambiar disponibilidad
 - `/admin/productos/encargues/nuevo` concentra:
   - seleccion/alta de perfil de importacion
   - carga de texto o `.txt`
   - fuente opcional de colores por Google Sheet publico o CSV manual
   - preview por seccion con remapeo a categorias
-  - preview colapsado de colores vinculados, warnings de filas sin match y resumen de colores nuevos/actualizados/sin stock
+  - preview colapsado de colores vinculados, warnings de filas sin match agrupadas por seccion, motivo y sugerencias, y resumen de colores nuevos/actualizados/sin stock
   - exclusion de filas conflictivas
   - resumen de `nuevos`, `actualizados`, `sin cambios`, `sin stock proveedor` y `desactivados`
 

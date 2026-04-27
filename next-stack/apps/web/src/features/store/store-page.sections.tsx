@@ -351,7 +351,10 @@ function StoreGridCard({ product }: { product: StoreProduct }) {
           {product.name}
         </Link>
 
-        {isSpecialOrder ? <StatusBadge tone="accent" size="sm" label="Por encargue" /> : null}
+        <div className="flex flex-wrap gap-1.5">
+          {isSpecialOrder ? <StatusBadge tone="accent" size="sm" label="Por encargue" /> : null}
+          {requiresColorSelection ? <StatusBadge tone="info" size="sm" label="Elegir color" /> : null}
+        </div>
 
         <div className="product-purchase-block">
           <div className="product-meta">{product.category ? buildStoreCategoryPathLabel(product.category) : 'Producto general'}</div>

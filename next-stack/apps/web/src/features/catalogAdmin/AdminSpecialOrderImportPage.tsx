@@ -193,6 +193,23 @@ export function AdminSpecialOrderImportPage() {
     }
     return grouped;
   }, [preview]);
+  const colorWarningsBySection = useMemo(() => {
+    const grouped = new Map<string, SpecialOrderImportPreview['colorImport']['warnings']>();
+    for (const warning of preview?.colorImport.warnings ?? []) {
+      const key = `${warning.sectionKey}::${warning.sectionName}`;
+      const bucket = grouped.get(key);
+      if (bucket) {
+        bucket.push(warning);
+      } else {
+        grouped.set(key, [warning]);
+      }
+    }
+    return Array.from(grouped.entries()).map(([key, warnings]) => ({
+      key,
+      sectionName: warnings[0]?.sectionName ?? 'Sin seccion',
+      warnings,
+    }));
+  }, [preview]);
   const includedItems =
     preview?.items.filter((item) =>
       isPreviewItemIncluded(item, effectiveExcludedSectionKeySet, effectiveExcludedSourceKeySet, effectiveExcludedRowIdSet),
@@ -1263,6 +1280,12 @@ export function AdminSpecialOrderImportPage() {
                                                 {rowExcluded ? (
                                                   <StatusBadge size="sm" tone="warning" label="Exclusion por fila" />
                                                 ) : null}
+                                                {item.collapsedDuplicate ? (
+                                                  <StatusBadge size="sm" tone="neutral" label="Duplicado unificado" />
+                                                ) : null}
+                                                {item.conflictReason ? (
+                                                  <StatusBadge size="sm" tone="danger" label={item.conflictReason} />
+                                                ) : null}
                                               </div>
                                               <div className="sm:col-span-2 text-xs text-zinc-500">
                                                 Categoria: {item.categoryName ?? item.createCategoryName ?? 'Sin categoria'} ·{' '}
@@ -1307,15 +1330,38 @@ export function AdminSpecialOrderImportPage() {
                             <div className="text-sm font-semibold text-amber-900">
                               {preview.colorImport.warnings.length} filas del sheet no se importan
                             </div>
-                            <div className="mt-3 space-y-2 text-sm text-amber-900">
-                              {preview.colorImport.warnings.map((warning) => (
-                                <div key={warning.rowId} className="rounded-2xl border border-amber-200 bg-white/80 px-3 py-2">
-                                  <div className="font-semibold">
-                                    Fila {warning.rowNumber} · {warning.sectionName}
+                            <div className="mt-3 space-y-3 text-sm text-amber-900">
+                              {colorWarningsBySection.map((group) => (
+                                <details key={group.key} className="rounded-2xl border border-amber-200 bg-white/80 px-3 py-2">
+                                  <summary className="cursor-pointer list-none">
+                                    <div className="flex flex-wrap items-center justify-between gap-3">
+                                      <div className="font-semibold">{group.sectionName}</div>
+                                      <StatusBadge size="sm" tone="warning" label={`${group.warnings.length} sin match`} />
+                                    </div>
+                                  </summary>
+                                  <div className="mt-3 space-y-2">
+                                    {group.warnings.slice(0, 20).map((warning) => (
+                                      <div key={warning.rowId} className="rounded-2xl border border-amber-100 bg-white px-3 py-2">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                          <div className="font-semibold">Fila {warning.rowNumber}</div>
+                                          <StatusBadge size="sm" tone="neutral" label={colorWarningReasonLabel(warning.reasonCode)} />
+                                        </div>
+                                        <div className="mt-1 text-xs text-zinc-600">{warning.rawTitle}</div>
+                                        <div className="mt-1 text-xs text-amber-800">{warning.reason}</div>
+                                        {warning.suggestions.length > 0 ? (
+                                          <div className="mt-2 text-xs text-zinc-600">
+                                            Sugerencias: {warning.suggestions.join(' · ')}
+                                          </div>
+                                        ) : null}
+                                      </div>
+                                    ))}
+                                    {group.warnings.length > 20 ? (
+                                      <div className="text-xs font-semibold text-amber-800">
+                                        Se muestran 20 de {group.warnings.length} filas para mantener la vista compacta.
+                                      </div>
+                                    ) : null}
                                   </div>
-                                  <div className="text-xs text-zinc-600">{warning.rawTitle}</div>
-                                  <div className="mt-1 text-xs text-amber-800">{warning.reason}</div>
-                                </div>
+                                </details>
                               ))}
                             </div>
                           </div>
@@ -1522,7 +1568,7 @@ function isPreviewItemIncluded(
   excludedSourceKeys: Set<string>,
   excludedRowIds: Set<string>,
 ) {
-  return !excludedSectionKeys.has(item.sectionKey) && !excludedSourceKeys.has(item.sourceKey) && !excludedRowIds.has(item.rowId);
+  return !item.collapsedDuplicate && !excludedSectionKeys.has(item.sectionKey) && !excludedSourceKeys.has(item.sourceKey) && !excludedRowIds.has(item.rowId);
 }
 
 function statusLabel(status: SpecialOrderPreviewItem['status']) {
@@ -1588,6 +1634,25 @@ function mappingSourceLabel(value: 'input' | 'profile' | 'existing' | 'new') {
       return 'Seccion nueva';
     default:
       return value;
+  }
+}
+
+function colorWarningReasonLabel(reasonCode: SpecialOrderImportPreview['colorImport']['warnings'][number]['reasonCode']) {
+  switch (reasonCode) {
+    case 'section_excluded':
+      return 'Seccion excluida';
+    case 'product_excluded':
+      return 'Producto excluido';
+    case 'no_product_match':
+      return 'Sin producto base';
+    case 'ambiguous_match':
+      return 'Ambiguo';
+    case 'empty_color':
+      return 'Color no aislado';
+    case 'duplicate_variant':
+      return 'Duplicado';
+    default:
+      return reasonCode;
   }
 }
 

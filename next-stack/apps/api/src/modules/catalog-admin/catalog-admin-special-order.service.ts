@@ -112,7 +112,15 @@ type ColorPreviewWarning = {
   sectionKey: string;
   sectionName: string;
   rawTitle: string;
+  reasonCode:
+    | 'section_excluded'
+    | 'product_excluded'
+    | 'no_product_match'
+    | 'ambiguous_match'
+    | 'empty_color'
+    | 'duplicate_variant';
   reason: string;
+  suggestions: string[];
 };
 
 type ColorPreviewGroup = {
@@ -545,16 +553,22 @@ export class CatalogAdminSpecialOrderService {
       categories,
     });
 
-    const includedCounts = new Map<string, number>();
+    const groupedIncludedRows = new Map<string, ParsedSpecialOrderRow[]>();
     for (const row of parsed.rows) {
-      if (
-        excludedRowIds.has(row.rowId) ||
-        effectiveExcludedSectionKeys.has(row.sectionKey) ||
-        effectiveExcludedSourceKeys.has(row.sourceKey)
-      ) {
+      if (excludedRowIds.has(row.rowId) || effectiveExcludedSectionKeys.has(row.sectionKey) || effectiveExcludedSourceKeys.has(row.sourceKey)) {
         continue;
       }
-      includedCounts.set(row.sourceKey, (includedCounts.get(row.sourceKey) ?? 0) + 1);
+      const bucket = groupedIncludedRows.get(row.sourceKey) ?? [];
+      bucket.push(row);
+      groupedIncludedRows.set(row.sourceKey, bucket);
+    }
+    const conflictSourceKeys = new Set<string>();
+    const primaryRowIdBySourceKey = new Map<string, string>();
+    for (const [sourceKey, rows] of groupedIncludedRows) {
+      if (rows.length === 0) continue;
+      primaryRowIdBySourceKey.set(sourceKey, rows[0]!.rowId);
+      const prices = new Set(rows.map((row) => (row.sourcePriceUsd == null ? 'null' : row.sourcePriceUsd.toFixed(2))));
+      if (prices.size > 1) conflictSourceKeys.add(sourceKey);
     }
 
     const existingBySourceKey = new Map(
@@ -573,8 +587,11 @@ export class CatalogAdminSpecialOrderService {
         const excludedBySection = effectiveExcludedSectionKeys.has(row.sectionKey);
         const excludedBySource = effectiveExcludedSourceKeys.has(row.sourceKey);
         const excludedByRow = excludedRowIds.has(row.rowId);
-        const included = !excludedBySection && !excludedBySource && !excludedByRow;
-        const conflict = included && (includedCounts.get(row.sourceKey) ?? 0) > 1;
+        const baseIncluded = !excludedBySection && !excludedBySource && !excludedByRow;
+        const conflict = baseIncluded && conflictSourceKeys.has(row.sourceKey);
+        const collapsedDuplicate =
+          baseIncluded && !conflict && (primaryRowIdBySourceKey.get(row.sourceKey) ?? row.rowId) !== row.rowId;
+        const included = baseIncluded && !collapsedDuplicate;
         const existing = existingBySourceKey.get(row.sourceKey) ?? null;
         const effectiveSourcePriceUsd = row.sourcePriceUsd ?? existing?.sourcePriceUsd ?? null;
         const pricing = await this.resolvePreviewPricing({
@@ -615,6 +632,8 @@ export class CatalogAdminSpecialOrderService {
           rowId: row.rowId,
           lineNumber: row.lineNumber,
           included,
+          collapsedDuplicate,
+          conflictReason: conflict ? 'Mismo producto base detectado con precios USD distintos' : null,
           excludedBySection,
           excludedBySource,
           excludedByRow,
@@ -1002,6 +1021,10 @@ export class CatalogAdminSpecialOrderService {
     items: Array<{
       rowId: string;
       included: boolean;
+      collapsedDuplicate?: boolean;
+      excludedBySection?: boolean;
+      excludedBySource?: boolean;
+      excludedByRow?: boolean;
       status: SpecialOrderPreviewStatus;
       sectionKey: string;
       sectionName: string;
@@ -1031,7 +1054,7 @@ export class CatalogAdminSpecialOrderService {
       };
     }
 
-    const baseItems = input.items.filter((item) => item.included && item.status !== 'conflict');
+    const baseItems = input.items.filter((item) => item.included && item.status !== 'conflict' && !item.collapsedDuplicate);
     const knownSectionKeys = new Set(input.items.map((item) => item.sectionKey));
     const candidatesBySectionKey = new Map<
       string,
@@ -1069,14 +1092,35 @@ export class CatalogAdminSpecialOrderService {
     for (const row of input.parsedColors.rows) {
       const sectionCandidates = candidatesBySectionKey.get(row.sectionKey) ?? [];
       if (sectionCandidates.length === 0) {
-        if (knownSectionKeys.has(row.sectionKey)) continue;
+        const sectionItems = input.items.filter((item) => item.sectionKey === row.sectionKey);
+        if (knownSectionKeys.has(row.sectionKey)) {
+          const reasonCode = sectionItems.every((item) => item.excludedBySection)
+            ? 'section_excluded'
+            : 'product_excluded';
+          warnings.push({
+            rowId: row.rowId,
+            rowNumber: row.rowNumber,
+            sectionKey: row.sectionKey,
+            sectionName: row.sectionName,
+            rawTitle: row.title,
+            reasonCode,
+            reason:
+              reasonCode === 'section_excluded'
+                ? 'La seccion esta excluida del TXT activo'
+                : 'El producto base esta excluido, duplicado colapsado o bloqueado por conflicto',
+            suggestions: this.buildColorMatchSuggestions(row, sectionItems),
+          });
+          continue;
+        }
         warnings.push({
           rowId: row.rowId,
           rowNumber: row.rowNumber,
           sectionKey: row.sectionKey,
           sectionName: row.sectionName,
           rawTitle: row.title,
+          reasonCode: 'no_product_match',
           reason: 'La seccion no matchea con productos incluidos del TXT',
+          suggestions: this.buildColorMatchSuggestions(row, input.items),
         });
         continue;
       }
@@ -1095,13 +1139,22 @@ export class CatalogAdminSpecialOrderService {
         .sort((left, right) => right.bestLength - left.bestLength);
 
       if (rankedMatches.length === 0) {
+        const excludedMatches = this.rankColorMatches(row, input.items.filter((item) => item.sectionKey === row.sectionKey));
+        const reasonCode = excludedMatches.some((entry) => !entry.item.included || entry.item.status === 'conflict')
+          ? 'product_excluded'
+          : 'no_product_match';
         warnings.push({
           rowId: row.rowId,
           rowNumber: row.rowNumber,
           sectionKey: row.sectionKey,
           sectionName: row.sectionName,
           rawTitle: row.title,
-          reason: 'No matchea con un producto base del TXT',
+          reasonCode,
+          reason:
+            reasonCode === 'product_excluded'
+              ? 'Matchea con un producto del TXT que esta excluido, duplicado o en conflicto'
+              : 'No matchea con un producto base del TXT',
+          suggestions: this.buildColorMatchSuggestions(row, input.items.filter((item) => item.sectionKey === row.sectionKey)),
         });
         continue;
       }
@@ -1115,7 +1168,9 @@ export class CatalogAdminSpecialOrderService {
           sectionKey: row.sectionKey,
           sectionName: row.sectionName,
           rawTitle: row.title,
+          reasonCode: 'ambiguous_match',
           reason: 'Matchea con mas de un producto base',
+          suggestions: topMatches.map((entry) => entry.candidate.title).slice(0, 3),
         });
         continue;
       }
@@ -1134,7 +1189,9 @@ export class CatalogAdminSpecialOrderService {
           sectionKey: row.sectionKey,
           sectionName: row.sectionName,
           rawTitle: row.title,
+          reasonCode: 'empty_color',
           reason: 'No pudimos aislar el color de la variante',
+          suggestions: [match.title],
         });
         continue;
       }
@@ -1147,7 +1204,9 @@ export class CatalogAdminSpecialOrderService {
           sectionKey: row.sectionKey,
           sectionName: row.sectionName,
           rawTitle: row.title,
+          reasonCode: 'empty_color',
           reason: 'El color detectado quedo vacio',
+          suggestions: [match.title],
         });
         continue;
       }
@@ -1198,7 +1257,9 @@ export class CatalogAdminSpecialOrderService {
           sectionKey: row.sectionKey,
           sectionName: row.sectionName,
           rawTitle: row.title,
+          reasonCode: 'duplicate_variant',
           reason: 'La hoja trae la misma variante mas de una vez',
+          suggestions: [match.title],
         });
         continue;
       }
@@ -1255,6 +1316,58 @@ export class CatalogAdminSpecialOrderService {
       warnings,
       deactivated,
     };
+  }
+
+  private rankColorMatches(
+    row: ParsedSpecialOrderColorRow,
+    items: Array<{
+      included?: boolean;
+      status?: SpecialOrderPreviewStatus;
+      sectionName: string;
+      title: string;
+    }>,
+  ) {
+    return items
+      .map((item) => {
+        const normalizedCandidates = Array.from(
+          new Set([
+            normalizeSpecialOrderText(item.title),
+            normalizeSpecialOrderText(`${item.sectionName} ${item.title}`),
+          ].filter(Boolean)),
+        );
+        const bestLength = Math.max(
+          ...normalizedCandidates
+            .filter((normalizedBase) => row.normalizedTitle === normalizedBase || row.normalizedTitle.startsWith(`${normalizedBase} `))
+            .map((normalizedBase) => normalizedBase.length),
+          0,
+        );
+        return { item, bestLength };
+      })
+      .filter((entry) => entry.bestLength > 0)
+      .sort((left, right) => right.bestLength - left.bestLength);
+  }
+
+  private buildColorMatchSuggestions(
+    row: ParsedSpecialOrderColorRow,
+    items: Array<{
+      sectionKey: string;
+      sectionName: string;
+      title: string;
+    }>,
+  ) {
+    const rowTokens = new Set(row.normalizedTitle.split(/\s+/).filter(Boolean));
+    return items
+      .filter((item) => item.sectionKey === row.sectionKey)
+      .map((item) => {
+        const titleTokens = new Set(normalizeSpecialOrderText(item.title).split(/\s+/).filter(Boolean));
+        const overlap = Array.from(titleTokens).filter((token) => rowTokens.has(token)).length;
+        return { title: item.title, overlap };
+      })
+      .filter((entry) => entry.overlap > 0)
+      .sort((left, right) => right.overlap - left.overlap || left.title.localeCompare(right.title, 'es'))
+      .map((entry) => entry.title)
+      .filter((title, index, values) => values.indexOf(title) === index)
+      .slice(0, 3);
   }
 
   private parseSectionMap(rawValue?: string | null): Record<string, SectionCategoryMapEntry> {

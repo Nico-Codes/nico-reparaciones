@@ -12,6 +12,29 @@
 
 ---
 
+### 2026-04-27 - Codex
+- Alcance: correccion de matching, visibilidad y edicion de colores para productos por encargue.
+- Tipo de intervencion: ajuste de parser/preview backend, endpoints admin de variantes, panel de colores en producto, refuerzo de tienda y documentacion viva.
+- Archivos tocados:
+  - `next-stack/apps/api/src/modules/catalog-admin/*`
+  - `next-stack/apps/web/src/features/{catalogAdmin,store}/*`
+  - `project-docs/{DECISIONS_LOG.md,backend/BACKEND_MAP.md,frontend/FRONTEND_MAP.md,architecture/BUSINESS_RULES.md}`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. El TXT normaliza capacidades y unifica hints de color, los `sin match` de colores explican el motivo, admin puede crear/editar colores por proveedor y tienda comunica mejor la seleccion de color.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/api`
+  - `cmd /c npm run test --workspace @nico/api`
+  - `cmd /c npm run build --workspace @nico/api`
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - Los productos por encargue ya importados con una clave vieja que incluia color pueden quedar como faltantes/desactivables en una nueva corrida si la base ahora se unifica; esto es coherente con la politica nueva de no duplicar por color.
+
+---
+
 ### 2026-04-24 - Codex
 - Alcance: jerarquia de categorias padre/subcategoria para catalogo, pricing y tienda publica.
 - Tipo de intervencion: migracion Prisma, ajuste backend de categorias/store/pricing, UI admin jerarquica, filtro publico por padre/hija y pruebas actualizadas.

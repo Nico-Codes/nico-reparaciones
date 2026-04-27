@@ -59,8 +59,12 @@ export type AdminProduct = {
   colorOptions: Array<{
     id: string;
     label: string;
+    normalizedLabel: string;
     supplierAvailability: 'IN_STOCK' | 'OUT_OF_STOCK' | 'UNKNOWN';
     active: boolean;
+    lastImportedAt: string | null;
+    sourceSheetRow: number | null;
+    sourceSheetKey: string | null;
   }>;
   lastImportedAt: string | null;
   createdAt: string | null;
@@ -104,6 +108,8 @@ export type SpecialOrderPreviewItem = {
   rowId: string;
   lineNumber: number;
   included: boolean;
+  collapsedDuplicate: boolean;
+  conflictReason: string | null;
   excludedBySection: boolean;
   excludedBySource: boolean;
   excludedByRow: boolean;
@@ -188,7 +194,15 @@ export type SpecialOrderImportPreview = {
       sectionKey: string;
       sectionName: string;
       rawTitle: string;
+      reasonCode:
+        | 'section_excluded'
+        | 'product_excluded'
+        | 'no_product_match'
+        | 'ambiguous_match'
+        | 'empty_color'
+        | 'duplicate_variant';
       reason: string;
+      suggestions: string[];
     }>;
     items: Array<{
       productSourceKey: string;
@@ -274,6 +288,28 @@ export const catalogAdminApi = {
       method: 'DELETE',
       body: JSON.stringify({}),
     });
+  },
+  createProductColorVariant(
+    id: string,
+    input: { label: string; supplierAvailability?: 'IN_STOCK' | 'OUT_OF_STOCK' | 'UNKNOWN'; active?: boolean },
+  ) {
+    return authJsonRequest<{ item: AdminProduct }>(`/catalog-admin/products/${encodeURIComponent(id)}/color-variants`, {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  },
+  updateProductColorVariant(
+    id: string,
+    variantId: string,
+    input: Partial<{ label: string; supplierAvailability: 'IN_STOCK' | 'OUT_OF_STOCK' | 'UNKNOWN'; active: boolean }>,
+  ) {
+    return authJsonRequest<{ item: AdminProduct }>(
+      `/catalog-admin/products/${encodeURIComponent(id)}/color-variants/${encodeURIComponent(variantId)}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify(input),
+      },
+    );
   },
   specialOrderProfiles() {
     return authJsonRequest<{ items: SpecialOrderProfile[] }>('/catalog-admin/special-order-profiles');

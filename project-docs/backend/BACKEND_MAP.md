@@ -93,15 +93,20 @@ Ubicacion:
   - `PATCH /api/catalog-admin/special-order-profiles/:id`
   - `POST /api/catalog-admin/special-order-imports/preview`
   - `POST /api/catalog-admin/special-order-imports/apply`
+  - `POST /api/catalog-admin/products/:id/color-variants`
+  - `PATCH /api/catalog-admin/products/:id/color-variants/:variantId`
 - El parser de listados:
   - detecta encabezados de seccion `*Marca*`/`*Categoria*`
   - extrae precios USD y estados `Sin Stock`
   - ignora ruido operativo como fechas, links y cabeceras repetidas
+  - normaliza capacidades (`256GB` = `256 GB`) y unifica hints de color finales entre parentesis cuando son colores
+  - si una misma base unificada llega con precios USD distintos, el preview queda en conflicto antes de aplicar
 - El parser opcional de colores:
   - consume links publicos de Google Sheets via export CSV o CSV manual
   - detecta secciones y filas `modelo + color + Stock/Sin Stock`
   - soporta CSV con columnas separadas por coma o punto y coma
   - no crea productos base; solo vincula colores contra productos del TXT del mismo preview
+  - clasifica filas sin match por motivo operativo y sugiere productos cercanos cuando hay coincidencia parcial
 - La aplicacion del batch:
   - crea categorias faltantes cuando el mapping asi lo define
   - crea/actualiza productos `SPECIAL_ORDER` sin tocar slug ni retoques manuales como imagen/descripcion

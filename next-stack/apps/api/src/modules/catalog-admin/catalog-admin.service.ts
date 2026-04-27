@@ -7,6 +7,8 @@ import type {
   CategoryCreateInput,
   CategoryUpdateInput,
   ProductCreateInput,
+  ProductColorVariantCreateInput,
+  ProductColorVariantUpdateInput,
   ProductImageUpload,
   ProductListParams,
   ProductPricingRuleCreateInput,
@@ -63,6 +65,14 @@ export class CatalogAdminService {
 
   async updateProduct(id: string, input: ProductUpdateInput) {
     return this.productsService.updateProduct(id, input);
+  }
+
+  async createProductColorVariant(productId: string, input: ProductColorVariantCreateInput) {
+    return this.productsService.createProductColorVariant(productId, input);
+  }
+
+  async updateProductColorVariant(productId: string, variantId: string, input: ProductColorVariantUpdateInput) {
+    return this.productsService.updateProductColorVariant(productId, variantId, input);
   }
 
   async uploadProductImage(id: string, file: ProductImageUpload) {

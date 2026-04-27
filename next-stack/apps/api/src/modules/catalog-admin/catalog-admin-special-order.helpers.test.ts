@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   extractSpecialOrderColorLabel,
   googleSheetUrlToCsvExportUrl,
+  normalizeSpecialOrderProductBaseTitle,
+  normalizeSpecialOrderText,
   parseSpecialOrderColorCsv,
   parseSpecialOrderListing,
   parseSpecialOrderUsdAmount,
@@ -37,6 +39,21 @@ Samsung Tab A9 8.7" 4/64GB   $195
       sourcePriceUsd: null,
       supplierAvailability: 'OUT_OF_STOCK',
     });
+  });
+
+  it('normaliza capacidades equivalentes para matching', () => {
+    expect(normalizeSpecialOrderText('iPhone 17 Pro 256GB')).toBe(normalizeSpecialOrderText('iPhone 17 Pro 256 GB'));
+    expect(normalizeSpecialOrderText('Samsung S26 Ultra 12/512GB')).toBe(
+      normalizeSpecialOrderText('Samsung S26 Ultra 12/512 GB'),
+    );
+    expect(normalizeSpecialOrderText('iPad Pro 1TB')).toBe(normalizeSpecialOrderText('iPad Pro 1 TB'));
+  });
+
+  it('quita hints de color finales del TXT sin quitar parentesis tecnicos', () => {
+    expect(normalizeSpecialOrderProductBaseTitle('iPhone 17 Pro 256 GB (Naranja, Azul)')).toBe('iPhone 17 Pro 256 GB');
+    expect(normalizeSpecialOrderProductBaseTitle('Xiaomi 15 Ultra 512 GB (con Leica)')).toBe(
+      'Xiaomi 15 Ultra 512 GB (con Leica)',
+    );
   });
 
   it('normaliza montos USD con separadores', () => {
@@ -199,5 +216,28 @@ Samsung A17 8/256 GB;Azul claro;;Sin Stock
         productSectionName: 'XIAOMI',
       }),
     ).toBe('Azul');
+  });
+
+  it('limpia prefijos tecnicos cuando quedan delante del color real', () => {
+    expect(
+      extractSpecialOrderColorLabel({
+        rowTitle: 'Samsung S26 Ultra 12/256 GB 5G DS Negro',
+        normalizedRowTitle: normalizeSpecialOrderText('Samsung S26 Ultra 12/256 GB 5G DS Negro'),
+        productTitle: 'Samsung S26 Ultra 12/256 GB',
+        productSectionName: 'SAMSUNG',
+      }),
+    ).toBe('Negro');
+  });
+
+  it('unifica filas de TXT cuando el color venia entre parentesis', () => {
+    const parsed = parseSpecialOrderListing(`
+*IPHONE*
+iPhone 17 Pro 256 GB (Naranja, Azul) $1325
+`);
+
+    expect(parsed.rows[0]).toMatchObject({
+      title: 'iPhone 17 Pro 256 GB',
+      sourceKey: normalizeSpecialOrderText('IPHONE iPhone 17 Pro 256 GB'),
+    });
   });
 });

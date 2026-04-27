@@ -37,6 +37,9 @@ export function AdminProductEditPage() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewObjectUrl, setPreviewObjectUrl] = useState<string | null>(null);
+  const [newColorLabel, setNewColorLabel] = useState('');
+  const [newColorAvailability, setNewColorAvailability] = useState<'IN_STOCK' | 'OUT_OF_STOCK' | 'UNKNOWN'>('IN_STOCK');
+  const [colorSaving, setColorSaving] = useState(false);
 
   const [recommendedPrice, setRecommendedPrice] = useState<number | null>(null);
   const [recommendedMarginPercent, setRecommendedMarginPercent] = useState<number | null>(null);
@@ -235,6 +238,47 @@ export function AdminProductEditPage() {
     }
   }
 
+  async function createColorVariant() {
+    if (!id || !newColorLabel.trim()) return;
+    setColorSaving(true);
+    setError('');
+    setSuccess('');
+    try {
+      const response = await catalogAdminApi.createProductColorVariant(id, {
+        label: newColorLabel.trim(),
+        supplierAvailability: newColorAvailability,
+        active: true,
+      });
+      syncProductForm(response.item);
+      setNewColorLabel('');
+      setNewColorAvailability('IN_STOCK');
+      setSuccess('Color por proveedor agregado correctamente.');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No se pudo agregar el color.');
+    } finally {
+      setColorSaving(false);
+    }
+  }
+
+  async function updateColorVariant(
+    variantId: string,
+    input: Partial<{ label: string; supplierAvailability: 'IN_STOCK' | 'OUT_OF_STOCK' | 'UNKNOWN'; active: boolean }>,
+  ) {
+    if (!id) return;
+    setColorSaving(true);
+    setError('');
+    setSuccess('');
+    try {
+      const response = await catalogAdminApi.updateProductColorVariant(id, variantId, input);
+      syncProductForm(response.item);
+      setSuccess('Color por proveedor actualizado correctamente.');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No se pudo actualizar el color.');
+    } finally {
+      setColorSaving(false);
+    }
+  }
+
   if (loading) {
     return (
       <PageShell context="admin" className="space-y-6">
@@ -291,6 +335,9 @@ export function AdminProductEditPage() {
         imagePreview={imagePreview}
         imageFileName={imageFile?.name ?? null}
         saving={saving}
+        colorSaving={colorSaving}
+        newColorLabel={newColorLabel}
+        newColorAvailability={newColorAvailability}
         recommendedPrice={recommendedPrice}
         recommendedMarginPercent={recommendedMarginPercent}
         recommendedRuleName={recommendedRuleName}
@@ -314,6 +361,10 @@ export function AdminProductEditPage() {
         onApplyRecommendedPrice={() => setPrice(String(recommendedPrice ?? 0))}
         onFileChange={handleImageSelection}
         onRemoveImage={() => void removeImage()}
+        onNewColorLabelChange={setNewColorLabel}
+        onNewColorAvailabilityChange={setNewColorAvailability}
+        onCreateColorVariant={() => void createColorVariant()}
+        onUpdateColorVariant={(variantId, input) => void updateColorVariant(variantId, input)}
         onCancel={() => window.history.back()}
         onSave={() => void save()}
       />

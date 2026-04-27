@@ -91,8 +91,10 @@ Confirmado por `Product.fulfillmentMode`:
 Reglas a preservar:
 
 - el TXT de proveedor sigue siendo la fuente maestra para producto base, precio USD y disponibilidad general
+- si el TXT trae colores al final del nombre entre parentesis, esos colores se tratan como hints y el producto base se unifica; precios USD distintos para la misma base bloquean el apply como conflicto
 - Google Sheets/CSV de colores solo enriquece productos `SPECIAL_ORDER`; no crea productos base ni modifica precios
 - si un producto `SPECIAL_ORDER` tiene colores activos, su disponibilidad publica depende de que al menos un color este `IN_STOCK`
+- las variantes de color pueden editarse manualmente desde admin producto, pero siguen acotadas a `SPECIAL_ORDER`
 - carrito y checkout deben guardar el color elegido en snapshot de orden, sin decrementar stock local
 
 ## Branding dinamico

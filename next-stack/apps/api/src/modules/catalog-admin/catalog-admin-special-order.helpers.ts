@@ -55,13 +55,24 @@ export type NextSpecialOrderSnapshot = {
 };
 
 export function normalizeSpecialOrderText(value?: string | null) {
-  return (value ?? '')
+  return normalizeCapacitySpacing(value ?? '')
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+export function normalizeSpecialOrderProductBaseTitle(title: string) {
+  const normalizedTitle = title.replace(/\s+/g, ' ').trim();
+  const parentheticalMatch = normalizedTitle.match(/^(.*?)\s*\(([^()]*)\)\s*$/);
+  if (!parentheticalMatch) return normalizedTitle;
+
+  const base = parentheticalMatch[1]?.trim() ?? '';
+  const hint = parentheticalMatch[2]?.trim() ?? '';
+  if (!base || !looksLikeColorHint(hint)) return normalizedTitle;
+  return base;
 }
 
 export function normalizeSpecialOrderSourceKey(sectionName: string, title: string) {
@@ -168,7 +179,7 @@ export function extractSpecialOrderColorLabel(input: {
   for (const rawBase of rawBaseCandidates) {
     if (startsWithInsensitive(rawRow, rawBase)) {
       const remainder = cleanColorRowLabel(rawRow.slice(rawBase.length));
-      if (remainder) return remainder;
+      if (remainder) return stripTechnicalColorPrefix(remainder);
     }
   }
 
@@ -242,12 +253,13 @@ function parseProductRow(
     .trim();
 
   if (!title) return null;
+  const baseTitle = normalizeSpecialOrderProductBaseTitle(title);
 
   return {
     sectionKey: section.sectionKey,
     sectionName: section.sectionName,
-    title,
-    sourceKey: normalizeSpecialOrderSourceKey(section.sectionName, title),
+    title: baseTitle,
+    sourceKey: normalizeSpecialOrderSourceKey(section.sectionName, baseTitle),
     sourcePriceUsd,
     supplierAvailability: availability,
     lineNumber,
@@ -406,11 +418,15 @@ function startsWithInsensitive(value: string, prefix: string) {
 }
 
 function humanizeNormalizedColorLabel(value: string) {
-  return value
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((token) => token.charAt(0).toUpperCase() + token.slice(1))
-    .join(' ');
+  return stripTechnicalColorPrefix(
+    value
+      .replace(/\b(\d+)\s+g\b/gi, '$1G')
+      .replace(/\b(\d+)\s+t\b/gi, '$1T')
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((token) => token.charAt(0).toUpperCase() + token.slice(1))
+      .join(' '),
+  );
 }
 
 function sameMoney(left: number | null | undefined, right: number | null | undefined) {
@@ -418,3 +434,90 @@ function sameMoney(left: number | null | undefined, right: number | null | undef
   if (left == null || right == null) return false;
   return Math.abs(left - right) < 0.005;
 }
+
+function normalizeCapacitySpacing(value: string) {
+  return value
+    .replace(/(\d+)\s*(gb|tb)\b/gi, '$1 $2')
+    .replace(/(\d+)\s*\/\s*(\d+)/g, '$1/$2');
+}
+
+function looksLikeColorHint(value: string) {
+  const normalized = normalizeSpecialOrderText(value);
+  if (!normalized || /\d/.test(normalized)) return false;
+
+  const segments = value
+    .split(/[,/|+]|\s+y\s+|\s+o\s+/i)
+    .map((segment) => normalizeSpecialOrderText(segment))
+    .filter(Boolean);
+  if (segments.length === 0) return false;
+
+  return segments.every((segment) => {
+    const tokens = segment.split(/\s+/).filter(Boolean);
+    return tokens.length > 0 && tokens.every((token) => COLOR_HINT_TOKENS.has(token));
+  });
+}
+
+function stripTechnicalColorPrefix(rawValue: string) {
+  let value = cleanColorRowLabel(rawValue);
+  let previous = '';
+  while (value && value !== previous) {
+    previous = value;
+    value = value
+      .replace(/^(?:5\s*g|4\s*g|3\s*g|2\s*g)\b[\s,./-]*/i, '')
+      .replace(/^(?:ds|dual\s*sim|dual|sim)\b[\s,./-]*/i, '')
+      .trim();
+  }
+  return value;
+}
+
+const COLOR_HINT_TOKENS = new Set([
+  'azul',
+  'azulado',
+  'beige',
+  'black',
+  'blanca',
+  'blanco',
+  'blue',
+  'cafe',
+  'celeste',
+  'champagne',
+  'claro',
+  'coral',
+  'crema',
+  'dark',
+  'dorado',
+  'gold',
+  'grafito',
+  'graphite',
+  'gray',
+  'green',
+  'grey',
+  'gris',
+  'lila',
+  'light',
+  'marron',
+  'menta',
+  'midnight',
+  'morado',
+  'naranja',
+  'natural',
+  'negra',
+  'negro',
+  'oscuro',
+  'pink',
+  'plata',
+  'plateado',
+  'purple',
+  'red',
+  'rojo',
+  'rosa',
+  'rosado',
+  'silver',
+  'starlight',
+  'teal',
+  'titanio',
+  'turquesa',
+  'verde',
+  'violeta',
+  'white',
+]);

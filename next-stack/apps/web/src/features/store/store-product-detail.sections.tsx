@@ -207,7 +207,17 @@ export function StoreProductPurchaseSection({
 
       {requiresColorSelection ? (
         <div className="mt-4 space-y-3">
-          <div className="ui-field__label">Color disponible</div>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <div className="ui-field__label">Elegi un color</div>
+              <div className="mt-1 text-xs text-zinc-500">Los agotados se muestran para referencia, pero no se pueden seleccionar.</div>
+            </div>
+            <StatusBadge
+              tone="info"
+              size="sm"
+              label={`${item.colorOptions.filter((option) => option.active && option.supplierAvailability === 'IN_STOCK').length} disponibles`}
+            />
+          </div>
           <div className="flex flex-wrap gap-2">
             {item.colorOptions.map((option) => {
               const disabled = !option.active || option.supplierAvailability !== 'IN_STOCK';

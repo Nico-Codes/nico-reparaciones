@@ -32,6 +32,13 @@ const productCreateSchema = z.object({
   categoryId: z.string().trim().max(191).optional().nullable(),
 });
 const productPatchSchema = productCreateSchema.partial();
+const supplierAvailabilitySchema = z.enum(['IN_STOCK', 'OUT_OF_STOCK', 'UNKNOWN']);
+const productColorVariantCreateSchema = z.object({
+  label: z.string().trim().min(1).max(80),
+  supplierAvailability: supplierAvailabilitySchema.optional(),
+  active: z.boolean().optional(),
+});
+const productColorVariantPatchSchema = productColorVariantCreateSchema.partial();
 
 const specialOrderProfileSchema = z.object({
   supplierId: z.string().trim().min(1).max(191),
@@ -146,6 +153,20 @@ export class CatalogAdminController {
     const parsed = productPatchSchema.safeParse(body);
     if (!parsed.success) throw zodBadRequest(parsed);
     return this.service.updateProduct(id, parsed.data);
+  }
+
+  @Post('products/:id/color-variants')
+  createProductColorVariant(@Param('id') id: string, @Body() body: unknown) {
+    const parsed = productColorVariantCreateSchema.safeParse(body);
+    if (!parsed.success) throw zodBadRequest(parsed);
+    return this.service.createProductColorVariant(id, parsed.data);
+  }
+
+  @Patch('products/:id/color-variants/:variantId')
+  updateProductColorVariant(@Param('id') id: string, @Param('variantId') variantId: string, @Body() body: unknown) {
+    const parsed = productColorVariantPatchSchema.safeParse(body);
+    if (!parsed.success) throw zodBadRequest(parsed);
+    return this.service.updateProductColorVariant(id, variantId, parsed.data);
   }
 
   @Post('products/:id/image')
