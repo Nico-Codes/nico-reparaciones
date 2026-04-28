@@ -13,6 +13,26 @@
 ---
 
 ### 2026-04-28 - Codex
+- Alcance: compactar accion de busqueda en tienda.
+- Tipo de intervencion: ajuste UI frontend responsive sin cambios de rutas ni contratos.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/store/store-page.sections.tsx`
+  - `next-stack/apps/web/src/styles/store.css`
+  - `project-docs/frontend/FRONTEND_MAP.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No. El submit de busqueda se mantiene igual; cambia el boton `Aplicar` por una lupa compacta, en mobile alineada con el input.
+- Validaciones ejecutadas:
+  - `npm run typecheck --workspace @nico/web`
+  - `npm run test --workspace @nico/web`
+  - `npm run build --workspace @nico/web`
+  - `npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - Cambio visual acotado a la barra de busqueda de tienda; no altera filtros.
+
+---
+
+### 2026-04-28 - Codex
 - Alcance: animar despliegue de subcategorias en el popup de tienda.
 - Tipo de intervencion: ajuste UI frontend sin cambios de rutas ni contratos.
 - Archivos tocados:

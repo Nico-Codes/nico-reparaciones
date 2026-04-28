@@ -202,7 +202,7 @@ Notas operativas del subdominio:
   - panel modal/bottom-sheet con buscador, categorias padre y subcategorias expandibles
   - el filtro por una subcategoria mantiene visible tambien su categoria padre activa en el resumen
 - la tienda separa controles visuales:
-  - la barra superior queda para busqueda, aplicar y limpiar
+  - la barra superior queda para busqueda, accion iconica de buscar y limpiar
   - la barra compacta inferior concentra categorias y ordenamiento
   - el popup mobile de ordenamiento aplica el cambio al tocar una opcion, sin confirmacion secundaria
   - los popups de categoria y ordenamiento comparten animacion de entrada/salida y tratamiento visual tipo sheet

@@ -183,9 +183,25 @@
   white-space: nowrap;
 }
 
+.store-filter-grid__apply {
+  width: 2.85rem;
+  min-width: 2.85rem;
+}
+
+.store-mobile-search-submit {
+  width: 3rem;
+  min-width: 3rem;
+  min-height: 3.1rem;
+  border-radius: 1.15rem;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 14px 26px -18px rgba(2, 132, 199, 0.45);
+}
+
 @media (max-width: 767px) {
   .store-mobile-controls {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: stretch;
   }
 }
 
@@ -976,7 +992,7 @@
   }
 
   .store-mobile-controls {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) auto;
   }
 
   .store-categories {

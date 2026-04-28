@@ -120,18 +120,27 @@ export function StoreToolbarSection({
               leadingIcon={<Search className="h-4 w-4" />}
               wrapperClassName="store-mobile-controls__search"
             />
-          </div>
-
-          <div className="store-mobile-apply-row">
-            <Button type="submit" className="w-full">
-              Aplicar
+            <Button
+              type="submit"
+              size="icon"
+              className="store-mobile-search-submit"
+              aria-label="Buscar productos"
+              title="Buscar productos"
+            >
+              <Search className="h-4 w-4" aria-hidden="true" />
             </Button>
           </div>
         </div>
 
         <div className="store-filter-grid__actions">
-          <Button type="submit" className="store-filter-grid__apply">
-            Aplicar
+          <Button
+            type="submit"
+            size="icon"
+            className="store-filter-grid__apply"
+            aria-label="Buscar productos"
+            title="Buscar productos"
+          >
+            <Search className="h-4 w-4" aria-hidden="true" />
           </Button>
           {hasActiveFilters ? (
             <Button type="button" variant="outline" className="store-filter-grid__clear" onClick={onClearFilters}>
