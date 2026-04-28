@@ -1,7 +1,7 @@
 import { createPortal } from 'react-dom';
 import { useEffect, useMemo, useState, type RefObject } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Check, ChevronDown, Search, ShoppingCart, SlidersHorizontal, X } from 'lucide-react';
+import { Check, ChevronDown, Search, ShoppingCart, SlidersHorizontal, Tags, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FilterBar } from '@/components/ui/filter-bar';
@@ -21,16 +21,9 @@ import type { StoreCategory, StoreProduct } from './types';
 
 type StoreToolbarSectionProps = {
   qInput: string;
-  sort: string;
-  sortOptions: StoreSortOption[];
-  mobileSortLabel: string;
-  mobileFiltersOpen: boolean;
   hasActiveFilters: boolean;
-  mobileSortTriggerRef: RefObject<HTMLButtonElement | null>;
   onQInputChange: (value: string) => void;
   onSubmit: () => void;
-  onSortChange: (value: string) => void;
-  onToggleMobileFilters: () => void;
   onClearFilters: () => void;
 };
 
@@ -48,7 +41,14 @@ type StoreCategoriesSectionProps = {
   activeParentSlug: string | null;
   activeChildSlug: string | null;
   subcategories: StoreCategory[];
+  sort: string;
+  sortOptions: StoreSortOption[];
+  mobileSortLabel: string;
+  mobileFiltersOpen: boolean;
+  mobileSortTriggerRef: RefObject<HTMLButtonElement | null>;
   onSelectCategory: (category: string | null) => void;
+  onSortChange: (value: string) => void;
+  onToggleMobileFilters: () => void;
 };
 
 type StoreResultsSectionProps = {
@@ -61,34 +61,13 @@ type StoreResultsSectionProps = {
 
 export function StoreToolbarSection({
   qInput,
-  sort,
-  sortOptions,
-  mobileSortLabel,
-  mobileFiltersOpen,
   hasActiveFilters,
-  mobileSortTriggerRef,
   onQInputChange,
   onSubmit,
-  onSortChange,
-  onToggleMobileFilters,
   onClearFilters,
 }: StoreToolbarSectionProps) {
   return (
-    <FilterBar
-      className="store-toolbar"
-      actions={
-        <div className="store-toolbar-actions store-toolbar-actions--desktop">
-          <Button type="submit" form="store-filter-form">
-            Aplicar
-          </Button>
-          {hasActiveFilters ? (
-            <Button type="button" variant="outline" onClick={onClearFilters}>
-              Limpiar
-            </Button>
-          ) : null}
-        </div>
-      }
-    >
+    <FilterBar className="store-toolbar">
       <form
         id="store-filter-form"
         className="store-filter-grid"
@@ -117,20 +96,6 @@ export function StoreToolbarSection({
               leadingIcon={<Search className="h-4 w-4" />}
               wrapperClassName="store-mobile-controls__search"
             />
-            <div className="store-mobile-controls__sort">
-              <Button
-                ref={mobileSortTriggerRef}
-                type="button"
-                variant="outline"
-                className="store-mobile-sort-btn"
-                aria-label={`Ordenar productos. Orden actual: ${mobileSortLabel}`}
-                aria-expanded={mobileFiltersOpen}
-                onClick={onToggleMobileFilters}
-              >
-                <SlidersHorizontal className="h-4 w-4" />
-                <span className="store-mobile-sort-btn__label">Ordenar</span>
-              </Button>
-            </div>
           </div>
 
           <div className="store-mobile-apply-row">
@@ -140,17 +105,15 @@ export function StoreToolbarSection({
           </div>
         </div>
 
-        <div className="store-filter-grid__sort space-y-2">
-          <label className="store-sort-label text-xs font-bold uppercase tracking-[0.12em] text-zinc-500">Ordenar</label>
-          <div className="store-desktop-sort">
-            <CustomSelect
-              value={sort}
-              onChange={onSortChange}
-              options={sortOptions}
-              triggerClassName="min-h-11 rounded-2xl font-semibold"
-              ariaLabel="Ordenar productos"
-            />
-          </div>
+        <div className="store-filter-grid__actions">
+          <Button type="submit" className="store-filter-grid__apply">
+            Aplicar
+          </Button>
+          {hasActiveFilters ? (
+            <Button type="button" variant="outline" className="store-filter-grid__clear" onClick={onClearFilters}>
+              Limpiar
+            </Button>
+          ) : null}
         </div>
       </form>
     </FilterBar>
@@ -215,7 +178,14 @@ export function StoreCategoriesSection({
   activeCategory,
   activeParentSlug,
   activeChildSlug,
+  sort,
+  sortOptions,
+  mobileSortLabel,
+  mobileFiltersOpen,
+  mobileSortTriggerRef,
   onSelectCategory,
+  onSortChange,
+  onToggleMobileFilters,
 }: StoreCategoriesSectionProps) {
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -250,15 +220,45 @@ export function StoreCategoriesSection({
       <div className="store-categories__summary">
         <button
           type="button"
-          className="store-categories__trigger"
+          className="store-categories__trigger store-categories__trigger--category"
           aria-haspopup="dialog"
           aria-expanded={open}
           onClick={() => setOpen(true)}
         >
-          <span>Categoria:</span>
-          <strong>{selectedLabel}</strong>
-          <ChevronDown className="h-4 w-4" aria-hidden="true" />
+          <span className="store-categories__trigger-icon" aria-hidden="true">
+            <Tags className="h-4 w-4" />
+          </span>
+          <span className="store-categories__trigger-copy">
+            <span>Categorias</span>
+            <strong>{selectedLabel}</strong>
+          </span>
+          <ChevronDown className="store-categories__trigger-caret h-4 w-4" aria-hidden="true" />
         </button>
+        <div className="store-categories__sort-desktop" aria-label="Ordenar productos">
+          <span className="store-categories__sort-icon" aria-hidden="true">
+            <SlidersHorizontal className="h-4 w-4" />
+          </span>
+          <CustomSelect
+            value={sort}
+            onChange={onSortChange}
+            options={sortOptions}
+            className="store-categories__sort-select"
+            triggerClassName="store-categories__sort-trigger"
+            ariaLabel="Ordenar productos"
+          />
+        </div>
+        <Button
+          ref={mobileSortTriggerRef}
+          type="button"
+          variant="outline"
+          className="store-categories__sort-mobile store-mobile-sort-btn"
+          aria-label={`Ordenar productos. Orden actual: ${mobileSortLabel}`}
+          aria-expanded={mobileFiltersOpen}
+          onClick={onToggleMobileFilters}
+        >
+          <SlidersHorizontal className="h-4 w-4" />
+          <span className="store-mobile-sort-btn__label">Ordenar</span>
+        </Button>
         {activeCategory ? (
           <button
             type="button"

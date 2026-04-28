@@ -201,6 +201,9 @@ Notas operativas del subdominio:
   - selector compacto con contexto activo
   - panel modal/bottom-sheet con buscador, categorias padre y subcategorias expandibles
   - el filtro por una subcategoria mantiene visible tambien su categoria padre activa en el resumen
+- la tienda separa controles visuales:
+  - la barra superior queda para busqueda, aplicar y limpiar
+  - la barra compacta inferior concentra categorias y ordenamiento
 - cards y detalle de producto muestran `pathLabel` cuando el item pertenece a una subcategoria
 - los productos `Por encargue` muestran badge/copy especifico; si el perfil exige color, la card usa CTA `Elegir color`
 - si un producto `Por encargue` requiere color, el detalle publico obliga a elegir una variante disponible antes de agregarlo al carrito; los colores sin stock se ven deshabilitados

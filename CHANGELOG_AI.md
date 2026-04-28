@@ -13,6 +13,27 @@
 ---
 
 ### 2026-04-28 - Codex
+- Alcance: reorganizar barra de busqueda, categorias y ordenamiento en tienda.
+- Tipo de intervencion: ajuste UI frontend sin cambios de backend ni query params.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/store/StorePage.tsx`
+  - `next-stack/apps/web/src/features/store/store-page.sections.tsx`
+  - `next-stack/apps/web/src/styles/store.css`
+  - `project-docs/frontend/FRONTEND_MAP.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No. La busqueda mantiene `q`, categorias mantiene `category` y orden mantiene `sort`; solo cambia la presentacion: buscar/aplicar arriba y categorias/ordenar en una barra compacta debajo.
+- Validaciones ejecutadas:
+  - `npm run typecheck --workspace @nico/web`
+  - `npm run test --workspace @nico/web`
+  - `npm run build --workspace @nico/web`
+  - `npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - Cambio limitado a layout de controles de tienda; no se tocaron rutas ni contratos.
+
+---
+
+### 2026-04-28 - Codex
 - Alcance: simplificar el boton visible del selector de categorias de tienda.
 - Tipo de intervencion: ajuste UI frontend sin cambiar el popup ni contratos.
 - Archivos tocados:

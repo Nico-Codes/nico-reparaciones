@@ -159,16 +159,9 @@ export function StorePage() {
 
       <StoreToolbarSection
         qInput={qInput}
-        sort={sort}
-        sortOptions={sortOptions}
-        mobileSortLabel={mobileSortLabel}
-        mobileFiltersOpen={mobileFiltersOpen}
         hasActiveFilters={hasActiveFilters}
-        mobileSortTriggerRef={mobileSortTriggerRef}
         onQInputChange={setQInput}
         onSubmit={() => applyQuery({ q: qInput })}
-        onSortChange={(value) => applyQuery({ sort: value })}
-        onToggleMobileFilters={() => setMobileFiltersOpen((value) => !value)}
         onClearFilters={clearFilters}
       />
 
@@ -178,7 +171,14 @@ export function StorePage() {
         activeParentSlug={categorySelection.activeParent?.slug ?? null}
         activeChildSlug={categorySelection.activeChild?.slug ?? null}
         subcategories={categorySelection.subcategories}
+        sort={sort}
+        sortOptions={sortOptions}
+        mobileSortLabel={mobileSortLabel}
+        mobileFiltersOpen={mobileFiltersOpen}
+        mobileSortTriggerRef={mobileSortTriggerRef}
         onSelectCategory={(value) => applyQuery({ category: value })}
+        onSortChange={(value) => applyQuery({ sort: value })}
+        onToggleMobileFilters={() => setMobileFiltersOpen((value) => !value)}
       />
 
       {error ? <StoreErrorSection message={error} /> : null}
