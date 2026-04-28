@@ -107,7 +107,6 @@ export function StoreToolbarSection({
               value={qInput}
               onChange={(event) => onQInputChange(event.target.value)}
               placeholder="Ej. iPhone, display, bateria"
-              leadingIcon={<Search className="h-4 w-4" />}
             />
           </div>
 
@@ -117,7 +116,6 @@ export function StoreToolbarSection({
               value={qInput}
               onChange={(event) => onQInputChange(event.target.value)}
               placeholder="Buscar productos"
-              leadingIcon={<Search className="h-4 w-4" />}
               wrapperClassName="store-mobile-controls__search"
             />
             <Button
