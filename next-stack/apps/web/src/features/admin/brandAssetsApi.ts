@@ -1,4 +1,4 @@
-import { adminAuthFetch } from './api';
+import { adminApiOrigin, adminAuthFetch } from './api';
 
 export type BrandAssetUploadResult = {
   ok: boolean;
@@ -34,7 +34,12 @@ export const brandAssetsApi = {
   toApiAssetUrl(pathValue?: string | null, updatedAt?: string | null) {
     const raw = (pathValue ?? '').trim();
     if (!raw) return null;
-    const normalizedUrl = /^https?:\/\//i.test(raw) ? raw : `/${raw.replace(/^\/+/, '')}`;
+    const normalizedPath = `/${raw.replace(/^\/+/, '')}`;
+    const normalizedUrl = /^https?:\/\//i.test(raw)
+      ? raw
+      : normalizedPath.startsWith('/brand-assets/') || normalizedPath.startsWith('/storage/')
+        ? `${adminApiOrigin.replace(/\/+$/, '')}${normalizedPath}`
+        : normalizedPath;
     const version = Date.parse((updatedAt ?? '').trim());
     if (!Number.isFinite(version)) return normalizedUrl;
     return `${normalizedUrl}${normalizedUrl.includes('?') ? '&' : '?'}v=${version}`;

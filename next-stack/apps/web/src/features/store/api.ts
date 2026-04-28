@@ -8,19 +8,19 @@ import type {
 } from './types';
 import { publicJsonRequest } from '@/features/auth/http';
 
-async function request<T>(path: string): Promise<T> {
-  return publicJsonRequest<T>(path, { method: 'GET' });
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  return publicJsonRequest<T>(path, { ...init, method: 'GET' });
 }
 
 export const storeApi = {
   home() {
-    return request<StoreHomeResponse>('/store/home');
+    return request<StoreHomeResponse>('/store/home', { cache: 'no-store' });
   },
   hero() {
-    return request<StoreHeroConfig>('/store/hero');
+    return request<StoreHeroConfig>('/store/hero', { cache: 'no-store' });
   },
   branding() {
-    return request<StoreBrandingAssets>('/store/branding');
+    return request<StoreBrandingAssets>('/store/branding', { cache: 'no-store' });
   },
   categories() {
     return request<{ items: StoreCategory[] }>('/store/categories');

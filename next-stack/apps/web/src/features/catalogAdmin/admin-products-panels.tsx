@@ -211,6 +211,17 @@ function AdminProductRow({
   const activeColorCount = product.colorOptions.filter((item) => item.active).length;
   const availableColorCount = product.colorOptions.filter((item) => item.active && item.supplierAvailability === 'IN_STOCK').length;
   const outOfStockColorCount = product.colorOptions.filter((item) => item.active && item.supplierAvailability === 'OUT_OF_STOCK').length;
+  const hasPendingColorFallback = product.colorOptions.some(
+    (item) => item.active && (item.label.trim().toLowerCase() === 'color a confirmar' || item.sourceSheetKey?.endsWith('::pending-color')),
+  );
+  const colorStatus =
+    isSpecialOrder && product.requiresColorSelection
+      ? hasPendingColorFallback
+        ? { tone: 'warning' as const, label: 'Color a confirmar' }
+        : availableColorCount > 0
+          ? { tone: 'info' as const, label: `Colores disponibles: ${availableColorCount}` }
+          : { tone: 'danger' as const, label: 'Sin color real' }
+      : null;
   const supplierTone =
     product.supplierAvailability === 'OUT_OF_STOCK'
       ? 'warning'
@@ -256,6 +267,7 @@ function AdminProductRow({
                 ) : (
                   <StatusBadge tone={getAdminProductStockTone(product.stock)} size="sm" label={product.stock > 0 ? `Stock ${product.stock}` : 'Sin stock'} />
                 )}
+                {colorStatus ? <StatusBadge tone={colorStatus.tone} size="sm" label={colorStatus.label} /> : null}
                 {isSpecialOrder && product.hasColorOptions ? (
                   <StatusBadge
                     tone="info"

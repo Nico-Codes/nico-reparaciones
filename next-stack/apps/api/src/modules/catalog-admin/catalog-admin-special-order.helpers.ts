@@ -164,11 +164,25 @@ export function buildSpecialOrderColorSourceKey(productSourceKey: string, colorL
   return `${productSourceKey}::${normalizeSpecialOrderText(colorLabel)}`;
 }
 
+export function buildSpecialOrderColorBaseCandidates(productTitle: string, productSectionName: string) {
+  const rawCandidates = [
+    productTitle.trim(),
+    `${productSectionName} ${productTitle}`.trim(),
+  ].filter(Boolean);
+
+  return Array.from(
+    new Set(
+      rawCandidates.flatMap((candidate) => expandStorageFlexibleBaseCandidates(normalizeSpecialOrderText(candidate))),
+    ),
+  ).filter(Boolean);
+}
+
 export function extractSpecialOrderColorLabel(input: {
   rowTitle: string;
   normalizedRowTitle: string;
   productTitle: string;
   productSectionName: string;
+  normalizedBaseCandidates?: string[];
 }) {
   const rawRow = cleanColorRowLabel(input.rowTitle);
   const rawBaseCandidates = [
@@ -183,10 +197,9 @@ export function extractSpecialOrderColorLabel(input: {
     }
   }
 
-  const normalizedBaseCandidates = [
-    normalizeSpecialOrderText(input.productTitle),
-    normalizeSpecialOrderText(`${input.productSectionName} ${input.productTitle}`),
-  ].filter(Boolean);
+  const normalizedBaseCandidates =
+    input.normalizedBaseCandidates?.filter(Boolean) ??
+    buildSpecialOrderColorBaseCandidates(input.productTitle, input.productSectionName);
 
   for (const normalizedBase of normalizedBaseCandidates) {
     if (input.normalizedRowTitle === normalizedBase) continue;
@@ -439,6 +452,33 @@ function normalizeCapacitySpacing(value: string) {
   return value
     .replace(/(\d+)\s*(gb|tb)\b/gi, '$1 $2')
     .replace(/(\d+)\s*\/\s*(\d+)/g, '$1/$2');
+}
+
+function expandStorageFlexibleBaseCandidates(normalizedBase: string) {
+  if (!normalizedBase) return [];
+  const variants = [normalizedBase];
+  const tokens = normalizedBase.split(/\s+/).filter(Boolean);
+
+  for (let index = 0; index < tokens.length - 2; index += 1) {
+    const maybeRam = tokens[index];
+    const maybeStorage = tokens[index + 1];
+    const maybeUnit = tokens[index + 2];
+    if (!isMemoryNumberToken(maybeRam) || !isMemoryNumberToken(maybeStorage) || !isStorageUnitToken(maybeUnit)) {
+      continue;
+    }
+    const withoutRam = [...tokens.slice(0, index), ...tokens.slice(index + 1)].join(' ');
+    if (withoutRam && withoutRam !== normalizedBase) variants.push(withoutRam);
+  }
+
+  return variants;
+}
+
+function isMemoryNumberToken(value?: string) {
+  return Boolean(value && /^\d{1,4}$/.test(value));
+}
+
+function isStorageUnitToken(value?: string) {
+  return value === 'gb' || value === 'tb';
 }
 
 function looksLikeColorHint(value: string) {

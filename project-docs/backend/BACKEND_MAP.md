@@ -73,9 +73,10 @@ Ubicacion:
   - slug de hija: filtra exacto por esa subcategoria
 - La visibilidad publica de productos ahora depende tambien de `fulfillmentMode`:
   - `INVENTORY`: visible solo si `active=true` y `stock > 0`
-  - `SPECIAL_ORDER` sin colores importados: visible si `active=true` y `supplierAvailability != OUT_OF_STOCK`
-  - `SPECIAL_ORDER` con colores importados: visible si `active=true` y al menos un color activo esta `IN_STOCK`
+  - `SPECIAL_ORDER` de perfil con `requiresColorVariants=true`: visible solo si tiene al menos un color activo `IN_STOCK`
+  - `SPECIAL_ORDER` sin perfil o con `requiresColorVariants=false`: conserva el fallback anterior por disponibilidad general si no hay colores activos
 - Los assets de `apps/web/public` servidos por API tienen headers de cache explicitos: largo para defaults versionables y corto/revalidable para `brand-assets/*` administrables.
+- Las URLs dinamicas de `brand-assets/*` que devuelve Store/Branding se resuelven contra `API_URL` y agregan `?v=updatedAt`; `/api/store/home`, `/api/store/hero` y `/api/store/branding` responden `Cache-Control: no-store` para que la portada editable no quede pegada a una respuesta anterior.
 
 ## Catalogo comercial: encargues
 
@@ -106,14 +107,16 @@ Ubicacion:
   - detecta secciones y filas `modelo + color + Stock/Sin Stock`
   - soporta CSV con columnas separadas por coma o punto y coma
   - no crea productos base; solo vincula colores contra productos del TXT del mismo preview
+  - matchea de forma flexible cuando el TXT trae RAM+almacenamiento (`12/1TB`) y la hoja trae solo almacenamiento (`1TB`), siempre que el match sea unico
   - clasifica filas sin match por motivo operativo y sugiere productos cercanos cuando hay coincidencia parcial
 - La aplicacion del batch:
   - crea categorias faltantes cuando el mapping asi lo define
   - crea/actualiza productos `SPECIAL_ORDER` sin tocar slug ni retoques manuales como imagen/descripcion
-  - crea/actualiza variantes de color cuando hay fuente de colores activa
+  - crea/actualiza variantes de color cuando hay fuente de colores activa o cuando el perfil exige fallback `Color a confirmar`
   - marca `OUT_OF_STOCK` si el item sigue viniendo pero sin stock
   - desactiva automaticamente productos del perfil que ya no aparecen en el listado nuevo
   - desactiva colores faltantes solo cuando esa corrida incluyo fuente de colores
+  - crea `Color a confirmar` para productos incluidos, disponibles y sin color real cuando `requiresColorVariants=true`
 
 ## Categorias comerciales y pricing
 

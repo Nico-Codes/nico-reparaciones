@@ -21,6 +21,7 @@ export type StoreProduct = {
   fulfillmentMode: 'INVENTORY' | 'SPECIAL_ORDER';
   supplierAvailability: 'IN_STOCK' | 'OUT_OF_STOCK' | 'UNKNOWN';
   hasColorOptions: boolean;
+  requiresColorSelection: boolean;
   colorOptions: Array<{
     id: string;
     label: string;

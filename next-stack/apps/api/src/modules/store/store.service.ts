@@ -364,6 +364,7 @@ export class StoreService {
                 active: true,
               },
             },
+            specialOrderProfile: { select: { id: true, requiresColorVariants: true } },
           },
           orderBy: this.orderBy(sort),
         }),
@@ -372,6 +373,8 @@ export class StoreService {
 
       let items = itemsRaw.map((p) => {
         const hasColorOptions = p.colorVariants.length > 0;
+        const requiresColorSelection =
+          p.fulfillmentMode === 'SPECIAL_ORDER' && (p.specialOrderProfile?.requiresColorVariants ?? true);
         const effectiveSupplierAvailability = hasColorOptions
           ? p.colorVariants.some((variant) => variant.supplierAvailability === 'IN_STOCK')
             ? 'IN_STOCK'
@@ -389,6 +392,7 @@ export class StoreService {
         fulfillmentMode: p.fulfillmentMode,
         supplierAvailability: effectiveSupplierAvailability,
         hasColorOptions,
+        requiresColorSelection,
         colorOptions: p.colorVariants.map((variant) => ({
           id: variant.id,
           label: variant.label,
@@ -488,12 +492,15 @@ export class StoreService {
               active: true,
             },
           },
+          specialOrderProfile: { select: { id: true, requiresColorVariants: true } },
         },
       });
 
       if (!p) return null;
 
       const hasColorOptions = p.colorVariants.length > 0;
+      const requiresColorSelection =
+        p.fulfillmentMode === 'SPECIAL_ORDER' && (p.specialOrderProfile?.requiresColorVariants ?? true);
       const effectiveSupplierAvailability = hasColorOptions
         ? p.colorVariants.some((variant) => variant.supplierAvailability === 'IN_STOCK')
           ? 'IN_STOCK'
@@ -511,6 +518,7 @@ export class StoreService {
         fulfillmentMode: p.fulfillmentMode,
         supplierAvailability: effectiveSupplierAvailability,
         hasColorOptions,
+        requiresColorSelection,
         colorOptions: p.colorVariants.map((variant) => ({
           id: variant.id,
           label: variant.label,
@@ -570,6 +578,11 @@ export class StoreService {
     if (/^https?:\/\//i.test(raw)) return raw;
 
     const normalized = `/${raw.replace(/^\/+/, '')}`;
+    if (normalized.startsWith('/brand-assets/')) {
+      const base = (process.env.API_URL ?? '').trim().replace(/\/+$/, '');
+      return base ? `${base}${normalized}` : normalized;
+    }
+
     if (normalized.startsWith('/storage/')) {
       const base = (process.env.STORE_IMAGE_BASE_URL ?? '').trim().replace(/\/+$/, '');
       return base ? `${base}${normalized}` : normalized;
@@ -631,20 +644,49 @@ export class StoreService {
           fulfillmentMode: 'SPECIAL_ORDER',
           OR: [
             {
-              colorVariants: {
-                some: {
-                  active: true,
-                  supplierAvailability: 'IN_STOCK',
+              AND: [
+                {
+                  specialOrderProfile: { is: { requiresColorVariants: true } },
                 },
-              },
+                {
+                  colorVariants: {
+                    some: {
+                      active: true,
+                      supplierAvailability: 'IN_STOCK',
+                    },
+                  },
+                },
+              ],
             },
             {
-              colorVariants: {
-                none: {
-                  active: true,
+              AND: [
+                {
+                  OR: [
+                    { specialOrderProfile: { is: null } },
+                    { specialOrderProfile: { is: { requiresColorVariants: false } } },
+                  ],
                 },
-              },
-              supplierAvailability: { not: 'OUT_OF_STOCK' },
+                {
+                  OR: [
+                    {
+                      colorVariants: {
+                        some: {
+                          active: true,
+                          supplierAvailability: 'IN_STOCK',
+                        },
+                      },
+                    },
+                    {
+                      colorVariants: {
+                        none: {
+                          active: true,
+                        },
+                      },
+                      supplierAvailability: { not: 'OUT_OF_STOCK' },
+                    },
+                  ],
+                },
+              ],
             },
           ],
         },

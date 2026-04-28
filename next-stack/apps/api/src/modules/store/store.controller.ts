@@ -1,4 +1,4 @@
-import { Controller, Get, Inject, NotFoundException, Param, Query } from '@nestjs/common';
+import { Controller, Get, Header, Inject, NotFoundException, Param, Query } from '@nestjs/common';
 import { StoreService } from './store.service.js';
 
 @Controller('store')
@@ -12,16 +12,19 @@ export class StoreController {
   }
 
   @Get('hero')
+  @Header('Cache-Control', 'no-store')
   async hero() {
     return this.storeService.getHeroConfig();
   }
 
   @Get('branding')
+  @Header('Cache-Control', 'no-store')
   async branding() {
     return this.storeService.getBrandingAssets();
   }
 
   @Get('home')
+  @Header('Cache-Control', 'no-store')
   async home() {
     return this.storeService.getHome();
   }

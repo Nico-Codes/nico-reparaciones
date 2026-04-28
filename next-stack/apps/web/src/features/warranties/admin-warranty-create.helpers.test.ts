@@ -54,6 +54,7 @@ function makeProduct(
     supplier: null,
     specialOrderProfile: null,
     hasColorOptions: false,
+    requiresColorSelection: false,
     colorOptions: [],
     lastImportedAt: null,
     createdAt: null,

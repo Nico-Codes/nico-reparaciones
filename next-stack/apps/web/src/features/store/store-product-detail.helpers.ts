@@ -13,7 +13,7 @@ export function isStoreProductSpecialOrder(item: StoreProduct | null) {
 export function canPurchaseStoreProduct(item: StoreProduct | null) {
   if (!item) return false;
   if (isStoreProductSpecialOrder(item)) {
-    if (item.hasColorOptions) {
+    if (item.requiresColorSelection || item.hasColorOptions) {
       return item.colorOptions.some((option) => option.active && option.supplierAvailability === 'IN_STOCK');
     }
     return item.supplierAvailability !== 'OUT_OF_STOCK';
@@ -43,7 +43,7 @@ export function clampStoreProductQuantity(rawValue: number, stock: number | unde
 export function getStoreProductAvailabilityLabel(item: StoreProduct | null) {
   if (!item) return 'Consultar disponibilidad';
   if (isStoreProductSpecialOrder(item)) {
-    if (item.hasColorOptions) {
+    if (item.requiresColorSelection || item.hasColorOptions) {
       const availableCount = item.colorOptions.filter((option) => option.active && option.supplierAvailability === 'IN_STOCK').length;
       return availableCount > 0 ? `${availableCount} colores disponibles` : 'Sin colores disponibles';
     }

@@ -49,6 +49,7 @@ export class CartService {
             active: true,
           },
         },
+        specialOrderProfile: { select: { id: true, requiresColorVariants: true } },
       },
     });
 
@@ -85,7 +86,8 @@ export class CartService {
       const categoryActive = product.category ? product.category.active : true;
       const isSpecialOrder = product.fulfillmentMode === 'SPECIAL_ORDER';
       const activeColorOptions = product.colorVariants.filter((variant) => variant.active);
-      const requiresColorSelection = isSpecialOrder && activeColorOptions.length > 0;
+      const requiresColorSelection =
+        isSpecialOrder && (product.specialOrderProfile?.requiresColorVariants ?? activeColorOptions.length > 0);
       const selectedVariant = row.variantId
         ? activeColorOptions.find((variant) => variant.id === row.variantId) ?? null
         : null;

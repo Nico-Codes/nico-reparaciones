@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ImagePlus, Palette, Percent, Sparkles } from 'lucide-react';
+import { ImagePlus, Percent, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SectionCard } from '@/components/ui/section-card';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -278,13 +278,23 @@ function AdminProductEditColorPanel({
   const total = product.colorOptions.filter((option) => option.active).length;
   const available = product.colorOptions.filter((option) => option.active && option.supplierAvailability === 'IN_STOCK').length;
   const outOfStock = product.colorOptions.filter((option) => option.active && option.supplierAvailability === 'OUT_OF_STOCK').length;
+  const hasPendingColorFallback = product.colorOptions.some(
+    (option) => option.active && (option.label.trim().toLowerCase() === 'color a confirmar' || option.sourceSheetKey?.endsWith('::pending-color')),
+  );
+  const colorState = product.requiresColorSelection
+    ? hasPendingColorFallback
+      ? { tone: 'warning' as const, label: 'Color a confirmar' }
+      : available > 0
+        ? { tone: 'success' as const, label: 'Colores disponibles' }
+        : { tone: 'danger' as const, label: 'Sin color real' }
+    : { tone: 'neutral' as const, label: 'Color opcional' };
 
   return (
     <SectionCard
       tone="info"
       title="Colores por proveedor"
       description="Edita colores importados o agrega uno manual para que el cliente pueda elegirlo en tienda."
-      actions={<Palette className="h-4 w-4 text-sky-600" />}
+      actions={<StatusBadge tone={colorState.tone} size="sm" label={colorState.label} />}
     >
       <div className="grid gap-2 sm:grid-cols-3">
         <ColorMetric label="Total" value={total} />

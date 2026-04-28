@@ -202,9 +202,9 @@ Notas operativas del subdominio:
   - segunda fila opcional con subcategorias cuando la categoria activa tiene hijas
   - el filtro por una subcategoria mantiene visible tambien su categoria padre activa
 - cards y detalle de producto muestran `pathLabel` cuando el item pertenece a una subcategoria
-- los productos `Por encargue` muestran badge/copy especifico y CTA `Encargar`
-- si un producto `Por encargue` tiene colores importados, el detalle publico obliga a elegir un color disponible antes de agregarlo al carrito; los colores sin stock se ven deshabilitados
-- carrito y checkout permiten esos items aunque el stock local sea `0`; la restriccion pasa por `supplierAvailability` o por la disponibilidad del color elegido
+- los productos `Por encargue` muestran badge/copy especifico; si el perfil exige color, la card usa CTA `Elegir color`
+- si un producto `Por encargue` requiere color, el detalle publico obliga a elegir una variante disponible antes de agregarlo al carrito; los colores sin stock se ven deshabilitados
+- carrito y checkout permiten esos items aunque el stock local sea `0`; la restriccion pasa por `supplierAvailability`, `requiresColorSelection` y la disponibilidad del color elegido
 
 Catalogo admin:
 
@@ -344,14 +344,14 @@ Catalogo comercial:
 Notas operativas del subdominio:
 
 - `/admin/productos` ahora ofrece el CTA `Nuevo listado de encargue`
-- la grilla/listado admin distingue `Stock real` vs `Por encargue`, muestra disponibilidad de proveedor y evita mezclar esos items en metricas de stock critico
-- el editor de producto por encargue incluye panel `Colores por proveedor` para agregar colores manuales, editar etiqueta, activar/desactivar y cambiar disponibilidad
+- la grilla/listado admin distingue `Stock real` vs `Por encargue`, muestra disponibilidad de proveedor, estado de color (`Colores disponibles`, `Sin color real`, `Color a confirmar`) y evita mezclar esos items en metricas de stock critico
+- el editor de producto por encargue incluye panel `Colores por proveedor` para agregar colores manuales, editar etiqueta, activar/desactivar, cambiar disponibilidad y detectar fallback pendiente
 - `/admin/productos/encargues/nuevo` concentra:
   - seleccion/alta de perfil de importacion
   - carga de texto o `.txt`
   - fuente opcional de colores por Google Sheet publico o CSV manual
   - preview por seccion con remapeo a categorias
-  - preview colapsado de colores vinculados, warnings de filas sin match agrupadas por seccion, motivo y sugerencias, y resumen de colores nuevos/actualizados/sin stock
+  - preview colapsado de colores vinculados, warnings de filas sin match agrupadas por seccion, motivo y sugerencias, resumen de colores nuevos/actualizados/sin stock y conteo de productos con `Color a confirmar`
   - exclusion de filas conflictivas
   - resumen de `nuevos`, `actualizados`, `sin cambios`, `sin stock proveedor` y `desactivados`
 

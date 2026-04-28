@@ -333,7 +333,7 @@ function StoreGridCard({ product }: { product: StoreProduct }) {
   const navigate = useNavigate();
   const isSpecialOrder = product.fulfillmentMode === 'SPECIAL_ORDER';
   const canPurchase = isSpecialOrder ? product.supplierAvailability !== 'OUT_OF_STOCK' : product.stock > 0;
-  const requiresColorSelection = isSpecialOrder && product.hasColorOptions;
+  const requiresColorSelection = product.requiresColorSelection;
   const actionLabel = requiresColorSelection ? 'Elegir color' : isSpecialOrder ? 'Encargar' : 'Agregar al carrito';
 
   return (

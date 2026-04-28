@@ -55,6 +55,7 @@ export class OrdersCheckoutService {
           price: true,
           name: true,
           fulfillmentMode: true,
+          specialOrderProfile: { select: { id: true, requiresColorVariants: true } },
           colorVariants: variantIds.length > 0
             ? {
                 where: { id: { in: variantIds } },
@@ -72,6 +73,11 @@ export class OrdersCheckoutService {
         }
         if (product.fulfillmentMode === 'INVENTORY' && product.stock < line.quantity) {
           throw new BadRequestException(`Stock insuficiente para ${line.name}`);
+        }
+        const requiresColorSelection =
+          product.fulfillmentMode === 'SPECIAL_ORDER' && (product.specialOrderProfile?.requiresColorVariants ?? false);
+        if (requiresColorSelection && !line.variantId) {
+          throw new BadRequestException(`Debes elegir un color para ${line.name}`);
         }
         if (product.fulfillmentMode === 'SPECIAL_ORDER' && line.variantId) {
           const variant = product.colorVariants.find((item) => item.id === line.variantId);

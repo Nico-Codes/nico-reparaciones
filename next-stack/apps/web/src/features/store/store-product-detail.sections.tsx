@@ -174,7 +174,7 @@ export function StoreProductPurchaseSection({
 }: StoreProductPurchaseSectionProps) {
   const isSpecialOrder = isStoreProductSpecialOrder(item);
   const actionLabel = getStoreProductCtaLabel(item);
-  const requiresColorSelection = isSpecialOrder && item.hasColorOptions;
+  const requiresColorSelection = item.requiresColorSelection || (isSpecialOrder && item.hasColorOptions);
   const canSubmit = canPurchase && (!requiresColorSelection || Boolean(selectedColorId));
 
   return (

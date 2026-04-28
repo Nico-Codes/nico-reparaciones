@@ -54,8 +54,9 @@ export type AdminProduct = {
   } | null;
   supplierId: string | null;
   supplier: { id: string; name: string } | null;
-  specialOrderProfile: { id: string; name: string } | null;
+  specialOrderProfile: { id: string; name: string; requiresColorVariants: boolean } | null;
   hasColorOptions: boolean;
+  requiresColorSelection: boolean;
   colorOptions: Array<{
     id: string;
     label: string;
@@ -81,6 +82,7 @@ export type SpecialOrderProfile = {
   fallbackMarginPercent: number;
   defaultColorSheetUrl: string | null;
   rememberColorSheet: boolean;
+  requiresColorVariants: boolean;
   lastBatch: { id: string; createdAt: string } | null;
   createdAt: string;
   updatedAt: string;
@@ -188,6 +190,8 @@ export type SpecialOrderImportPreview = {
     updatedCount: number;
     unchangedCount: number;
     deactivatedCount: number;
+    fallbackCount: number;
+    missingRequiredColorCount: number;
     warnings: Array<{
       rowId: string;
       rowNumber: number;
@@ -226,6 +230,7 @@ export type SpecialOrderImportPreview = {
         status: 'new' | 'availability_update' | 'unchanged';
         existingVariantId: string | null;
         included: boolean;
+        fallback: boolean;
       }>;
     }>;
   };
@@ -323,6 +328,7 @@ export const catalogAdminApi = {
     fallbackMarginPercent: number;
     defaultColorSheetUrl?: string | null;
     rememberColorSheet?: boolean;
+    requiresColorVariants?: boolean;
   }) {
     return authJsonRequest<{ item: SpecialOrderProfile }>('/catalog-admin/special-order-profiles', {
       method: 'POST',
@@ -340,6 +346,7 @@ export const catalogAdminApi = {
       fallbackMarginPercent: number;
       defaultColorSheetUrl: string | null;
       rememberColorSheet: boolean;
+      requiresColorVariants: boolean;
     }>,
   ) {
     return authJsonRequest<{ item: SpecialOrderProfile }>(`/catalog-admin/special-order-profiles/${encodeURIComponent(id)}`, {

@@ -70,6 +70,7 @@ export type SpecialOrderProfileCreateInput = {
   fallbackMarginPercent: number;
   defaultColorSheetUrl?: string | null;
   rememberColorSheet?: boolean;
+  requiresColorVariants?: boolean;
 };
 
 export type SpecialOrderProfileUpdateInput = Partial<SpecialOrderProfileCreateInput>;
@@ -141,7 +142,7 @@ export type ProductWithRelations = Prisma.ProductGetPayload<{
       };
     };
     supplier: { select: { id: true; name: true } };
-    specialOrderProfile: { select: { id: true; name: true } };
+    specialOrderProfile: { select: { id: true; name: true; requiresColorVariants: true } };
     colorVariants: {
       select: {
         id: true;

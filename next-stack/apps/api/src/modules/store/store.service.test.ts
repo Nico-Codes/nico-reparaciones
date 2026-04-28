@@ -3,6 +3,7 @@ import { StoreService } from './store.service.js';
 
 describe('StoreService', () => {
   const originalStoreImageBaseUrl = process.env.STORE_IMAGE_BASE_URL;
+  const originalApiUrl = process.env.API_URL;
   const expectedPublicWhere = {
     active: true,
     OR: [
@@ -11,20 +12,49 @@ describe('StoreService', () => {
         fulfillmentMode: 'SPECIAL_ORDER',
         OR: [
           {
-            colorVariants: {
-              some: {
-                active: true,
-                supplierAvailability: 'IN_STOCK',
+            AND: [
+              {
+                specialOrderProfile: { is: { requiresColorVariants: true } },
               },
-            },
+              {
+                colorVariants: {
+                  some: {
+                    active: true,
+                    supplierAvailability: 'IN_STOCK',
+                  },
+                },
+              },
+            ],
           },
           {
-            colorVariants: {
-              none: {
-                active: true,
+            AND: [
+              {
+                OR: [
+                  { specialOrderProfile: { is: null } },
+                  { specialOrderProfile: { is: { requiresColorVariants: false } } },
+                ],
               },
-            },
-            supplierAvailability: { not: 'OUT_OF_STOCK' },
+              {
+                OR: [
+                  {
+                    colorVariants: {
+                      some: {
+                        active: true,
+                        supplierAvailability: 'IN_STOCK',
+                      },
+                    },
+                  },
+                  {
+                    colorVariants: {
+                      none: {
+                        active: true,
+                      },
+                    },
+                    supplierAvailability: { not: 'OUT_OF_STOCK' },
+                  },
+                ],
+              },
+            ],
           },
         ],
       },
@@ -34,10 +64,13 @@ describe('StoreService', () => {
   afterEach(() => {
     if (originalStoreImageBaseUrl === undefined) delete process.env.STORE_IMAGE_BASE_URL;
     else process.env.STORE_IMAGE_BASE_URL = originalStoreImageBaseUrl;
+    if (originalApiUrl === undefined) delete process.env.API_URL;
+    else process.env.API_URL = originalApiUrl;
   });
 
-  it('returns branding and hero assets as web-public paths instead of storage base URLs', async () => {
+  it('returns dynamic branding and hero assets through the API origin with cache busting', async () => {
     process.env.STORE_IMAGE_BASE_URL = 'http://127.0.0.1:8000';
+    process.env.API_URL = 'http://localhost:3001';
     const updatedAt = new Date('2026-04-16T17:40:00.000Z');
 
     const prisma = {
@@ -61,8 +94,8 @@ describe('StoreService', () => {
 
     await expect(service.getBrandingAssets()).resolves.toMatchObject({
       authPanelImages: {
-        desktop: `/brand-assets/identity/auth-login-background.png?v=${updatedAt.getTime()}`,
-        mobile: `/brand-assets/identity/auth-login-background-mobile.png?v=${updatedAt.getTime()}`,
+        desktop: `http://localhost:3001/brand-assets/identity/auth-login-background.png?v=${updatedAt.getTime()}`,
+        mobile: `http://localhost:3001/brand-assets/identity/auth-login-background-mobile.png?v=${updatedAt.getTime()}`,
       },
       authPanelContent: {
         eyebrow: 'Ingresa',
@@ -75,8 +108,8 @@ describe('StoreService', () => {
     });
 
     await expect(service.getHeroConfig()).resolves.toMatchObject({
-      imageDesktop: `/brand-assets/identity/store-hero-desktop.png?v=${updatedAt.getTime()}`,
-      imageMobile: `/brand-assets/identity/store-hero-mobile.png?v=${updatedAt.getTime()}`,
+      imageDesktop: `http://localhost:3001/brand-assets/identity/store-hero-desktop.png?v=${updatedAt.getTime()}`,
+      imageMobile: `http://localhost:3001/brand-assets/identity/store-hero-mobile.png?v=${updatedAt.getTime()}`,
     });
   });
 

@@ -12,6 +12,58 @@
 
 ---
 
+### 2026-04-28 - Codex
+- Alcance: corregir refresco de imagen editable de portada de tienda.
+- Tipo de intervencion: ajuste de cache HTTP, resolucion de URLs dinamicas de assets y preview admin alineada al origen API.
+- Archivos tocados:
+  - `next-stack/apps/api/src/modules/store/{store.controller.ts,store.service.ts,store.service.test.ts}`
+  - `next-stack/apps/web/src/features/store/api.ts`
+  - `next-stack/apps/web/src/features/admin/brandAssetsApi.ts`
+  - `project-docs/backend/BACKEND_MAP.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. La tienda pide portada/branding/home sin cache y los `brand-assets` editables se sirven desde `API_URL` con `?v=updatedAt`, evitando que la portada siga mostrando una imagen anterior tras subir un archivo nuevo.
+- Validaciones ejecutadas:
+  - `npm run test --workspace @nico/api -- store.service.test.ts`
+  - `npm run typecheck --workspace @nico/api`
+  - `npm run typecheck --workspace @nico/web`
+  - `npm run test --workspace @nico/api`
+  - `npm run build --workspace @nico/api`
+  - `npm run test --workspace @nico/web`
+  - `npm run build --workspace @nico/web`
+  - `npm run smoke:web`
+  - `git diff --check`
+  - `GET http://localhost:3001/api/store/hero` verificado con `Cache-Control: no-store` y URLs `brand-assets` absolutas contra API.
+- Riesgos / notas:
+  - La terminal PowerShell integrada quedo bloqueada incluso para comandos simples; las validaciones se ejecutaron via Node `child_process`.
+
+---
+
+### 2026-04-27 - Codex
+- Alcance: hacer obligatoria la seleccion de color para perfiles de productos por encargue.
+- Tipo de intervencion: migracion Prisma, ajuste de matching/fallback de colores, endurecimiento de store/cart/checkout, UI admin/store y documentacion viva.
+- Archivos tocados:
+  - `next-stack/apps/api/prisma/{schema.prisma,migrations/20260427090000_add_special_order_requires_color_variants/*}`
+  - `next-stack/apps/api/src/modules/{catalog-admin,store,cart,orders}/*`
+  - `next-stack/apps/web/src/features/{catalogAdmin,store,cart,orders,admin,warranties}/*`
+  - `project-docs/{DECISIONS_LOG.md,backend/BACKEND_MAP.md,frontend/FRONTEND_MAP.md,architecture/BUSINESS_RULES.md}`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. Los perfiles de encargue actuales/nuevos exigen variantes de color; el importador matchea casos donde el TXT trae RAM+almacenamiento y el CSV solo almacenamiento; si un producto disponible queda sin color real se crea `Color a confirmar`; tienda, carrito y checkout exigen `variantId` cuando corresponde.
+- Validaciones ejecutadas:
+  - `cmd /c npm run db:migrate --workspace @nico/api`
+  - `cmd /c npm run db:generate --workspace @nico/api`
+  - `cmd /c npm run typecheck --workspace @nico/api`
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/api`
+  - `cmd /c npm run build --workspace @nico/api`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `cmd /c git diff --check`
+- Riesgos / notas:
+  - Se detuvo el proceso local `dev:api` para liberar el lock de Windows sobre el cliente Prisma antes de regenerarlo.
+
+---
+
 ### 2026-04-27 - Codex
 - Alcance: correccion de matching, visibilidad y edicion de colores para productos por encargue.
 - Tipo de intervencion: ajuste de parser/preview backend, endpoints admin de variantes, panel de colores en producto, refuerzo de tienda y documentacion viva.

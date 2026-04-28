@@ -32,6 +32,7 @@ function makeProduct(input: Partial<AdminProduct> & Pick<AdminProduct, 'id' | 'n
     supplier: input.supplier ?? null,
     specialOrderProfile: input.specialOrderProfile ?? null,
     hasColorOptions: input.hasColorOptions ?? false,
+    requiresColorSelection: input.requiresColorSelection ?? false,
     colorOptions: input.colorOptions ?? [],
     lastImportedAt: input.lastImportedAt ?? null,
     createdAt: input.createdAt ?? null,

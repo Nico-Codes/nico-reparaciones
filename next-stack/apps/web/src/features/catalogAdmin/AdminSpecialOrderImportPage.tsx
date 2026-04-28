@@ -42,6 +42,7 @@ type ProfileDraft = {
   fallbackMarginPercent: string;
   defaultColorSheetUrl: string;
   rememberColorSheet: boolean;
+  requiresColorVariants: boolean;
 };
 
 type SectionMappingDraft = {
@@ -747,6 +748,17 @@ export function AdminSpecialOrderImportPage() {
                     Recordar la URL de la hoja de colores en este perfil
                   </label>
 
+                  <label className="flex items-center gap-3 rounded-2xl border border-sky-200 bg-sky-50/60 px-4 py-3 text-sm text-sky-900">
+                    <input
+                      type="checkbox"
+                      checked={profileDraft.requiresColorVariants}
+                      onChange={(event) =>
+                        setProfileDraft((current) => ({ ...current, requiresColorVariants: event.target.checked }))
+                      }
+                    />
+                    Este perfil requiere color en tienda
+                  </label>
+
                   <div className="flex flex-wrap gap-3">
                     <Button type="submit" disabled={profileSaving}>
                       {profileSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
@@ -951,6 +963,12 @@ export function AdminSpecialOrderImportPage() {
                       <MetricTile label="Colores nuevos" value={String(preview.colorImport.newCount)} tone="success" />
                       <MetricTile label="Colores actualizados" value={String(preview.colorImport.updatedCount)} tone="info" />
                       <MetricTile label="Sin match" value={String(preview.colorImport.unmatchedCount)} tone="warning" />
+                      <MetricTile
+                        label="Productos sin color real"
+                        value={String(preview.colorImport.missingRequiredColorCount)}
+                        tone={preview.colorImport.missingRequiredColorCount > 0 ? 'warning' : 'success'}
+                      />
+                      <MetricTile label="Color a confirmar" value={String(preview.colorImport.fallbackCount)} tone="warning" />
                       <MetricTile label="Colores sin stock" value={String(preview.colorImport.outOfStockCount)} tone="warning" />
                       <MetricTile label="Colores a desactivar" value={String(preview.colorImport.deactivatedCount)} tone="danger" />
                     </div>
@@ -1316,10 +1334,24 @@ export function AdminSpecialOrderImportPage() {
                         <div className="flex flex-wrap gap-2">
                           <StatusBadge
                             size="sm"
-                            tone={preview.colorImport.sourceKind === 'csv' ? 'accent' : 'info'}
-                            label={preview.colorImport.sourceKind === 'csv' ? 'Fuente: CSV' : 'Fuente: Google Sheet'}
+                            tone={preview.colorImport.sourceKind === 'csv' ? 'accent' : preview.colorImport.sourceKind === 'google_sheet' ? 'info' : 'warning'}
+                            label={
+                              preview.colorImport.sourceKind === 'csv'
+                                ? 'Fuente: CSV'
+                                : preview.colorImport.sourceKind === 'google_sheet'
+                                  ? 'Fuente: Google Sheet'
+                                  : 'Sin fuente de colores'
+                            }
                           />
                           <StatusBadge size="sm" tone="neutral" label={`${preview.colorImport.rowsParsed} filas leidas`} />
+                          <StatusBadge
+                            size="sm"
+                            tone={preview.colorImport.missingRequiredColorCount > 0 ? 'warning' : 'success'}
+                            label={`${preview.colorImport.missingRequiredColorCount} productos sin color real`}
+                          />
+                          {preview.colorImport.fallbackCount > 0 ? (
+                            <StatusBadge size="sm" tone="warning" label={`${preview.colorImport.fallbackCount} con Color a confirmar`} />
+                          ) : null}
                           {preview.colorImport.sourceLabel ? (
                             <StatusBadge size="sm" tone="neutral" label={preview.colorImport.sourceLabel} />
                           ) : null}
@@ -1387,6 +1419,9 @@ export function AdminSpecialOrderImportPage() {
                                       {group.items.some((item) => item.supplierAvailability === 'OUT_OF_STOCK') ? (
                                         <StatusBadge size="sm" tone="warning" label="Incluye agotados" />
                                       ) : null}
+                                      {group.items.some((item) => item.fallback) ? (
+                                        <StatusBadge size="sm" tone="warning" label="Color a confirmar" />
+                                      ) : null}
                                     </div>
                                   </div>
                                 </summary>
@@ -1401,6 +1436,7 @@ export function AdminSpecialOrderImportPage() {
                                       <div className="flex flex-wrap gap-2">
                                         <StatusBadge size="sm" tone={item.status === 'new' ? 'success' : item.status === 'availability_update' ? 'info' : 'neutral'} label={item.status === 'new' ? 'Nuevo' : item.status === 'availability_update' ? 'Actualiza' : 'Sin cambios'} />
                                         <StatusBadge size="sm" tone={item.supplierAvailability === 'OUT_OF_STOCK' ? 'warning' : 'success'} label={item.supplierAvailability === 'OUT_OF_STOCK' ? 'Sin stock' : 'Stock'} />
+                                        {item.fallback ? <StatusBadge size="sm" tone="warning" label="Fallback" /> : null}
                                       </div>
                                     </div>
                                   ))}
@@ -1505,6 +1541,7 @@ function emptyProfileDraft(supplierId = ''): ProfileDraft {
     fallbackMarginPercent: '15',
     defaultColorSheetUrl: '',
     rememberColorSheet: false,
+    requiresColorVariants: true,
   };
 }
 
@@ -1522,6 +1559,7 @@ function profileToDraft(profile: SpecialOrderProfile): ProfileDraft {
     fallbackMarginPercent: formatDecimalInput(profile.fallbackMarginPercent),
     defaultColorSheetUrl: profile.defaultColorSheetUrl ?? '',
     rememberColorSheet: profile.rememberColorSheet,
+    requiresColorVariants: profile.requiresColorVariants,
   };
 }
 
@@ -1535,6 +1573,7 @@ function normalizeProfileDraft(draft: ProfileDraft) {
     fallbackMarginPercent: parseOptionalNumber(draft.fallbackMarginPercent) ?? 0,
     defaultColorSheetUrl: draft.defaultColorSheetUrl.trim() || null,
     rememberColorSheet: draft.rememberColorSheet,
+    requiresColorVariants: draft.requiresColorVariants,
   };
 }
 

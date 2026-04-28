@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { CatalogAdminPricingService } from './catalog-admin-pricing.service.js';
 import { CatalogAdminSupportService } from './catalog-admin-support.service.js';
 import {
+  buildSpecialOrderColorBaseCandidates,
   buildSpecialOrderColorSourceKey,
   extractSpecialOrderColorLabel,
   googleSheetUrlToCsvExportUrl,
@@ -104,6 +105,7 @@ type ColorPreviewItem = {
   status: 'new' | 'availability_update' | 'unchanged';
   existingVariantId: string | null;
   included: boolean;
+  fallback: boolean;
 };
 
 type ColorPreviewWarning = {
@@ -145,6 +147,8 @@ type ColorPreviewResult = {
   updatedCount: number;
   unchangedCount: number;
   deactivatedCount: number;
+  fallbackCount: number;
+  missingRequiredColorCount: number;
   items: ColorPreviewGroup[];
   warnings: ColorPreviewWarning[];
   deactivated: Array<{
@@ -155,6 +159,9 @@ type ColorPreviewResult = {
     label: string;
   }>;
 };
+
+const SPECIAL_ORDER_PENDING_COLOR_LABEL = 'Color a confirmar';
+const SPECIAL_ORDER_PENDING_COLOR_SUFFIX = 'pending-color';
 
 @Injectable()
 export class CatalogAdminSpecialOrderService {
@@ -197,6 +204,7 @@ export class CatalogAdminSpecialOrderService {
           fallbackMarginPercent: this.decimal(this.clampDecimalInput(input.fallbackMarginPercent, 0, 500, 0)),
           defaultColorSheetUrl: this.support.nullable(input.defaultColorSheetUrl),
           rememberColorSheet: input.rememberColorSheet ?? false,
+          requiresColorVariants: input.requiresColorVariants ?? true,
         },
         include: {
           supplier: { select: { id: true, name: true } },
@@ -243,6 +251,7 @@ export class CatalogAdminSpecialOrderService {
             ? { defaultColorSheetUrl: this.support.nullable(input.defaultColorSheetUrl) }
             : {}),
           ...(input.rememberColorSheet !== undefined ? { rememberColorSheet: input.rememberColorSheet } : {}),
+          ...(input.requiresColorVariants !== undefined ? { requiresColorVariants: input.requiresColorVariants } : {}),
           ...(input.supplierId !== undefined ? { supplierId } : {}),
         },
         include: {
@@ -446,6 +455,8 @@ export class CatalogAdminSpecialOrderService {
               updatedCount: preview.colorImport.updatedCount,
               unchangedCount: preview.colorImport.unchangedCount,
               deactivatedCount: preview.colorImport.deactivatedCount,
+              fallbackCount: preview.colorImport.fallbackCount,
+              missingRequiredColorCount: preview.colorImport.missingRequiredColorCount,
             },
           }),
           createdBy: this.support.nullable(input.createdBy),
@@ -697,6 +708,7 @@ export class CatalogAdminSpecialOrderService {
       parsedColors,
       items,
       existingProducts: Array.from(existingBySourceKey.values()),
+      requiresColorVariants: profile.requiresColorVariants,
     });
 
     const summary = {
@@ -866,6 +878,7 @@ export class CatalogAdminSpecialOrderService {
     fallbackMarginPercent: Prisma.Decimal | number;
     defaultColorSheetUrl?: string | null;
     rememberColorSheet?: boolean;
+    requiresColorVariants?: boolean;
     supplier: { id: string; name: string };
     createdAt: Date;
     updatedAt: Date;
@@ -881,6 +894,7 @@ export class CatalogAdminSpecialOrderService {
       fallbackMarginPercent: Number(profile.fallbackMarginPercent),
       defaultColorSheetUrl: profile.defaultColorSheetUrl ?? null,
       rememberColorSheet: profile.rememberColorSheet ?? false,
+      requiresColorVariants: profile.requiresColorVariants ?? true,
       lastBatch: profile.batches?.[0]
         ? {
             id: profile.batches[0].id,
@@ -1030,11 +1044,13 @@ export class CatalogAdminSpecialOrderService {
       sectionName: string;
       sourceKey: string;
       title: string;
+      supplierAvailability: 'IN_STOCK' | 'OUT_OF_STOCK' | 'UNKNOWN';
       existingProductId: string | null;
     }>;
     existingProducts: ExistingImportedProduct[];
+    requiresColorVariants: boolean;
   }): ColorPreviewResult {
-    if (!input.colorSource || !input.parsedColors) {
+    if (!input.colorSource && !input.requiresColorVariants) {
       return {
         enabled: false,
         sourceKind: null,
@@ -1048,6 +1064,8 @@ export class CatalogAdminSpecialOrderService {
         updatedCount: 0,
         unchangedCount: 0,
         deactivatedCount: 0,
+        fallbackCount: 0,
+        missingRequiredColorCount: 0,
         items: [],
         warnings: [],
         deactivated: [],
@@ -1075,12 +1093,7 @@ export class CatalogAdminSpecialOrderService {
         sourceKey: item.sourceKey,
         title: item.title,
         sectionName: item.sectionName,
-        normalizedCandidates: Array.from(
-          new Set([
-            normalizeSpecialOrderText(item.title),
-            normalizeSpecialOrderText(`${item.sectionName} ${item.title}`),
-          ].filter(Boolean)),
-        ),
+        normalizedCandidates: buildSpecialOrderColorBaseCandidates(item.title, item.sectionName),
       });
       candidatesBySectionKey.set(item.sectionKey, bucket);
     }
@@ -1089,7 +1102,7 @@ export class CatalogAdminSpecialOrderService {
     const warnings: ColorPreviewWarning[] = [];
     const matchedSourceKeysByProduct = new Map<string, Set<string>>();
 
-    for (const row of input.parsedColors.rows) {
+    for (const row of input.parsedColors?.rows ?? []) {
       const sectionCandidates = candidatesBySectionKey.get(row.sectionKey) ?? [];
       if (sectionCandidates.length === 0) {
         const sectionItems = input.items.filter((item) => item.sectionKey === row.sectionKey);
@@ -1181,6 +1194,7 @@ export class CatalogAdminSpecialOrderService {
         normalizedRowTitle: row.normalizedTitle,
         productTitle: match.title,
         productSectionName: match.sectionName,
+        normalizedBaseCandidates: match.normalizedCandidates,
       });
       if (!colorLabel) {
         warnings.push({
@@ -1239,6 +1253,7 @@ export class CatalogAdminSpecialOrderService {
         status,
         existingVariantId: existingVariant?.id ?? null,
         included: true,
+        fallback: false,
       };
 
       const group = matchedGroups.get(match.sourceKey) ?? {
@@ -1272,24 +1287,50 @@ export class CatalogAdminSpecialOrderService {
       matchedSourceKeysByProduct.set(match.sourceKey, matchedKeys);
     }
 
-    const deactivated = baseItems.flatMap((item) => {
-      const existingProduct = existingBySourceKey.get(item.sourceKey);
-      if (!existingProduct) return [];
-      const matchedKeys = matchedSourceKeysByProduct.get(item.sourceKey) ?? new Set<string>();
-      return existingProduct.colorVariants
-        .filter((variant) => variant.active)
-        .filter((variant) => {
-          const sourceKey = variant.sourceSheetKey ?? buildSpecialOrderColorSourceKey(item.sourceKey, variant.label);
-          return !matchedKeys.has(sourceKey);
+    const fallbackItems = input.requiresColorVariants
+      ? baseItems
+          .filter((item) => item.included && item.status !== 'conflict' && item.supplierAvailability !== 'OUT_OF_STOCK')
+          .filter((item) => !matchedGroups.has(item.sourceKey))
+          .map((item) => this.buildPendingColorPreviewItem(item, existingBySourceKey.get(item.sourceKey) ?? null))
+      : [];
+
+    for (const colorItem of fallbackItems) {
+      const group = matchedGroups.get(colorItem.productSourceKey) ?? {
+        productSourceKey: colorItem.productSourceKey,
+        productTitle: colorItem.productTitle,
+        productRowId: colorItem.productRowId,
+        sectionKey: colorItem.sectionKey,
+        sectionName: colorItem.sectionName,
+        items: [],
+      };
+      group.items.push(colorItem);
+      matchedGroups.set(colorItem.productSourceKey, group);
+
+      const matchedKeys = matchedSourceKeysByProduct.get(colorItem.productSourceKey) ?? new Set<string>();
+      matchedKeys.add(colorItem.sourceSheetKey);
+      matchedSourceKeysByProduct.set(colorItem.productSourceKey, matchedKeys);
+    }
+
+    const deactivated = input.colorSource
+      ? baseItems.flatMap((item) => {
+          const existingProduct = existingBySourceKey.get(item.sourceKey);
+          if (!existingProduct) return [];
+          const matchedKeys = matchedSourceKeysByProduct.get(item.sourceKey) ?? new Set<string>();
+          return existingProduct.colorVariants
+            .filter((variant) => variant.active)
+            .filter((variant) => {
+              const sourceKey = variant.sourceSheetKey ?? buildSpecialOrderColorSourceKey(item.sourceKey, variant.label);
+              return !matchedKeys.has(sourceKey);
+            })
+            .map((variant) => ({
+              productId: existingProduct.id,
+              productSourceKey: item.sourceKey,
+              productTitle: item.title,
+              variantId: variant.id,
+              label: variant.label,
+            }));
         })
-        .map((variant) => ({
-          productId: existingProduct.id,
-          productSourceKey: item.sourceKey,
-          productTitle: item.title,
-          variantId: variant.id,
-          label: variant.label,
-        }));
-    });
+      : [];
 
     const groups = Array.from(matchedGroups.values())
       .map((group) => ({
@@ -1301,10 +1342,10 @@ export class CatalogAdminSpecialOrderService {
     const allItems = groups.flatMap((group) => group.items);
     return {
       enabled: true,
-      sourceKind: input.colorSource.kind,
-      sourceLabel: input.colorSource.label,
-      sourceUrl: input.colorSource.kind === 'google_sheet' ? input.colorSource.label : null,
-      rowsParsed: input.parsedColors.rows.length,
+      sourceKind: input.colorSource?.kind ?? null,
+      sourceLabel: input.colorSource?.label ?? null,
+      sourceUrl: input.colorSource?.kind === 'google_sheet' ? input.colorSource.label : null,
+      rowsParsed: input.parsedColors?.rows.length ?? 0,
       matchedCount: allItems.length,
       unmatchedCount: warnings.length,
       outOfStockCount: allItems.filter((item) => item.supplierAvailability === 'OUT_OF_STOCK').length,
@@ -1312,10 +1353,60 @@ export class CatalogAdminSpecialOrderService {
       updatedCount: allItems.filter((item) => item.status === 'availability_update').length,
       unchangedCount: allItems.filter((item) => item.status === 'unchanged').length,
       deactivatedCount: deactivated.length,
+      fallbackCount: fallbackItems.length,
+      missingRequiredColorCount: fallbackItems.length,
       items: groups,
       warnings,
       deactivated,
     };
+  }
+
+  private buildPendingColorPreviewItem(
+    item: {
+      rowId: string;
+      sectionKey: string;
+      sectionName: string;
+      sourceKey: string;
+      title: string;
+    },
+    existingProduct: ExistingImportedProduct | null,
+  ): ColorPreviewItem {
+    const sourceSheetKey = this.buildPendingColorSourceKey(item.sourceKey);
+    const normalizedLabel = normalizeSpecialOrderText(SPECIAL_ORDER_PENDING_COLOR_LABEL);
+    const existingVariant =
+      existingProduct?.colorVariants.find(
+        (variant) => variant.sourceSheetKey === sourceSheetKey || variant.normalizedLabel === normalizedLabel,
+      ) ?? null;
+    const status: ColorPreviewItem['status'] = !existingVariant
+      ? 'new'
+      : !existingVariant.active ||
+          existingVariant.supplierAvailability !== 'IN_STOCK' ||
+          existingVariant.label !== SPECIAL_ORDER_PENDING_COLOR_LABEL
+        ? 'availability_update'
+        : 'unchanged';
+
+    return {
+      rowId: `fallback:${item.rowId}`,
+      rowNumber: 0,
+      sectionKey: item.sectionKey,
+      sectionName: item.sectionName,
+      rawTitle: item.title,
+      productSourceKey: item.sourceKey,
+      productTitle: item.title,
+      productRowId: item.rowId,
+      label: SPECIAL_ORDER_PENDING_COLOR_LABEL,
+      normalizedLabel,
+      sourceSheetKey,
+      supplierAvailability: 'IN_STOCK',
+      status,
+      existingVariantId: existingVariant?.id ?? null,
+      included: true,
+      fallback: true,
+    };
+  }
+
+  private buildPendingColorSourceKey(productSourceKey: string) {
+    return `${productSourceKey}::${SPECIAL_ORDER_PENDING_COLOR_SUFFIX}`;
   }
 
   private rankColorMatches(
@@ -1329,12 +1420,7 @@ export class CatalogAdminSpecialOrderService {
   ) {
     return items
       .map((item) => {
-        const normalizedCandidates = Array.from(
-          new Set([
-            normalizeSpecialOrderText(item.title),
-            normalizeSpecialOrderText(`${item.sectionName} ${item.title}`),
-          ].filter(Boolean)),
-        );
+        const normalizedCandidates = buildSpecialOrderColorBaseCandidates(item.title, item.sectionName);
         const bestLength = Math.max(
           ...normalizedCandidates
             .filter((normalizedBase) => row.normalizedTitle === normalizedBase || row.normalizedTitle.startsWith(`${normalizedBase} `))

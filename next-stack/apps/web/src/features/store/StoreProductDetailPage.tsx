@@ -64,7 +64,7 @@ export function StoreProductDetailPage() {
 
   function addToCart() {
     if (!item || !canPurchase) return;
-    if (item.fulfillmentMode === 'SPECIAL_ORDER' && item.hasColorOptions && !selectedColorId) return;
+    if (item.requiresColorSelection && !selectedColorId) return;
     cartStorage.add(item.id, qty, { productName: item.name, variantId: selectedColorId });
   }
 

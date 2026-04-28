@@ -63,7 +63,7 @@ export class CatalogAdminProductsService {
           },
         },
         supplier: { select: { id: true, name: true } },
-        specialOrderProfile: { select: { id: true, name: true } },
+        specialOrderProfile: { select: { id: true, name: true, requiresColorVariants: true } },
         colorVariants: {
           select: {
             id: true,
@@ -100,7 +100,7 @@ export class CatalogAdminProductsService {
           },
         },
         supplier: { select: { id: true, name: true } },
-        specialOrderProfile: { select: { id: true, name: true } },
+        specialOrderProfile: { select: { id: true, name: true, requiresColorVariants: true } },
         colorVariants: {
           select: {
             id: true,
@@ -173,7 +173,7 @@ export class CatalogAdminProductsService {
             },
           },
           supplier: { select: { id: true, name: true } },
-          specialOrderProfile: { select: { id: true, name: true } },
+          specialOrderProfile: { select: { id: true, name: true, requiresColorVariants: true } },
           colorVariants: {
             select: {
               id: true,
@@ -269,7 +269,7 @@ export class CatalogAdminProductsService {
             },
           },
           supplier: { select: { id: true, name: true } },
-          specialOrderProfile: { select: { id: true, name: true } },
+          specialOrderProfile: { select: { id: true, name: true, requiresColorVariants: true } },
           colorVariants: {
             select: {
               id: true,
@@ -390,7 +390,7 @@ export class CatalogAdminProductsService {
           },
         },
         supplier: { select: { id: true, name: true } },
-        specialOrderProfile: { select: { id: true, name: true } },
+        specialOrderProfile: { select: { id: true, name: true, requiresColorVariants: true } },
         colorVariants: {
           select: {
             id: true,
@@ -430,7 +430,7 @@ export class CatalogAdminProductsService {
           },
         },
         supplier: { select: { id: true, name: true } },
-        specialOrderProfile: { select: { id: true, name: true } },
+        specialOrderProfile: { select: { id: true, name: true, requiresColorVariants: true } },
         colorVariants: {
           select: {
             id: true,
@@ -466,7 +466,7 @@ export class CatalogAdminProductsService {
           },
         },
         supplier: { select: { id: true, name: true } },
-        specialOrderProfile: { select: { id: true, name: true } },
+        specialOrderProfile: { select: { id: true, name: true, requiresColorVariants: true } },
         colorVariants: {
           select: {
             id: true,
@@ -526,9 +526,15 @@ export class CatalogAdminProductsService {
       supplierId: product.supplierId ?? null,
       supplier: product.supplier ? { id: product.supplier.id, name: product.supplier.name } : null,
       specialOrderProfile: product.specialOrderProfile
-        ? { id: product.specialOrderProfile.id, name: product.specialOrderProfile.name }
+        ? {
+            id: product.specialOrderProfile.id,
+            name: product.specialOrderProfile.name,
+            requiresColorVariants: product.specialOrderProfile.requiresColorVariants,
+          }
         : null,
       hasColorOptions: product.colorVariants.some((variant) => variant.active),
+      requiresColorSelection:
+        product.fulfillmentMode === 'SPECIAL_ORDER' && (product.specialOrderProfile?.requiresColorVariants ?? true),
       colorOptions: product.colorVariants.map((variant) => ({
         id: variant.id,
         label: variant.label,

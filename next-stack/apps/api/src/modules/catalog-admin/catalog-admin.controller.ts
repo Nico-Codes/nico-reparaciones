@@ -49,6 +49,7 @@ const specialOrderProfileSchema = z.object({
   fallbackMarginPercent: z.number().min(0).max(500),
   defaultColorSheetUrl: z.string().trim().url().max(2000).optional().nullable(),
   rememberColorSheet: z.boolean().optional(),
+  requiresColorVariants: z.boolean().optional(),
 });
 const specialOrderProfilePatchSchema = specialOrderProfileSchema.partial();
 

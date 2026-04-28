@@ -485,6 +485,7 @@ model SpecialOrderImportProfile {
   fallbackMarginPercent Decimal   @default(0) @db.Decimal(7, 2)
   defaultColorSheetUrl  String?
   rememberColorSheet    Boolean   @default(false)
+  requiresColorVariants Boolean   @default(true)
   sectionCategoryMapJson String?
   rememberedExcludedSectionKeysJson String?
   rememberedExcludedSourceKeysJson String?

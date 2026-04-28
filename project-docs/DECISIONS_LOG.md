@@ -20,6 +20,20 @@ Registrar decisiones tecnicas confirmadas para evitar dependencia de memoria ora
 
 ---
 
+### [DL-0132]
+- Fecha: 2026-04-27
+- Estado: aceptada
+- Tema: perfiles de encargue con color obligatorio y fallback operativo
+- Contexto: algunos dispositivos por encargue quedaban publicados sin selector de color aunque el proveedor enviaba colores en la hoja. El caso real `Samsung S25 Ultra 12/1TB 5G DS` vs filas `Samsung S25 Ultra 1TB 5G DS Negro` mostraba que el matching literal no cubria listados donde el TXT incluye RAM y el CSV solo almacenamiento.
+- Decision: agregar `requiresColorVariants` en `SpecialOrderImportProfile`, con default/backfill `true`, y usarlo como regla de publicacion. El matching de colores ahora genera candidatos flexibles quitando RAM antes del almacenamiento solo cuando queda un candidato unico. Si un producto incluido y disponible sigue sin color real, el preview/aplicacion crea o actualiza una variante fallback `Color a confirmar` con `sourceSheetKey` estable `sourceKey::pending-color`.
+- Impacto: un producto por encargue de un perfil que exige color no queda comprable sin `variantId`. La tienda solo publica esos productos si tienen al menos una variante activa disponible, las cards envian al detalle con `Elegir color`, carrito/checkout rechazan lineas sin color y admin muestra si el item tiene `Colores disponibles`, `Sin color real` o `Color a confirmar`.
+- Alternativas consideradas: ocultar todo producto sin match de color o seguir permitiendo productos por encargue sin variantes; descartado porque lo primero bloquea ventas recuperables y lo segundo reproduce el problema operativo original.
+- Archivos / modulos afectados: `next-stack/apps/api/prisma/*`, `next-stack/apps/api/src/modules/{catalog-admin,store,cart,orders}/*`, `next-stack/apps/web/src/features/{catalogAdmin,store}/*`, `project-docs/{backend/BACKEND_MAP.md,frontend/FRONTEND_MAP.md,architecture/BUSINESS_RULES.md}`, `CHANGELOG_AI.md`.
+- Validacion requerida: `db:migrate --workspace @nico/api`, typecheck/test/build API y web, `smoke:web`, prueba manual con producto matcheado real, fallback `Color a confirmar` y checkout sin `variantId`.
+- Responsable: Codex + operador humano
+
+---
+
 ### [DL-0131]
 - Fecha: 2026-04-27
 - Estado: aceptada

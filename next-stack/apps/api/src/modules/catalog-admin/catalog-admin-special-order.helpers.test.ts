@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildSpecialOrderColorBaseCandidates,
   extractSpecialOrderColorLabel,
   googleSheetUrlToCsvExportUrl,
   normalizeSpecialOrderProductBaseTitle,
@@ -216,6 +217,29 @@ Samsung A17 8/256 GB;Azul claro;;Sin Stock
         productSectionName: 'XIAOMI',
       }),
     ).toBe('Azul');
+  });
+
+  it('genera candidatos flexibles cuando el TXT trae RAM mas almacenamiento y el CSV solo almacenamiento', () => {
+    expect(buildSpecialOrderColorBaseCandidates('Samsung S25 Ultra 12/1TB 5G DS', 'SAMSUNG')).toContain(
+      'samsung s25 ultra 1 tb 5g ds',
+    );
+    expect(buildSpecialOrderColorBaseCandidates('Samsung S25 Ultra 12/512GB 5G DS', 'SAMSUNG')).toContain(
+      'samsung s25 ultra 512 gb 5g ds',
+    );
+  });
+
+  it('extrae color cuando la hoja omite la RAM del producto base', () => {
+    const normalizedBaseCandidates = buildSpecialOrderColorBaseCandidates('Samsung S25 Ultra 12/1TB 5G DS', 'SAMSUNG');
+
+    expect(
+      extractSpecialOrderColorLabel({
+        rowTitle: 'Samsung S25 Ultra 1TB 5G DS Negro',
+        normalizedRowTitle: normalizeSpecialOrderText('Samsung S25 Ultra 1TB 5G DS Negro'),
+        productTitle: 'Samsung S25 Ultra 12/1TB 5G DS',
+        productSectionName: 'SAMSUNG',
+        normalizedBaseCandidates,
+      }),
+    ).toBe('Negro');
   });
 
   it('limpia prefijos tecnicos cuando quedan delante del color real', () => {
