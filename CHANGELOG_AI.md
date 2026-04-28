@@ -13,6 +13,26 @@
 ---
 
 ### 2026-04-28 - Codex
+- Alcance: compactar seleccion de categorias y subcategorias en tienda.
+- Tipo de intervencion: refactor UI frontend, modal/bottom-sheet de categorias y estilos responsive.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/store/store-page.sections.tsx`
+  - `next-stack/apps/web/src/styles/store.css`
+  - `project-docs/frontend/FRONTEND_MAP.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. `/store` ya no muestra todas las categorias como pills permanentes; muestra el contexto activo y abre un panel con buscador para elegir categoria padre o subcategoria.
+- Validaciones ejecutadas:
+  - `npm run typecheck --workspace @nico/web`
+  - `npm run test --workspace @nico/web`
+  - `npm run build --workspace @nico/web`
+  - `npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - Se mantiene el query param `category`; no cambia backend ni contratos.
+
+---
+
+### 2026-04-28 - Codex
 - Alcance: corregir refresco de imagen editable de portada de tienda.
 - Tipo de intervencion: ajuste de cache HTTP, resolucion de URLs dinamicas de assets y preview admin alineada al origen API.
 - Archivos tocados:

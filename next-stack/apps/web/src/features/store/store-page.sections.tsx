@@ -1,7 +1,7 @@
 import { createPortal } from 'react-dom';
-import type { RefObject } from 'react';
+import { useEffect, useMemo, useState, type RefObject } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Check, Search, ShoppingCart, SlidersHorizontal, X } from 'lucide-react';
+import { Check, ChevronDown, Search, ShoppingCart, SlidersHorizontal, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FilterBar } from '@/components/ui/filter-bar';
@@ -215,54 +215,227 @@ export function StoreCategoriesSection({
   activeCategory,
   activeParentSlug,
   activeChildSlug,
-  subcategories,
   onSelectCategory,
 }: StoreCategoriesSectionProps) {
+  const [open, setOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [expandedParentSlug, setExpandedParentSlug] = useState<string | null>(activeParentSlug);
+
+  const activeParent = useMemo(
+    () => categories.find((category) => category.slug === activeParentSlug) ?? null,
+    [categories, activeParentSlug],
+  );
+  const activeChild = useMemo(
+    () => activeParent?.children.find((category) => category.slug === activeChildSlug) ?? null,
+    [activeParent, activeChildSlug],
+  );
+  const selectedLabel = activeChild
+    ? buildStoreCategoryPathLabel({ ...activeChild, parentName: activeParent?.name ?? null })
+    : activeParent?.name ?? 'Todas las categorias';
+  const selectedDescription = activeChild
+    ? 'Subcategoria activa'
+    : activeParent
+      ? 'Categoria activa'
+      : 'Catalogo completo';
+
+  useEffect(() => {
+    if (!open) return;
+    setSearchTerm('');
+    setExpandedParentSlug(activeParentSlug);
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [activeParentSlug, open]);
+
   if (categories.length === 0) return null;
 
   return (
     <SectionCard className="store-categories" bodyClassName="store-categories__body">
-      <div className="store-categories__rail" aria-label="Categorias del catalogo">
+      <div className="store-categories__summary">
+        <div className="store-categories__current">
+          <span className="store-categories__eyebrow">Categoria</span>
+          <strong>{selectedLabel}</strong>
+          <span>{selectedDescription}</span>
+        </div>
         <button
           type="button"
-          onClick={() => onSelectCategory(null)}
-          className={`nav-pill shrink-0 whitespace-nowrap ${!activeCategory ? 'nav-pill-active' : ''}`}
+          className="store-categories__change"
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          onClick={() => setOpen(true)}
         >
-          Todas
+          Cambiar
+          <ChevronDown className="h-4 w-4" aria-hidden="true" />
         </button>
-        {categories.map((category) => (
+        {activeCategory ? (
           <button
-            key={category.id}
             type="button"
-            onClick={() => onSelectCategory(category.slug)}
-            className={`nav-pill shrink-0 whitespace-nowrap ${activeParentSlug === category.slug ? 'nav-pill-active' : ''}`}
+            className="store-categories__clear"
+            onClick={() => {
+              onSelectCategory(null);
+              setOpen(false);
+            }}
           >
-            {category.name}
+            Limpiar
           </button>
-        ))}
+        ) : null}
       </div>
-      {subcategories.length > 0 && activeParentSlug ? (
-        <div className="store-categories__subrail" aria-label="Subcategorias">
+      <StoreCategoryPickerPanel
+        open={open}
+        categories={categories}
+        activeCategory={activeCategory}
+        activeParentSlug={activeParentSlug}
+        activeChildSlug={activeChildSlug}
+        expandedParentSlug={expandedParentSlug}
+        searchTerm={searchTerm}
+        onSearchTermChange={setSearchTerm}
+        onExpandedParentChange={setExpandedParentSlug}
+        onClose={() => setOpen(false)}
+        onSelectCategory={(category) => {
+          onSelectCategory(category);
+          setOpen(false);
+        }}
+      />
+    </SectionCard>
+  );
+}
+
+function StoreCategoryPickerPanel({
+  open,
+  categories,
+  activeCategory,
+  activeParentSlug,
+  activeChildSlug,
+  expandedParentSlug,
+  searchTerm,
+  onSearchTermChange,
+  onExpandedParentChange,
+  onClose,
+  onSelectCategory,
+}: {
+  open: boolean;
+  categories: StoreCategory[];
+  activeCategory: string | null;
+  activeParentSlug: string | null;
+  activeChildSlug: string | null;
+  expandedParentSlug: string | null;
+  searchTerm: string;
+  onSearchTermChange: (value: string) => void;
+  onExpandedParentChange: (value: string | null) => void;
+  onClose: () => void;
+  onSelectCategory: (category: string | null) => void;
+}) {
+  const normalizedSearch = searchTerm.trim().toLowerCase();
+  const visibleCategories = useMemo(() => {
+    if (!normalizedSearch) return categories;
+    return categories.filter((category) => {
+      const parentMatches = category.name.toLowerCase().includes(normalizedSearch);
+      const childMatches = category.children.some((child) => child.name.toLowerCase().includes(normalizedSearch));
+      return parentMatches || childMatches;
+    });
+  }, [categories, normalizedSearch]);
+
+  if (!open || typeof document === 'undefined') return null;
+
+  return createPortal(
+    <div className="store-category-picker" role="presentation">
+      <button type="button" className="store-category-picker__backdrop" aria-label="Cerrar categorias" onClick={onClose} />
+      <div className="store-category-picker__dialog" role="dialog" aria-modal="true" aria-labelledby="store-category-picker-title">
+        <div className="store-category-picker__header">
+          <div>
+            <h2 id="store-category-picker-title">Elegir categoria</h2>
+            <p>Filtra el catalogo sin ocupar espacio en la tienda.</p>
+          </div>
+          <Button type="button" variant="ghost" size="icon" aria-label="Cerrar categorias" onClick={onClose}>
+            <X className="h-5 w-5" />
+          </Button>
+        </div>
+
+        <label className="store-category-picker__search">
+          <Search className="h-4 w-4" aria-hidden="true" />
+          <input
+            value={searchTerm}
+            onChange={(event) => onSearchTermChange(event.target.value)}
+            placeholder="Buscar categoria o subcategoria"
+            autoFocus
+          />
+        </label>
+
+        <div className="store-category-picker__list">
           <button
             type="button"
-            onClick={() => onSelectCategory(activeParentSlug)}
-            className={`nav-pill nav-pill--sub shrink-0 whitespace-nowrap ${activeCategory === activeParentSlug ? 'nav-pill-active' : ''}`}
+            className={`store-category-option store-category-option--all ${!activeCategory ? 'is-active' : ''}`}
+            onClick={() => onSelectCategory(null)}
           >
-            Todo en {categories.find((category) => category.slug === activeParentSlug)?.name ?? 'la categoria'}
+            <span>
+              <strong>Todas las categorias</strong>
+              <small>Ver todo el catalogo</small>
+            </span>
+            {!activeCategory ? <Check className="h-4 w-4" aria-hidden="true" /> : null}
           </button>
-          {subcategories.map((category) => (
-            <button
-              key={category.id}
-              type="button"
-              onClick={() => onSelectCategory(category.slug)}
-              className={`nav-pill nav-pill--sub shrink-0 whitespace-nowrap ${activeChildSlug === category.slug ? 'nav-pill-active' : ''}`}
-            >
-              {category.name}
-            </button>
-          ))}
+
+          {visibleCategories.map((category) => {
+            const parentMatches = normalizedSearch && category.name.toLowerCase().includes(normalizedSearch);
+            const visibleChildren = normalizedSearch
+              ? category.children.filter((child) => parentMatches || child.name.toLowerCase().includes(normalizedSearch))
+              : category.children;
+            const expanded = expandedParentSlug === category.slug || (Boolean(normalizedSearch) && visibleChildren.length > 0);
+            const isParentActive = activeParentSlug === category.slug && activeCategory === category.slug;
+
+            return (
+              <div key={category.id} className={`store-category-group ${expanded ? 'is-expanded' : ''}`}>
+                <button
+                  type="button"
+                  className={`store-category-option ${activeParentSlug === category.slug ? 'is-parent-active' : ''}`}
+                  onClick={() => onExpandedParentChange(expanded ? null : category.slug)}
+                >
+                  <span>
+                    <strong>{category.name}</strong>
+                    <small>{category.productsCount} productos</small>
+                  </span>
+                  <ChevronDown className="h-4 w-4" aria-hidden="true" />
+                </button>
+
+                {expanded ? (
+                  <div className="store-category-group__children">
+                    <button
+                      type="button"
+                      className={`store-category-child ${isParentActive ? 'is-active' : ''}`}
+                      onClick={() => onSelectCategory(category.slug)}
+                    >
+                      <span>Todo en {category.name}</span>
+                      {isParentActive ? <Check className="h-4 w-4" aria-hidden="true" /> : null}
+                    </button>
+                    {visibleChildren.map((child) => {
+                      const isChildActive = activeChildSlug === child.slug;
+                      return (
+                        <button
+                          key={child.id}
+                          type="button"
+                          className={`store-category-child ${isChildActive ? 'is-active' : ''}`}
+                          onClick={() => onSelectCategory(child.slug)}
+                        >
+                          <span>{child.name}</span>
+                          <small>{child.productsCount}</small>
+                          {isChildActive ? <Check className="h-4 w-4" aria-hidden="true" /> : null}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
+
+          {visibleCategories.length === 0 ? (
+            <div className="store-category-picker__empty">No hay categorias que coincidan con esa busqueda.</div>
+          ) : null}
         </div>
-      ) : null}
-    </SectionCard>
+      </div>
+    </div>,
+    document.body,
   );
 }
 

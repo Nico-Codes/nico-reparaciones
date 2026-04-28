@@ -198,9 +198,9 @@ Notas operativas del subdominio:
   - `Stock real` para inventario local
   - `Por encargue` para productos importados desde listados de proveedor
 - las categorias publicas ahora soportan un nivel de jerarquia:
-  - rail principal con categorias padre
-  - segunda fila opcional con subcategorias cuando la categoria activa tiene hijas
-  - el filtro por una subcategoria mantiene visible tambien su categoria padre activa
+  - selector compacto con contexto activo
+  - panel modal/bottom-sheet con buscador, categorias padre y subcategorias expandibles
+  - el filtro por una subcategoria mantiene visible tambien su categoria padre activa en el resumen
 - cards y detalle de producto muestran `pathLabel` cuando el item pertenece a una subcategoria
 - los productos `Por encargue` muestran badge/copy especifico; si el perfil exige color, la card usa CTA `Elegir color`
 - si un producto `Por encargue` requiere color, el detalle publico obliga a elegir una variante disponible antes de agregarlo al carrito; los colores sin stock se ven deshabilitados
