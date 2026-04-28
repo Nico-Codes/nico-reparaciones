@@ -232,12 +232,6 @@ export function StoreCategoriesSection({
   const selectedLabel = activeChild
     ? buildStoreCategoryPathLabel({ ...activeChild, parentName: activeParent?.name ?? null })
     : activeParent?.name ?? 'Todas las categorias';
-  const selectedDescription = activeChild
-    ? 'Subcategoria activa'
-    : activeParent
-      ? 'Categoria activa'
-      : 'Catalogo completo';
-
   useEffect(() => {
     if (!open) return;
     setSearchTerm('');
@@ -254,19 +248,15 @@ export function StoreCategoriesSection({
   return (
     <SectionCard className="store-categories" bodyClassName="store-categories__body">
       <div className="store-categories__summary">
-        <div className="store-categories__current">
-          <span className="store-categories__eyebrow">Categoria</span>
-          <strong>{selectedLabel}</strong>
-          <span>{selectedDescription}</span>
-        </div>
         <button
           type="button"
-          className="store-categories__change"
+          className="store-categories__trigger"
           aria-haspopup="dialog"
           aria-expanded={open}
           onClick={() => setOpen(true)}
         >
-          Cambiar
+          <span>Categoria:</span>
+          <strong>{selectedLabel}</strong>
           <ChevronDown className="h-4 w-4" aria-hidden="true" />
         </button>
         {activeCategory ? (

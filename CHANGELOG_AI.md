@@ -13,6 +13,23 @@
 ---
 
 ### 2026-04-28 - Codex
+- Alcance: simplificar el boton visible del selector de categorias de tienda.
+- Tipo de intervencion: ajuste UI frontend sin cambiar el popup ni contratos.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/store/store-page.sections.tsx`
+  - `next-stack/apps/web/src/styles/store.css`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No. Se mantiene el panel desplegable; cambia solo el disparador visible a una fila mas simple `Categoria: ...`.
+- Validaciones ejecutadas:
+  - `npm run typecheck --workspace @nico/web`
+  - `npm run build --workspace @nico/web`
+  - `git diff --check`
+- Riesgos / notas:
+  - No se ejecuto smoke completo porque el cambio es visual acotado y build/typecheck cubren compilacion.
+
+---
+
+### 2026-04-28 - Codex
 - Alcance: compactar seleccion de categorias y subcategorias en tienda.
 - Tipo de intervencion: refactor UI frontend, modal/bottom-sheet de categorias y estilos responsive.
 - Archivos tocados:
