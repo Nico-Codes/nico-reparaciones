@@ -13,6 +13,26 @@
 ---
 
 ### 2026-04-28 - Codex
+- Alcance: animar despliegue de subcategorias en el popup de tienda.
+- Tipo de intervencion: ajuste UI frontend sin cambios de rutas ni contratos.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/store/store-page.sections.tsx`
+  - `next-stack/apps/web/src/styles/store.css`
+  - `project-docs/frontend/FRONTEND_MAP.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No. Solo cambia la transicion visual al abrir/cerrar subcategorias.
+- Validaciones ejecutadas:
+  - `npm run typecheck --workspace @nico/web`
+  - `npm run test --workspace @nico/web`
+  - `npm run build --workspace @nico/web`
+  - `npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - Cambio visual acotado al popup de categorias; no altera seleccion ni filtros.
+
+---
+
+### 2026-04-28 - Codex
 - Alcance: alinear popups de categorias y ordenamiento en tienda.
 - Tipo de intervencion: ajuste UI frontend con animaciones y seleccion directa.
 - Archivos tocados:

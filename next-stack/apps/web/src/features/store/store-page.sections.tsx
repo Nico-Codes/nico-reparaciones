@@ -409,10 +409,11 @@ function StoreCategoryPickerPanel({
                   <ChevronDown className="h-4 w-4" aria-hidden="true" />
                 </button>
 
-                {expanded ? (
-                  <div className="store-category-group__children">
+                <div className="store-category-group__children" aria-hidden={!expanded}>
+                  <div className="store-category-group__children-inner">
                     <button
                       type="button"
+                      tabIndex={expanded ? undefined : -1}
                       className={`store-category-child ${isParentActive ? 'is-active' : ''}`}
                       onClick={() => onSelectCategory(category.slug)}
                     >
@@ -425,6 +426,7 @@ function StoreCategoryPickerPanel({
                         <button
                           key={child.id}
                           type="button"
+                          tabIndex={expanded ? undefined : -1}
                           className={`store-category-child ${isChildActive ? 'is-active' : ''}`}
                           onClick={() => onSelectCategory(child.slug)}
                         >
@@ -435,7 +437,7 @@ function StoreCategoryPickerPanel({
                       );
                     })}
                   </div>
-                ) : null}
+                </div>
               </div>
             );
           })}
