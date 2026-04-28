@@ -32,7 +32,7 @@ type StoreMobileSortSheetProps = {
   mobileSortDraft: StoreSortValue;
   onClose: () => void;
   onDraftChange: (value: StoreSortValue) => void;
-  onApply: () => void;
+  onSelect: (value: StoreSortValue) => void;
 };
 
 type StoreCategoriesSectionProps = {
@@ -58,6 +58,30 @@ type StoreResultsSectionProps = {
   hasActiveFilters: boolean;
   onClearFilters: () => void;
 };
+
+function usePopupPresence(open: boolean, exitMs = 180) {
+  const [shouldRender, setShouldRender] = useState(open);
+  const [closing, setClosing] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setShouldRender(true);
+      setClosing(false);
+      return;
+    }
+    if (!shouldRender) return;
+
+    setClosing(true);
+    const timeout = window.setTimeout(() => {
+      setShouldRender(false);
+      setClosing(false);
+    }, exitMs);
+
+    return () => window.clearTimeout(timeout);
+  }, [exitMs, open, shouldRender]);
+
+  return { shouldRender, closing };
+}
 
 export function StoreToolbarSection({
   qInput,
@@ -125,12 +149,14 @@ export function StoreMobileSortSheet({
   mobileSortDraft,
   onClose,
   onDraftChange,
-  onApply,
+  onSelect,
 }: StoreMobileSortSheetProps) {
-  if (!open || typeof document === 'undefined') return null;
+  const { shouldRender, closing } = usePopupPresence(open);
+
+  if (!shouldRender || typeof document === 'undefined') return null;
 
   return createPortal(
-    <div className="store-mobile-sort-overlay" role="presentation">
+    <div className={`store-mobile-sort-overlay ${closing ? 'is-closing' : ''}`} role="presentation">
       <button type="button" className="store-mobile-sort-backdrop" aria-label="Cerrar panel de orden" onClick={onClose} />
       <div className="store-mobile-sort-sheet" role="dialog" aria-modal="true" aria-labelledby="store-mobile-sort-title">
         <div className="store-mobile-sort-sheet__header">
@@ -151,21 +177,15 @@ export function StoreMobileSortSheet({
               key={option.value}
               type="button"
               className={`store-mobile-sort-option ${mobileSortDraft === option.value ? 'is-active' : ''}`}
-              onClick={() => onDraftChange(option.value)}
+              onClick={() => {
+                onDraftChange(option.value);
+                onSelect(option.value);
+              }}
             >
               <span>{option.label}</span>
               {mobileSortDraft === option.value ? <Check className="h-4 w-4" /> : null}
             </button>
           ))}
-        </div>
-
-        <div className="store-mobile-sort-actions">
-          <Button type="button" variant="outline" size="sm" onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button type="button" size="sm" onClick={onApply}>
-            Aplicar
-          </Button>
         </div>
       </div>
     </div>,
@@ -317,6 +337,7 @@ function StoreCategoryPickerPanel({
   onClose: () => void;
   onSelectCategory: (category: string | null) => void;
 }) {
+  const { shouldRender, closing } = usePopupPresence(open);
   const normalizedSearch = searchTerm.trim().toLowerCase();
   const visibleCategories = useMemo(() => {
     if (!normalizedSearch) return categories;
@@ -327,10 +348,10 @@ function StoreCategoryPickerPanel({
     });
   }, [categories, normalizedSearch]);
 
-  if (!open || typeof document === 'undefined') return null;
+  if (!shouldRender || typeof document === 'undefined') return null;
 
   return createPortal(
-    <div className="store-category-picker" role="presentation">
+    <div className={`store-category-picker ${closing ? 'is-closing' : ''}`} role="presentation">
       <button type="button" className="store-category-picker__backdrop" aria-label="Cerrar categorias" onClick={onClose} />
       <div className="store-category-picker__dialog" role="dialog" aria-modal="true" aria-labelledby="store-category-picker-title">
         <div className="store-category-picker__header">

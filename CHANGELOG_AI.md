@@ -13,6 +13,27 @@
 ---
 
 ### 2026-04-28 - Codex
+- Alcance: alinear popups de categorias y ordenamiento en tienda.
+- Tipo de intervencion: ajuste UI frontend con animaciones y seleccion directa.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/store/StorePage.tsx`
+  - `next-stack/apps/web/src/features/store/store-page.sections.tsx`
+  - `next-stack/apps/web/src/styles/store.css`
+  - `project-docs/frontend/FRONTEND_MAP.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. En mobile, tocar una opcion de ordenamiento aplica el `sort` y cierra el popup sin botones `Cancelar`/`Aplicar`.
+- Validaciones ejecutadas:
+  - `npm run typecheck --workspace @nico/web`
+  - `npm run test --workspace @nico/web`
+  - `npm run build --workspace @nico/web`
+  - `npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - Cambio limitado a tienda publica; no se tocaron rutas, backend ni contratos.
+
+---
+
+### 2026-04-28 - Codex
 - Alcance: reorganizar barra de busqueda, categorias y ordenamiento en tienda.
 - Tipo de intervencion: ajuste UI frontend sin cambios de backend ni query params.
 - Archivos tocados:

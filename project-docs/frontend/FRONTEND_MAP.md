@@ -204,6 +204,8 @@ Notas operativas del subdominio:
 - la tienda separa controles visuales:
   - la barra superior queda para busqueda, aplicar y limpiar
   - la barra compacta inferior concentra categorias y ordenamiento
+  - el popup mobile de ordenamiento aplica el cambio al tocar una opcion, sin confirmacion secundaria
+  - los popups de categoria y ordenamiento comparten animacion de entrada/salida y tratamiento visual tipo sheet
 - cards y detalle de producto muestran `pathLabel` cuando el item pertenece a una subcategoria
 - los productos `Por encargue` muestran badge/copy especifico; si el perfil exige color, la card usa CTA `Elegir color`
 - si un producto `Por encargue` requiere color, el detalle publico obliga a elegir una variante disponible antes de agregarlo al carrito; los colores sin stock se ven deshabilitados

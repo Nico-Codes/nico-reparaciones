@@ -191,8 +191,9 @@ export function StorePage() {
           mobileSortTriggerRef.current?.focus();
         }}
         onDraftChange={setMobileSortDraft}
-        onApply={() => {
-          applyQuery({ sort: mobileSortDraft });
+        onSelect={(value) => {
+          setMobileSortDraft(value);
+          applyQuery({ sort: value });
           setMobileFiltersOpen(false);
           mobileSortTriggerRef.current?.focus();
         }}
