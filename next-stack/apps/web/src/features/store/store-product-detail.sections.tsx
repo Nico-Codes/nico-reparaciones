@@ -14,6 +14,7 @@ import {
   getStoreProductAvailabilityLabel,
   getStoreProductFallbackDescription,
   isStoreProductSpecialOrder,
+  requiresStoreProductColorSelection,
   resolveStoreProductStockTone,
 } from './store-product-detail.helpers';
 import { buildStoreCategoryPathLabel } from './store-page.helpers';
@@ -174,7 +175,7 @@ export function StoreProductPurchaseSection({
 }: StoreProductPurchaseSectionProps) {
   const isSpecialOrder = isStoreProductSpecialOrder(item);
   const actionLabel = getStoreProductCtaLabel(item);
-  const requiresColorSelection = item.requiresColorSelection || (isSpecialOrder && item.hasColorOptions);
+  const requiresColorSelection = requiresStoreProductColorSelection(item);
   const canSubmit = canPurchase && (!requiresColorSelection || Boolean(selectedColorId));
 
   return (

@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
+  canPurchaseStoreProduct,
   clampStoreProductQuantity,
   formatStoreProductMoney,
+  getAvailableStoreProductColorOptions,
   getStoreProductAvailabilityLabel,
   getStoreProductFallbackDescription,
+  requiresStoreProductColorSelection,
   resolveStoreProductStockTone,
 } from './store-product-detail.helpers';
 
@@ -31,5 +34,24 @@ describe('store-product-detail.helpers', () => {
     expect(
       getStoreProductFallbackDescription({ description: 'Pantalla AMOLED original' } as never),
     ).toBe('Pantalla AMOLED original');
+  });
+
+  it('requires an available color for special order products with color selection', () => {
+    const product = {
+      fulfillmentMode: 'SPECIAL_ORDER',
+      requiresColorSelection: true,
+      hasColorOptions: true,
+      supplierAvailability: 'IN_STOCK',
+      colorOptions: [
+        { id: 'red', label: 'Rojo', active: true, supplierAvailability: 'OUT_OF_STOCK' },
+        { id: 'black', label: 'Negro', active: true, supplierAvailability: 'IN_STOCK' },
+      ],
+    } as never;
+
+    expect(requiresStoreProductColorSelection(product)).toBe(true);
+    expect(getAvailableStoreProductColorOptions(product)).toEqual([
+      { id: 'black', label: 'Negro', active: true, supplierAvailability: 'IN_STOCK' },
+    ]);
+    expect(canPurchaseStoreProduct(product)).toBe(true);
   });
 });

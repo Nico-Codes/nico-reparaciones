@@ -17,6 +17,10 @@ import {
   type StoreSortOption,
   type StoreSortValue,
 } from './store-page.helpers';
+import {
+  getAvailableStoreProductColorOptions,
+  requiresStoreProductColorSelection,
+} from './store-product-detail.helpers';
 import type { StoreCategory, StoreProduct } from './types';
 
 type StoreToolbarSectionProps = {
@@ -525,9 +529,23 @@ export function StoreResultsSection({
 function StoreGridCard({ product }: { product: StoreProduct }) {
   const navigate = useNavigate();
   const isSpecialOrder = product.fulfillmentMode === 'SPECIAL_ORDER';
-  const canPurchase = isSpecialOrder ? product.supplierAvailability !== 'OUT_OF_STOCK' : product.stock > 0;
-  const requiresColorSelection = product.requiresColorSelection;
-  const actionLabel = requiresColorSelection ? 'Elegir color' : isSpecialOrder ? 'Encargar' : 'Agregar al carrito';
+  const requiresColorSelection = requiresStoreProductColorSelection(product);
+  const availableColorOptions = getAvailableStoreProductColorOptions(product);
+  const canPurchase = isSpecialOrder
+    ? requiresColorSelection
+      ? availableColorOptions.length > 0
+      : product.supplierAvailability !== 'OUT_OF_STOCK'
+    : product.stock > 0;
+  const canAddDirectly = !requiresColorSelection || availableColorOptions.length === 1;
+  const quickVariantId = requiresColorSelection ? availableColorOptions[0]?.id ?? null : null;
+  const actionLabel = !canPurchase
+    ? 'Sin stock'
+    : requiresColorSelection && !canAddDirectly
+      ? 'Elegir color'
+      : isSpecialOrder
+        ? 'Encargar'
+        : 'Agregar al carrito';
+  const useTextAction = requiresColorSelection && (!canPurchase || !canAddDirectly);
 
   return (
     <div className="product-card product-card-grid">
@@ -558,19 +576,23 @@ function StoreGridCard({ product }: { product: StoreProduct }) {
             <div className="product-actions">
               <button
                 type="button"
-                className={`btn-cart ${canPurchase ? '' : 'is-disabled'}`}
+                className={`btn-cart ${useTextAction ? 'btn-cart--label' : ''} ${canPurchase ? '' : 'is-disabled'}`}
                 disabled={!canPurchase}
                 aria-label={actionLabel}
                 title={canPurchase ? actionLabel : 'Sin stock'}
                 onClick={() => {
-                  if (requiresColorSelection) {
+                  if (!canAddDirectly) {
                     navigate(`/store/${product.slug}`);
                     return;
                   }
-                  cartStorage.add(product.id, 1, { productName: product.name });
+                  cartStorage.add(product.id, 1, { productName: product.name, variantId: quickVariantId });
                 }}
               >
-                <ShoppingCart className="h-4 w-4" />
+                {useTextAction ? (
+                  <span>{actionLabel}</span>
+                ) : (
+                  <ShoppingCart className="h-4 w-4" />
+                )}
               </button>
             </div>
           </div>

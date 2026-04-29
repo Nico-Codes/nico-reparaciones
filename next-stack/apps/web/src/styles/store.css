@@ -1383,6 +1383,17 @@ textarea:focus-visible {
   transition: all 160ms ease;
 }
 
+.btn-cart--label {
+  width: auto;
+  min-width: 5.8rem;
+  padding: 0 0.72rem;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
 .btn-cart:hover {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(239, 246, 255, 0.94));
   border-color: rgba(186, 230, 253, 0.96);
@@ -1458,6 +1469,14 @@ textarea:focus-visible {
     width: 34px;
     height: 34px;
     border-radius: 12px;
+  }
+
+  .product-card-grid .btn-cart--label,
+  .product-card-featured .btn-cart--label {
+    width: auto;
+    min-width: 4.9rem;
+    padding: 0 0.5rem;
+    font-size: 0.66rem;
   }
 
   .product-card-grid .btn-cart svg,

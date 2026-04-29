@@ -54,7 +54,10 @@ describe('cart.helpers', () => {
     ];
 
     expect(buildValidCartLines(lines)).toHaveLength(1);
-    expect(buildQuotedCartItems(lines)).toEqual([{ productId: 'p-1', variantId: null, quantity: 2 }]);
+    expect(buildQuotedCartItems(lines)).toEqual([
+      { productId: 'p-1', variantId: null, quantity: 2 },
+      { productId: 'p-2', variantId: null, quantity: 1 },
+    ]);
   });
 
   it('detects stock issues and compares local cart items by order', () => {

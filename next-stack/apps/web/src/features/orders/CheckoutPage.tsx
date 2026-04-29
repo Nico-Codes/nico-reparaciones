@@ -53,7 +53,7 @@ export function CheckoutPage() {
           setQuote(response);
 
           if (response.items.length) {
-            const normalized = buildCheckoutItems(buildValidCheckoutLines(response.items));
+            const normalized = buildCheckoutItems(response.items);
             const current = cartStorage.getItems();
             if (!sameCartItems(normalized, current)) {
               cartStorage.setItems(normalized);
@@ -88,7 +88,7 @@ export function CheckoutPage() {
   const validCheckoutItems = useMemo(() => buildCheckoutItems(validItems), [validItems]);
   const hasInvalidItems = useMemo(() => hasInvalidCheckoutItems(quote?.items ?? []), [quote]);
   const paymentOptions = useMemo(() => resolveCheckoutPaymentMethods(checkoutConfig), [checkoutConfig]);
-  const canConfirm = !loading && !submitting && validCheckoutItems.length > 0;
+  const canConfirm = !loading && !submitting && validCheckoutItems.length > 0 && !hasInvalidItems;
   const selectedPayment = useMemo(
     () => resolveSelectedPayment(paymentMethod, paymentOptions),
     [paymentMethod, paymentOptions],
@@ -158,7 +158,7 @@ export function CheckoutPage() {
 
         <CheckoutSummarySection
           quote={quote}
-          items={validItems}
+          items={quote?.items ?? []}
           paymentTitle={selectedPayment.title}
           paymentSubtitle={selectedPayment.subtitle}
         />

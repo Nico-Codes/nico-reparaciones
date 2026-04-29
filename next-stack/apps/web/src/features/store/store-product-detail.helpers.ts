@@ -10,11 +10,19 @@ export function isStoreProductSpecialOrder(item: StoreProduct | null) {
   return item?.fulfillmentMode === 'SPECIAL_ORDER';
 }
 
+export function getAvailableStoreProductColorOptions(item: StoreProduct | null) {
+  return (item?.colorOptions ?? []).filter((option) => option.active && option.supplierAvailability === 'IN_STOCK');
+}
+
+export function requiresStoreProductColorSelection(item: StoreProduct | null) {
+  return Boolean(item && isStoreProductSpecialOrder(item) && (item.requiresColorSelection || item.hasColorOptions));
+}
+
 export function canPurchaseStoreProduct(item: StoreProduct | null) {
   if (!item) return false;
   if (isStoreProductSpecialOrder(item)) {
-    if (item.requiresColorSelection || item.hasColorOptions) {
-      return item.colorOptions.some((option) => option.active && option.supplierAvailability === 'IN_STOCK');
+    if (requiresStoreProductColorSelection(item)) {
+      return getAvailableStoreProductColorOptions(item).length > 0;
     }
     return item.supplierAvailability !== 'OUT_OF_STOCK';
   }

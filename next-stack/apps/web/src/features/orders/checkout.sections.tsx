@@ -309,11 +309,25 @@ export function CheckoutSummarySection({
                 {line.fulfillmentMode === 'SPECIAL_ORDER' ? (
                   <StatusBadge tone="accent" size="sm" label="Por encargue" />
                 ) : null}
+                {!line.valid ? <StatusBadge tone="danger" size="sm" label="Requiere ajuste" /> : null}
               </div>
               <div className="line-item__meta">
                 {line.quantity} x {formatCheckoutMoney(line.unitPrice)}
                 {line.selectedColorLabel ? ` · Color ${line.selectedColorLabel}` : ''}
               </div>
+              {!line.valid && line.reason ? (
+                <div className="mt-2 text-xs font-semibold text-amber-700">
+                  {line.reason}
+                  {line.slug ? (
+                    <>
+                      {' '}
+                      <Link to={`/store/${line.slug}`} className="text-sky-700 underline-offset-2 hover:underline">
+                        Ver producto
+                      </Link>
+                    </>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
             <div className="line-item__total">{formatCheckoutMoney(line.lineTotal)}</div>
           </div>

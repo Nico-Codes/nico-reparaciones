@@ -3,7 +3,13 @@ import { PageHeader } from '@/components/ui/page-header';
 import { PageShell } from '@/components/ui/page-shell';
 import { cartStorage } from '@/features/cart/storage';
 import { storeApi } from './api';
-import { canPurchaseStoreProduct, clampStoreProductQuantity, isStoreProductSpecialOrder } from './store-product-detail.helpers';
+import {
+  canPurchaseStoreProduct,
+  clampStoreProductQuantity,
+  getAvailableStoreProductColorOptions,
+  isStoreProductSpecialOrder,
+  requiresStoreProductColorSelection,
+} from './store-product-detail.helpers';
 import {
   StoreProductBreadcrumb,
   StoreProductEmptyState,
@@ -53,7 +59,8 @@ export function StoreProductDetailPage() {
   useEffect(() => {
     if (!item) return;
     setQty((current) => clampStoreProductQuantity(current, item.stock, item.fulfillmentMode));
-    setSelectedColorId(null);
+    const availableColors = getAvailableStoreProductColorOptions(item);
+    setSelectedColorId(requiresStoreProductColorSelection(item) && availableColors.length === 1 ? availableColors[0].id : null);
   }, [item?.id, item?.stock, item?.fulfillmentMode]);
 
   const canPurchase = canPurchaseStoreProduct(item);
@@ -64,7 +71,7 @@ export function StoreProductDetailPage() {
 
   function addToCart() {
     if (!item || !canPurchase) return;
-    if (item.requiresColorSelection && !selectedColorId) return;
+    if (requiresStoreProductColorSelection(item) && !selectedColorId) return;
     cartStorage.add(item.id, qty, { productName: item.name, variantId: selectedColorId });
   }
 

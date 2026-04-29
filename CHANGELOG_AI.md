@@ -13,6 +13,32 @@
 ---
 
 ### 2026-04-29 - Codex
+- Alcance: corregir agregado al carrito de productos por encargue.
+- Tipo de intervencion: ajuste funcional frontend de tienda, carrito y checkout.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/store/store-page.sections.tsx`
+  - `next-stack/apps/web/src/features/store/StoreProductDetailPage.tsx`
+  - `next-stack/apps/web/src/features/store/store-product-detail.sections.tsx`
+  - `next-stack/apps/web/src/features/store/store-product-detail.helpers.ts`
+  - `next-stack/apps/web/src/features/store/store-product-detail.helpers.test.ts`
+  - `next-stack/apps/web/src/features/cart/cart.helpers.ts`
+  - `next-stack/apps/web/src/features/cart/cart.helpers.test.ts`
+  - `next-stack/apps/web/src/features/orders/CheckoutPage.tsx`
+  - `next-stack/apps/web/src/features/orders/checkout.sections.tsx`
+  - `next-stack/apps/web/src/styles/store.css`
+- ¿Cambio comportamiento funcional?: Si. Los encargues con un solo color disponible pueden agregarse directo, los que requieren decision abren detalle, y el carrito ya no borra invalidos silenciosamente.
+- Validaciones ejecutadas:
+  - `npm run typecheck --workspace @nico/web`
+  - `npm run test --workspace @nico/web`
+  - `npm run build --workspace @nico/web`
+  - `npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - La validacion final de color y disponibilidad sigue en backend; checkout queda bloqueado si hay lineas invalidas.
+
+---
+
+### 2026-04-29 - Codex
 - Alcance: mejorar el scroll mobile del popup de categorias en tienda.
 - Tipo de intervencion: ajuste CSS frontend sin cambios funcionales.
 - Archivos tocados:

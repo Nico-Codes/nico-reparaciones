@@ -22,7 +22,7 @@ export function buildValidCartLines(items: CartQuoteLine[]) {
 }
 
 export function buildQuotedCartItems(items: CartQuoteLine[]): CartLocalItem[] {
-  return buildValidCartLines(items).map((item) => ({
+  return items.map((item) => ({
     productId: item.productId,
     variantId: item.variantId ?? null,
     quantity: item.quantity,
