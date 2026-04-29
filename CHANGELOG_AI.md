@@ -12,6 +12,24 @@
 
 ---
 
+### 2026-04-29 - Codex
+- Alcance: mejorar el scroll mobile del popup de categorias en tienda.
+- Tipo de intervencion: ajuste CSS frontend sin cambios funcionales.
+- Archivos tocados:
+  - `next-stack/apps/web/src/styles/store.css`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No. El listado sigue scrolleable; se oculta el scrollbar visual en mobile y se ajusta el alto del sheet.
+- Validaciones ejecutadas:
+  - `npm run typecheck --workspace @nico/web`
+  - `npm run test --workspace @nico/web`
+  - `npm run build --workspace @nico/web`
+  - `npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - Cambio acotado al selector mobile de categorias.
+
+---
+
 ### 2026-04-28 - Codex
 - Alcance: limpiar icono interno del campo de busqueda en tienda.
 - Tipo de intervencion: ajuste UI frontend sin cambios funcionales.
