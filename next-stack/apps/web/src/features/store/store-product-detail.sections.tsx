@@ -183,7 +183,7 @@ export function StoreProductPurchaseSection({
       title="Compra rapida"
       description={
         isSpecialOrder
-          ? 'Elegi la cantidad y sumalo al pedido por encargue con el precio actualizado.'
+          ? 'Elegi cantidad y color para iniciar el encargo sin pasar por el carrito.'
           : 'Elegi la cantidad y agrega el producto al carrito con el precio actualizado.'
       }
     >
@@ -287,19 +287,25 @@ export function StoreProductPurchaseSection({
           </div>
 
           <Button type="button" className="w-full justify-center" onClick={onAddToCart} disabled={!canSubmit}>
-            <ShoppingCart className="h-4 w-4" />
+            {isSpecialOrder ? <ShieldCheck className="h-4 w-4" /> : <ShoppingCart className="h-4 w-4" />}
             {canSubmit ? actionLabel : requiresColorSelection && canPurchase ? 'Elegir color' : 'Sin stock'}
           </Button>
         </div>
 
-        <div className="grid gap-2 sm:grid-cols-2">
+        {isSpecialOrder ? (
           <Button asChild variant="outline" className="w-full justify-center">
-            <Link to="/cart">Ver carrito</Link>
+            <Link to="/store">Volver a tienda</Link>
           </Button>
-          <Button asChild variant="ghost" className="w-full justify-center">
-            <Link to="/store">Seguir comprando</Link>
-          </Button>
-        </div>
+        ) : (
+          <div className="grid gap-2 sm:grid-cols-2">
+            <Button asChild variant="outline" className="w-full justify-center">
+              <Link to="/cart">Ver carrito</Link>
+            </Button>
+            <Button asChild variant="ghost" className="w-full justify-center">
+              <Link to="/store">Seguir comprando</Link>
+            </Button>
+          </div>
+        )}
       </div>
     </SectionCard>
   );

@@ -4,6 +4,7 @@ import { PageShell } from '@/components/ui/page-shell';
 import { cartStorage } from '@/features/cart/storage';
 import { storeApi } from './api';
 import {
+  buildSpecialOrderCheckoutUrl,
   canPurchaseStoreProduct,
   clampStoreProductQuantity,
   getAvailableStoreProductColorOptions,
@@ -21,10 +22,11 @@ import {
   StoreProductPurchaseSection,
 } from './store-product-detail.sections';
 import type { StoreProduct } from './types';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 export function StoreProductDetailPage() {
   const { slug = '' } = useParams();
+  const navigate = useNavigate();
   const [item, setItem] = useState<StoreProduct | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -72,6 +74,10 @@ export function StoreProductDetailPage() {
   function addToCart() {
     if (!item || !canPurchase) return;
     if (requiresStoreProductColorSelection(item) && !selectedColorId) return;
+    if (isStoreProductSpecialOrder(item)) {
+      navigate(buildSpecialOrderCheckoutUrl(item.id, qty, selectedColorId));
+      return;
+    }
     cartStorage.add(item.id, qty, { productName: item.name, variantId: selectedColorId });
   }
 

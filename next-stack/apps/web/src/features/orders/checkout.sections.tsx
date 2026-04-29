@@ -31,6 +31,7 @@ type CheckoutEmptyStateProps = {
   hasCartItems: boolean;
   hasInvalidItems: boolean;
   message: string;
+  mode?: 'cart' | 'special-order';
 };
 
 type CheckoutFeedbackProps = {
@@ -52,6 +53,8 @@ type CheckoutActionsProps = {
   canConfirm: boolean;
   submitting: boolean;
   onConfirm: () => void;
+  secondaryTo?: string;
+  secondaryLabel?: string;
 };
 
 type CheckoutSummarySectionProps = {
@@ -100,8 +103,15 @@ export function CheckoutEmptyState({
   hasCartItems,
   hasInvalidItems,
   message,
+  mode = 'cart',
 }: CheckoutEmptyStateProps) {
-  const emptyState = buildCheckoutEmptyState(hasCartItems);
+  const emptyState = mode === 'special-order'
+    ? {
+        title: 'No pudimos preparar el encargo',
+        description: message || 'Volve a la tienda y elegi el producto por encargue nuevamente.',
+        subtitle: 'Revisa el producto por encargue antes de continuar.',
+      }
+    : buildCheckoutEmptyState(hasCartItems);
 
   return (
     <PageShell context="store" className="space-y-6">
@@ -140,9 +150,11 @@ export function CheckoutEmptyState({
           description={emptyState.description}
           actions={
             <div className="flex flex-wrap gap-3">
-              <Button asChild>
-                <Link to="/cart">Revisar carrito</Link>
-              </Button>
+              {mode === 'cart' ? (
+                <Button asChild>
+                  <Link to="/cart">Revisar carrito</Link>
+                </Button>
+              ) : null}
               <Button asChild variant="outline">
                 <Link to="/store">Ir a la tienda</Link>
               </Button>
@@ -261,7 +273,13 @@ export function CheckoutAccountSection({ user }: CheckoutAccountSectionProps) {
   );
 }
 
-export function CheckoutActions({ canConfirm, submitting, onConfirm }: CheckoutActionsProps) {
+export function CheckoutActions({
+  canConfirm,
+  submitting,
+  onConfirm,
+  secondaryTo = '/cart',
+  secondaryLabel = 'Volver al carrito',
+}: CheckoutActionsProps) {
   return (
     <div className="grid gap-2 sm:flex sm:flex-row">
       <Button
@@ -274,7 +292,7 @@ export function CheckoutActions({ canConfirm, submitting, onConfirm }: CheckoutA
         {submitting ? 'Procesando...' : 'Confirmar pedido'}
       </Button>
       <Button asChild variant="outline" className="w-full justify-center sm:w-auto">
-        <Link to="/cart">Volver al carrito</Link>
+        <Link to={secondaryTo}>{secondaryLabel}</Link>
       </Button>
     </div>
   );
@@ -313,7 +331,7 @@ export function CheckoutSummarySection({
               </div>
               <div className="line-item__meta">
                 {line.quantity} x {formatCheckoutMoney(line.unitPrice)}
-                {line.selectedColorLabel ? ` · Color ${line.selectedColorLabel}` : ''}
+                {line.selectedColorLabel ? ` - Color ${line.selectedColorLabel}` : ''}
               </div>
               {!line.valid && line.reason ? (
                 <div className="mt-2 text-xs font-semibold text-amber-700">

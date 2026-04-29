@@ -22,6 +22,7 @@ type CartHeaderActionsProps = {
 
 type CartEmptyStateProps = {
   hasItems: boolean;
+  message?: string;
 };
 
 type CartFeedbackProps = {
@@ -57,7 +58,7 @@ export function CartHeaderActions({ itemsCount }: CartHeaderActionsProps) {
   );
 }
 
-export function CartEmptyState({ hasItems }: CartEmptyStateProps) {
+export function CartEmptyState({ hasItems, message = '' }: CartEmptyStateProps) {
   return (
     <PageShell context="store" className="space-y-6">
       <PageHeader
@@ -75,6 +76,15 @@ export function CartEmptyState({ hasItems }: CartEmptyStateProps) {
           </Button>
         }
       />
+      {message ? (
+        <div className="ui-alert ui-alert--info">
+          <AlertTriangle className="mt-0.5 h-4 w-4 flex-none" />
+          <div>
+            <span className="ui-alert__title">Carrito actualizado</span>
+            <div className="ui-alert__text">{message}</div>
+          </div>
+        </div>
+      ) : null}
       <SectionCard>
         <EmptyState
           title="Tu carrito esta vacio"
@@ -148,9 +158,9 @@ export function CartLinesSection({
                         Ver producto
                       </Link>
                     ) : null}
-                    {line.slug ? ' · ' : ''}
-                    {isSpecialOrder ? 'Modalidad por encargue · ' : ''}
-                    {line.selectedColorLabel ? `Color ${line.selectedColorLabel} · ` : ''}
+                    {line.slug ? ' - ' : ''}
+                    {isSpecialOrder ? 'Modalidad por encargue - ' : ''}
+                    {line.selectedColorLabel ? `Color ${line.selectedColorLabel} - ` : ''}
                     Precio unitario {formatCartMoney(line.unitPrice)}
                   </div>
 

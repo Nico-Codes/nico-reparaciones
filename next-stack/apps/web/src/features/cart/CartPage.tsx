@@ -6,6 +6,7 @@ import { quoteCart } from './api';
 import {
   buildQuotedCartItems,
   buildValidCartLines,
+  filterInventoryCartQuote,
   hasCartStockIssue,
   sameCartItems,
 } from './cart.helpers';
@@ -34,10 +35,15 @@ export function CartPage() {
     quoteCart(cart.items)
       .then((response) => {
         if (!active) return;
-        setQuote(response);
+        const { quote: inventoryQuote, removedSpecialOrderCount } = filterInventoryCartQuote(response);
+        setQuote(inventoryQuote);
+
+        if (removedSpecialOrderCount > 0) {
+          setMessage('Los productos por encargue se compran directamente desde su ficha.');
+        }
 
         if (response.items.length) {
-          const normalizedItems = buildQuotedCartItems(response.items);
+          const normalizedItems = buildQuotedCartItems(inventoryQuote.items);
           if (!sameCartItems(normalizedItems, cart.items)) {
             cart.setItems(normalizedItems);
           }
@@ -63,7 +69,7 @@ export function CartPage() {
   const canCheckout = !loading && !hasStockIssue && validLines.length > 0;
 
   if (!cart.items.length) {
-    return <CartEmptyState hasItems={false} />;
+    return <CartEmptyState hasItems={false} message={message} />;
   }
 
   return (

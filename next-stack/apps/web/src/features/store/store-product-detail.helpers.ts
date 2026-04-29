@@ -6,6 +6,17 @@ export function formatStoreProductMoney(value: number) {
   return `$ ${value.toLocaleString('es-AR')}`;
 }
 
+export function buildSpecialOrderCheckoutUrl(productId: string, quantity = 1, variantId?: string | null) {
+  const params = new URLSearchParams({
+    mode: 'special-order',
+    productId,
+    quantity: String(Math.max(1, Math.min(999, Number(quantity) || 1))),
+  });
+  const normalizedVariantId = (variantId ?? '').trim();
+  if (normalizedVariantId) params.set('variantId', normalizedVariantId);
+  return `/checkout?${params.toString()}`;
+}
+
 export function isStoreProductSpecialOrder(item: StoreProduct | null) {
   return item?.fulfillmentMode === 'SPECIAL_ORDER';
 }
@@ -31,7 +42,7 @@ export function canPurchaseStoreProduct(item: StoreProduct | null) {
 
 export function getStoreProductCtaLabel(item: StoreProduct | null) {
   if (!item) return 'Agregar al carrito';
-  if (isStoreProductSpecialOrder(item)) return 'Encargar';
+  if (isStoreProductSpecialOrder(item)) return 'Encargar ahora';
   return canPurchaseStoreProduct(item) ? 'Agregar al carrito' : 'Sin stock';
 }
 

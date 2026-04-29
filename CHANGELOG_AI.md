@@ -13,6 +13,35 @@
 ---
 
 ### 2026-04-29 - Codex
+- Alcance: compra directa para productos por encargue.
+- Tipo de intervencion: ajuste funcional frontend de tienda, carrito y checkout.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/store/store-page.sections.tsx`
+  - `next-stack/apps/web/src/features/store/StoreProductDetailPage.tsx`
+  - `next-stack/apps/web/src/features/store/store-product-detail.sections.tsx`
+  - `next-stack/apps/web/src/features/store/store-product-detail.helpers.ts`
+  - `next-stack/apps/web/src/features/store/store-product-detail.helpers.test.ts`
+  - `next-stack/apps/web/src/features/cart/CartPage.tsx`
+  - `next-stack/apps/web/src/features/cart/cart.helpers.ts`
+  - `next-stack/apps/web/src/features/cart/cart.helpers.test.ts`
+  - `next-stack/apps/web/src/features/cart/cart.sections.tsx`
+  - `next-stack/apps/web/src/features/orders/CheckoutPage.tsx`
+  - `next-stack/apps/web/src/features/orders/checkout.helpers.ts`
+  - `next-stack/apps/web/src/features/orders/checkout.helpers.test.ts`
+  - `next-stack/apps/web/src/features/orders/checkout.sections.tsx`
+- ¿Cambio comportamiento funcional?: Si. Los productos por encargue dejan de entrar al carrito y se compran desde checkout directo con una linea.
+- Validaciones ejecutadas:
+  - `npm run typecheck --workspace @nico/web`
+  - `npm run test --workspace @nico/web`
+  - `npm run build --workspace @nico/web`
+  - `npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - El backend mantiene la validacion final de color y disponibilidad al confirmar el pedido.
+
+---
+
+### 2026-04-29 - Codex
 - Alcance: corregir agregado al carrito de productos por encargue.
 - Tipo de intervencion: ajuste funcional frontend de tienda, carrito y checkout.
 - Archivos tocados:

@@ -18,6 +18,7 @@ import {
   type StoreSortValue,
 } from './store-page.helpers';
 import {
+  buildSpecialOrderCheckoutUrl,
   getAvailableStoreProductColorOptions,
   requiresStoreProductColorSelection,
 } from './store-product-detail.helpers';
@@ -545,7 +546,7 @@ function StoreGridCard({ product }: { product: StoreProduct }) {
       : isSpecialOrder
         ? 'Encargar'
         : 'Agregar al carrito';
-  const useTextAction = requiresColorSelection && (!canPurchase || !canAddDirectly);
+  const useTextAction = isSpecialOrder;
 
   return (
     <div className="product-card product-card-grid">
@@ -583,6 +584,10 @@ function StoreGridCard({ product }: { product: StoreProduct }) {
                 onClick={() => {
                   if (!canAddDirectly) {
                     navigate(`/store/${product.slug}`);
+                    return;
+                  }
+                  if (isSpecialOrder) {
+                    navigate(buildSpecialOrderCheckoutUrl(product.id, 1, quickVariantId));
                     return;
                   }
                   cartStorage.add(product.id, 1, { productName: product.name, variantId: quickVariantId });

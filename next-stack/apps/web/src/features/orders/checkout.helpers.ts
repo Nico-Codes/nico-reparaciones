@@ -51,6 +51,33 @@ export function buildCheckoutItems(lines: CartQuoteLine[]): CartLocalItem[] {
   }));
 }
 
+export function buildSpecialOrderCheckoutItems(search: string | URLSearchParams) {
+  const params = typeof search === 'string' ? new URLSearchParams(search) : search;
+  const mode = (params.get('mode') ?? '').trim();
+  const isSpecialOrderMode = mode === 'special-order';
+  if (!isSpecialOrderMode) {
+    return { isSpecialOrderMode: false, items: [] as CartLocalItem[], error: '' };
+  }
+
+  const productId = (params.get('productId') ?? '').trim();
+  const variantId = (params.get('variantId') ?? '').trim() || null;
+  const quantity = Math.max(1, Math.min(999, Number(params.get('quantity')) || 1));
+
+  if (!productId) {
+    return {
+      isSpecialOrderMode: true,
+      items: [] as CartLocalItem[],
+      error: 'Falta el producto por encargue. Volve a la tienda y elegi el producto nuevamente.',
+    };
+  }
+
+  return {
+    isSpecialOrderMode: true,
+    items: [{ productId, variantId, quantity }],
+    error: '',
+  };
+}
+
 export function sameCartItems(left: CartLocalItem[], right: CartLocalItem[]) {
   return (
     left.length === right.length &&

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildSpecialOrderCheckoutUrl,
   canPurchaseStoreProduct,
   clampStoreProductQuantity,
   formatStoreProductMoney,
@@ -11,6 +12,15 @@ import {
 } from './store-product-detail.helpers';
 
 describe('store-product-detail.helpers', () => {
+  it('builds direct checkout URLs for special-order products', () => {
+    expect(buildSpecialOrderCheckoutUrl('product-1', 2, 'color-1')).toBe(
+      '/checkout?mode=special-order&productId=product-1&quantity=2&variantId=color-1',
+    );
+    expect(buildSpecialOrderCheckoutUrl('product-1', 2000)).toBe(
+      '/checkout?mode=special-order&productId=product-1&quantity=999',
+    );
+  });
+
   it('formats money and resolves stock tones', () => {
     expect(formatStoreProductMoney(12345)).toBe('$ 12.345');
     expect(resolveStoreProductStockTone(null)).toBe('neutral');

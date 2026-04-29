@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { quoteCart } from '@/features/cart/api';
 import { cartStorage } from '@/features/cart/storage';
 import type { CartQuoteResponse } from '@/features/cart/types';
+import { filterInventoryCartQuote } from '@/features/cart/cart.helpers';
 import { authStorage } from '@/features/auth/storage';
 import {
   buildCheckoutItems,
+  buildSpecialOrderCheckoutItems,
   buildValidCheckoutLines,
   hasInvalidCheckoutItems,
   resolveCheckoutPaymentMethods,
@@ -29,6 +31,7 @@ import type { CheckoutConfig } from './types';
 
 export function CheckoutPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [quote, setQuote] = useState<CartQuoteResponse | null>(null);
   const [checkoutConfig, setCheckoutConfig] = useState<CheckoutConfig | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<string>('efectivo');
@@ -36,8 +39,13 @@ export function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState('');
 
-  const localItems = cartStorage.getItems();
-  const hasCartItems = localItems.length > 0;
+  const specialOrderCheckout = useMemo(() => buildSpecialOrderCheckoutItems(location.search), [location.search]);
+  const isSpecialOrderMode = specialOrderCheckout.isSpecialOrderMode;
+  const stableCheckoutSourceItems = useMemo(
+    () => (isSpecialOrderMode ? specialOrderCheckout.items : cartStorage.getItems()),
+    [isSpecialOrderMode, specialOrderCheckout.items],
+  );
+  const hasCartItems = stableCheckoutSourceItems.length > 0;
   const user = authStorage.getUser();
 
   useEffect(() => {
@@ -45,14 +53,20 @@ export function CheckoutPage() {
     setLoading(true);
     setMessage('');
 
-    Promise.allSettled([quoteCart(localItems), ordersApi.checkoutConfig()])
+    Promise.allSettled([
+      specialOrderCheckout.error
+        ? Promise.resolve({ items: [], totals: { subtotal: 0, itemsCount: 0 } } as CartQuoteResponse)
+        : quoteCart(stableCheckoutSourceItems),
+      ordersApi.checkoutConfig(),
+    ])
       .then(([quoteResult, configResult]) => {
         if (!active) return;
         if (quoteResult.status === 'fulfilled') {
-          const response = quoteResult.value;
+          const inventoryFilter = isSpecialOrderMode ? null : filterInventoryCartQuote(quoteResult.value);
+          const response = isSpecialOrderMode ? quoteResult.value : inventoryFilter?.quote ?? quoteResult.value;
           setQuote(response);
 
-          if (response.items.length) {
+          if (!isSpecialOrderMode && quoteResult.value.items.length) {
             const normalized = buildCheckoutItems(response.items);
             const current = cartStorage.getItems();
             if (!sameCartItems(normalized, current)) {
@@ -64,6 +78,11 @@ export function CheckoutPage() {
             setCheckoutConfig(configResult.value);
           } else {
             setCheckoutConfig(null);
+          }
+          if (specialOrderCheckout.error) {
+            setMessage(specialOrderCheckout.error);
+          } else if (inventoryFilter && inventoryFilter.removedSpecialOrderCount > 0) {
+            setMessage('Los productos por encargue se compran directamente desde su ficha.');
           }
           return;
         }
@@ -82,7 +101,7 @@ export function CheckoutPage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [stableCheckoutSourceItems, isSpecialOrderMode, specialOrderCheckout.error]);
 
   const validItems = useMemo(() => buildValidCheckoutLines(quote?.items ?? []), [quote]);
   const validCheckoutItems = useMemo(() => buildCheckoutItems(validItems), [validItems]);
@@ -109,7 +128,9 @@ export function CheckoutPage() {
         items: validCheckoutItems,
         paymentMethod,
       });
-      cartStorage.clear();
+      if (!isSpecialOrderMode) {
+        cartStorage.clear();
+      }
       navigate(`/orders/${order.id}`, { replace: true });
     } catch (cause) {
       setMessage(cause instanceof Error ? cause.message : 'Error creando el pedido');
@@ -122,12 +143,15 @@ export function CheckoutPage() {
     return <CheckoutLoadingState message="Preparando checkout" />;
   }
 
-  if (!validItems.length) {
+  const quotedItems = quote?.items ?? [];
+
+  if (!quotedItems.length) {
     return (
       <CheckoutEmptyState
         hasCartItems={hasCartItems}
         hasInvalidItems={hasInvalidItems}
         message={message}
+        mode={isSpecialOrderMode ? 'special-order' : 'cart'}
       />
     );
   }
@@ -136,10 +160,14 @@ export function CheckoutPage() {
     <PageShell context="store" className="space-y-6">
       <PageHeader
         context="store"
-        eyebrow="Compra"
-        title="Finalizar compra"
-        subtitle="Última revisión antes de confirmar tu pedido para retiro en local."
-        actions={<StatusBadge label={`${validItems.length} productos`} tone="info" />}
+        eyebrow={isSpecialOrderMode ? 'Encargo' : 'Compra'}
+        title={isSpecialOrderMode ? 'Finalizar encargo' : 'Finalizar compra'}
+        subtitle={
+          isSpecialOrderMode
+            ? 'Ultima revision antes de confirmar el producto por encargue.'
+            : 'Ultima revision antes de confirmar tu pedido para retiro en local.'
+        }
+        actions={<StatusBadge label={`${quotedItems.length} ${quotedItems.length === 1 ? 'producto' : 'productos'}`} tone="info" />}
       />
 
       <CheckoutFeedback message={message} />
@@ -153,12 +181,18 @@ export function CheckoutPage() {
             onChange={setPaymentMethod}
           />
           <CheckoutAccountSection user={user} />
-          <CheckoutActions canConfirm={canConfirm} submitting={submitting} onConfirm={() => void confirmOrder()} />
+          <CheckoutActions
+            canConfirm={canConfirm}
+            submitting={submitting}
+            onConfirm={() => void confirmOrder()}
+            secondaryTo={isSpecialOrderMode ? '/store' : '/cart'}
+            secondaryLabel={isSpecialOrderMode ? 'Volver a tienda' : 'Volver al carrito'}
+          />
         </div>
 
         <CheckoutSummarySection
           quote={quote}
-          items={quote?.items ?? []}
+          items={quotedItems}
           paymentTitle={selectedPayment.title}
           paymentSubtitle={selectedPayment.subtitle}
         />

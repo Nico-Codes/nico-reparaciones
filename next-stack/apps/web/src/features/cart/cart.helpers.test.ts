@@ -4,6 +4,7 @@ import {
   buildQuotedCartItems,
   buildValidCartLines,
   clampCartQuantity,
+  filterInventoryCartQuote,
   formatCartMoney,
   hasCartStockIssue,
   resolveCartStockTone,
@@ -116,5 +117,36 @@ describe('cart.helpers', () => {
     expect(clampCartQuantity(99, 3, 'INVENTORY')).toBe(3);
     expect(clampCartQuantity(4, 0, 'INVENTORY')).toBe(1);
     expect(clampCartQuantity(2000, 0, 'SPECIAL_ORDER')).toBe(999);
+  });
+
+  it('filters special order lines out of cart quotes', () => {
+    const inventoryLine = makeLine({
+      productId: 'p-1',
+      quantity: 2,
+      valid: true,
+      name: 'Cable',
+      unitPrice: 100,
+      lineTotal: 200,
+      stockAvailable: 4,
+    });
+    const specialOrderLine = makeLine({
+      productId: 'p-2',
+      quantity: 1,
+      valid: true,
+      name: 'iPhone por encargue',
+      unitPrice: 1000,
+      lineTotal: 1000,
+      stockAvailable: 0,
+      fulfillmentMode: 'SPECIAL_ORDER',
+    });
+
+    const result = filterInventoryCartQuote({
+      items: [inventoryLine, specialOrderLine],
+      totals: { subtotal: 1200, itemsCount: 3 },
+    });
+
+    expect(result.removedSpecialOrderCount).toBe(1);
+    expect(result.quote.items).toEqual([inventoryLine]);
+    expect(result.quote.totals).toEqual({ subtotal: 200, itemsCount: 2 });
   });
 });

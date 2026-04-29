@@ -1,4 +1,4 @@
-import type { CartLocalItem, CartQuoteLine } from './types';
+import type { CartLocalItem, CartQuoteLine, CartQuoteResponse } from './types';
 
 export type BadgeTone = 'neutral' | 'info' | 'accent' | 'success' | 'warning' | 'danger';
 
@@ -19,6 +19,22 @@ export function resolveCartStockTone(valid: boolean, stockAvailable: number, ful
 
 export function buildValidCartLines(items: CartQuoteLine[]) {
   return items.filter((item) => item.valid);
+}
+
+export function filterInventoryCartQuote(response: CartQuoteResponse) {
+  const items = response.items.filter((item) => item.fulfillmentMode === 'INVENTORY');
+  const validItems = buildValidCartLines(items);
+  return {
+    quote: {
+      ...response,
+      items,
+      totals: {
+        subtotal: validItems.reduce((total, item) => total + item.lineTotal, 0),
+        itemsCount: validItems.reduce((total, item) => total + item.quantity, 0),
+      },
+    },
+    removedSpecialOrderCount: response.items.length - items.length,
+  };
 }
 
 export function buildQuotedCartItems(items: CartQuoteLine[]): CartLocalItem[] {
