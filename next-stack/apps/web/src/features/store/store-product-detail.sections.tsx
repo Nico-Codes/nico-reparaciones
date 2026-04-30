@@ -193,7 +193,6 @@ export function StoreProductPurchaseSection({
           <div className="product-color-picker__header">
             <div>
               <div className="ui-field__label">Elegi un color</div>
-              <div className="product-color-picker__hint">Agotados deshabilitados.</div>
             </div>
             <StatusBadge
               tone="info"

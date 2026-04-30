@@ -97,11 +97,6 @@ export function StoreProductDetailPage() {
         className="product-detail-header"
         eyebrow={item.category?.name || 'Producto'}
         title={item.name}
-        subtitle={
-          isStoreProductSpecialOrder(item)
-            ? 'Encargo con confirmacion de proveedor y retiro en local.'
-            : 'Compra con retiro en local y stock validado.'
-        }
         actions={<StoreProductHeaderActions item={item} canPurchase={canPurchase} />}
       />
 
