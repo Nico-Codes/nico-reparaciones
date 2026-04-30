@@ -563,7 +563,7 @@ function StoreGridCard({ product }: { product: StoreProduct }) {
           {product.name}
         </Link>
 
-        <div className="flex flex-wrap gap-1.5">
+        <div className="product-badges">
           {isSpecialOrder ? <StatusBadge tone="accent" size="sm" label="Por encargue" /> : null}
         </div>
 

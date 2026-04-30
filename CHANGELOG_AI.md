@@ -13,6 +13,25 @@
 ---
 
 ### 2026-04-30 - Codex
+- Alcance: ordenar espaciado interno de cards de producto en tienda.
+- Tipo de intervencion: ajuste UX frontend en cards publicas.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/store/store-page.sections.tsx`
+  - `next-stack/apps/web/src/styles/store.css`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si, visual/UX. Los espacios entre nombre, badge, categoria, precio y CTA ahora usan margenes explicitos y simetricos.
+- Validaciones ejecutadas:
+  - `typecheck --workspace @nico/web`
+  - `test --workspace @nico/web`
+  - `build --workspace @nico/web`
+  - `smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - No cambia flujo de compra, carrito ni datos; solo presentacion de cards.
+
+---
+
+### 2026-04-30 - Codex
 - Alcance: compactar nombres de productos en tienda y mover descripcion a detalles desplegables.
 - Tipo de intervencion: ajuste UX frontend con validacion admin/backend para nombres manuales.
 - Archivos tocados:
