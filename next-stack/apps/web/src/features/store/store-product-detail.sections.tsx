@@ -11,13 +11,11 @@ import {
   clampStoreProductQuantity,
   formatStoreProductMoney,
   getStoreProductCtaLabel,
-  getStoreProductAvailabilityLabel,
   getStoreProductFallbackDescription,
   isStoreProductSpecialOrder,
   requiresStoreProductColorSelection,
   resolveStoreProductStockTone,
 } from './store-product-detail.helpers';
-import { buildStoreCategoryPathLabel } from './store-page.helpers';
 import type { StoreProduct } from './types';
 
 type StoreProductLoadingStateProps = {
@@ -50,10 +48,6 @@ type StoreProductPurchaseSectionProps = {
   onQtyChange: (value: number) => void;
   onSelectColor: (value: string) => void;
   onAddToCart: () => void;
-};
-
-type StoreProductMetaSectionProps = {
-  item: StoreProduct;
 };
 
 export function StoreProductLoadingState({ message }: StoreProductLoadingStateProps) {
@@ -292,23 +286,6 @@ export function StoreProductPurchaseSection({
             </Button>
           </div>
         )}
-      </div>
-    </SectionCard>
-  );
-}
-
-export function StoreProductMetaSection({ item }: StoreProductMetaSectionProps) {
-  return (
-    <SectionCard className="product-meta-card" title="Informacion rapida">
-      <div className="meta-grid">
-        <div className="meta-tile">
-          <div className="meta-tile__label">Categoria</div>
-          <div className="meta-tile__value">{item.category ? buildStoreCategoryPathLabel(item.category) : 'Sin categoria'}</div>
-        </div>
-        <div className="meta-tile">
-          <div className="meta-tile__label">Disponibilidad</div>
-          <div className="meta-tile__value">{getStoreProductAvailabilityLabel(item)}</div>
-        </div>
       </div>
     </SectionCard>
   );

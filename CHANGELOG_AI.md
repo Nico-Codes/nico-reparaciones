@@ -13,6 +13,26 @@
 ---
 
 ### 2026-04-30 - Codex
+- Alcance: eliminar informacion rapida del detalle publico de producto y centrar imagen.
+- Tipo de intervencion: ajuste UX frontend en ficha publica de tienda.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/store/StoreProductDetailPage.tsx`
+  - `next-stack/apps/web/src/features/store/store-product-detail.sections.tsx`
+  - `next-stack/apps/web/src/styles/commerce.css`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si, visual/UX. La ficha publica ya no renderiza la caja `Informacion rapida` en desktop ni mobile, y la imagen del producto llena el contenedor centrada.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - No cambia checkout, carrito ni seleccion de color; solo se elimina informacion secundaria del detalle publico.
+
+---
+
+### 2026-04-30 - Codex
 - Alcance: compactar el detalle publico de productos en mobile.
 - Tipo de intervencion: ajuste UX frontend en ficha publica de tienda.
 - Archivos tocados:

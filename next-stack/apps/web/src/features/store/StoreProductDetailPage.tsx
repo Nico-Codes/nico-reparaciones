@@ -18,7 +18,6 @@ import {
   StoreProductHelpSection,
   StoreProductLoadingState,
   StoreProductMediaSection,
-  StoreProductMetaSection,
   StoreProductPurchaseSection,
 } from './store-product-detail.sections';
 import type { StoreProduct } from './types';
@@ -120,7 +119,6 @@ export function StoreProductDetailPage() {
             onSelectColor={setSelectedColorId}
             onAddToCart={addToCart}
           />
-          <StoreProductMetaSection item={item} />
           <StoreProductHelpSection />
         </div>
       </div>
