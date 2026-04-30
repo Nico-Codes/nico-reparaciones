@@ -9,7 +9,7 @@ import { Link, useParams } from 'react-router-dom';
 import { catalogAdminApi, type AdminCategory, type AdminProduct } from './api';
 import { productPricingApi } from './productPricingApi';
 import { AdminProductEditFeedback, AdminProductEditFormLayout, AdminProductEditHeaderActions, AdminProductEditMissingState } from './admin-product-edit.sections';
-import { buildHierarchicalCategoryOptions, buildNamedOptions, buildProductMarginStats, slugify } from './admin-product-form.helpers';
+import { buildHierarchicalCategoryOptions, buildNamedOptions, buildProductMarginStats, slugify, validateProductNameLength } from './admin-product-form.helpers';
 
 export function AdminProductEditPage() {
   const { id = '' } = useParams();
@@ -179,6 +179,12 @@ export function AdminProductEditPage() {
     setError('');
     setSuccess('');
     try {
+      const nameLengthError = validateProductNameLength(name);
+      if (nameLengthError) {
+        setError(nameLengthError);
+        return;
+      }
+
       const nextCost = Number(costPrice || 0);
       const nextPrice = Number(price || 0);
       if (preventNegativeMargin && Number.isFinite(nextCost) && Number.isFinite(nextPrice) && nextPrice < nextCost) {

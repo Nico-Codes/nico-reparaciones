@@ -10,7 +10,7 @@ import { TextAreaField } from '@/components/ui/textarea-field';
 import { TextField } from '@/components/ui/text-field';
 import type { AdminCategory } from './api';
 import { BooleanChoice, SelectField } from './admin-product-form.controls';
-import { money, type ProductMarginStats, type ProductSelectOption } from './admin-product-form.helpers';
+import { money, PRODUCT_NAME_MAX_LENGTH, type ProductMarginStats, type ProductSelectOption } from './admin-product-form.helpers';
 import type { AdminProductCreateSummaryItem } from './admin-product-create.helpers';
 
 export function AdminProductCreateLoadingState() {
@@ -165,7 +165,14 @@ export function AdminProductCreateFormLayout({
           actions={<StatusBadge tone="neutral" size="sm" label={finalSlug ? `Slug: ${finalSlug}` : 'Sin slug'} />}
         >
           <div className="grid gap-4 md:grid-cols-2">
-            <TextField label="Nombre" value={name} onChange={(event) => onNameChange(event.target.value)} placeholder="Ej: Módulo de carga iPhone 12" />
+            <TextField
+              label="Nombre"
+              value={name}
+              maxLength={PRODUCT_NAME_MAX_LENGTH}
+              onChange={(event) => onNameChange(event.target.value)}
+              placeholder="Ej: Modulo de carga iPhone 12"
+              hint={`${name.trim().length}/${PRODUCT_NAME_MAX_LENGTH} caracteres. Usa detalles para informacion extra.`}
+            />
             <TextField label="Slug" value={slug} onChange={(event) => onSlugChange(event.target.value)} placeholder="Se genera automáticamente si queda vacío" hint="Si lo dejás vacío, se construye a partir del nombre." />
           </div>
 
@@ -181,11 +188,11 @@ export function AdminProductCreateFormLayout({
 
           <div className="mt-4">
             <TextAreaField
-              label="Descripción comercial"
+              label="Detalles del producto"
               value={description}
               onChange={(event) => onDescriptionChange(event.target.value)}
               rows={4}
-              placeholder="Detalle, compatibilidad, color, observaciones y argumentos de venta."
+              placeholder="Compatibilidad, color, observaciones y argumentos de venta. Esto se ve en la ficha del producto."
             />
           </div>
         </SectionCard>

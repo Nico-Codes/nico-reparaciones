@@ -42,6 +42,18 @@ describe('admin-product-create.helpers', () => {
         false,
       ),
     ).toBeNull();
+
+    expect(
+      validateAdminProductCreateDraft(
+        {
+          name: 'x'.repeat(65),
+          slug: '',
+          costPrice: '20',
+          price: '30',
+        },
+        true,
+      ),
+    ).toContain('hasta 64 caracteres');
   });
 
   it('builds normalized payload for create product', () => {

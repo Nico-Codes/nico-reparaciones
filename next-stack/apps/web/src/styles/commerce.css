@@ -450,14 +450,52 @@
   gap: 0.75rem;
 }
 
-.product-detail-description-note {
-  white-space: pre-line;
+.product-detail-details {
+  overflow: hidden;
   border-radius: 1rem;
+  border: 1px solid rgba(226, 232, 240, 0.92);
   background: rgba(248, 250, 252, 0.82);
-  padding: 0.75rem 0.85rem;
+}
+
+.product-detail-details__summary {
+  display: flex;
+  cursor: pointer;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.78rem 0.85rem;
+  color: var(--nr-text-strong);
+  font-size: 0.86rem;
+  font-weight: 900;
+  list-style: none;
+}
+
+.product-detail-details__summary::-webkit-details-marker {
+  display: none;
+}
+
+.product-detail-details__summary::after {
+  width: 0.5rem;
+  height: 0.5rem;
+  flex: 0 0 auto;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  content: "";
+  transform: rotate(45deg);
+  transition: transform 160ms ease;
+}
+
+.product-detail-details[open] .product-detail-details__summary::after {
+  transform: rotate(225deg);
+}
+
+.product-detail-details__content {
+  white-space: pre-line;
+  border-top: 1px solid rgba(226, 232, 240, 0.86);
+  padding: 0.75rem 0.85rem 0.85rem;
+  color: var(--nr-text-body);
   font-size: 0.86rem;
   line-height: 1.5;
-  color: var(--nr-text-body);
 }
 
 @media (min-width: 640px) {
@@ -1177,12 +1215,6 @@
 
   .product-quantity-control .quantity-stepper__input {
     width: 3rem;
-  }
-
-  .product-detail-description-note {
-    padding: 0.65rem 0.72rem;
-    font-size: 0.8rem;
-    line-height: 1.42;
   }
 
   .product-meta-card .meta-grid {

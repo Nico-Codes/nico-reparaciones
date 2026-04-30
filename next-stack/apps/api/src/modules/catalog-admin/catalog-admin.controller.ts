@@ -15,9 +15,10 @@ const categoryCreateSchema = z.object({
   active: z.boolean().optional(),
 });
 const categoryPatchSchema = categoryCreateSchema.partial();
+const manualProductNameMaxLength = 64;
 
 const productCreateSchema = z.object({
-  name: z.string().trim().min(2).max(190),
+  name: z.string().trim().min(2).max(manualProductNameMaxLength),
   slug: z.string().trim().min(2).max(190),
   description: z.string().trim().max(5000).optional().nullable(),
   price: z.number().nonnegative().optional().nullable(),

@@ -4,7 +4,9 @@ import {
   buildHierarchicalCategoryOptions,
   buildNamedOptions,
   buildProductMarginStats,
+  PRODUCT_NAME_MAX_LENGTH,
   slugify,
+  validateProductNameLength,
 } from './admin-product-form.helpers';
 
 describe('admin-product-form helpers', () => {
@@ -45,5 +47,12 @@ describe('admin-product-form helpers', () => {
 
     expect(buildProductMarginStats('100', '100').tone).toBe('warning');
     expect(buildProductMarginStats('100', '80').tone).toBe('danger');
+  });
+
+  it('validates product names against the public card limit', () => {
+    expect(validateProductNameLength('Samsung S25 Ultra 12/1TB 5G DS')).toBeNull();
+    expect(validateProductNameLength('x'.repeat(PRODUCT_NAME_MAX_LENGTH + 1))).toContain(
+      `hasta ${PRODUCT_NAME_MAX_LENGTH} caracteres`,
+    );
   });
 });

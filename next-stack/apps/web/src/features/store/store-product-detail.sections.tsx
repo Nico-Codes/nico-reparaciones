@@ -267,9 +267,12 @@ export function StoreProductPurchaseSection({
           </Button>
         </div>
 
-        <div className="product-detail-description-note">
-          {getStoreProductFallbackDescription(item)}
-        </div>
+        <details className="product-detail-details">
+          <summary className="product-detail-details__summary">Detalles del producto</summary>
+          <div className="product-detail-details__content">
+            {getStoreProductFallbackDescription(item)}
+          </div>
+        </details>
 
         {isSpecialOrder ? (
           <Button asChild variant="outline" className="w-full justify-center">

@@ -1294,8 +1294,8 @@ textarea:focus-visible {
 
 .product-card-featured .product-title {
   font-size: 14px;
-  line-height: 1.2;
-  min-height: calc(1.2em * 2);
+  line-height: 1.08;
+  min-height: 1.08em;
 }
 
 .product-card-featured .product-price {
@@ -1331,17 +1331,28 @@ textarea:focus-visible {
 }
 
 .product-title {
+  min-width: 0;
   color: #09090b;
+  font-size: 0.95rem;
   font-weight: 900;
-  line-height: 1.22;
+  line-height: 1.15;
   letter-spacing: -0.02em;
   text-decoration: none;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
+  display: block;
   overflow: hidden;
-  min-height: calc(1.2em * 2);
+  min-height: 1.15em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.product-title--sm {
+  font-size: clamp(0.78rem, 1.75vw, 0.86rem);
+  letter-spacing: -0.045em;
+}
+
+.product-title--xs {
+  font-size: clamp(0.68rem, 1.45vw, 0.78rem);
+  letter-spacing: -0.06em;
 }
 
 .product-meta {
@@ -1447,7 +1458,15 @@ textarea:focus-visible {
   .product-card-grid .product-title {
     min-height: 0;
     font-size: 0.82rem;
-    line-height: 1.14;
+    line-height: 1.08;
+  }
+
+  .product-card-grid .product-title--sm {
+    font-size: clamp(0.68rem, 3.6vw, 0.75rem);
+  }
+
+  .product-card-grid .product-title--xs {
+    font-size: clamp(0.58rem, 3.15vw, 0.67rem);
   }
 
   .product-card-grid .product-meta {

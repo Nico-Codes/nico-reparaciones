@@ -1,5 +1,5 @@
 import type { AdminCategory } from './api';
-import { findCategoryPathLabel, money, slugify } from './admin-product-form.helpers';
+import { findCategoryPathLabel, money, slugify, validateProductNameLength } from './admin-product-form.helpers';
 
 export type AdminProductCreateDraft = {
   name: string;
@@ -37,6 +37,8 @@ export function validateAdminProductCreateDraft(
   if (!trimmedName || nextSlug.length < 2) {
     return 'Completa un nombre valido para generar el producto.';
   }
+  const nameLengthError = validateProductNameLength(trimmedName);
+  if (nameLengthError) return nameLengthError;
 
   const nextCost = Number(draft.costPrice || 0);
   const nextPrice = Number(draft.price || 0);

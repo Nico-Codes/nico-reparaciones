@@ -13,6 +13,38 @@
 ---
 
 ### 2026-04-30 - Codex
+- Alcance: compactar nombres de productos en tienda y mover descripcion a detalles desplegables.
+- Tipo de intervencion: ajuste UX frontend con validacion admin/backend para nombres manuales.
+- Archivos tocados:
+  - `next-stack/apps/api/src/modules/catalog-admin/catalog-admin.controller.ts`
+  - `next-stack/apps/web/src/features/catalogAdmin/AdminProductEditPage.tsx`
+  - `next-stack/apps/web/src/features/catalogAdmin/admin-product-create.helpers.ts`
+  - `next-stack/apps/web/src/features/catalogAdmin/admin-product-create.helpers.test.ts`
+  - `next-stack/apps/web/src/features/catalogAdmin/admin-product-create.sections.tsx`
+  - `next-stack/apps/web/src/features/catalogAdmin/admin-product-edit-panels.tsx`
+  - `next-stack/apps/web/src/features/catalogAdmin/admin-product-form.helpers.ts`
+  - `next-stack/apps/web/src/features/catalogAdmin/admin-product-form.helpers.test.ts`
+  - `next-stack/apps/web/src/features/store/store-page.sections.tsx`
+  - `next-stack/apps/web/src/features/store/store-product-detail.sections.tsx`
+  - `next-stack/apps/web/src/styles/commerce.css`
+  - `next-stack/apps/web/src/styles/store.css`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. Las cards publicas muestran nombres en una sola linea, los formularios manuales limitan el nombre a 64 caracteres y la ficha publica usa un bloque desplegable `Detalles del producto`.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/api`
+  - `cmd /c npm run test --workspace @nico/api`
+  - `cmd /c npm run build --workspace @nico/api`
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - El limite aplica a alta/edicion manual por admin; el importador de encargues no se limita en esta pasada para no romper listados de proveedor ya operativos.
+
+---
+
+### 2026-04-30 - Codex
 - Alcance: mostrar dimensiones recomendadas al cargar imagen de producto.
 - Tipo de intervencion: ajuste UX frontend en formularios admin de catalogo.
 - Archivos tocados:

@@ -63,6 +63,13 @@ type StoreResultsSectionProps = {
   onClearFilters: () => void;
 };
 
+function resolveProductTitleClassName(name: string) {
+  const length = name.trim().length;
+  if (length > 48) return 'product-title product-title--xs';
+  if (length > 34) return 'product-title product-title--sm';
+  return 'product-title';
+}
+
 function usePopupPresence(open: boolean, exitMs = 180) {
   const [shouldRender, setShouldRender] = useState(open);
   const [closing, setClosing] = useState(false);
@@ -552,7 +559,7 @@ function StoreGridCard({ product }: { product: StoreProduct }) {
       </Link>
 
       <div className="product-body">
-        <Link className="product-title" to={`/store/${product.slug}`}>
+        <Link className={resolveProductTitleClassName(product.name)} to={`/store/${product.slug}`} title={product.name}>
           {product.name}
         </Link>
 

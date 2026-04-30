@@ -14,6 +14,8 @@ export type ProductMarginStats = {
   tone: 'success' | 'warning' | 'danger';
 };
 
+export const PRODUCT_NAME_MAX_LENGTH = 64;
+
 export function money(value: number) {
   return `$ ${Math.round(value || 0).toLocaleString('es-AR')}`;
 }
@@ -94,4 +96,10 @@ export function buildProductMarginStats(costPrice: string, price: string): Produ
   const margin = cost > 0 ? (utility / cost) * 100 : 0;
   const tone: ProductMarginStats['tone'] = utility > 0 ? 'success' : utility === 0 ? 'warning' : 'danger';
   return { utility, margin, tone };
+}
+
+export function validateProductNameLength(name: string) {
+  const length = name.trim().length;
+  if (length <= PRODUCT_NAME_MAX_LENGTH) return null;
+  return `El nombre puede tener hasta ${PRODUCT_NAME_MAX_LENGTH} caracteres. Usa detalles del producto para informacion extra.`;
 }
