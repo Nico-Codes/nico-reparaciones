@@ -97,7 +97,7 @@ export function StoreProductDetailPage() {
         className="product-detail-header"
         eyebrow={item.category?.name || 'Producto'}
         title={item.name}
-        actions={<StoreProductHeaderActions item={item} canPurchase={canPurchase} />}
+        actions={<StoreProductHeaderActions item={item} />}
       />
 
       <div className="commerce-layout commerce-layout--product">

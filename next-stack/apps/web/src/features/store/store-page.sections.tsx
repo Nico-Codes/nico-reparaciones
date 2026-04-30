@@ -7,7 +7,6 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { FilterBar } from '@/components/ui/filter-bar';
 import { LoadingBlock } from '@/components/ui/loading-block';
 import { SectionCard } from '@/components/ui/section-card';
-import { StatusBadge } from '@/components/ui/status-badge';
 import { TextField } from '@/components/ui/text-field';
 import { CustomSelect } from '@/components/ui/custom-select';
 import { cartStorage } from '@/features/cart/storage';
@@ -556,20 +555,13 @@ function StoreGridCard({ product }: { product: StoreProduct }) {
         ) : (
           <div className="product-image-placeholder">Sin imagen</div>
         )}
+        {isSpecialOrder ? <span className="product-image-badge">Por encargue</span> : null}
       </Link>
 
       <div className="product-body">
         <Link className={resolveProductTitleClassName(product.name)} to={`/store/${product.slug}`} title={product.name}>
           {product.name}
         </Link>
-
-        <div className="product-badges">
-          {isSpecialOrder ? (
-            <StatusBadge tone="accent" size="sm" label="Por encargue" />
-          ) : (
-            <StatusBadge tone="success" size="sm" label="Stock disponible" />
-          )}
-        </div>
 
         <div className="product-purchase-block">
           <div className="product-meta">{product.category ? buildStoreCategoryPathLabel(product.category) : 'Producto general'}</div>

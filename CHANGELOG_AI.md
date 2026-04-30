@@ -13,6 +13,26 @@
 ---
 
 ### 2026-04-30 - Codex
+- Alcance: mover badge de encargue sobre imagen de producto en tienda.
+- Tipo de intervencion: ajuste UX frontend en cards y detalle publico.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/store/StoreProductDetailPage.tsx`
+  - `next-stack/apps/web/src/features/store/store-page.sections.tsx`
+  - `next-stack/apps/web/src/features/store/store-product-detail.sections.tsx`
+  - `next-stack/apps/web/src/styles/commerce.css`
+  - `next-stack/apps/web/src/styles/store.css`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si, visual/UX. Las cards ya no reservan espacio inferior para badges; `Por encargue` queda como overlay sobre la imagen y `Stock disponible` deja de mostrarse.
+- Validaciones ejecutadas:
+  - `typecheck --workspace @nico/web`
+  - `build --workspace @nico/web`
+  - `git diff --check`
+- Riesgos / notas:
+  - No cambia disponibilidad, carrito ni checkout.
+
+---
+
+### 2026-04-30 - Codex
 - Alcance: renombrar badge de stock fisico en tienda.
 - Tipo de intervencion: ajuste copy frontend.
 - Archivos tocados:

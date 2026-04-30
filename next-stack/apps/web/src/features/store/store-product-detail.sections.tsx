@@ -14,7 +14,6 @@ import {
   getStoreProductFallbackDescription,
   isStoreProductSpecialOrder,
   requiresStoreProductColorSelection,
-  resolveStoreProductStockTone,
 } from './store-product-detail.helpers';
 import type { StoreProduct } from './types';
 
@@ -32,7 +31,6 @@ type StoreProductBreadcrumbProps = {
 
 type StoreProductHeaderActionsProps = {
   item: StoreProduct;
-  canPurchase: boolean;
 };
 
 type StoreProductMediaSectionProps = {
@@ -121,17 +119,8 @@ export function StoreProductBreadcrumb({ item }: StoreProductBreadcrumbProps) {
   );
 }
 
-export function StoreProductHeaderActions({ item, canPurchase }: StoreProductHeaderActionsProps) {
-  const isSpecialOrder = isStoreProductSpecialOrder(item);
-  return (
-    <>
-      <StatusBadge
-        label={isSpecialOrder ? 'Por encargue' : canPurchase ? 'Stock disponible' : 'Sin stock'}
-        tone={resolveStoreProductStockTone(item)}
-      />
-      {item.featured ? <StatusBadge label="Destacado" tone="accent" /> : null}
-    </>
-  );
+export function StoreProductHeaderActions({ item }: StoreProductHeaderActionsProps) {
+  return item.featured ? <StatusBadge label="Destacado" tone="accent" /> : null;
 }
 
 export function StoreProductMediaSection({ item }: StoreProductMediaSectionProps) {
@@ -151,6 +140,7 @@ export function StoreProductMediaSection({ item }: StoreProductMediaSectionProps
         ) : (
           <div className="media-surface__placeholder">Sin imagen disponible</div>
         )}
+        {isStoreProductSpecialOrder(item) ? <span className="product-image-badge">Por encargue</span> : null}
       </div>
     </SectionCard>
   );
