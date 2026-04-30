@@ -13,6 +13,25 @@
 ---
 
 ### 2026-04-30 - Codex
+- Alcance: ajustar cards mobile de tienda para precios largos y titulos cortos.
+- Tipo de intervencion: ajuste UX frontend en cards publicas de tienda.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/store/store-page.sections.tsx`
+  - `next-stack/apps/web/src/styles/store.css`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si, visual/UX. Los precios largos reducen fuente para mantenerse en una sola linea junto al CTA y los titulos cortos dejan de reservar altura de dos lineas en mobile.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - No cambia carrito, checkout ni reglas de compra; solo compacta la presentacion de cards.
+
+---
+
+### 2026-04-30 - Codex
 - Alcance: forzar ancho completo real de imagen en detalle mobile de producto.
 - Tipo de intervencion: ajuste UX frontend en ficha publica de tienda.
 - Archivos tocados:

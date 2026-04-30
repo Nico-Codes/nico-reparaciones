@@ -538,6 +538,8 @@ function StoreGridCard({ product }: { product: StoreProduct }) {
     : product.stock > 0;
   const actionLabel = !canPurchase ? 'Sin stock' : isSpecialOrder ? 'Encargar' : 'Agregar al carrito';
   const useTextAction = isSpecialOrder;
+  const formattedPrice = product.price.toLocaleString('es-AR');
+  const isLongPrice = formattedPrice.length >= 9;
 
   return (
     <div className="product-card product-card-grid">
@@ -562,7 +564,7 @@ function StoreGridCard({ product }: { product: StoreProduct }) {
           <div className="product-meta">{product.category ? buildStoreCategoryPathLabel(product.category) : 'Producto general'}</div>
 
           <div className="product-row">
-            <div className="product-price">$ {product.price.toLocaleString('es-AR')}</div>
+            <div className={`product-price ${isLongPrice ? 'product-price--long' : ''}`}>$ {formattedPrice}</div>
 
             <div className="product-actions">
               <button
