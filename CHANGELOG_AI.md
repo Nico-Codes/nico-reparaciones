@@ -13,6 +13,24 @@
 ---
 
 ### 2026-04-30 - Codex
+- Alcance: forzar ancho completo real de imagen en detalle mobile de producto.
+- Tipo de intervencion: ajuste UX frontend en ficha publica de tienda.
+- Archivos tocados:
+  - `next-stack/apps/web/src/styles/commerce.css`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si, visual/UX. En mobile el contenedor interno de imagen del detalle de producto tambien usa `100vw`, evitando que la imagen quede limitada por el ancho de contenido.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - No cambia flujo de compra ni carga de imagenes; solo corrige ancho visual mobile.
+
+---
+
+### 2026-04-30 - Codex
 - Alcance: corregir URLs de imagenes subidas en productos.
 - Tipo de intervencion: ajuste backend de resolucion de assets runtime y documentacion de entorno.
 - Archivos tocados:
