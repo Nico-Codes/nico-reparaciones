@@ -7,6 +7,14 @@ import {
   orderStatusTone,
   paymentMethodLabel,
 } from './order-ui';
+import {
+  SPECIAL_ORDER_RESERVATION_DAYS,
+  SPECIAL_ORDER_RESERVATION_DEPOSIT_PERCENT,
+  buildSpecialOrderReservationDeadline,
+  buildSpecialOrderReservationItemsSummary,
+  calculateSpecialOrderReservationDeposit,
+  isSpecialOrderReservationExpired,
+} from './order-reservation.helpers';
 import type { CheckoutTransferDetails, OrderItem } from './types';
 
 export function resolveOrderDetailLoadError(cause: unknown) {
@@ -17,12 +25,31 @@ export function orderUsesTransferPayment(method: string | null | undefined) {
   return (method ?? '').trim().toLowerCase() === 'transferencia';
 }
 
+export function orderUsesReservationWhatsappPayment(method: string | null | undefined) {
+  return (method ?? '').trim().toLowerCase() === 'reserva_whatsapp';
+}
+
 export function buildOrderDetailTotalItems(order: OrderItem | null) {
   return order?.items.reduce((accumulator, line) => accumulator + line.quantity, 0) ?? 0;
 }
 
 export function orderHasSpecialOrderLines(order: OrderItem | null) {
   return order?.items.some((line) => line.fulfillmentMode === 'SPECIAL_ORDER') ?? false;
+}
+
+export function buildOrderReservationSummary(order: OrderItem, now: Date = new Date()) {
+  const deadline = buildSpecialOrderReservationDeadline(order.createdAt);
+  const expired = isSpecialOrderReservationExpired(order.createdAt, now);
+  return {
+    depositPercent: SPECIAL_ORDER_RESERVATION_DEPOSIT_PERCENT,
+    reservationDays: SPECIAL_ORDER_RESERVATION_DAYS,
+    depositAmount: calculateSpecialOrderReservationDeposit(order.total),
+    deadline,
+    deadlineLabel: formatDateTime(deadline.toISOString()),
+    expired,
+    statusLabel: expired ? 'Reserva vencida' : 'Reserva vigente',
+    statusTone: expired ? 'warning' as const : 'success' as const,
+  };
 }
 
 export function resolveOrderDetailAlertTone(status: string) {
@@ -72,6 +99,33 @@ export function buildOrderTransferWhatsappUrl(
     `Pedido: ${orderCode(order.id)}`,
     `Total: ${money(order.total)}`,
   ].join('\n');
+
+  const params = new URLSearchParams({
+    phone,
+    text: message,
+  });
+  return `https://api.whatsapp.com/send?${params.toString()}`;
+}
+
+export function buildOrderReservationWhatsappUrl(
+  order: OrderItem,
+  whatsappPhone?: string | null,
+  orderUrl?: string | null,
+) {
+  const phone = normalizeWhatsappPhone(whatsappPhone);
+  if (!phone || !orderHasSpecialOrderLines(order)) return null;
+
+  const summary = buildOrderReservationSummary(order);
+  const itemsSummary = buildSpecialOrderReservationItemsSummary(order);
+  const message = [
+    'Hola, quiero finalizar la gestion de mi reserva por encargo.',
+    `Pedido: ${orderCode(order.id)}`,
+    `Productos:\n${itemsSummary}`,
+    `Total: ${money(order.total)}`,
+    `Sena ${summary.depositPercent}%: ${money(summary.depositAmount)}`,
+    `Reserva valida hasta: ${summary.deadlineLabel}`,
+    orderUrl ? `Link del pedido: ${orderUrl}` : '',
+  ].filter(Boolean).join('\n');
 
   const params = new URLSearchParams({
     phone,

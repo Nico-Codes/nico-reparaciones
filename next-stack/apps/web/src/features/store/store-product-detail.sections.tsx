@@ -288,7 +288,7 @@ export function StoreProductPurchaseSection({
 
           <Button type="button" className="w-full justify-center" onClick={onAddToCart} disabled={!canSubmit}>
             {isSpecialOrder ? <ShieldCheck className="h-4 w-4" /> : <ShoppingCart className="h-4 w-4" />}
-            {canSubmit ? actionLabel : requiresColorSelection && canPurchase ? 'Elegir color' : 'Sin stock'}
+            {canSubmit || (isSpecialOrder && canPurchase) ? actionLabel : 'Sin stock'}
           </Button>
         </div>
 

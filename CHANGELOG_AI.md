@@ -12,6 +12,31 @@
 
 ---
 
+### 2026-04-30 - Codex
+- Alcance: reserva por WhatsApp para productos por encargue.
+- Tipo de intervencion: ajuste funcional full-stack en checkout, tienda, pedidos y visualizacion admin.
+- Archivos tocados:
+  - `next-stack/apps/api/src/modules/orders/*`
+  - `next-stack/apps/web/src/features/orders/*`
+  - `next-stack/apps/web/src/features/store/store-page.sections.tsx`
+  - `next-stack/apps/web/src/features/store/store-product-detail.sections.tsx`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. El checkout de encargues exige aceptar condiciones de reserva, crea pedidos con `reserva_whatsapp` y muestra CTA de WhatsApp con sena 10% y vigencia 7 dias. Las cards de productos por encargue ya no hacen checkout directo ni muestran `Elegir color`: siempre llevan al detalle con CTA `Encargar`.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/api`
+  - `cmd /c npm run test --workspace @nico/api`
+  - `cmd /c npm run build --workspace @nico/api`
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - La sena y el vencimiento son informativos/calculados en UI; no hay cobro automatico ni cancelacion automatica.
+  - Cada producto por encargue se inicia desde su detalle para evitar decisiones ocultas de color o reserva desde la card.
+
+---
+
 ### 2026-04-29 - Codex
 - Alcance: compra directa para productos por encargue.
 - Tipo de intervencion: ajuste funcional frontend de tienda, carrito y checkout.

@@ -13,6 +13,7 @@ import type { CheckoutTransferDetails, OrderItem } from './types';
 import {
   buildOrderDetailLinesMeta,
   orderHasSpecialOrderLines,
+  buildOrderReservationSummary,
   buildOrderDetailStatusMeta,
   buildOrderDetailSummaryFacts,
   orderUsesTransferPayment,
@@ -78,31 +79,47 @@ export function OrderDetailLayout({
   order,
   transferDetails,
   transferWhatsappUrl,
+  reservationWhatsappUrl,
+  reservationDialogOpen,
   proofFile,
   proofUploading,
   proofFeedback,
   proofFeedbackTone,
   onProofFileChange,
   onProofUpload,
+  onCloseReservationDialog,
 }: {
   order: OrderItem;
   transferDetails: CheckoutTransferDetails | null;
   transferWhatsappUrl: string | null;
+  reservationWhatsappUrl: string | null;
+  reservationDialogOpen: boolean;
   proofFile: File | null;
   proofUploading: boolean;
   proofFeedback: string;
   proofFeedbackTone: 'success' | 'warning';
   onProofFileChange: (file: File | null) => void;
   onProofUpload: () => void;
+  onCloseReservationDialog: () => void;
 }) {
   const status = buildOrderDetailStatusMeta(order);
   const summaryFacts = buildOrderDetailSummaryFacts(order);
   const linesMeta = buildOrderDetailLinesMeta(order);
   const showTransferDetails = orderUsesTransferPayment(order.paymentMethod);
   const hasSpecialOrderLines = orderHasSpecialOrderLines(order);
+  const reservationSummary = hasSpecialOrderLines ? buildOrderReservationSummary(order) : null;
 
   return (
     <PageShell context="account">
+      {reservationDialogOpen && reservationSummary ? (
+        <OrderReservationDialog
+          order={order}
+          reservationSummary={reservationSummary}
+          reservationWhatsappUrl={reservationWhatsappUrl}
+          onClose={onCloseReservationDialog}
+        />
+      ) : null}
+
       <PageHeader
         context="account"
         eyebrow={`Pedido ${status.code}`}
@@ -159,6 +176,56 @@ export function OrderDetailLayout({
               </div>
             </div>
           </SectionCard>
+
+          {reservationSummary ? (
+            <SectionCard
+              title="Reserva por encargo"
+              description="Para completar la reserva, envia los datos por WhatsApp y coordina la sena con el local."
+              actions={<StatusBadge tone={reservationSummary.statusTone} size="sm" label={reservationSummary.statusLabel} />}
+            >
+              <div className="grid gap-3 md:grid-cols-3">
+                <div className="summary-box">
+                  <div className="summary-box__label">Total del pedido</div>
+                  <div className="summary-box__value">{money(order.total)}</div>
+                </div>
+                <div className="summary-box">
+                  <div className="summary-box__label">Sena 10%</div>
+                  <div className="summary-box__value">{money(reservationSummary.depositAmount)}</div>
+                </div>
+                <div className="summary-box">
+                  <div className="summary-box__label">Reserva hasta</div>
+                  <div className="summary-box__value">{reservationSummary.deadlineLabel}</div>
+                </div>
+              </div>
+
+              <div className="ui-alert ui-alert--info mt-4">
+                <PackageCheck className="mt-0.5 h-4 w-4 flex-none" />
+                <div>
+                  <span className="ui-alert__title">Condiciones del encargo</span>
+                  <div className="ui-alert__text">
+                    El producto y el precio quedan reservados por {reservationSummary.reservationDays} dias. Para sostener la reserva se pide una sena del {reservationSummary.depositPercent}%.
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                {reservationWhatsappUrl ? (
+                  <Button asChild>
+                    <a href={reservationWhatsappUrl} target="_blank" rel="noreferrer">
+                      <MessageCircle className="h-4 w-4" />
+                      Enviar datos por WhatsApp
+                      <ExternalLink className="h-4 w-4" />
+                    </a>
+                  </Button>
+                ) : (
+                  <Button type="button" disabled>
+                    <MessageCircle className="h-4 w-4" />
+                    WhatsApp no configurado
+                  </Button>
+                )}
+              </div>
+            </SectionCard>
+          ) : null}
 
           <SectionCard
             title="Productos del pedido"
@@ -366,6 +433,80 @@ function FactRow({ label, value }: { label: string; value: string }) {
     <div className="fact-row">
       <div className="fact-label">{label}</div>
       <div className="fact-value">{value}</div>
+    </div>
+  );
+}
+
+function OrderReservationDialog({
+  order,
+  reservationSummary,
+  reservationWhatsappUrl,
+  onClose,
+}: {
+  order: OrderItem;
+  reservationSummary: ReturnType<typeof buildOrderReservationSummary>;
+  reservationWhatsappUrl: string | null;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/45 px-4 py-6" role="presentation">
+      <div className="w-full max-w-xl rounded-[2rem] border border-sky-100 bg-white p-5 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="reservation-dialog-title">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="text-xs font-black uppercase tracking-[0.22em] text-sky-600">Reserva creada</div>
+            <h2 id="reservation-dialog-title" className="mt-1 text-2xl font-black text-zinc-950">
+              Finaliza la gestion por WhatsApp
+            </h2>
+          </div>
+          <Button type="button" variant="ghost" size="sm" onClick={onClose}>
+            Cerrar
+          </Button>
+        </div>
+
+        <div className="ui-alert ui-alert--info mt-4">
+          <MessageCircle className="mt-0.5 h-4 w-4 flex-none" />
+          <div>
+            <span className="ui-alert__title">Necesitamos tus datos por WhatsApp</span>
+            <div className="ui-alert__text">
+              Para mantener la reserva del pedido, envia el mensaje automatico al local y coordina la sena del {reservationSummary.depositPercent}%.
+            </div>
+          </div>
+        </div>
+
+        <div className="meta-grid mt-4">
+          <div className="meta-tile">
+            <div className="meta-tile__label">Pedido</div>
+            <div className="meta-tile__value">#{order.id.slice(0, 8)}</div>
+          </div>
+          <div className="meta-tile">
+            <div className="meta-tile__label">Sena</div>
+            <div className="meta-tile__value">{money(reservationSummary.depositAmount)}</div>
+          </div>
+          <div className="meta-tile">
+            <div className="meta-tile__label">Reserva hasta</div>
+            <div className="meta-tile__value">{reservationSummary.deadlineLabel}</div>
+          </div>
+        </div>
+
+        <div className="mt-5 grid gap-2 sm:flex sm:justify-end">
+          <Button type="button" variant="outline" onClick={onClose} className="w-full justify-center sm:w-auto">
+            Lo hago despues
+          </Button>
+          {reservationWhatsappUrl ? (
+            <Button asChild className="w-full justify-center sm:w-auto">
+              <a href={reservationWhatsappUrl} target="_blank" rel="noreferrer">
+                <MessageCircle className="h-4 w-4" />
+                Enviar por WhatsApp
+                <ExternalLink className="h-4 w-4" />
+              </a>
+            </Button>
+          ) : (
+            <Button type="button" disabled className="w-full justify-center sm:w-auto">
+              WhatsApp no configurado
+            </Button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

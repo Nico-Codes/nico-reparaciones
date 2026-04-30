@@ -18,7 +18,6 @@ import {
   type StoreSortValue,
 } from './store-page.helpers';
 import {
-  buildSpecialOrderCheckoutUrl,
   getAvailableStoreProductColorOptions,
   requiresStoreProductColorSelection,
 } from './store-product-detail.helpers';
@@ -537,15 +536,7 @@ function StoreGridCard({ product }: { product: StoreProduct }) {
       ? availableColorOptions.length > 0
       : product.supplierAvailability !== 'OUT_OF_STOCK'
     : product.stock > 0;
-  const canAddDirectly = !requiresColorSelection || availableColorOptions.length === 1;
-  const quickVariantId = requiresColorSelection ? availableColorOptions[0]?.id ?? null : null;
-  const actionLabel = !canPurchase
-    ? 'Sin stock'
-    : requiresColorSelection && !canAddDirectly
-      ? 'Elegir color'
-      : isSpecialOrder
-        ? 'Encargar'
-        : 'Agregar al carrito';
+  const actionLabel = !canPurchase ? 'Sin stock' : isSpecialOrder ? 'Encargar' : 'Agregar al carrito';
   const useTextAction = isSpecialOrder;
 
   return (
@@ -565,7 +556,6 @@ function StoreGridCard({ product }: { product: StoreProduct }) {
 
         <div className="flex flex-wrap gap-1.5">
           {isSpecialOrder ? <StatusBadge tone="accent" size="sm" label="Por encargue" /> : null}
-          {requiresColorSelection ? <StatusBadge tone="info" size="sm" label="Elegir color" /> : null}
         </div>
 
         <div className="product-purchase-block">
@@ -582,15 +572,11 @@ function StoreGridCard({ product }: { product: StoreProduct }) {
                 aria-label={actionLabel}
                 title={canPurchase ? actionLabel : 'Sin stock'}
                 onClick={() => {
-                  if (!canAddDirectly) {
+                  if (isSpecialOrder) {
                     navigate(`/store/${product.slug}`);
                     return;
                   }
-                  if (isSpecialOrder) {
-                    navigate(buildSpecialOrderCheckoutUrl(product.id, 1, quickVariantId));
-                    return;
-                  }
-                  cartStorage.add(product.id, 1, { productName: product.name, variantId: quickVariantId });
+                  cartStorage.add(product.id, 1, { productName: product.name });
                 }}
               >
                 {useTextAction ? (

@@ -68,8 +68,13 @@ export class OrdersSupportService {
       this.buildCheckoutTransferField('extra', map.get('checkout_transfer_extra_label'), map.get('checkout_transfer_extra_value'), 'Referencia'),
     ].filter((item) => item.value.trim().length > 0);
 
+    const shopPhone = (map.get('shop_phone') || '').trim() || null;
+
     return {
       paymentMethods,
+      businessContact: {
+        whatsappPhone: shopPhone,
+      },
       transferDetails: {
         title: (map.get('checkout_transfer_title') || 'Datos para transferencia').trim() || 'Datos para transferencia',
         description:
@@ -80,7 +85,7 @@ export class OrdersSupportService {
           'Si tienes dudas, contactanos antes de confirmar el pago.',
         fields,
         available: fields.length > 0,
-        supportWhatsappPhone: (map.get('shop_phone') || '').trim() || null,
+        supportWhatsappPhone: shopPhone,
       },
     };
   }
@@ -216,6 +221,7 @@ export class OrdersSupportService {
     const defaultPaths: Record<CheckoutPaymentMethodKey, string> = {
       efectivo: 'icons/payment-local.svg',
       transferencia: 'icons/payment-transfer.svg',
+      reserva_whatsapp: 'icons/payment-transfer.svg',
     };
 
     return {

@@ -8,6 +8,7 @@ import {
   orderStatusTone,
   paymentMethodLabel,
 } from './order-ui';
+import { isSpecialOrderReservationExpired, orderHasSpecialOrderReservation } from './order-reservation.helpers';
 import type { OrderItem } from './types';
 
 export {
@@ -43,6 +44,8 @@ export type AdminOrderDetailView = {
   contactLabel: string;
   channelLabel: string;
   paymentLabel: string;
+  reservationLabel: string | null;
+  reservationTone: 'accent' | 'warning' | null;
   subtitle: string;
   printHref: string;
   ticketHref: string;
@@ -60,6 +63,8 @@ export function buildAdminOrderDetailView(item: OrderItem): AdminOrderDetailView
   const contactLabel = item.user?.email || 'Sin contacto registrado';
   const channelLabel = item.isQuickSale ? 'Venta rápida' : 'Compra web';
   const paymentLabel = paymentMethodLabel(item.paymentMethod);
+  const hasReservation = orderHasSpecialOrderReservation(item);
+  const reservationExpired = hasReservation && item.status === 'PENDIENTE' && isSpecialOrderReservationExpired(item.createdAt);
 
   return {
     totalItems,
@@ -70,6 +75,8 @@ export function buildAdminOrderDetailView(item: OrderItem): AdminOrderDetailView
     contactLabel,
     channelLabel,
     paymentLabel,
+    reservationLabel: hasReservation ? (reservationExpired ? 'Reserva vencida' : 'Reserva por WhatsApp') : null,
+    reservationTone: hasReservation ? (reservationExpired ? 'warning' : 'accent') : null,
     subtitle: `${customerLabel} · ${formatDateTime(item.createdAt)}`,
     printHref: orderPrintHref(item.id),
     ticketHref: orderTicketHref(item.id),
@@ -98,6 +105,7 @@ export function buildAdminOrderDetailView(item: OrderItem): AdminOrderDetailView
       { label: 'Creado', value: formatDateTime(item.createdAt) },
       { label: 'Última actualización', value: formatDateTime(item.updatedAt) },
       { label: 'Pago', value: paymentLabel },
+      ...(hasReservation ? [{ label: 'Reserva', value: reservationExpired ? 'Vencida' : 'Vigente' }] : []),
       { label: 'Canal', value: channelLabel },
     ],
   };

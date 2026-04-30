@@ -23,6 +23,7 @@ export const ORDER_STATUS_LABELS: Record<string, string> = {
 const PAYMENT_LABELS: Record<string, string> = {
   EFECTIVO: 'Pago en el local',
   TRANSFERENCIA: 'Transferencia',
+  RESERVA_WHATSAPP: 'Reserva por WhatsApp',
 };
 
 export function normalizeOrderStatus(status: string) {

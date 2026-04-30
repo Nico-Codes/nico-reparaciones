@@ -38,7 +38,7 @@ export type QuickSaleHistoryItem = OrderItem & {
   } | null;
 };
 
-export type CheckoutPaymentMethodKey = 'efectivo' | 'transferencia';
+export type CheckoutPaymentMethodKey = 'efectivo' | 'transferencia' | 'reserva_whatsapp';
 
 export type CheckoutPaymentMethodConfig = {
   value: CheckoutPaymentMethodKey;
@@ -64,5 +64,8 @@ export type CheckoutTransferDetails = {
 
 export type CheckoutConfig = {
   paymentMethods: CheckoutPaymentMethodConfig[];
+  businessContact?: {
+    whatsappPhone: string | null;
+  };
   transferDetails: CheckoutTransferDetails;
 };

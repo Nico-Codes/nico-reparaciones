@@ -2,6 +2,7 @@ import {
   AlertTriangle,
   Banknote,
   Landmark,
+  MessageCircle,
   ShieldCheck,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -19,6 +20,11 @@ import {
   emailVerificationTone,
   formatCheckoutMoney,
 } from './checkout.helpers';
+import {
+  SPECIAL_ORDER_RESERVATION_DAYS,
+  SPECIAL_ORDER_RESERVATION_DEPOSIT_PERCENT,
+  calculateSpecialOrderReservationDeposit,
+} from './order-reservation.helpers';
 import type {
   CheckoutPaymentMethodConfig,
 } from './types';
@@ -45,6 +51,13 @@ type CheckoutPaymentSectionProps = {
   onChange: (paymentMethod: string) => void;
 };
 
+type CheckoutSpecialOrderReservationSectionProps = {
+  total: number;
+  accepted: boolean;
+  submitting: boolean;
+  onAcceptedChange: (accepted: boolean) => void;
+};
+
 type CheckoutAccountSectionProps = {
   user: AuthUser | null;
 };
@@ -53,6 +66,7 @@ type CheckoutActionsProps = {
   canConfirm: boolean;
   submitting: boolean;
   onConfirm: () => void;
+  confirmLabel?: string;
   secondaryTo?: string;
   secondaryLabel?: string;
 };
@@ -62,6 +76,7 @@ type CheckoutSummarySectionProps = {
   items: CartQuoteLine[];
   paymentTitle: string;
   paymentSubtitle: string;
+  isSpecialOrderMode?: boolean;
 };
 
 function CheckoutPaymentIcon({ option }: { option: CheckoutPaymentMethodConfig }) {
@@ -241,6 +256,62 @@ export function CheckoutPaymentSection({
   );
 }
 
+export function CheckoutSpecialOrderReservationSection({
+  total,
+  accepted,
+  submitting,
+  onAcceptedChange,
+}: CheckoutSpecialOrderReservationSectionProps) {
+  const deposit = calculateSpecialOrderReservationDeposit(total);
+
+  return (
+    <SectionCard
+      title="Reserva por WhatsApp"
+      description="El encargo no se paga como stock fisico: se reserva y la gestion continua por WhatsApp."
+      actions={<StatusBadge tone="accent" size="sm" label="Encargo" />}
+    >
+      <div className="ui-alert ui-alert--info">
+        <MessageCircle className="mt-0.5 h-4 w-4 flex-none" />
+        <div>
+          <span className="ui-alert__title">Condiciones de reserva</span>
+          <div className="ui-alert__text">
+            Para finalizar la reserva tenes que enviar los datos del pedido por WhatsApp y abonar una sena del {SPECIAL_ORDER_RESERVATION_DEPOSIT_PERCENT}%.
+            El precio y el producto quedan reservados por {SPECIAL_ORDER_RESERVATION_DAYS} dias desde la confirmacion.
+          </div>
+        </div>
+      </div>
+
+      <div className="meta-grid mt-4">
+        <div className="meta-tile">
+          <div className="meta-tile__label">Total del encargo</div>
+          <div className="meta-tile__value">{formatCheckoutMoney(total)}</div>
+        </div>
+        <div className="meta-tile">
+          <div className="meta-tile__label">Sena estimada</div>
+          <div className="meta-tile__value">{formatCheckoutMoney(deposit)}</div>
+        </div>
+        <div className="meta-tile">
+          <div className="meta-tile__label">Reserva</div>
+          <div className="meta-tile__value">{SPECIAL_ORDER_RESERVATION_DAYS} dias</div>
+        </div>
+      </div>
+
+      <label className="mt-4 flex gap-3 rounded-2xl border border-sky-100 bg-sky-50/70 p-4 text-sm font-semibold text-zinc-800">
+        <input
+          type="checkbox"
+          className="mt-1 h-4 w-4 rounded border-sky-300 text-sky-600"
+          checked={accepted}
+          disabled={submitting}
+          onChange={(event) => onAcceptedChange(event.target.checked)}
+        />
+        <span>
+          Entiendo que para reservar debo enviar los datos por WhatsApp y abonar una sena del {SPECIAL_ORDER_RESERVATION_DEPOSIT_PERCENT}%.
+        </span>
+      </label>
+    </SectionCard>
+  );
+}
+
 export function CheckoutAccountSection({ user }: CheckoutAccountSectionProps) {
   return (
     <SectionCard
@@ -277,6 +348,7 @@ export function CheckoutActions({
   canConfirm,
   submitting,
   onConfirm,
+  confirmLabel = 'Confirmar pedido',
   secondaryTo = '/cart',
   secondaryLabel = 'Volver al carrito',
 }: CheckoutActionsProps) {
@@ -289,7 +361,7 @@ export function CheckoutActions({
         disabled={!canConfirm}
       >
         <ShieldCheck className="h-4 w-4" />
-        {submitting ? 'Procesando...' : 'Confirmar pedido'}
+        {submitting ? 'Procesando...' : confirmLabel}
       </Button>
       <Button asChild variant="outline" className="w-full justify-center sm:w-auto">
         <Link to={secondaryTo}>{secondaryLabel}</Link>
@@ -303,6 +375,7 @@ export function CheckoutSummarySection({
   items,
   paymentTitle,
   paymentSubtitle,
+  isSpecialOrderMode = false,
 }: CheckoutSummarySectionProps) {
   const hasSpecialOrderLines = items.some((line) => line.fulfillmentMode === 'SPECIAL_ORDER');
 
@@ -356,9 +429,11 @@ export function CheckoutSummarySection({
         <div className="ui-alert ui-alert--info mt-4">
           <ShieldCheck className="mt-0.5 h-4 w-4 flex-none" />
           <div>
-            <span className="ui-alert__title">Incluye productos por encargue</span>
+            <span className="ui-alert__title">{isSpecialOrderMode ? 'Reserva por encargue' : 'Incluye productos por encargue'}</span>
             <div className="ui-alert__text">
-              Estas lineas se confirman contra proveedor y no dependen del stock local del negocio.
+              {isSpecialOrderMode
+                ? 'Al confirmar, se genera el pedido y la reserva se termina de gestionar por WhatsApp.'
+                : 'Estas lineas se confirman contra proveedor y no dependen del stock local del negocio.'}
             </div>
           </div>
         </div>
@@ -372,18 +447,21 @@ export function CheckoutSummarySection({
       <div className="ui-alert ui-alert--info mt-4">
         <ShieldCheck className="mt-0.5 h-4 w-4 flex-none" />
         <div>
-          <span className="ui-alert__title">Compra con retiro en local</span>
+          <span className="ui-alert__title">{isSpecialOrderMode ? 'Reserva con gestion por WhatsApp' : 'Compra con retiro en local'}</span>
           <div className="ui-alert__text">
-            Una vez confirmado, el pedido aparecera en tu cuenta y el equipo del local podra
-            continuar con la gestion.
+            {isSpecialOrderMode
+              ? 'Una vez confirmado, el pedido aparecera en tu cuenta y vas a poder enviar los datos al local.'
+              : 'Una vez confirmado, el pedido aparecera en tu cuenta y el equipo del local podra continuar con la gestion.'}
           </div>
         </div>
       </div>
 
-      <div className="summary-box mt-4">
-        <div className="summary-box__label">Importante</div>
-        <div className="summary-box__hint">Si eliges transferencia, los datos y el envio del comprobante aparecen despues de confirmar el pedido.</div>
-      </div>
+      {!isSpecialOrderMode ? (
+        <div className="summary-box mt-4">
+          <div className="summary-box__label">Importante</div>
+          <div className="summary-box__hint">Si eliges transferencia, los datos y el envio del comprobante aparecen despues de confirmar el pedido.</div>
+        </div>
+      ) : null}
     </SectionCard>
   );
 }

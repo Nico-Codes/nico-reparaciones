@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ordersApi } from './api';
 import {
+  buildOrderReservationWhatsappUrl,
   buildOrderTransferWhatsappUrl,
+  orderHasSpecialOrderLines,
   orderUsesTransferPayment,
   resolveOrderDetailLoadError,
 } from './order-detail.helpers';
@@ -11,8 +13,12 @@ import type { CheckoutTransferDetails, OrderItem } from './types';
 
 export function OrderDetailPage() {
   const { id = '' } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [order, setOrder] = useState<OrderItem | null>(null);
   const [transferDetails, setTransferDetails] = useState<CheckoutTransferDetails | null>(null);
+  const [businessWhatsappPhone, setBusinessWhatsappPhone] = useState<string | null>(null);
+  const [reservationDialogOpen, setReservationDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [proofFile, setProofFile] = useState<File | null>(null);
@@ -36,6 +42,12 @@ export function OrderDetailPage() {
         setProofFeedback('');
         setProofFeedbackTone('success');
 
+        setBusinessWhatsappPhone(
+          configResult.status === 'fulfilled'
+            ? configResult.value.businessContact?.whatsappPhone ?? configResult.value.transferDetails.supportWhatsappPhone
+            : null,
+        );
+
         if (
           orderUsesTransferPayment(nextOrder.paymentMethod) &&
           configResult.status === 'fulfilled'
@@ -53,10 +65,25 @@ export function OrderDetailPage() {
     };
   }, [id]);
 
+  useEffect(() => {
+    if (!order || !orderHasSpecialOrderLines(order)) return;
+    const params = new URLSearchParams(location.search);
+    if (params.get('reservation') === '1') {
+      setReservationDialogOpen(true);
+      params.delete('reservation');
+      navigate({ pathname: location.pathname, search: params.toString() ? `?${params.toString()}` : '' }, { replace: true });
+    }
+  }, [location.pathname, location.search, navigate, order]);
+
   const transferWhatsappUrl = useMemo(() => {
     if (!order) return null;
     return buildOrderTransferWhatsappUrl(order, transferDetails);
   }, [order, transferDetails]);
+  const reservationWhatsappUrl = useMemo(() => {
+    if (!order) return null;
+    const orderUrl = typeof window === 'undefined' ? null : window.location.href;
+    return buildOrderReservationWhatsappUrl(order, businessWhatsappPhone, orderUrl);
+  }, [businessWhatsappPhone, order]);
 
   async function uploadTransferProof() {
     if (!order || !proofFile) return;
@@ -83,12 +110,15 @@ export function OrderDetailPage() {
       order={order}
       transferDetails={transferDetails}
       transferWhatsappUrl={transferWhatsappUrl}
+      reservationWhatsappUrl={reservationWhatsappUrl}
+      reservationDialogOpen={reservationDialogOpen}
       proofFile={proofFile}
       proofUploading={proofUploading}
       proofFeedback={proofFeedback}
       proofFeedbackTone={proofFeedbackTone}
       onProofFileChange={setProofFile}
       onProofUpload={() => void uploadTransferProof()}
+      onCloseReservationDialog={() => setReservationDialogOpen(false)}
     />
   );
 }

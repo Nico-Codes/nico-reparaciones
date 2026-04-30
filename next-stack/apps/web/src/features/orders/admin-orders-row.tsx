@@ -3,6 +3,7 @@ import { ActionDropdown } from '@/components/ui/action-dropdown';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { formatDateTime, money, orderPrintHref, orderStatusLabel, ORDER_STATUS_OPTIONS, orderStatusTone, orderTicketHref, timeAgo } from './admin-orders.helpers';
+import { isSpecialOrderReservationExpired, orderHasSpecialOrderReservation } from './order-reservation.helpers';
 import type { OrderItem } from './types';
 import { AdminOrderDetailState } from './admin-orders-detail-panel';
 
@@ -27,6 +28,8 @@ export function AdminOrderRow({
 }) {
   const customerName = order.user?.name || 'Venta local';
   const email = order.user?.email || 'Sin email';
+  const hasReservation = orderHasSpecialOrderReservation(order);
+  const reservationExpired = hasReservation && order.status === 'PENDIENTE' && isSpecialOrderReservationExpired(order.createdAt);
 
   return (
     <article className={`admin-entity-row ${isActive ? 'is-active' : ''}`}>
@@ -38,6 +41,9 @@ export function AdminOrderRow({
             </button>
             <StatusBadge label={orderStatusLabel(order.status)} tone={orderStatusTone(order.status)} />
             <StatusBadge label={order.user ? 'Web' : 'Venta local'} tone="neutral" />
+            {hasReservation ? (
+              <StatusBadge label={reservationExpired ? 'Reserva vencida' : 'Reserva por WhatsApp'} tone={reservationExpired ? 'warning' : 'accent'} />
+            ) : null}
             {!order.user?.email ? <StatusBadge label="Sin email" tone="warning" /> : null}
           </div>
           <div className="admin-entity-row__meta">

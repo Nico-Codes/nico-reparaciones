@@ -6,6 +6,7 @@ export const ORDER_WALKIN_EMAIL = 'walkin@nico.local';
 export const ORDER_CHECKOUT_PAYMENT_METHODS = {
   efectivo: 'Pago en el local',
   transferencia: 'Transferencia',
+  reserva_whatsapp: 'Reserva por WhatsApp',
 } as const;
 
 export const ORDER_PAYMENT_METHODS = {
@@ -47,6 +48,9 @@ export function normalizeCheckoutPaymentMethod(raw?: string | null) {
     local: 'efectivo',
     transferencia: 'transferencia',
     transfer: 'transferencia',
+    reserva: 'reserva_whatsapp',
+    reserva_whatsapp: 'reserva_whatsapp',
+    whatsapp: 'reserva_whatsapp',
   };
   const normalized = aliases[value];
   return normalized && normalized in ORDER_CHECKOUT_PAYMENT_METHODS ? normalized : null;

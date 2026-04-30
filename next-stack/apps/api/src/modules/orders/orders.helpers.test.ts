@@ -23,6 +23,8 @@ describe('orders.helpers', () => {
   it('normalizes checkout payment aliases', () => {
     expect(normalizeCheckoutPaymentMethod('cash')).toBe('efectivo');
     expect(normalizeCheckoutPaymentMethod('transfer')).toBe('transferencia');
+    expect(normalizeCheckoutPaymentMethod('reserva_whatsapp')).toBe('reserva_whatsapp');
+    expect(normalizeCheckoutPaymentMethod('whatsapp')).toBe('reserva_whatsapp');
     expect(normalizeCheckoutPaymentMethod('otro')).toBeNull();
     expect(normalizeCheckoutPaymentMethod('crypto')).toBeNull();
   });

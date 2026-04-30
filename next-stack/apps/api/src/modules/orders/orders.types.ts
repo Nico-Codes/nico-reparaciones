@@ -6,7 +6,7 @@ export type CheckoutInput = {
   paymentMethod?: string | null;
 };
 
-export type CheckoutPaymentMethodKey = 'efectivo' | 'transferencia';
+export type CheckoutPaymentMethodKey = 'efectivo' | 'transferencia' | 'reserva_whatsapp';
 
 export type CheckoutPaymentMethodConfig = {
   value: CheckoutPaymentMethodKey;
@@ -23,6 +23,9 @@ export type CheckoutTransferField = {
 
 export type CheckoutConfig = {
   paymentMethods: CheckoutPaymentMethodConfig[];
+  businessContact: {
+    whatsappPhone: string | null;
+  };
   transferDetails: {
     title: string;
     description: string;

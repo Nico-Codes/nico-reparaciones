@@ -21,6 +21,7 @@ import {
   CheckoutFeedback,
   CheckoutLoadingState,
   CheckoutPaymentSection,
+  CheckoutSpecialOrderReservationSection,
   CheckoutSummarySection,
 } from './checkout.sections';
 import { PageHeader } from '@/components/ui/page-header';
@@ -38,6 +39,7 @@ export function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState('');
+  const [reservationAccepted, setReservationAccepted] = useState(false);
 
   const specialOrderCheckout = useMemo(() => buildSpecialOrderCheckoutItems(location.search), [location.search]);
   const isSpecialOrderMode = specialOrderCheckout.isSpecialOrderMode;
@@ -107,7 +109,12 @@ export function CheckoutPage() {
   const validCheckoutItems = useMemo(() => buildCheckoutItems(validItems), [validItems]);
   const hasInvalidItems = useMemo(() => hasInvalidCheckoutItems(quote?.items ?? []), [quote]);
   const paymentOptions = useMemo(() => resolveCheckoutPaymentMethods(checkoutConfig), [checkoutConfig]);
-  const canConfirm = !loading && !submitting && validCheckoutItems.length > 0 && !hasInvalidItems;
+  const canConfirm =
+    !loading &&
+    !submitting &&
+    validCheckoutItems.length > 0 &&
+    !hasInvalidItems &&
+    (!isSpecialOrderMode || reservationAccepted);
   const selectedPayment = useMemo(
     () => resolveSelectedPayment(paymentMethod, paymentOptions),
     [paymentMethod, paymentOptions],
@@ -119,6 +126,10 @@ export function CheckoutPage() {
     }
   }, [paymentMethod, paymentOptions]);
 
+  useEffect(() => {
+    setReservationAccepted(false);
+  }, [location.search]);
+
   async function confirmOrder() {
     if (!canConfirm) return;
     setSubmitting(true);
@@ -126,12 +137,12 @@ export function CheckoutPage() {
     try {
       const order = await ordersApi.checkout({
         items: validCheckoutItems,
-        paymentMethod,
+        paymentMethod: isSpecialOrderMode ? 'reserva_whatsapp' : paymentMethod,
       });
       if (!isSpecialOrderMode) {
         cartStorage.clear();
       }
-      navigate(`/orders/${order.id}`, { replace: true });
+      navigate(`/orders/${order.id}${isSpecialOrderMode ? '?reservation=1' : ''}`, { replace: true });
     } catch (cause) {
       setMessage(cause instanceof Error ? cause.message : 'Error creando el pedido');
     } finally {
@@ -174,17 +185,27 @@ export function CheckoutPage() {
 
       <div className="commerce-layout commerce-layout--checkout">
         <div className="commerce-stack">
-          <CheckoutPaymentSection
-            paymentMethod={paymentMethod}
-            paymentOptions={paymentOptions}
-            submitting={submitting}
-            onChange={setPaymentMethod}
-          />
+          {isSpecialOrderMode ? (
+            <CheckoutSpecialOrderReservationSection
+              total={quote?.totals.subtotal ?? 0}
+              accepted={reservationAccepted}
+              submitting={submitting}
+              onAcceptedChange={setReservationAccepted}
+            />
+          ) : (
+            <CheckoutPaymentSection
+              paymentMethod={paymentMethod}
+              paymentOptions={paymentOptions}
+              submitting={submitting}
+              onChange={setPaymentMethod}
+            />
+          )}
           <CheckoutAccountSection user={user} />
           <CheckoutActions
             canConfirm={canConfirm}
             submitting={submitting}
             onConfirm={() => void confirmOrder()}
+            confirmLabel={isSpecialOrderMode ? 'Confirmar reserva' : 'Confirmar pedido'}
             secondaryTo={isSpecialOrderMode ? '/store' : '/cart'}
             secondaryLabel={isSpecialOrderMode ? 'Volver a tienda' : 'Volver al carrito'}
           />
@@ -193,8 +214,13 @@ export function CheckoutPage() {
         <CheckoutSummarySection
           quote={quote}
           items={quotedItems}
-          paymentTitle={selectedPayment.title}
-          paymentSubtitle={selectedPayment.subtitle}
+          paymentTitle={isSpecialOrderMode ? 'Reserva por WhatsApp' : selectedPayment.title}
+          paymentSubtitle={
+            isSpecialOrderMode
+              ? 'El pedido queda registrado y la reserva continua por WhatsApp con sena del 10%.'
+              : selectedPayment.subtitle
+          }
+          isSpecialOrderMode={isSpecialOrderMode}
         />
       </div>
     </PageShell>

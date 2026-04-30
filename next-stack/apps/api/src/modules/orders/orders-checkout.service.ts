@@ -31,6 +31,13 @@ export class OrdersCheckoutService {
       throw new BadRequestException('No hay items validos para generar pedido');
     }
 
+    if (
+      selectedPaymentMethod === 'reserva_whatsapp' &&
+      !validLines.every((line) => line.fulfillmentMode === 'SPECIAL_ORDER')
+    ) {
+      throw new BadRequestException('La reserva por WhatsApp solo se puede usar para productos por encargue');
+    }
+
     const invalid = quote.items.filter((item) => !item.valid);
     if (invalid.length > 0) {
       throw new BadRequestException({

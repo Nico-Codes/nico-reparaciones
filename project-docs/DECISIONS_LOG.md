@@ -20,6 +20,20 @@ Registrar decisiones tecnicas confirmadas para evitar dependencia de memoria ora
 
 ---
 
+### [DL-0133]
+- Fecha: 2026-04-29
+- Estado: aceptada
+- Tema: reservas por WhatsApp para productos por encargue sin persistencia extra
+- Contexto: los productos por encargue ya usan compra directa y pedido separado, pero necesitan explicar al cliente que la gestion continua por WhatsApp, con sena del 10% y reserva de precio/producto por 7 dias.
+- Decision: usar `paymentMethod=reserva_whatsapp` solo para pedidos compuestos por lineas `SPECIAL_ORDER`. La sena y el vencimiento se calculan en UI desde `total` y `createdAt`, sin agregar columnas ni cancelacion automatica. El WhatsApp destino es el `shop_phone` existente.
+- Impacto: el checkout de encargues exige aceptar condiciones de reserva, el detalle del pedido muestra card/popup con CTA a WhatsApp y admin puede distinguir `Reserva por WhatsApp` / `Reserva vencida`.
+- Alternativas consideradas: guardar monto/vencimiento en base o exigir pago online de sena; descartado en esta fase para mantener el flujo operativo liviano y resolver la coordinacion por WhatsApp.
+- Archivos / modulos afectados: `next-stack/apps/api/src/modules/orders/*`, `next-stack/apps/web/src/features/orders/*`, `CHANGELOG_AI.md`.
+- Validacion requerida: typecheck/test/build API y web, `smoke:web`, `git diff --check`.
+- Responsable: Codex + operador humano
+
+---
+
 ### [DL-0132]
 - Fecha: 2026-04-27
 - Estado: aceptada

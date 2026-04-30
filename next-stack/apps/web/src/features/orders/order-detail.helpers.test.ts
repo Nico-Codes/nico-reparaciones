@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   buildOrderDetailLinesMeta,
   buildOrderDetailSummaryFacts,
+  buildOrderReservationSummary,
+  buildOrderReservationWhatsappUrl,
   buildOrderTransferWhatsappUrl,
   orderHasSpecialOrderLines,
   orderUsesTransferPayment,
@@ -68,5 +70,22 @@ describe('order-detail.helpers', () => {
     );
     expect(url).toContain('phone=5493415551212');
     expect(url).toContain('Pedido%3A');
+  });
+
+  it('arma resumen y link de whatsapp para reserva por encargue', () => {
+    const summary = buildOrderReservationSummary(order, new Date('2026-04-02T10:00:00.000Z'));
+    expect(summary.depositAmount).toBe(3);
+    expect(summary.expired).toBe(false);
+    expect(summary.deadlineLabel).toContain('8/4/2026');
+
+    const url = buildOrderReservationWhatsappUrl(
+      { ...order, paymentMethod: 'reserva_whatsapp' },
+      '+54 9 341 555 1212',
+      'https://nico.test/orders/ord_1',
+    );
+
+    expect(url).toContain('phone=5493415551212');
+    expect(url).toContain('Sena');
+    expect(url).toContain('Color+Azul');
   });
 });

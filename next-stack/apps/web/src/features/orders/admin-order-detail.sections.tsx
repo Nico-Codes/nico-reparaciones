@@ -92,6 +92,9 @@ export function AdminOrderDetailHeaderActions({ view }: { view: AdminOrderDetail
   return (
     <>
       <StatusBadge label={view.statusLabel} tone={view.statusTone} />
+      {view.reservationLabel && view.reservationTone ? (
+        <StatusBadge label={view.reservationLabel} tone={view.reservationTone} />
+      ) : null}
       <Button asChild variant="outline" size="sm">
         <Link to="/admin/orders">
           <ArrowLeft className="h-4 w-4" />
