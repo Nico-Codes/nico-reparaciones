@@ -13,6 +13,28 @@
 ---
 
 ### 2026-04-30 - Codex
+- Alcance: corregir URLs de imagenes subidas en productos.
+- Tipo de intervencion: ajuste backend de resolucion de assets runtime y documentacion de entorno.
+- Archivos tocados:
+  - `next-stack/apps/api/src/modules/store/store.service.ts`
+  - `next-stack/apps/api/src/modules/store/store.service.test.ts`
+  - `next-stack/apps/api/src/modules/catalog-admin/catalog-admin-products.service.ts`
+  - `next-stack/.env.example`
+  - `next-stack/.env.production.example`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. Las imagenes nuevas subidas a productos ahora se resuelven por `API_URL`, mientras que `STORE_IMAGE_BASE_URL` queda solo para imagenes heredadas.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/api`
+  - `cmd /c npm run test --workspace @nico/api`
+  - `cmd /c npm run build --workspace @nico/api`
+  - `cmd /c npm run smoke:backend`
+  - `git diff --check`
+- Riesgos / notas:
+  - Requiere reiniciar el backend si ya estaba corriendo para que el cambio de resolucion de URLs impacte en respuestas nuevas.
+
+---
+
+### 2026-04-30 - Codex
 - Alcance: simplificar header e imagen mobile del detalle publico de producto.
 - Tipo de intervencion: ajuste UX frontend en ficha publica de tienda.
 - Archivos tocados:

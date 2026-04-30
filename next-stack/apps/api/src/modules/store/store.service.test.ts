@@ -278,6 +278,48 @@ describe('StoreService', () => {
     );
   });
 
+  it('resolves uploaded product images through API_URL and legacy images through STORE_IMAGE_BASE_URL', async () => {
+    process.env.API_URL = 'http://localhost:3001';
+    process.env.STORE_IMAGE_BASE_URL = 'http://127.0.0.1:8000';
+    const createdAt = new Date('2026-04-30T10:00:00.000Z');
+    const baseProduct = {
+      id: 'prod_1',
+      name: 'Samsung S25 Ultra',
+      slug: 'samsung-s25-ultra',
+      description: null,
+      imageLegacy: null,
+      price: 1000,
+      stock: 0,
+      fulfillmentMode: 'SPECIAL_ORDER',
+      supplierAvailability: 'IN_STOCK',
+      colorVariants: [],
+      specialOrderProfile: { id: 'profile_1', requiresColorVariants: false },
+      featured: false,
+      active: true,
+      sku: null,
+      barcode: null,
+      category: null,
+      createdAt,
+    };
+    const prisma = {
+      product: {
+        findFirst: vi
+          .fn()
+          .mockResolvedValueOnce({ ...baseProduct, imagePath: 'products/uploaded.webp' })
+          .mockResolvedValueOnce({ ...baseProduct, imagePath: null, imageLegacy: 'legacy.webp' }),
+      },
+    };
+
+    const service = new StoreService(prisma as never);
+
+    await expect(service.getProductBySlug('uploaded')).resolves.toMatchObject({
+      imageUrl: 'http://localhost:3001/storage/products/uploaded.webp',
+    });
+    await expect(service.getProductBySlug('legacy')).resolves.toMatchObject({
+      imageUrl: 'http://127.0.0.1:8000/storage/products/legacy.webp',
+    });
+  });
+
   it('falls back to the default login background when no auth branding is configured', async () => {
     const prisma = {
       appSetting: {

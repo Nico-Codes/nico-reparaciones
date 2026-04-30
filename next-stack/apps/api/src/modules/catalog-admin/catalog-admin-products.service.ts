@@ -411,7 +411,7 @@ export class CatalogAdminProductsService {
       item: this.serializeProduct(item),
       upload: {
         path: relPath,
-        url: this.assetStorage.toStorageUrl(relPath),
+        url: this.resolveProductImageUrl(relPath, null),
       },
     };
   }
@@ -493,7 +493,7 @@ export class CatalogAdminProductsService {
       description: product.description ?? null,
       purchaseReference: product.purchaseReference ?? null,
       imagePath: product.imagePath ?? null,
-      imageUrl: this.assetStorage.toStorageUrl(product.imagePath ?? product.imageLegacy ?? null),
+      imageUrl: this.resolveProductImageUrl(product.imagePath, product.imageLegacy),
       price: Number(product.price),
       costPrice: product.costPrice != null ? Number(product.costPrice) : null,
       stock: product.stock,
@@ -564,6 +564,39 @@ export class CatalogAdminProductsService {
     }
     const categoryIds = [category.id, ...category.children.map((child) => child.id)];
     return { categoryId: { in: categoryIds } };
+  }
+
+  private resolveProductImageUrl(imagePath?: string | null, imageLegacy?: string | null) {
+    const fromPath = imagePath && imagePath.trim() !== '' ? imagePath.trim() : null;
+    if (fromPath) {
+      return this.resolveStorageAssetUrl(fromPath, this.runtimeStorageBaseUrl());
+    }
+
+    if (imageLegacy && imageLegacy.trim() !== '') {
+      const legacy = imageLegacy.trim();
+      return this.resolveStorageAssetUrl(legacy.includes('/') ? legacy : `products/${legacy}`, this.legacyStorageBaseUrl());
+    }
+
+    return null;
+  }
+
+  private resolveStorageAssetUrl(rawPath: string, base: string) {
+    const raw = rawPath.trim();
+    if (!raw) return null;
+    if (/^https?:\/\//i.test(raw)) return raw;
+
+    let path = raw.replace(/^\/+/, '');
+    if (path.startsWith('storage/')) path = path.slice('storage/'.length);
+    const urlPath = `/storage/${path}`;
+    return base ? `${base}${urlPath}` : urlPath;
+  }
+
+  private runtimeStorageBaseUrl() {
+    return (process.env.API_URL ?? '').trim().replace(/\/+$/, '');
+  }
+
+  private legacyStorageBaseUrl() {
+    return (process.env.STORE_IMAGE_BASE_URL ?? process.env.API_URL ?? '').trim().replace(/\/+$/, '');
   }
 
   private rethrowColorVariantWriteError(error: unknown): never {

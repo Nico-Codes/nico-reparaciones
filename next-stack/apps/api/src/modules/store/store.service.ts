@@ -553,23 +553,36 @@ export class StoreService {
   }
 
   private resolveProductImageUrl(imagePath?: string | null, imageLegacy?: string | null) {
-    const base = (process.env.STORE_IMAGE_BASE_URL ?? '').trim().replace(/\/+$/, '');
-
     const fromPath = imagePath && imagePath.trim() !== '' ? imagePath.trim() : null;
-    let raw = fromPath;
-    if (!raw && imageLegacy && imageLegacy.trim() !== '') {
-      const legacy = imageLegacy.trim();
-      raw = legacy.includes('/') ? legacy : `products/${legacy}`;
+    if (fromPath) {
+      return this.resolveStorageAssetUrl(fromPath, this.runtimeStorageBaseUrl());
     }
 
-    if (raw) {
-      if (/^https?:\/\//i.test(raw)) return raw;
-      if (raw.startsWith('/')) return base ? `${base}${raw}` : raw;
-      const path = raw.replace(/^\/+/, '');
-      return base ? `${base}/storage/${path}` : `/storage/${path}`;
+    if (imageLegacy && imageLegacy.trim() !== '') {
+      const legacy = imageLegacy.trim();
+      return this.resolveStorageAssetUrl(legacy.includes('/') ? legacy : `products/${legacy}`, this.legacyStorageBaseUrl());
     }
 
     return null;
+  }
+
+  private resolveStorageAssetUrl(rawPath: string, base: string) {
+    const raw = rawPath.trim();
+    if (!raw) return null;
+    if (/^https?:\/\//i.test(raw)) return raw;
+
+    let path = raw.replace(/^\/+/, '');
+    if (path.startsWith('storage/')) path = path.slice('storage/'.length);
+    const urlPath = `/storage/${path}`;
+    return base ? `${base}${urlPath}` : urlPath;
+  }
+
+  private runtimeStorageBaseUrl() {
+    return (process.env.API_URL ?? '').trim().replace(/\/+$/, '');
+  }
+
+  private legacyStorageBaseUrl() {
+    return (process.env.STORE_IMAGE_BASE_URL ?? process.env.API_URL ?? '').trim().replace(/\/+$/, '');
   }
 
   private resolveHeroAssetUrl(rawValue?: string | null) {
