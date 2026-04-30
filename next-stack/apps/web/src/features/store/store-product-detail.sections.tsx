@@ -54,7 +54,6 @@ type StoreProductPurchaseSectionProps = {
 
 type StoreProductMetaSectionProps = {
   item: StoreProduct;
-  canPurchase: boolean;
 };
 
 export function StoreProductLoadingState({ message }: StoreProductLoadingStateProps) {
@@ -143,7 +142,7 @@ export function StoreProductHeaderActions({ item, canPurchase }: StoreProductHea
 
 export function StoreProductMediaSection({ item }: StoreProductMediaSectionProps) {
   return (
-    <SectionCard className="media-surface overflow-hidden" bodyClassName="p-0">
+    <SectionCard className="media-surface product-detail-media overflow-hidden" bodyClassName="p-0">
       <div className="media-surface__frame">
         {item.imageUrl ? (
           <img
@@ -179,14 +178,7 @@ export function StoreProductPurchaseSection({
   const canSubmit = canPurchase && (!requiresColorSelection || Boolean(selectedColorId));
 
   return (
-    <SectionCard
-      title="Compra rapida"
-      description={
-        isSpecialOrder
-          ? 'Elegi cantidad y color para iniciar el encargo sin pasar por el carrito.'
-          : 'Elegi la cantidad y agrega el producto al carrito con el precio actualizado.'
-      }
-    >
+    <SectionCard className="product-purchase-card" title={isSpecialOrder ? 'Encargar producto' : 'Comprar producto'}>
       <div className="summary-box">
         <div className="summary-box__label">Precio</div>
         <div className="summary-box__value">{formatStoreProductMoney(item.price)}</div>
@@ -202,16 +194,12 @@ export function StoreProductPurchaseSection({
         </div>
       ) : null}
 
-      <div className="mt-4 whitespace-pre-line text-sm leading-relaxed text-zinc-700">
-        {getStoreProductFallbackDescription(item)}
-      </div>
-
       {requiresColorSelection ? (
-        <div className="mt-4 space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="product-color-picker">
+          <div className="product-color-picker__header">
             <div>
               <div className="ui-field__label">Elegi un color</div>
-              <div className="mt-1 text-xs text-zinc-500">Los agotados se muestran para referencia, pero no se pueden seleccionar.</div>
+              <div className="product-color-picker__hint">Agotados deshabilitados.</div>
             </div>
             <StatusBadge
               tone="info"
@@ -219,7 +207,7 @@ export function StoreProductPurchaseSection({
               label={`${item.colorOptions.filter((option) => option.active && option.supplierAvailability === 'IN_STOCK').length} disponibles`}
             />
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="product-color-options">
             {item.colorOptions.map((option) => {
               const disabled = !option.active || option.supplierAvailability !== 'IN_STOCK';
               const selected = selectedColorId === option.id;
@@ -227,18 +215,12 @@ export function StoreProductPurchaseSection({
                 <button
                   key={option.id}
                   type="button"
-                  className={`rounded-2xl border px-3 py-2 text-sm font-semibold transition ${
-                    selected
-                      ? 'border-sky-500 bg-sky-50 text-sky-900'
-                      : disabled
-                        ? 'border-zinc-200 bg-zinc-100 text-zinc-400'
-                        : 'border-zinc-200 bg-white text-zinc-800 hover:border-zinc-300'
-                  }`}
+                  className={`product-color-option ${selected ? 'is-selected' : ''} ${disabled ? 'is-disabled' : ''}`}
                   disabled={disabled}
                   onClick={() => onSelectColor(option.id)}
                 >
                   {option.label}
-                  {disabled ? ' · Sin stock' : ''}
+                  {disabled ? ' - Sin stock' : ''}
                 </button>
               );
             })}
@@ -249,9 +231,9 @@ export function StoreProductPurchaseSection({
         </div>
       ) : null}
 
-      <div className="mt-5 grid gap-3">
-        <div className="grid gap-3 sm:grid-cols-[auto_1fr] sm:items-end">
-          <div>
+      <div className="product-purchase-flow">
+        <div className="product-purchase-actions">
+          <div className="product-quantity-control">
             <label className="ui-field__label" htmlFor="productQty">Cantidad</label>
             <div className="quantity-stepper mt-1.5">
               <button
@@ -292,6 +274,10 @@ export function StoreProductPurchaseSection({
           </Button>
         </div>
 
+        <div className="product-detail-description-note">
+          {getStoreProductFallbackDescription(item)}
+        </div>
+
         {isSpecialOrder ? (
           <Button asChild variant="outline" className="w-full justify-center">
             <Link to="/store">Volver a tienda</Link>
@@ -313,7 +299,7 @@ export function StoreProductPurchaseSection({
 
 export function StoreProductMetaSection({ item }: StoreProductMetaSectionProps) {
   return (
-    <SectionCard title="Informacion rapida" description="Datos utiles para compra y seguimiento del producto.">
+    <SectionCard className="product-meta-card" title="Informacion rapida">
       <div className="meta-grid">
         <div className="meta-tile">
           <div className="meta-tile__label">Categoria</div>
@@ -323,14 +309,6 @@ export function StoreProductMetaSection({ item }: StoreProductMetaSectionProps) 
           <div className="meta-tile__label">Disponibilidad</div>
           <div className="meta-tile__value">{getStoreProductAvailabilityLabel(item)}</div>
         </div>
-        <div className="meta-tile">
-          <div className="meta-tile__label">SKU</div>
-          <div className="meta-tile__value">{item.sku || 'No informado'}</div>
-        </div>
-        <div className="meta-tile">
-          <div className="meta-tile__label">Codigo</div>
-          <div className="meta-tile__value">{item.barcode || 'No informado'}</div>
-        </div>
       </div>
     </SectionCard>
   );
@@ -338,7 +316,7 @@ export function StoreProductMetaSection({ item }: StoreProductMetaSectionProps) 
 
 export function StoreProductHelpSection() {
   return (
-    <SectionCard title="Necesitas ayuda?" description="Tambien podes consultar el estado de una reparacion o seguir navegando el catalogo.">
+    <SectionCard className="product-help-card" title="Necesitas ayuda?">
       <div className="grid gap-2 sm:grid-cols-2">
         <Button asChild variant="outline" className="w-full justify-center">
           <Link to="/reparacion">

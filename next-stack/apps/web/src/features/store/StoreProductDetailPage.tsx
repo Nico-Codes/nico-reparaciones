@@ -90,17 +90,18 @@ export function StoreProductDetailPage() {
   }
 
   return (
-    <PageShell context="store" className="space-y-5">
+    <PageShell context="store" className="product-detail-page">
       <StoreProductBreadcrumb item={item} />
 
       <PageHeader
         context="store"
+        className="product-detail-header"
         eyebrow={item.category?.name || 'Producto'}
         title={item.name}
         subtitle={
           isStoreProductSpecialOrder(item)
-            ? 'Disponible por encargue con confirmacion contra proveedor y retiro en local.'
-            : 'Compra directa con retiro en local y stock validado desde el panel administrativo.'
+            ? 'Encargo con confirmacion de proveedor y retiro en local.'
+            : 'Compra con retiro en local y stock validado.'
         }
         actions={<StoreProductHeaderActions item={item} canPurchase={canPurchase} />}
       />
@@ -119,7 +120,7 @@ export function StoreProductDetailPage() {
             onSelectColor={setSelectedColorId}
             onAddToCart={addToCart}
           />
-          <StoreProductMetaSection item={item} canPurchase={canPurchase} />
+          <StoreProductMetaSection item={item} />
           <StoreProductHelpSection />
         </div>
       </div>

@@ -13,6 +13,26 @@
 ---
 
 ### 2026-04-30 - Codex
+- Alcance: compactar el detalle publico de productos en mobile.
+- Tipo de intervencion: ajuste UX frontend en ficha publica de tienda.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/store/StoreProductDetailPage.tsx`
+  - `next-stack/apps/web/src/features/store/store-product-detail.sections.tsx`
+  - `next-stack/apps/web/src/styles/commerce.css`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si, visual/UX. La ficha mobile reduce altura, prioriza precio/color/cantidad/CTA y la caja `Informacion rapida` ya no muestra `SKU` ni `Codigo`.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - No cambia checkout, carrito ni reglas de compra; solo jerarquia visual del detalle publico.
+
+---
+
+### 2026-04-30 - Codex
 - Alcance: reserva por WhatsApp para productos por encargue.
 - Tipo de intervencion: ajuste funcional full-stack en checkout, tienda, pedidos y visualizacion admin.
 - Archivos tocados:
