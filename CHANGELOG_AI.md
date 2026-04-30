@@ -13,6 +13,21 @@
 ---
 
 ### 2026-04-30 - Codex
+- Alcance: igualar margen inferior del badge de producto por encargue.
+- Tipo de intervencion: ajuste visual CSS en cards de tienda.
+- Archivos tocados:
+  - `next-stack/apps/web/src/styles/store.css`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si, visual/UX. El badge `Por encargue` ahora replica abajo el mismo margen que tenia arriba.
+- Validaciones ejecutadas:
+  - `build --workspace @nico/web`
+  - `git diff --check`
+- Riesgos / notas:
+  - No cambia datos, carrito ni flujo de compra.
+
+---
+
+### 2026-04-30 - Codex
 - Alcance: ordenar espaciado interno de cards de producto en tienda.
 - Tipo de intervencion: ajuste UX frontend en cards publicas.
 - Archivos tocados:
