@@ -13,6 +13,23 @@
 ---
 
 ### 2026-04-30 - Codex
+- Alcance: agregar badge `En Stock` para productos fisicos en tienda.
+- Tipo de intervencion: ajuste UX frontend en cards y detalle publico de producto.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/store/store-page.sections.tsx`
+  - `next-stack/apps/web/src/features/store/store-product-detail.sections.tsx`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si, visual/UX. Los productos con stock real muestran badge `En Stock` en vez de quedar sin badge o mostrar cantidad en detalle.
+- Validaciones ejecutadas:
+  - `typecheck --workspace @nico/web`
+  - `build --workspace @nico/web`
+  - `git diff --check`
+- Riesgos / notas:
+  - No cambia validacion de stock ni flujo de compra; solo presentacion.
+
+---
+
+### 2026-04-30 - Codex
 - Alcance: igualar margen inferior del badge de producto por encargue.
 - Tipo de intervencion: ajuste visual CSS en cards de tienda.
 - Archivos tocados:

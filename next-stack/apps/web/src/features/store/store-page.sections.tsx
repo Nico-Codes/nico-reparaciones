@@ -564,7 +564,11 @@ function StoreGridCard({ product }: { product: StoreProduct }) {
         </Link>
 
         <div className="product-badges">
-          {isSpecialOrder ? <StatusBadge tone="accent" size="sm" label="Por encargue" /> : null}
+          {isSpecialOrder ? (
+            <StatusBadge tone="accent" size="sm" label="Por encargue" />
+          ) : (
+            <StatusBadge tone="success" size="sm" label="En Stock" />
+          )}
         </div>
 
         <div className="product-purchase-block">
