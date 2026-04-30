@@ -567,7 +567,7 @@ function StoreGridCard({ product }: { product: StoreProduct }) {
           {isSpecialOrder ? (
             <StatusBadge tone="accent" size="sm" label="Por encargue" />
           ) : (
-            <StatusBadge tone="success" size="sm" label="En Stock" />
+            <StatusBadge tone="success" size="sm" label="Stock disponible" />
           )}
         </div>
 

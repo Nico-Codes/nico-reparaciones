@@ -126,7 +126,7 @@ export function StoreProductHeaderActions({ item, canPurchase }: StoreProductHea
   return (
     <>
       <StatusBadge
-        label={isSpecialOrder ? 'Por encargue' : canPurchase ? 'En Stock' : 'Sin stock'}
+        label={isSpecialOrder ? 'Por encargue' : canPurchase ? 'Stock disponible' : 'Sin stock'}
         tone={resolveStoreProductStockTone(item)}
       />
       {item.featured ? <StatusBadge label="Destacado" tone="accent" /> : null}

@@ -13,6 +13,22 @@
 ---
 
 ### 2026-04-30 - Codex
+- Alcance: renombrar badge de stock fisico en tienda.
+- Tipo de intervencion: ajuste copy frontend.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/store/store-page.sections.tsx`
+  - `next-stack/apps/web/src/features/store/store-product-detail.sections.tsx`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si, visual/UX. El badge de productos fisicos ahora dice `Stock disponible`.
+- Validaciones ejecutadas:
+  - `typecheck --workspace @nico/web`
+  - `git diff --check`
+- Riesgos / notas:
+  - No cambia validacion de stock, carrito ni checkout.
+
+---
+
+### 2026-04-30 - Codex
 - Alcance: agregar badge `En Stock` para productos fisicos en tienda.
 - Tipo de intervencion: ajuste UX frontend en cards y detalle publico de producto.
 - Archivos tocados:
