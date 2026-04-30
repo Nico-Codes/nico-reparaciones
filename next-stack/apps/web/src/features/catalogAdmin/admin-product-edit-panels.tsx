@@ -491,6 +491,9 @@ function AdminProductEditAsidePanels({
             {imagePreview ? <img src={imagePreview} alt="Vista previa del producto" className="h-full w-full object-cover" /> : <div className="media-surface__placeholder">Sin imagen cargada</div>}
           </div>
         </div>
+        <div className="mt-3 rounded-[1rem] border border-sky-100 bg-sky-50 px-3 py-2 text-xs font-bold text-sky-800">
+          Dimensiones recomendadas: 1200 x 1200 px. Imagen cuadrada para tienda y detalle.
+        </div>
 
         <div className="mt-4 space-y-3">
           <label className="ui-field">
@@ -501,7 +504,7 @@ function AdminProductEditAsidePanels({
               onChange={(event) => onFileChange(event.target.files?.[0] ?? null)}
               className="block min-h-[2.85rem] w-full rounded-[0.95rem] border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-800 shadow-[0_1px_2px_rgba(15,23,42,0.06)] file:mr-3 file:rounded-xl file:border-0 file:bg-zinc-100 file:px-3 file:py-1.5 file:text-sm file:font-bold"
             />
-            <span className="ui-field__hint">Formatos permitidos: JPG, PNG o WEBP. Maximo 4 MB.</span>
+            <span className="ui-field__hint">Recomendado: 1200 x 1200 px. Formatos permitidos: JPG, PNG o WEBP. Maximo 4 MB.</span>
           </label>
           <div className="flex flex-wrap items-center gap-2">
             <Button type="button" variant="outline" size="sm" onClick={onRemoveImage} disabled={saving || (!imagePreview && !product.imagePath)}>

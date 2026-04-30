@@ -13,6 +13,25 @@
 ---
 
 ### 2026-04-30 - Codex
+- Alcance: mostrar dimensiones recomendadas al cargar imagen de producto.
+- Tipo de intervencion: ajuste UX frontend en formularios admin de catalogo.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/catalogAdmin/admin-product-create.sections.tsx`
+  - `next-stack/apps/web/src/features/catalogAdmin/admin-product-edit-panels.tsx`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si, visual/UX. Los formularios de producto ahora informan la medida recomendada `1200 x 1200 px` para imagen comercial.
+- Validaciones ejecutadas:
+  - `cmd /c npm run typecheck --workspace @nico/web`
+  - `cmd /c npm run test --workspace @nico/web`
+  - `cmd /c npm run build --workspace @nico/web`
+  - `cmd /c npm run smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - No cambia validacion ni procesamiento de archivos; solo agrega ayuda visual para carga.
+
+---
+
+### 2026-04-30 - Codex
 - Alcance: ajustar cards mobile de tienda para precios largos y titulos cortos.
 - Tipo de intervencion: ajuste UX frontend en cards publicas de tienda.
 - Archivos tocados:
