@@ -13,6 +13,22 @@
 ---
 
 ### 2026-05-04 - Codex
+- Alcance: corregir overflow del selector de cantidad en carrito muy angosto.
+- Tipo de intervencion: ajuste visual frontend.
+- Archivos tocados:
+  - `next-stack/apps/web/src/styles/commerce.css`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No. Solo ajusta medidas responsivas del carrito.
+- Validaciones ejecutadas:
+  - `typecheck --workspace @nico/web`
+  - `build --workspace @nico/web`
+  - `git diff --check`
+- Riesgos / notas:
+  - En pantallas extremadamente angostas el subtotal baja una linea para que el stepper no desborde.
+
+---
+
+### 2026-05-04 - Codex
 - Alcance: mejorar feedback y compactacion del carrito.
 - Tipo de intervencion: bugfix/ajuste visual frontend.
 - Archivos tocados:
