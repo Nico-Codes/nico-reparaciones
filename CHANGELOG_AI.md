@@ -13,6 +13,22 @@
 ---
 
 ### 2026-05-04 - Codex
+- Alcance: corregir ancho de miniatura cuadrada en carrito mobile.
+- Tipo de intervencion: ajuste visual frontend.
+- Archivos tocados:
+  - `next-stack/apps/web/src/styles/commerce.css`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No. La columna de imagen del carrito vuelve a tener ancho suficiente para igualar el alto visual de la fila.
+- Validaciones ejecutadas:
+  - `typecheck --workspace @nico/web`
+  - `build --workspace @nico/web`
+  - `git diff --check`
+- Riesgos / notas:
+  - Se mantiene el alto actual de la card y se evita que la caja de imagen quede rectangular por falta de ancho.
+
+---
+
+### 2026-05-04 - Codex
 - Alcance: mantener miniatura alta con imagen interna cuadrada en carrito.
 - Tipo de intervencion: ajuste visual frontend.
 - Archivos tocados:
