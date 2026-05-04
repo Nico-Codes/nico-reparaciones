@@ -13,6 +13,22 @@
 ---
 
 ### 2026-05-04 - Codex
+- Alcance: corregir botones de cantidad en carrito.
+- Tipo de intervencion: bugfix frontend.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/cart/cart.sections.tsx`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. El boton sumar vuelve a habilitarse hasta el maximo real disponible.
+- Validaciones ejecutadas:
+  - `typecheck --workspace @nico/web`
+  - `build --workspace @nico/web`
+  - `git diff --check`
+- Riesgos / notas:
+  - El limite de cantidad ahora se calcula contra stock/maximo real, no contra la cantidad actual de la linea.
+
+---
+
+### 2026-05-04 - Codex
 - Alcance: reemplazar input de cantidad por valor fijo en steppers.
 - Tipo de intervencion: ajuste visual frontend.
 - Archivos tocados:

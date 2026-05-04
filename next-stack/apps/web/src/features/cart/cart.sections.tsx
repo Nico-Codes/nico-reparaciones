@@ -136,7 +136,7 @@ export function CartLinesSection({
             const isSpecialOrder = isCartSpecialOrderLine(line);
             const isOut = !isSpecialOrder && line.stockAvailable <= 0;
             const disableQuantity = !line.valid || isOut;
-            const clampedQuantity = clampCartQuantity(line.quantity, line.stockAvailable, line.fulfillmentMode);
+            const maxQuantity = clampCartQuantity(999, line.stockAvailable, line.fulfillmentMode);
             const productHref = line.slug ? `/store/${line.slug}` : null;
             const lineKey = `${line.productId}:${line.variantId ?? 'base'}`;
 
@@ -196,7 +196,13 @@ export function CartLinesSection({
                       <button
                         type="button"
                         className="quantity-stepper__button"
-                        onClick={() => onUpdate(line.productId, Math.max(1, line.quantity - 1), line.variantId)}
+                        onClick={() =>
+                          onUpdate(
+                            line.productId,
+                            clampCartQuantity(line.quantity - 1, line.stockAvailable, line.fulfillmentMode),
+                            line.variantId,
+                          )
+                        }
                         disabled={disableQuantity || line.quantity <= 1}
                         aria-label="Restar"
                       >
@@ -208,8 +214,14 @@ export function CartLinesSection({
                       <button
                         type="button"
                         className="quantity-stepper__button"
-                        onClick={() => onUpdate(line.productId, Math.min(clampedQuantity, line.quantity + 1), line.variantId)}
-                        disabled={disableQuantity || line.quantity >= clampedQuantity}
+                        onClick={() =>
+                          onUpdate(
+                            line.productId,
+                            clampCartQuantity(line.quantity + 1, line.stockAvailable, line.fulfillmentMode),
+                            line.variantId,
+                          )
+                        }
+                        disabled={disableQuantity || line.quantity >= maxQuantity}
                         aria-label="Sumar"
                       >
                         <Plus className="h-3.5 w-3.5" aria-hidden="true" />
