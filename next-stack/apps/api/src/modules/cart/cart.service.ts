@@ -70,6 +70,7 @@ export class CartService {
           valid: false,
           reason: 'Producto no existe',
           name: 'Producto no encontrado',
+          imageUrl: null,
           selectedColorLabel: null,
           unitPrice: 0,
           lineTotal: 0,
@@ -148,6 +149,7 @@ export class CartService {
         reason,
         name: product.name,
         slug: product.slug,
+        imageUrl: this.resolveProductImageUrl(product.imagePath, product.imageLegacy),
         selectedColorLabel: selectedVariant?.label ?? null,
         unitPrice,
         lineTotal,
@@ -173,5 +175,41 @@ export class CartService {
         itemsCount,
       },
     };
+  }
+
+  private resolveProductImageUrl(imagePath?: string | null, imageLegacy?: string | null) {
+    const fromPath = imagePath && imagePath.trim() !== '' ? imagePath.trim() : null;
+    if (fromPath) {
+      return this.resolveStorageAssetUrl(fromPath, this.runtimeStorageBaseUrl());
+    }
+
+    if (imageLegacy && imageLegacy.trim() !== '') {
+      const legacy = imageLegacy.trim();
+      return this.resolveStorageAssetUrl(
+        legacy.includes('/') ? legacy : `products/${legacy}`,
+        this.legacyStorageBaseUrl(),
+      );
+    }
+
+    return null;
+  }
+
+  private resolveStorageAssetUrl(rawPath: string, base: string) {
+    const raw = rawPath.trim();
+    if (!raw) return null;
+    if (/^https?:\/\//i.test(raw)) return raw;
+
+    let path = raw.replace(/^\/+/, '');
+    if (path.startsWith('storage/')) path = path.slice('storage/'.length);
+    const urlPath = `/storage/${path}`;
+    return base ? `${base}${urlPath}` : urlPath;
+  }
+
+  private runtimeStorageBaseUrl() {
+    return (process.env.API_URL ?? '').trim().replace(/\/+$/, '');
+  }
+
+  private legacyStorageBaseUrl() {
+    return (process.env.STORE_IMAGE_BASE_URL ?? process.env.API_URL ?? '').trim().replace(/\/+$/, '');
   }
 }

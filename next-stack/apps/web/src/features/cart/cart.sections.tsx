@@ -10,9 +10,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import {
   clampCartQuantity,
   formatCartMoney,
-  getCartLineAvailabilityLabel,
   isCartSpecialOrderLine,
-  resolveCartStockTone,
 } from './cart.helpers';
 import type { CartQuoteLine } from './types';
 
@@ -138,30 +136,44 @@ export function CartLinesSection({
             const isOut = !isSpecialOrder && line.stockAvailable <= 0;
             const disableQuantity = !line.valid || isOut;
             const clampedQuantity = clampCartQuantity(line.quantity, line.stockAvailable, line.fulfillmentMode);
+            const productHref = line.slug ? `/store/${line.slug}` : null;
+            const lineKey = `${line.productId}:${line.variantId ?? 'base'}`;
 
             return (
-              <article key={`${line.productId}:${line.variantId ?? 'base'}`} className="line-item">
-                <div className="line-item__main flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
+              <article key={lineKey} className="line-item cart-line-item">
+                {productHref ? (
+                  <Link to={productHref} className="line-item__media" aria-label={`Ver ${line.name || 'producto'}`}>
+                    {line.imageUrl ? (
+                      <img src={line.imageUrl} alt={line.name || 'Producto'} loading="lazy" decoding="async" />
+                    ) : (
+                      <span>Sin imagen</span>
+                    )}
+                  </Link>
+                ) : (
+                  <div className="line-item__media" aria-hidden="true">
+                    {line.imageUrl ? (
+                      <img src={line.imageUrl} alt="" loading="lazy" decoding="async" />
+                    ) : (
+                      <span>Sin imagen</span>
+                    )}
+                  </div>
+                )}
+
+                <div className="line-item__main">
+                  <div className="line-item__heading">
                     <div className="line-item__title">{line.name || 'Producto'}</div>
-                    <StatusBadge
-                      label={getCartLineAvailabilityLabel(line)}
-                      tone={resolveCartStockTone(line.valid, line.stockAvailable, line.fulfillmentMode)}
-                      size="sm"
-                    />
                     {!line.valid && line.reason ? <StatusBadge label="Requiere ajuste" tone="danger" size="sm" /> : null}
                   </div>
 
                   <div className="line-item__meta">
-                    {line.slug ? (
-                      <Link to={`/store/${line.slug}`} className="font-semibold text-sky-700 hover:text-sky-800">
+                    {productHref ? (
+                      <Link to={productHref} className="font-semibold text-sky-700 hover:text-sky-800">
                         Ver producto
                       </Link>
                     ) : null}
-                    {line.slug ? ' - ' : ''}
-                    {isSpecialOrder ? 'Modalidad por encargue - ' : ''}
-                    {line.selectedColorLabel ? `Color ${line.selectedColorLabel} - ` : ''}
-                    Precio unitario {formatCartMoney(line.unitPrice)}
+                    {isSpecialOrder ? <span>Por encargue</span> : null}
+                    {line.selectedColorLabel ? <span>Color {line.selectedColorLabel}</span> : null}
+                    <span>Unidad {formatCartMoney(line.unitPrice)}</span>
                   </div>
 
                   {!line.valid && line.reason ? (
@@ -174,7 +186,7 @@ export function CartLinesSection({
                     </div>
                   ) : null}
 
-                  <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="line-item__actions">
                     <div className="quantity-stepper">
                       <button
                         type="button"
@@ -216,16 +228,21 @@ export function CartLinesSection({
                       </button>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-3">
-                      <div className="text-right">
-                        <div className="summary-box__label">Subtotal</div>
-                        <div className="text-lg font-black text-zinc-950">{formatCartMoney(line.lineTotal)}</div>
-                      </div>
-                      <Button type="button" variant="ghost" size="sm" onClick={() => onRemove(line.productId, line.variantId)}>
-                        <Trash2 className="h-4 w-4" />
-                        Quitar
-                      </Button>
+                    <div className="line-item__total">
+                      <div className="line-item__total-label">Subtotal</div>
+                      <div className="line-item__total-value">{formatCartMoney(line.lineTotal)}</div>
                     </div>
+
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="line-item__remove"
+                      onClick={() => onRemove(line.productId, line.variantId)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      <span>Quitar</span>
+                    </Button>
                   </div>
                 </div>
               </article>

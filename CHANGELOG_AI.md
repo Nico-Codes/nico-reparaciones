@@ -13,6 +13,31 @@
 ---
 
 ### 2026-05-04 - Codex
+- Alcance: compactar las lineas de productos del carrito y mostrar miniatura.
+- Tipo de intervencion: ajuste UX frontend con ampliacion menor del payload de cotizacion.
+- Archivos tocados:
+  - `next-stack/apps/api/src/modules/cart/cart.service.ts`
+  - `next-stack/apps/web/src/features/cart/cart.sections.tsx`
+  - `next-stack/apps/web/src/features/cart/types.ts`
+  - `next-stack/apps/web/src/styles/commerce.css`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. La cotizacion del carrito ahora devuelve `imageUrl`; la vista del carrito deja de mostrar stock visible por linea y muestra imagen compacta sin cambiar validaciones internas.
+- Validaciones ejecutadas:
+  - `typecheck --workspace @nico/api`
+  - `typecheck --workspace @nico/web`
+  - `test --workspace @nico/api`
+  - `test --workspace @nico/web`
+  - `build --workspace @nico/api`
+  - `build --workspace @nico/web`
+  - `smoke:backend`
+  - `smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - La imagen usa la misma resolucion de assets de tienda; si un producto no tiene imagen, se muestra placeholder compacto.
+
+---
+
+### 2026-05-04 - Codex
 - Alcance: corregir carrito vacio visualmente cuando habia productos locales.
 - Tipo de intervencion: bugfix frontend/backend en cotizacion de carrito y checkout.
 - Archivos tocados:

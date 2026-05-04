@@ -12,6 +12,7 @@ export type CartQuoteLine = {
   valid: boolean;
   reason: string | null;
   name: string;
+  imageUrl?: string | null;
   selectedColorLabel: string | null;
   slug?: string;
   unitPrice: number;
