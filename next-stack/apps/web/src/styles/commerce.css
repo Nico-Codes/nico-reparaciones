@@ -25,12 +25,12 @@
 
 .line-item__media {
   display: flex;
-  width: 100%;
-  min-height: 100%;
+  width: 4.5rem;
+  height: 4.5rem;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  align-self: stretch;
+  align-self: center;
   border-radius: 0.82rem;
   border: 1px solid rgba(226, 232, 240, 0.9);
   background: linear-gradient(180deg, rgba(241, 245, 249, 0.95), rgba(255, 255, 255, 0.92));
@@ -43,8 +43,8 @@
 }
 
 .line-item__media img {
+  height: 100%;
   width: 100%;
-  aspect-ratio: 1 / 1;
   border-radius: 0.62rem;
   object-fit: cover;
 }
@@ -190,6 +190,8 @@
   }
 
   .cart-line-item .line-item__media {
+    width: 3.7rem;
+    height: 3.7rem;
     border-radius: 0.72rem;
     padding: 0.2rem;
   }

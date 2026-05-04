@@ -13,6 +13,22 @@
 ---
 
 ### 2026-05-04 - Codex
+- Alcance: forzar miniatura cuadrada en carrito.
+- Tipo de intervencion: ajuste visual frontend.
+- Archivos tocados:
+  - `next-stack/apps/web/src/styles/commerce.css`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No. La celda de imagen del carrito ahora tiene alto y ancho fijos 1:1 para impedir deformacion por stretch de grid.
+- Validaciones ejecutadas:
+  - `typecheck --workspace @nico/web`
+  - `build --workspace @nico/web`
+  - `git diff --check`
+- Riesgos / notas:
+  - Se mantiene centrada en la fila; ya no ocupa todo el alto si la fila crece por texto.
+
+---
+
+### 2026-05-04 - Codex
 - Alcance: corregir proporcion de imagen en miniaturas del carrito.
 - Tipo de intervencion: ajuste visual frontend.
 - Archivos tocados:
