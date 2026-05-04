@@ -13,6 +13,26 @@
 ---
 
 ### 2026-05-04 - Codex
+- Alcance: compactar visualmente el carrito y rediseñar controles de cantidad.
+- Tipo de intervencion: ajuste UX frontend.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/cart/CartPage.tsx`
+  - `next-stack/apps/web/src/features/cart/cart.sections.tsx`
+  - `next-stack/apps/web/src/styles/commerce.css`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No. Se mantiene la misma logica de cotizacion, stock y checkout; solo cambia presentacion, header e interacciones visuales.
+- Validaciones ejecutadas:
+  - `typecheck --workspace @nico/web`
+  - `test --workspace @nico/web`
+  - `build --workspace @nico/web`
+  - `smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - El ajuste de imagen queda encapsulado en `cart-line-item` para no afectar listas de pedidos ni checkout.
+
+---
+
+### 2026-05-04 - Codex
 - Alcance: compactar las lineas de productos del carrito y mostrar miniatura.
 - Tipo de intervencion: ajuste UX frontend con ampliacion menor del payload de cotizacion.
 - Archivos tocados:

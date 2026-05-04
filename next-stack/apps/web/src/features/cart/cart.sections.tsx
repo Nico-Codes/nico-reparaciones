@@ -1,4 +1,4 @@
-import { AlertTriangle, Trash2 } from 'lucide-react';
+import { AlertTriangle, Minus, Plus, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -61,6 +61,7 @@ export function CartEmptyState({ hasItems, message = '' }: CartEmptyStateProps) 
     <PageShell context="store" className="space-y-6">
       <PageHeader
         context="store"
+        className="cart-page-header"
         eyebrow="Compra"
         title="Carrito"
         subtitle={
@@ -195,7 +196,7 @@ export function CartLinesSection({
                         disabled={disableQuantity || line.quantity <= 1}
                         aria-label="Restar"
                       >
-                        -
+                        <Minus className="h-3.5 w-3.5" aria-hidden="true" />
                       </button>
                       <label className="sr-only" htmlFor={`qty_${line.productId}`}>
                         Cantidad
@@ -224,7 +225,7 @@ export function CartLinesSection({
                         disabled={disableQuantity || line.quantity >= clampedQuantity}
                         aria-label="Sumar"
                       >
-                        +
+                        <Plus className="h-3.5 w-3.5" aria-hidden="true" />
                       </button>
                     </div>
 

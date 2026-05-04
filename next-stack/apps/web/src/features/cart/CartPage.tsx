@@ -81,6 +81,7 @@ export function CartPage() {
     <PageShell context="store" className="space-y-6">
       <PageHeader
         context="store"
+        className="cart-page-header"
         eyebrow="Compra"
         title="Carrito"
         subtitle="Revisa cantidades, stock y total antes de pasar al checkout."
