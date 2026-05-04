@@ -2,11 +2,11 @@ import { Body, Controller, Inject, Post } from '@nestjs/common';
 import { z } from 'zod';
 import { CartService } from './cart.service.js';
 
-const cartQuoteSchema = z.object({
+export const cartQuoteSchema = z.object({
   items: z.array(
     z.object({
       productId: z.string().min(1),
-      variantId: z.string().min(1).optional(),
+      variantId: z.string().min(1).nullable().optional(),
       quantity: z.number().int().min(1).max(999),
     }),
   ).max(200),

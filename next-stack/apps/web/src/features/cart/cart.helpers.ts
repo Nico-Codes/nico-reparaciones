@@ -1,6 +1,11 @@
 import type { CartLocalItem, CartQuoteLine, CartQuoteResponse } from './types';
 
 export type BadgeTone = 'neutral' | 'info' | 'accent' | 'success' | 'warning' | 'danger';
+export type CartRequestItem = {
+  productId: string;
+  variantId?: string;
+  quantity: number;
+};
 
 export function formatCartMoney(value: number) {
   return `$ ${value.toLocaleString('es-AR')}`;
@@ -43,6 +48,18 @@ export function buildQuotedCartItems(items: CartQuoteLine[]): CartLocalItem[] {
     variantId: item.variantId ?? null,
     quantity: item.quantity,
   }));
+}
+
+export function buildCartRequestItems(items: CartLocalItem[]): CartRequestItem[] {
+  return items
+    .map((item) => {
+      const productId = String(item.productId ?? '').trim();
+      const variantId = String(item.variantId ?? '').trim();
+      const quantity = Math.max(1, Math.min(999, Number(item.quantity) || 1));
+
+      return variantId ? { productId, variantId, quantity } : { productId, quantity };
+    })
+    .filter((item) => item.productId);
 }
 
 export function sameCartItems(left: CartLocalItem[], right: CartLocalItem[]) {

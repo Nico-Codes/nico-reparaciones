@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { CartQuoteLine } from './types';
 import {
+  buildCartRequestItems,
   buildQuotedCartItems,
   buildValidCartLines,
   clampCartQuantity,
@@ -58,6 +59,21 @@ describe('cart.helpers', () => {
     expect(buildQuotedCartItems(lines)).toEqual([
       { productId: 'p-1', variantId: null, quantity: 2 },
       { productId: 'p-2', variantId: null, quantity: 1 },
+    ]);
+  });
+
+  it('serializes cart request items without null base variants', () => {
+    expect(
+      buildCartRequestItems([
+        { productId: ' p-1 ', variantId: null, quantity: 2 },
+        { productId: 'p-2', variantId: '', quantity: 0 },
+        { productId: 'p-3', variantId: ' color-1 ', quantity: 2000 },
+        { productId: ' ', variantId: null, quantity: 1 },
+      ]),
+    ).toEqual([
+      { productId: 'p-1', quantity: 2 },
+      { productId: 'p-2', quantity: 1 },
+      { productId: 'p-3', variantId: 'color-1', quantity: 999 },
     ]);
   });
 

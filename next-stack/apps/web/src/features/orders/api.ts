@@ -1,5 +1,6 @@
 import { authFetch, authJsonRequest } from '@/features/auth/http';
 import type { CartLocalItem } from '@/features/cart/types';
+import { buildCartRequestItems } from '@/features/cart/cart.helpers';
 import type { CheckoutConfig, OrderItem, QuickSaleHistoryItem } from './types';
 
 async function authMultipartRequest<T>(path: string, form: FormData): Promise<T> {
@@ -19,7 +20,7 @@ export const ordersApi = {
   checkout(input: { items: CartLocalItem[]; paymentMethod: string }) {
     return authJsonRequest<OrderItem>('/orders/checkout', {
       method: 'POST',
-      body: JSON.stringify(input),
+      body: JSON.stringify({ ...input, items: buildCartRequestItems(input.items) }),
     });
   },
   myOrders() {

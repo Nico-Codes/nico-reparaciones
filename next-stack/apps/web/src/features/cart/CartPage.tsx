@@ -38,6 +38,11 @@ export function CartPage() {
         const { quote: inventoryQuote, removedSpecialOrderCount } = filterInventoryCartQuote(response);
         setQuote(inventoryQuote);
 
+        if (response.errors?.length) {
+          setMessage('No pudimos interpretar algunos productos del carrito. Quita esos items y vuelve a agregarlos desde la tienda.');
+          return;
+        }
+
         if (removedSpecialOrderCount > 0) {
           setMessage('Los productos por encargue se compran directamente desde su ficha.');
         }

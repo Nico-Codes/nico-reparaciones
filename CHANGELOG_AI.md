@@ -12,6 +12,37 @@
 
 ---
 
+### 2026-05-04 - Codex
+- Alcance: corregir carrito vacio visualmente cuando habia productos locales.
+- Tipo de intervencion: bugfix frontend/backend en cotizacion de carrito y checkout.
+- Archivos tocados:
+  - `next-stack/apps/api/src/modules/cart/cart.controller.ts`
+  - `next-stack/apps/api/src/modules/cart/cart.controller.test.ts`
+  - `next-stack/apps/api/src/modules/orders/orders.schemas.ts`
+  - `next-stack/apps/api/src/modules/orders/orders.schemas.test.ts`
+  - `next-stack/apps/web/src/features/cart/CartPage.tsx`
+  - `next-stack/apps/web/src/features/cart/api.ts`
+  - `next-stack/apps/web/src/features/cart/cart.helpers.ts`
+  - `next-stack/apps/web/src/features/cart/cart.helpers.test.ts`
+  - `next-stack/apps/web/src/features/orders/CheckoutPage.tsx`
+  - `next-stack/apps/web/src/features/orders/api.ts`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. El backend acepta `variantId: null` y el frontend omite variantes vacias al cotizar/confirmar, evitando que productos de stock fisico queden como `0 validos`.
+- Validaciones ejecutadas:
+  - `typecheck --workspace @nico/api`
+  - `test --workspace @nico/api`
+  - `build --workspace @nico/api`
+  - `typecheck --workspace @nico/web`
+  - `test --workspace @nico/web`
+  - `build --workspace @nico/web`
+  - `smoke:backend`
+  - `smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - Mantiene la regla de que los productos por encargue no viven en carrito; solo corrige productos base sin variante.
+
+---
+
 ### 2026-04-30 - Codex
 - Alcance: mover badge de encargue sobre imagen de producto en tienda.
 - Tipo de intervencion: ajuste UX frontend en cards y detalle publico.

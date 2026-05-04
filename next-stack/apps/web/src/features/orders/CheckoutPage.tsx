@@ -67,6 +67,7 @@ export function CheckoutPage() {
           const inventoryFilter = isSpecialOrderMode ? null : filterInventoryCartQuote(quoteResult.value);
           const response = isSpecialOrderMode ? quoteResult.value : inventoryFilter?.quote ?? quoteResult.value;
           setQuote(response);
+          const quoteErrors = quoteResult.value.errors ?? [];
 
           if (!isSpecialOrderMode && quoteResult.value.items.length) {
             const normalized = buildCheckoutItems(response.items);
@@ -83,6 +84,8 @@ export function CheckoutPage() {
           }
           if (specialOrderCheckout.error) {
             setMessage(specialOrderCheckout.error);
+          } else if (quoteErrors.length) {
+            setMessage('No pudimos interpretar algunos productos del carrito. Vuelve al carrito y agregalos nuevamente desde la tienda.');
           } else if (inventoryFilter && inventoryFilter.removedSpecialOrderCount > 0) {
             setMessage('Los productos por encargue se compran directamente desde su ficha.');
           }
