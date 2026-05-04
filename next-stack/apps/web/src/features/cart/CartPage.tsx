@@ -16,6 +16,7 @@ import {
   CartHeaderActions,
   CartLinesSection,
   CartSummarySection,
+  CartStockLimitPopup,
 } from './cart.sections';
 import { useCartItems } from './useCart';
 import type { CartQuoteResponse } from './types';
@@ -26,6 +27,7 @@ export function CartPage() {
   const [quote, setQuote] = useState<CartQuoteResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [stockLimitNotice, setStockLimitNotice] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -68,6 +70,12 @@ export function CartPage() {
     };
   }, [cart.items]);
 
+  useEffect(() => {
+    if (!stockLimitNotice) return;
+    const timeout = window.setTimeout(() => setStockLimitNotice(''), 3600);
+    return () => window.clearTimeout(timeout);
+  }, [stockLimitNotice]);
+
   const lines = quote?.items ?? [];
   const validLines = useMemo(() => buildValidCartLines(lines), [lines]);
   const hasStockIssue = useMemo(() => hasCartStockIssue(lines), [lines]);
@@ -78,7 +86,7 @@ export function CartPage() {
   }
 
   return (
-    <PageShell context="store" className="space-y-6">
+    <PageShell context="store" className="cart-page-shell">
       <PageHeader
         context="store"
         className="cart-page-header"
@@ -99,6 +107,10 @@ export function CartPage() {
           hasQuote={Boolean(quote)}
           onUpdate={cart.update}
           onRemove={cart.remove}
+          onQuantityLimit={(productName, maxQuantity) => {
+            const units = maxQuantity === 1 ? 'unidad disponible' : 'unidades disponibles';
+            setStockLimitNotice(`No se pueden agregar mas unidades de ${productName}: solo hay ${maxQuantity} ${units} en stock.`);
+          }}
         />
 
         <CartSummarySection
@@ -109,6 +121,8 @@ export function CartPage() {
           onClear={cart.clear}
         />
       </div>
+
+      <CartStockLimitPopup message={stockLimitNotice} onClose={() => setStockLimitNotice('')} />
     </PageShell>
   );
 }

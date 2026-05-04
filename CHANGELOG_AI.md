@@ -13,6 +13,24 @@
 ---
 
 ### 2026-05-04 - Codex
+- Alcance: mejorar feedback y compactacion del carrito.
+- Tipo de intervencion: bugfix/ajuste visual frontend.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/cart/CartPage.tsx`
+  - `next-stack/apps/web/src/features/cart/cart.sections.tsx`
+  - `next-stack/apps/web/src/styles/commerce.css`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. Al tocar sumar en el maximo de stock se muestra un aviso en lugar de fallar silenciosamente.
+- Validaciones ejecutadas:
+  - `typecheck --workspace @nico/web`
+  - `build --workspace @nico/web`
+  - `git diff --check`
+- Riesgos / notas:
+  - El boton sumar en maximo queda visualmente deshabilitado con `aria-disabled`, pero no usa `disabled` nativo para poder mostrar el aviso.
+
+---
+
+### 2026-05-04 - Codex
 - Alcance: corregir botones de cantidad en carrito.
 - Tipo de intervencion: bugfix frontend.
 - Archivos tocados:

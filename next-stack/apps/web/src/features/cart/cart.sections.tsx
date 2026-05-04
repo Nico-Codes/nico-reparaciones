@@ -35,6 +35,7 @@ type CartLinesSectionProps = {
   hasQuote: boolean;
   onUpdate: (productId: string, quantity: number, variantId?: string | null) => void;
   onRemove: (productId: string, variantId?: string | null) => void;
+  onQuantityLimit: (productName: string, maxQuantity: number) => void;
 };
 
 type CartSummarySectionProps = {
@@ -43,6 +44,11 @@ type CartSummarySectionProps = {
   canCheckout: boolean;
   onCheckout: () => void;
   onClear: () => void;
+};
+
+type CartStockLimitPopupProps = {
+  message: string;
+  onClose: () => void;
 };
 
 export function CartHeaderActions({ itemsCount }: CartHeaderActionsProps) {
@@ -121,6 +127,7 @@ export function CartLinesSection({
   hasQuote,
   onUpdate,
   onRemove,
+  onQuantityLimit,
 }: CartLinesSectionProps) {
   return (
     <SectionCard
@@ -137,6 +144,7 @@ export function CartLinesSection({
             const isOut = !isSpecialOrder && line.stockAvailable <= 0;
             const disableQuantity = !line.valid || isOut;
             const maxQuantity = clampCartQuantity(999, line.stockAvailable, line.fulfillmentMode);
+            const plusAtLimit = line.quantity >= maxQuantity;
             const productHref = line.slug ? `/store/${line.slug}` : null;
             const lineKey = `${line.productId}:${line.variantId ?? 'base'}`;
 
@@ -213,15 +221,20 @@ export function CartLinesSection({
                       </output>
                       <button
                         type="button"
-                        className="quantity-stepper__button"
-                        onClick={() =>
+                        className={`quantity-stepper__button ${plusAtLimit ? 'is-disabled' : ''}`}
+                        onClick={() => {
+                          if (plusAtLimit) {
+                            onQuantityLimit(line.name || 'Producto', maxQuantity);
+                            return;
+                          }
                           onUpdate(
                             line.productId,
                             clampCartQuantity(line.quantity + 1, line.stockAvailable, line.fulfillmentMode),
                             line.variantId,
-                          )
-                        }
-                        disabled={disableQuantity || line.quantity >= maxQuantity}
+                          );
+                        }}
+                        disabled={disableQuantity}
+                        aria-disabled={plusAtLimit ? 'true' : undefined}
                         aria-label="Sumar"
                       >
                         <Plus className="h-3.5 w-3.5" aria-hidden="true" />
@@ -251,6 +264,22 @@ export function CartLinesSection({
         </div>
       )}
     </SectionCard>
+  );
+}
+
+export function CartStockLimitPopup({ message, onClose }: CartStockLimitPopupProps) {
+  if (!message) return null;
+
+  return (
+    <div className="cart-stock-popup" role="alert" aria-live="assertive">
+      <div>
+        <div className="cart-stock-popup__title">Stock maximo alcanzado</div>
+        <div className="cart-stock-popup__text">{message}</div>
+      </div>
+      <button type="button" className="cart-stock-popup__close" onClick={onClose} aria-label="Cerrar aviso">
+        Cerrar
+      </button>
+    </div>
   );
 }
 
