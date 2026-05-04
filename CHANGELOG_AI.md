@@ -13,6 +13,24 @@
 ---
 
 ### 2026-05-04 - Codex
+- Alcance: centrar el icono del carrito en la navbar publica/auth.
+- Tipo de intervencion: ajuste visual frontend.
+- Archivos tocados:
+  - `next-stack/apps/web/src/layouts/AppShell.tsx`
+  - `next-stack/apps/web/src/features/auth/AuthLayout.tsx`
+  - `next-stack/apps/web/src/styles/layout.css`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No. Solo normaliza la caja visual del acceso al carrito.
+- Validaciones ejecutadas:
+  - `typecheck --workspace @nico/web`
+  - `build --workspace @nico/web`
+  - `git diff --check`
+- Riesgos / notas:
+  - El carrito ahora usa una celda fija de 36px para alinear icono y badge igual en desktop y mobile.
+
+---
+
+### 2026-05-04 - Codex
 - Alcance: corregir overflow del selector de cantidad en carrito muy angosto.
 - Tipo de intervencion: ajuste visual frontend.
 - Archivos tocados:

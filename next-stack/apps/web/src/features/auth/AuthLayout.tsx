@@ -269,12 +269,12 @@ export function AuthLayout({
 
               <Link
                 to="/cart"
-                className="relative mr-2 inline-flex items-center justify-center rounded-none border-0 bg-transparent p-0 text-zinc-800 transition-colors hover:bg-transparent hover:text-sky-700"
+                className="shell-cart-link"
                 aria-label="Carrito"
               >
-                {display.iconCartUrl ? <img src={display.iconCartUrl} alt="" className="h-7 w-7 object-contain" /> : <CartGlyph />}
+                {display.iconCartUrl ? <img src={display.iconCartUrl} alt="" className="shell-cart-link__icon" /> : <span className="shell-cart-link__icon"><CartGlyph /></span>}
                 {cartCount > 0 ? (
-                  <span className="absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-sky-600 px-1 text-[10px] font-black leading-4 text-white ring-2 ring-white">
+                  <span className="shell-cart-link__badge">
                     {cartCount > 99 ? '99+' : cartCount}
                   </span>
                 ) : null}
