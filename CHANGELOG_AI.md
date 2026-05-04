@@ -13,6 +13,23 @@
 ---
 
 ### 2026-05-04 - Codex
+- Alcance: igualar el tamano visual del icono de usuario mobile con el carrito.
+- Tipo de intervencion: ajuste visual frontend.
+- Archivos tocados:
+  - `next-stack/apps/web/src/layouts/app-shell/account-menu.tsx`
+  - `next-stack/apps/web/src/styles/layout.css`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No. Solo ajusta la caja e icono del boton de cuenta en mobile.
+- Validaciones ejecutadas:
+  - `typecheck --workspace @nico/web`
+  - `build --workspace @nico/web`
+  - `git diff --check`
+- Riesgos / notas:
+  - El ajuste se limita a mobile; en desktop el menu de cuenta conserva nombre y chevron.
+
+---
+
+### 2026-05-04 - Codex
 - Alcance: centrar el icono del carrito en la navbar publica/auth.
 - Tipo de intervencion: ajuste visual frontend.
 - Archivos tocados:

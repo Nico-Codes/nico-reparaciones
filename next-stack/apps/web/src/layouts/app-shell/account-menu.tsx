@@ -54,7 +54,7 @@ export function AccountMenu({
       <button
         id="account-menu-button"
         ref={accountButtonRef}
-        className="btn-ghost px-3 py-2"
+        className="account-menu-button btn-ghost px-3 py-2"
         aria-expanded={accountOpen ? 'true' : 'false'}
         aria-haspopup="menu"
         aria-controls="account-menu"
@@ -63,8 +63,8 @@ export function AccountMenu({
         onClick={onButtonClick}
         onKeyDown={onButtonKeyDown}
       >
-        <span className="sm:hidden">
-          {iconAccountUrl ? <img src={iconAccountUrl} alt="" className="h-5 w-5 object-contain" /> : <User className="h-5 w-5" />}
+        <span className="account-menu-button__mobile-icon sm:hidden">
+          {iconAccountUrl ? <img src={iconAccountUrl} alt="" className="account-menu-button__icon" /> : <User className="account-menu-button__icon" />}
         </span>
         <span className="hidden max-w-[12rem] truncate sm:inline">{authUser.name || 'Cuenta'}</span>
         <ChevronDown className="hidden h-4 w-4 text-zinc-500 sm:inline-block" />
