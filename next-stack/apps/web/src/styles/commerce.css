@@ -795,18 +795,25 @@
 }
 
 .quantity-stepper__button {
-  display: inline-flex;
+  display: grid;
   height: 2.6rem;
   width: 2.6rem;
-  align-items: center;
-  justify-content: center;
+  place-items: center;
+  padding: 0;
   border-radius: 0.8rem;
   border: 1px solid rgba(226, 232, 240, 0.96);
   background: #fff;
   font-size: 1rem;
   font-weight: 900;
+  line-height: 1;
   color: var(--nr-text-strong);
   transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.quantity-stepper__button svg {
+  display: block;
+  height: 0.95rem;
+  width: 0.95rem;
 }
 
 .quantity-stepper__button:hover:not(:disabled) {

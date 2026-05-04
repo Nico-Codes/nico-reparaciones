@@ -13,6 +13,22 @@
 ---
 
 ### 2026-05-04 - Codex
+- Alcance: centrar iconos de cantidad en carrito y detalle.
+- Tipo de intervencion: ajuste visual frontend.
+- Archivos tocados:
+  - `next-stack/apps/web/src/styles/commerce.css`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No. Los botones del stepper ahora centran explicitamente sus iconos.
+- Validaciones ejecutadas:
+  - `typecheck --workspace @nico/web`
+  - `build --workspace @nico/web`
+  - `git diff --check`
+- Riesgos / notas:
+  - El ajuste aplica al componente de cantidad compartido por carrito y detalle de producto.
+
+---
+
+### 2026-05-04 - Codex
 - Alcance: corregir ancho de miniatura cuadrada en carrito mobile.
 - Tipo de intervencion: ajuste visual frontend.
 - Archivos tocados:
