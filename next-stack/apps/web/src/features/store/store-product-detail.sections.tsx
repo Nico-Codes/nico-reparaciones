@@ -8,7 +8,6 @@ import { PageShell } from '@/components/ui/page-shell';
 import { SectionCard } from '@/components/ui/section-card';
 import { StatusBadge } from '@/components/ui/status-badge';
 import {
-  clampStoreProductQuantity,
   formatStoreProductMoney,
   getStoreProductCtaLabel,
   getStoreProductFallbackDescription,
@@ -228,17 +227,9 @@ export function StoreProductPurchaseSection({
               >
                 -
               </button>
-              <input
-                id="productQty"
-                type="number"
-                value={qty}
-                min={1}
-                max={maxQty}
-                onChange={(event) => onQtyChange(clampStoreProductQuantity(Number(event.target.value), item.stock, item.fulfillmentMode))}
-                className="quantity-stepper__input"
-                inputMode="numeric"
-                disabled={!canPurchase}
-              />
+              <output id="productQty" className="quantity-stepper__value" aria-label="Cantidad">
+                {qty}
+              </output>
               <button
                 type="button"
                 className="quantity-stepper__button"

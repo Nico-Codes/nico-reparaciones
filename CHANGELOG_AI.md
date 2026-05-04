@@ -13,6 +13,24 @@
 ---
 
 ### 2026-05-04 - Codex
+- Alcance: reemplazar input de cantidad por valor fijo en steppers.
+- Tipo de intervencion: ajuste visual frontend.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/cart/cart.sections.tsx`
+  - `next-stack/apps/web/src/features/store/store-product-detail.sections.tsx`
+  - `next-stack/apps/web/src/styles/commerce.css`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No. La cantidad sigue cambiando con los botones laterales; ya no se edita desde un campo numerico.
+- Validaciones ejecutadas:
+  - `typecheck --workspace @nico/web`
+  - `build --workspace @nico/web`
+  - `git diff --check`
+- Riesgos / notas:
+  - El cambio evita desalineacion del input y simplifica el control visual.
+
+---
+
+### 2026-05-04 - Codex
 - Alcance: centrar iconos de cantidad en carrito y detalle.
 - Tipo de intervencion: ajuste visual frontend.
 - Archivos tocados:

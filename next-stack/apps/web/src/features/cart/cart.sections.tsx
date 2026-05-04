@@ -202,26 +202,9 @@ export function CartLinesSection({
                       >
                         <Minus className="h-3.5 w-3.5" aria-hidden="true" />
                       </button>
-                      <label className="sr-only" htmlFor={`qty_${line.productId}`}>
-                        Cantidad
-                      </label>
-                      <input
-                        id={`qty_${line.productId}`}
-                        type="number"
-                        min={1}
-                        max={clampedQuantity}
-                        inputMode="numeric"
-                        value={line.quantity}
-                        onChange={(event) =>
-                          onUpdate(
-                            line.productId,
-                            clampCartQuantity(Number(event.target.value), line.stockAvailable, line.fulfillmentMode),
-                            line.variantId,
-                          )
-                        }
-                        className="quantity-stepper__input"
-                        disabled={disableQuantity}
-                      />
+                      <output className="quantity-stepper__value" aria-label="Cantidad">
+                        {line.quantity}
+                      </output>
                       <button
                         type="button"
                         className="quantity-stepper__button"
