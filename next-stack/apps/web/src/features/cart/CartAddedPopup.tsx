@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { X } from 'lucide-react';
+import { BrandIcon } from '@/components/brand/BrandIcon';
 import { CART_ADDED_EVENT, type CartAddedDetail } from './storage';
 
 const AUTO_CLOSE_MS = 4500;
@@ -92,7 +93,7 @@ export function CartAddedPopup() {
             </div>
 
             <button type="button" className="icon-btn" onClick={close} aria-label="Cerrar">
-              <X className="h-5 w-5" />
+              <BrandIcon slot="icon_close" className="h-5 w-5" fallback={<X className="h-5 w-5" />} />
             </button>
           </div>
 

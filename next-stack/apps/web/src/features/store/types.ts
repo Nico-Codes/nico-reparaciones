@@ -108,6 +108,7 @@ export type StoreBrandingAssets = {
     adminVentaRapida: string | null;
     adminProductos: string | null;
   };
+  iconsBySlot: Record<string, string | null>;
   favicons: {
     faviconIco: string | null;
     favicon16: string | null;

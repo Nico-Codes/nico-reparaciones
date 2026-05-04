@@ -6,6 +6,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { BrandIcon } from '@/components/brand/BrandIcon';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { LoadingBlock } from '@/components/ui/loading-block';
@@ -81,6 +82,7 @@ type CheckoutSummarySectionProps = {
 
 function CheckoutPaymentIcon({ option }: { option: CheckoutPaymentMethodConfig }) {
   const FallbackIcon = option.value === 'efectivo' ? Banknote : Landmark;
+  const slot = option.value === 'efectivo' ? 'checkout_payment_local' : 'checkout_payment_transfer';
 
   if (option.iconUrl) {
     return (
@@ -94,7 +96,7 @@ function CheckoutPaymentIcon({ option }: { option: CheckoutPaymentMethodConfig }
     );
   }
 
-  return <FallbackIcon className="h-5 w-5" aria-hidden="true" />;
+  return <BrandIcon slot={slot} className="h-5 w-5" fallback={<FallbackIcon className="h-5 w-5" aria-hidden="true" />} />;
 }
 
 export function CheckoutLoadingState({ message }: CheckoutLoadingStateProps) {
@@ -139,7 +141,7 @@ export function CheckoutEmptyState({
 
       {message ? (
         <div className="ui-alert ui-alert--danger">
-          <AlertTriangle className="mt-0.5 h-4 w-4 flex-none" />
+          <BrandIcon slot="icon_alert" className="mt-0.5 h-4 w-4 flex-none" fallback={<AlertTriangle className="h-4 w-4" />} />
           <div>
             <span className="ui-alert__title">No pudimos preparar el checkout.</span>
             <div className="ui-alert__text">{message}</div>
@@ -149,7 +151,7 @@ export function CheckoutEmptyState({
 
       {hasInvalidItems ? (
         <div className="ui-alert ui-alert--warning">
-          <AlertTriangle className="mt-0.5 h-4 w-4 flex-none" />
+          <BrandIcon slot="icon_alert" className="mt-0.5 h-4 w-4 flex-none" fallback={<AlertTriangle className="h-4 w-4" />} />
           <div>
             <span className="ui-alert__title">Hay productos con cambios de stock o cantidad.</span>
             <div className="ui-alert__text">
@@ -186,7 +188,7 @@ export function CheckoutFeedback({ message }: CheckoutFeedbackProps) {
 
   return (
     <div className="ui-alert ui-alert--danger">
-      <AlertTriangle className="mt-0.5 h-4 w-4 flex-none" />
+      <BrandIcon slot="icon_alert" className="mt-0.5 h-4 w-4 flex-none" fallback={<AlertTriangle className="h-4 w-4" />} />
       <div>
         <span className="ui-alert__title">No pudimos confirmar el pedido.</span>
         <div className="ui-alert__text">{message}</div>
@@ -243,7 +245,7 @@ export function CheckoutPaymentSection({
 
       {showTransferHint ? (
         <div className="ui-alert ui-alert--info mt-4">
-          <Landmark className="mt-0.5 h-4 w-4 flex-none" />
+          <BrandIcon slot="checkout_payment_transfer" className="mt-0.5 h-4 w-4 flex-none" fallback={<Landmark className="h-4 w-4" />} />
           <div>
             <span className="ui-alert__title">Transferencia: datos y comprobante despues de confirmar</span>
             <div className="ui-alert__text">
@@ -271,7 +273,7 @@ export function CheckoutSpecialOrderReservationSection({
       actions={<StatusBadge tone="accent" size="sm" label="Encargo" />}
     >
       <div className="ui-alert ui-alert--info">
-        <MessageCircle className="mt-0.5 h-4 w-4 flex-none" />
+        <BrandIcon slot="icon_whatsapp" className="mt-0.5 h-4 w-4 flex-none" fallback={<MessageCircle className="h-4 w-4" />} />
         <div>
           <span className="ui-alert__title">Condiciones de reserva</span>
           <div className="ui-alert__text">
@@ -360,7 +362,7 @@ export function CheckoutActions({
         onClick={onConfirm}
         disabled={!canConfirm}
       >
-        <ShieldCheck className="h-4 w-4" />
+        <BrandIcon slot="icon_shield" className="h-4 w-4" fallback={<ShieldCheck className="h-4 w-4" />} />
         {submitting ? 'Procesando...' : confirmLabel}
       </Button>
       <Button asChild variant="outline" className="w-full justify-center sm:w-auto">
@@ -427,7 +429,7 @@ export function CheckoutSummarySection({
 
       {hasSpecialOrderLines ? (
         <div className="ui-alert ui-alert--info mt-4">
-          <ShieldCheck className="mt-0.5 h-4 w-4 flex-none" />
+          <BrandIcon slot="icon_shield" className="mt-0.5 h-4 w-4 flex-none" fallback={<ShieldCheck className="h-4 w-4" />} />
           <div>
             <span className="ui-alert__title">{isSpecialOrderMode ? 'Reserva por encargue' : 'Incluye productos por encargue'}</span>
             <div className="ui-alert__text">
@@ -445,7 +447,7 @@ export function CheckoutSummarySection({
       </div>
 
       <div className="ui-alert ui-alert--info mt-4">
-        <ShieldCheck className="mt-0.5 h-4 w-4 flex-none" />
+        <BrandIcon slot="icon_shield" className="mt-0.5 h-4 w-4 flex-none" fallback={<ShieldCheck className="h-4 w-4" />} />
         <div>
           <span className="ui-alert__title">{isSpecialOrderMode ? 'Reserva con gestion por WhatsApp' : 'Compra con retiro en local'}</span>
           <div className="ui-alert__text">

@@ -1,5 +1,6 @@
 import { AlertTriangle, Minus, Plus, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { BrandIcon } from '@/components/brand/BrandIcon';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { LoadingBlock } from '@/components/ui/loading-block';
@@ -83,7 +84,7 @@ export function CartEmptyState({ hasItems, message = '' }: CartEmptyStateProps) 
       />
       {message ? (
         <div className="ui-alert ui-alert--info">
-          <AlertTriangle className="mt-0.5 h-4 w-4 flex-none" />
+          <BrandIcon slot="icon_alert" className="mt-0.5 h-4 w-4 flex-none" fallback={<AlertTriangle className="h-4 w-4" />} />
           <div>
             <span className="ui-alert__title">Carrito actualizado</span>
             <div className="ui-alert__text">{message}</div>
@@ -110,7 +111,7 @@ export function CartFeedback({ message }: CartFeedbackProps) {
 
   return (
     <div className="ui-alert ui-alert--danger">
-      <AlertTriangle className="mt-0.5 h-4 w-4 flex-none" />
+      <BrandIcon slot="icon_alert" className="mt-0.5 h-4 w-4 flex-none" fallback={<AlertTriangle className="h-4 w-4" />} />
       <div>
         <span className="ui-alert__title">No pudimos cotizar el carrito.</span>
         <div className="ui-alert__text">{message}</div>
@@ -191,7 +192,7 @@ export function CartLinesSection({
 
                   {!line.valid && line.reason ? (
                     <div className="ui-alert ui-alert--warning mt-3">
-                      <AlertTriangle className="mt-0.5 h-4 w-4 flex-none" />
+                      <BrandIcon slot="icon_alert" className="mt-0.5 h-4 w-4 flex-none" fallback={<AlertTriangle className="h-4 w-4" />} />
                       <div>
                         <span className="ui-alert__title">Ajuste requerido</span>
                         <div className="ui-alert__text">{line.reason}</div>
@@ -214,7 +215,7 @@ export function CartLinesSection({
                         disabled={disableQuantity || line.quantity <= 1}
                         aria-label="Restar"
                       >
-                        <Minus className="h-3.5 w-3.5" aria-hidden="true" />
+                        <BrandIcon slot="icon_minus" className="h-3.5 w-3.5" fallback={<Minus className="h-3.5 w-3.5" aria-hidden="true" />} />
                       </button>
                       <output className="quantity-stepper__value" aria-label="Cantidad">
                         {line.quantity}
@@ -237,7 +238,7 @@ export function CartLinesSection({
                         aria-disabled={plusAtLimit ? 'true' : undefined}
                         aria-label="Sumar"
                       >
-                        <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+                        <BrandIcon slot="icon_plus" className="h-3.5 w-3.5" fallback={<Plus className="h-3.5 w-3.5" aria-hidden="true" />} />
                       </button>
                     </div>
 
@@ -253,7 +254,7 @@ export function CartLinesSection({
                       className="line-item__remove"
                       onClick={() => onRemove(line.productId, line.variantId)}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <BrandIcon slot="icon_trash" className="h-4 w-4" fallback={<Trash2 className="h-4 w-4" />} />
                       <span>Quitar</span>
                     </Button>
                   </div>
@@ -303,7 +304,7 @@ export function CartSummarySection({
 
       {hasStockIssue ? (
         <div className="ui-alert ui-alert--warning mt-4">
-          <AlertTriangle className="mt-0.5 h-4 w-4 flex-none" />
+          <BrandIcon slot="icon_alert" className="mt-0.5 h-4 w-4 flex-none" fallback={<AlertTriangle className="h-4 w-4" />} />
           <div>
             <span className="ui-alert__title">Hay productos para revisar</span>
             <div className="ui-alert__text">Ajusta las cantidades o quita los items invalidos antes de continuar.</div>

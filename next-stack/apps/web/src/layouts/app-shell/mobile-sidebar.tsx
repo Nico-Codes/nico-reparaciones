@@ -1,6 +1,7 @@
 import { createPortal } from 'react-dom';
 import { ChevronDown, LogOut, Wrench, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { BrandIcon } from '@/components/brand/BrandIcon';
 import type { AuthUser } from '@/features/auth/types';
 import { renderAccountLinkIcon, renderAdminLinkIcon, renderSidebarNavIcon } from '@/layouts/app-shell/link-icons';
 import { LinkBadge, MenuLinkIcon } from '@/layouts/app-shell/primitives';
@@ -69,7 +70,7 @@ export function MobileSidebar({
           </div>
 
           <button className="icon-btn" aria-label="Cerrar menu" type="button" onClick={onClose}>
-            <X className="h-5 w-5" />
+            <BrandIcon slot="icon_close" className="h-5 w-5" fallback={<X className="h-5 w-5" />} />
           </button>
         </div>
 
@@ -117,7 +118,11 @@ export function MobileSidebar({
                   <>
                     <button type="button" className={`sidebar-link flex items-center justify-between gap-2 ${adminSectionOpen ? 'active' : ''}`} onClick={onToggleAdminSection}>
                       <span>Admin</span>
-                      <ChevronDown className={`h-4 w-4 transition-transform ${adminSectionOpen ? 'rotate-180' : ''}`} />
+                      <BrandIcon
+                        slot="icon_chevron_down"
+                        className={`h-4 w-4 transition-transform ${adminSectionOpen ? 'rotate-180' : ''}`}
+                        fallback={<ChevronDown className="h-4 w-4" />}
+                      />
                     </button>
                     <div className={adminSectionOpen ? '' : 'hidden'}>
                       <div className="ml-2 grid gap-1 border-l border-zinc-200 pl-2">
@@ -138,7 +143,10 @@ export function MobileSidebar({
                 {authUser ? (
                   <button type="button" className="sidebar-link text-rose-700" onClick={onLogout}>
                     <span className="inline-flex items-center gap-2">
-                      <MenuLinkIcon iconUrl={iconLogoutUrl} fallback={<LogOut className="h-4 w-4" />} />
+                      <MenuLinkIcon
+                        iconUrl={iconLogoutUrl}
+                        fallback={<BrandIcon slot="icon_logout" className="h-4 w-4" fallback={<LogOut className="h-4 w-4" />} />}
+                      />
                       <span>Cerrar sesion</span>
                     </span>
                   </button>

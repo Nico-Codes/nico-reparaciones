@@ -558,6 +558,22 @@ model AppSetting {
   @@index([group])
 }
 
+model BrandAssetVersion {
+  id           String   @id @default(cuid())
+  slot         String
+  path         String
+  originalName String?
+  mimeType     String?
+  size         Int?
+  isActive     Boolean  @default(false)
+  source       String   @default("upload")
+  createdById  String?
+  createdAt    DateTime @default(now())
+
+  @@index([slot])
+  @@index([slot, isActive])
+}
+
 model WhatsAppLog {
   id          String   @id @default(cuid())
   channel     String   @default("general")

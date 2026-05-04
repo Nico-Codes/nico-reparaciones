@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
+import { BrandIcon } from '@/components/brand/BrandIcon';
 import { PageHeader } from '@/components/ui/page-header';
 import { PageShell } from '@/components/ui/page-shell';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -64,7 +65,7 @@ export function AdminDashboardPage() {
 
       {error ? (
         <div className="ui-alert ui-alert--danger" data-reveal>
-          <AlertTriangle className="mt-0.5 h-4 w-4 flex-none" />
+          <BrandIcon slot="icon_alert" className="mt-0.5 h-4 w-4 flex-none" fallback={<AlertTriangle className="h-4 w-4" />} />
           <div>
             <span className="ui-alert__title">No se pudo cargar el dashboard</span>
             <div className="ui-alert__text">{error}</div>

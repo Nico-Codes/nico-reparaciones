@@ -36,7 +36,43 @@ export type VisualIconName =
   | 'quickSale'
   | 'products'
   | 'paymentLocal'
-  | 'paymentTransfer';
+  | 'paymentTransfer'
+  | 'menu'
+  | 'close'
+  | 'search'
+  | 'filter'
+  | 'tags'
+  | 'chevronDown'
+  | 'arrowLeft'
+  | 'plus'
+  | 'minus'
+  | 'trash'
+  | 'alert'
+  | 'success'
+  | 'upload'
+  | 'download'
+  | 'empty'
+  | 'whatsapp'
+  | 'externalLink'
+  | 'clock'
+  | 'calculator'
+  | 'package'
+  | 'receipt'
+  | 'truck'
+  | 'refresh'
+  | 'shield'
+  | 'users'
+  | 'building'
+  | 'percent'
+  | 'sparkles'
+  | 'image'
+  | 'fileText'
+  | 'folderTree'
+  | 'layers'
+  | 'tag'
+  | 'banknote'
+  | 'message'
+  | 'clipboard';
 
 export type AssetSectionDefinition = {
   title: string;
@@ -54,6 +90,21 @@ export type AuthVisualFormState = {
 };
 
 const ICON_RECOMMENDED_SIZE = '1:1 - SVG con viewBox 24 x 24 o PNG/WEBP 128 x 128 px o mayor';
+
+function editableIconAsset(title: string, slot: string, icon: VisualIconName, tint = 'text-zinc-700'): AssetCard {
+  return {
+    title,
+    filename: `brand-assets/identity/${slot}`,
+    slot,
+    settingKey: `brand_asset.${slot}.path`,
+    defaultPath: '',
+    formats: 'SVG, PNG, JPG, JPEG, WEBP',
+    maxKb: 2048,
+    recommendedPx: ICON_RECOMMENDED_SIZE,
+    preview: { kind: 'icon', icon, tint },
+    showReset: true,
+  };
+}
 
 export const DEFAULT_AUTH_VISUAL_FORM_STATE: AuthVisualFormState = {
   eyebrow: 'Cuenta web',
@@ -403,6 +454,57 @@ export const CHECKOUT_ICON_ASSETS: AssetCard[] = [
   },
 ];
 
+export const GLOBAL_ACTION_ICON_ASSETS: AssetCard[] = [
+  editableIconAsset('Icono menu', 'icon_menu', 'menu', 'text-zinc-900'),
+  editableIconAsset('Icono cerrar', 'icon_close', 'close', 'text-zinc-800'),
+  editableIconAsset('Icono buscar', 'icon_search', 'search', 'text-sky-700'),
+  editableIconAsset('Icono filtros/orden', 'icon_filter', 'filter', 'text-sky-700'),
+  editableIconAsset('Icono etiquetas/categorias', 'icon_tags', 'tags', 'text-sky-700'),
+  editableIconAsset('Icono desplegar', 'icon_chevron_down', 'chevronDown', 'text-zinc-600'),
+  editableIconAsset('Icono volver', 'icon_arrow_left', 'arrowLeft', 'text-zinc-700'),
+  editableIconAsset('Icono sumar', 'icon_plus', 'plus', 'text-blue-600'),
+  editableIconAsset('Icono restar', 'icon_minus', 'minus', 'text-blue-600'),
+  editableIconAsset('Icono eliminar', 'icon_trash', 'trash', 'text-slate-600'),
+  editableIconAsset('Icono alerta', 'icon_alert', 'alert', 'text-amber-700'),
+  editableIconAsset('Icono exito', 'icon_success', 'success', 'text-emerald-700'),
+  editableIconAsset('Icono subir archivo', 'icon_upload', 'upload', 'text-blue-600'),
+  editableIconAsset('Icono descargar', 'icon_download', 'download', 'text-slate-600'),
+  editableIconAsset('Icono estado vacio', 'icon_empty', 'empty', 'text-blue-600'),
+  editableIconAsset('Icono enlace externo', 'icon_external_link', 'externalLink', 'text-slate-700'),
+];
+
+export const STORE_ACTION_ICON_ASSETS: AssetCard[] = [
+  editableIconAsset('Icono producto', 'icon_package', 'package', 'text-sky-700'),
+  editableIconAsset('Icono categoria', 'icon_tag', 'tag', 'text-sky-700'),
+  editableIconAsset('Icono imagen', 'icon_image', 'image', 'text-slate-600'),
+  editableIconAsset('Icono capas', 'icon_layers', 'layers', 'text-slate-600'),
+];
+
+export const ORDER_ICON_ASSETS: AssetCard[] = [
+  editableIconAsset('Icono WhatsApp', 'icon_whatsapp', 'whatsapp', 'text-emerald-700'),
+  editableIconAsset('Icono mensaje', 'icon_message', 'message', 'text-sky-700'),
+  editableIconAsset('Icono comprobante', 'icon_receipt', 'receipt', 'text-slate-700'),
+  editableIconAsset('Icono envio/retiro', 'icon_truck', 'truck', 'text-slate-700'),
+  editableIconAsset('Icono portapapeles', 'icon_clipboard', 'clipboard', 'text-slate-700'),
+];
+
+export const REPAIR_ICON_ASSETS: AssetCard[] = [
+  editableIconAsset('Icono reloj/tiempo', 'icon_clock', 'clock', 'text-slate-700'),
+  editableIconAsset('Icono calculadora', 'icon_calculator', 'calculator', 'text-sky-700'),
+  editableIconAsset('Icono proteccion/estado', 'icon_shield', 'shield', 'text-emerald-700'),
+  editableIconAsset('Icono refrescar', 'icon_refresh', 'refresh', 'text-blue-600'),
+];
+
+export const ADMIN_ACTION_ICON_ASSETS: AssetCard[] = [
+  editableIconAsset('Icono usuarios', 'icon_users', 'users', 'text-slate-700'),
+  editableIconAsset('Icono negocio', 'icon_building', 'building', 'text-slate-700'),
+  editableIconAsset('Icono porcentaje', 'icon_percent', 'percent', 'text-slate-700'),
+  editableIconAsset('Icono destacado', 'icon_sparkles', 'sparkles', 'text-amber-700'),
+  editableIconAsset('Icono archivo', 'icon_file_text', 'fileText', 'text-slate-700'),
+  editableIconAsset('Icono arbol categorias', 'icon_folder_tree', 'folderTree', 'text-slate-700'),
+  editableIconAsset('Icono dinero', 'icon_banknote', 'banknote', 'text-emerald-700'),
+];
+
 export const LOGO_ASSETS: AssetCard[] = [
   {
     title: 'Logo principal',
@@ -420,11 +522,16 @@ export const LOGO_ASSETS: AssetCard[] = [
 
 export const VISUAL_IDENTITY_SECTIONS: AssetSectionDefinition[] = [
   { title: 'Favicons e iconos de app', items: FAVICON_ASSETS, columns: 'three' },
+  { title: 'Logos', items: LOGO_ASSETS, columns: 'one' },
   { title: 'Portada de tienda', items: STORE_HERO_ASSETS, columns: 'two' },
   { title: 'Acceso y auth', items: AUTH_VISUAL_ASSETS, columns: 'one' },
+  { title: 'Navegacion', items: NAV_ICON_ASSETS, columns: 'three' },
   { title: 'Checkout y pagos', items: CHECKOUT_ICON_ASSETS, columns: 'two' },
-  { title: 'Iconos de navegacion', items: NAV_ICON_ASSETS, columns: 'three' },
-  { title: 'Logos', items: LOGO_ASSETS, columns: 'one' },
+  { title: 'Acciones y estados', items: GLOBAL_ACTION_ICON_ASSETS, columns: 'three' },
+  { title: 'Tienda y productos', items: STORE_ACTION_ICON_ASSETS, columns: 'three' },
+  { title: 'Pedidos y WhatsApp', items: ORDER_ICON_ASSETS, columns: 'three' },
+  { title: 'Reparaciones', items: REPAIR_ICON_ASSETS, columns: 'three' },
+  { title: 'Admin', items: ADMIN_ACTION_ICON_ASSETS, columns: 'three' },
 ];
 
 export function resolveAssetState(item: AssetCard, settingsByKey: Map<string, AdminSettingItem>) {

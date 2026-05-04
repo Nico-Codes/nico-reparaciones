@@ -1,5 +1,6 @@
 import { AlertTriangle, ArrowLeft, ExternalLink, MessageCircle, PackageCheck, ReceiptText, ShoppingBag, Upload } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { BrandIcon } from '@/components/brand/BrandIcon';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { LoadingBlock } from '@/components/ui/loading-block';
@@ -48,7 +49,7 @@ export function OrderDetailEmpty({ error }: { error: string }) {
         actions={
           <Button asChild variant="outline" size="sm">
             <Link to="/orders">
-              <ArrowLeft className="h-4 w-4" />
+              <BrandIcon slot="icon_arrow_left" className="h-4 w-4" fallback={<ArrowLeft className="h-4 w-4" />} />
               Volver a pedidos
             </Link>
           </Button>
@@ -56,7 +57,7 @@ export function OrderDetailEmpty({ error }: { error: string }) {
       />
       <SectionCard>
         <EmptyState
-          icon={<AlertTriangle className="h-5 w-5" />}
+          icon={<BrandIcon slot="icon_alert" className="h-5 w-5" fallback={<AlertTriangle className="h-5 w-5" />} />}
           title={error || 'Pedido no encontrado'}
           description="Volve al listado de pedidos para revisar otra compra o retomar el flujo desde la tienda."
           actions={
@@ -130,7 +131,7 @@ export function OrderDetailLayout({
             <StatusBadge label={status.statusLabel} tone={status.statusTone} />
             <Button asChild variant="outline" size="sm">
               <Link to="/orders">
-                <ArrowLeft className="h-4 w-4" />
+                <BrandIcon slot="icon_arrow_left" className="h-4 w-4" fallback={<ArrowLeft className="h-4 w-4" />} />
                 Mis pedidos
               </Link>
             </Button>
@@ -158,7 +159,7 @@ export function OrderDetailLayout({
 
                 {hasSpecialOrderLines ? (
                   <div className="ui-alert ui-alert--info">
-                    <PackageCheck className="mt-0.5 h-4 w-4 flex-none" />
+                    <BrandIcon slot="icon_package" className="mt-0.5 h-4 w-4 flex-none" fallback={<PackageCheck className="h-4 w-4" />} />
                     <div>
                       <span className="ui-alert__title">Incluye productos por encargue</span>
                       <div className="ui-alert__text">Al menos una linea del pedido se gestiona por proveedor y no descuenta stock local.</div>
@@ -167,7 +168,7 @@ export function OrderDetailLayout({
                 ) : null}
 
                 <div className={`ui-alert ui-alert--${resolveOrderDetailAlertTone(order.status)}`}>
-                  <PackageCheck className="mt-0.5 h-4 w-4 flex-none" />
+                  <BrandIcon slot="icon_package" className="mt-0.5 h-4 w-4 flex-none" fallback={<PackageCheck className="h-4 w-4" />} />
                   <div>
                     <span className="ui-alert__title">{status.statusLabel}</span>
                     <div className="ui-alert__text">{status.statusSummary}</div>
@@ -199,7 +200,7 @@ export function OrderDetailLayout({
               </div>
 
               <div className="ui-alert ui-alert--info mt-4">
-                <PackageCheck className="mt-0.5 h-4 w-4 flex-none" />
+                <BrandIcon slot="icon_package" className="mt-0.5 h-4 w-4 flex-none" fallback={<PackageCheck className="h-4 w-4" />} />
                 <div>
                   <span className="ui-alert__title">Condiciones del encargo</span>
                   <div className="ui-alert__text">
@@ -212,14 +213,14 @@ export function OrderDetailLayout({
                 {reservationWhatsappUrl ? (
                   <Button asChild>
                     <a href={reservationWhatsappUrl} target="_blank" rel="noreferrer">
-                      <MessageCircle className="h-4 w-4" />
+                      <BrandIcon slot="icon_whatsapp" className="h-4 w-4" fallback={<MessageCircle className="h-4 w-4" />} />
                       Enviar datos por WhatsApp
-                      <ExternalLink className="h-4 w-4" />
+                      <BrandIcon slot="icon_external_link" className="h-4 w-4" fallback={<ExternalLink className="h-4 w-4" />} />
                     </a>
                   </Button>
                 ) : (
                   <Button type="button" disabled>
-                    <MessageCircle className="h-4 w-4" />
+                    <BrandIcon slot="icon_whatsapp" className="h-4 w-4" fallback={<MessageCircle className="h-4 w-4" />} />
                     WhatsApp no configurado
                   </Button>
                 )}
@@ -288,7 +289,7 @@ export function OrderDetailLayout({
                 </>
               ) : (
                 <div className="ui-alert ui-alert--warning">
-                  <AlertTriangle className="mt-0.5 h-4 w-4 flex-none" />
+                  <BrandIcon slot="icon_alert" className="mt-0.5 h-4 w-4 flex-none" fallback={<AlertTriangle className="h-4 w-4" />} />
                   <div>
                     <span className="ui-alert__title">Transferencia sin datos visibles</span>
                     <div className="ui-alert__text">
@@ -331,13 +332,13 @@ export function OrderDetailLayout({
                       onClick={onProofUpload}
                       disabled={!proofFile || proofUploading}
                     >
-                      <Upload className="h-4 w-4" />
+                      <BrandIcon slot="icon_upload" className="h-4 w-4" fallback={<Upload className="h-4 w-4" />} />
                       {proofUploading ? 'Subiendo...' : 'Subir comprobante'}
                     </Button>
                     {order.transferProofUrl ? (
                       <Button asChild variant="outline" size="sm">
                         <a href={order.transferProofUrl} target="_blank" rel="noreferrer">
-                          <ReceiptText className="h-4 w-4" />
+                          <BrandIcon slot="icon_receipt" className="h-4 w-4" fallback={<ReceiptText className="h-4 w-4" />} />
                           Ver comprobante
                         </a>
                       </Button>
@@ -352,7 +353,7 @@ export function OrderDetailLayout({
 
                   {proofFeedback ? (
                     <div className={`ui-alert ui-alert--${proofFeedbackTone}`}>
-                      <AlertTriangle className="mt-0.5 h-4 w-4 flex-none" />
+                      <BrandIcon slot="icon_alert" className="mt-0.5 h-4 w-4 flex-none" fallback={<AlertTriangle className="h-4 w-4" />} />
                       <div>
                         <div className="ui-alert__text">{proofFeedback}</div>
                       </div>
@@ -378,14 +379,14 @@ export function OrderDetailLayout({
                   {transferWhatsappUrl ? (
                     <Button asChild variant="outline">
                       <a href={transferWhatsappUrl} target="_blank" rel="noreferrer">
-                        <MessageCircle className="h-4 w-4" />
+                        <BrandIcon slot="icon_whatsapp" className="h-4 w-4" fallback={<MessageCircle className="h-4 w-4" />} />
                         Enviar comprobante por WhatsApp
-                        <ExternalLink className="h-4 w-4" />
+                        <BrandIcon slot="icon_external_link" className="h-4 w-4" fallback={<ExternalLink className="h-4 w-4" />} />
                       </a>
                     </Button>
                   ) : (
                     <div className="ui-alert ui-alert--warning">
-                      <AlertTriangle className="mt-0.5 h-4 w-4 flex-none" />
+                      <BrandIcon slot="icon_alert" className="mt-0.5 h-4 w-4 flex-none" fallback={<AlertTriangle className="h-4 w-4" />} />
                       <div>
                         <span className="ui-alert__title">WhatsApp del local no configurado</span>
                         <div className="ui-alert__text">
@@ -416,7 +417,7 @@ export function OrderDetailLayout({
               </Button>
               <Button asChild variant="ghost" className="w-full justify-center">
                 <Link to="/store">
-                  <ShoppingBag className="h-4 w-4" />
+                  <BrandIcon slot="icon_tienda" className="h-4 w-4" fallback={<ShoppingBag className="h-4 w-4" />} />
                   Seguir comprando
                 </Link>
               </Button>
@@ -464,7 +465,7 @@ function OrderReservationDialog({
         </div>
 
         <div className="ui-alert ui-alert--info mt-4">
-          <MessageCircle className="mt-0.5 h-4 w-4 flex-none" />
+          <BrandIcon slot="icon_whatsapp" className="mt-0.5 h-4 w-4 flex-none" fallback={<MessageCircle className="h-4 w-4" />} />
           <div>
             <span className="ui-alert__title">Necesitamos tus datos por WhatsApp</span>
             <div className="ui-alert__text">
@@ -495,9 +496,9 @@ function OrderReservationDialog({
           {reservationWhatsappUrl ? (
             <Button asChild className="w-full justify-center sm:w-auto">
               <a href={reservationWhatsappUrl} target="_blank" rel="noreferrer">
-                <MessageCircle className="h-4 w-4" />
+                <BrandIcon slot="icon_whatsapp" className="h-4 w-4" fallback={<MessageCircle className="h-4 w-4" />} />
                 Enviar por WhatsApp
-                <ExternalLink className="h-4 w-4" />
+                <BrandIcon slot="icon_external_link" className="h-4 w-4" fallback={<ExternalLink className="h-4 w-4" />} />
               </a>
             </Button>
           ) : (

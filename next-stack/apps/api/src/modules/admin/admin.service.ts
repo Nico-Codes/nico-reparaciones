@@ -475,6 +475,14 @@ export class AdminService {
     return this.adminBrandAssetsService.resetBrandAsset(slot);
   }
 
+  async listBrandAssetVersions(slot: string) {
+    return this.adminBrandAssetsService.listBrandAssetVersions(slot);
+  }
+
+  async activateBrandAssetVersion(slot: string, versionId: string) {
+    return this.adminBrandAssetsService.activateBrandAssetVersion(slot, versionId);
+  }
+
   private slugify(value: string) {
     return value
       .toLowerCase()

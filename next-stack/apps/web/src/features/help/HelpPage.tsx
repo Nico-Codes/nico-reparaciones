@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ChevronDown, Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { BrandIcon } from '@/components/brand/BrandIcon';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { LoadingBlock } from '@/components/ui/loading-block';
@@ -71,7 +72,7 @@ export function HelpPage() {
             value={q}
             onChange={(event) => setQ(event.target.value)}
             placeholder="Ej: retiro, pago, reparación"
-            leadingIcon={<Search className="h-4 w-4" />}
+            leadingIcon={<BrandIcon slot="icon_search" className="h-4 w-4" fallback={<Search className="h-4 w-4" />} />}
           />
         </SectionCard>
 
@@ -132,10 +133,10 @@ export function HelpPage() {
                         <StatusBadge tone="neutral" size="sm" label={item.category || 'General'} />
                       </div>
                     </div>
-                    <ChevronDown
-                      className={`h-5 w-5 shrink-0 text-zinc-500 transition-transform duration-200 ${
-                        open ? 'rotate-180' : ''
-                      }`}
+                    <BrandIcon
+                      slot="icon_chevron_down"
+                      className={`h-5 w-5 shrink-0 text-zinc-500 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+                      fallback={<ChevronDown className="h-5 w-5" />}
                     />
                   </button>
                   <div

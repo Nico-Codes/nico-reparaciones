@@ -1,5 +1,6 @@
 import { Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { BrandIcon } from '@/components/brand/BrandIcon';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PageHeader } from '@/components/ui/page-header';
@@ -144,7 +145,7 @@ function PublicRepairLookupForm({
 
       <div className="flex flex-wrap gap-3">
         <Button type="submit" disabled={loading || !canSubmit}>
-          <Search className="h-4 w-4" />
+          <BrandIcon slot="icon_search" className="h-4 w-4" fallback={<Search className="h-4 w-4" />} />
           {loading ? 'Buscando...' : 'Buscar reparacion'}
         </Button>
         <Button asChild variant="outline">

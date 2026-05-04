@@ -8,6 +8,27 @@ export type BrandAssetUploadResult = {
   url: string | null;
 };
 
+export type BrandAssetVersionItem = {
+  id: string;
+  slot: string;
+  path: string;
+  url: string | null;
+  originalName: string | null;
+  mimeType: string | null;
+  size: number | null;
+  source: string;
+  isActive: boolean;
+  createdAt: string | null;
+};
+
+export type BrandAssetVersionsResponse = {
+  slot: string;
+  settingKey: string;
+  defaultPath: string;
+  activePath: string;
+  items: BrandAssetVersionItem[];
+};
+
 export const brandAssetsApi = {
   async upload(slot: string, file: File) {
     const form = new FormData();
@@ -26,6 +47,26 @@ export const brandAssetsApi = {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
     });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error((data?.message as string) || `Error ${res.status}`);
+    return data as BrandAssetUploadResult;
+  },
+
+  async versions(slot: string) {
+    const res = await adminAuthFetch(`/admin/brand-assets/${encodeURIComponent(slot)}/versions`);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error((data?.message as string) || `Error ${res.status}`);
+    return data as BrandAssetVersionsResponse;
+  },
+
+  async activateVersion(slot: string, versionId: string) {
+    const res = await adminAuthFetch(
+      `/admin/brand-assets/${encodeURIComponent(slot)}/versions/${encodeURIComponent(versionId)}/activate`,
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+      },
+    );
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error((data?.message as string) || `Error ${res.status}`);
     return data as BrandAssetUploadResult;

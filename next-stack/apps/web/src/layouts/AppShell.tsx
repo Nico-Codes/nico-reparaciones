@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Menu, Wrench } from 'lucide-react';
+import { BrandIcon } from '@/components/brand/BrandIcon';
 import { CartAddedPopup } from '@/features/cart/CartAddedPopup';
 import { AccountMenu } from '@/layouts/app-shell/account-menu';
 import { AppShellFooter } from '@/layouts/app-shell/footer';
@@ -65,7 +66,7 @@ export function AppShell({ children }: AppShellProps) {
                   type="button"
                   onClick={toggleSidebar}
                 >
-                  <Menu className="h-5 w-5" />
+                  <BrandIcon slot="icon_menu" className="h-5 w-5" fallback={<Menu className="h-5 w-5" />} />
                 </button>
               ) : null}
 

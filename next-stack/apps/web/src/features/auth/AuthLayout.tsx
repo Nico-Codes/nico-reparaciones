@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, Wrench } from 'lucide-react';
+import { BrandIcon } from '@/components/brand/BrandIcon';
 import { useCartCount } from '@/features/cart/useCart';
 import { authStorage } from './storage';
 import { useStoreBranding } from '@/features/store/branding-cache';
@@ -216,7 +217,7 @@ export function AuthLayout({
                   type="button"
                   onClick={() => setSidebarOpen((current) => !current)}
                 >
-                  <Menu className="h-5 w-5" />
+                  <BrandIcon slot="icon_menu" className="h-5 w-5" fallback={<Menu className="h-5 w-5" />} />
                 </button>
               ) : null}
 

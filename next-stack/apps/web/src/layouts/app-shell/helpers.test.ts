@@ -48,6 +48,7 @@ describe('app-shell helpers', () => {
         adminVentaRapida: '/quick-sale.png',
         adminProductos: '/products.png',
       },
+      iconsBySlot: {},
       favicons: {
         faviconIco: null,
         favicon16: null,

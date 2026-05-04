@@ -365,4 +365,14 @@ export class AdminController {
   resetBrandAsset(@Param('slot') slot: string) {
     return this.adminService.resetBrandAsset(slot);
   }
+
+  @Get('brand-assets/:slot/versions')
+  listBrandAssetVersions(@Param('slot') slot: string) {
+    return this.adminService.listBrandAssetVersions(slot);
+  }
+
+  @Patch('brand-assets/:slot/versions/:versionId/activate')
+  activateBrandAssetVersion(@Param('slot') slot: string, @Param('versionId') versionId: string) {
+    return this.adminService.activateBrandAssetVersion(slot, versionId);
+  }
 }

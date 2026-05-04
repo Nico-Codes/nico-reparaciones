@@ -1,27 +1,59 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import {
+  ArrowLeft,
   Boxes,
   Banknote,
+  Building2,
+  Calculator,
+  CheckCheck,
+  ChevronDown,
+  ClipboardList,
+  Clock3,
   Download,
+  ExternalLink,
+  FileText,
+  FolderTree,
   HelpCircle,
+  ImagePlus,
+  Inbox,
   Landmark,
+  Layers3,
   LayoutDashboard,
   LogOut,
+  Menu,
+  MessageCircle,
+  Minus,
   PackageCheck,
+  Package as PackageIcon,
+  Percent,
+  Plus,
+  RefreshCcw,
   ReceiptText,
   Settings,
+  ShieldCheck,
   ShoppingCart,
   Smartphone,
+  Sparkles,
   Store,
+  Tag,
+  Tags,
+  Trash2,
+  Truck,
   TriangleAlert,
   User,
+  Users,
   Wrench,
+  X,
+  Search,
+  SlidersHorizontal,
+  Upload,
 } from 'lucide-react';
+import { BrandIcon } from '@/components/brand/BrandIcon';
 import { Button } from '@/components/ui/button';
 import { TextAreaField } from '@/components/ui/textarea-field';
 import { TextField } from '@/components/ui/text-field';
-import { brandAssetsApi } from './brandAssetsApi';
+import { brandAssetsApi, type BrandAssetVersionItem } from './brandAssetsApi';
 import {
   acceptFromFormats,
   buildAssetDownloadName,
@@ -50,6 +82,7 @@ type AdminVisualIdentityResourcesSectionProps = {
   onSelectFile: (item: AssetCard, file: File | null) => void;
   onUpload: (item: AssetCard) => void;
   onReset: (item: AssetCard) => void;
+  onHistory: (item: AssetCard) => void;
 };
 
 type AdminVisualIdentityAuthCopySectionProps = {
@@ -78,6 +111,42 @@ const ICONS_BY_NAME: Record<VisualIconName, ReactNode> = {
   products: <Boxes className="h-7 w-7" />,
   paymentLocal: <Banknote className="h-7 w-7" />,
   paymentTransfer: <Landmark className="h-7 w-7" />,
+  menu: <Menu className="h-7 w-7" />,
+  close: <X className="h-7 w-7" />,
+  search: <Search className="h-7 w-7" />,
+  filter: <SlidersHorizontal className="h-7 w-7" />,
+  tags: <Tags className="h-7 w-7" />,
+  chevronDown: <ChevronDown className="h-7 w-7" />,
+  arrowLeft: <ArrowLeft className="h-7 w-7" />,
+  plus: <Plus className="h-7 w-7" />,
+  minus: <Minus className="h-7 w-7" />,
+  trash: <Trash2 className="h-7 w-7" />,
+  alert: <TriangleAlert className="h-7 w-7" />,
+  success: <CheckCheck className="h-7 w-7" />,
+  upload: <Upload className="h-7 w-7" />,
+  download: <Download className="h-7 w-7" />,
+  empty: <Inbox className="h-7 w-7" />,
+  whatsapp: <MessageCircle className="h-7 w-7" />,
+  externalLink: <ExternalLink className="h-7 w-7" />,
+  clock: <Clock3 className="h-7 w-7" />,
+  calculator: <Calculator className="h-7 w-7" />,
+  package: <PackageIcon className="h-7 w-7" />,
+  receipt: <ReceiptText className="h-7 w-7" />,
+  truck: <Truck className="h-7 w-7" />,
+  refresh: <RefreshCcw className="h-7 w-7" />,
+  shield: <ShieldCheck className="h-7 w-7" />,
+  users: <Users className="h-7 w-7" />,
+  building: <Building2 className="h-7 w-7" />,
+  percent: <Percent className="h-7 w-7" />,
+  sparkles: <Sparkles className="h-7 w-7" />,
+  image: <ImagePlus className="h-7 w-7" />,
+  fileText: <FileText className="h-7 w-7" />,
+  folderTree: <FolderTree className="h-7 w-7" />,
+  layers: <Layers3 className="h-7 w-7" />,
+  tag: <Tag className="h-7 w-7" />,
+  banknote: <Banknote className="h-7 w-7" />,
+  message: <MessageCircle className="h-7 w-7" />,
+  clipboard: <ClipboardList className="h-7 w-7" />,
 };
 
 export function AdminVisualIdentityHeader() {
@@ -113,6 +182,7 @@ export function AdminVisualIdentityResourcesSection({
   onSelectFile,
   onUpload,
   onReset,
+  onHistory,
 }: AdminVisualIdentityResourcesSectionProps) {
   return (
     <section className="card overflow-hidden">
@@ -155,6 +225,7 @@ export function AdminVisualIdentityResourcesSection({
                     onSelectFile={(file) => onSelectFile(item, file)}
                     onUpload={() => onUpload(item)}
                     onReset={() => onReset(item)}
+                    onHistory={() => onHistory(item)}
                   />
                 );
               }}
@@ -344,6 +415,7 @@ function AssetUploadCard({
   onSelectFile,
   onUpload,
   onReset,
+  onHistory,
 }: {
   item: AssetCard;
   loading: boolean;
@@ -356,6 +428,7 @@ function AssetUploadCard({
   onSelectFile: (file: File | null) => void;
   onUpload: () => void;
   onReset: () => void;
+  onHistory: () => void;
 }) {
   return (
     <article className="rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm">
@@ -374,6 +447,9 @@ function AssetUploadCard({
               </a>
             </Button>
           ) : null}
+          <Button type="button" variant="outline" size="sm" className="!h-8 !rounded-xl px-3 text-xs" onClick={onHistory}>
+            Historial
+          </Button>
         </div>
       </div>
 
@@ -465,6 +541,127 @@ function AssetImagePreview({
       )}
     </div>
   );
+}
+
+export function BrandAssetHistoryModal({
+  item,
+  versions,
+  loading,
+  activatingVersionId,
+  onClose,
+  onActivate,
+}: {
+  item: AssetCard;
+  versions: BrandAssetVersionItem[];
+  loading: boolean;
+  activatingVersionId: string | null;
+  onClose: () => void;
+  onActivate: (versionId: string) => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-zinc-950/45 px-3 py-4 backdrop-blur-sm sm:items-center">
+      <section className="max-h-[86vh] w-full max-w-3xl overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-2xl">
+        <div className="flex items-start justify-between gap-3 border-b border-zinc-100 px-4 py-4 md:px-5">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-blue-600">Historial de versiones</p>
+            <h3 className="mt-1 text-2xl font-black tracking-tight text-zinc-900">{item.title}</h3>
+            <p className="mt-1 text-sm text-zinc-600">Puedes descargar versiones anteriores o volver a activar una sin borrar historial.</p>
+          </div>
+          <button
+            type="button"
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-700"
+            onClick={onClose}
+            aria-label="Cerrar historial"
+          >
+            <BrandIcon slot="icon_close" className="h-5 w-5" fallback={<X className="h-5 w-5" />} />
+          </button>
+        </div>
+
+        <div className="max-h-[64vh] overflow-y-auto px-4 py-4 md:px-5">
+          {loading ? (
+            <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-6 text-sm font-bold text-zinc-600">
+              Cargando historial...
+            </div>
+          ) : versions.length ? (
+            <div className="grid gap-3">
+              {versions.map((version) => (
+                <article
+                  key={version.id}
+                  className={`grid gap-3 rounded-2xl border p-3 sm:grid-cols-[5.5rem_minmax(0,1fr)_auto] sm:items-center ${
+                    version.isActive ? 'border-emerald-200 bg-emerald-50/70' : 'border-zinc-200 bg-white'
+                  }`}
+                >
+                  <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50">
+                    {version.url ? (
+                      <img src={version.url} alt={version.originalName ?? item.title} className="h-full w-full object-contain" />
+                    ) : (
+                      <Preview spec={item.preview} />
+                    )}
+                  </div>
+
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="truncate text-sm font-black text-zinc-900">{version.originalName || version.path || 'Por defecto'}</p>
+                      {version.isActive ? <StatusBadge status="Personalizado" /> : null}
+                      {version.source === 'default' ? (
+                        <span className="inline-flex h-6 items-center rounded-full border border-zinc-200 bg-white px-2 text-xs font-black text-zinc-700">
+                          Default
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="mt-1 text-xs text-zinc-500">
+                      {formatVersionDate(version.createdAt)} · {formatBytes(version.size)} · {version.mimeType || 'archivo local'}
+                    </p>
+                    <p className="mt-1 truncate text-xs text-zinc-400">{version.path || item.defaultPath || 'Sin archivo'}</p>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 sm:justify-end">
+                    {version.url ? (
+                      <Button asChild variant="outline" size="sm" className="!h-9 !rounded-xl text-xs">
+                        <a href={version.url} download={version.originalName || buildAssetDownloadName(item, version.path)}>
+                          Descargar
+                        </a>
+                      </Button>
+                    ) : null}
+                    <Button
+                      type="button"
+                      variant={version.isActive ? 'outline' : 'default'}
+                      size="sm"
+                      className="!h-9 !rounded-xl text-xs"
+                      disabled={version.isActive || activatingVersionId === version.id}
+                      onClick={() => onActivate(version.id)}
+                    >
+                      {activatingVersionId === version.id ? 'Activando...' : version.isActive ? 'Activa' : 'Activar'}
+                    </Button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-6 text-sm font-bold text-zinc-600">
+              Todavia no hay versiones para este asset.
+            </div>
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function formatVersionDate(value: string | null) {
+  if (!value) return 'Version inicial';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' });
+}
+
+function formatBytes(value: number | null) {
+  if (!value) return 'sin peso';
+  if (value < 1024) return `${value} B`;
+  const kb = value / 1024;
+  if (kb < 1024) return `${kb.toFixed(kb >= 100 ? 0 : 1)} KB`;
+  const mb = kb / 1024;
+  return `${mb.toFixed(mb >= 10 ? 1 : 2)} MB`;
 }
 
 function StatusBadge({ status }: { status: 'Por defecto' | 'Personalizado' }) {

@@ -1,5 +1,6 @@
 import type { KeyboardEvent, RefObject } from 'react';
 import { ChevronDown, LogOut, User } from 'lucide-react';
+import { BrandIcon } from '@/components/brand/BrandIcon';
 import type { AuthUser } from '@/features/auth/types';
 import { renderAccountLinkIcon } from '@/layouts/app-shell/link-icons';
 import { MenuLink, MenuLinkIcon } from '@/layouts/app-shell/primitives';
@@ -64,10 +65,18 @@ export function AccountMenu({
         onKeyDown={onButtonKeyDown}
       >
         <span className="account-menu-button__mobile-icon sm:hidden">
-          {iconAccountUrl ? <img src={iconAccountUrl} alt="" className="account-menu-button__icon" /> : <User className="account-menu-button__icon" />}
+          {iconAccountUrl ? (
+            <img src={iconAccountUrl} alt="" className="account-menu-button__icon" />
+          ) : (
+            <BrandIcon slot="icon_mi_cuenta" className="account-menu-button__icon" fallback={<User className="account-menu-button__icon" />} />
+          )}
         </span>
         <span className="hidden max-w-[12rem] truncate sm:inline">{authUser.name || 'Cuenta'}</span>
-        <ChevronDown className="hidden h-4 w-4 text-zinc-500 sm:inline-block" />
+        <BrandIcon
+          slot="icon_chevron_down"
+          className="hidden h-4 w-4 text-zinc-500 sm:inline-flex"
+          fallback={<ChevronDown className="h-4 w-4" />}
+        />
       </button>
       <div className="absolute right-0 top-full h-2 w-64" aria-hidden="true" />
 
@@ -113,7 +122,10 @@ export function AccountMenu({
         <div className="my-2 border-t border-zinc-200" />
         <button type="button" role="menuitem" data-account-menu-item className="dropdown-item text-rose-700" onClick={onLogout}>
           <span className="inline-flex items-center gap-2">
-            <MenuLinkIcon iconUrl={iconLogoutUrl} fallback={<LogOut className="h-4 w-4" />} />
+            <MenuLinkIcon
+              iconUrl={iconLogoutUrl}
+              fallback={<BrandIcon slot="icon_logout" className="h-4 w-4" fallback={<LogOut className="h-4 w-4" />} />}
+            />
             <span>Cerrar sesion</span>
           </span>
         </button>

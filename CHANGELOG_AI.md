@@ -13,6 +13,39 @@
 ---
 
 ### 2026-05-04 - Codex
+- Alcance: sistema de iconos editables con historial en Identidad Visual.
+- Tipo de intervencion: migracion de datos, backend admin, API publica de branding y UX frontend.
+- Archivos tocados:
+  - `next-stack/apps/api/prisma/schema.prisma`
+  - `next-stack/apps/api/prisma/migrations/20260504120000_add_brand_asset_versions/migration.sql`
+  - `next-stack/apps/api/src/modules/admin/*`
+  - `next-stack/apps/api/src/modules/store/store.service.ts`
+  - `next-stack/apps/web/src/components/brand/BrandIcon.tsx`
+  - `next-stack/apps/web/src/features/admin/*visual-identity*`
+  - `next-stack/apps/web/src/features/store/*`
+  - `next-stack/apps/web/src/features/cart/*`
+  - `next-stack/apps/web/src/features/orders/*`
+  - `next-stack/apps/web/src/layouts/*`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. Los uploads de identidad visual ahora crean versiones, el historial permite descargar/activar versiones y el branding publico expone `iconsBySlot`.
+- Validaciones ejecutadas:
+  - `db:generate --workspace @nico/api`
+  - `db:migrate --workspace @nico/api`
+  - `typecheck --workspace @nico/api`
+  - `test --workspace @nico/api`
+  - `build --workspace @nico/api`
+  - `typecheck --workspace @nico/web`
+  - `test --workspace @nico/web`
+  - `build --workspace @nico/web`
+  - `smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - Se detuvo temporalmente el proceso dev de API para liberar el DLL de Prisma y regenerar client; Vite/web quedo activo.
+  - Los iconos globales/publicos y de flujos principales consumen `BrandIcon`; los slots restantes quedan registrados para administracion y fallback.
+
+---
+
+### 2026-05-04 - Codex
 - Alcance: igualar el tamano visual del icono de usuario mobile con el carrito.
 - Tipo de intervencion: ajuste visual frontend.
 - Archivos tocados:

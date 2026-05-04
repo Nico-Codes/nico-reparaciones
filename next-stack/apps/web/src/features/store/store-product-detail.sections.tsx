@@ -1,5 +1,6 @@
 import { ArrowLeft, ShieldCheck, ShoppingCart, Wrench } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { BrandIcon } from '@/components/brand/BrandIcon';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { LoadingBlock } from '@/components/ui/loading-block';
@@ -243,7 +244,11 @@ export function StoreProductPurchaseSection({
           </div>
 
           <Button type="button" className="w-full justify-center" onClick={onAddToCart} disabled={!canSubmit}>
-            {isSpecialOrder ? <ShieldCheck className="h-4 w-4" /> : <ShoppingCart className="h-4 w-4" />}
+            {isSpecialOrder ? (
+              <BrandIcon slot="icon_shield" className="h-4 w-4" fallback={<ShieldCheck className="h-4 w-4" />} />
+            ) : (
+              <BrandIcon slot="icon_carrito" className="h-4 w-4" fallback={<ShoppingCart className="h-4 w-4" />} />
+            )}
             {canSubmit || (isSpecialOrder && canPurchase) ? actionLabel : 'Sin stock'}
           </Button>
         </div>

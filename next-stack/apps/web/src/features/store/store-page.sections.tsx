@@ -2,6 +2,7 @@ import { createPortal } from 'react-dom';
 import { useEffect, useMemo, useState, type RefObject } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Check, ChevronDown, Search, ShoppingCart, SlidersHorizontal, Tags, X } from 'lucide-react';
+import { BrandIcon } from '@/components/brand/BrandIcon';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FilterBar } from '@/components/ui/filter-bar';
@@ -135,7 +136,7 @@ export function StoreToolbarSection({
               aria-label="Buscar productos"
               title="Buscar productos"
             >
-              <Search className="h-4 w-4" aria-hidden="true" />
+              <BrandIcon slot="icon_search" className="h-4 w-4" fallback={<Search className="h-4 w-4" aria-hidden="true" />} />
             </Button>
           </div>
         </div>
@@ -148,7 +149,7 @@ export function StoreToolbarSection({
             aria-label="Buscar productos"
             title="Buscar productos"
           >
-            <Search className="h-4 w-4" aria-hidden="true" />
+            <BrandIcon slot="icon_search" className="h-4 w-4" fallback={<Search className="h-4 w-4" aria-hidden="true" />} />
           </Button>
           {hasActiveFilters ? (
             <Button type="button" variant="outline" className="store-filter-grid__clear" onClick={onClearFilters}>
@@ -184,7 +185,7 @@ export function StoreMobileSortSheet({
             <p className="store-mobile-sort-sheet__subtitle">Elegi como queres ver el catalogo.</p>
           </div>
           <Button type="button" variant="ghost" size="icon" aria-label="Cerrar ordenamiento" onClick={onClose}>
-            <X className="h-5 w-5" />
+            <BrandIcon slot="icon_close" className="h-5 w-5" fallback={<X className="h-5 w-5" />} />
           </Button>
         </div>
 
@@ -200,7 +201,9 @@ export function StoreMobileSortSheet({
               }}
             >
               <span>{option.label}</span>
-              {mobileSortDraft === option.value ? <Check className="h-4 w-4" /> : null}
+              {mobileSortDraft === option.value ? (
+                <BrandIcon slot="icon_success" className="h-4 w-4" fallback={<Check className="h-4 w-4" />} />
+              ) : null}
             </button>
           ))}
         </div>
@@ -263,17 +266,21 @@ export function StoreCategoriesSection({
           onClick={() => setOpen(true)}
         >
           <span className="store-categories__trigger-icon" aria-hidden="true">
-            <Tags className="h-4 w-4" />
+            <BrandIcon slot="icon_tags" className="h-4 w-4" fallback={<Tags className="h-4 w-4" />} />
           </span>
           <span className="store-categories__trigger-copy">
             <span>Categorias</span>
             <strong>{selectedLabel}</strong>
           </span>
-          <ChevronDown className="store-categories__trigger-caret h-4 w-4" aria-hidden="true" />
+          <BrandIcon
+            slot="icon_chevron_down"
+            className="store-categories__trigger-caret h-4 w-4"
+            fallback={<ChevronDown className="h-4 w-4" aria-hidden="true" />}
+          />
         </button>
         <div className="store-categories__sort-desktop" aria-label="Ordenar productos">
           <span className="store-categories__sort-icon" aria-hidden="true">
-            <SlidersHorizontal className="h-4 w-4" />
+            <BrandIcon slot="icon_filter" className="h-4 w-4" fallback={<SlidersHorizontal className="h-4 w-4" />} />
           </span>
           <CustomSelect
             value={sort}
@@ -293,7 +300,7 @@ export function StoreCategoriesSection({
           aria-expanded={mobileFiltersOpen}
           onClick={onToggleMobileFilters}
         >
-          <SlidersHorizontal className="h-4 w-4" />
+          <BrandIcon slot="icon_filter" className="h-4 w-4" fallback={<SlidersHorizontal className="h-4 w-4" />} />
           <span className="store-mobile-sort-btn__label">Ordenar</span>
         </Button>
         {activeCategory ? (
@@ -377,12 +384,12 @@ function StoreCategoryPickerPanel({
             <p>Filtra el catalogo sin ocupar espacio en la tienda.</p>
           </div>
           <Button type="button" variant="ghost" size="icon" aria-label="Cerrar categorias" onClick={onClose}>
-            <X className="h-5 w-5" />
+            <BrandIcon slot="icon_close" className="h-5 w-5" fallback={<X className="h-5 w-5" />} />
           </Button>
         </div>
 
         <label className="store-category-picker__search">
-          <Search className="h-4 w-4" aria-hidden="true" />
+          <BrandIcon slot="icon_search" className="h-4 w-4" fallback={<Search className="h-4 w-4" aria-hidden="true" />} />
           <input
             value={searchTerm}
             onChange={(event) => onSearchTermChange(event.target.value)}
@@ -401,7 +408,9 @@ function StoreCategoryPickerPanel({
               <strong>Todas las categorias</strong>
               <small>Ver todo el catalogo</small>
             </span>
-            {!activeCategory ? <Check className="h-4 w-4" aria-hidden="true" /> : null}
+            {!activeCategory ? (
+              <BrandIcon slot="icon_success" className="h-4 w-4" fallback={<Check className="h-4 w-4" aria-hidden="true" />} />
+            ) : null}
           </button>
 
           {visibleCategories.map((category) => {
@@ -423,7 +432,7 @@ function StoreCategoryPickerPanel({
                     <strong>{category.name}</strong>
                     <small>{category.productsCount} productos</small>
                   </span>
-                  <ChevronDown className="h-4 w-4" aria-hidden="true" />
+                  <BrandIcon slot="icon_chevron_down" className="h-4 w-4" fallback={<ChevronDown className="h-4 w-4" aria-hidden="true" />} />
                 </button>
 
                 <div className="store-category-group__children" aria-hidden={!expanded}>
@@ -435,7 +444,9 @@ function StoreCategoryPickerPanel({
                       onClick={() => onSelectCategory(category.slug)}
                     >
                       <span>Todo en {category.name}</span>
-                      {isParentActive ? <Check className="h-4 w-4" aria-hidden="true" /> : null}
+                      {isParentActive ? (
+                        <BrandIcon slot="icon_success" className="h-4 w-4" fallback={<Check className="h-4 w-4" aria-hidden="true" />} />
+                      ) : null}
                     </button>
                     {visibleChildren.map((child) => {
                       const isChildActive = activeChildSlug === child.slug;
@@ -449,7 +460,9 @@ function StoreCategoryPickerPanel({
                         >
                           <span>{child.name}</span>
                           <small>{child.productsCount}</small>
-                          {isChildActive ? <Check className="h-4 w-4" aria-hidden="true" /> : null}
+                          {isChildActive ? (
+                            <BrandIcon slot="icon_success" className="h-4 w-4" fallback={<Check className="h-4 w-4" aria-hidden="true" />} />
+                          ) : null}
                         </button>
                       );
                     })}
@@ -587,7 +600,7 @@ function StoreGridCard({ product }: { product: StoreProduct }) {
                 {useTextAction ? (
                   <span>{actionLabel}</span>
                 ) : (
-                  <ShoppingCart className="h-4 w-4" />
+                  <BrandIcon slot="icon_carrito" className="h-4 w-4" fallback={<ShoppingCart className="h-4 w-4" />} />
                 )}
               </button>
             </div>
