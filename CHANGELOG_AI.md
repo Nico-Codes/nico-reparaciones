@@ -13,6 +13,22 @@
 ---
 
 ### 2026-05-04 - Codex
+- Alcance: corregir proporcion de imagen en miniaturas del carrito.
+- Tipo de intervencion: ajuste visual frontend.
+- Archivos tocados:
+  - `next-stack/apps/web/src/styles/commerce.css`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No. Solo evita que la imagen del carrito se deforme al mantenerla 1:1 dentro del marco compacto.
+- Validaciones ejecutadas:
+  - `typecheck --workspace @nico/web`
+  - `build --workspace @nico/web`
+  - `git diff --check`
+- Riesgos / notas:
+  - El contenedor sigue ocupando el alto de la fila, pero la imagen se renderiza como cuadrado centrado.
+
+---
+
+### 2026-05-04 - Codex
 - Alcance: compactar visualmente el carrito y rediseñar controles de cantidad.
 - Tipo de intervencion: ajuste UX frontend.
 - Archivos tocados:

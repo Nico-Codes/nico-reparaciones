@@ -43,9 +43,8 @@
 }
 
 .line-item__media img {
-  height: 100%;
   width: 100%;
-  min-height: 100%;
+  aspect-ratio: 1 / 1;
   border-radius: 0.62rem;
   object-fit: cover;
 }
