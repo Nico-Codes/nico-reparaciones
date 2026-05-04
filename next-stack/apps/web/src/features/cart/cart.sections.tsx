@@ -144,19 +144,23 @@ export function CartLinesSection({
               <article key={lineKey} className="line-item cart-line-item">
                 {productHref ? (
                   <Link to={productHref} className="line-item__media" aria-label={`Ver ${line.name || 'producto'}`}>
-                    {line.imageUrl ? (
-                      <img src={line.imageUrl} alt={line.name || 'Producto'} loading="lazy" decoding="async" />
-                    ) : (
-                      <span>Sin imagen</span>
-                    )}
+                    <span className="line-item__media-frame">
+                      {line.imageUrl ? (
+                        <img src={line.imageUrl} alt={line.name || 'Producto'} loading="lazy" decoding="async" />
+                      ) : (
+                        <span>Sin imagen</span>
+                      )}
+                    </span>
                   </Link>
                 ) : (
                   <div className="line-item__media" aria-hidden="true">
-                    {line.imageUrl ? (
-                      <img src={line.imageUrl} alt="" loading="lazy" decoding="async" />
-                    ) : (
-                      <span>Sin imagen</span>
-                    )}
+                    <span className="line-item__media-frame">
+                      {line.imageUrl ? (
+                        <img src={line.imageUrl} alt="" loading="lazy" decoding="async" />
+                      ) : (
+                        <span>Sin imagen</span>
+                      )}
+                    </span>
                   </div>
                 )}
 

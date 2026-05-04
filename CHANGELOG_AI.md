@@ -13,6 +13,23 @@
 ---
 
 ### 2026-05-04 - Codex
+- Alcance: mantener miniatura alta con imagen interna cuadrada en carrito.
+- Tipo de intervencion: ajuste visual frontend.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/cart/cart.sections.tsx`
+  - `next-stack/apps/web/src/styles/commerce.css`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No. La celda vuelve a ocupar el alto de la card, pero la imagen visible queda 1:1 mediante un frame interno.
+- Validaciones ejecutadas:
+  - `typecheck --workspace @nico/web`
+  - `build --workspace @nico/web`
+  - `git diff --check`
+- Riesgos / notas:
+  - El wrapper interno evita deformacion sin perder altura visual en la columna izquierda.
+
+---
+
+### 2026-05-04 - Codex
 - Alcance: forzar miniatura cuadrada en carrito.
 - Tipo de intervencion: ajuste visual frontend.
 - Archivos tocados:
