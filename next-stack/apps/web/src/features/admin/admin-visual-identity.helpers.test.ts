@@ -116,9 +116,9 @@ describe('admin-visual-identity.helpers', () => {
     });
   });
 
-  it('uses v3 defaults for navigation and checkout icons', () => {
-    expect(NAV_ICON_ASSETS.every((item) => item.defaultPath.startsWith('icons/v3/'))).toBe(true);
-    expect(CHECKOUT_ICON_ASSETS.every((item) => item.defaultPath.startsWith('icons/v3/'))).toBe(true);
+  it('uses v4 defaults for navigation and checkout icons', () => {
+    expect(NAV_ICON_ASSETS.every((item) => item.defaultPath.startsWith('icons/v4/'))).toBe(true);
+    expect(CHECKOUT_ICON_ASSETS.every((item) => item.defaultPath.startsWith('icons/v4/'))).toBe(true);
   });
 
   it('shows recommended proportions for every visual identity asset card', () => {

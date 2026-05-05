@@ -13,6 +13,31 @@
 ---
 
 ### 2026-05-05 - Codex
+- Alcance: simplificacion monocromatica de los iconos de Navegacion y Checkout/Pagos.
+- Tipo de intervencion: nuevos SVG versionados, defaults de branding y migracion de activacion.
+- Archivos tocados:
+  - `next-stack/apps/web/public/icons/v4/*`
+  - `next-stack/apps/api/prisma/migrations/20260505123000_activate_v4_monochrome_navigation_checkout_icons/migration.sql`
+  - `next-stack/apps/api/src/modules/admin/app-settings.registry.*`
+  - `next-stack/apps/web/src/features/admin/admin-visual-identity.helpers.*`
+  - `next-stack/apps/web/src/features/orders/checkout.helpers.*`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. Los slots modificados pasan a defaults `icons/v4` unicolor y la version v3 queda disponible en historial.
+- Validaciones ejecutadas:
+  - `db:migrate --workspace @nico/api`
+  - `typecheck --workspace @nico/api`
+  - `test --workspace @nico/api`
+  - `build --workspace @nico/api`
+  - `typecheck --workspace @nico/web`
+  - `test --workspace @nico/web`
+  - `build --workspace @nico/web`
+  - `smoke:web`
+- Riesgos / notas:
+  - Se mantuvo el alcance en los iconos recien modificados; no se tocaron los grupos visuales ya aprobados.
+
+---
+
+### 2026-05-05 - Codex
 - Alcance: rediseño de iconos default para Navegación y Checkout/Pagos.
 - Tipo de intervencion: nuevos SVG versionados, registry de branding, migracion de datos y ajustes de defaults en API/web.
 - Archivos tocados:

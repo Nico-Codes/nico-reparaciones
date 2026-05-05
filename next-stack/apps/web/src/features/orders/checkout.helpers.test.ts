@@ -12,7 +12,7 @@ describe('checkout.helpers', () => {
     const methods = resolveCheckoutPaymentMethods();
     expect(methods).toHaveLength(2);
     expect(methods.map((item) => item.value)).toEqual(['efectivo', 'transferencia']);
-    expect(methods.map((item) => item.iconUrl)).toEqual(['/icons/v3/payment-local.svg', '/icons/v3/payment-transfer.svg']);
+    expect(methods.map((item) => item.iconUrl)).toEqual(['/icons/v4/payment-local.svg', '/icons/v4/payment-transfer.svg']);
     expect(resolveCheckoutTransferDetails()).toEqual(DEFAULT_CHECKOUT_TRANSFER_DETAILS);
   });
 
@@ -22,7 +22,7 @@ describe('checkout.helpers', () => {
         value: 'transferencia',
         title: 'Transferencia',
         subtitle: 'Datos bancarios antes de confirmar.',
-        iconUrl: '/icons/v3/payment-transfer.svg',
+        iconUrl: '/icons/v4/payment-transfer.svg',
       },
     ]);
 
