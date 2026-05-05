@@ -30,6 +30,8 @@ describe('app-settings.registry', () => {
     expect(BRAND_ASSET_SLOTS.auth_login_background_mobile.fileBase).toBe('auth-login-background-mobile');
     expect(BRAND_ASSET_SLOTS.auth_login_background_mobile.defaultPath).toBe('brand/logo-bg.png');
     expect(BRAND_ASSET_SLOTS.icon_carrito.defaultPath).toBe('icons/v4/carrito.svg');
+    expect(BRAND_ASSET_SLOTS.icon_mis_reparaciones.defaultPath).toBe('icons/v5/mis-reparaciones.svg');
+    expect(BRAND_ASSET_SLOTS.icon_verificar_correo.defaultPath).toBe('icons/v5/verificar-correo.svg');
     expect(BRAND_ASSET_SLOTS.checkout_payment_transfer.defaultPath).toBe('icons/v4/payment-transfer.svg');
   });
 

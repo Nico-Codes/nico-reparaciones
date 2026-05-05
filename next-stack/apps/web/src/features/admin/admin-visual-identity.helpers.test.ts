@@ -116,9 +116,11 @@ describe('admin-visual-identity.helpers', () => {
     });
   });
 
-  it('uses v4 defaults for navigation and checkout icons', () => {
-    expect(NAV_ICON_ASSETS.every((item) => item.defaultPath.startsWith('icons/v4/'))).toBe(true);
+  it('uses current versioned defaults for navigation and checkout icons', () => {
+    expect(NAV_ICON_ASSETS.every((item) => /^icons\/v[45]\//.test(item.defaultPath))).toBe(true);
     expect(CHECKOUT_ICON_ASSETS.every((item) => item.defaultPath.startsWith('icons/v4/'))).toBe(true);
+    expect(NAV_ICON_ASSETS.find((item) => item.slot === 'icon_mis_reparaciones')?.defaultPath).toBe('icons/v5/mis-reparaciones.svg');
+    expect(NAV_ICON_ASSETS.find((item) => item.slot === 'icon_verificar_correo')?.defaultPath).toBe('icons/v5/verificar-correo.svg');
   });
 
   it('shows recommended proportions for every visual identity asset card', () => {

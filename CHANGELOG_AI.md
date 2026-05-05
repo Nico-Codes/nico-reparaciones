@@ -13,6 +13,30 @@
 ---
 
 ### 2026-05-05 - Codex
+- Alcance: variantes finales para iconos de reparacion y verificar correo.
+- Tipo de intervencion: nuevos SVG versionados y migracion de activacion selectiva.
+- Archivos tocados:
+  - `next-stack/apps/web/public/icons/v5/*`
+  - `next-stack/apps/api/prisma/migrations/20260505133000_activate_v5_repair_verify_icons/migration.sql`
+  - `next-stack/apps/api/src/modules/admin/app-settings.registry.*`
+  - `next-stack/apps/web/src/features/admin/admin-visual-identity.helpers.*`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. Los slots de reparacion usan una llave inglesa simple y verificar correo usa sobre con advertencia en acento.
+- Validaciones ejecutadas:
+  - `db:migrate --workspace @nico/api`
+  - `typecheck --workspace @nico/api`
+  - `test --workspace @nico/api`
+  - `build --workspace @nico/api`
+  - `typecheck --workspace @nico/web`
+  - `test --workspace @nico/web`
+  - `build --workspace @nico/web`
+  - `smoke:web`
+- Riesgos / notas:
+  - No se modifica el icono de tienda; queda en v4 hasta definir una variante nueva.
+
+---
+
+### 2026-05-05 - Codex
 - Alcance: simplificacion monocromatica de los iconos de Navegacion y Checkout/Pagos.
 - Tipo de intervencion: nuevos SVG versionados, defaults de branding y migracion de activacion.
 - Archivos tocados:
