@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { BrandIcon } from '@/components/brand/BrandIcon';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/ui/page-header';
 import { PageShell } from '@/components/ui/page-shell';
@@ -59,7 +60,7 @@ function AdminSettingsModuleCard({
         <div className="space-y-2">
           <div className="flex items-center gap-3">
             <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-zinc-100 bg-white text-zinc-700 shadow-sm">
-              <Icon className="h-5 w-5" />
+              <BrandIcon slot={card.iconSlot} className="h-5 w-5" fallback={<Icon className="h-5 w-5" />} />
             </span>
             <StatusBadge tone={tone === 'info' ? 'info' : 'accent'} size="sm" label={card.tag} />
           </div>

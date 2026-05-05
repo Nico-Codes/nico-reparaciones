@@ -30,6 +30,10 @@ export type VisualIconName =
   | 'store'
   | 'help'
   | 'account'
+  | 'mail'
+  | 'barChart'
+  | 'palette'
+  | 'landmark'
   | 'verifyEmail'
   | 'adminOrders'
   | 'adminRepairs'
@@ -505,6 +509,21 @@ export const ADMIN_ACTION_ICON_ASSETS: AssetCard[] = [
   editableIconAsset('Icono dinero', 'icon_banknote', 'banknote', 'text-emerald-700'),
 ];
 
+export const ADMIN_SETTINGS_HUB_ICON_ASSETS: AssetCard[] = [
+  editableIconAsset('Icono config correo SMTP', 'icon_settings_hub_mail', 'mail', 'text-sky-700'),
+  editableIconAsset('Icono config reportes', 'icon_settings_hub_reports', 'barChart', 'text-sky-700'),
+  editableIconAsset('Icono config negocio', 'icon_settings_hub_business', 'building', 'text-slate-700'),
+  editableIconAsset('Icono config checkout', 'icon_settings_hub_checkout', 'landmark', 'text-slate-700'),
+  editableIconAsset('Icono config calculos', 'icon_settings_hub_calculations', 'calculator', 'text-sky-700'),
+  editableIconAsset('Icono config plantillas email', 'icon_settings_hub_mail_templates', 'fileText', 'text-slate-700'),
+  editableIconAsset('Icono config ayuda', 'icon_settings_hub_help', 'help', 'text-sky-700'),
+  editableIconAsset('Icono config identidad visual', 'icon_settings_hub_identity', 'palette', 'text-indigo-700'),
+  editableIconAsset('Icono config portada tienda', 'icon_settings_hub_store_hero', 'image', 'text-slate-700'),
+  editableIconAsset('Icono config seguridad 2FA', 'icon_settings_hub_security', 'shield', 'text-emerald-700'),
+  editableIconAsset('Icono config WhatsApp reparaciones', 'icon_settings_hub_whatsapp_repairs', 'message', 'text-emerald-700'),
+  editableIconAsset('Icono config WhatsApp pedidos', 'icon_settings_hub_whatsapp_orders', 'message', 'text-emerald-700'),
+];
+
 export const LOGO_ASSETS: AssetCard[] = [
   {
     title: 'Logo principal',
@@ -531,6 +550,7 @@ export const VISUAL_IDENTITY_SECTIONS: AssetSectionDefinition[] = [
   { title: 'Tienda y productos', items: STORE_ACTION_ICON_ASSETS, columns: 'three' },
   { title: 'Pedidos y WhatsApp', items: ORDER_ICON_ASSETS, columns: 'three' },
   { title: 'Reparaciones', items: REPAIR_ICON_ASSETS, columns: 'three' },
+  { title: 'Admin: configuracion', items: ADMIN_SETTINGS_HUB_ICON_ASSETS, columns: 'three' },
   { title: 'Admin', items: ADMIN_ACTION_ICON_ASSETS, columns: 'three' },
 ];
 

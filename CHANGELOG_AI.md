@@ -12,6 +12,27 @@
 
 ---
 
+### 2026-05-05 - Codex
+- Alcance: iconos editables faltantes en las cards de `/admin/configuraciones`.
+- Tipo de intervencion: backend branding registry y frontend admin/Identidad Visual.
+- Archivos tocados:
+  - `next-stack/apps/api/src/modules/admin/app-settings.registry.ts`
+  - `next-stack/apps/web/src/features/admin/admin-settings-hub.*`
+  - `next-stack/apps/web/src/features/admin/admin-visual-identity.*`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. Las cards de Operacion diaria y Configuracion avanzada ahora tienen slots independientes en Identidad Visual y consumen `BrandIcon` con fallback al icono actual.
+- Validaciones ejecutadas:
+  - `typecheck --workspace @nico/api`
+  - `build --workspace @nico/api`
+  - `typecheck --workspace @nico/web`
+  - `test --workspace @nico/web`
+  - `build --workspace @nico/web`
+  - `git diff --check`
+- Riesgos / notas:
+  - No se modifica la navegacion ni los destinos de las cards; solo la fuente editable del icono.
+
+---
+
 ### 2026-05-04 - Codex
 - Alcance: sistema de iconos editables con historial en Identidad Visual.
 - Tipo de intervencion: migracion de datos, backend admin, API publica de branding y UX frontend.

@@ -19,6 +19,7 @@ export type ConfigCard = {
   tag: string;
   to?: string;
   icon: LucideIcon;
+  iconSlot: string;
   tone?: 'accent' | 'info';
 };
 
@@ -41,6 +42,7 @@ export const ADMIN_SETTINGS_SECTIONS: ConfigSectionDef[] = [
         tag: 'Listo',
         to: '/admin/configuracion/mail',
         icon: Mail,
+        iconSlot: 'icon_settings_hub_mail',
         tone: 'info',
       },
       {
@@ -49,6 +51,7 @@ export const ADMIN_SETTINGS_SECTIONS: ConfigSectionDef[] = [
         tag: 'Activo',
         to: '/admin/configuracion/reportes',
         icon: BarChart3,
+        iconSlot: 'icon_settings_hub_reports',
         tone: 'info',
       },
       {
@@ -57,6 +60,7 @@ export const ADMIN_SETTINGS_SECTIONS: ConfigSectionDef[] = [
         tag: 'Base',
         to: '/admin/configuracion/negocio',
         icon: Building2,
+        iconSlot: 'icon_settings_hub_business',
         tone: 'info',
       },
       {
@@ -65,6 +69,7 @@ export const ADMIN_SETTINGS_SECTIONS: ConfigSectionDef[] = [
         tag: 'Modulo',
         to: '/admin/configuracion/checkoutpagos',
         icon: Landmark,
+        iconSlot: 'icon_settings_hub_checkout',
         tone: 'info',
       },
       {
@@ -73,6 +78,7 @@ export const ADMIN_SETTINGS_SECTIONS: ConfigSectionDef[] = [
         tag: 'Modulo',
         to: '/admin/calculos',
         icon: Calculator,
+        iconSlot: 'icon_settings_hub_calculations',
         tone: 'info',
       },
     ],
@@ -88,6 +94,7 @@ export const ADMIN_SETTINGS_SECTIONS: ConfigSectionDef[] = [
         tag: 'Predeterminado',
         to: '/admin/mail-templates',
         icon: FileText,
+        iconSlot: 'icon_settings_hub_mail_templates',
       },
       {
         title: 'Centro de ayuda',
@@ -95,6 +102,7 @@ export const ADMIN_SETTINGS_SECTIONS: ConfigSectionDef[] = [
         tag: 'Modulo',
         to: '/admin/help',
         icon: HelpCircle,
+        iconSlot: 'icon_settings_hub_help',
       },
       {
         title: 'Identidad visual',
@@ -102,6 +110,7 @@ export const ADMIN_SETTINGS_SECTIONS: ConfigSectionDef[] = [
         tag: 'Modulo',
         to: '/admin/configuracion/identidadvisual',
         icon: Palette,
+        iconSlot: 'icon_settings_hub_identity',
       },
       {
         title: 'Portada de tienda',
@@ -109,6 +118,7 @@ export const ADMIN_SETTINGS_SECTIONS: ConfigSectionDef[] = [
         tag: 'Modulo',
         to: '/admin/configuracion/portadatienda',
         icon: ImageIcon,
+        iconSlot: 'icon_settings_hub_store_hero',
       },
       {
         title: 'Seguridad 2FA',
@@ -116,6 +126,7 @@ export const ADMIN_SETTINGS_SECTIONS: ConfigSectionDef[] = [
         tag: 'Seguridad',
         to: '/admin/seguridad/2fa',
         icon: ShieldCheck,
+        iconSlot: 'icon_settings_hub_security',
       },
       {
         title: 'Plantillas WhatsApp',
@@ -123,6 +134,7 @@ export const ADMIN_SETTINGS_SECTIONS: ConfigSectionDef[] = [
         tag: 'Modulo',
         to: '/admin/whatsapp',
         icon: MessageSquare,
+        iconSlot: 'icon_settings_hub_whatsapp_repairs',
       },
       {
         title: 'WhatsApp pedidos',
@@ -130,6 +142,7 @@ export const ADMIN_SETTINGS_SECTIONS: ConfigSectionDef[] = [
         tag: 'Modulo',
         to: '/admin/whatsapppedidos',
         icon: MessageSquare,
+        iconSlot: 'icon_settings_hub_whatsapp_orders',
       },
     ],
   },

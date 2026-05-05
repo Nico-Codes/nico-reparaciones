@@ -12,4 +12,12 @@ describe('admin-settings-hub.helpers', () => {
     expect(resolveConfigCardToneClass('info')).toContain('sky');
     expect(resolveConfigCardToneClass('accent')).toContain('indigo');
   });
+
+  it('define un slot editable para cada icono de tarjeta', () => {
+    const cards = ADMIN_SETTINGS_SECTIONS.flatMap((section) => section.cards);
+
+    expect(cards).toHaveLength(12);
+    expect(cards.every((card) => card.iconSlot.startsWith('icon_settings_hub_'))).toBe(true);
+    expect(new Set(cards.map((card) => card.iconSlot)).size).toBe(cards.length);
+  });
 });
