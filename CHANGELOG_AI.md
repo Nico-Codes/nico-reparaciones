@@ -13,6 +13,23 @@
 ---
 
 ### 2026-05-05 - Codex
+- Alcance: aplicacion real de favicons e iconos de app configurados desde Identidad Visual.
+- Tipo de intervencion: correccion frontend de sincronizacion del head y manifest dinamico.
+- Archivos tocados:
+  - `next-stack/apps/web/src/components/BrandingHeadSync.*`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. Los favicons reemplazan los links estaticos iniciales y el manifest usa los iconos de app activos con cache busting.
+- Validaciones ejecutadas:
+  - `typecheck --workspace @nico/web`
+  - `test --workspace @nico/web`
+  - `build --workspace @nico/web`
+  - `smoke:web`
+- Riesgos / notas:
+  - El navegador puede conservar favicon cacheado unos segundos, pero el href ahora cambia por version y no compite con el favicon estatico.
+
+---
+
+### 2026-05-05 - Codex
 - Alcance: variantes finales para iconos de reparacion y verificar correo.
 - Tipo de intervencion: nuevos SVG versionados y migracion de activacion selectiva.
 - Archivos tocados:
