@@ -12,6 +12,8 @@ import {
   resolveAssetState,
   summarizeAssetPath,
   VISUAL_IDENTITY_SECTIONS,
+  NAV_ICON_ASSETS,
+  CHECKOUT_ICON_ASSETS,
 } from './admin-visual-identity.helpers';
 import type { AdminSettingItem } from './settingsApi';
 
@@ -112,6 +114,11 @@ describe('admin-visual-identity.helpers', () => {
       defaultPath: 'brand/logo-bg.png',
       recommendedPx: '3:2 - 1080 x 720 px o mayor',
     });
+  });
+
+  it('uses v3 defaults for navigation and checkout icons', () => {
+    expect(NAV_ICON_ASSETS.every((item) => item.defaultPath.startsWith('icons/v3/'))).toBe(true);
+    expect(CHECKOUT_ICON_ASSETS.every((item) => item.defaultPath.startsWith('icons/v3/'))).toBe(true);
   });
 
   it('shows recommended proportions for every visual identity asset card', () => {

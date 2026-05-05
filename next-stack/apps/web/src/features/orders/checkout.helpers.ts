@@ -10,13 +10,13 @@ export const DEFAULT_CHECKOUT_PAYMENT_OPTIONS: CheckoutPaymentMethodConfig[] = [
     value: 'efectivo',
     title: 'Pago en el local',
     subtitle: 'Pagas al retirar en el local.',
-    iconUrl: '/icons/payment-local.svg',
+    iconUrl: '/icons/v3/payment-local.svg',
   },
   {
     value: 'transferencia',
     title: 'Transferencia',
     subtitle: 'Confirmas el pedido y luego veras los datos para pagar.',
-    iconUrl: '/icons/payment-transfer.svg',
+    iconUrl: '/icons/v3/payment-transfer.svg',
   },
 ];
 

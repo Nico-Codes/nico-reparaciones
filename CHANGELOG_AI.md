@@ -13,6 +13,34 @@
 ---
 
 ### 2026-05-05 - Codex
+- Alcance: rediseño de iconos default para Navegación y Checkout/Pagos.
+- Tipo de intervencion: nuevos SVG versionados, registry de branding, migracion de datos y ajustes de defaults en API/web.
+- Archivos tocados:
+  - `next-stack/apps/web/public/icons/v3/*`
+  - `next-stack/apps/api/prisma/migrations/20260505110000_activate_v3_navigation_checkout_icons/migration.sql`
+  - `next-stack/apps/api/src/modules/admin/app-settings.registry.*`
+  - `next-stack/apps/api/src/modules/store/store.service.ts`
+  - `next-stack/apps/api/src/modules/orders/orders-support.service.ts`
+  - `next-stack/apps/web/src/features/admin/admin-visual-identity.helpers.*`
+  - `next-stack/apps/web/src/features/orders/checkout.helpers.*`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. Los slots rediseñados quedan activos por defecto con `icons/v3`, y la migracion conserva versiones anteriores en el historial de Identidad Visual.
+- Validaciones ejecutadas:
+  - `db:migrate --workspace @nico/api`
+  - `typecheck --workspace @nico/api`
+  - `test --workspace @nico/api`
+  - `build --workspace @nico/api`
+  - `typecheck --workspace @nico/web`
+  - `test --workspace @nico/web`
+  - `build --workspace @nico/web`
+  - `smoke:web`
+- Riesgos / notas:
+  - No se tocaron los iconos de secciones previamente aprobadas; el cambio queda acotado a Navegación y Checkout/Pagos.
+  - Los uploads runtime de `brand-assets/identity` no se versionan en Git.
+
+---
+
+### 2026-05-05 - Codex
 - Alcance: iconos editables faltantes en las cards de `/admin/configuraciones`.
 - Tipo de intervencion: backend branding registry y frontend admin/Identidad Visual.
 - Archivos tocados:

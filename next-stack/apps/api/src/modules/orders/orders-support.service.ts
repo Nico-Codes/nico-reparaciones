@@ -1,6 +1,7 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PublicAssetStorageService, type BufferedUploadFile } from '../../common/storage/public-asset-storage.service.js';
+import { BRAND_ASSET_SLOTS } from '../admin/app-settings.registry.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { ORDER_CHECKOUT_PAYMENT_METHODS, ORDER_WALKIN_EMAIL } from './orders.helpers.js';
 import type { CheckoutConfig, CheckoutPaymentMethodKey, SerializableOrder } from './orders.types.js';
@@ -219,9 +220,9 @@ export class OrdersSupportService {
     updatedAt?: Date | null,
   ) {
     const defaultPaths: Record<CheckoutPaymentMethodKey, string> = {
-      efectivo: 'icons/payment-local.svg',
-      transferencia: 'icons/payment-transfer.svg',
-      reserva_whatsapp: 'icons/payment-transfer.svg',
+      efectivo: BRAND_ASSET_SLOTS.checkout_payment_local.defaultPath,
+      transferencia: BRAND_ASSET_SLOTS.checkout_payment_transfer.defaultPath,
+      reserva_whatsapp: BRAND_ASSET_SLOTS.checkout_payment_transfer.defaultPath,
     };
 
     return {
