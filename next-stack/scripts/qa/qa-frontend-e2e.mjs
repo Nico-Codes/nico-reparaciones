@@ -322,7 +322,7 @@ async function main() {
 
     await gotoAndCheck(page, `${WEB_URL}/help`, {
       label: '/help',
-      selectors: ['text=Ayuda', 'input[placeholder*="Buscar problema"]'],
+      selectors: ['text=Ayuda', 'text=/Buscar en ayuda/i'],
     });
 
     await gotoAndCheck(page, `${WEB_URL}/reparacion`, {

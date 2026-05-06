@@ -2,6 +2,7 @@
 .DS_Store
 Thumbs.db
 /tmp-*.log
+*.tsbuildinfo
 
 /.idea/
 /.vscode/
@@ -20,6 +21,7 @@ Thumbs.db
 /next-stack/apps/api/dist/
 /next-stack/apps/web/dist/
 /next-stack/apps/web/public/brand-assets/identity/*
+/next-stack/apps/web/public/storage/
 /next-stack/.dev-logs/
 /next-stack/artifacts/
 /next-stack/.api-restart*.log

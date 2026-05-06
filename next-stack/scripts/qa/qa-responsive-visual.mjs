@@ -44,7 +44,7 @@ const ADMIN_ROUTES = [
   { path: '/admin/configuracion/portadatienda', selectors: ['text=/portada de tienda/i'] },
   { path: '/admin/whatsapp', selectors: ['text=/plantillas whatsapp/i'] },
   { path: '/admin/whatsapppedidos', selectors: ['text=/whatsapp.*pedidos/i'] },
-  { path: '/admin/seguridad/2fa', selectors: ['text=/seguridad 2fa/i'] },
+  { path: '/admin/seguridad/2fa', selectors: ['text=/autenticaci.n de dos factores|2fa/i'] },
   { path: '/admin/help', selectors: ['text=/ayuda editable|centro de ayuda|faq/i'] },
   { path: '/admin/users', selectors: ['text=/usuarios/i'] },
 ];

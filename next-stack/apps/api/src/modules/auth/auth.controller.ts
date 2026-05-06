@@ -47,6 +47,10 @@ import type { AuthenticatedUser } from './auth.types.js';
 import { JwtAuthGuard } from './jwt-auth.guard.js';
 import { ZodValidationPipe } from './zod-validation.pipe.js';
 
+type RedirectResponse = {
+  redirect: (url: string) => unknown;
+};
+
 @Controller('auth')
 export class AuthController {
   constructor(@Inject(AuthService) private readonly authService: AuthService) {}
@@ -72,7 +76,7 @@ export class AuthController {
   }
 
   @Get('google/start')
-  async googleStart(@Query('returnTo') returnTo: string | undefined, @Res() res: any) {
+  async googleStart(@Query('returnTo') returnTo: string | undefined, @Res() res: RedirectResponse) {
     try {
       const redirectUrl = await this.authService.createGoogleAuthorizationUrl(returnTo);
       return res.redirect(redirectUrl);
@@ -88,7 +92,7 @@ export class AuthController {
     @Query('code') code: string | undefined,
     @Query('state') state: string | undefined,
     @Query('error') error: string | undefined,
-    @Res() res: any,
+    @Res() res: RedirectResponse,
   ) {
     try {
       const redirectUrl = await this.authService.handleGoogleCallback({ code, state, error });
@@ -109,7 +113,7 @@ export class AuthController {
   }
 
   @Get('apple/start')
-  async appleStart(@Query('returnTo') returnTo: string | undefined, @Res() res: any) {
+  async appleStart(@Query('returnTo') returnTo: string | undefined, @Res() res: RedirectResponse) {
     try {
       const redirectUrl = await this.authService.createAppleAuthorizationUrl(returnTo);
       return res.redirect(redirectUrl);
@@ -125,7 +129,7 @@ export class AuthController {
     @Query('code') code: string | undefined,
     @Query('state') state: string | undefined,
     @Query('error') error: string | undefined,
-    @Res() res: any,
+    @Res() res: RedirectResponse,
   ) {
     try {
       const redirectUrl = await this.authService.handleAppleCallback({ code, state, error });
@@ -143,7 +147,7 @@ export class AuthController {
     @Body('state') state: string | undefined,
     @Body('error') error: string | undefined,
     @Body('user') user: unknown,
-    @Res() res: any,
+    @Res() res: RedirectResponse,
   ) {
     try {
       const redirectUrl = await this.authService.handleAppleCallback({ code, state, error, user });

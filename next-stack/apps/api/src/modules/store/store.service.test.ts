@@ -69,7 +69,7 @@ describe('StoreService', () => {
   });
 
   it('returns dynamic branding and hero assets through the API origin with cache busting', async () => {
-    process.env.STORE_IMAGE_BASE_URL = 'http://127.0.0.1:8000';
+    process.env.STORE_IMAGE_BASE_URL = 'https://legacy-assets.example.test';
     process.env.API_URL = 'http://localhost:3001';
     const updatedAt = new Date('2026-04-16T17:40:00.000Z');
 
@@ -280,7 +280,7 @@ describe('StoreService', () => {
 
   it('resolves uploaded product images through API_URL and legacy images through STORE_IMAGE_BASE_URL', async () => {
     process.env.API_URL = 'http://localhost:3001';
-    process.env.STORE_IMAGE_BASE_URL = 'http://127.0.0.1:8000';
+    process.env.STORE_IMAGE_BASE_URL = 'https://legacy-assets.example.test';
     const createdAt = new Date('2026-04-30T10:00:00.000Z');
     const baseProduct = {
       id: 'prod_1',
@@ -316,7 +316,7 @@ describe('StoreService', () => {
       imageUrl: 'http://localhost:3001/storage/products/uploaded.webp',
     });
     await expect(service.getProductBySlug('legacy')).resolves.toMatchObject({
-      imageUrl: 'http://127.0.0.1:8000/storage/products/legacy.webp',
+      imageUrl: 'https://legacy-assets.example.test/storage/products/legacy.webp',
     });
   });
 

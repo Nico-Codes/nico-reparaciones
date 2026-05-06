@@ -3,12 +3,14 @@ import type { AppSetting } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import nodemailer from 'nodemailer';
 
+type MailTransporter = ReturnType<typeof nodemailer.createTransport>;
+
 type TemplateKey = 'verify_email' | 'reset_password' | 'order_created';
 
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
-  private transporterPromise: Promise<any | null> | null = null;
+  private transporterPromise: Promise<MailTransporter | null> | null = null;
 
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 

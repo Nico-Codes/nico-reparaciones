@@ -14,6 +14,20 @@ import { PrismaService } from './modules/prisma/prisma.service.js';
 
 loadCanonicalEnv();
 
+type RequestWithId = {
+  headers?: Record<string, string | string[] | undefined>;
+  method?: string;
+  originalUrl?: string;
+  url?: string;
+  requestId?: string;
+};
+
+type ResponseWithStatus = {
+  statusCode: number;
+  setHeader: (name: string, value: string) => void;
+  on: (event: 'finish', listener: () => void) => void;
+};
+
 function env(name: string) {
   return (process.env[name] ?? '').trim();
 }
@@ -139,7 +153,7 @@ async function bootstrap() {
   const httpLoggingEnabled = shouldLogHttpRequests();
   const appVersion = env('APP_VERSION') || process.env.npm_package_version || '0.0.0';
   const gitSha = env('GIT_SHA');
-  app.use((req: any, res: any, next: () => void) => {
+  app.use((req: RequestWithId, res: ResponseWithStatus, next: () => void) => {
     const incoming = typeof req.headers?.['x-request-id'] === 'string' ? req.headers['x-request-id'] : '';
     const requestId = incoming.trim() || randomUUID();
     req.requestId = requestId;

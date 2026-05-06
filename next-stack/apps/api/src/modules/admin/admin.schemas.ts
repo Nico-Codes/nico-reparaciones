@@ -48,7 +48,7 @@ export const createWhatsappLogSchema = z.object({
   recipient: z.string().trim().max(190).optional().nullable(),
   status: z.string().trim().max(60).optional(),
   message: z.string().trim().max(4000).optional().nullable(),
-  meta: z.record(z.string(), z.any()).optional().nullable(),
+  meta: z.record(z.string(), z.unknown()).optional().nullable(),
 });
 
 export const helpFaqCreateSchema = z.object({

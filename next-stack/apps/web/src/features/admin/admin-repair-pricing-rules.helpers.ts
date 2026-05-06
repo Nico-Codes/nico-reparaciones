@@ -72,12 +72,34 @@ type RepairScopeCatalogs = {
   issuesCatalog: RepairIssueCatalogItem[];
 };
 
+type ApiRepairRuleRow = {
+  id: string;
+  name?: string | null;
+  active?: boolean | number | null;
+  deviceBrand?: string | null;
+  deviceModel?: string | null;
+  issueLabel?: string | null;
+  basePrice?: string | number | null;
+  profitPercent?: string | number | null;
+  minProfit?: string | number | null;
+  calcMode?: string | null;
+  minFinalPrice?: string | number | null;
+  shippingFee?: string | number | null;
+  priority?: string | number | null;
+  notes?: string | null;
+  deviceTypeId?: string | null;
+  deviceBrandId?: string | null;
+  deviceModelGroupId?: string | null;
+  deviceModelId?: string | null;
+  deviceIssueTypeId?: string | null;
+};
+
 export const REPAIR_PRICING_CALC_MODE_OPTIONS = [
   { value: 'BASE_PLUS_MARGIN', label: 'Base + %' },
   { value: 'FIXED_TOTAL', label: 'Fijo' },
 ] as const;
 
-export function fromApiRepairRule(row: any): RepairRuleRow {
+export function fromApiRepairRule(row: ApiRepairRuleRow): RepairRuleRow {
   return {
     id: row.id,
     name: row.name ?? '',

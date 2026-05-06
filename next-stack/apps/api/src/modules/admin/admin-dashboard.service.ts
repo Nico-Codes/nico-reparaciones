@@ -80,20 +80,20 @@ export class AdminDashboardService {
       },
       alerts,
       recent: {
-        orders: recentOrders.map((row: any) => ({
+        orders: recentOrders.map((row) => ({
           id: row.id,
           status: row.status,
           total: Number(row.total),
           createdAt: row.createdAt.toISOString(),
           user: row.user ? { id: row.user.id, name: row.user.name, email: row.user.email } : null,
-          itemsPreview: (row.items ?? []).map((item: any) => ({
+          itemsPreview: (row.items ?? []).map((item) => ({
             id: item.id,
             name: item.nameSnapshot,
             quantity: item.quantity,
             lineTotal: Number(item.lineTotal),
           })),
         })),
-        repairs: recentRepairs.map((row: any) => ({
+        repairs: recentRepairs.map((row) => ({
           id: row.id,
           status: row.status,
           customerName: row.customerName,

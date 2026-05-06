@@ -12,6 +12,46 @@
 
 ---
 
+### 2026-05-06 - Codex
+- Alcance: hardening pre-publicacion de QA, higiene de artefactos y deuda menor de tipado.
+- Tipo de intervencion: correccion de selectores QA, eliminacion de referencia legacy en tests, ignore de archivos runtime/generados y reemplazo de `any` por tipos estructurales.
+- Archivos tocados:
+  - `.gitignore`
+  - `next-stack/scripts/qa/qa-frontend-e2e.mjs`
+  - `next-stack/scripts/qa/qa-admin-visual-audit.mjs`
+  - `next-stack/scripts/qa/qa-responsive-visual.mjs`
+  - `next-stack/apps/api/src/main.ts`
+  - `next-stack/apps/api/src/modules/auth/auth.controller.ts`
+  - `next-stack/apps/api/src/modules/admin/admin-dashboard.service.ts`
+  - `next-stack/apps/api/src/modules/admin/admin.schemas.ts`
+  - `next-stack/apps/api/src/modules/device-catalog/device-catalog.service.ts`
+  - `next-stack/apps/api/src/modules/mail/mail.service.ts`
+  - `next-stack/apps/api/src/modules/store/store.service.test.ts`
+  - `next-stack/apps/web/src/features/admin/admin-repair-pricing-rules.helpers.ts`
+  - `next-stack/apps/web/tsconfig.tsbuildinfo`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No. Se corrigen checks, tipos y tracking de artefactos sin cambiar flujos de usuario.
+- Validaciones ejecutadas:
+  - `env:check`
+  - `deploy:check`
+  - `qa:legacy:detach`
+  - `typecheck`
+  - `test`
+  - `build`
+  - `smoke:backend`
+  - `smoke:web`
+  - `qa:route-parity`
+  - `qa:frontend:e2e`
+  - `qa:admin:visual`
+  - `qa:performance`
+  - `qa:responsive:visual`
+  - `git diff --check`
+- Riesgos / notas:
+  - `env:check` y `deploy:check` siguen con warnings esperados porque faltan valores reales de produccion para secretos, URLs y DB.
+  - `tsconfig.tsbuildinfo` queda removido del tracking para evitar ruido generado por builds.
+
+---
+
 ### 2026-05-05 - Codex
 - Alcance: aplicacion real de favicons e iconos de app configurados desde Identidad Visual.
 - Tipo de intervencion: correccion frontend de sincronizacion del head y manifest dinamico.

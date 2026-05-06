@@ -24,7 +24,7 @@ export class DeviceCatalogService {
       items: items.map((m: DeviceModel & { brand: { id: string; name: string; slug: string } }) => ({
         id: m.id,
         brandId: m.brandId,
-        deviceModelGroupId: (m as any).deviceModelGroupId ?? null,
+        deviceModelGroupId: m.deviceModelGroupId ?? null,
         name: m.name,
         slug: m.slug,
         active: m.active,
