@@ -16,17 +16,16 @@ async function requestWithAuth(path: string, init?: RequestInit): Promise<Respon
   if (token && !headers.has('Authorization')) {
     headers.set('Authorization', `Bearer ${token}`);
   }
-  return fetch(apiUrl(path), { ...init, headers });
+  return fetch(apiUrl(path), { ...init, credentials: init?.credentials ?? 'include', headers });
 }
 
 async function refreshSession() {
   if (!refreshInFlight) {
-    const refreshToken = authStorage.getRefreshToken();
-    if (!refreshToken) throw new Error('No refresh token');
     refreshInFlight = fetch(apiUrl('/auth/refresh'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken }),
+      credentials: 'include',
+      body: JSON.stringify({}),
     })
       .then(async (res) => {
         const data = await res.json().catch(() => ({}));
@@ -59,7 +58,7 @@ function resolveErrorMessage(data: unknown, status: number) {
 
 export async function authFetch(path: string, init?: RequestInit): Promise<Response> {
   const first = await requestWithAuth(path, init);
-  if (first.status !== 401 || !authStorage.getRefreshToken()) {
+  if (first.status !== 401) {
     return first;
   }
 
@@ -84,9 +83,8 @@ export async function authJsonRequest<T>(path: string, init?: RequestInit): Prom
 export async function publicJsonRequest<T>(path: string, init?: RequestInit): Promise<T> {
   const headers = new Headers(init?.headers ?? {});
   if (!headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
-  const res = await fetch(apiUrl(path), { ...init, headers });
+  const res = await fetch(apiUrl(path), { ...init, credentials: init?.credentials ?? 'include', headers });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(resolveErrorMessage(data, res.status));
   return data as T;
 }
-

@@ -14,6 +14,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { ADMIN_UPLOAD_INTERCEPTOR_OPTIONS } from '../../common/http/upload-limits.js';
 import { zodBadRequest, zodErrorBody } from '../../common/http/zod-bad-request.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
 import type { AuthenticatedUser } from '../auth/auth.types.js';
@@ -352,7 +353,7 @@ export class AdminController {
   }
 
   @Post('brand-assets/upload/:slot')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', ADMIN_UPLOAD_INTERCEPTOR_OPTIONS))
   uploadBrandAsset(
     @Param('slot') slot: string,
     @UploadedFile() file?: { originalname: string; mimetype: string; size: number; buffer?: Buffer },

@@ -14,7 +14,8 @@ export const authStorage = {
     return localStorage.getItem(ACCESS_KEY);
   },
   getRefreshToken() {
-    return localStorage.getItem(REFRESH_KEY);
+    localStorage.removeItem(REFRESH_KEY);
+    return null;
   },
   getUser(): AuthUser | null {
     const raw = localStorage.getItem(USER_KEY);
@@ -27,7 +28,7 @@ export const authStorage = {
   },
   setSession(user: AuthUser, tokens: AuthTokens) {
     localStorage.setItem(ACCESS_KEY, tokens.accessToken);
-    localStorage.setItem(REFRESH_KEY, tokens.refreshToken);
+    localStorage.removeItem(REFRESH_KEY);
     localStorage.setItem(USER_KEY, JSON.stringify(user));
     emitAuthChanged();
   },

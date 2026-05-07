@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { logoutSession } from '@/features/auth/logout';
 import { authStorage } from '@/features/auth/storage';
 import type { AuthUser } from '@/features/auth/types';
 import { useCartCount } from '@/features/cart/useCart';
@@ -157,8 +158,8 @@ export function useAppShell() {
     setAdminSectionOpen(display.isAdmin && adminLinks.some((link) => link.active));
   }, [adminLinks, display.isAdmin]);
 
-  const logout = () => {
-    authStorage.clear();
+  const logout = async () => {
+    await logoutSession();
     setAccountOpen(false);
     setSidebarOpen(false);
     navigate('/store', { replace: true });

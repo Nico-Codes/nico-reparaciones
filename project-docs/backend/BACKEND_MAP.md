@@ -45,6 +45,8 @@ Ubicacion:
 - `RolesGuard`
 - roles `USER` y `ADMIN`
 - throttling, logging, health endpoints, correo SMTP y 2FA admin
+- refresh token rotativo en cookie HttpOnly (`nico_refresh_token`) y logout con limpieza/revocacion de cookie
+- uploads administrables validados por extension, tamano y firma real del archivo antes de publicarse
 - `AuthModule` ahora tambien expone auth social por redirect para cuentas `USER`, con Google y Apple. Ambos providers usan vinculacion por email para clientes, discovery publico de disponibilidad (`/api/auth/social/providers`) y callback de completado con `result token` corto en fragmento, sin tokens finales en query string
 
 ## Catalogo tecnico y pricing de reparaciones

@@ -6,6 +6,10 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { PublicAssetStorageService } from './public-asset-storage.service.js';
 
 const createdDirs: string[] = [];
+const pngBuffer = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00]);
+const jpgBuffer = Buffer.from([0xff, 0xd8, 0xff, 0xdb, 0x00]);
+const webpBuffer = Buffer.from('RIFF0000WEBPvp8 ', 'ascii');
+const safeSvgBuffer = Buffer.from('<svg viewBox="0 0 24 24"><path d="M1 1h2"/></svg>', 'utf8');
 
 async function createPublicRoot() {
   const root = await mkdtemp(path.join(os.tmpdir(), 'nico-public-assets-'));
@@ -53,5 +57,67 @@ describe('PublicAssetStorageService', () => {
         128,
       ),
     ).toThrowError(/Formato no permitido/);
+  });
+
+  it('accepts known safe image signatures', () => {
+    const service = new PublicAssetStorageService();
+
+    expect(
+      service.validateUpload({ originalname: 'image.png', mimetype: 'image/png', size: pngBuffer.byteLength, buffer: pngBuffer }, ['png'], 128)
+        .ext,
+    ).toBe('png');
+    expect(
+      service.validateUpload({ originalname: 'image.jpg', mimetype: 'image/jpeg', size: jpgBuffer.byteLength, buffer: jpgBuffer }, ['jpg'], 128)
+        .ext,
+    ).toBe('jpg');
+    expect(
+      service.validateUpload({ originalname: 'image.webp', mimetype: 'image/webp', size: webpBuffer.byteLength, buffer: webpBuffer }, ['webp'], 128)
+        .ext,
+    ).toBe('webp');
+    expect(
+      service.validateUpload({ originalname: 'icon.svg', mimetype: 'image/svg+xml', size: safeSvgBuffer.byteLength, buffer: safeSvgBuffer }, ['svg'], 128)
+        .ext,
+    ).toBe('svg');
+  });
+
+  it('rejects extension spoofing', () => {
+    const service = new PublicAssetStorageService();
+
+    expect(() =>
+      service.validateUpload(
+        { originalname: 'image.png', mimetype: 'image/png', size: 18, buffer: Buffer.from('<html>fake</html>') },
+        ['png'],
+        128,
+      ),
+    ).toThrowError(/contenido del archivo/);
+  });
+
+  it('rejects unsafe SVG uploads', () => {
+    const service = new PublicAssetStorageService();
+
+    expect(() =>
+      service.validateUpload(
+        {
+          originalname: 'icon.svg',
+          mimetype: 'image/svg+xml',
+          size: 64,
+          buffer: Buffer.from('<svg><script>alert(1)</script></svg>'),
+        },
+        ['svg'],
+        128,
+      ),
+    ).toThrowError(/SVG contiene contenido no permitido/);
+    expect(() =>
+      service.validateUpload(
+        {
+          originalname: 'icon.svg',
+          mimetype: 'image/svg+xml',
+          size: 64,
+          buffer: Buffer.from('<svg onload="alert(1)"><path d="M0 0"/></svg>'),
+        },
+        ['svg'],
+        128,
+      ),
+    ).toThrowError(/SVG contiene contenido no permitido/);
   });
 });

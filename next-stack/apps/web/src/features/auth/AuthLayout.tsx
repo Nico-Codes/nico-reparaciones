@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, Wrench } from 'lucide-react';
 import { BrandIcon } from '@/components/brand/BrandIcon';
 import { useCartCount } from '@/features/cart/useCart';
+import { logoutSession } from './logout';
 import { authStorage } from './storage';
 import { useStoreBranding } from '@/features/store/branding-cache';
 import { MobileSidebar } from '@/layouts/app-shell/mobile-sidebar';
@@ -197,8 +198,8 @@ export function AuthLayout({
     setSidebarOpen(false);
   }
 
-  function logout() {
-    authStorage.clear();
+  async function logout() {
+    await logoutSession();
     setSidebarOpen(false);
     navigate('/store', { replace: true });
   }

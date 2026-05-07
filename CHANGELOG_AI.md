@@ -13,6 +13,42 @@
 ---
 
 ### 2026-05-06 - Codex
+- Alcance: hardening de seguridad pre-publicacion en Web + API.
+- Tipo de intervencion: actualizacion de dependencias vulnerables, validacion fuerte de uploads, refresh token en cookie HttpOnly, logout con revocacion, headers y documentacion viva.
+- Archivos tocados:
+  - `next-stack/package-lock.json`
+  - `next-stack/.env.example`
+  - `next-stack/.env.production.example`
+  - `next-stack/packages/contracts/src/index.ts`
+  - `next-stack/apps/api/src/main.ts`
+  - `next-stack/apps/api/src/common/http/upload-limits.ts`
+  - `next-stack/apps/api/src/common/storage/public-asset-storage.service.*`
+  - `next-stack/apps/api/src/modules/{admin,auth,catalog-admin,orders}/*`
+  - `next-stack/apps/web/src/features/auth/*`
+  - `next-stack/apps/web/src/layouts/app-shell/use-app-shell.ts`
+  - `project-docs/DECISIONS_LOG.md`
+  - `project-docs/architecture/AUTH_STRATEGY.md`
+  - `project-docs/architecture/ASSET_STRATEGY.md`
+  - `project-docs/backend/BACKEND_MAP.md`
+- ¿Cambio comportamiento funcional?: Si. El refresh token deja de persistirse en `localStorage`; se emite como cookie HttpOnly y el logout intenta revocar/limpiar la cookie. Los uploads ahora rechazan archivos cuyo contenido no coincide con la extension o SVG inseguros.
+- Validaciones ejecutadas:
+  - `npm audit --audit-level=moderate`
+  - `typecheck`
+  - `test`
+  - `build`
+  - `smoke:backend`
+  - `smoke:web`
+  - `env:check`
+  - `deploy:check`
+  - `git diff --check`
+- Riesgos / notas:
+  - `env:check` mantiene warnings esperados por `.env` local con secretos placeholder y URLs localhost.
+  - `deploy:check` mantiene warning de `DATABASE_URL` local si el deploy no corre junto a la DB; antes de publicar conviene usar credenciales/host reales o confirmar que la DB local en servidor es intencional.
+  - La cookie HttpOnly usa `AUTH_COOKIE_SAMESITE=lax` por defecto; si web/API quedan en dominios cross-site reales, configurar `AUTH_COOKIE_SAMESITE=none` y HTTPS.
+
+---
+
+### 2026-05-06 - Codex
 - Alcance: hardening pre-publicacion de QA, higiene de artefactos y deuda menor de tipado.
 - Tipo de intervencion: correccion de selectores QA, eliminacion de referencia legacy en tests, ignore de archivos runtime/generados y reemplazo de `any` por tipos estructurales.
 - Archivos tocados:

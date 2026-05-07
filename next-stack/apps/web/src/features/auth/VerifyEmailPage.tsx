@@ -6,6 +6,7 @@ import { SectionCard } from '@/components/ui/section-card';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { AuthLayout } from './AuthLayout';
 import { authApi } from './api';
+import { logoutSession } from './logout';
 import { authStorage } from './storage';
 
 export function VerifyEmailPage() {
@@ -60,8 +61,8 @@ export function VerifyEmailPage() {
     }
   }
 
-  function handleLogout() {
-    authStorage.clear();
+  async function handleLogout() {
+    await logoutSession();
     navigate('/auth/login');
   }
 

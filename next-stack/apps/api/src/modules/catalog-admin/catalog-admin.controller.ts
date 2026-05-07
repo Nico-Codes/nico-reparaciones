@@ -1,6 +1,7 @@
 import { BadRequestException, Body, Controller, Delete, Get, Inject, Patch, Post, Query, Param, UnauthorizedException, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { z } from 'zod';
+import { ADMIN_UPLOAD_INTERCEPTOR_OPTIONS } from '../../common/http/upload-limits.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
 import type { AuthenticatedUser } from '../auth/auth.types.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
@@ -172,7 +173,7 @@ export class CatalogAdminController {
   }
 
   @Post('products/:id/image')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', ADMIN_UPLOAD_INTERCEPTOR_OPTIONS))
   uploadProductImage(
     @Param('id') id: string,
     @UploadedFile() file?: { originalname: string; mimetype: string; size: number; buffer?: Buffer },

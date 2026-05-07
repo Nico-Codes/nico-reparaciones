@@ -42,6 +42,13 @@ import {
 } from '@nico/contracts';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service.js';
+import {
+  clearRefreshCookie,
+  extractCookie,
+  REFRESH_COOKIE_NAME,
+  setRefreshCookie,
+  type RefreshCookieResponse,
+} from './auth-refresh-cookie.js';
 import { CurrentUser } from './current-user.decorator.js';
 import type { AuthenticatedUser } from './auth.types.js';
 import { JwtAuthGuard } from './jwt-auth.guard.js';
@@ -58,16 +65,20 @@ export class AuthController {
   @Post('register')
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @UsePipes(new ZodValidationPipe(registerSchema))
-  async register(@Body() input: RegisterInput) {
-    return this.authService.register(input);
+  async register(@Body() input: RegisterInput, @Res({ passthrough: true }) res: RefreshCookieResponse) {
+    const response = await this.authService.register(input);
+    setRefreshCookie(res, response.tokens.refreshToken);
+    return response;
   }
 
   @Post('login')
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   @UsePipes(new ZodValidationPipe(loginSchema))
-  async login(@Body() input: LoginInput) {
-    return this.authService.login(input);
+  async login(@Body() input: LoginInput, @Res({ passthrough: true }) res: RefreshCookieResponse) {
+    const response = await this.authService.login(input);
+    setRefreshCookie(res, response.tokens.refreshToken);
+    return response;
   }
 
   @Get('social/providers')
@@ -108,8 +119,10 @@ export class AuthController {
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   @UsePipes(new ZodValidationPipe(googleAuthCompleteSchema))
-  async googleComplete(@Body() input: GoogleAuthCompleteInput) {
-    return this.authService.completeGoogleLogin(input);
+  async googleComplete(@Body() input: GoogleAuthCompleteInput, @Res({ passthrough: true }) res: RefreshCookieResponse) {
+    const response = await this.authService.completeGoogleLogin(input);
+    setRefreshCookie(res, response.tokens.refreshToken);
+    return response;
   }
 
   @Get('apple/start')
@@ -163,16 +176,40 @@ export class AuthController {
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   @UsePipes(new ZodValidationPipe(appleAuthCompleteSchema))
-  async appleComplete(@Body() input: AppleAuthCompleteInput) {
-    return this.authService.completeAppleLogin(input);
+  async appleComplete(@Body() input: AppleAuthCompleteInput, @Res({ passthrough: true }) res: RefreshCookieResponse) {
+    const response = await this.authService.completeAppleLogin(input);
+    setRefreshCookie(res, response.tokens.refreshToken);
+    return response;
   }
 
   @Post('refresh')
   @Throttle({ default: { limit: 30, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   @UsePipes(new ZodValidationPipe(refreshTokenSchema))
-  async refresh(@Body() input: RefreshTokenInput) {
-    return this.authService.refresh(input);
+  async refresh(
+    @Body() input: RefreshTokenInput,
+    @Headers('cookie') cookieHeader: string | undefined,
+    @Res({ passthrough: true }) res: RefreshCookieResponse,
+  ) {
+    const response = await this.authService.refresh({
+      refreshToken: input.refreshToken ?? extractCookie(cookieHeader, REFRESH_COOKIE_NAME) ?? undefined,
+    });
+    setRefreshCookie(res, response.tokens.refreshToken);
+    return response;
+  }
+
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  async logout(
+    @Body() input: Partial<RefreshTokenInput> | undefined,
+    @Headers('cookie') cookieHeader: string | undefined,
+    @Res({ passthrough: true }) res: RefreshCookieResponse,
+  ) {
+    await this.authService.logout({
+      refreshToken: input?.refreshToken ?? extractCookie(cookieHeader, REFRESH_COOKIE_NAME) ?? null,
+    });
+    clearRefreshCookie(res);
+    return { ok: true };
   }
 
   @Post('verify-email/request')
@@ -209,8 +246,10 @@ export class AuthController {
   @Post('bootstrap-admin')
   @Throttle({ default: { limit: 3, ttl: 300_000 } })
   @UsePipes(new ZodValidationPipe(bootstrapAdminSchema))
-  async bootstrapAdmin(@Body() input: BootstrapAdminInput) {
-    return this.authService.bootstrapAdmin(input);
+  async bootstrapAdmin(@Body() input: BootstrapAdminInput, @Res({ passthrough: true }) res: RefreshCookieResponse) {
+    const response = await this.authService.bootstrapAdmin(input);
+    setRefreshCookie(res, response.tokens.refreshToken);
+    return response;
   }
 
   @Get('me')

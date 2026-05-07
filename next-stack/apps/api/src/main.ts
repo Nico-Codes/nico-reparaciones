@@ -108,6 +108,7 @@ function assertProductionSafeEnv() {
   const jwtRefresh = env('JWT_REFRESH_SECRET');
   const webUrl = env('WEB_URL');
   const apiUrl = env('API_URL');
+  const corsOrigins = env('CORS_ORIGINS');
   const allowBootstrap = env('ALLOW_ADMIN_BOOTSTRAP');
   const previewTokens = env('MAIL_PREVIEW_TOKENS');
   const googleEnabled = isTruthy(env('GOOGLE_OAUTH_ENABLED'));
@@ -127,6 +128,7 @@ function assertProductionSafeEnv() {
   if (jwtRefresh && isPlaceholderSecret(jwtRefresh)) errors.push('JWT_REFRESH_SECRET parece placeholder');
   if (!webUrl || !isHttpsUrl(webUrl)) errors.push('WEB_URL debe ser HTTPS en producción');
   if (!apiUrl || !isHttpsUrl(apiUrl)) errors.push('API_URL debe ser HTTPS en producción');
+  if (!corsOrigins) errors.push('CORS_ORIGINS debe estar configurado en producción');
   if (isTruthy(allowBootstrap)) errors.push('ALLOW_ADMIN_BOOTSTRAP no puede estar habilitado en producción');
   if (isTruthy(previewTokens)) errors.push('MAIL_PREVIEW_TOKENS no puede estar habilitado en producción');
   if (googleEnabled && !googleClientId) errors.push('GOOGLE_CLIENT_ID es obligatorio cuando GOOGLE_OAUTH_ENABLED=1');
@@ -197,6 +199,10 @@ async function bootstrap() {
       crossOriginResourcePolicy: false,
     }),
   );
+  app.use((_req: RequestWithId, res: ResponseWithStatus, next: () => void) => {
+    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=()');
+    next();
+  });
 
   app.setGlobalPrefix('api');
   app.enableShutdownHooks();

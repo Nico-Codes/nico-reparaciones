@@ -14,7 +14,8 @@ export type BufferedUploadFile = {
 export class PublicAssetStorageService {
   validateUpload(file: BufferedUploadFile, allowedExts: readonly string[], maxKb: number) {
     const ext = this.detectFileExt(file.originalname);
-    if (!ext || !allowedExts.includes(ext)) {
+    const normalizedAllowedExts = allowedExts.map((value) => value.trim().toLowerCase()).filter(Boolean);
+    if (!ext || !normalizedAllowedExts.includes(ext)) {
       throw new BadRequestException(`Formato no permitido. Permitidos: ${allowedExts.join(', ')}`);
     }
 
@@ -24,7 +25,9 @@ export class PublicAssetStorageService {
       throw new BadRequestException(`Archivo supera el maximo (${maxKb} KB)`);
     }
 
-    return { ext, buffer };
+    const safeBuffer = this.assertUploadContentMatchesExtension(buffer, ext);
+
+    return { ext, buffer: safeBuffer };
   }
 
   buildTimestampedProductImagePath(productId: string, ext: string) {
@@ -88,6 +91,69 @@ export class PublicAssetStorageService {
     if (Buffer.isBuffer(file.buffer)) return file.buffer;
     if (file.buffer instanceof Uint8Array) return Buffer.from(file.buffer);
     throw new BadRequestException('Archivo invalido');
+  }
+
+  private assertUploadContentMatchesExtension(buffer: Buffer, ext: string) {
+    if (ext === 'png' && this.hasBytes(buffer, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) {
+      return buffer;
+    }
+    if ((ext === 'jpg' || ext === 'jpeg') && this.hasBytes(buffer, [0xff, 0xd8, 0xff])) {
+      return buffer;
+    }
+    if (ext === 'webp' && this.isWebp(buffer)) {
+      return buffer;
+    }
+    if (ext === 'ico' && this.hasBytes(buffer, [0x00, 0x00, 0x01, 0x00])) {
+      return buffer;
+    }
+    if (ext === 'pdf' && this.hasBytes(buffer, [0x25, 0x50, 0x44, 0x46, 0x2d])) {
+      return buffer;
+    }
+    if (ext === 'svg') {
+      return this.validateSvg(buffer);
+    }
+
+    throw new BadRequestException('El contenido del archivo no coincide con el formato declarado');
+  }
+
+  private validateSvg(buffer: Buffer) {
+    if (buffer.includes(0)) {
+      throw new BadRequestException('SVG invalido');
+    }
+
+    const text = buffer.toString('utf8').trim();
+    if (!/<svg[\s>]/i.test(text) || /<html[\s>]/i.test(text)) {
+      throw new BadRequestException('SVG invalido');
+    }
+
+    const unsafePatterns = [
+      /<script\b/i,
+      /<foreignObject\b/i,
+      /<iframe\b/i,
+      /<object\b/i,
+      /<embed\b/i,
+      /\son[a-z]+\s*=/i,
+      /javascript\s*:/i,
+      /data\s*:\s*text\/html/i,
+      /<!doctype\b/i,
+      /<!entity\b/i,
+      /<image\b[^>]+(?:href|xlink:href)\s*=\s*["']\s*https?:/i,
+    ];
+    if (unsafePatterns.some((pattern) => pattern.test(text))) {
+      throw new BadRequestException('SVG contiene contenido no permitido');
+    }
+
+    return Buffer.from(text, 'utf8');
+  }
+
+  private hasBytes(buffer: Buffer, bytes: readonly number[]) {
+    if (buffer.byteLength < bytes.length) return false;
+    return bytes.every((byte, index) => buffer[index] === byte);
+  }
+
+  private isWebp(buffer: Buffer) {
+    if (buffer.byteLength < 12) return false;
+    return buffer.subarray(0, 4).toString('ascii') === 'RIFF' && buffer.subarray(8, 12).toString('ascii') === 'WEBP';
   }
 
   private resolvePublicRoot() {

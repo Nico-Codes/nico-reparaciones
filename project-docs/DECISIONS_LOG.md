@@ -20,6 +20,20 @@ Registrar decisiones tecnicas confirmadas para evitar dependencia de memoria ora
 
 ---
 
+### [DL-0134]
+- Fecha: 2026-05-06
+- Estado: aceptada
+- Tema: hardening de seguridad pre-publicacion
+- Contexto: antes de publicar la web se necesitaba reducir riesgo real en dependencias, uploads administrables y persistencia de sesion. La auditoria encontro vulnerabilidades transitivas corregibles por lockfile, uploads validados solo por extension y refresh tokens persistidos en `localStorage`.
+- Decision: actualizar dependencias vulnerables con `npm audit fix`, validar uploads por extension/tamano/firma real y bloquear SVG peligrosos, mover el refresh token a cookie HttpOnly rotativa, agregar logout con limpieza/revocacion de cookie, exigir `CORS_ORIGINS` en produccion y sumar headers `Permissions-Policy`.
+- Impacto: baja la superficie de XSS persistente por tokens, se reduce el riesgo de subir archivos disfrazados o SVG activos a `public/`, y la configuracion productiva queda mas estricta antes de deploy.
+- Alternativas consideradas: mantener refresh token en `localStorage` por simplicidad o validar solo MIME/extensiones; descartado porque ambos dejan riesgos evitables en una app con usuarios, pedidos y panel admin.
+- Archivos / modulos afectados: `next-stack/apps/api/src/{main.ts,common,modules/auth,modules/admin,modules/catalog-admin,modules/orders}`, `next-stack/apps/web/src/features/auth`, `next-stack/packages/contracts`, env examples, documentacion viva.
+- Validacion requerida: `npm audit`, typecheck/test/build API y web, smoke backend/web y `git diff --check`.
+- Responsable: Codex + operador humano
+
+---
+
 ### [DL-0133]
 - Fecha: 2026-04-29
 - Estado: aceptada

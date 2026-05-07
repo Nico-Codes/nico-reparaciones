@@ -13,6 +13,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { ADMIN_UPLOAD_INTERCEPTOR_OPTIONS } from '../../common/http/upload-limits.js';
 import { zodBadRequest } from '../../common/http/zod-bad-request.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
 import type { AuthenticatedUser } from '../auth/auth.types.js';
@@ -59,7 +60,7 @@ export class OrdersController {
   }
 
   @Post('my/:id/transfer-proof')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', ADMIN_UPLOAD_INTERCEPTOR_OPTIONS))
   async uploadTransferProof(
     @CurrentUser() user: AuthenticatedUser | null,
     @Param('id') id: string,

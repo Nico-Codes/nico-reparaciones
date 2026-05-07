@@ -1,5 +1,4 @@
 import type { AuthResponse } from './types';
-import { authStorage } from './storage';
 import { authJsonRequest, publicJsonRequest } from './http';
 import { apiOrigin } from './http';
 import { resolvePostAuthReturnTo } from './google-auth.helpers';
@@ -72,11 +71,26 @@ export const authApi = {
     });
   },
   refresh(refreshToken?: string) {
-    const token = refreshToken ?? authStorage.getRefreshToken();
     return publicJsonRequest<AuthResponse>('/auth/refresh', {
       method: 'POST',
-      body: JSON.stringify({ refreshToken: token }),
+      body: JSON.stringify(refreshToken ? { refreshToken } : {}),
     });
+  },
+  async logout() {
+    const res = await fetch(new URL('/api/auth/logout', apiOrigin), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({}),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      const message = data && typeof data === 'object' && typeof (data as { message?: unknown }).message === 'string'
+        ? (data as { message: string }).message
+        : `Error ${res.status}`;
+      throw new Error(message);
+    }
+    return { ok: true };
   },
   forgotPassword(email: string) {
     return publicJsonRequest<{ ok: boolean; message: string; previewToken?: string }>('/auth/forgot-password', {

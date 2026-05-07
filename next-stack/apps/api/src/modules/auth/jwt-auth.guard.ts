@@ -5,6 +5,7 @@ import {
   type ExecutionContext,
 } from '@nestjs/common';
 import jwt from 'jsonwebtoken';
+import { appLog } from '../../common/logging.js';
 import type { RequestWithUser } from './auth.types.js';
 import type { JwtPayload } from './auth.service.js';
 
@@ -47,7 +48,9 @@ export class JwtAuthGuard implements CanActivate {
       const secret = process.env.JWT_ACCESS_SECRET ?? 'dev-access-secret-change-me';
       return jwt.verify(accessToken, secret) as JwtPayload;
     } catch (error) {
-      console.warn('[auth] jwt verify failed in guard', error instanceof Error ? error.message : error);
+      appLog('warn', '[auth] jwt verify failed in guard', {
+        message: error instanceof Error ? error.message : String(error),
+      });
       throw new UnauthorizedException('Token inválido o expirado');
     }
   }

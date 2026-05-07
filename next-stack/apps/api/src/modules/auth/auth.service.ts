@@ -474,7 +474,12 @@ export class AuthService {
   }
 
   async refresh(input: RefreshTokenInput) {
-    const tokenHash = this.hashToken(input.refreshToken);
+    const refreshToken = input.refreshToken?.trim();
+    if (!refreshToken) {
+      throw new UnauthorizedException('Refresh token invalido o expirado');
+    }
+
+    const tokenHash = this.hashToken(refreshToken);
     const record = await this.prisma.refreshToken.findUnique({
       where: { tokenHash },
       include: { user: true },
@@ -496,6 +501,23 @@ export class AuthService {
       user: this.usersService.toPublicUser(record.user),
       tokens,
     };
+  }
+
+  async logout(input: { refreshToken?: string | null }) {
+    const refreshToken = input.refreshToken?.trim();
+    if (refreshToken) {
+      await this.prisma.refreshToken.updateMany({
+        where: {
+          tokenHash: this.hashToken(refreshToken),
+          revokedAt: null,
+        },
+        data: {
+          revokedAt: new Date(),
+        },
+      });
+    }
+
+    return { ok: true };
   }
 
   async resetPassword(input: ResetPasswordInput) {
