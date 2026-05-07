@@ -6,6 +6,7 @@ Checklist para dejar `next-stack` listo antes de deploy.
 
 - `npm run env:check`
 - `npm run deploy:check` (con `.env.production` o `.env` de staging/prod)
+- `npm run db:backup:check` (en el servidor o entorno que ejecutara backups)
 - `npm run db:check`
 - `npm run db:generate`
 - `npm run db:migrate` (`prisma migrate deploy`)
@@ -28,6 +29,8 @@ Revisar y ajustar:
 - `MAIL_PREVIEW_TOKENS=0`
 - `ALLOW_ADMIN_BOOTSTRAP=0`
 - `ALLOW_DEMO_SEED=0`
+- `PG_BACKUP_DIR`
+- `BACKUP_OFFSITE_TARGET`
 
 ## 3) Base de datos PostgreSQL
 
@@ -41,6 +44,8 @@ Revisar y ajustar:
 - Confirmar `CORS_ORIGINS` sin orígenes de dev
 - Confirmar bootstrap admin desactivado en prod
 - Confirmar HTTPS en frontend y API
+- Confirmar que `/robots.txt` y `/sitemap.xml` responden desde el dominio publico
+- Confirmar que `/api/health/ready` responde `ok=true`
 
 ## 5) Correo
 
@@ -70,7 +75,10 @@ Revisar y ajustar:
 ## 7) Operación y soporte
 
 - Logs de API activos
+- `LOG_FORMAT=json` en produccion si los logs se consumen desde PM2/servicio externo
+- Reporte de errores frontend activo en `/api/telemetry/client-error`
 - Plan de backup DB
+- Restore probado al menos una vez en staging/base temporal
 - Runbooks de backup/restore y primer arranque listos
 - Usuario admin inicial validado
 
@@ -78,6 +86,7 @@ Revisar y ajustar:
 
 - `npm run env:check`
 - `npm run deploy:check`
+- `npm run db:backup:check`
 - `npm run db:check`
 - `npm run db:migrate`
 - `npm run qa:migration:close`

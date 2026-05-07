@@ -324,6 +324,23 @@ export class StoreService {
     };
   }
 
+  async listSeoProducts() {
+    try {
+      return this.prisma.product.findMany({
+        where: this.buildPublicProductVisibilityWhere(),
+        orderBy: [{ featured: 'desc' }, { updatedAt: 'desc' }],
+        take: 5000,
+        select: {
+          slug: true,
+          featured: true,
+          updatedAt: true,
+        },
+      });
+    } catch {
+      return [];
+    }
+  }
+
   async listProducts(params: ListProductsParams) {
     const q = (params.q ?? '').trim();
     const categorySlug = (params.category ?? '').trim();

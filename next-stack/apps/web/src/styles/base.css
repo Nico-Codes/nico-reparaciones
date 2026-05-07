@@ -9,6 +9,34 @@ body {
   background: #fafafa;
 }
 
+.skip-link {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 1000;
+  transform: translateY(-160%);
+  border-radius: 999px;
+  border: 1px solid #bae6fd;
+  background: #ffffff;
+  color: #075985;
+  box-shadow: 0 16px 40px -24px rgba(15, 23, 42, 0.35);
+  font-size: 0.875rem;
+  font-weight: 900;
+  padding: 0.65rem 0.95rem;
+  text-decoration: none;
+  transition: transform 160ms ease;
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
+  outline: 3px solid rgba(14, 165, 233, 0.35);
+  outline-offset: 3px;
+}
+
+#main-content:focus {
+  outline: none;
+}
+
 html.nr-scroll-lock,
 body.nr-scroll-lock {
   overflow: hidden;

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ChevronDown, Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { BrandIcon } from '@/components/brand/BrandIcon';
+import { SeoHead } from '@/components/SeoHead';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { LoadingBlock } from '@/components/ui/loading-block';
@@ -46,6 +47,10 @@ export function HelpPage() {
 
   return (
     <PageShell context="store" className="px-4 py-4 md:py-5">
+      <SeoHead
+        title="Centro de ayuda"
+        description="Preguntas frecuentes sobre compras, pedidos y reparaciones en NicoReparaciones."
+      />
       <div className="mx-auto max-w-4xl space-y-6">
         <PageHeader
           context="store"

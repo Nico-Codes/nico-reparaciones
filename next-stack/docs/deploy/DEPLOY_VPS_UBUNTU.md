@@ -1,19 +1,19 @@
 # Deploy Guide (VPS Ubuntu + Nginx + PM2 + PostgreSQL)
 
-Guía práctica para desplegar `next-stack` en producción.
+GuÃ­a prÃ¡ctica para desplegar `next-stack` en producciÃ³n.
 
 ## 1) Arquitectura recomendada
 
 - `Nginx` como reverse proxy (HTTPS)
-- API NestJS (`@nico/api`) detrás de PM2
-- Frontend React servido como estático (`apps/web/dist`)
+- API NestJS (`@nico/api`) detrÃ¡s de PM2
+- Frontend React servido como estÃ¡tico (`apps/web/dist`)
 - PostgreSQL (local o administrado)
 
-## 2) Requisitos mínimos VPS
+## 2) Requisitos mÃ­nimos VPS
 
 - Ubuntu 22.04/24.04 LTS
 - 2 vCPU
-- 2 GB RAM (mínimo)
+- 2 GB RAM (mÃ­nimo)
 - 20+ GB SSD
 
 ## 3) Base del servidor
@@ -41,12 +41,12 @@ pm2 -v
 
 ## 4) PostgreSQL
 
-### Opción A (recomendada): administrado
+### OpciÃ³n A (recomendada): administrado
 
-- Usar proveedor externo (backup/operación más simple)
+- Usar proveedor externo (backup/operaciÃ³n mÃ¡s simple)
 - Configurar `DATABASE_URL` con TLS si corresponde
 
-### Opción B: en VPS
+### OpciÃ³n B: en VPS
 
 ```bash
 sudo apt install -y postgresql postgresql-contrib
@@ -71,7 +71,7 @@ cd next-stack
 npm install
 ```
 
-## 6) Variables de entorno (producción)
+## 6) Variables de entorno (producciÃ³n)
 
 ```bash
 cp .env.production.example .env.production
@@ -86,6 +86,8 @@ Completar al menos:
 - `API_URL`
 - `VITE_API_URL`
 - `CORS_ORIGINS`
+- `PG_BACKUP_DIR`
+- `BACKUP_OFFSITE_TARGET`
 - `MAIL_PREVIEW_TOKENS=0`
 - `ALLOW_ADMIN_BOOTSTRAP=0`
 - `ALLOW_DEMO_SEED=0`
@@ -94,9 +96,10 @@ Validar:
 
 ```bash
 npm run deploy:check
+npm run db:backup:check
 ```
 
-## 7) Gate final de migración antes de deploy
+## 7) Gate final de migraciÃ³n antes de deploy
 
 ```bash
 npm run qa:migration:close
@@ -106,9 +109,9 @@ Incluye:
 - backend full
 - route parity
 - e2e frontend
-- auditoría visual admin
+- auditorÃ­a visual admin
 - parity visual legacy vs next
-- auditoría responsive (desktop/tablet/mobile)
+- auditorÃ­a responsive (desktop/tablet/mobile)
 - chequeo de desacople legacy
 
 ## 8) Build + migraciones
@@ -119,8 +122,8 @@ npm run db:migrate:deploy
 ```
 
 Nota:
-- Evitar seed demo en producción.
-- Si necesitás seed inicial, usar uno controlado para prod.
+- Evitar seed demo en producciÃ³n.
+- Si necesitÃ¡s seed inicial, usar uno controlado para prod.
 
 ## 9) API con PM2
 
@@ -131,7 +134,7 @@ pm2 startup
 pm2 logs nico-api
 ```
 
-## 10) Frontend estático
+## 10) Frontend estÃ¡tico
 
 ```bash
 npm run build --workspace @nico/web
@@ -153,6 +156,20 @@ server {
 
     location / {
         try_files $uri $uri/ /index.html;
+    }
+
+    location = /sitemap.xml {
+        proxy_pass http://127.0.0.1:3001/api/seo/sitemap.xml;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location = /robots.txt {
+        proxy_pass http://127.0.0.1:3001/api/seo/robots.txt;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
     }
 
     location /api/ {
@@ -188,19 +205,22 @@ sudo ufw enable
 sudo ufw status
 ```
 
-## 14) QA post-deploy mínimo
+## 14) QA post-deploy mÃ­nimo
 
 - `GET /api/health`
+- `GET /api/health/ready`
+- `GET /robots.txt`
+- `GET /sitemap.xml`
 - login admin/user
 - tienda/carrito/checkout
 - admin dashboard
 - mails (verify/reset/order)
 
-## 15) Operación
+## 15) OperaciÃ³n
 
 - Backup DB diario
 - Monitoreo RAM/CPU
-- Rotación de logs
+- RotaciÃ³n de logs
 - Update controlado:
   - `git pull`
   - `npm install`

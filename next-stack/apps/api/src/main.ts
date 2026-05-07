@@ -28,6 +28,12 @@ type ResponseWithStatus = {
   on: (event: 'finish', listener: () => void) => void;
 };
 
+type ExpressLike = {
+  disable?: (name: string) => void;
+  get?: (path: string, handler: (req: unknown, res: { redirect: (status: number, url: string) => void; type: (value: string) => void; send: (body: string) => void }) => void) => void;
+  set?: (name: string, value: unknown) => void;
+};
+
 function env(name: string) {
   return (process.env[name] ?? '').trim();
 }
@@ -98,6 +104,30 @@ function setWebPublicAssetCacheHeaders(publicDir: string, res: { setHeader: (nam
   }
 
   res.setHeader('Cache-Control', 'public, max-age=3600');
+}
+
+function registerSeoRootRoutes(expressApp?: ExpressLike) {
+  if (!expressApp?.get) return;
+  expressApp.get('/sitemap.xml', (_req, res) => {
+    res.redirect(302, '/api/seo/sitemap.xml');
+  });
+  expressApp.get('/robots.txt', (_req, res) => {
+    const baseUrl = env('WEB_URL').replace(/\/+$/, '') || 'http://localhost:5174';
+    res.type('text/plain; charset=utf-8');
+    res.send(
+      [
+        'User-agent: *',
+        'Allow: /',
+        'Disallow: /admin',
+        'Disallow: /auth',
+        'Disallow: /checkout',
+        'Disallow: /cart',
+        'Disallow: /orders',
+        `Sitemap: ${baseUrl}/sitemap.xml`,
+        '',
+      ].join('\n'),
+    );
+  });
 }
 
 function assertProductionSafeEnv() {
@@ -215,10 +245,11 @@ async function bootstrap() {
     }),
   );
   app.useGlobalFilters(new HttpExceptionFilter());
-  const expressApp = app.getHttpAdapter().getInstance?.();
+  const expressApp = app.getHttpAdapter().getInstance?.() as ExpressLike | undefined;
   if (expressApp?.disable) {
     expressApp.disable('x-powered-by');
   }
+  registerSeoRootRoutes(expressApp);
   const webPublicDir = resolveWebPublicDir();
   if (webPublicDir) {
     app.useStaticAssets(webPublicDir, {

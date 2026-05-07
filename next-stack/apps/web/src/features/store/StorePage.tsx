@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { SeoHead } from '@/components/SeoHead';
 import { PageShell } from '@/components/ui/page-shell';
 import { storeApi } from './api';
 import { setStoreBrandingCache } from './branding-cache';
@@ -147,6 +148,14 @@ export function StorePage() {
 
   return (
     <PageShell context="store" className="page-shell--store-front" data-store-shell>
+      <SeoHead
+        title={selectedCategoryLabel === 'Todas' ? 'Tienda' : `Tienda - ${selectedCategoryLabel}`}
+        description={
+          q
+            ? `Resultados para ${q} en tienda NicoReparaciones.`
+            : `Productos disponibles${selectedCategoryLabel && selectedCategoryLabel !== 'Todas' ? ` en ${selectedCategoryLabel}` : ''}, accesorios y encargues.`
+        }
+      />
       <div className="store-front-band store-front-band--flush" style={heroVisualVars}>
         <section className="store-front-hero">
           <picture className="store-front-hero__picture" aria-hidden="true">

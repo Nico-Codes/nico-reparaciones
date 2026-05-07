@@ -20,6 +20,20 @@ Registrar decisiones tecnicas confirmadas para evitar dependencia de memoria ora
 
 ---
 
+### [DL-0135]
+- Fecha: 2026-05-07
+- Estado: aceptada
+- Tema: readiness pre-publicacion para SEO, accesibilidad, observabilidad y datos
+- Contexto: despues del hardening de seguridad, los aspectos por debajo de 8 eran SEO/publicacion, accesibilidad, observabilidad/logs y readiness de datos/deploy. El stack ya tenia health checks, cache de assets y QA, pero faltaban sitemap/robots dinamicos, metadatos por ruta, reporte minimo de errores del frontend y un check operativo de backups.
+- Decision: agregar `SeoModule` con sitemap/robots generados desde el catalogo publico visible, registrar aliases raiz para SEO, sumar `SeoHead` en rutas publicas clave, agregar skip link global, envolver la app con `ClientErrorBoundary`, reportar errores cliente a `TelemetryModule` y sumar `db:backup:check` junto a variables/documentacion de backups.
+- Impacto: mejora la publicacion organica sin cambiar rutas publicas, los errores de UI dejan de quedar invisibles, la navegacion por teclado tiene una salida basica al contenido principal y la preparacion de datos gana un gate concreto antes de deploy.
+- Alternativas consideradas: montar SEO estatico manual o integrar un servicio externo de observabilidad; descartado porque el catalogo cambia desde admin y no se justificaba una dependencia externa para esta etapa.
+- Archivos / modulos afectados: `next-stack/apps/api/src/modules/{seo,telemetry,store}`, `next-stack/apps/api/src/main.ts`, `next-stack/apps/web/src/{components,features/store,features/auth,features/help,layouts}`, scripts de checks, env examples y documentacion viva.
+- Validacion requerida: typecheck/test/build API y web, smoke backend/web, `env:check`, `deploy:check`, `git diff --check`.
+- Responsable: Codex + operador humano
+
+---
+
 ### [DL-0134]
 - Fecha: 2026-05-06
 - Estado: aceptada

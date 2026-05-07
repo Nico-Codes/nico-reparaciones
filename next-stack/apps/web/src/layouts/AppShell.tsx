@@ -177,7 +177,9 @@ export function AppShell({ children }: AppShellProps) {
         onToggleAdminSection={toggleAdminSection}
       />
 
-      <main className={cn('shell-main container-page')}>{children}</main>
+      <main id="main-content" className={cn('shell-main container-page')} tabIndex={-1}>
+        {children}
+      </main>
 
       <AppShellFooter authUser={authUser} brandLogoUrl={brandLogoUrl} brandTitle={brandTitle} isAdmin={isAdmin} onLogout={logout} />
 

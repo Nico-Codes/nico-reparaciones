@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { GlobalVisualEnhancements } from '@/components/GlobalVisualEnhancements';
 import { BrandingHeadSync } from '@/components/BrandingHeadSync';
+import { GlobalErrorReporter } from '@/components/GlobalErrorReporter';
 import {
   AdminProductCreateAliasRedirect,
   AdminProductEditAliasRedirect,
@@ -99,6 +100,10 @@ export default function App() {
     <>
       <GlobalVisualEnhancements />
       <BrandingHeadSync />
+      <GlobalErrorReporter />
+      <a className="skip-link" href="#main-content">
+        Saltar al contenido principal
+      </a>
       <Routes>
         <Route path="/" element={<RootEntryRedirect />} />
         <Route path="/api/auth/*" element={<ApiAuthAliasRedirect />} />

@@ -18,7 +18,9 @@ Ubicacion:
 - `OrdersModule`
 - `PricingModule`
 - `RepairsModule`
+- `SeoModule`
 - `StoreModule`
+- `TelemetryModule`
 - `PrismaModule`
 
 ## Modulos internos ya seccionados
@@ -79,6 +81,20 @@ Ubicacion:
   - `SPECIAL_ORDER` sin perfil o con `requiresColorVariants=false`: conserva el fallback anterior por disponibilidad general si no hay colores activos
 - Los assets de `apps/web/public` servidos por API tienen headers de cache explicitos: largo para defaults versionables y corto/revalidable para `brand-assets/*` administrables.
 - Las URLs dinamicas de `brand-assets/*` que devuelve Store/Branding se resuelven contra `API_URL` y agregan `?v=updatedAt`; `/api/store/home`, `/api/store/hero` y `/api/store/branding` responden `Cache-Control: no-store` para que la portada editable no quede pegada a una respuesta anterior.
+
+## SEO y publicacion
+
+- `SeoModule` expone endpoints publicos para publicacion:
+  - `GET /api/seo/sitemap.xml`
+  - `GET /api/seo/robots.txt`
+- `main.ts` registra aliases raiz en API para `/sitemap.xml` y `/robots.txt`; en deploy con Nginx sirviendo el frontend estatico se debe proxyar esas rutas al API segun `next-stack/docs/deploy/DEPLOY_VPS_UBUNTU.md`.
+- El sitemap se genera desde categorias activas y productos visibles segun la misma regla publica de `StoreService`, evitando publicar productos inactivos, sin stock real o encargues sin color disponible.
+
+## Observabilidad cliente
+
+- `TelemetryModule` expone `POST /api/telemetry/client-error` para registrar errores no capturados del frontend.
+- El endpoint sanitiza y recorta campos antes de escribir logs con `appLog`; no persiste PII ni agrega tablas nuevas.
+- El frontend reporta errores desde `ClientErrorBoundary`, `window.error` y `unhandledrejection`, con limite por carga de pagina para no generar ruido excesivo.
 
 ## Catalogo comercial: encargues
 

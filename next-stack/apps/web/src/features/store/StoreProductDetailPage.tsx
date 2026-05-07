@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { PageHeader } from '@/components/ui/page-header';
 import { PageShell } from '@/components/ui/page-shell';
+import { SeoHead } from '@/components/SeoHead';
 import { cartStorage } from '@/features/cart/storage';
 import { storeApi } from './api';
 import {
@@ -90,6 +91,12 @@ export function StoreProductDetailPage() {
 
   return (
     <PageShell context="store" className="product-detail-page">
+      <SeoHead
+        title={item.name}
+        description={item.description || `${item.name} en NicoReparaciones${item.category?.pathLabel ? ` - ${item.category.pathLabel}` : ''}.`}
+        imageUrl={item.imageUrl}
+        type="product"
+      />
       <StoreProductBreadcrumb item={item} />
 
       <PageHeader

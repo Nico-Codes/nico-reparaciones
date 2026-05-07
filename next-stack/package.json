@@ -27,6 +27,7 @@
     "smoke:web": "node ./scripts/smoke/smoke-web.mjs",
     "env:check": "node ./scripts/checks/env-check.mjs",
     "deploy:check": "node ./scripts/checks/deploy-check.mjs",
+    "db:backup:check": "node ./scripts/checks/db-backup-check.mjs",
     "smoke:api": "node ./scripts/smoke/smoke-api.mjs",
     "smoke:backend": "node ./scripts/smoke/smoke-backend.mjs",
     "build": "npm run build --workspaces --if-present",

@@ -16,6 +16,7 @@ import {
   deriveAppShellDisplay,
 } from '@/layouts/app-shell/helpers';
 import { lockScroll, unlockScroll } from '@/layouts/app-shell/utils';
+import { SeoHead } from '@/components/SeoHead';
 import { PageShell } from '@/components/ui/page-shell';
 import { StatusBadge } from '@/components/ui/status-badge';
 
@@ -205,7 +206,8 @@ export function AuthLayout({
   }
 
   return (
-    <PageShell context="account" className="auth-shell">
+    <PageShell id="main-content" context="account" className="auth-shell" tabIndex={-1}>
+      <SeoHead title={title} description={subtitle} noindex />
       <header className="shell-header sticky top-0 z-[140] border-b shadow-sm">
         <div className="container-page">
           <div className="flex h-14 items-center justify-between gap-3">

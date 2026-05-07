@@ -62,6 +62,7 @@ No se detecto una capa custom de React Context global para dominio de negocio.
 Lo confirmado es:
 
 - `BrowserRouter` como provider de routing
+- `ClientErrorBoundary` como frontera global de error de UI
 - estado local por feature con `useState` y `useEffect`
 - persistencia de auth en `localStorage`
 - persistencia de carrito en `localStorage`
@@ -89,6 +90,26 @@ Hoy orquesta:
 ### BrandingHeadSync
 
 Sincroniza branding dinamico y metadatos del sitio.
+
+### SeoHead
+
+Sincroniza metadatos SEO por ruta cuando una pantalla publica tiene contexto propio.
+
+Uso actual:
+- `/store`
+- `/store/:slug`
+- `/help`
+- pantallas auth con `noindex`
+
+### GlobalErrorReporter
+
+Registra errores no capturados del navegador y rechazos de promesas en `/api/telemetry/client-error`.
+
+### Accesibilidad transversal
+
+- `App.tsx` expone un skip link global hacia `#main-content`.
+- `AppShell` marca el contenido principal con `main#main-content`.
+- `AuthLayout` marca su shell publico como destino de skip link cuando no usa `AppShell`.
 
 ### GlobalVisualEnhancements
 

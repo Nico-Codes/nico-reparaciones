@@ -12,6 +12,46 @@
 
 ---
 
+### 2026-05-07 - Codex
+- Alcance: mejoras de puntos bajo 8 pre-publicacion: SEO, accesibilidad, observabilidad y readiness de datos/deploy.
+- Tipo de intervencion: endpoints SEO dinamicos, metadatos frontend por ruta, skip link, error boundary, telemetria cliente, check operativo de backups y documentacion viva.
+- Archivos tocados:
+  - `next-stack/apps/api/src/main.ts`
+  - `next-stack/apps/api/src/modules/{seo,telemetry,store}/*`
+  - `next-stack/apps/web/src/components/*`
+  - `next-stack/apps/web/src/lib/client-telemetry.ts`
+  - `next-stack/apps/web/src/{App.tsx,main.tsx}`
+  - `next-stack/apps/web/src/features/{store,auth,help}/*`
+  - `next-stack/apps/web/src/layouts/AppShell.tsx`
+  - `next-stack/apps/web/src/styles/base.css`
+  - `next-stack/scripts/checks/db-backup-check.mjs`
+  - `next-stack/.env.example`
+  - `next-stack/.env.production.example`
+  - `next-stack/docs/*`
+  - `project-docs/{DECISIONS_LOG.md,backend/BACKEND_MAP.md,frontend/FRONTEND_MAP.md}`
+- ¿Cambio comportamiento funcional?: Si. La app publica metadatos SEO por ruta, la API sirve sitemap/robots, el frontend reporta errores cliente y la navegacion por teclado puede saltar al contenido principal.
+- Validaciones ejecutadas:
+  - `typecheck --workspace @nico/api`
+  - `typecheck --workspace @nico/web`
+  - `test --workspace @nico/api`
+  - `test --workspace @nico/web`
+  - `build --workspace @nico/api`
+  - `build --workspace @nico/web`
+  - `env:check`
+  - `deploy:check`
+  - `smoke:backend`
+  - `smoke:web`
+  - `qa:performance`
+  - `qa:route-parity`
+  - `npm audit --audit-level=moderate`
+  - `git diff --check`
+  - `db:backup:check` ejecutado y falla localmente por falta de `pg_dump`/`pg_restore` en PATH y variables de backup pendientes.
+- Riesgos / notas:
+  - En deploy con Nginx estatico, `/robots.txt` y `/sitemap.xml` deben proxyarse al API como indica el runbook.
+  - `db:backup:check` valida herramientas y configuracion, pero no reemplaza una prueba real de restore.
+
+---
+
 ### 2026-05-06 - Codex
 - Alcance: hardening de seguridad pre-publicacion en Web + API.
 - Tipo de intervencion: actualizacion de dependencias vulnerables, validacion fuerte de uploads, refresh token en cookie HttpOnly, logout con revocacion, headers y documentacion viva.

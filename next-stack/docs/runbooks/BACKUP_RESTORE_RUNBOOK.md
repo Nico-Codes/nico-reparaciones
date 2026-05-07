@@ -21,6 +21,8 @@ Runbook operativo para respaldos y restauración del `next-stack`.
 
 Tomadas desde `.env.production`:
 - `DATABASE_URL`
+- `PG_BACKUP_DIR` (recomendado: `/var/backups/nico-reparaciones`)
+- `BACKUP_OFFSITE_TARGET` (destino externo operativo: S3, otro VPS, Drive, etc.)
 
 Opcional (si preferís explícitas):
 - `PGHOST`
@@ -84,6 +86,12 @@ Ejecutar:
 pg_dump "$DATABASE_URL" -Fc -f "/var/backups/nico-reparaciones/predeploy_$(date +%F_%H%M%S).dump"
 ```
 
+Validar herramientas y destino antes del deploy:
+
+```bash
+npm run db:backup:check
+```
+
 ## 8. Procedimiento de rollback (alto nivel)
 
 1. Poner mantenimiento (si aplica)
@@ -112,3 +120,9 @@ Sugerido:
 - Cifrar backups si salen del servidor
 - Documentar cuál backup se usó en cada rollback
 
+## 11. Criterio minimo antes de publicar
+
+- `npm run db:backup:check` sin errores.
+- Al menos un backup manual generado antes de `db:migrate:deploy`.
+- Un restore probado en staging o base temporal.
+- Copia externa definida en `BACKUP_OFFSITE_TARGET` o procedimiento manual documentado.
