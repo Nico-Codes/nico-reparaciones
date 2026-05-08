@@ -13,6 +13,32 @@
 ---
 
 ### 2026-05-08 - Codex
+- Alcance: completar cobertura directa de los modulos/features que habian quedado como warnings en `qa:test-inventory`.
+- Tipo de intervencion: tests unitarios adicionales y extraccion menor de helper frontend testeable.
+- Archivos tocados:
+  - `next-stack/apps/api/src/modules/{mail,pricing,prisma,whatsapp}/*.test.ts`
+  - `next-stack/apps/web/src/features/deviceCatalog/{AdminDeviceCatalogPage.tsx,device-catalog.helpers.ts,device-catalog.helpers.test.ts}`
+  - `next-stack/scripts/checks/test-inventory.mjs`
+  - `next-stack/docs/qa/TESTING_STRATEGY.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: No. La pantalla legacy de catalogo de dispositivos ahora reutiliza un helper exportado para generar slugs, manteniendo el mismo resultado.
+- Validaciones ejecutadas:
+  - `qa:test-inventory`
+  - `typecheck --workspace @nico/api`
+  - `typecheck --workspace @nico/web`
+  - `test --workspace @nico/api`
+  - `test --workspace @nico/web`
+  - `build --workspace @nico/api`
+  - `build --workspace @nico/web`
+  - `smoke:backend`
+  - `smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - `qa:test-inventory` quedo sin warnings de modulos API o features Web sin test directo.
+
+---
+
+### 2026-05-08 - Codex
 - Alcance: ampliar repertorio de tests y formalizar gate de inventario de QA previo a deploy.
 - Tipo de intervencion: nuevos tests unitarios API/Web, smoke backend extendido, script de inventario de cobertura y documentacion QA.
 - Archivos tocados:

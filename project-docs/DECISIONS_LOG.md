@@ -20,6 +20,20 @@ Registrar decisiones tecnicas confirmadas para evitar dependencia de memoria ora
 
 ---
 
+### [DL-0137]
+- Fecha: 2026-05-08
+- Estado: aceptada
+- Tema: cobertura directa completa por modulo API y feature Web
+- Contexto: despues de agregar `qa:test-inventory`, el gate marcaba warnings no bloqueantes en `mail`, `pricing`, `prisma`, `whatsapp` y `deviceCatalog`. Aunque varios estaban cubiertos indirectamente por smoke/E2E, para maxima robustez pre-publicacion convenia que cada modulo/feature tuviera al menos una prueba directa.
+- Decision: agregar tests unitarios directos para `MailService`, `PricingService`, `PrismaService`, `WhatsappService` y el helper de slugs de `deviceCatalog`; actualizar el inventario para tratar esos tests como cobertura critica. Se evita crear E2E fragiles y se priorizan reglas de dinero, dispatch/logs, fallback SMTP, lifecycle DB y normalizacion de slugs.
+- Impacto: `qa:test-inventory` queda sin warnings de modulos o features sin test directo. La red de pruebas pasa a cubrir todos los subdominios operativos del stack con al menos una prueba aislada y mantiene smokes/E2E para flujos reales.
+- Alternativas consideradas: mantener warnings como backlog o agregar tests visuales para cada pantalla; descartado porque los warnings eran baratos de cerrar con tests de servicios/helpers y los tests visuales por pantalla no cubren mejor las reglas de negocio.
+- Archivos / modulos afectados: `next-stack/apps/api/src/modules/{mail,pricing,prisma,whatsapp}`, `next-stack/apps/web/src/features/deviceCatalog`, `next-stack/scripts/checks/test-inventory.mjs`, documentacion QA y changelog.
+- Validacion requerida: `qa:test-inventory`, typecheck/test/build API y web, smoke backend/web, `git diff --check`.
+- Responsable: Codex + operador humano
+
+---
+
 ### [DL-0136]
 - Fecha: 2026-05-08
 - Estado: aceptada

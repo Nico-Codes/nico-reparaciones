@@ -13,12 +13,19 @@ Evitar regresiones antes de publicar con una cobertura por capas. No existe un t
 
 ## Repertorio actual
 
+Snapshot de cobertura directa al cierre de `V1.348-TestCoverageComplete`:
+
+- API: `26` archivos de test, todos los modulos de `apps/api/src/modules` con al menos una prueba directa.
+- Web: `52` archivos de test, todos los features de `apps/web/src/features` con al menos una prueba directa.
+- QA/check scripts: `14`.
+- `qa:test-inventory` sin warnings de modulos o features sin test directo.
+
 ### Unitarios e integracion liviana
 
 - `npm run test --workspace @nico/api`
-  - Auth, carrito, tienda, pedidos, reparaciones, proveedores, encargues, SEO, settings y reglas de negocio.
+  - Auth, carrito, tienda, pedidos, reparaciones, proveedores, encargues, SEO, telemetria, health, help, mail, pricing, Prisma lifecycle, WhatsApp, settings y reglas de negocio.
 - `npm run test --workspace @nico/web`
-  - Store, producto, carrito, checkout, pedidos, reserva WhatsApp, admin, reparaciones, providers, auth, identidad visual y shell.
+  - Store, producto, carrito, checkout, pedidos, reserva WhatsApp, admin, reparaciones, providers, auth, identidad visual, device catalog, help y shell.
 
 ### Smoke / E2E
 

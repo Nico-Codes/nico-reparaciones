@@ -49,6 +49,10 @@ const REQUIRED_TEST_FILES = [
     path: 'apps/api/src/modules/help/help.service.test.ts',
   },
   {
+    label: 'API mail',
+    path: 'apps/api/src/modules/mail/mail.service.test.ts',
+  },
+  {
     label: 'API cart quote',
     path: 'apps/api/src/modules/cart/cart.controller.test.ts',
   },
@@ -69,6 +73,14 @@ const REQUIRED_TEST_FILES = [
     path: 'apps/api/src/modules/admin/admin-provider-search.parsers.test.ts',
   },
   {
+    label: 'API pricing',
+    path: 'apps/api/src/modules/pricing/pricing.service.test.ts',
+  },
+  {
+    label: 'API prisma lifecycle',
+    path: 'apps/api/src/modules/prisma/prisma.service.test.ts',
+  },
+  {
     label: 'API special-order importer',
     path: 'apps/api/src/modules/catalog-admin/catalog-admin-special-order.helpers.test.ts',
   },
@@ -79,6 +91,10 @@ const REQUIRED_TEST_FILES = [
   {
     label: 'API telemetry',
     path: 'apps/api/src/modules/telemetry/telemetry.controller.test.ts',
+  },
+  {
+    label: 'API WhatsApp',
+    path: 'apps/api/src/modules/whatsapp/whatsapp.service.test.ts',
   },
   {
     label: 'WEB store listing',
@@ -107,6 +123,10 @@ const REQUIRED_TEST_FILES = [
   {
     label: 'WEB app shell',
     path: 'apps/web/src/layouts/app-shell/helpers.test.ts',
+  },
+  {
+    label: 'WEB device catalog',
+    path: 'apps/web/src/features/deviceCatalog/device-catalog.helpers.test.ts',
   },
   {
     label: 'WEB help',

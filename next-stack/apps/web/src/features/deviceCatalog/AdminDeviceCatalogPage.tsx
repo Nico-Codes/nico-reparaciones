@@ -2,15 +2,7 @@
 import { Link } from 'react-router-dom';
 import { CustomSelect } from '@/components/ui/custom-select';
 import { deviceCatalogApi } from '@/features/deviceCatalog/api';
-
-function slugify(value: string) {
-  return value
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
+import { slugifyDeviceCatalogValue } from './device-catalog.helpers';
 
 export function AdminDeviceCatalogPage() {
   const [brands, setBrands] = useState<Array<{ id: string; name: string; slug: string; active: boolean }>>([]);
@@ -75,7 +67,7 @@ export function AdminDeviceCatalogPage() {
             <div className="text-sm font-bold uppercase tracking-wide text-zinc-500">Marcas</div>
             <form className="mt-3 flex gap-2" onSubmit={async (e) => {
               e.preventDefault();
-              await deviceCatalogApi.createBrand({ name: brandName, slug: slugify(brandName) });
+              await deviceCatalogApi.createBrand({ name: brandName, slug: slugifyDeviceCatalogValue(brandName) });
               setBrandName('');
               await loadAll();
             }}>
@@ -99,7 +91,7 @@ export function AdminDeviceCatalogPage() {
             <form className="mt-3 grid gap-2" onSubmit={async (e) => {
               e.preventDefault();
               if (!selectedBrandId) return;
-              await deviceCatalogApi.createModel({ brandId: selectedBrandId, name: modelName, slug: slugify(modelName) });
+              await deviceCatalogApi.createModel({ brandId: selectedBrandId, name: modelName, slug: slugifyDeviceCatalogValue(modelName) });
               setModelName('');
               await loadModels(selectedBrandId);
             }}>
@@ -132,7 +124,7 @@ export function AdminDeviceCatalogPage() {
             <div className="text-sm font-bold uppercase tracking-wide text-zinc-500">Fallas</div>
             <form className="mt-3 flex gap-2" onSubmit={async (e) => {
               e.preventDefault();
-              await deviceCatalogApi.createIssue({ name: issueName, slug: slugify(issueName) });
+              await deviceCatalogApi.createIssue({ name: issueName, slug: slugifyDeviceCatalogValue(issueName) });
               setIssueName('');
               await loadAll();
             }}>
