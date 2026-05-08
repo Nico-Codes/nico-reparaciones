@@ -6,6 +6,7 @@ Checklist para dejar `next-stack` listo antes de deploy.
 
 - `npm run env:check`
 - `npm run deploy:check` (con `.env.production` o `.env` de staging/prod)
+- `npm run qa:test-inventory`
 - `npm run db:backup:check` (en el servidor o entorno que ejecutara backups)
 - `npm run db:check`
 - `npm run db:generate`
@@ -58,6 +59,22 @@ Revisar y ajustar:
 
 ## 6) QA funcional mínima pre-deploy
 
+### Gates automatizados
+
+- `npm run qa:test-inventory`
+- `npm run typecheck`
+- `npm run test`
+- `npm run build`
+- `npm run smoke:backend`
+- `npm run smoke:web`
+- `npm run qa:frontend:e2e`
+- `npm run qa:admin:visual`
+- `npm run qa:route-parity`
+- `npm run qa:performance`
+- `npm run qa:responsive:visual`
+
+### Revision manual critica
+
 - Registro / Login / Logout
 - Verificación de correo
 - Recuperación de contraseña
@@ -86,6 +103,7 @@ Revisar y ajustar:
 
 - `npm run env:check`
 - `npm run deploy:check`
+- `npm run qa:test-inventory`
 - `npm run db:backup:check`
 - `npm run db:check`
 - `npm run db:migrate`

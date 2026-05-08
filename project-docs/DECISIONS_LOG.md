@@ -20,6 +20,20 @@ Registrar decisiones tecnicas confirmadas para evitar dependencia de memoria ora
 
 ---
 
+### [DL-0136]
+- Fecha: 2026-05-08
+- Estado: aceptada
+- Tema: repertorio de tests con inventario ejecutable como gate pre-deploy
+- Contexto: el proyecto ya tenia tests unitarios en API/Web y scripts smoke/E2E, pero la cobertura estaba repartida entre Vitest, smokes, QA visual, performance y checks de deploy. Para evitar una falsa promesa de "100% testeado" y, a la vez, impedir perdida accidental de cobertura critica, hacia falta una matriz ejecutable y documentada.
+- Decision: agregar `qa:test-inventory` como gate rapido que cuenta tests, scripts QA y cobertura directa por modulo/feature, falla si faltan tests o scripts criticos y deja warnings para areas sin test directo. Se amplian tests unitarios en `health`, `help`, `telemetry` y `help.helpers`, y `smoke:backend` valida tambien SEO raiz/API y telemetria cliente.
+- Impacto: antes de publicar o mergear se puede verificar rapidamente que el repertorio de tests sigue completo, que endpoints publicos nuevos no quedan fuera del smoke y que la estrategia de QA esta documentada en `next-stack/docs/qa/TESTING_STRATEGY.md`.
+- Alternativas consideradas: intentar crear E2E para cada click de la web o declarar cobertura total manualmente; descartado porque generaria tests fragiles y una garantia falsa. La estrategia elegida combina unitarios donde la logica es aislable, smoke/E2E para flujos reales y un inventario que marca huecos.
+- Archivos / modulos afectados: `next-stack/scripts/checks/test-inventory.mjs`, `next-stack/scripts/smoke/smoke-backend.mjs`, `next-stack/apps/api/src/modules/{health,help,telemetry}`, `next-stack/apps/web/src/features/help`, `next-stack/docs/qa`, `CHANGELOG_AI.md`.
+- Validacion requerida: `qa:test-inventory`, typecheck/test/build API y web, smoke backend/web, `git diff --check`.
+- Responsable: Codex + operador humano
+
+---
+
 ### [DL-0135]
 - Fecha: 2026-05-07
 - Estado: aceptada

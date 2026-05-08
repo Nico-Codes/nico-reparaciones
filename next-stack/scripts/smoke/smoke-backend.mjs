@@ -33,6 +33,29 @@ async function req(path, init = {}) {
   return { res, data };
 }
 
+async function reqText(path, init = {}) {
+  const res = await fetch(`${api}${path}`, {
+    ...init,
+    headers: {
+      Accept: 'text/plain, application/xml, */*',
+      ...(init.headers || {}),
+    },
+  });
+  return { res, text: await res.text() };
+}
+
+async function reqRootText(path, init = {}) {
+  const res = await fetch(`${baseUrl}${path}`, {
+    redirect: 'follow',
+    ...init,
+    headers: {
+      Accept: 'text/plain, application/xml, */*',
+      ...(init.headers || {}),
+    },
+  });
+  return { res, text: await res.text() };
+}
+
 function findMojibakePaths(value, currentPath = '$', hits = [], seen = new Set()) {
   if (value == null) return hits;
   if (typeof value === 'string') {
@@ -84,6 +107,48 @@ async function main() {
   assert(health.res.ok, 'Health HTTP error', { status: health.res.status, body: health.data });
   assert(health.data?.ok === true, 'Health payload invalido', health.data);
   logStep('health', { ok: true });
+
+  const robots = await reqText('/seo/robots.txt');
+  assert(robots.res.ok, 'seo/robots.txt fallo', { status: robots.res.status, body: robots.text.slice(0, 200) });
+  assert(robots.text.includes('Sitemap:'), 'seo/robots.txt sin Sitemap', robots.text);
+  logStep('seo/robots.txt', { ok: true });
+
+  const sitemap = await reqText('/seo/sitemap.xml');
+  assert(sitemap.res.ok, 'seo/sitemap.xml fallo', { status: sitemap.res.status, body: sitemap.text.slice(0, 200) });
+  assert(sitemap.text.includes('<urlset'), 'seo/sitemap.xml sin urlset', sitemap.text.slice(0, 400));
+  logStep('seo/sitemap.xml', { ok: true });
+
+  const rootRobots = await reqRootText('/robots.txt');
+  assert(rootRobots.res.ok, 'root robots.txt fallo', {
+    status: rootRobots.res.status,
+    body: rootRobots.text.slice(0, 200),
+  });
+  assert(rootRobots.text.includes('Sitemap:'), 'root robots.txt sin Sitemap', rootRobots.text);
+  logStep('root robots.txt', { ok: true });
+
+  const rootSitemap = await reqRootText('/sitemap.xml');
+  assert(rootSitemap.res.ok, 'root sitemap.xml fallo', {
+    status: rootSitemap.res.status,
+    body: rootSitemap.text.slice(0, 200),
+  });
+  assert(rootSitemap.text.includes('<urlset'), 'root sitemap.xml sin urlset', rootSitemap.text.slice(0, 400));
+  logStep('root sitemap.xml', { ok: true });
+
+  const telemetry = await fetch(`${api}/telemetry/client-error`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      source: 'smoke-backend',
+      message: 'Smoke telemetry probe',
+      path: '/smoke',
+      userAgent: 'smoke-backend',
+    }),
+  });
+  assert(telemetry.status === 204, 'telemetry/client-error fallo', { status: telemetry.status });
+  logStep('telemetry/client-error', { status: telemetry.status });
 
   const bootstrap = await req('/auth/bootstrap-admin', {
     method: 'POST',

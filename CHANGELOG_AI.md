@@ -12,6 +12,34 @@
 
 ---
 
+### 2026-05-08 - Codex
+- Alcance: ampliar repertorio de tests y formalizar gate de inventario de QA previo a deploy.
+- Tipo de intervencion: nuevos tests unitarios API/Web, smoke backend extendido, script de inventario de cobertura y documentacion QA.
+- Archivos tocados:
+  - `next-stack/package.json`
+  - `next-stack/scripts/checks/test-inventory.mjs`
+  - `next-stack/scripts/smoke/smoke-backend.mjs`
+  - `next-stack/apps/api/src/modules/{health,help,telemetry}/*.test.ts`
+  - `next-stack/apps/web/src/features/help/{help.helpers.ts,help.helpers.test.ts,HelpPage.tsx}`
+  - `next-stack/docs/{INDEX.md,qa/PREHOSTING_CHECKLIST.md,qa/TESTING_STRATEGY.md}`
+  - `project-docs/DECISIONS_LOG.md`
+- ¿Cambio comportamiento funcional?: No en UX principal. Se extrajo el filtrado de ayuda a helper testeable y se endurecieron validaciones automatizadas.
+- Validaciones ejecutadas:
+  - `qa:test-inventory`
+  - `typecheck --workspace @nico/api`
+  - `typecheck --workspace @nico/web`
+  - `test --workspace @nico/api`
+  - `test --workspace @nico/web`
+  - `build --workspace @nico/api`
+  - `build --workspace @nico/web`
+  - `smoke:backend`
+  - `smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - El inventario advierte aun modulos sin test directo (`mail`, `pricing`, `prisma`, `whatsapp`, `deviceCatalog`), pero quedan cubiertos parcialmente por smoke/E2E o por dependencias indirectas. Es backlog de mejora, no bloqueo actual.
+
+---
+
 ### 2026-05-07 - Codex
 - Alcance: mejoras de puntos bajo 8 pre-publicacion: SEO, accesibilidad, observabilidad y readiness de datos/deploy.
 - Tipo de intervencion: endpoints SEO dinamicos, metadatos frontend por ruta, skip link, error boundary, telemetria cliente, check operativo de backups y documentacion viva.

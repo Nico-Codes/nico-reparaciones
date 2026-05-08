@@ -12,6 +12,7 @@ import { SectionCard } from '@/components/ui/section-card';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { TextField } from '@/components/ui/text-field';
 import { fetchHelpFaq, type HelpFaqPublicItem } from './api';
+import { filterHelpFaqItems, formatHelpResultLabel } from './help.helpers';
 
 export function HelpPage() {
   const [items, setItems] = useState<HelpFaqPublicItem[]>([]);
@@ -37,13 +38,9 @@ export function HelpPage() {
     };
   }, []);
 
-  const filtered = useMemo(() => {
-    const term = q.trim().toLowerCase();
-    if (!term) return items;
-    return items.filter((item) => `${item.question} ${item.answer} ${item.category}`.toLowerCase().includes(term));
-  }, [items, q]);
+  const filtered = useMemo(() => filterHelpFaqItems(items, q), [items, q]);
 
-  const resultLabel = `${filtered.length} ${filtered.length === 1 ? 'resultado' : 'resultados'}`;
+  const resultLabel = formatHelpResultLabel(filtered.length);
 
   return (
     <PageShell context="store" className="px-4 py-4 md:py-5">
