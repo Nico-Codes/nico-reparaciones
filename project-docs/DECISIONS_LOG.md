@@ -20,6 +20,20 @@ Registrar decisiones tecnicas confirmadas para evitar dependencia de memoria ora
 
 ---
 
+### [DL-0138]
+- Fecha: 2026-05-08
+- Estado: aceptada
+- Tema: `qa:frontend:e2e` cubre tareas habituales de comprador con fixtures deterministicas contra API real
+- Contexto: la cobertura de tests ya incluia rutas, guards, unitarios y smoke, pero faltaba que el E2E frontend ejecutara interacciones habituales completas como las que usa un comprador: buscar, filtrar, ordenar, comprar stock real y reservar encargues. Sin fixtures propias, esos escenarios quedaban atados a datos manuales y podian volverse fragiles.
+- Decision: extender `scripts/qa/qa-frontend-e2e.mjs` para crear o actualizar por API fixtures deterministicas de categoria, producto de stock real, proveedor/perfil de encargues y producto `SPECIAL_ORDER` con color. El E2E ahora valida busqueda, selector de categorias, ordenamiento, agregado al carrito, limite de stock, checkout normal, seleccion de color, checkout directo de encargo y popup/reserva por WhatsApp. El build del preview dentro del QA fuerza `VITE_API_URL` a la API local usada por el script para no depender de `.env.production`.
+- Impacto: el gate frontend deja de ser solo navegacion/rutas y pasa a detectar regresiones en interacciones criticas de venta antes del deploy. Los fixtures quedan controlados por el propio script y se actualizan en cada corrida para mantener stock/precio/estado esperados.
+- Alternativas consideradas: depender de productos existentes o cubrir estos flujos solo con unit tests; descartado porque los datos reales pueden cambiar y los unit tests no validan integracion navegador + frontend + API + storage + checkout.
+- Archivos / modulos afectados: `next-stack/scripts/qa/qa-frontend-e2e.mjs`, `next-stack/docs/qa/TESTING_STRATEGY.md`, `CHANGELOG_AI.md`, `project-docs/DECISIONS_LOG.md`.
+- Validacion requerida: `qa:frontend:e2e`, `typecheck --workspace @nico/web`, `test --workspace @nico/web`, `build --workspace @nico/web`, `git diff --check`.
+- Responsable: Codex + operador humano
+
+---
+
 ### [DL-0137]
 - Fecha: 2026-05-08
 - Estado: aceptada

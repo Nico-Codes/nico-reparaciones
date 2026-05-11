@@ -160,6 +160,10 @@ function extractTokens(payload) {
   };
 }
 
+function assert(condition, message) {
+  if (!condition) throw new Error(message);
+}
+
 async function apiRequest(path, init = {}) {
   const res = await fetch(`${API_URL}${path}`, {
     ...init,
@@ -171,6 +175,25 @@ async function apiRequest(path, init = {}) {
   });
   const data = await res.json().catch(() => ({}));
   return { res, data };
+}
+
+async function authApiRequest(session, path, init = {}) {
+  const res = await fetch(`${API_URL}${path}`, {
+    ...init,
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${session.accessToken}`,
+      ...(init.headers || {}),
+    },
+  });
+  const data = await res.json().catch(() => ({}));
+  return { res, data };
+}
+
+function assertApiOk(result, label) {
+  if (result.res.ok) return;
+  throw new Error(`${label} fallo (${result.res.status}): ${JSON.stringify(result.data).slice(0, 500)}`);
 }
 
 async function loginSession(email, password) {
@@ -235,6 +258,315 @@ async function createUserSession() {
   return session;
 }
 
+function flattenAdminCategories(items = []) {
+  const out = [];
+  for (const item of items) {
+    if (!item || typeof item !== 'object') continue;
+    out.push(item);
+    out.push(...flattenAdminCategories(Array.isArray(item.children) ? item.children : []));
+  }
+  return out;
+}
+
+async function ensureE2ECategory(session) {
+  const slug = 'e2e-qa';
+  const name = 'E2E QA';
+  const categories = await authApiRequest(session, '/catalog-admin/categories');
+  assertApiOk(categories, 'listar categorias fixture');
+  const existing = flattenAdminCategories(categories.data.items).find((item) => item.slug === slug);
+  if (existing) return existing;
+
+  const created = await authApiRequest(session, '/catalog-admin/categories', {
+    method: 'POST',
+    body: JSON.stringify({ name, slug, parentId: null, active: true }),
+  });
+  assertApiOk(created, 'crear categoria fixture');
+  return created.data.item;
+}
+
+async function ensureE2EInventoryProduct(session, categoryId) {
+  const slug = 'e2e-stock-product';
+  const payload = {
+    name: 'E2E Stock Product',
+    slug,
+    description: 'Producto fixture para simulaciones E2E de carrito y checkout.',
+    price: 12345,
+    costPrice: 8000,
+    stock: 2,
+    active: true,
+    featured: true,
+    categoryId,
+    sku: null,
+    barcode: null,
+  };
+
+  const listed = await authApiRequest(session, `/catalog-admin/products?q=${encodeURIComponent(slug)}`);
+  assertApiOk(listed, 'buscar producto stock fixture');
+  const existing = (listed.data.items ?? []).find((item) => item.slug === slug);
+  if (existing) {
+    const updated = await authApiRequest(session, `/catalog-admin/products/${encodeURIComponent(existing.id)}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+    assertApiOk(updated, 'actualizar producto stock fixture');
+    return updated.data.item;
+  }
+
+  const created = await authApiRequest(session, '/catalog-admin/products', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  assertApiOk(created, 'crear producto stock fixture');
+  return created.data.item;
+}
+
+async function ensureE2ESupplier(session) {
+  const name = 'E2E Encargues';
+  const listed = await authApiRequest(session, `/admin/providers?q=${encodeURIComponent(name)}`);
+  assertApiOk(listed, 'buscar proveedor fixture');
+  const existing = (listed.data.items ?? []).find((item) => item.name === name);
+  if (existing) return existing;
+
+  const created = await authApiRequest(session, '/admin/providers', {
+    method: 'POST',
+    body: JSON.stringify({
+      name,
+      active: true,
+      searchPriority: 999,
+      searchEnabled: false,
+      searchInRepairs: false,
+      searchMode: 'html',
+      searchEndpoint: null,
+      searchConfigJson: null,
+      notes: 'Proveedor fixture para QA E2E.',
+    }),
+  });
+  assertApiOk(created, 'crear proveedor fixture');
+  return created.data.item;
+}
+
+async function ensureE2ESpecialOrderProfile(session, supplierId) {
+  const name = 'E2E Encargues';
+  const listed = await authApiRequest(session, '/catalog-admin/special-order-profiles');
+  assertApiOk(listed, 'listar perfiles de encargue fixture');
+  const payload = {
+    supplierId,
+    name,
+    active: true,
+    defaultUsdRate: 1000,
+    defaultShippingUsd: 10,
+    fallbackMarginPercent: 20,
+    defaultColorSheetUrl: null,
+    rememberColorSheet: false,
+    requiresColorVariants: true,
+  };
+  const existing = (listed.data.items ?? []).find((item) => item.name === name);
+  if (existing) {
+    const updated = await authApiRequest(session, `/catalog-admin/special-order-profiles/${encodeURIComponent(existing.id)}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+    assertApiOk(updated, 'actualizar perfil de encargue fixture');
+    return updated.data.item;
+  }
+
+  const created = await authApiRequest(session, '/catalog-admin/special-order-profiles', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  assertApiOk(created, 'crear perfil de encargue fixture');
+  return created.data.item;
+}
+
+async function applyE2ESpecialOrderImport(session, profileId) {
+  const rawText = `
+*SAMSUNG*
+Samsung E2E S25 12/1TB 5G DS $1000
+`;
+  const colorCsvText = `
+SAMSUNG;;;
+Samsung E2E S25 1TB 5G DS;Negro;;Stock
+Samsung E2E S25 1TB 5G DS;Azul;;Sin Stock
+`;
+  const applied = await authApiRequest(session, '/catalog-admin/special-order-imports/apply', {
+    method: 'POST',
+    body: JSON.stringify({
+      profileId,
+      rawText,
+      usdRate: 1000,
+      shippingUsd: 10,
+      colorCsvText,
+      excludedSectionKeys: [],
+      excludedSourceKeys: [],
+      excludedRowIds: [],
+      rememberExclusions: false,
+    }),
+  });
+  assertApiOk(applied, 'aplicar importacion de encargue fixture');
+}
+
+async function findPublicProductByQuery(query, predicate) {
+  const result = await apiRequest(`/store/products?q=${encodeURIComponent(query)}&pageSize=10`);
+  assertApiOk(result, `buscar producto publico ${query}`);
+  const item = (result.data.items ?? []).find(predicate);
+  if (!item) throw new Error(`No se encontro producto publico fixture para ${query}`);
+  return item;
+}
+
+async function ensureE2EStoreFixtures(adminSession) {
+  const category = await ensureE2ECategory(adminSession);
+  const inventoryProduct = await ensureE2EInventoryProduct(adminSession, category.id);
+  const supplier = await ensureE2ESupplier(adminSession);
+  const profile = await ensureE2ESpecialOrderProfile(adminSession, supplier.id);
+  await applyE2ESpecialOrderImport(adminSession, profile.id);
+
+  const settings = await authApiRequest(adminSession, '/admin/settings', {
+    method: 'PATCH',
+    body: JSON.stringify({
+      items: [
+        {
+          key: 'shop_phone',
+          value: '+5493410000000',
+          group: 'business',
+          label: 'Telefono WhatsApp',
+          type: 'text',
+        },
+      ],
+    }),
+  });
+  assertApiOk(settings, 'configurar WhatsApp local fixture');
+
+  const publicInventoryProduct = await findPublicProductByQuery(
+    inventoryProduct.name,
+    (item) => item.slug === inventoryProduct.slug && item.fulfillmentMode === 'INVENTORY',
+  );
+  const specialOrderProduct = await findPublicProductByQuery(
+    'Samsung E2E S25',
+    (item) => item.fulfillmentMode === 'SPECIAL_ORDER' && item.name.includes('Samsung E2E S25'),
+  );
+  const availableSpecialOrderColor = specialOrderProduct.colorOptions.find(
+    (option) => option.active && option.supplierAvailability === 'IN_STOCK',
+  );
+  assert(availableSpecialOrderColor, 'El producto por encargue fixture no tiene color disponible');
+
+  return {
+    category,
+    inventoryProduct: publicInventoryProduct,
+    specialOrderProduct,
+    availableSpecialOrderColor,
+  };
+}
+
+async function clearCartStorage(page) {
+  await page.evaluate(() => {
+    localStorage.removeItem('nico_next_cart');
+    window.dispatchEvent(new Event('nico-next-cart-changed'));
+  });
+}
+
+async function exerciseStoreCatalogInteractions(page, fixtures) {
+  await gotoAndCheck(page, `${WEB_URL}/store`, {
+    label: '/store catalog interactions',
+    selectors: ['[data-store-shell]', 'input[placeholder*="iPhone"]'],
+  });
+
+  await page.locator('.store-desktop-search input').fill(fixtures.inventoryProduct.name);
+  await page.locator('.store-filter-grid__apply').click();
+  await page.waitForURL((url) => url.pathname === '/store' && url.searchParams.get('q') === fixtures.inventoryProduct.name, {
+    timeout: 10000,
+  });
+  await page.locator('.product-card').filter({ hasText: fixtures.inventoryProduct.name }).first().waitFor({ timeout: 15000 });
+
+  await page.locator('.store-categories__trigger--category').click();
+  await page.locator('.store-category-picker__search input').fill(fixtures.category.name);
+  await page.locator('.store-category-option').filter({ hasText: fixtures.category.name }).first().click();
+  await page.locator('.store-category-child').filter({ hasText: `Todo en ${fixtures.category.name}` }).first().click();
+  await page.waitForURL((url) => url.pathname === '/store' && url.searchParams.get('category') === fixtures.category.slug, {
+    timeout: 10000,
+  });
+
+  await page.locator('button[aria-label="Ordenar productos"]').click();
+  const priceAscendingOption = page.locator('button[role="option"]').filter({ hasText: 'Menor precio' }).first();
+  await priceAscendingOption.waitFor({ state: 'attached', timeout: 10000 });
+  await priceAscendingOption.evaluate((option) => option.click());
+  await page.waitForURL((url) => url.pathname === '/store' && url.searchParams.get('sort') === 'price_asc', {
+    timeout: 10000,
+  });
+
+  await assertNoMojibake(page, '/store catalog interactions');
+}
+
+async function exerciseInventoryCartCheckoutFlow(page, fixtures) {
+  await clearCartStorage(page);
+  await gotoAndCheck(page, `${WEB_URL}/store?q=${encodeURIComponent(fixtures.inventoryProduct.name)}`, {
+    label: '/store inventory add to cart',
+    selectors: ['[data-store-shell]'],
+  });
+
+  const productCard = page.locator('.product-card').filter({ hasText: fixtures.inventoryProduct.name }).first();
+  await productCard.waitFor({ timeout: 15000 });
+  await productCard.locator('button[aria-label="Agregar al carrito"]').click();
+  await page.waitForFunction(
+    (productId) => {
+      const items = JSON.parse(localStorage.getItem('nico_next_cart') || '[]');
+      return Array.isArray(items) && items.some((item) => item.productId === productId && item.quantity === 1);
+    },
+    fixtures.inventoryProduct.id,
+    { timeout: 10000 },
+  );
+
+  await gotoAndCheck(page, `${WEB_URL}/cart`, {
+    label: '/cart inventory line',
+    selectors: ['text=/Carrito/i', `text=${fixtures.inventoryProduct.name}`],
+  });
+
+  const line = page.locator('.cart-line-item').filter({ hasText: fixtures.inventoryProduct.name }).first();
+  const plus = line.locator('button[aria-label="Sumar"]');
+  await plus.click();
+  await line.locator('.quantity-stepper__value').filter({ hasText: '2' }).waitFor({ timeout: 10000 });
+  await plus.dispatchEvent('click');
+  await page.locator('.cart-stock-popup').filter({ hasText: 'Stock maximo alcanzado' }).waitFor({ timeout: 10000 });
+
+  await page.getByRole('button', { name: /Finalizar compra/i }).click();
+  await page.waitForURL((url) => url.pathname === '/checkout', { timeout: 10000 });
+  await page.waitForSelector('text=/Pago/i', { timeout: 15000 });
+  await page.getByRole('button', { name: /Confirmar pedido/i }).click();
+  await page.waitForURL((url) => url.pathname.startsWith('/orders/'), { timeout: 15000 });
+  await page.waitForSelector('text=/Detalle del pedido/i', { timeout: 15000 });
+  await page.waitForSelector(`text=${fixtures.inventoryProduct.name}`, { timeout: 15000 });
+}
+
+async function exerciseSpecialOrderReservationFlow(page, fixtures) {
+  await clearCartStorage(page);
+  await gotoAndCheck(page, `${WEB_URL}/store?q=${encodeURIComponent('Samsung E2E S25')}`, {
+    label: '/store special order card',
+    selectors: ['[data-store-shell]'],
+  });
+
+  const productCard = page.locator('.product-card').filter({ hasText: fixtures.specialOrderProduct.name }).first();
+  await productCard.waitFor({ timeout: 15000 });
+  await productCard.getByRole('button', { name: /Encargar/i }).click();
+  await page.waitForURL((url) => url.pathname === `/store/${fixtures.specialOrderProduct.slug}`, { timeout: 10000 });
+  await page.waitForSelector('text=/Elegi un color/i', { timeout: 15000 });
+  await page.getByRole('button', { name: new RegExp(`^${fixtures.availableSpecialOrderColor.label}$`, 'i') }).click();
+  await page.getByRole('button', { name: /Encargar ahora/i }).click();
+  await page.waitForURL((url) => url.pathname === '/checkout' && url.searchParams.get('mode') === 'special-order', {
+    timeout: 10000,
+  });
+  await page.waitForSelector('text=/Reserva por WhatsApp/i', { timeout: 15000 });
+
+  const confirm = page.getByRole('button', { name: /Confirmar reserva/i });
+  assert(await confirm.isDisabled(), 'La reserva por encargue debe exigir aceptar condiciones antes de confirmar');
+  await page.getByRole('checkbox').check();
+  assert(!(await confirm.isDisabled()), 'La reserva por encargue no habilito confirmar despues de aceptar condiciones');
+  await confirm.click();
+  await page.waitForURL((url) => url.pathname.startsWith('/orders/') && url.searchParams.get('reservation') === '1', {
+    timeout: 15000,
+  });
+  await page.waitForSelector('text=/Finaliza la gestion por WhatsApp/i', { timeout: 15000 });
+  await page.waitForSelector('text=/Reserva por encargo/i', { timeout: 15000 });
+}
+
 async function main() {
   let apiProcess;
   let preview;
@@ -259,7 +591,12 @@ async function main() {
     const webUp = await isUp(`${WEB_URL}/`);
     if (!webUp) {
       console.log('[E2E] Building web...');
-      await runNpm(['run', 'build', '--workspace', '@nico/web']);
+      await runNpm(['run', 'build', '--workspace', '@nico/web'], {
+        env: {
+          ...process.env,
+          VITE_API_URL: API_BASE_URL,
+        },
+      });
       console.log('[E2E] Starting web preview...');
       preview = startNpm(['run', 'preview:prod', '--workspace', '@nico/web']);
       await waitFor(`${WEB_URL}/`);
@@ -383,6 +720,7 @@ async function main() {
 
     // Real admin session
     const adminSession = await createAdminSession();
+    const fixtures = await ensureE2EStoreFixtures(adminSession);
     await setSession(page, adminSession);
 
     const adminRoutes = [
@@ -504,9 +842,13 @@ async function main() {
       selectors: ['[data-store-shell]'],
     });
 
+    await exerciseStoreCatalogInteractions(page, fixtures);
+    await exerciseInventoryCartCheckoutFlow(page, fixtures);
+    await exerciseSpecialOrderReservationFlow(page, fixtures);
+
     await clearSession(page);
 
-    console.log('\n[E2E] Frontend smoke OK (real backend session)');
+    console.log('\n[E2E] Frontend smoke OK (real backend session + habitual interactions)');
   } finally {
     if (browser) await browser.close().catch(() => {});
     if (preview) await killTree(preview);

@@ -13,6 +13,27 @@
 ---
 
 ### 2026-05-08 - Codex
+- Alcance: ampliar `qa:frontend:e2e` con simulaciones reales de tareas habituales de comprador.
+- Tipo de intervencion: E2E frontend con fixtures deterministicas contra API real y documentacion QA.
+- Archivos tocados:
+  - `next-stack/scripts/qa/qa-frontend-e2e.mjs`
+  - `next-stack/docs/qa/TESTING_STRATEGY.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ?Cambio comportamiento funcional?: No en la app. Cambia el comportamiento del QA: ahora crea/actualiza fixtures y valida flujos completos de tienda, carrito, checkout y encargues.
+- Validaciones ejecutadas:
+  - `build --workspace @nico/web`
+  - `qa:frontend:e2e`
+  - `typecheck --workspace @nico/web`
+  - `test --workspace @nico/web`
+  - `qa:test-inventory`
+  - `git diff --check`
+- Riesgos / notas:
+  - El E2E compila el preview con `VITE_API_URL` local para evitar que un `.env.production` apunte a dominios externos durante QA.
+
+---
+
+### 2026-05-08 - Codex
 - Alcance: completar cobertura directa de los modulos/features que habian quedado como warnings en `qa:test-inventory`.
 - Tipo de intervencion: tests unitarios adicionales y extraccion menor de helper frontend testeable.
 - Archivos tocados:

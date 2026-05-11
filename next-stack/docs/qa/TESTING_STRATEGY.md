@@ -35,6 +35,8 @@ Snapshot de cobertura directa al cierre de `V1.348-TestCoverageComplete`:
   - Build web + preview + rutas publicas base.
 - `npm run qa:frontend:e2e`
   - Frontend contra API real, sesiones admin/user, aliases, rutas protegidas y rutas admin principales.
+  - Simula tareas habituales de comprador con fixtures deterministicas: busqueda en tienda, selector de categorias, ordenamiento, agregar stock real al carrito, limite de stock, checkout normal, producto por encargue con color obligatorio y reserva por WhatsApp.
+  - Compila el preview con `VITE_API_URL` apuntando a la API local del QA para no depender de `.env.production`.
 - `npm run qa:admin:visual`
   - Captura visual de pantallas admin clave.
 
