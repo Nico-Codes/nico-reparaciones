@@ -35,6 +35,7 @@ enum RepairStatus {
 enum RepairPricingSnapshotSource {
   RULE_ONLY
   SUPPLIER_PART
+  INTERNAL_STOCK
   MANUAL_OVERRIDE
 }
 
@@ -144,6 +145,8 @@ model Product {
   stock       Int         @default(0)
   fulfillmentMode ProductFulfillmentMode @default(INVENTORY)
   supplierAvailability SupplierAvailability @default(UNKNOWN)
+  publishedToStore Boolean @default(true)
+  repairUsageEnabled Boolean @default(false)
   specialOrderProfileId String?
   specialOrderSourceKey String?
   sourcePriceUsd Decimal? @db.Decimal(12, 2)
@@ -160,11 +163,16 @@ model Product {
   supplier    Supplier?   @relation(fields: [supplierId], references: [id], onDelete: SetNull)
   specialOrderProfile SpecialOrderImportProfile? @relation(fields: [specialOrderProfileId], references: [id], onDelete: SetNull)
   colorVariants ProductColorVariant[]
+  repairApplicabilities RepairPartApplicability[]
+  stockMovements ProductStockMovement[]
+  internalRepairPricingSnapshots RepairPricingSnapshot[] @relation("InternalRepairPricingProduct")
   orderItems  OrderItem[]
   productPricingRules ProductPricingRule[]
 
   @@index([supplierId])
   @@index([fulfillmentMode, active])
+  @@index([publishedToStore, active])
+  @@index([repairUsageEnabled, active])
   @@index([specialOrderProfileId])
   @@unique([specialOrderProfileId, specialOrderSourceKey])
 }
@@ -263,12 +271,35 @@ model Repair {
   events            RepairEventLog[]
   activePricingSnapshot RepairPricingSnapshot? @relation("RepairActivePricingSnapshot", fields: [activePricingSnapshotId], references: [id], onDelete: SetNull)
   pricingSnapshots  RepairPricingSnapshot[] @relation("RepairPricingSnapshots")
+  stockMovements    ProductStockMovement[]
 
   @@index([deviceTypeId])
   @@index([deviceBrandId])
   @@index([deviceModelId])
   @@index([deviceIssueTypeId])
   @@index([activePricingSnapshotId])
+}
+
+model RepairPartApplicability {
+  id                 String   @id @default(cuid())
+  productId          String
+  deviceTypeId       String?
+  deviceBrandId      String?
+  deviceModelGroupId String?
+  deviceModelId      String?
+  deviceIssueTypeId  String?
+  notes              String?
+  active             Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  product            Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, active])
+  @@index([deviceTypeId])
+  @@index([deviceBrandId])
+  @@index([deviceModelGroupId])
+  @@index([deviceModelId])
+  @@index([deviceIssueTypeId])
 }
 
 model RepairEventLog {
@@ -334,6 +365,12 @@ model RepairPricingSnapshot {
   partBrandSnapshot         String?
   partUrlSnapshot           String?
   partAvailabilitySnapshot  String?
+  internalProductId         String?
+  internalProductNameSnapshot String?
+  internalProductSkuSnapshot String?
+  internalProductApplicabilityId String?
+  internalProductStockBefore Int?
+  internalProductStockAfter  Int?
   quantity                  Int                         @default(1)
   deviceTypeIdSnapshot      String?
   deviceBrandIdSnapshot     String?
@@ -361,13 +398,37 @@ model RepairPricingSnapshot {
   repair                    Repair                      @relation("RepairPricingSnapshots", fields: [repairId], references: [id], onDelete: Cascade)
   pricingRule               RepairPricingRule?          @relation(fields: [pricingRuleId], references: [id], onDelete: SetNull)
   supplier                  Supplier?                   @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  internalProduct           Product?                    @relation("InternalRepairPricingProduct", fields: [internalProductId], references: [id], onDelete: SetNull)
   activeForRepair           Repair?                     @relation("RepairActivePricingSnapshot")
+  stockMovements            ProductStockMovement[]
 
   @@index([repairId, createdAt])
   @@index([status])
   @@index([source])
   @@index([supplierId])
+  @@index([internalProductId])
   @@index([pricingRuleId])
+}
+
+model ProductStockMovement {
+  id                String   @id @default(cuid())
+  productId         String
+  repairId          String?
+  pricingSnapshotId String?
+  type              String
+  quantityDelta     Int
+  stockBefore       Int
+  stockAfter        Int
+  notes             String?
+  createdAt         DateTime @default(now())
+  product           Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  repair            Repair?  @relation(fields: [repairId], references: [id], onDelete: SetNull)
+  pricingSnapshot   RepairPricingSnapshot? @relation(fields: [pricingSnapshotId], references: [id], onDelete: SetNull)
+
+  @@index([productId, createdAt])
+  @@index([repairId, createdAt])
+  @@index([pricingSnapshotId])
+  @@index([type])
 }
 
 model DeviceBrand {

@@ -38,6 +38,8 @@ export type AdminProduct = {
   stock: number;
   fulfillmentMode: 'INVENTORY' | 'SPECIAL_ORDER';
   supplierAvailability: 'IN_STOCK' | 'OUT_OF_STOCK' | 'UNKNOWN';
+  publishedToStore: boolean;
+  repairUsageEnabled: boolean;
   sourcePriceUsd: number | null;
   active: boolean;
   featured: boolean;
@@ -67,7 +69,22 @@ export type AdminProduct = {
     sourceSheetRow: number | null;
     sourceSheetKey: string | null;
   }>;
+  repairApplicabilities: AdminRepairPartApplicability[];
   lastImportedAt: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+};
+
+export type AdminRepairPartApplicability = {
+  id: string;
+  productId: string;
+  deviceTypeId: string | null;
+  deviceBrandId: string | null;
+  deviceModelGroupId: string | null;
+  deviceModelId: string | null;
+  deviceIssueTypeId: string | null;
+  notes: string | null;
+  active: boolean;
   createdAt: string | null;
   updatedAt: string | null;
 };
@@ -263,13 +280,40 @@ export const catalogAdminApi = {
   deleteCategory(id: string) {
     return authJsonRequest<{ ok: boolean }>(`/catalog-admin/categories/${encodeURIComponent(id)}`, { method: 'DELETE' });
   },
-  products(params?: { q?: string; categoryId?: string; active?: string; fulfillmentMode?: string }) {
+  products(params?: { q?: string; categoryId?: string; active?: string; fulfillmentMode?: string; publishedToStore?: string; repairUsageEnabled?: string }) {
     const qs = new URLSearchParams();
     if (params?.q) qs.set('q', params.q);
     if (params?.categoryId) qs.set('categoryId', params.categoryId);
     if (params?.active) qs.set('active', params.active);
     if (params?.fulfillmentMode) qs.set('fulfillmentMode', params.fulfillmentMode);
+    if (params?.publishedToStore) qs.set('publishedToStore', params.publishedToStore);
+    if (params?.repairUsageEnabled) qs.set('repairUsageEnabled', params.repairUsageEnabled);
     return authJsonRequest<{ items: AdminProduct[] }>('/catalog-admin/products' + (qs.size ? `?${qs.toString()}` : ''));
+  },
+  repairPartSuggestions(params: {
+    deviceTypeId?: string | null;
+    deviceBrandId?: string | null;
+    deviceModelGroupId?: string | null;
+    deviceModelId?: string | null;
+    deviceIssueTypeId?: string | null;
+    deviceBrand?: string | null;
+    deviceModel?: string | null;
+    issueLabel?: string | null;
+    limit?: number;
+  }) {
+    const qs = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value != null && String(value).trim()) qs.set(key, String(value));
+    });
+    return authJsonRequest<{
+      items: Array<{
+        product: AdminProduct;
+        applicability: AdminRepairPartApplicability;
+        score: number;
+        matchKind: 'exact' | 'probable';
+      }>;
+      meta: { total: number };
+    }>(`/catalog-admin/repair-parts/suggestions${qs.size ? `?${qs.toString()}` : ''}`);
   },
   product(id: string) {
     return authJsonRequest<{ item: AdminProduct }>(`/catalog-admin/products/${encodeURIComponent(id)}`);
@@ -314,6 +358,47 @@ export const catalogAdminApi = {
         method: 'PATCH',
         body: JSON.stringify(input),
       },
+    );
+  },
+  createRepairPartApplicability(
+    id: string,
+    input: Partial<{
+      deviceTypeId: string | null;
+      deviceBrandId: string | null;
+      deviceModelGroupId: string | null;
+      deviceModelId: string | null;
+      deviceIssueTypeId: string | null;
+      notes: string | null;
+      active: boolean;
+    }>,
+  ) {
+    return authJsonRequest<{ item: AdminProduct }>(`/catalog-admin/products/${encodeURIComponent(id)}/repair-applicabilities`, {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  },
+  updateRepairPartApplicability(
+    id: string,
+    applicabilityId: string,
+    input: Partial<{
+      deviceTypeId: string | null;
+      deviceBrandId: string | null;
+      deviceModelGroupId: string | null;
+      deviceModelId: string | null;
+      deviceIssueTypeId: string | null;
+      notes: string | null;
+      active: boolean;
+    }>,
+  ) {
+    return authJsonRequest<{ item: AdminProduct }>(
+      `/catalog-admin/products/${encodeURIComponent(id)}/repair-applicabilities/${encodeURIComponent(applicabilityId)}`,
+      { method: 'PATCH', body: JSON.stringify(input) },
+    );
+  },
+  deleteRepairPartApplicability(id: string, applicabilityId: string) {
+    return authJsonRequest<{ item: AdminProduct }>(
+      `/catalog-admin/products/${encodeURIComponent(id)}/repair-applicabilities/${encodeURIComponent(applicabilityId)}`,
+      { method: 'DELETE' },
     );
   },
   specialOrderProfiles() {

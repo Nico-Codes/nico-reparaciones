@@ -13,6 +13,8 @@ export type AdminProductsStats = {
   lowStock: number;
   noStock: number;
   specialOrder: number;
+  repairUsage: number;
+  unpublishedRepairParts: number;
 };
 
 export type AdminProductsStockTone = 'success' | 'warning' | 'danger';
@@ -42,6 +44,18 @@ export const ADMIN_PRODUCTS_FULFILLMENT_OPTIONS: ProductSelectOption[] = [
   { value: 'SPECIAL_ORDER', label: 'Por encargue' },
 ];
 
+export const ADMIN_PRODUCTS_STORE_OPTIONS: ProductSelectOption[] = [
+  { value: '', label: 'Publicacion tienda' },
+  { value: '1', label: 'Publicados' },
+  { value: '0', label: 'No publicados' },
+];
+
+export const ADMIN_PRODUCTS_REPAIR_USAGE_OPTIONS: ProductSelectOption[] = [
+  { value: '', label: 'Uso reparaciones' },
+  { value: '1', label: 'Usados en reparaciones' },
+  { value: '0', label: 'No usados en reparaciones' },
+];
+
 export function formatAdminProductMoney(value: number) {
   return money(value);
 }
@@ -67,6 +81,8 @@ export function buildAdminProductsStats(products: AdminProduct[]): AdminProducts
     lowStock: inventoryProducts.filter((product) => product.stock > 0 && product.stock <= 3).length,
     noStock: inventoryProducts.filter((product) => product.stock <= 0).length,
     specialOrder: products.filter((product) => product.fulfillmentMode === 'SPECIAL_ORDER').length,
+    repairUsage: products.filter((product) => product.repairUsageEnabled).length,
+    unpublishedRepairParts: products.filter((product) => product.repairUsageEnabled && !product.publishedToStore).length,
   };
 }
 
@@ -75,6 +91,8 @@ export function filterAdminProducts(
   featuredFilter: string,
   stockFilter: string,
   fulfillmentFilter: string,
+  publishedToStoreFilter = '',
+  repairUsageFilter = '',
 ) {
   return products
     .filter((product) => {
@@ -82,6 +100,10 @@ export function filterAdminProducts(
       if (featuredFilter === '0' && product.featured) return false;
       if (fulfillmentFilter === 'INVENTORY' && product.fulfillmentMode !== 'INVENTORY') return false;
       if (fulfillmentFilter === 'SPECIAL_ORDER' && product.fulfillmentMode !== 'SPECIAL_ORDER') return false;
+      if (publishedToStoreFilter === '1' && !product.publishedToStore) return false;
+      if (publishedToStoreFilter === '0' && product.publishedToStore) return false;
+      if (repairUsageFilter === '1' && !product.repairUsageEnabled) return false;
+      if (repairUsageFilter === '0' && product.repairUsageEnabled) return false;
       if (stockFilter && product.fulfillmentMode === 'SPECIAL_ORDER') return false;
       if (stockFilter === 'with' && product.stock <= 0) return false;
       if (stockFilter === 'empty' && product.stock > 0) return false;
@@ -97,6 +119,8 @@ export function hasAdminProductFilters(filters: {
   featuredFilter: string;
   stockFilter: string;
   fulfillmentFilter: string;
+  publishedToStoreFilter?: string;
+  repairUsageFilter?: string;
 }) {
   return Boolean(
     filters.q.trim() ||
@@ -104,7 +128,9 @@ export function hasAdminProductFilters(filters: {
       filters.activeFilter ||
       filters.featuredFilter ||
       filters.stockFilter ||
-      filters.fulfillmentFilter,
+      filters.fulfillmentFilter ||
+      filters.publishedToStoreFilter ||
+      filters.repairUsageFilter,
   );
 }
 

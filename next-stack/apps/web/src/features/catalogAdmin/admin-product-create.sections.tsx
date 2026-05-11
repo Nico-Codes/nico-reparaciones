@@ -76,6 +76,8 @@ type AdminProductCreateFormLayoutProps = {
   description: string;
   active: boolean;
   featured: boolean;
+  publishedToStore: boolean;
+  repairUsageEnabled: boolean;
   imagePreview: string | null;
   imageFileName: string | null;
   saving: boolean;
@@ -100,6 +102,8 @@ type AdminProductCreateFormLayoutProps = {
   onDescriptionChange: (value: string) => void;
   onActiveChange: (value: boolean) => void;
   onFeaturedChange: (value: boolean) => void;
+  onPublishedToStoreChange: (value: boolean) => void;
+  onRepairUsageEnabledChange: (value: boolean) => void;
   onApplyRecommendedPrice: () => void;
   onFileChange: (file: File | null) => void;
   onRemoveImage: () => void;
@@ -126,6 +130,8 @@ export function AdminProductCreateFormLayout({
   description,
   active,
   featured,
+  publishedToStore,
+  repairUsageEnabled,
   imagePreview,
   imageFileName,
   saving,
@@ -150,6 +156,8 @@ export function AdminProductCreateFormLayout({
   onDescriptionChange,
   onActiveChange,
   onFeaturedChange,
+  onPublishedToStoreChange,
+  onRepairUsageEnabledChange,
   onApplyRecommendedPrice,
   onFileChange,
   onRemoveImage,
@@ -241,6 +249,8 @@ export function AdminProductCreateFormLayout({
 
           <div className="choice-grid mt-4">
             <BooleanChoice checked={active} onChange={onActiveChange} title="Producto activo" hint="Disponible para publicar y vender dentro del sistema." />
+            <BooleanChoice checked={publishedToStore} onChange={onPublishedToStoreChange} title="Publicar en tienda" hint="Si esta apagado, conserva stock interno pero no aparece en la tienda." />
+            <BooleanChoice checked={repairUsageEnabled} onChange={onRepairUsageEnabledChange} title="Usar en reparaciones" hint="Permite sugerir este producto como repuesto interno compatible." />
             <BooleanChoice checked={featured} onChange={onFeaturedChange} title="Producto destacado" hint="Se usa para reforzar visibilidad en módulos comerciales." />
           </div>
         </SectionCard>

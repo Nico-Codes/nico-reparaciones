@@ -101,9 +101,9 @@ export type RepairProviderPartPricingPreviewInput = {
 };
 
 export type RepairPricingSnapshotDraft = {
-  source: 'SUPPLIER_PART';
+  source: 'SUPPLIER_PART' | 'INTERNAL_STOCK';
   status: 'DRAFT';
-  supplierId: string;
+  supplierId: string | null;
   supplierNameSnapshot: string;
   supplierSearchQuery: string | null;
   supplierEndpointSnapshot: string | null;
@@ -113,6 +113,12 @@ export type RepairPricingSnapshotDraft = {
   partBrandSnapshot: string | null;
   partUrlSnapshot: string | null;
   partAvailabilitySnapshot: string | null;
+  internalProductId?: string | null;
+  internalProductNameSnapshot?: string | null;
+  internalProductSkuSnapshot?: string | null;
+  internalProductApplicabilityId?: string | null;
+  internalProductStockBefore?: number | null;
+  internalProductStockAfter?: number | null;
   quantity: number;
   deviceTypeIdSnapshot: string | null;
   deviceBrandIdSnapshot: string | null;
@@ -135,6 +141,22 @@ export type RepairPricingSnapshotDraft = {
   suggestedQuotedPrice: number | null;
   appliedQuotedPrice: number | null;
   manualOverridePrice: number | null;
+};
+
+export type RepairInternalPartPricingPreviewInput = {
+  productId: string;
+  applicabilityId?: string | null;
+  quantity?: number;
+  extraCost?: number | null;
+  shippingCost?: number | null;
+  deviceTypeId?: string | null;
+  deviceBrandId?: string | null;
+  deviceModelGroupId?: string | null;
+  deviceModelId?: string | null;
+  deviceIssueTypeId?: string | null;
+  deviceBrand?: string | null;
+  deviceModel?: string | null;
+  issueLabel?: string | null;
 };
 
 export type RepairProviderPartPricingPreviewResult = {
@@ -177,6 +199,26 @@ export type RepairProviderPartPricingPreviewResult = {
     coversBaseCost: boolean | null;
   };
   snapshotDraft: RepairPricingSnapshotDraft | null;
+};
+
+export type RepairInternalPartPricingPreviewResult = Omit<RepairProviderPartPricingPreviewResult, 'supplier' | 'part'> & {
+  product: {
+    id: string;
+    name: string;
+    sku: string | null;
+    costPrice: number | null;
+    stock: number;
+    supplier: { id: string; name: string } | null;
+    applicability: {
+      id: string;
+      deviceTypeId: string | null;
+      deviceBrandId: string | null;
+      deviceModelGroupId: string | null;
+      deviceModelId: string | null;
+      deviceIssueTypeId: string | null;
+      notes: string | null;
+    } | null;
+  };
 };
 
 export type AdminRepairDetailResponse = {
@@ -302,6 +344,12 @@ export const repairsApi = {
   },
   pricingProviderPartPreview(input: RepairProviderPartPricingPreviewInput) {
     return authJsonRequest<RepairProviderPartPricingPreviewResult>('/pricing/repairs/provider-part-preview', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  },
+  pricingInternalPartPreview(input: RepairInternalPartPricingPreviewInput) {
+    return authJsonRequest<RepairInternalPartPricingPreviewResult>('/pricing/repairs/internal-part-preview', {
       method: 'POST',
       body: JSON.stringify(input),
     });

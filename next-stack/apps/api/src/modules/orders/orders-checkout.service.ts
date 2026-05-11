@@ -59,6 +59,7 @@ export class OrdersCheckoutService {
           id: true,
           stock: true,
           active: true,
+          publishedToStore: true,
           price: true,
           name: true,
           fulfillmentMode: true,
@@ -75,7 +76,7 @@ export class OrdersCheckoutService {
 
       for (const line of validLines) {
         const product = byId.get(line.productId);
-        if (!product || !product.active) {
+        if (!product || !product.active || !product.publishedToStore) {
           throw new BadRequestException(`Producto invalido en checkout: ${line.name}`);
         }
         if (product.fulfillmentMode === 'INVENTORY' && product.stock < line.quantity) {

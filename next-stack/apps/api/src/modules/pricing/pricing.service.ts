@@ -30,6 +30,14 @@ type SupplierPartPreviewInput = ResolveInput & {
   };
 };
 
+type InternalPartPreviewInput = ResolveInput & {
+  productId: string;
+  applicabilityId?: string | null;
+  quantity?: number;
+  extraCost?: number | null;
+  shippingCost?: number | null;
+};
+
 type ResolvedRepairContext = {
   typeId: string | null;
   brandId: string | null;
@@ -107,6 +115,13 @@ type RepairPricingRuleWithCatalogIds = RepairPricingRule & {
   deviceIssueTypeId?: string | null;
   minProfit?: Prisma.Decimal | null;
 };
+
+type InternalPartProduct = Prisma.ProductGetPayload<{
+  include: {
+    repairApplicabilities: true;
+    supplier: { select: { id: true; name: true } };
+  };
+}>;
 
 @Injectable()
 export class PricingService {
@@ -337,6 +352,134 @@ export class PricingService {
     };
   }
 
+  async previewRepairInternalPartPricing(input: InternalPartPreviewInput) {
+    const productId = this.nullableId(input.productId);
+    if (!productId) throw new BadRequestException('productId es requerido');
+
+    const quantity = Math.max(1, Math.min(999, Math.round(Number(input.quantity ?? 1))));
+    const extraCost = this.toMoney(input.extraCost ?? 0);
+    const shippingCost = this.toMoney(input.shippingCost ?? 0);
+
+    const product = await this.prisma.product.findUnique({
+      where: { id: productId },
+      include: {
+        repairApplicabilities: {
+          where: input.applicabilityId ? { id: input.applicabilityId } : { active: true },
+          orderBy: [{ updatedAt: 'desc' }],
+        },
+        supplier: { select: { id: true, name: true } },
+      },
+    });
+    if (!product) throw new BadRequestException('Repuesto interno no encontrado');
+    if (product.fulfillmentMode !== 'INVENTORY' || !product.repairUsageEnabled) {
+      throw new BadRequestException('El producto no esta habilitado como repuesto interno');
+    }
+    if (!product.active) throw new BadRequestException('El repuesto interno esta inactivo');
+    if (product.stock < quantity) throw new BadRequestException('Stock insuficiente del repuesto interno');
+    if (product.costPrice == null) throw new BadRequestException('El repuesto interno no tiene costo cargado');
+
+    const applicability = product.repairApplicabilities[0] ?? null;
+    if (input.applicabilityId && !applicability) {
+      throw new BadRequestException('Compatibilidad de repuesto invalida');
+    }
+
+    await this.assertScopeConsistency({
+      deviceTypeId: input.deviceTypeId ?? null,
+      deviceBrandId: input.deviceBrandId ?? null,
+      deviceModelGroupId: input.deviceModelGroupId ?? null,
+      deviceModelId: input.deviceModelId ?? null,
+      deviceIssueTypeId: input.deviceIssueTypeId ?? null,
+    });
+
+    const context = await this.resolvePricingContext(input);
+    this.assertProviderPartPreviewContext(context);
+
+    const rule = await this.findBestRule(context);
+    const unitCost = this.toMoney(Number(product.costPrice));
+    const baseCost = this.roundMoney(unitCost * quantity);
+    const costSubtotal = this.roundMoney(baseCost + extraCost);
+
+    if (!rule) {
+      return {
+        matched: false,
+        input: this.serializeResolvedContext(context),
+        product: this.serializeInternalPartProduct(product, applicability),
+        calculation: {
+          unitCost,
+          quantity,
+          baseCost,
+          extraCost,
+          shippingCost,
+          costSubtotal,
+          marginPercent: null,
+          marginAmount: null,
+          appliedShippingFee: null,
+          suggestedQuotedPrice: null,
+          coversBaseCost: null,
+        },
+        rule: null,
+        snapshotDraft: null,
+      };
+    }
+
+    const pricing = this.buildProviderPartSuggestion(rule, {
+      unitCost,
+      quantity,
+      extraCost,
+      shippingCost,
+    });
+
+    return {
+      matched: true,
+      input: this.serializeResolvedContext(context),
+      product: this.serializeInternalPartProduct(product, applicability),
+      rule: this.serializeRule(rule),
+      calculation: pricing,
+      snapshotDraft: {
+        source: 'INTERNAL_STOCK',
+        status: 'DRAFT',
+        supplierId: null,
+        supplierNameSnapshot: product.supplier?.name ?? 'Stock interno',
+        supplierSearchQuery: null,
+        supplierEndpointSnapshot: null,
+        externalPartId: product.id,
+        partSkuSnapshot: this.nullable(product.sku),
+        partNameSnapshot: product.name,
+        partBrandSnapshot: null,
+        partUrlSnapshot: null,
+        partAvailabilitySnapshot: 'in_stock',
+        internalProductId: product.id,
+        internalProductNameSnapshot: product.name,
+        internalProductSkuSnapshot: this.nullable(product.sku),
+        internalProductApplicabilityId: applicability?.id ?? null,
+        internalProductStockBefore: product.stock,
+        internalProductStockAfter: product.stock - quantity,
+        quantity,
+        deviceTypeIdSnapshot: context.typeId,
+        deviceBrandIdSnapshot: context.brandId,
+        deviceModelGroupIdSnapshot: context.modelGroupId,
+        deviceModelIdSnapshot: context.modelId,
+        deviceIssueTypeIdSnapshot: context.issueTypeId,
+        deviceBrandSnapshot: context.brand || null,
+        deviceModelSnapshot: context.model || null,
+        issueLabelSnapshot: context.issue || null,
+        baseCost,
+        extraCost,
+        shippingCost,
+        pricingRuleId: rule.id,
+        pricingRuleNameSnapshot: rule.name,
+        calcModeSnapshot: rule.calcMode === 'FIXED_TOTAL' ? 'FIXED_TOTAL' : 'BASE_PLUS_MARGIN',
+        marginPercentSnapshot: Number(rule.profitPercent),
+        minProfitSnapshot: rule.minProfit != null ? Number(rule.minProfit) : null,
+        minFinalPriceSnapshot: rule.minFinalPrice != null ? Number(rule.minFinalPrice) : null,
+        shippingFeeSnapshot: rule.shippingFee != null ? Number(rule.shippingFee) : null,
+        suggestedQuotedPrice: pricing.suggestedQuotedPrice,
+        appliedQuotedPrice: null,
+        manualOverridePrice: null,
+      },
+    };
+  }
+
   private async resolvePricingContext(input: ResolveInput): Promise<ResolvedRepairContext> {
     let typeId = this.nullableId(input.deviceTypeId);
     const brandId = this.nullableId(input.deviceBrandId);
@@ -387,6 +530,31 @@ export class PricingService {
       deviceBrand: context.brand,
       deviceModel: context.model,
       issueLabel: context.issue,
+    };
+  }
+
+  private serializeInternalPartProduct(
+    product: InternalPartProduct,
+    applicability: InternalPartProduct['repairApplicabilities'][number] | null,
+  ) {
+    return {
+      id: product.id,
+      name: product.name,
+      sku: product.sku ?? null,
+      costPrice: product.costPrice != null ? Number(product.costPrice) : null,
+      stock: product.stock,
+      supplier: product.supplier ? { id: product.supplier.id, name: product.supplier.name } : null,
+      applicability: applicability
+        ? {
+            id: applicability.id,
+            deviceTypeId: applicability.deviceTypeId ?? null,
+            deviceBrandId: applicability.deviceBrandId ?? null,
+            deviceModelGroupId: applicability.deviceModelGroupId ?? null,
+            deviceModelId: applicability.deviceModelId ?? null,
+            deviceIssueTypeId: applicability.deviceIssueTypeId ?? null,
+            notes: applicability.notes ?? null,
+          }
+        : null,
     };
   }
 

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { PageHeader } from '@/components/ui/page-header';
 import { PageShell } from '@/components/ui/page-shell';
 import { adminApi } from '@/features/admin/api';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { catalogAdminApi, type AdminCategory } from './api';
 import {
   AdminProductCreateFeedback,
@@ -20,6 +20,8 @@ import { productPricingApi } from './productPricingApi';
 
 export function AdminProductCreatePage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isRepairPartPreset = searchParams.get('tipo') === 'repuesto';
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -39,6 +41,8 @@ export function AdminProductCreatePage() {
   const [description, setDescription] = useState('');
   const [featured, setFeatured] = useState(false);
   const [active, setActive] = useState(true);
+  const [publishedToStore, setPublishedToStore] = useState(!isRepairPartPreset);
+  const [repairUsageEnabled, setRepairUsageEnabled] = useState(isRepairPartPreset);
 
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -168,6 +172,8 @@ export function AdminProductCreatePage() {
           slug,
           costPrice,
           price,
+          stock,
+          repairUsageEnabled,
         },
         preventNegativeMargin,
       );
@@ -191,6 +197,8 @@ export function AdminProductCreatePage() {
           description,
           featured,
           active,
+          publishedToStore,
+          repairUsageEnabled,
         }),
       );
 
@@ -213,7 +221,7 @@ export function AdminProductCreatePage() {
       <PageHeader
         context="admin"
         eyebrow="Catálogo"
-        title="Nuevo producto"
+        title={isRepairPartPreset ? 'Nuevo repuesto interno' : 'Nuevo producto'}
         subtitle="Alta completa con precio, stock, publicación e imagen desde una vista administrativa más clara y ordenada."
         actions={<AdminProductCreateHeaderActions />}
       />
@@ -239,6 +247,8 @@ export function AdminProductCreatePage() {
         description={description}
         active={active}
         featured={featured}
+        publishedToStore={publishedToStore}
+        repairUsageEnabled={repairUsageEnabled}
         imagePreview={imagePreview}
         imageFileName={imageFile?.name ?? null}
         saving={saving}
@@ -263,6 +273,8 @@ export function AdminProductCreatePage() {
         onDescriptionChange={setDescription}
         onActiveChange={setActive}
         onFeaturedChange={setFeatured}
+        onPublishedToStoreChange={setPublishedToStore}
+        onRepairUsageEnabledChange={setRepairUsageEnabled}
         onApplyRecommendedPrice={() => setPrice(String(recommendedPrice ?? 0))}
         onFileChange={(file) => {
           if (!file) return;

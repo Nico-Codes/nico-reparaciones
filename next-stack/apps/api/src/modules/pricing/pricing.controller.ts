@@ -4,7 +4,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { Roles } from '../auth/roles.decorator.js';
 import { RolesGuard } from '../auth/roles.guard.js';
 import { PricingService } from './pricing.service.js';
-import { repairProviderPartPreviewSchema, repairRulePatchSchema, repairRuleSchema } from './pricing.schemas.js';
+import { repairInternalPartPreviewSchema, repairProviderPartPreviewSchema, repairRulePatchSchema, repairRuleSchema } from './pricing.schemas.js';
 
 @Controller('pricing')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -93,6 +93,28 @@ export class PricingController {
         availability: parsed.data.part.availability ?? 'unknown',
         url: parsed.data.part.url ?? null,
       },
+    });
+  }
+
+  @Post('repairs/internal-part-preview')
+  previewRepairInternalPartPricing(@Body() body: unknown) {
+    const parsed = repairInternalPartPreviewSchema.safeParse(body);
+    if (!parsed.success) throw zodBadRequest(parsed);
+
+    return this.pricingService.previewRepairInternalPartPricing({
+      productId: parsed.data.productId,
+      applicabilityId: parsed.data.applicabilityId ?? null,
+      quantity: parsed.data.quantity ?? 1,
+      extraCost: parsed.data.extraCost ?? null,
+      shippingCost: parsed.data.shippingCost ?? null,
+      deviceTypeId: parsed.data.deviceTypeId ?? parsed.data.device_type_id ?? null,
+      deviceBrandId: parsed.data.deviceBrandId ?? parsed.data.device_brand_id ?? null,
+      deviceModelGroupId: parsed.data.deviceModelGroupId ?? parsed.data.device_model_group_id ?? null,
+      deviceModelId: parsed.data.deviceModelId ?? parsed.data.device_model_id ?? null,
+      deviceIssueTypeId: parsed.data.deviceIssueTypeId ?? parsed.data.device_issue_type_id ?? parsed.data.repair_type_id ?? null,
+      deviceBrand: parsed.data.deviceBrand ?? null,
+      deviceModel: parsed.data.deviceModel ?? null,
+      issueLabel: parsed.data.issueLabel ?? null,
     });
   }
 }

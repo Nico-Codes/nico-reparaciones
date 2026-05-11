@@ -12,6 +12,34 @@
 
 ---
 
+### 2026-05-11 - Codex
+- Alcance: agregar inventario de repuestos fisicos para uso interno en reparaciones con publicacion opcional en tienda.
+- Tipo de intervencion: modelo de datos, endpoints admin, pricing interno, aplicacion transaccional de stock, UI admin/catalogo y sugerencias en reparaciones.
+- Archivos tocados:
+  - `next-stack/apps/api/prisma/schema.prisma`
+  - `next-stack/apps/api/prisma/migrations/20260511120000_add_repair_parts_inventory/`
+  - `next-stack/apps/api/src/modules/{catalog-admin,pricing,repairs,store,cart,orders}`
+  - `next-stack/apps/web/src/features/{catalogAdmin,repairs,orders}`
+  - `project-docs/DECISIONS_LOG.md`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. Los productos fisicos ahora pueden ocultarse de tienda, habilitarse como repuestos internos y sugerirse/aplicarse en reparaciones descontando stock compartido.
+- Validaciones ejecutadas:
+  - `db:generate --workspace @nico/api`
+  - `db:migrate --workspace @nico/api`
+  - `typecheck --workspace @nico/api`
+  - `test --workspace @nico/api`
+  - `build --workspace @nico/api`
+  - `typecheck --workspace @nico/web`
+  - `test --workspace @nico/web`
+  - `build --workspace @nico/web`
+  - `smoke:backend`
+  - `smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - El stock de repuestos internos es el mismo stock fisico usado por tienda cuando el producto tambien esta publicado.
+
+---
+
 ### 2026-05-08 - Codex
 - Alcance: ampliar `qa:frontend:e2e` con simulaciones reales de tareas habituales de comprador.
 - Tipo de intervencion: E2E frontend con fixtures deterministicas contra API real y documentacion QA.
@@ -20,7 +48,7 @@
   - `next-stack/docs/qa/TESTING_STRATEGY.md`
   - `project-docs/DECISIONS_LOG.md`
   - `CHANGELOG_AI.md`
-- ?Cambio comportamiento funcional?: No en la app. Cambia el comportamiento del QA: ahora crea/actualiza fixtures y valida flujos completos de tienda, carrito, checkout y encargues.
+- ¿Cambio comportamiento funcional?: No en la app. Cambia el comportamiento del QA: ahora crea/actualiza fixtures y valida flujos completos de tienda, carrito, checkout y encargues.
 - Validaciones ejecutadas:
   - `build --workspace @nico/web`
   - `qa:frontend:e2e`

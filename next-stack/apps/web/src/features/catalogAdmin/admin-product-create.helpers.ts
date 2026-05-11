@@ -15,6 +15,8 @@ export type AdminProductCreateDraft = {
   description: string;
   featured: boolean;
   active: boolean;
+  publishedToStore: boolean;
+  repairUsageEnabled: boolean;
 };
 
 export type AdminProductCreateSupplier = {
@@ -29,7 +31,8 @@ export type AdminProductCreateSummaryItem = {
 };
 
 export function validateAdminProductCreateDraft(
-  draft: Pick<AdminProductCreateDraft, 'name' | 'slug' | 'costPrice' | 'price'>,
+  draft: Pick<AdminProductCreateDraft, 'name' | 'slug' | 'costPrice' | 'price'> &
+    Partial<Pick<AdminProductCreateDraft, 'stock' | 'repairUsageEnabled'>>,
   preventNegativeMargin: boolean,
 ) {
   const trimmedName = draft.name.trim();
@@ -44,6 +47,10 @@ export function validateAdminProductCreateDraft(
   const nextPrice = Number(draft.price || 0);
   if (preventNegativeMargin && Number.isFinite(nextCost) && Number.isFinite(nextPrice) && nextPrice < nextCost) {
     return 'El precio de venta no puede quedar por debajo del costo mientras el guard de margen este activo.';
+  }
+  const nextStock = Number(draft.stock || 0);
+  if (draft.repairUsageEnabled && (!Number.isFinite(nextCost) || nextCost <= 0 || !Number.isFinite(nextStock) || nextStock < 1)) {
+    return 'Un repuesto interno necesita costo y stock inicial mayor a cero.';
   }
 
   return null;
@@ -65,6 +72,8 @@ export function buildAdminProductCreatePayload(draft: AdminProductCreateDraft) {
     description: draft.description.trim() || null,
     featured: draft.featured,
     active: draft.active,
+    publishedToStore: draft.publishedToStore,
+    repairUsageEnabled: draft.repairUsageEnabled,
   };
 }
 

@@ -19,6 +19,8 @@ export type ProductListParams = {
   categoryId?: string;
   active?: string;
   fulfillmentMode?: string;
+  publishedToStore?: string;
+  repairUsageEnabled?: string;
 };
 
 export type ProductCreateInput = {
@@ -31,6 +33,8 @@ export type ProductCreateInput = {
   stock?: number;
   active?: boolean;
   featured?: boolean;
+  publishedToStore?: boolean;
+  repairUsageEnabled?: boolean;
   sku?: string | null;
   barcode?: string | null;
   supplierId?: string | null;
@@ -47,10 +51,36 @@ export type ProductUpdateInput = {
   stock?: number;
   active?: boolean;
   featured?: boolean;
+  publishedToStore?: boolean;
+  repairUsageEnabled?: boolean;
   sku?: string | null;
   barcode?: string | null;
   supplierId?: string | null;
   categoryId?: string | null;
+};
+
+export type RepairPartApplicabilityCreateInput = {
+  deviceTypeId?: string | null;
+  deviceBrandId?: string | null;
+  deviceModelGroupId?: string | null;
+  deviceModelId?: string | null;
+  deviceIssueTypeId?: string | null;
+  notes?: string | null;
+  active?: boolean;
+};
+
+export type RepairPartApplicabilityUpdateInput = Partial<RepairPartApplicabilityCreateInput>;
+
+export type RepairPartSuggestionsInput = {
+  deviceTypeId?: string | null;
+  deviceBrandId?: string | null;
+  deviceModelGroupId?: string | null;
+  deviceModelId?: string | null;
+  deviceIssueTypeId?: string | null;
+  deviceBrand?: string | null;
+  deviceModel?: string | null;
+  issueLabel?: string | null;
+  limit?: number;
 };
 
 export type ProductColorVariantCreateInput = {
@@ -155,6 +185,9 @@ export type ProductWithRelations = Prisma.ProductGetPayload<{
         sourceSheetKey: true;
       };
       orderBy: [{ active: 'desc' }, { label: 'asc' }];
+    };
+    repairApplicabilities: {
+      orderBy: [{ active: 'desc' }, { updatedAt: 'desc' }];
     };
   };
 }>;

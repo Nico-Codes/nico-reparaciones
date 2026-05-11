@@ -5,6 +5,7 @@ import { PageShell } from '@/components/ui/page-shell';
 import { SectionCard } from '@/components/ui/section-card';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { adminApi } from '@/features/admin/api';
+import { deviceCatalogApi } from '@/features/deviceCatalog/api';
 import { Link, useParams } from 'react-router-dom';
 import { catalogAdminApi, type AdminCategory, type AdminProduct } from './api';
 import { productPricingApi } from './productPricingApi';
@@ -20,6 +21,11 @@ export function AdminProductEditPage() {
   const [product, setProduct] = useState<AdminProduct | null>(null);
   const [categories, setCategories] = useState<AdminCategory[]>([]);
   const [suppliers, setSuppliers] = useState<Array<{ id: string; name: string }>>([]);
+  const [deviceTypes, setDeviceTypes] = useState<Array<{ id: string; name: string; active: boolean }>>([]);
+  const [deviceBrands, setDeviceBrands] = useState<Array<{ id: string; deviceTypeId?: string | null; name: string; active: boolean }>>([]);
+  const [deviceModelGroups, setDeviceModelGroups] = useState<Array<{ id: string; deviceBrandId: string; name: string; active: boolean }>>([]);
+  const [deviceModels, setDeviceModels] = useState<Array<{ id: string; brandId: string; deviceModelGroupId?: string | null; name: string; active: boolean }>>([]);
+  const [deviceIssues, setDeviceIssues] = useState<Array<{ id: string; deviceTypeId?: string | null; name: string; active: boolean }>>([]);
 
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
@@ -34,6 +40,8 @@ export function AdminProductEditPage() {
   const [description, setDescription] = useState('');
   const [active, setActive] = useState(true);
   const [featured, setFeatured] = useState(false);
+  const [publishedToStore, setPublishedToStore] = useState(true);
+  const [repairUsageEnabled, setRepairUsageEnabled] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewObjectUrl, setPreviewObjectUrl] = useState<string | null>(null);
@@ -70,6 +78,8 @@ export function AdminProductEditPage() {
     setDescription(nextProduct.description ?? '');
     setActive(nextProduct.active);
     setFeatured(nextProduct.featured);
+    setPublishedToStore(nextProduct.publishedToStore);
+    setRepairUsageEnabled(nextProduct.repairUsageEnabled);
     setImagePreview(nextProduct.imageUrl ?? null);
   }
 
@@ -96,16 +106,32 @@ export function AdminProductEditPage() {
       setLoading(true);
       setError('');
       try {
-        const [categoriesResponse, productResponse, settings, providersResponse] = await Promise.all([
+        const [categoriesResponse, productResponse, settings, providersResponse, typesResponse, brandsResponse, modelsResponse, issuesResponse] = await Promise.all([
           catalogAdminApi.categories(),
           catalogAdminApi.product(id),
           productPricingApi.settings().catch(() => null),
           adminApi.providers({ active: '1' }).catch(() => ({ items: [] })),
+          adminApi.deviceTypes().catch(() => ({ items: [] })),
+          deviceCatalogApi.brands().catch(() => ({ items: [] })),
+          deviceCatalogApi.models().catch(() => ({ items: [] })),
+          deviceCatalogApi.issues().catch(() => ({ items: [] })),
         ]);
         if (!mounted) return;
 
+        const groupSettled = await Promise.allSettled(
+          brandsResponse.items.map(async (brand) => {
+            const response = await adminApi.modelGroups(brand.id);
+            return response.groups.map((group) => ({ ...group, deviceBrandId: brand.id }));
+          }),
+        );
+
         setCategories(categoriesResponse.items);
         setSuppliers(providersResponse.items.map((provider) => ({ id: provider.id, name: provider.name })));
+        setDeviceTypes(typesResponse.items);
+        setDeviceBrands(brandsResponse.items);
+        setDeviceModels(modelsResponse.items);
+        setDeviceIssues(issuesResponse.items);
+        setDeviceModelGroups(groupSettled.flatMap((result) => (result.status === 'fulfilled' ? result.value : [])));
         syncProductForm(productResponse.item);
         clearPreviewObjectUrl();
         setImageFile(null);
@@ -187,8 +213,13 @@ export function AdminProductEditPage() {
 
       const nextCost = Number(costPrice || 0);
       const nextPrice = Number(price || 0);
+      const nextStock = Number(stock || 0);
       if (preventNegativeMargin && Number.isFinite(nextCost) && Number.isFinite(nextPrice) && nextPrice < nextCost) {
         setError('El precio de venta no puede quedar por debajo del costo mientras el guard de margen este activo.');
+        return;
+      }
+      if (repairUsageEnabled && (!Number.isFinite(nextCost) || nextCost <= 0 || !Number.isFinite(nextStock) || nextStock < 1)) {
+        setError('Un repuesto interno necesita costo y stock mayor a cero.');
         return;
       }
 
@@ -206,6 +237,8 @@ export function AdminProductEditPage() {
         description: description.trim() || null,
         active,
         featured,
+        publishedToStore,
+        repairUsageEnabled,
       });
 
       let nextItem = response.item;
@@ -285,6 +318,62 @@ export function AdminProductEditPage() {
     }
   }
 
+  async function createRepairPartApplicability(input: Partial<{
+    deviceTypeId: string | null;
+    deviceBrandId: string | null;
+    deviceModelGroupId: string | null;
+    deviceModelId: string | null;
+    deviceIssueTypeId: string | null;
+    notes: string | null;
+    active: boolean;
+  }>) {
+    if (!id) return;
+    setColorSaving(true);
+    setError('');
+    setSuccess('');
+    try {
+      const response = await catalogAdminApi.createRepairPartApplicability(id, input);
+      syncProductForm(response.item);
+      setSuccess('Compatibilidad de repuesto agregada correctamente.');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No se pudo agregar la compatibilidad.');
+    } finally {
+      setColorSaving(false);
+    }
+  }
+
+  async function updateRepairPartApplicability(applicabilityId: string, input: Partial<{ active: boolean }>) {
+    if (!id) return;
+    setColorSaving(true);
+    setError('');
+    setSuccess('');
+    try {
+      const response = await catalogAdminApi.updateRepairPartApplicability(id, applicabilityId, input);
+      syncProductForm(response.item);
+      setSuccess('Compatibilidad de repuesto actualizada correctamente.');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No se pudo actualizar la compatibilidad.');
+    } finally {
+      setColorSaving(false);
+    }
+  }
+
+  async function deleteRepairPartApplicability(applicabilityId: string) {
+    if (!id) return;
+    setColorSaving(true);
+    setError('');
+    setSuccess('');
+    try {
+      const response = await catalogAdminApi.deleteRepairPartApplicability(id, applicabilityId);
+      syncProductForm(response.item);
+      setSuccess('Compatibilidad de repuesto eliminada correctamente.');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No se pudo eliminar la compatibilidad.');
+    } finally {
+      setColorSaving(false);
+    }
+  }
+
   if (loading) {
     return (
       <PageShell context="admin" className="space-y-6">
@@ -322,6 +411,11 @@ export function AdminProductEditPage() {
         product={product}
         categories={categories}
         suppliers={suppliers}
+        deviceTypes={deviceTypes}
+        deviceBrands={deviceBrands}
+        deviceModelGroups={deviceModelGroups}
+        deviceModels={deviceModels}
+        deviceIssues={deviceIssues}
         categoryOptions={categoryOptions}
         supplierOptions={supplierOptions}
         finalSlug={finalSlug}
@@ -338,6 +432,8 @@ export function AdminProductEditPage() {
         description={description}
         active={active}
         featured={featured}
+        publishedToStore={publishedToStore}
+        repairUsageEnabled={repairUsageEnabled}
         imagePreview={imagePreview}
         imageFileName={imageFile?.name ?? null}
         saving={saving}
@@ -364,6 +460,8 @@ export function AdminProductEditPage() {
         onDescriptionChange={setDescription}
         onActiveChange={setActive}
         onFeaturedChange={setFeatured}
+        onPublishedToStoreChange={setPublishedToStore}
+        onRepairUsageEnabledChange={setRepairUsageEnabled}
         onApplyRecommendedPrice={() => setPrice(String(recommendedPrice ?? 0))}
         onFileChange={handleImageSelection}
         onRemoveImage={() => void removeImage()}
@@ -371,6 +469,9 @@ export function AdminProductEditPage() {
         onNewColorAvailabilityChange={setNewColorAvailability}
         onCreateColorVariant={() => void createColorVariant()}
         onUpdateColorVariant={(variantId, input) => void updateColorVariant(variantId, input)}
+        onCreateRepairPartApplicability={(input) => void createRepairPartApplicability(input)}
+        onUpdateRepairPartApplicability={(applicabilityId, input) => void updateRepairPartApplicability(applicabilityId, input)}
+        onDeleteRepairPartApplicability={(applicabilityId) => void deleteRepairPartApplicability(applicabilityId)}
         onCancel={() => window.history.back()}
         onSave={() => void save()}
       />

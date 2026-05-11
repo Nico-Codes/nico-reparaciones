@@ -2,7 +2,7 @@ export type RepairPricingSnapshotItem = {
   id: string;
   repairId: string;
   pricingRuleId: string | null;
-  source: 'RULE_ONLY' | 'SUPPLIER_PART' | 'MANUAL_OVERRIDE';
+  source: 'RULE_ONLY' | 'SUPPLIER_PART' | 'INTERNAL_STOCK' | 'MANUAL_OVERRIDE';
   status: 'DRAFT' | 'APPLIED' | 'SUPERSEDED' | 'DISCARDED';
   supplierId: string | null;
   supplierNameSnapshot: string | null;
@@ -14,6 +14,12 @@ export type RepairPricingSnapshotItem = {
   partBrandSnapshot: string | null;
   partUrlSnapshot: string | null;
   partAvailabilitySnapshot: string | null;
+  internalProductId: string | null;
+  internalProductNameSnapshot: string | null;
+  internalProductSkuSnapshot: string | null;
+  internalProductApplicabilityId: string | null;
+  internalProductStockBefore: number | null;
+  internalProductStockAfter: number | null;
   quantity: number;
   deviceTypeIdSnapshot: string | null;
   deviceBrandIdSnapshot: string | null;

@@ -6,6 +6,7 @@ describe('StoreService', () => {
   const originalApiUrl = process.env.API_URL;
   const expectedPublicWhere = {
     active: true,
+    publishedToStore: true,
     OR: [
       { fulfillmentMode: 'INVENTORY', stock: { gt: 0 } },
       {

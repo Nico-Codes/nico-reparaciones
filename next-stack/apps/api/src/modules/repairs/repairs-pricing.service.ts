@@ -37,7 +37,7 @@ export class RepairsPricingService {
     },
   ) {
     const draft = input.draft;
-    if (draft.source !== 'SUPPLIER_PART' || draft.status !== 'DRAFT') {
+    if ((draft.source !== 'SUPPLIER_PART' && draft.source !== 'INTERNAL_STOCK') || draft.status !== 'DRAFT') {
       throw new BadRequestException('Snapshot de pricing invalido');
     }
 
@@ -77,6 +77,25 @@ export class RepairsPricingService {
       return previousActiveSnapshot.id;
     }
 
+    let internalStockMovement:
+      | {
+          productId: string;
+          stockBefore: number;
+          stockAfter: number;
+          quantity: number;
+        }
+      | null = null;
+
+    if (previousActiveSnapshot?.source === 'INTERNAL_STOCK') {
+      await this.releaseInternalStockSnapshot(tx, previousActiveSnapshot);
+    }
+
+    if (draft.source === 'INTERNAL_STOCK') {
+      internalStockMovement = await this.reserveInternalStockForDraft(tx, draft);
+      draft.internalProductStockBefore = internalStockMovement.stockBefore;
+      draft.internalProductStockAfter = internalStockMovement.stockAfter;
+    }
+
     if (input.previousActiveSnapshotId) {
       await tx.repairPricingSnapshot.updateMany({
         where: { repairId: input.repairId, id: input.previousActiveSnapshotId, status: 'APPLIED' },
@@ -99,6 +118,12 @@ export class RepairsPricingService {
         partBrandSnapshot: cleanNullable(draft.partBrandSnapshot),
         partUrlSnapshot: cleanNullable(draft.partUrlSnapshot),
         partAvailabilitySnapshot: cleanNullable(draft.partAvailabilitySnapshot) ?? 'unknown',
+        internalProductId: cleanNullable(draft.internalProductId),
+        internalProductNameSnapshot: cleanNullable(draft.internalProductNameSnapshot),
+        internalProductSkuSnapshot: cleanNullable(draft.internalProductSkuSnapshot),
+        internalProductApplicabilityId: cleanNullable(draft.internalProductApplicabilityId),
+        internalProductStockBefore: draft.internalProductStockBefore ?? null,
+        internalProductStockAfter: draft.internalProductStockAfter ?? null,
         quantity: Math.max(1, Math.min(999, Math.round(draft.quantity))),
         deviceTypeIdSnapshot: cleanNullable(draft.deviceTypeIdSnapshot),
         deviceBrandIdSnapshot: cleanNullable(draft.deviceBrandIdSnapshot),
@@ -125,6 +150,21 @@ export class RepairsPricingService {
       },
     });
 
+    if (internalStockMovement) {
+      await tx.productStockMovement.create({
+        data: {
+          productId: internalStockMovement.productId,
+          repairId: input.repairId,
+          pricingSnapshotId: created.id,
+          type: 'REPAIR_APPLY',
+          quantityDelta: -internalStockMovement.quantity,
+          stockBefore: internalStockMovement.stockBefore,
+          stockAfter: internalStockMovement.stockAfter,
+          notes: `Repuesto aplicado: ${draft.partNameSnapshot.trim()}`,
+        },
+      });
+    }
+
     await tx.repair.update({
       where: { id: input.repairId },
       data: { activePricingSnapshotId: created.id },
@@ -136,15 +176,27 @@ export class RepairsPricingService {
   private async assertValidRepairSnapshotDraft(tx: Prisma.TransactionClient, draft: RepairPricingSnapshotDraftInput) {
     const supplierId = cleanNullable(draft.supplierId);
     const pricingRuleId = cleanNullable(draft.pricingRuleId);
-    if (!supplierId) throw new BadRequestException('Proveedor invalido para el snapshot de pricing');
     if (!pricingRuleId) throw new BadRequestException('Regla de pricing invalida para el snapshot');
 
-    const [supplier, pricingRule] = await Promise.all([
-      tx.supplier.findUnique({ where: { id: supplierId }, select: { id: true } }),
+    const [supplier, pricingRule, internalProduct] = await Promise.all([
+      supplierId ? tx.supplier.findUnique({ where: { id: supplierId }, select: { id: true } }) : null,
       tx.repairPricingRule.findUnique({ where: { id: pricingRuleId }, select: { id: true } }),
+      draft.source === 'INTERNAL_STOCK' && draft.internalProductId
+        ? tx.product.findUnique({
+            where: { id: draft.internalProductId },
+            select: { id: true, active: true, repairUsageEnabled: true, fulfillmentMode: true, stock: true, costPrice: true },
+          })
+        : null,
     ]);
 
-    if (!supplier) throw new BadRequestException('Proveedor invalido para el snapshot de pricing');
+    if (draft.source === 'SUPPLIER_PART' && !supplier) throw new BadRequestException('Proveedor invalido para el snapshot de pricing');
+    if (draft.source === 'INTERNAL_STOCK') {
+      if (!internalProduct) throw new BadRequestException('Repuesto interno invalido para el snapshot');
+      if (!internalProduct.active || !internalProduct.repairUsageEnabled || internalProduct.fulfillmentMode !== 'INVENTORY') {
+        throw new BadRequestException('El producto no esta habilitado como repuesto interno');
+      }
+      if (internalProduct.costPrice == null) throw new BadRequestException('El repuesto interno no tiene costo cargado');
+    }
     if (!pricingRule) throw new BadRequestException('Regla de pricing invalida para el snapshot');
     if (!draft.partNameSnapshot.trim() || draft.partNameSnapshot.trim().length < 2) {
       throw new BadRequestException('Selecciona un repuesto valido antes de aplicar el snapshot');
@@ -191,6 +243,7 @@ export class RepairsPricingService {
   ) {
     return (
       current.source === 'SUPPLIER_PART' &&
+      draft.source === 'SUPPLIER_PART' &&
       current.supplierId === cleanNullable(draft.supplierId) &&
       (current.externalPartId ?? null) === cleanNullable(draft.externalPartId) &&
       current.partNameSnapshot === draft.partNameSnapshot.trim() &&
@@ -205,5 +258,55 @@ export class RepairsPricingService {
       sameMoney(current.appliedQuotedPrice, appliedQuotedPrice) &&
       sameMoney(current.manualOverridePrice, manualOverridePrice)
     );
+  }
+
+  private async reserveInternalStockForDraft(tx: Prisma.TransactionClient, draft: RepairPricingSnapshotDraftInput) {
+    const productId = cleanNullable(draft.internalProductId);
+    if (!productId) throw new BadRequestException('Repuesto interno invalido');
+    const quantity = Math.max(1, Math.min(999, Math.round(draft.quantity)));
+    const product = await tx.product.findUnique({
+      where: { id: productId },
+      select: { id: true, stock: true, active: true, repairUsageEnabled: true, fulfillmentMode: true },
+    });
+    if (!product || !product.active || !product.repairUsageEnabled || product.fulfillmentMode !== 'INVENTORY') {
+      throw new BadRequestException('El producto no esta habilitado como repuesto interno');
+    }
+    if (product.stock < quantity) throw new BadRequestException('Stock insuficiente del repuesto interno');
+
+    const updated = await tx.product.updateMany({
+      where: { id: product.id, stock: { gte: quantity }, active: true, repairUsageEnabled: true, fulfillmentMode: 'INVENTORY' },
+      data: { stock: { decrement: quantity } },
+    });
+    if (updated.count !== 1) throw new BadRequestException('Stock insuficiente del repuesto interno');
+
+    return {
+      productId: product.id,
+      stockBefore: product.stock,
+      stockAfter: product.stock - quantity,
+      quantity,
+    };
+  }
+
+  private async releaseInternalStockSnapshot(tx: Prisma.TransactionClient, snapshot: RepairPricingSnapshot) {
+    const productId = cleanNullable(snapshot.internalProductId);
+    if (!productId || snapshot.source !== 'INTERNAL_STOCK') return;
+    const quantity = Math.max(1, Math.min(999, Math.round(snapshot.quantity)));
+    const product = await tx.product.findUnique({ where: { id: productId }, select: { id: true, stock: true } });
+    if (!product) return;
+    const stockBefore = product.stock;
+    const stockAfter = stockBefore + quantity;
+    await tx.product.update({ where: { id: product.id }, data: { stock: { increment: quantity } } });
+    await tx.productStockMovement.create({
+      data: {
+        productId: product.id,
+        repairId: snapshot.repairId,
+        pricingSnapshotId: snapshot.id,
+        type: 'REPAIR_RELEASE',
+        quantityDelta: quantity,
+        stockBefore,
+        stockAfter,
+        notes: `Repuesto liberado: ${snapshot.partNameSnapshot}`,
+      },
+    });
   }
 }

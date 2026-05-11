@@ -93,7 +93,8 @@ export class CartService {
         ? activeColorOptions.find((variant) => variant.id === row.variantId) ?? null
         : null;
       const hasAvailableColor = activeColorOptions.some((variant) => variant.supplierAvailability === 'IN_STOCK');
-      const valid = isSpecialOrder
+      const published = product.publishedToStore;
+      const valid = published && (isSpecialOrder
         ? product.active &&
           categoryActive &&
           (
@@ -101,7 +102,7 @@ export class CartService {
               ? Boolean(selectedVariant && selectedVariant.supplierAvailability === 'IN_STOCK')
               : product.supplierAvailability !== 'OUT_OF_STOCK'
           )
-        : product.active && categoryActive && product.stock > 0;
+        : product.active && categoryActive && product.stock > 0);
 
       const quantity = isSpecialOrder
         ? Math.max(1, Math.min(row.quantity, 999))
@@ -116,6 +117,8 @@ export class CartService {
 
       const reason = !product.active
         ? 'Producto inactivo'
+        : !published
+          ? 'Producto no publicado en tienda'
         : !categoryActive
           ? 'Categoria inactiva'
           : isSpecialOrder

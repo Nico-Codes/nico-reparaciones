@@ -72,6 +72,8 @@ describe('admin-product-create.helpers', () => {
         description: '  detalle  ',
         featured: true,
         active: false,
+        publishedToStore: true,
+        repairUsageEnabled: false,
       }),
     ).toEqual({
       name: 'Bateria iPhone',
@@ -87,6 +89,8 @@ describe('admin-product-create.helpers', () => {
       description: 'detalle',
       featured: true,
       active: false,
+      publishedToStore: true,
+      repairUsageEnabled: false,
     });
   });
 

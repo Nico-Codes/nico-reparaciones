@@ -11,6 +11,9 @@ import type {
   ProductColorVariantUpdateInput,
   ProductImageUpload,
   ProductListParams,
+  RepairPartApplicabilityCreateInput,
+  RepairPartApplicabilityUpdateInput,
+  RepairPartSuggestionsInput,
   ProductPricingRuleCreateInput,
   ProductPricingRuleUpdateInput,
   ProductPricingSettingsInput,
@@ -59,6 +62,10 @@ export class CatalogAdminService {
     return this.productsService.product(id);
   }
 
+  async repairPartSuggestions(input: RepairPartSuggestionsInput) {
+    return this.productsService.repairPartSuggestions(input);
+  }
+
   async createProduct(input: ProductCreateInput) {
     return this.productsService.createProduct(input);
   }
@@ -73,6 +80,18 @@ export class CatalogAdminService {
 
   async updateProductColorVariant(productId: string, variantId: string, input: ProductColorVariantUpdateInput) {
     return this.productsService.updateProductColorVariant(productId, variantId, input);
+  }
+
+  async createRepairPartApplicability(productId: string, input: RepairPartApplicabilityCreateInput) {
+    return this.productsService.createRepairPartApplicability(productId, input);
+  }
+
+  async updateRepairPartApplicability(productId: string, applicabilityId: string, input: RepairPartApplicabilityUpdateInput) {
+    return this.productsService.updateRepairPartApplicability(productId, applicabilityId, input);
+  }
+
+  async deleteRepairPartApplicability(productId: string, applicabilityId: string) {
+    return this.productsService.deleteRepairPartApplicability(productId, applicabilityId);
   }
 
   async uploadProductImage(id: string, file: ProductImageUpload) {

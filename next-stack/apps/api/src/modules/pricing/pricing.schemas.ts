@@ -64,3 +64,28 @@ export const repairProviderPartPreviewSchema = z.object({
     url: z.string().trim().max(1000).optional().nullable(),
   }),
 });
+
+const repairPricingScopeSchema = z.object({
+  quantity: z.number().int().min(1).max(999).optional(),
+  extraCost: z.number().min(0).optional().nullable(),
+  shippingCost: z.number().min(0).optional().nullable(),
+  deviceTypeId: z.string().trim().max(191).optional().nullable(),
+  device_type_id: z.string().trim().max(191).optional().nullable(),
+  deviceBrandId: z.string().trim().max(191).optional().nullable(),
+  device_brand_id: z.string().trim().max(191).optional().nullable(),
+  deviceModelGroupId: z.string().trim().max(191).optional().nullable(),
+  device_model_group_id: z.string().trim().max(191).optional().nullable(),
+  deviceModelId: z.string().trim().max(191).optional().nullable(),
+  device_model_id: z.string().trim().max(191).optional().nullable(),
+  deviceIssueTypeId: z.string().trim().max(191).optional().nullable(),
+  device_issue_type_id: z.string().trim().max(191).optional().nullable(),
+  repair_type_id: z.string().trim().max(191).optional().nullable(),
+  deviceBrand: z.string().trim().max(120).optional().nullable(),
+  deviceModel: z.string().trim().max(120).optional().nullable(),
+  issueLabel: z.string().trim().max(190).optional().nullable(),
+});
+
+export const repairInternalPartPreviewSchema = repairPricingScopeSchema.extend({
+  productId: z.string().trim().min(1).max(191),
+  applicabilityId: z.string().trim().max(191).optional().nullable(),
+});

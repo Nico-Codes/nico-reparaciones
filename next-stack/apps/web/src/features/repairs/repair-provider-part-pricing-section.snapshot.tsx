@@ -31,9 +31,7 @@ export function RepairProviderPartPricingSnapshotPanels({
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <div className="text-xs font-semibold uppercase tracking-[0.12em] text-emerald-700">Snapshot activo</div>
-              <div className="mt-1 text-sm font-semibold text-zinc-900">
-                {activeSnapshot.supplierNameSnapshot || 'Proveedor sin nombre'} · {activeSnapshot.partNameSnapshot}
-              </div>
+              <div className="mt-1 text-sm font-semibold text-zinc-900">{snapshotTitle(activeSnapshot)}</div>
               <div className="mt-1 text-sm text-zinc-600">
                 {activeSnapshot.partSkuSnapshot ? `SKU ${activeSnapshot.partSkuSnapshot} · ` : ''}
                 {money(activeSnapshot.baseCost, 'Sin costo base')} · {activeSnapshot.pricingRuleNameSnapshot || 'Sin regla asociada'}
@@ -134,7 +132,7 @@ export function RepairProviderPartPricingSnapshotPanels({
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <div>
                         <div className="detail-panel__label">
-                          {snapshot.supplierNameSnapshot || 'Proveedor sin nombre'} · {snapshot.partNameSnapshot}
+                          {snapshotTitle(snapshot)}
                         </div>
                         <div className="mt-1 text-sm font-semibold text-zinc-900">
                           {money(snapshot.baseCost, 'Sin costo base')}
@@ -177,4 +175,9 @@ export function RepairProviderPartPricingSnapshotPanels({
       ) : null}
     </>
   );
+}
+
+function snapshotTitle(snapshot: RepairPricingSnapshotItem) {
+  const origin = snapshot.source === 'INTERNAL_STOCK' ? 'Stock interno' : snapshot.supplierNameSnapshot || 'Proveedor sin nombre';
+  return `${origin} · ${snapshot.partNameSnapshot}`;
 }

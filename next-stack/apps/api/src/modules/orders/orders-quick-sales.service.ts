@@ -50,13 +50,13 @@ export class OrdersQuickSalesService {
       const productIds = validLines.map((line) => line.productId);
       const products = await tx.product.findMany({
         where: { id: { in: productIds } },
-        select: { id: true, stock: true, active: true, price: true, name: true, fulfillmentMode: true },
+        select: { id: true, stock: true, active: true, publishedToStore: true, price: true, name: true, fulfillmentMode: true },
       });
       const byId = new Map(products.map((product) => [product.id, product]));
 
       for (const line of validLines) {
         const product = byId.get(line.productId);
-        if (!product || !product.active) {
+        if (!product || !product.active || !product.publishedToStore) {
           throw new BadRequestException(`Producto invalido en venta rapida: ${line.name}`);
         }
         if (product.fulfillmentMode === 'SPECIAL_ORDER') {

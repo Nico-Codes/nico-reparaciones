@@ -14,6 +14,8 @@ import {
   ADMIN_PRODUCTS_ACTIVE_OPTIONS,
   ADMIN_PRODUCTS_FEATURED_OPTIONS,
   ADMIN_PRODUCTS_FULFILLMENT_OPTIONS,
+  ADMIN_PRODUCTS_REPAIR_USAGE_OPTIONS,
+  ADMIN_PRODUCTS_STORE_OPTIONS,
   ADMIN_PRODUCTS_STOCK_OPTIONS,
   getAdminProductFulfillmentLabel,
   buildAdminProductPriceSummary,
@@ -32,6 +34,7 @@ export function AdminProductsStatsPanel({ stats }: { stats: AdminProductsStats }
       <ProductMetricCard label="Activos" value={String(stats.active)} meta="Items disponibles para publicar y vender" />
       <ProductMetricCard label="Destacados" value={String(stats.featured)} meta="Productos reforzados en la tienda" />
       <ProductMetricCard label="Por encargue" value={String(stats.specialOrder)} meta="Catalogo publicado sin stock local" />
+      <ProductMetricCard label="Repuestos" value={String(stats.repairUsage)} meta={`${stats.unpublishedRepairParts} solo uso interno`} />
       <ProductMetricCard label="Stock critico" value={String(stats.lowStock + stats.noStock)} meta="Solo inventario real con poco stock o agotado" />
     </section>
   );
@@ -44,6 +47,8 @@ export function AdminProductsFiltersPanel({
   featuredFilter,
   stockFilter,
   fulfillmentFilter,
+  publishedToStoreFilter,
+  repairUsageFilter,
   hasFilters,
   loading,
   categoryOptions,
@@ -53,6 +58,8 @@ export function AdminProductsFiltersPanel({
   onFeaturedFilterChange,
   onStockFilterChange,
   onFulfillmentFilterChange,
+  onPublishedToStoreFilterChange,
+  onRepairUsageFilterChange,
   onClear,
   onReload,
 }: {
@@ -62,6 +69,8 @@ export function AdminProductsFiltersPanel({
   featuredFilter: string;
   stockFilter: string;
   fulfillmentFilter: string;
+  publishedToStoreFilter: string;
+  repairUsageFilter: string;
   hasFilters: boolean;
   loading: boolean;
   categoryOptions: ProductSelectOption[];
@@ -71,6 +80,8 @@ export function AdminProductsFiltersPanel({
   onFeaturedFilterChange: (value: string) => void;
   onStockFilterChange: (value: string) => void;
   onFulfillmentFilterChange: (value: string) => void;
+  onPublishedToStoreFilterChange: (value: string) => void;
+  onRepairUsageFilterChange: (value: string) => void;
   onClear: () => void;
   onReload: () => void;
 }) {
@@ -107,6 +118,8 @@ export function AdminProductsFiltersPanel({
         options={ADMIN_PRODUCTS_FULFILLMENT_OPTIONS}
         ariaLabel="Filtrar por modalidad"
       />
+      <ProductsSelectField label="Tienda" value={publishedToStoreFilter} onChange={onPublishedToStoreFilterChange} options={ADMIN_PRODUCTS_STORE_OPTIONS} ariaLabel="Filtrar por publicacion en tienda" />
+      <ProductsSelectField label="Reparaciones" value={repairUsageFilter} onChange={onRepairUsageFilterChange} options={ADMIN_PRODUCTS_REPAIR_USAGE_OPTIONS} ariaLabel="Filtrar por uso en reparaciones" />
       <ProductsSelectField label="Stock" value={stockFilter} onChange={onStockFilterChange} options={ADMIN_PRODUCTS_STOCK_OPTIONS} ariaLabel="Filtrar por stock" />
     </FilterBar>
   );
@@ -247,6 +260,8 @@ function AdminProductRow({
                 <div className="admin-entity-row__title">{product.name}</div>
                 <StatusBadge tone={product.active ? 'success' : 'neutral'} size="sm" label={product.active ? 'Activo' : 'Inactivo'} />
                 {product.featured ? <StatusBadge tone="accent" size="sm" label="Destacado" /> : null}
+                <StatusBadge tone={product.publishedToStore ? 'success' : 'neutral'} size="sm" label={product.publishedToStore ? 'Publicado tienda' : 'No publicado'} />
+                {product.repairUsageEnabled ? <StatusBadge tone="info" size="sm" label="Uso reparaciones" /> : null}
                 <StatusBadge
                   tone={isSpecialOrder ? 'accent' : 'info'}
                   size="sm"
@@ -394,6 +409,30 @@ function AdminProductRow({
               >
                 <span>Destacado</span>
                 <StatusBadge tone={product.featured ? 'accent' : 'neutral'} size="sm" label={product.featured ? 'Si' : 'No'} />
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onPatchProduct(product.id, { publishedToStore: !product.publishedToStore });
+                  close();
+                }}
+                disabled={pending}
+                className="dropdown-item flex items-center justify-between gap-2 disabled:pointer-events-none disabled:opacity-60"
+              >
+                <span>Tienda</span>
+                <StatusBadge tone={product.publishedToStore ? 'success' : 'neutral'} size="sm" label={product.publishedToStore ? 'Publicado' : 'Oculto'} />
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onPatchProduct(product.id, { repairUsageEnabled: !product.repairUsageEnabled });
+                  close();
+                }}
+                disabled={pending || product.fulfillmentMode !== 'INVENTORY'}
+                className="dropdown-item flex items-center justify-between gap-2 disabled:pointer-events-none disabled:opacity-60"
+              >
+                <span>Reparaciones</span>
+                <StatusBadge tone={product.repairUsageEnabled ? 'info' : 'neutral'} size="sm" label={product.repairUsageEnabled ? 'Si' : 'No'} />
               </button>
               <Link to={`/admin/productos/${encodeURIComponent(product.id)}/etiqueta`} onClick={close} className="dropdown-item">
                 Etiqueta

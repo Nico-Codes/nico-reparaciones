@@ -21,6 +21,8 @@ function makeProduct(
     costPrice: null,
     fulfillmentMode: 'INVENTORY',
     supplierAvailability: 'IN_STOCK',
+    publishedToStore: true,
+    repairUsageEnabled: false,
     sourcePriceUsd: null,
     sku: null,
     barcode: null,
@@ -32,6 +34,7 @@ function makeProduct(
     hasColorOptions: false,
     requiresColorSelection: false,
     colorOptions: [],
+    repairApplicabilities: [],
     lastImportedAt: null,
     createdAt: null,
     updatedAt: null,
@@ -64,6 +67,8 @@ describe('admin-products.helpers', () => {
       lowStock: 1,
       noStock: 1,
       specialOrder: 1,
+      repairUsage: 0,
+      unpublishedRepairParts: 0,
     });
     expect(filterAdminProducts(products, '1', '', '')).toHaveLength(1);
     expect(filterAdminProducts(products, '', 'empty', '')).toHaveLength(1);

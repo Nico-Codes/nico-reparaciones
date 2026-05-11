@@ -27,6 +27,8 @@ const productCreateSchema = z.object({
   stock: z.number().int().min(0).max(999999).optional(),
   active: z.boolean().optional(),
   featured: z.boolean().optional(),
+  publishedToStore: z.boolean().optional(),
+  repairUsageEnabled: z.boolean().optional(),
   sku: z.string().trim().max(120).optional().nullable(),
   barcode: z.string().trim().max(190).optional().nullable(),
   purchaseReference: z.string().trim().max(190).optional().nullable(),
@@ -41,6 +43,16 @@ const productColorVariantCreateSchema = z.object({
   active: z.boolean().optional(),
 });
 const productColorVariantPatchSchema = productColorVariantCreateSchema.partial();
+const repairPartApplicabilitySchema = z.object({
+  deviceTypeId: z.string().trim().max(191).optional().nullable(),
+  deviceBrandId: z.string().trim().max(191).optional().nullable(),
+  deviceModelGroupId: z.string().trim().max(191).optional().nullable(),
+  deviceModelId: z.string().trim().max(191).optional().nullable(),
+  deviceIssueTypeId: z.string().trim().max(191).optional().nullable(),
+  notes: z.string().trim().max(1000).optional().nullable(),
+  active: z.boolean().optional(),
+});
+const repairPartApplicabilityPatchSchema = repairPartApplicabilitySchema.partial();
 
 const specialOrderProfileSchema = z.object({
   supplierId: z.string().trim().min(1).max(191),
@@ -135,8 +147,37 @@ export class CatalogAdminController {
     @Query('categoryId') categoryId?: string,
     @Query('active') active?: string,
     @Query('fulfillmentMode') fulfillmentMode?: string,
+    @Query('publishedToStore') publishedToStore?: string,
+    @Query('repairUsageEnabled') repairUsageEnabled?: string,
   ) {
-    return this.service.products({ q, categoryId, active, fulfillmentMode });
+    return this.service.products({ q, categoryId, active, fulfillmentMode, publishedToStore, repairUsageEnabled });
+  }
+
+  @Get('repair-parts/suggestions')
+  repairPartSuggestions(
+    @Query('deviceTypeId') deviceTypeId?: string,
+    @Query('deviceBrandId') deviceBrandId?: string,
+    @Query('deviceModelGroupId') deviceModelGroupId?: string,
+    @Query('deviceModelId') deviceModelId?: string,
+    @Query('deviceIssueTypeId') deviceIssueTypeId?: string,
+    @Query('deviceBrand') deviceBrand?: string,
+    @Query('deviceModel') deviceModel?: string,
+    @Query('issueLabel') issueLabel?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const parsed = z.object({
+      deviceTypeId: z.string().trim().max(191).optional().nullable(),
+      deviceBrandId: z.string().trim().max(191).optional().nullable(),
+      deviceModelGroupId: z.string().trim().max(191).optional().nullable(),
+      deviceModelId: z.string().trim().max(191).optional().nullable(),
+      deviceIssueTypeId: z.string().trim().max(191).optional().nullable(),
+      deviceBrand: z.string().trim().max(120).optional().nullable(),
+      deviceModel: z.string().trim().max(120).optional().nullable(),
+      issueLabel: z.string().trim().max(190).optional().nullable(),
+      limit: z.coerce.number().int().min(1).max(50).optional(),
+    }).safeParse({ deviceTypeId, deviceBrandId, deviceModelGroupId, deviceModelId, deviceIssueTypeId, deviceBrand, deviceModel, issueLabel, limit });
+    if (!parsed.success) throw zodBadRequest(parsed);
+    return this.service.repairPartSuggestions(parsed.data);
   }
 
   @Get('products/:id')
@@ -170,6 +211,25 @@ export class CatalogAdminController {
     const parsed = productColorVariantPatchSchema.safeParse(body);
     if (!parsed.success) throw zodBadRequest(parsed);
     return this.service.updateProductColorVariant(id, variantId, parsed.data);
+  }
+
+  @Post('products/:id/repair-applicabilities')
+  createRepairPartApplicability(@Param('id') id: string, @Body() body: unknown) {
+    const parsed = repairPartApplicabilitySchema.safeParse(body);
+    if (!parsed.success) throw zodBadRequest(parsed);
+    return this.service.createRepairPartApplicability(id, parsed.data);
+  }
+
+  @Patch('products/:id/repair-applicabilities/:applicabilityId')
+  updateRepairPartApplicability(@Param('id') id: string, @Param('applicabilityId') applicabilityId: string, @Body() body: unknown) {
+    const parsed = repairPartApplicabilityPatchSchema.safeParse(body);
+    if (!parsed.success) throw zodBadRequest(parsed);
+    return this.service.updateRepairPartApplicability(id, applicabilityId, parsed.data);
+  }
+
+  @Delete('products/:id/repair-applicabilities/:applicabilityId')
+  deleteRepairPartApplicability(@Param('id') id: string, @Param('applicabilityId') applicabilityId: string) {
+    return this.service.deleteRepairPartApplicability(id, applicabilityId);
   }
 
   @Post('products/:id/image')

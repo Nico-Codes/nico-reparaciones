@@ -1,9 +1,9 @@
 import type { Prisma } from '@prisma/client';
 
 export type RepairPricingSnapshotDraftInput = {
-  source: 'SUPPLIER_PART';
+  source: 'SUPPLIER_PART' | 'INTERNAL_STOCK';
   status: 'DRAFT';
-  supplierId: string;
+  supplierId?: string | null;
   supplierNameSnapshot: string;
   supplierSearchQuery?: string | null;
   supplierEndpointSnapshot?: string | null;
@@ -13,6 +13,12 @@ export type RepairPricingSnapshotDraftInput = {
   partBrandSnapshot?: string | null;
   partUrlSnapshot?: string | null;
   partAvailabilitySnapshot?: 'in_stock' | 'out_of_stock' | 'unknown' | null;
+  internalProductId?: string | null;
+  internalProductNameSnapshot?: string | null;
+  internalProductSkuSnapshot?: string | null;
+  internalProductApplicabilityId?: string | null;
+  internalProductStockBefore?: number | null;
+  internalProductStockAfter?: number | null;
   quantity: number;
   deviceTypeIdSnapshot?: string | null;
   deviceBrandIdSnapshot?: string | null;

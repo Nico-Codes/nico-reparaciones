@@ -20,6 +20,11 @@ export type AdminProductEditFormLayoutProps = {
   product: AdminProduct;
   categories: AdminCategory[];
   suppliers: Array<{ id: string; name: string }>;
+  deviceTypes: Array<{ id: string; name: string; active: boolean }>;
+  deviceBrands: Array<{ id: string; deviceTypeId?: string | null; name: string; active: boolean }>;
+  deviceModelGroups: Array<{ id: string; deviceBrandId: string; name: string; active: boolean }>;
+  deviceModels: Array<{ id: string; brandId: string; deviceModelGroupId?: string | null; name: string; active: boolean }>;
+  deviceIssues: Array<{ id: string; deviceTypeId?: string | null; name: string; active: boolean }>;
   categoryOptions: ProductSelectOption[];
   supplierOptions: ProductSelectOption[];
   finalSlug: string;
@@ -36,6 +41,8 @@ export type AdminProductEditFormLayoutProps = {
   description: string;
   active: boolean;
   featured: boolean;
+  publishedToStore: boolean;
+  repairUsageEnabled: boolean;
   imagePreview: string | null;
   imageFileName: string | null;
   saving: boolean;
@@ -62,6 +69,8 @@ export type AdminProductEditFormLayoutProps = {
   onDescriptionChange: (value: string) => void;
   onActiveChange: (value: boolean) => void;
   onFeaturedChange: (value: boolean) => void;
+  onPublishedToStoreChange: (value: boolean) => void;
+  onRepairUsageEnabledChange: (value: boolean) => void;
   onApplyRecommendedPrice: () => void;
   onFileChange: (file: File | null) => void;
   onRemoveImage: () => void;
@@ -72,6 +81,17 @@ export type AdminProductEditFormLayoutProps = {
     variantId: string,
     input: Partial<{ label: string; supplierAvailability: 'IN_STOCK' | 'OUT_OF_STOCK' | 'UNKNOWN'; active: boolean }>,
   ) => void;
+  onCreateRepairPartApplicability: (input: Partial<{
+    deviceTypeId: string | null;
+    deviceBrandId: string | null;
+    deviceModelGroupId: string | null;
+    deviceModelId: string | null;
+    deviceIssueTypeId: string | null;
+    notes: string | null;
+    active: boolean;
+  }>) => void;
+  onUpdateRepairPartApplicability: (applicabilityId: string, input: Partial<{ active: boolean }>) => void;
+  onDeleteRepairPartApplicability: (applicabilityId: string) => void;
   onCancel: () => void;
   onSave: () => void;
 };
@@ -93,6 +113,8 @@ function AdminProductEditMainPanels({
   description,
   active,
   featured,
+  publishedToStore,
+  repairUsageEnabled,
   recommendedPrice,
   recommendedMarginPercent,
   recommendedRuleName,
@@ -113,6 +135,8 @@ function AdminProductEditMainPanels({
   onDescriptionChange,
   onActiveChange,
   onFeaturedChange,
+  onPublishedToStoreChange,
+  onRepairUsageEnabledChange,
   onApplyRecommendedPrice,
 }: Pick<
   AdminProductEditFormLayoutProps,
@@ -132,6 +156,8 @@ function AdminProductEditMainPanels({
   | 'description'
   | 'active'
   | 'featured'
+  | 'publishedToStore'
+  | 'repairUsageEnabled'
   | 'recommendedPrice'
   | 'recommendedMarginPercent'
   | 'recommendedRuleName'
@@ -152,6 +178,8 @@ function AdminProductEditMainPanels({
   | 'onDescriptionChange'
   | 'onActiveChange'
   | 'onFeaturedChange'
+  | 'onPublishedToStoreChange'
+  | 'onRepairUsageEnabledChange'
   | 'onApplyRecommendedPrice'
 >) {
   return (
@@ -248,6 +276,18 @@ function AdminProductEditMainPanels({
             onChange={onActiveChange}
             title="Producto activo"
             hint="Disponible para vender y mostrar en el flujo comercial."
+          />
+          <BooleanChoice
+            checked={publishedToStore}
+            onChange={onPublishedToStoreChange}
+            title="Publicar en tienda"
+            hint="Si esta apagado, el producto queda como stock interno."
+          />
+          <BooleanChoice
+            checked={repairUsageEnabled}
+            onChange={onRepairUsageEnabledChange}
+            title="Usar en reparaciones"
+            hint="Permite sugerir este producto como repuesto interno compatible."
           />
           <BooleanChoice
             checked={featured}
@@ -362,6 +402,140 @@ function AdminProductEditColorPanel({
   );
 }
 
+function AdminProductEditRepairApplicabilityPanel({
+  product,
+  disabled,
+  deviceTypes,
+  deviceBrands,
+  deviceModelGroups,
+  deviceModels,
+  deviceIssues,
+  onCreateRepairPartApplicability,
+  onUpdateRepairPartApplicability,
+  onDeleteRepairPartApplicability,
+}: {
+  product: AdminProduct;
+  disabled: boolean;
+  deviceTypes: AdminProductEditFormLayoutProps['deviceTypes'];
+  deviceBrands: AdminProductEditFormLayoutProps['deviceBrands'];
+  deviceModelGroups: AdminProductEditFormLayoutProps['deviceModelGroups'];
+  deviceModels: AdminProductEditFormLayoutProps['deviceModels'];
+  deviceIssues: AdminProductEditFormLayoutProps['deviceIssues'];
+  onCreateRepairPartApplicability: AdminProductEditFormLayoutProps['onCreateRepairPartApplicability'];
+  onUpdateRepairPartApplicability: AdminProductEditFormLayoutProps['onUpdateRepairPartApplicability'];
+  onDeleteRepairPartApplicability: AdminProductEditFormLayoutProps['onDeleteRepairPartApplicability'];
+}) {
+  const [deviceTypeId, setDeviceTypeId] = useState('');
+  const [deviceBrandId, setDeviceBrandId] = useState('');
+  const [deviceModelGroupId, setDeviceModelGroupId] = useState('');
+  const [deviceModelId, setDeviceModelId] = useState('');
+  const [deviceIssueTypeId, setDeviceIssueTypeId] = useState('');
+  const [notes, setNotes] = useState('');
+
+  if (!product.repairUsageEnabled) return null;
+
+  const typeOptions = buildSimpleOptions(deviceTypes, 'Todos los tipos');
+  const brandOptions = buildSimpleOptions(
+    deviceBrands.filter((item) => !deviceTypeId || item.deviceTypeId === deviceTypeId),
+    'Todas las marcas',
+  );
+  const groupOptions = buildSimpleOptions(
+    deviceModelGroups.filter((item) => !deviceBrandId || item.deviceBrandId === deviceBrandId),
+    'Todos los grupos',
+  );
+  const modelOptions = buildSimpleOptions(
+    deviceModels.filter((item) => !deviceBrandId || item.brandId === deviceBrandId),
+    'Todos los modelos',
+  );
+  const issueOptions = buildSimpleOptions(
+    deviceIssues.filter((item) => !deviceTypeId || !item.deviceTypeId || item.deviceTypeId === deviceTypeId),
+    'Todas las fallas',
+  );
+  const hasScope = Boolean(deviceTypeId || deviceBrandId || deviceModelGroupId || deviceModelId || deviceIssueTypeId);
+
+  return (
+    <SectionCard
+      title="Compatibilidad para reparaciones"
+      description="Define cuando este producto debe sugerirse como repuesto interno antes de buscar proveedor externo."
+      actions={<StatusBadge tone={product.repairApplicabilities.length ? 'info' : 'warning'} size="sm" label={`${product.repairApplicabilities.length} reglas`} />}
+    >
+      <div className="grid gap-3">
+        <SelectField label="Tipo" value={deviceTypeId} onChange={(value) => { setDeviceTypeId(value); setDeviceBrandId(''); setDeviceModelGroupId(''); setDeviceModelId(''); setDeviceIssueTypeId(''); }} options={typeOptions} ariaLabel="Tipo compatible" />
+        <SelectField label="Marca" value={deviceBrandId} onChange={(value) => { setDeviceBrandId(value); setDeviceModelGroupId(''); setDeviceModelId(''); }} options={brandOptions} ariaLabel="Marca compatible" />
+        <SelectField label="Grupo" value={deviceModelGroupId} onChange={setDeviceModelGroupId} options={groupOptions} ariaLabel="Grupo compatible" />
+        <SelectField label="Modelo" value={deviceModelId} onChange={setDeviceModelId} options={modelOptions} ariaLabel="Modelo compatible" />
+        <SelectField label="Falla" value={deviceIssueTypeId} onChange={setDeviceIssueTypeId} options={issueOptions} ariaLabel="Falla compatible" />
+        <TextAreaField label="Notas" value={notes} rows={2} onChange={(event) => setNotes(event.target.value)} placeholder="Ej: modulo OLED compatible con revision A." />
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={disabled || !hasScope}
+          onClick={() => {
+            onCreateRepairPartApplicability({
+              deviceTypeId: deviceTypeId || null,
+              deviceBrandId: deviceBrandId || null,
+              deviceModelGroupId: deviceModelGroupId || null,
+              deviceModelId: deviceModelId || null,
+              deviceIssueTypeId: deviceIssueTypeId || null,
+              notes: notes.trim() || null,
+              active: true,
+            });
+            setNotes('');
+          }}
+        >
+          Agregar compatibilidad
+        </Button>
+      </div>
+
+      <div className="mt-4 space-y-2">
+        {product.repairApplicabilities.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-zinc-300 px-4 py-4 text-sm font-semibold text-zinc-500">
+            Sin compatibilidades cargadas. El repuesto no se sugerira automaticamente hasta agregar al menos una.
+          </div>
+        ) : (
+          product.repairApplicabilities.map((item) => (
+            <div key={item.id} className="rounded-2xl border border-zinc-200 bg-white px-3 py-3">
+              <div className="text-sm font-black text-zinc-900">{buildApplicabilityLabel(item, { deviceTypes, deviceBrands, deviceModelGroups, deviceModels, deviceIssues })}</div>
+              {item.notes ? <div className="mt-1 text-xs font-semibold text-zinc-500">{item.notes}</div> : null}
+              <div className="mt-2 flex flex-wrap gap-2">
+                <Button type="button" variant="outline" size="sm" disabled={disabled} onClick={() => onUpdateRepairPartApplicability(item.id, { active: !item.active })}>
+                  {item.active ? 'Desactivar' : 'Activar'}
+                </Button>
+                <Button type="button" variant="ghost" size="sm" disabled={disabled} onClick={() => onDeleteRepairPartApplicability(item.id)}>
+                  Borrar
+                </Button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </SectionCard>
+  );
+}
+
+function buildSimpleOptions(items: Array<{ id: string; name: string }>, emptyLabel: string): ProductSelectOption[] {
+  return [{ value: '', label: emptyLabel }, ...items.map((item) => ({ value: item.id, label: item.name }))];
+}
+
+function buildApplicabilityLabel(
+  item: AdminProduct['repairApplicabilities'][number],
+  catalog: Pick<AdminProductEditFormLayoutProps, 'deviceTypes' | 'deviceBrands' | 'deviceModelGroups' | 'deviceModels' | 'deviceIssues'>,
+) {
+  const values = [
+    findById(catalog.deviceTypes, item.deviceTypeId),
+    findById(catalog.deviceBrands, item.deviceBrandId),
+    findById(catalog.deviceModelGroups, item.deviceModelGroupId),
+    findById(catalog.deviceModels, item.deviceModelId),
+    findById(catalog.deviceIssues, item.deviceIssueTypeId),
+  ].filter(Boolean);
+  return values.join(' / ') || 'Alcance tecnico general';
+}
+
+function findById(items: Array<{ id: string; name: string }>, id?: string | null) {
+  return id ? items.find((item) => item.id === id)?.name ?? null : null;
+}
+
 function ColorMetric({ label, value }: { label: string; value: number }) {
   return (
     <div className="rounded-2xl border border-sky-100 bg-sky-50 px-3 py-2">
@@ -446,6 +620,11 @@ function AdminProductEditAsidePanels({
   product,
   categories,
   suppliers,
+  deviceTypes,
+  deviceBrands,
+  deviceModelGroups,
+  deviceModels,
+  deviceIssues,
   categoryId,
   supplierId,
   finalSlug,
@@ -461,6 +640,9 @@ function AdminProductEditAsidePanels({
   onNewColorAvailabilityChange,
   onCreateColorVariant,
   onUpdateColorVariant,
+  onCreateRepairPartApplicability,
+  onUpdateRepairPartApplicability,
+  onDeleteRepairPartApplicability,
   onCancel,
   onSave,
 }: Pick<
@@ -468,6 +650,11 @@ function AdminProductEditAsidePanels({
   | 'product'
   | 'categories'
   | 'suppliers'
+  | 'deviceTypes'
+  | 'deviceBrands'
+  | 'deviceModelGroups'
+  | 'deviceModels'
+  | 'deviceIssues'
   | 'categoryId'
   | 'supplierId'
   | 'finalSlug'
@@ -483,6 +670,9 @@ function AdminProductEditAsidePanels({
   | 'onNewColorAvailabilityChange'
   | 'onCreateColorVariant'
   | 'onUpdateColorVariant'
+  | 'onCreateRepairPartApplicability'
+  | 'onUpdateRepairPartApplicability'
+  | 'onDeleteRepairPartApplicability'
   | 'onCancel'
   | 'onSave'
 >) {
@@ -522,6 +712,19 @@ function AdminProductEditAsidePanels({
           </div>
         </div>
       </SectionCard>
+
+      <AdminProductEditRepairApplicabilityPanel
+        product={product}
+        disabled={colorSaving}
+        deviceTypes={deviceTypes}
+        deviceBrands={deviceBrands}
+        deviceModelGroups={deviceModelGroups}
+        deviceModels={deviceModels}
+        deviceIssues={deviceIssues}
+        onCreateRepairPartApplicability={onCreateRepairPartApplicability}
+        onUpdateRepairPartApplicability={onUpdateRepairPartApplicability}
+        onDeleteRepairPartApplicability={onDeleteRepairPartApplicability}
+      />
 
       <AdminProductEditColorPanel
         product={product}

@@ -676,6 +676,7 @@ export class StoreService {
   private buildPublicProductVisibilityWhere(): Prisma.ProductWhereInput {
     return {
       active: true,
+      publishedToStore: true,
       OR: [
         {
           fulfillmentMode: 'INVENTORY',

@@ -29,6 +29,8 @@ export function AdminProductsPage() {
   const [featuredFilter, setFeaturedFilter] = useState('');
   const [stockFilter, setStockFilter] = useState('');
   const [fulfillmentFilter, setFulfillmentFilter] = useState('');
+  const [publishedToStoreFilter, setPublishedToStoreFilter] = useState('');
+  const [repairUsageFilter, setRepairUsageFilter] = useState('');
   const [pendingProductIds, setPendingProductIds] = useState<string[]>([]);
   const productsRequestIdRef = useRef(0);
 
@@ -48,6 +50,8 @@ export function AdminProductsPage() {
         categoryId: categoryId || undefined,
         active: activeFilter || undefined,
         fulfillmentMode: fulfillmentFilter || undefined,
+        publishedToStore: publishedToStoreFilter || undefined,
+        repairUsageEnabled: repairUsageFilter || undefined,
       });
       if (requestId !== productsRequestIdRef.current) return;
       setProducts(response.items);
@@ -68,11 +72,11 @@ export function AdminProductsPage() {
 
   useEffect(() => {
     void loadProducts();
-  }, [q, categoryId, activeFilter, fulfillmentFilter]);
+  }, [q, categoryId, activeFilter, fulfillmentFilter, publishedToStoreFilter, repairUsageFilter]);
 
   const filteredProducts = useMemo(
-    () => filterAdminProducts(products, featuredFilter, stockFilter, fulfillmentFilter),
-    [products, featuredFilter, stockFilter, fulfillmentFilter],
+    () => filterAdminProducts(products, featuredFilter, stockFilter, fulfillmentFilter, publishedToStoreFilter, repairUsageFilter),
+    [products, featuredFilter, stockFilter, fulfillmentFilter, publishedToStoreFilter, repairUsageFilter],
   );
   const stats = useMemo(() => buildAdminProductsStats(products), [products]);
   const hasFilters = hasAdminProductFilters({
@@ -82,6 +86,8 @@ export function AdminProductsPage() {
     featuredFilter,
     stockFilter,
     fulfillmentFilter,
+    publishedToStoreFilter,
+    repairUsageFilter,
   });
   const categoryOptions = useMemo(
     () => buildAdminProductCategoryOptions(categories),
@@ -95,6 +101,8 @@ export function AdminProductsPage() {
     setFeaturedFilter('');
     setStockFilter('');
     setFulfillmentFilter('');
+    setPublishedToStoreFilter('');
+    setRepairUsageFilter('');
   }
 
   async function patchProduct(id: string, patch: Record<string, unknown>) {
@@ -125,6 +133,12 @@ export function AdminProductsPage() {
               <Link to="/admin/categorias">Categorias</Link>
             </Button>
             <Button asChild variant="outline" size="sm">
+              <Link to="/admin/productos/crear?tipo=repuesto">
+                <PackagePlus className="h-4 w-4" />
+                Nuevo repuesto interno
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="sm">
               <Link to="/admin/productos/encargues/nuevo">
                 <FileText className="h-4 w-4" />
                 Nuevo listado de encargue
@@ -149,6 +163,8 @@ export function AdminProductsPage() {
         featuredFilter={featuredFilter}
         stockFilter={stockFilter}
         fulfillmentFilter={fulfillmentFilter}
+        publishedToStoreFilter={publishedToStoreFilter}
+        repairUsageFilter={repairUsageFilter}
         hasFilters={hasFilters}
         loading={loading}
         categoryOptions={categoryOptions}
@@ -158,6 +174,8 @@ export function AdminProductsPage() {
         onFeaturedFilterChange={setFeaturedFilter}
         onStockFilterChange={setStockFilter}
         onFulfillmentFilterChange={setFulfillmentFilter}
+        onPublishedToStoreFilterChange={setPublishedToStoreFilter}
+        onRepairUsageFilterChange={setRepairUsageFilter}
         onClear={clearFilters}
         onReload={() => void loadProducts()}
       />

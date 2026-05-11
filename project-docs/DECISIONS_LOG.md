@@ -20,6 +20,20 @@ Registrar decisiones tecnicas confirmadas para evitar dependencia de memoria ora
 
 ---
 
+### [DL-0139]
+- Fecha: 2026-05-11
+- Estado: aceptada
+- Tema: productos fisicos como repuestos internos con publicacion opcional
+- Contexto: el inventario necesitaba cubrir repuestos de uso interno en reparaciones sin duplicar catalogo ni perder la posibilidad de vender algunos repuestos en tienda. Usar un nuevo `fulfillmentMode` excluyente para repuestos habria mezclado stock fisico con canales de uso y complicaria checkout, tienda y reparaciones.
+- Decision: mantener `fulfillmentMode=INVENTORY` para todo stock fisico y agregar flags de canal `publishedToStore` y `repairUsageEnabled`. Un producto puede quedar solo interno, solo vendible o ambos. Las compatibilidades tecnicas viven en `RepairPartApplicability`; la aplicacion en una reparacion descuenta stock en transaccion y registra `ProductStockMovement`. El pricing interno usa `Product.costPrice` como costo base y la fuente `INTERNAL_STOCK` en snapshots de reparacion.
+- Impacto: tienda, carrito, checkout y venta rapida solo exponen productos publicados; reparaciones pueden sugerir repuestos compatibles con stock y minimizar la busqueda externa. El stock es compartido cuando un repuesto tambien se publica en tienda, evitando doble fuente de verdad.
+- Alternativas consideradas: crear un modo `REPAIR_PART` separado o un catalogo paralelo de repuestos; descartado porque rompia la semantica de stock fisico, duplicaba datos y hacia mas dificil publicar opcionalmente un repuesto.
+- Archivos / modulos afectados: `next-stack/apps/api/prisma/schema.prisma`, migracion `20260511120000_add_repair_parts_inventory`, modulos API `catalog-admin`, `pricing`, `repairs`, `store`, `cart`, `orders`, features Web `catalogAdmin`, `repairs`, `orders`, `CHANGELOG_AI.md`.
+- Validacion requerida: `db:migrate --workspace @nico/api`, typecheck/test/build API y web, `smoke:backend`, `smoke:web`, `git diff --check`.
+- Responsable: Codex + operador humano
+
+---
+
 ### [DL-0138]
 - Fecha: 2026-05-08
 - Estado: aceptada
