@@ -13,6 +13,27 @@
 ---
 
 ### 2026-05-12 - Codex
+- Alcance: permitir eliminacion definitiva de proveedores con perfiles de encargue vinculados.
+- Tipo de intervencion: backend admin, UX admin y tests.
+- Archivos tocados:
+  - `next-stack/apps/api/src/modules/admin/admin-provider-registry.service.ts`
+  - `next-stack/apps/api/src/modules/admin/admin-provider-registry.service.test.ts`
+  - `next-stack/apps/web/src/features/providers/admin-providers.sections.tsx`
+- ¿Cambio comportamiento funcional?: Si. Al eliminar un proveedor con perfiles de encargue, se eliminan esos perfiles, se ocultan los productos importados vinculados y se desvincula el proveedor antes de borrar el registro.
+- Validaciones ejecutadas:
+  - `typecheck --workspace @nico/api`
+  - `test --workspace @nico/api -- admin-provider-registry.service.test.ts`
+  - `build --workspace @nico/api`
+  - `typecheck --workspace @nico/web`
+  - `test --workspace @nico/web -- admin-providers.helpers.test.ts`
+  - `build --workspace @nico/web`
+  - `git diff --check`
+- Riesgos / notas:
+  - La eliminacion definitiva deja sin historial de importacion al proveedor eliminado; si solo se quiere sacarlo de uso, conviene desactivarlo.
+
+---
+
+### 2026-05-12 - Codex
 - Alcance: corregir feedback de eliminacion de proveedores con dependencias.
 - Tipo de intervencion: UX admin.
 - Archivos tocados:

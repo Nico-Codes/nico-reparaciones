@@ -266,14 +266,30 @@ export class AdminProviderRegistryService {
     });
     if (!supplier) throw new BadRequestException('Proveedor no encontrado');
 
-    const profileCount = await this.prisma.specialOrderImportProfile.count({ where: { supplierId: id } });
-    if (profileCount > 0) {
-      throw new BadRequestException(
-        `No se puede eliminar "${supplier.name}" porque tiene ${profileCount} perfil${profileCount === 1 ? '' : 'es'} de importacion por encargue. Desactivalo si queres sacarlo de uso.`,
-      );
-    }
+    const profiles = await this.prisma.specialOrderImportProfile.findMany({
+      where: { supplierId: id },
+      select: { id: true },
+    });
+    const profileIds = profiles.map((profile) => profile.id);
 
     await this.prisma.$transaction(async (tx) => {
+      if (profileIds.length > 0) {
+        await tx.product.updateMany({
+          where: { specialOrderProfileId: { in: profileIds } },
+          data: {
+            active: false,
+            publishedToStore: false,
+            supplierId: null,
+            specialOrderProfileId: null,
+            specialOrderSourceKey: null,
+          },
+        });
+        await tx.specialOrderImportProfile.deleteMany({ where: { id: { in: profileIds } } });
+      }
+      await tx.product.updateMany({
+        where: { supplierId: id, fulfillmentMode: 'SPECIAL_ORDER' },
+        data: { active: false, publishedToStore: false, supplierId: null },
+      });
       await tx.product.updateMany({ where: { supplierId: id }, data: { supplierId: null } });
       await tx.repairPricingSnapshot.updateMany({ where: { supplierId: id }, data: { supplierId: null } });
       await tx.warrantyIncident.updateMany({ where: { supplierId: id }, data: { supplierId: null } });

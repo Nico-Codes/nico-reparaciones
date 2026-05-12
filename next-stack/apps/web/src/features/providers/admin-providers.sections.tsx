@@ -94,7 +94,7 @@ export function ProvidersConfirmDialog(props: {
   const title = isDelete ? 'Eliminar proveedor' : action.provider.active ? 'Desactivar proveedor' : 'Activar proveedor';
   const confirmLabel = isDelete ? 'Eliminar definitivamente' : action.provider.active ? 'Desactivar' : 'Activar';
   const warning = isDelete
-    ? 'Esta accion elimina el proveedor del registro. Si tiene perfiles de encargue activos, el sistema lo va a bloquear para no romper importaciones; en ese caso usa Desactivar.'
+    ? 'Esta accion elimina el proveedor del registro. Si tiene perfiles de encargue, esos perfiles se eliminan y los productos importados quedan ocultos y sin proveedor vinculado.'
     : action.provider.active
       ? 'El proveedor dejara de aparecer como activo y no participara en operaciones normales hasta que lo vuelvas a activar.'
       : 'El proveedor volvera a estar disponible para operaciones y configuraciones activas.';
