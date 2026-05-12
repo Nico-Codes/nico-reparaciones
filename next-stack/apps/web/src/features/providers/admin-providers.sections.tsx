@@ -83,17 +83,18 @@ export function ProvidersTableSection(props: {
 export function ProvidersConfirmDialog(props: {
   action: ProviderConfirmAction | null;
   pending: boolean;
+  error: string;
   onCancel: () => void;
   onConfirm: () => void;
 }) {
-  const { action, pending, onCancel, onConfirm } = props;
+  const { action, pending, error, onCancel, onConfirm } = props;
   if (!action) return null;
 
   const isDelete = action.type === 'delete';
   const title = isDelete ? 'Eliminar proveedor' : action.provider.active ? 'Desactivar proveedor' : 'Activar proveedor';
   const confirmLabel = isDelete ? 'Eliminar definitivamente' : action.provider.active ? 'Desactivar' : 'Activar';
   const warning = isDelete
-    ? 'Esta accion elimina el proveedor del registro. Si tenia productos o movimientos asociados, el historial queda sin proveedor vinculado.'
+    ? 'Esta accion elimina el proveedor del registro. Si tiene perfiles de encargue activos, el sistema lo va a bloquear para no romper importaciones; en ese caso usa Desactivar.'
     : action.provider.active
       ? 'El proveedor dejara de aparecer como activo y no participara en operaciones normales hasta que lo vuelvas a activar.'
       : 'El proveedor volvera a estar disponible para operaciones y configuraciones activas.';
@@ -110,6 +111,11 @@ export function ProvidersConfirmDialog(props: {
         <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           Proveedor: <span className="font-black">{action.provider.name}</span>
         </div>
+        {error ? (
+          <div className="mt-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm leading-6 text-rose-800">
+            <span className="font-black">No se pudo completar:</span> {error}
+          </div>
+        ) : null}
         <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <button type="button" onClick={onCancel} disabled={pending} className="btn-outline !h-11 !rounded-xl px-5 text-sm font-bold disabled:opacity-60">
             Cancelar

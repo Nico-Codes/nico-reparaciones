@@ -13,6 +13,23 @@
 ---
 
 ### 2026-05-12 - Codex
+- Alcance: corregir feedback de eliminacion de proveedores con dependencias.
+- Tipo de intervencion: UX admin.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/providers/AdminProvidersPage.tsx`
+  - `next-stack/apps/web/src/features/providers/admin-providers.sections.tsx`
+- ¿Cambio comportamiento funcional?: Si. Si un proveedor no puede eliminarse por dependencias, el popup muestra el error dentro de la ventana y aclara que los perfiles de encargue deben desactivarse en vez de eliminarse.
+- Validaciones ejecutadas:
+  - `typecheck --workspace @nico/web`
+  - `test --workspace @nico/web -- admin-providers.helpers.test.ts`
+  - `build --workspace @nico/web`
+  - `git diff --check`
+- Riesgos / notas:
+  - `Electronica Encargue` no debe eliminarse mientras tenga perfil de importacion por encargue; para sacarlo de uso corresponde desactivarlo.
+
+---
+
+### 2026-05-12 - Codex
 - Alcance: mejorar gestion de proveedores en `/admin/proveedores` y limpiar proveedores de prueba.
 - Tipo de intervencion: UX admin, endpoint backend, tests y limpieza de datos runtime.
 - Archivos tocados:

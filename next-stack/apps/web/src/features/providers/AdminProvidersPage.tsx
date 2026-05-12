@@ -20,6 +20,7 @@ export function AdminProvidersPage() {
   const [message, setMessage] = useState('');
   const [confirmAction, setConfirmAction] = useState<ProviderConfirmAction | null>(null);
   const [confirmPending, setConfirmPending] = useState(false);
+  const [confirmError, setConfirmError] = useState('');
   const [testQuery, setTestQuery] = useState('modulo a30');
   const [draft, setDraft] = useState(createInitialProviderDraft);
 
@@ -140,10 +141,12 @@ export function AdminProvidersPage() {
   }
 
   function requestToggleProvider(row: AdminProviderItem) {
+    setConfirmError('');
     setConfirmAction({ type: 'toggle', provider: row });
   }
 
   function requestDeleteProvider(row: AdminProviderItem) {
+    setConfirmError('');
     setConfirmAction({ type: 'delete', provider: row });
   }
 
@@ -163,8 +166,11 @@ export function AdminProvidersPage() {
         setMessage(`Proveedor "${confirmAction.provider.name}" eliminado.`);
       }
       setConfirmAction(null);
+      setConfirmError('');
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'No se pudo completar la accion');
+      const nextError = cause instanceof Error ? cause.message : 'No se pudo completar la accion';
+      setConfirmError(nextError);
+      setError(nextError);
       await load();
     } finally {
       setConfirmPending(false);
@@ -226,7 +232,11 @@ export function AdminProvidersPage() {
       <ProvidersConfirmDialog
         action={confirmAction}
         pending={confirmPending}
-        onCancel={() => setConfirmAction(null)}
+        error={confirmError}
+        onCancel={() => {
+          setConfirmAction(null);
+          setConfirmError('');
+        }}
         onConfirm={() => void confirmProviderAction()}
       />
     </div>
