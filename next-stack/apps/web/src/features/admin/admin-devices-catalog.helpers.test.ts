@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildBrandOptions,
   buildDeviceTypeOptions,
+  findExactCatalogMatch,
   findSimilarModels,
   getActiveBrands,
   getDefaultDeviceTypeId,
@@ -101,5 +102,17 @@ describe('admin-devices-catalog.helpers', () => {
     expect(matches[1]).toMatchObject({ item: { id: 'm2' }, exact: false });
     expect(hasExactModelMatch(models, 'Redmi Note13')).toBe(true);
     expect(hasExactModelMatch(models, 'Redmi 13')).toBe(false);
+  });
+
+  it('finds exact catalog matches ignoring casing, spaces and slug punctuation', () => {
+    expect(
+      findExactCatalogMatch(
+        [
+          { name: 'SAMSUNG', slug: 'samsung' },
+          { name: 'MOTOROLA', slug: 'moto-rola' },
+        ],
+        ' moto rola ',
+      ),
+    ).toEqual({ name: 'MOTOROLA', slug: 'moto-rola' });
   });
 });

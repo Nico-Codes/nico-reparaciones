@@ -12,6 +12,31 @@
 
 ---
 
+### 2026-05-12 - Codex
+- Alcance: corregir altas rapidas de catalogo tecnico en la hub de calculos/reparaciones.
+- Tipo de intervencion: bugfix backend/frontend y tests de duplicados.
+- Archivos tocados:
+  - `next-stack/apps/api/src/modules/admin/admin.service.ts`
+  - `next-stack/apps/api/src/modules/device-catalog/device-catalog.service.ts`
+  - `next-stack/apps/api/src/modules/device-catalog/device-catalog.service.test.ts`
+  - `next-stack/apps/web/src/features/admin/AdminRepairCalculationsHubPage.tsx`
+  - `next-stack/apps/web/src/features/admin/admin-devices-catalog.helpers.ts`
+  - `next-stack/apps/web/src/features/admin/admin-devices-catalog.helpers.test.ts`
+  - `next-stack/apps/web/src/features/admin/admin-repair-calculations-hub.sections.tsx`
+- ¿Cambio comportamiento funcional?: Si. Al crear tipo, marca, grupo, modelo o falla, si ya existe en el contexto se selecciona/reutiliza y no se rompe por `slug` duplicado.
+- Validaciones ejecutadas:
+  - `typecheck --workspace @nico/api`
+  - `typecheck --workspace @nico/web`
+  - `test --workspace @nico/api -- device-catalog.service.test.ts`
+  - `test --workspace @nico/web -- admin-devices-catalog.helpers.test.ts`
+  - `build --workspace @nico/api`
+  - `build --workspace @nico/web`
+  - `git diff --check`
+- Riesgos / notas:
+  - El backend ahora genera `slug` unico si el mismo nombre existe en otro tipo y devuelve mensaje controlado cuando el duplicado pertenece al mismo contexto.
+
+---
+
 ### 2026-05-11 - Codex
 - Alcance: agregar inventario de repuestos fisicos para uso interno en reparaciones con publicacion opcional en tienda.
 - Tipo de intervencion: modelo de datos, endpoints admin, pricing interno, aplicacion transaccional de stock, UI admin/catalogo y sugerencias en reparaciones.

@@ -43,23 +43,47 @@ export class DeviceCatalogService {
 
   async createBrand(input: { deviceTypeId?: string | null; name: string; slug: string; active?: boolean }) {
     const name = this.normalizeCatalogName(input.name);
+    const deviceTypeId = this.nullableId(input.deviceTypeId);
+    const existing = await this.findEquivalentBrand(deviceTypeId, name);
+    if (existing) {
+      if ((input.active ?? true) && !existing.active) {
+        return this.prisma.deviceBrand.update({ where: { id: existing.id }, data: { active: true } });
+      }
+      return existing;
+    }
+    const slug = await this.buildUniqueSlug('brand', this.normalizeCatalogSlug(input.slug || name));
     return this.prisma.deviceBrand.create({
       data: {
-        deviceTypeId: this.nullableId(input.deviceTypeId),
+        deviceTypeId,
         name,
-        slug: input.slug.trim(),
+        slug,
         active: input.active ?? true,
       },
     });
   }
 
   async updateBrand(id: string, input: { deviceTypeId?: string | null; name?: string; slug?: string; active?: boolean }) {
+    const current = await this.prisma.deviceBrand.findUnique({
+      where: { id },
+      select: { id: true, deviceTypeId: true, name: true, slug: true },
+    });
+    if (!current) throw new NotFoundException('Marca no encontrada');
+    const nextTypeId = input.deviceTypeId !== undefined ? this.nullableId(input.deviceTypeId) : current.deviceTypeId ?? null;
+    const nextName = input.name !== undefined ? this.normalizeCatalogName(input.name) : current.name;
+    const duplicate = await this.findEquivalentBrand(nextTypeId, nextName, current.id);
+    if (duplicate) {
+      throw new BadRequestException(`Ya existe una marca equivalente en este tipo: "${duplicate.name}". Reutilizala o renombrala.`);
+    }
+    const nextSlug =
+      input.slug !== undefined || input.name !== undefined
+        ? await this.buildUniqueSlug('brand', this.normalizeCatalogSlug(input.slug ?? nextName), current.id)
+        : undefined;
     return this.prisma.deviceBrand.update({
       where: { id },
       data: {
-        ...(input.deviceTypeId !== undefined ? { deviceTypeId: this.nullableId(input.deviceTypeId) } : {}),
-        ...(input.name !== undefined ? { name: this.normalizeCatalogName(input.name) } : {}),
-        ...(input.slug !== undefined ? { slug: input.slug.trim() } : {}),
+        ...(input.deviceTypeId !== undefined ? { deviceTypeId: nextTypeId } : {}),
+        ...(input.name !== undefined ? { name: nextName } : {}),
+        ...(nextSlug !== undefined ? { slug: nextSlug } : {}),
         ...(input.active !== undefined ? { active: input.active } : {}),
       },
     });
@@ -106,23 +130,47 @@ export class DeviceCatalogService {
 
   async createIssue(input: { deviceTypeId?: string | null; name: string; slug: string; active?: boolean }) {
     const name = this.normalizeCatalogName(input.name);
+    const deviceTypeId = this.nullableId(input.deviceTypeId);
+    const existing = await this.findEquivalentIssue(deviceTypeId, name);
+    if (existing) {
+      if ((input.active ?? true) && !existing.active) {
+        return this.prisma.deviceIssueType.update({ where: { id: existing.id }, data: { active: true } });
+      }
+      return existing;
+    }
+    const slug = await this.buildUniqueSlug('issue', this.normalizeCatalogSlug(input.slug || name));
     return this.prisma.deviceIssueType.create({
       data: {
-        deviceTypeId: this.nullableId(input.deviceTypeId),
+        deviceTypeId,
         name,
-        slug: input.slug.trim(),
+        slug,
         active: input.active ?? true,
       },
     });
   }
 
   async updateIssue(id: string, input: { deviceTypeId?: string | null; name?: string; slug?: string; active?: boolean }) {
+    const current = await this.prisma.deviceIssueType.findUnique({
+      where: { id },
+      select: { id: true, deviceTypeId: true, name: true, slug: true },
+    });
+    if (!current) throw new NotFoundException('Falla no encontrada');
+    const nextTypeId = input.deviceTypeId !== undefined ? this.nullableId(input.deviceTypeId) : current.deviceTypeId ?? null;
+    const nextName = input.name !== undefined ? this.normalizeCatalogName(input.name) : current.name;
+    const duplicate = await this.findEquivalentIssue(nextTypeId, nextName, current.id);
+    if (duplicate) {
+      throw new BadRequestException(`Ya existe una falla equivalente en este tipo: "${duplicate.name}". Reutilizala o renombrala.`);
+    }
+    const nextSlug =
+      input.slug !== undefined || input.name !== undefined
+        ? await this.buildUniqueSlug('issue', this.normalizeCatalogSlug(input.slug ?? nextName), current.id)
+        : undefined;
     return this.prisma.deviceIssueType.update({
       where: { id },
       data: {
-        ...(input.deviceTypeId !== undefined ? { deviceTypeId: this.nullableId(input.deviceTypeId) } : {}),
-        ...(input.name != null ? { name: this.normalizeCatalogName(input.name) } : {}),
-        ...(input.slug != null ? { slug: input.slug.trim() } : {}),
+        ...(input.deviceTypeId !== undefined ? { deviceTypeId: nextTypeId } : {}),
+        ...(input.name != null ? { name: nextName } : {}),
+        ...(nextSlug !== undefined ? { slug: nextSlug } : {}),
         ...(input.active != null ? { active: input.active } : {}),
       },
     });
@@ -175,6 +223,58 @@ export class DeviceCatalogService {
       .replace(/\p{Diacritic}/gu, '')
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '');
+  }
+
+  private compactCatalogValue(value: string) {
+    return this.normalizeCatalogSlug(value).replace(/-/g, '');
+  }
+
+  private async findEquivalentBrand(deviceTypeId: string | null, name: string, ignoreId?: string) {
+    const compact = this.compactCatalogValue(name);
+    if (!compact) return null;
+    const items = await this.prisma.deviceBrand.findMany({
+      where: { deviceTypeId },
+      select: { id: true, deviceTypeId: true, name: true, slug: true, active: true },
+    });
+    return (
+      items.find((item) => {
+        if (ignoreId && item.id === ignoreId) return false;
+        return this.compactCatalogValue(item.name) === compact || this.compactCatalogValue(item.slug) === compact;
+      }) ?? null
+    );
+  }
+
+  private async findEquivalentIssue(deviceTypeId: string | null, name: string, ignoreId?: string) {
+    const compact = this.compactCatalogValue(name);
+    if (!compact) return null;
+    const items = await this.prisma.deviceIssueType.findMany({
+      where: { deviceTypeId },
+      select: { id: true, deviceTypeId: true, name: true, slug: true, active: true },
+    });
+    return (
+      items.find((item) => {
+        if (ignoreId && item.id === ignoreId) return false;
+        return this.compactCatalogValue(item.name) === compact || this.compactCatalogValue(item.slug) === compact;
+      }) ?? null
+    );
+  }
+
+  private async buildUniqueSlug(kind: 'brand' | 'issue', preferredSlug: string, ignoreId?: string) {
+    const base = preferredSlug || kind;
+    let slug = base;
+    let suffix = 2;
+    while (await this.slugExists(kind, slug, ignoreId)) {
+      slug = `${base}-${suffix++}`;
+    }
+    return slug;
+  }
+
+  private async slugExists(kind: 'brand' | 'issue', slug: string, ignoreId?: string) {
+    const item =
+      kind === 'brand'
+        ? await this.prisma.deviceBrand.findUnique({ where: { slug }, select: { id: true } })
+        : await this.prisma.deviceIssueType.findUnique({ where: { slug }, select: { id: true } });
+    return Boolean(item && item.id !== ignoreId);
   }
 
   private async ensureModelNameAvailable(brandId: string, name: string, ignoreId?: string) {

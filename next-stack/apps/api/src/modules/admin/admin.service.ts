@@ -119,6 +119,14 @@ export class AdminService {
 
   async createDeviceType(input: { name: string; active?: boolean }) {
     const name = this.normalizeCatalogName(input.name);
+    const existing = await this.findEquivalentDeviceType(name);
+    if (existing) {
+      if ((input.active ?? true) && !existing.active) {
+        const item = await this.prisma.deviceType.update({ where: { id: existing.id }, data: { active: true } });
+        return { item: { id: item.id, name: item.name, slug: item.slug, active: item.active } };
+      }
+      return { item: { id: existing.id, name: existing.name, slug: existing.slug, active: existing.active } };
+    }
     const slugBase = this.slugify(name) || 'tipo';
     let slug = slugBase;
     let idx = 2;
@@ -208,6 +216,14 @@ export class AdminService {
     if (!brand) throw new BadRequestException('Marca no encontrada');
 
     const name = this.normalizeCatalogName(input.name);
+    const existing = await this.findEquivalentModelGroup(input.deviceBrandId, name);
+    if (existing) {
+      if ((input.active ?? true) && !existing.active) {
+        const item = await this.prisma.deviceModelGroup.update({ where: { id: existing.id }, data: { active: true } });
+        return { item: { id: item.id, name: item.name, slug: item.slug, active: item.active } };
+      }
+      return { item: { id: existing.id, name: existing.name, slug: existing.slug, active: existing.active } };
+    }
     const slugBase = this.slugify(name) || 'grupo';
     let slug = slugBase;
     let idx = 2;
@@ -494,6 +510,29 @@ export class AdminService {
 
   private normalizeCatalogName(value: string) {
     return value.trim().toUpperCase();
+  }
+
+  private compactCatalogValue(value: string) {
+    return this.slugify(value).replace(/-/g, '');
+  }
+
+  private async findEquivalentDeviceType(name: string) {
+    const compact = this.compactCatalogValue(name);
+    if (!compact) return null;
+    const items = await this.prisma.deviceType.findMany({
+      select: { id: true, name: true, slug: true, active: true },
+    });
+    return items.find((item) => this.compactCatalogValue(item.name) === compact || this.compactCatalogValue(item.slug) === compact) ?? null;
+  }
+
+  private async findEquivalentModelGroup(deviceBrandId: string, name: string) {
+    const compact = this.compactCatalogValue(name);
+    if (!compact) return null;
+    const items = await this.prisma.deviceModelGroup.findMany({
+      where: { deviceBrandId },
+      select: { id: true, name: true, slug: true, active: true },
+    });
+    return items.find((item) => this.compactCatalogValue(item.name) === compact || this.compactCatalogValue(item.slug) === compact) ?? null;
   }
 
   private cleanNullable(value?: string | null) {

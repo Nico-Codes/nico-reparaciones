@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import type { CustomSelectMenuAction } from '@/components/ui/custom-select';
 import { adminApi } from './api';
 import type { DeviceTypeItem, BrandItem, IssueItem, ModelItem } from './admin-devices-catalog.helpers';
-import { findSimilarModels, hasExactModelMatch, slugify } from './admin-devices-catalog.helpers';
+import { findExactCatalogMatch, findSimilarModels, hasExactModelMatch, slugify } from './admin-devices-catalog.helpers';
 import {
   applyRepairCalculationScopePatch,
   buildRepairCalculationSearch,
@@ -259,6 +259,13 @@ export function AdminRepairCalculationsHubPage() {
 
   async function createDeviceTypeValue(name: string, active = true, successMessage = 'Tipo de dispositivo creado.') {
     const normalizedName = normalizeTaxonomyDraft(name).trim();
+    const existing = findExactCatalogMatch(deviceTypes, normalizedName);
+    if (existing) {
+      setError('');
+      setSuccess('El tipo ya existia; lo seleccionamos en el scope.');
+      patchScope({ deviceTypeId: existing.id });
+      return true;
+    }
     return runCatalogAction(
       async () => {
         const response = await adminApi.createDeviceType({ name: normalizedName, active });
@@ -272,6 +279,13 @@ export function AdminRepairCalculationsHubPage() {
   async function createBrandValue(name: string, successMessage = 'Marca creada.') {
     if (!scope.deviceTypeId) return false;
     const normalizedName = normalizeTaxonomyDraft(name).trim();
+    const existing = findExactCatalogMatch(filteredBrands, normalizedName);
+    if (existing) {
+      setError('');
+      setSuccess('La marca ya existia para este tipo; la seleccionamos en el scope.');
+      patchScope({ deviceBrandId: existing.id });
+      return true;
+    }
     return runCatalogAction(
       async () => {
         const response = await deviceCatalogApi.createBrand({
@@ -290,6 +304,13 @@ export function AdminRepairCalculationsHubPage() {
   async function createGroupValue(name: string, active = true, successMessage = 'Grupo creado.') {
     if (!scope.deviceBrandId) return false;
     const normalizedName = normalizeTaxonomyDraft(name).trim();
+    const existing = findExactCatalogMatch(filteredGroups, normalizedName);
+    if (existing) {
+      setError('');
+      setSuccess('El grupo ya existia para esta marca; lo seleccionamos en el scope.');
+      patchScope({ deviceModelGroupId: existing.id });
+      return true;
+    }
     return runCatalogAction(
       async () => {
         const response = await adminApi.createModelGroup({
@@ -304,18 +325,15 @@ export function AdminRepairCalculationsHubPage() {
     );
   }
 
-  function getModelDuplicateError(name: string) {
-    if (!hasExactModelMatch(brandModels, name)) return '';
-    return `Ya existe un modelo con ese nombre dentro de ${selectedBrand?.name || 'la marca activa'}.`;
-  }
-
   async function createModelValue(name: string, successMessage = 'Modelo creado.') {
     if (!scope.deviceBrandId) return false;
     const normalizedName = normalizeTaxonomyDraft(name).trim();
-    const duplicateError = getModelDuplicateError(normalizedName);
-    if (duplicateError) {
-      setError(duplicateError);
-      return false;
+    const existing = findExactCatalogMatch(brandModels, normalizedName);
+    if (existing) {
+      setError('');
+      setSuccess('El modelo ya existia para esta marca; lo seleccionamos en el scope.');
+      patchScope({ deviceModelId: existing.id });
+      return true;
     }
     return runCatalogAction(
       async () => {
@@ -334,6 +352,13 @@ export function AdminRepairCalculationsHubPage() {
   async function createIssueValue(name: string, successMessage = 'Falla creada.') {
     if (!scope.deviceTypeId) return false;
     const normalizedName = normalizeTaxonomyDraft(name).trim();
+    const existing = findExactCatalogMatch(filteredIssues, normalizedName);
+    if (existing) {
+      setError('');
+      setSuccess('La falla ya existia para este tipo; la seleccionamos en el scope.');
+      patchScope({ deviceIssueTypeId: existing.id });
+      return true;
+    }
     return runCatalogAction(
       async () => {
         const response = await deviceCatalogApi.createIssue({
@@ -633,7 +658,7 @@ export function AdminRepairCalculationsHubPage() {
         description: 'Revisa las coincidencias antes de crear para no duplicar la marca activa.',
         fieldLabel: 'Nombre del modelo',
         placeholder: selectedBrand ? `Ej: ${selectedBrand.name} A13` : 'Ej: A13',
-        submitLabel: quickCreateHasExactDuplicate ? 'Ya existe' : 'Crear modelo',
+        submitLabel: quickCreateHasExactDuplicate ? 'Usar existente' : 'Crear modelo',
         contextLabel: `Marca activa: ${selectedBrand?.name || 'Sin marca'}`,
         value: quickCreate.value,
         onValueChange: updateValue,

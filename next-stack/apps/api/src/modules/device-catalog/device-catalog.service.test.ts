@@ -2,6 +2,72 @@ import { describe, expect, it } from 'vitest';
 import { DeviceCatalogService } from './device-catalog.service.js';
 
 describe('DeviceCatalogService', () => {
+  it('reuses an equivalent brand in the same device type instead of creating a duplicate', async () => {
+    let createCalled = false;
+    const service = new DeviceCatalogService({
+      deviceBrand: {
+        findMany: async () => [
+          { id: 'brand_1', deviceTypeId: 'type_1', name: 'SAMSUNG', slug: 'samsung', active: true },
+        ],
+        create: async () => {
+          createCalled = true;
+          return null;
+        },
+      },
+    } as never);
+
+    await expect(service.createBrand({ deviceTypeId: 'type_1', name: ' samsung ', slug: 'samsung' })).resolves.toMatchObject({
+      id: 'brand_1',
+      name: 'SAMSUNG',
+    });
+    expect(createCalled).toBe(false);
+  });
+
+  it('uses a unique slug when creating the same brand name in another device type', async () => {
+    let payload: { deviceTypeId: string | null; name: string; slug: string; active: boolean } | null = null;
+    const service = new DeviceCatalogService({
+      deviceBrand: {
+        findMany: async () => [],
+        findUnique: async ({ where }: { where: { slug: string } }) =>
+          where.slug === 'samsung' ? { id: 'brand_other' } : null,
+        create: async ({ data }: { data: { deviceTypeId: string | null; name: string; slug: string; active: boolean } }) => {
+          payload = data;
+          return data;
+        },
+      },
+    } as never);
+
+    await service.createBrand({ deviceTypeId: 'type_2', name: 'Samsung', slug: 'samsung' });
+
+    expect(payload).toEqual({
+      deviceTypeId: 'type_2',
+      name: 'SAMSUNG',
+      slug: 'samsung-2',
+      active: true,
+    });
+  });
+
+  it('reuses an equivalent issue in the same device type instead of creating a duplicate', async () => {
+    let createCalled = false;
+    const service = new DeviceCatalogService({
+      deviceIssueType: {
+        findMany: async () => [
+          { id: 'issue_1', deviceTypeId: 'type_1', name: 'MODULO', slug: 'modulo', active: true },
+        ],
+        create: async () => {
+          createCalled = true;
+          return null;
+        },
+      },
+    } as never);
+
+    await expect(service.createIssue({ deviceTypeId: 'type_1', name: 'módulo', slug: 'modulo' })).resolves.toMatchObject({
+      id: 'issue_1',
+      name: 'MODULO',
+    });
+    expect(createCalled).toBe(false);
+  });
+
   it('stores model names in uppercase when creating them', async () => {
     let payload: { brandId: string; name: string; slug: string; active: boolean } | null = null;
     const service = new DeviceCatalogService({

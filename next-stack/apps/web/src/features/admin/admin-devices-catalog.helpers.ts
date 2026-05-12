@@ -29,6 +29,18 @@ function compactCatalogValue(value: string) {
   return normalizeCatalogValue(value).replace(/-/g, '');
 }
 
+export function findExactCatalogMatch<T extends { name: string; slug?: string }>(items: T[], draft: string) {
+  const compactDraft = compactCatalogValue(draft);
+  if (!compactDraft) return null;
+  return (
+    items.find(
+      (item) =>
+        compactCatalogValue(item.name) === compactDraft ||
+        compactCatalogValue(item.slug ?? '') === compactDraft,
+    ) ?? null
+  );
+}
+
 function tokenizeCatalogValue(value: string) {
   return normalizeCatalogValue(value).split('-').filter(Boolean);
 }
@@ -107,13 +119,7 @@ export function findSimilarModels(models: ModelItem[], draft: string, limit = 5)
 }
 
 export function hasExactModelMatch(models: ModelItem[], draft: string) {
-  const compactDraft = compactCatalogValue(draft);
-  if (!compactDraft) return false;
-  return models.some(
-    (item) =>
-      compactCatalogValue(item.name) === compactDraft ||
-      compactCatalogValue(item.slug) === compactDraft,
-  );
+  return Boolean(findExactCatalogMatch(models, draft));
 }
 
 export function buildDeviceTypeOptions(deviceTypes: DeviceTypeItem[]) {

@@ -512,8 +512,8 @@ export function AdminRepairCalculationsModelsPanel({
               disabled={!brandSelected}
               autoCapitalize="characters"
           />
-          <button type="button" onClick={onCreate} disabled={!brandSelected || hasExactDuplicate || !draft.trim()} className="btn-primary !h-11 !rounded-2xl px-4 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-60">
-            {hasExactDuplicate ? 'Ya existe' : 'Agregar modelo'}
+          <button type="button" onClick={onCreate} disabled={!brandSelected || !draft.trim()} className="btn-primary !h-11 !rounded-2xl px-4 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-60">
+            {hasExactDuplicate ? 'Usar existente' : 'Agregar modelo'}
           </button>
         </div>
         {brandSelected && draft.trim() ? (
@@ -808,7 +808,7 @@ export function AdminRepairCalculationsQuickCreateDialog({
               </div>
               <div className="mt-1 text-xs font-medium opacity-80">
                 {hasExactDuplicate
-                  ? 'Bloqueamos el alta para evitar un duplicado exacto.'
+                  ? 'Si confirmas, vamos a seleccionar el registro existente en vez de duplicarlo.'
                   : 'Revisa estas coincidencias antes de crear otro registro.'}
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
@@ -836,7 +836,7 @@ export function AdminRepairCalculationsQuickCreateDialog({
             <button
               type="button"
               onClick={onSubmit}
-              disabled={!value.trim() || hasExactDuplicate}
+              disabled={!value.trim()}
               className="btn-primary !h-11 !rounded-2xl px-5 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submitLabel}
@@ -904,7 +904,7 @@ function SimilarModelHint({
       </div>
       <div className="mt-1 text-xs font-medium opacity-80">
         {hasExactDuplicate
-          ? 'Bloqueamos el alta para evitar duplicados exactos.'
+          ? 'Si confirmas, vamos a seleccionar el registro existente en vez de duplicarlo.'
           : 'Si uno ya corresponde, seleccionalo en el scope o reutiliza ese registro.'}
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
