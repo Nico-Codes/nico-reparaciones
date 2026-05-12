@@ -315,6 +315,10 @@ export class AdminService {
     return this.adminProvidersService.toggleProvider(id);
   }
 
+  async deleteProvider(id: string) {
+    return this.adminProvidersService.deleteProvider(id);
+  }
+
   async importDefaultProviders() {
     return this.adminProvidersService.importDefaultProviders();
   }

@@ -19,6 +19,11 @@ export type ProvidersSummary = {
   accumulatedLoss: number;
 };
 
+export type ProviderConfirmAction = {
+  type: 'toggle' | 'delete';
+  provider: AdminProviderItem;
+};
+
 export const providerModeOptions = [
   { value: 'JSON API', label: 'JSON API' },
   { value: 'HTML simple', label: 'HTML simple' },
@@ -51,6 +56,10 @@ export function sortProvidersByPriority(providers: AdminProviderItem[]) {
   return [...providers].sort((a, b) => a.priority - b.priority);
 }
 
+function reindexProviderPriorities(providers: AdminProviderItem[]) {
+  return providers.map((provider, index) => ({ ...provider, priority: (index + 1) * 10 }));
+}
+
 export function buildProvidersSummary(providers: AdminProviderItem[]): ProvidersSummary {
   return providers.reduce<ProvidersSummary>(
     (acc, provider) => {
@@ -70,17 +79,15 @@ export function buildProvidersSummary(providers: AdminProviderItem[]): Providers
 }
 
 export function moveProviderPriority(providers: AdminProviderItem[], id: string, dir: -1 | 1) {
-  const sorted = sortProvidersByPriority(providers).map((provider) => ({ ...provider }));
+  const sorted = sortProvidersByPriority(providers);
   const idx = sorted.findIndex((provider) => provider.id === id);
   const target = idx + dir;
   if (idx < 0 || target < 0 || target >= sorted.length) return providers;
 
-  const current = sorted[idx];
-  const other = sorted[target];
-  const currentPriority = current.priority;
-  current.priority = other.priority;
-  other.priority = currentPriority;
-  return sortProvidersByPriority(sorted);
+  const next = [...sorted];
+  const [current] = next.splice(idx, 1);
+  next.splice(target, 0, current);
+  return reindexProviderPriorities(next);
 }
 
 export function patchProviderList(providers: AdminProviderItem[], id: string, patch: Partial<AdminProviderItem>) {

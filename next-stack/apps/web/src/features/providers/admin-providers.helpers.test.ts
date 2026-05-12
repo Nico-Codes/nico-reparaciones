@@ -62,6 +62,19 @@ describe('admin-providers helpers', () => {
     expect(moveProviderPriority(providers, 'b', -1).map((provider) => provider.id)).toEqual(['b', 'a']);
   });
 
+  it('reorders providers even when priorities are duplicated', () => {
+    const providers = [
+      makeProvider({ id: 'a', name: 'A', priority: 10 }),
+      makeProvider({ id: 'b', name: 'B', priority: 10 }),
+      makeProvider({ id: 'c', name: 'C', priority: 20 }),
+    ];
+
+    const next = moveProviderPriority(providers, 'b', -1);
+
+    expect(next.map((provider) => provider.id)).toEqual(['b', 'a', 'c']);
+    expect(next.map((provider) => provider.priority)).toEqual([10, 20, 30]);
+  });
+
   it('builds summary stats and patches a single provider', () => {
     const providers = [
       makeProvider({ id: 'a', name: 'A', priority: 10, incidents: 2, warrantiesOk: 1, warrantiesExpired: 1, loss: 150 }),

@@ -747,6 +747,17 @@ async function main() {
   assert(closeWarranty.data?.item?.status === 'closed', 'admin/warranties/:id/close no cerro incidente', closeWarranty.data);
   logStep('admin/warranties/:id/close', { warrantyId, status: closeWarranty.data.item.status });
 
+  const deleteProvider = await req(`/admin/providers/${encodeURIComponent(providerId)}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${refreshTokens.accessToken}` },
+  });
+  assert(deleteProvider.res.ok, 'admin/providers DELETE fallo', {
+    status: deleteProvider.res.status,
+    body: deleteProvider.data,
+  });
+  assert(deleteProvider.data?.ok === true, 'admin/providers DELETE payload invalido', deleteProvider.data);
+  logStep('admin/providers DELETE', { providerId });
+
   const accounting = await req('/admin/accounting', {
     headers: { Authorization: `Bearer ${refreshTokens.accessToken}` },
   });

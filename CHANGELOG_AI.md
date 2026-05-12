@@ -13,6 +13,32 @@
 ---
 
 ### 2026-05-12 - Codex
+- Alcance: mejorar gestion de proveedores en `/admin/proveedores` y limpiar proveedores de prueba.
+- Tipo de intervencion: UX admin, endpoint backend, tests y limpieza de datos runtime.
+- Archivos tocados:
+  - `next-stack/apps/api/src/modules/admin/admin-provider-registry.service.ts`
+  - `next-stack/apps/api/src/modules/admin/admin-providers.service.ts`
+  - `next-stack/apps/api/src/modules/admin/admin.controller.ts`
+  - `next-stack/apps/api/src/modules/admin/admin.service.ts`
+  - `next-stack/apps/web/src/features/providers/AdminProvidersPage.tsx`
+  - `next-stack/apps/web/src/features/providers/admin-providers-panels.tsx`
+  - `next-stack/apps/web/src/features/providers/admin-providers.helpers.ts`
+  - `next-stack/scripts/smoke/smoke-backend.mjs`
+- ¿Cambio comportamiento funcional?: Si. El listado de prioridad ahora permite activar/desactivar y eliminar con confirmacion; el orden se puede mover aunque haya prioridades duplicadas; el smoke backend elimina el proveedor temporal que crea.
+- Validaciones ejecutadas:
+  - `typecheck --workspace @nico/api`
+  - `typecheck --workspace @nico/web`
+  - `test --workspace @nico/api`
+  - `test --workspace @nico/web`
+  - `build --workspace @nico/api`
+  - `build --workspace @nico/web`
+  - `git diff --check`
+- Riesgos / notas:
+  - Se limpiaron proveedores runtime de prueba (`Smoke Supplier`, `Phase1 DummyJSON`, `Proveedor Probe`, `Proveedor Hist`, `E2E Encargues`) y se reasigno el perfil real `Electronica Encargue` a un proveedor limpio del mismo nombre para no perder los productos por encargue.
+
+---
+
+### 2026-05-12 - Codex
 - Alcance: simplificar alta de reparaciones y automatizar busqueda inicial de repuestos por contexto exacto.
 - Tipo de intervencion: UX frontend, automatizacion de busqueda y tests de helpers.
 - Archivos tocados:

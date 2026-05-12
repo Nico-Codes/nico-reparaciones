@@ -53,6 +53,10 @@ export class AdminProvidersService {
     return this.adminProviderRegistryService.toggleProvider(id);
   }
 
+  async deleteProvider(id: string) {
+    return this.adminProviderRegistryService.deleteProvider(id);
+  }
+
   async importDefaultProviders() {
     return this.adminProviderRegistryService.importDefaultProviders();
   }

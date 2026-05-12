@@ -167,6 +167,11 @@ export class AdminController {
     return this.adminService.toggleProvider(id);
   }
 
+  @Delete('providers/:id')
+  deleteProvider(@Param('id') id: string) {
+    return this.adminService.deleteProvider(id);
+  }
+
   @Post('providers/:id/probe')
   probeProvider(@Param('id') id: string, @Body() body: unknown) {
     const parsed = providerProbeSchema.safeParse(body ?? {});

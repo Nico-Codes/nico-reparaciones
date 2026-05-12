@@ -1,3 +1,5 @@
+import { ArrowDown, ArrowUp, Power, Trash2 } from 'lucide-react';
+import { BrandIcon } from '@/components/brand/BrandIcon';
 import { CustomSelect } from '@/components/ui/custom-select';
 import type { AdminProviderItem } from '@/features/admin/api';
 import {
@@ -23,11 +25,15 @@ export function ProvidersPriorityPanel({
   savingOrder,
   onMovePriority,
   onSaveOrder,
+  onRequestToggle,
+  onRequestDelete,
 }: {
   ordered: AdminProviderItem[];
   savingOrder: boolean;
   onMovePriority: (id: string, dir: -1 | 1) => void;
   onSaveOrder: () => void;
+  onRequestToggle: (provider: AdminProviderItem) => void;
+  onRequestDelete: (provider: AdminProviderItem) => void;
 }) {
   return (
     <section className="card">
@@ -46,11 +52,47 @@ export function ProvidersPriorityPanel({
               <div className="text-sm text-zinc-500">Prioridad #{idx + 1}</div>
             </div>
             <div className="flex items-center gap-2">
-              <button type="button" onClick={() => onMovePriority(provider.id, -1)} className="btn-ghost !h-8 !w-8 !rounded-xl p-0 text-base font-black">
-                ↑
+              <button
+                type="button"
+                onClick={() => onMovePriority(provider.id, -1)}
+                disabled={idx === 0}
+                className="btn-ghost !h-8 !w-8 !rounded-xl p-0 text-base font-black disabled:cursor-not-allowed disabled:opacity-35"
+                aria-label={`Subir ${provider.name}`}
+                title="Subir prioridad"
+              >
+                <ArrowUp className="h-4 w-4" />
               </button>
-              <button type="button" onClick={() => onMovePriority(provider.id, 1)} className="btn-ghost !h-8 !w-8 !rounded-xl p-0 text-base font-black">
-                ↓
+              <button
+                type="button"
+                onClick={() => onMovePriority(provider.id, 1)}
+                disabled={idx === ordered.length - 1}
+                className="btn-ghost !h-8 !w-8 !rounded-xl p-0 text-base font-black disabled:cursor-not-allowed disabled:opacity-35"
+                aria-label={`Bajar ${provider.name}`}
+                title="Bajar prioridad"
+              >
+                <ArrowDown className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => onRequestToggle(provider)}
+                className={`inline-flex h-8 w-8 items-center justify-center rounded-xl border text-sm font-black ${
+                  provider.active
+                    ? 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'
+                    : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                }`}
+                aria-label={provider.active ? `Desactivar ${provider.name}` : `Activar ${provider.name}`}
+                title={provider.active ? 'Desactivar proveedor' : 'Activar proveedor'}
+              >
+                <Power className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => onRequestDelete(provider)}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
+                aria-label={`Eliminar ${provider.name}`}
+                title="Eliminar proveedor"
+              >
+                <BrandIcon slot="icon_trash" className="h-4 w-4" fallback={<Trash2 className="h-4 w-4" />} />
               </button>
             </div>
           </div>
@@ -192,14 +234,16 @@ export function ProvidersTablePanel({
   ordered,
   onPatchProvider,
   onSaveProvider,
-  onToggleProvider,
+  onRequestToggle,
+  onRequestDelete,
   onProbeProvider,
 }: {
   loading: boolean;
   ordered: AdminProviderItem[];
   onPatchProvider: (id: string, patch: Partial<AdminProviderItem>) => void;
   onSaveProvider: (provider: AdminProviderItem) => void;
-  onToggleProvider: (provider: AdminProviderItem) => void;
+  onRequestToggle: (provider: AdminProviderItem) => void;
+  onRequestDelete: (provider: AdminProviderItem) => void;
   onProbeProvider: (provider: AdminProviderItem) => void;
 }) {
   return (
@@ -210,7 +254,7 @@ export function ProvidersTablePanel({
         ) : (
           <div className="overflow-x-auto">
             <div className="min-w-[1200px]">
-              <div className="grid grid-cols-[1.25fr_0.7fr_0.55fr_0.65fr_0.8fr_0.7fr_0.65fr_0.95fr_0.9fr_1.35fr] gap-3 bg-zinc-50 px-3 py-2 text-xs font-black uppercase tracking-wide text-zinc-500">
+              <div className="grid grid-cols-[1.25fr_0.7fr_0.55fr_0.65fr_0.8fr_0.7fr_0.65fr_0.95fr_1.05fr_1.35fr] gap-3 bg-zinc-50 px-3 py-2 text-xs font-black uppercase tracking-wide text-zinc-500">
                 <div>PROVEEDOR</div>
                 <div>TELEFONO</div>
                 <div className="text-right">PRODUCTOS</div>
@@ -229,7 +273,8 @@ export function ProvidersTablePanel({
                   bordered={Boolean(idx)}
                   onPatchProvider={onPatchProvider}
                   onSaveProvider={onSaveProvider}
-                  onToggleProvider={onToggleProvider}
+                  onRequestToggle={onRequestToggle}
+                  onRequestDelete={onRequestDelete}
                   onProbeProvider={onProbeProvider}
                 />
               ))}
@@ -247,19 +292,21 @@ function ProviderRow({
   bordered,
   onPatchProvider,
   onSaveProvider,
-  onToggleProvider,
+  onRequestToggle,
+  onRequestDelete,
   onProbeProvider,
 }: {
   provider: AdminProviderItem;
   bordered: boolean;
   onPatchProvider: (id: string, patch: Partial<AdminProviderItem>) => void;
   onSaveProvider: (provider: AdminProviderItem) => void;
-  onToggleProvider: (provider: AdminProviderItem) => void;
+  onRequestToggle: (provider: AdminProviderItem) => void;
+  onRequestDelete: (provider: AdminProviderItem) => void;
   onProbeProvider: (provider: AdminProviderItem) => void;
 }) {
   return (
     <div className={bordered ? 'border-t border-zinc-100' : ''}>
-      <div className="grid grid-cols-[1.25fr_0.7fr_0.55fr_0.65fr_0.8fr_0.7fr_0.65fr_0.95fr_0.9fr_1.35fr] items-center gap-3 px-3 py-3">
+      <div className="grid grid-cols-[1.25fr_0.7fr_0.55fr_0.65fr_0.8fr_0.7fr_0.65fr_0.95fr_1.05fr_1.35fr] items-center gap-3 px-3 py-3">
         <div className="text-lg font-black tracking-tight text-zinc-900">{provider.name}</div>
         <div className="text-sm text-zinc-500">{provider.phone || '-'}</div>
         <div className="text-right text-lg font-black text-zinc-900">{provider.products}</div>
@@ -287,7 +334,7 @@ function ProviderRow({
             {provider.active ? 'Activo' : 'Inactivo'}
           </div>
         </div>
-        <div className="flex items-center justify-center gap-2">
+        <div className="flex flex-wrap items-center justify-center gap-2">
           <button
             type="button"
             onClick={() => onSaveProvider({ ...provider, searchEnabled: !provider.searchEnabled })}
@@ -298,8 +345,16 @@ function ProviderRow({
           <button type="button" onClick={() => onProbeProvider(provider)} className="btn-outline !h-9 !rounded-xl px-3 text-sm font-bold">
             Probar busqueda
           </button>
-          <button type="button" onClick={() => onToggleProvider(provider)} className="btn-outline !h-9 !rounded-xl px-3 text-sm font-bold">
+          <button type="button" onClick={() => onRequestToggle(provider)} className="btn-outline !h-9 !rounded-xl px-3 text-sm font-bold">
             {provider.active ? 'Desactivar' : 'Activar'}
+          </button>
+          <button
+            type="button"
+            onClick={() => onRequestDelete(provider)}
+            className="inline-flex h-9 items-center justify-center rounded-xl border border-rose-200 bg-rose-50 px-3 text-sm font-black text-rose-700 hover:bg-rose-100"
+          >
+            <BrandIcon slot="icon_trash" className="mr-1.5 h-4 w-4" fallback={<Trash2 className="mr-1.5 h-4 w-4" />} />
+            Eliminar
           </button>
         </div>
         <div className="space-y-2">

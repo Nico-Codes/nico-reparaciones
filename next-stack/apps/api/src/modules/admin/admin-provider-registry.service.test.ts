@@ -190,4 +190,53 @@ describe('AdminProviderRegistryService', () => {
       ]),
     );
   });
+
+  it('deletes providers without special order profiles', async () => {
+    const deleted: string[] = [];
+    const tx = {
+      product: { updateMany: async () => ({ count: 0 }) },
+      repairPricingSnapshot: { updateMany: async () => ({ count: 0 }) },
+      warrantyIncident: { updateMany: async () => ({ count: 0 }) },
+      supplier: {
+        delete: async ({ where }: { where: { id: string } }) => {
+          deleted.push(where.id);
+          return { id: where.id };
+        },
+      },
+    };
+    const service = new AdminProviderRegistryService(
+      {
+        supplier: {
+          findUnique: async () => ({ id: 'sup_test', name: 'Proveedor Probe A' }),
+        },
+        specialOrderImportProfile: {
+          count: async () => 0,
+        },
+        $transaction: async (callback: (input: typeof tx) => Promise<unknown>) => callback(tx),
+      } as never,
+      { readIncidents: async () => [] } as never,
+    );
+
+    await expect(service.deleteProvider('sup_test')).resolves.toEqual({ ok: true });
+    expect(deleted).toEqual(['sup_test']);
+  });
+
+  it('blocks deleting providers used by special order profiles', async () => {
+    const service = new AdminProviderRegistryService(
+      {
+        supplier: {
+          findUnique: async () => ({ id: 'sup_profile', name: 'Proveedor con perfil' }),
+          delete: async () => {
+            throw new Error('delete should not run');
+          },
+        },
+        specialOrderImportProfile: {
+          count: async () => 1,
+        },
+      } as never,
+      { readIncidents: async () => [] } as never,
+    );
+
+    await expect(service.deleteProvider('sup_profile')).rejects.toThrow('perfil');
+  });
 });

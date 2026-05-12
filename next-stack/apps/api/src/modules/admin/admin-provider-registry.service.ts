@@ -259,6 +259,29 @@ export class AdminProviderRegistryService {
     return { item: this.serializeProvider(items[index], stats, productCount) };
   }
 
+  async deleteProvider(id: string) {
+    const supplier = await this.prisma.supplier.findUnique({
+      where: { id },
+      select: { id: true, name: true },
+    });
+    if (!supplier) throw new BadRequestException('Proveedor no encontrado');
+
+    const profileCount = await this.prisma.specialOrderImportProfile.count({ where: { supplierId: id } });
+    if (profileCount > 0) {
+      throw new BadRequestException(
+        `No se puede eliminar "${supplier.name}" porque tiene ${profileCount} perfil${profileCount === 1 ? '' : 'es'} de importacion por encargue. Desactivalo si queres sacarlo de uso.`,
+      );
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.product.updateMany({ where: { supplierId: id }, data: { supplierId: null } });
+      await tx.repairPricingSnapshot.updateMany({ where: { supplierId: id }, data: { supplierId: null } });
+      await tx.warrantyIncident.updateMany({ where: { supplierId: id }, data: { supplierId: null } });
+      await tx.supplier.delete({ where: { id } });
+    });
+    return { ok: true };
+  }
+
   async importDefaultProviders() {
     const items = await this.readSuppliersRegistry();
     const now = new Date().toISOString();

@@ -282,6 +282,11 @@ export const adminApi = {
       body: '{}',
     });
   },
+  deleteProvider(id: string) {
+    return authRequest<{ ok: boolean }>(`/admin/providers/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+  },
   importDefaultProviders() {
     return authRequest<{ created: number; updated: number; items: AdminProviderItem[] }>('/admin/providers/import-defaults', {
       method: 'POST',

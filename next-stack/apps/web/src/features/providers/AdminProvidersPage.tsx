@@ -6,10 +6,11 @@ import {
   createInitialProviderDraft,
   moveProviderPriority,
   patchProviderList,
+  type ProviderConfirmAction,
   sortProvidersByPriority,
   toSearchMode,
 } from './admin-providers.helpers';
-import { ProvidersCreateSection, ProvidersFeedback, ProvidersPrioritySection, ProvidersProbeSection, ProvidersStatsGrid, ProvidersTableSection } from './admin-providers.sections';
+import { ProvidersConfirmDialog, ProvidersCreateSection, ProvidersFeedback, ProvidersPrioritySection, ProvidersProbeSection, ProvidersStatsGrid, ProvidersTableSection } from './admin-providers.sections';
 
 export function AdminProvidersPage() {
   const [providers, setProviders] = useState<AdminProviderItem[]>([]);
@@ -17,6 +18,8 @@ export function AdminProvidersPage() {
   const [savingOrder, setSavingOrder] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [confirmAction, setConfirmAction] = useState<ProviderConfirmAction | null>(null);
+  const [confirmPending, setConfirmPending] = useState(false);
   const [testQuery, setTestQuery] = useState('modulo a30');
   const [draft, setDraft] = useState(createInitialProviderDraft);
 
@@ -136,14 +139,35 @@ export function AdminProvidersPage() {
     }
   }
 
-  async function toggleProvider(row: AdminProviderItem) {
+  function requestToggleProvider(row: AdminProviderItem) {
+    setConfirmAction({ type: 'toggle', provider: row });
+  }
+
+  function requestDeleteProvider(row: AdminProviderItem) {
+    setConfirmAction({ type: 'delete', provider: row });
+  }
+
+  async function confirmProviderAction() {
+    if (!confirmAction) return;
+    setConfirmPending(true);
     setError('');
     setMessage('');
     try {
-      const res = await adminApi.toggleProvider(row.id);
-      patchProvider(row.id, res.item);
+      if (confirmAction.type === 'toggle') {
+        const res = await adminApi.toggleProvider(confirmAction.provider.id);
+        patchProvider(confirmAction.provider.id, res.item);
+        setMessage(`Proveedor "${res.item.name}" ${res.item.active ? 'activado' : 'desactivado'}.`);
+      } else {
+        await adminApi.deleteProvider(confirmAction.provider.id);
+        setProviders((prev) => prev.filter((provider) => provider.id !== confirmAction.provider.id));
+        setMessage(`Proveedor "${confirmAction.provider.name}" eliminado.`);
+      }
+      setConfirmAction(null);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'No se pudo cambiar el estado');
+      setError(cause instanceof Error ? cause.message : 'No se pudo completar la accion');
+      await load();
+    } finally {
+      setConfirmPending(false);
     }
   }
 
@@ -180,7 +204,14 @@ export function AdminProvidersPage() {
 
       <ProvidersFeedback error={error} message={message} />
       <ProvidersStatsGrid summary={summary} />
-      <ProvidersPrioritySection ordered={ordered} savingOrder={savingOrder} onMovePriority={reorderProvider} onSaveOrder={() => void saveOrder()} />
+      <ProvidersPrioritySection
+        ordered={ordered}
+        savingOrder={savingOrder}
+        onMovePriority={reorderProvider}
+        onSaveOrder={() => void saveOrder()}
+        onRequestToggle={requestToggleProvider}
+        onRequestDelete={requestDeleteProvider}
+      />
       <ProvidersProbeSection testQuery={testQuery} onTestQueryChange={setTestQuery} />
       <ProvidersCreateSection draft={draft} onDraftChange={updateDraft} onSave={() => void addProvider()} />
       <ProvidersTableSection
@@ -188,8 +219,15 @@ export function AdminProvidersPage() {
         ordered={ordered}
         onPatchProvider={patchProvider}
         onSaveProvider={(provider) => void saveProvider(provider)}
-        onToggleProvider={(provider) => void toggleProvider(provider)}
+        onRequestToggle={requestToggleProvider}
+        onRequestDelete={requestDeleteProvider}
         onProbeProvider={(provider) => void probeProvider(provider)}
+      />
+      <ProvidersConfirmDialog
+        action={confirmAction}
+        pending={confirmPending}
+        onCancel={() => setConfirmAction(null)}
+        onConfirm={() => void confirmProviderAction()}
       />
     </div>
   );
