@@ -13,6 +13,29 @@
 ---
 
 ### 2026-05-12 - Codex
+- Alcance: simplificar alta de reparaciones y automatizar busqueda inicial de repuestos por contexto exacto.
+- Tipo de intervencion: UX frontend, automatizacion de busqueda y tests de helpers.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/repairs/admin-repair-create-basic-panel.tsx`
+  - `next-stack/apps/web/src/features/repairs/use-admin-repair-create.ts`
+  - `next-stack/apps/web/src/features/repairs/use-admin-repair-create-catalog.ts`
+  - `next-stack/apps/web/src/features/repairs/use-repair-provider-part-pricing.ts`
+  - `next-stack/apps/web/src/features/repairs/use-repair-provider-part-search.ts`
+  - `next-stack/apps/web/src/features/repairs/repair-provider-part-pricing-section.helpers.ts`
+  - `next-stack/apps/web/src/features/repairs/repair-provider-part-pricing-section.helpers.test.ts`
+- ¿Cambio comportamiento funcional?: Si. El alta ya no muestra `Marca visible` ni `Modelo visible`; al tener modelo exacto y falla, el buscador de repuestos dispara automaticamente una consulta tipo `MODULO SAMSUNG A06`.
+- Validaciones ejecutadas:
+  - `typecheck --workspace @nico/web`
+  - `test --workspace @nico/web -- repair-provider-part-pricing-section.helpers.test.ts admin-repair-create.helpers.test.ts`
+  - `test --workspace @nico/web`
+  - `build --workspace @nico/web`
+  - `git diff --check`
+- Riesgos / notas:
+  - La busqueda automatica se limita al modo alta de reparacion y requiere `deviceModelId`, marca, modelo y falla resueltos para evitar consultas prematuras.
+
+---
+
+### 2026-05-12 - Codex
 - Alcance: corregir altas rapidas de catalogo tecnico en la hub de calculos/reparaciones.
 - Tipo de intervencion: bugfix backend/frontend y tests de duplicados.
 - Archivos tocados:

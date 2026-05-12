@@ -22,8 +22,6 @@ export type AdminRepairCreateBasicSectionProps = {
   onDeviceTypeIdChange: (value: string) => void;
   onDeviceBrandIdChange: (value: string) => void;
   onDeviceModelIdChange: (value: string) => void;
-  onDeviceBrandChange: (value: string) => void;
-  onDeviceModelChange: (value: string) => void;
 };
 
 export function AdminRepairCreateBasicPanel({
@@ -41,13 +39,11 @@ export function AdminRepairCreateBasicPanel({
   onDeviceTypeIdChange,
   onDeviceBrandIdChange,
   onDeviceModelIdChange,
-  onDeviceBrandChange,
-  onDeviceModelChange,
 }: AdminRepairCreateBasicSectionProps) {
   return (
     <SectionCard
       title="Datos basicos"
-      description="Carga lo minimo para abrir rapido el caso: cliente, equipo y referencia visible."
+      description="Carga lo minimo para abrir rapido el caso: cliente y equipo exacto."
       actions={<StatusBadge label="Paso 1" tone="neutral" size="sm" />}
       className="repair-create-card"
       bodyClassName="space-y-5"
@@ -87,7 +83,7 @@ export function AdminRepairCreateBasicPanel({
             triggerClassName="min-h-11 rounded-[1rem]"
             ariaLabel="Seleccionar tipo de equipo"
           />
-          <span className="ui-field__hint">Podes omitirlo y cargar la marca y el modelo en forma manual.</span>
+          <span className="ui-field__hint">Define que marcas y fallas se muestran en el formulario.</span>
         </div>
         <div className="ui-field">
           <span className="ui-field__label">Marca exacta del catalogo</span>
@@ -100,7 +96,7 @@ export function AdminRepairCreateBasicPanel({
             triggerClassName="min-h-11 rounded-[1rem]"
             ariaLabel="Seleccionar marca exacta del catalogo"
           />
-          <span className="ui-field__hint">Ayuda al calculo y a la busqueda de repuestos cuando el equipo existe en el catalogo.</span>
+          <span className="ui-field__hint">Ayuda al calculo y a la busqueda automatica de repuestos.</span>
         </div>
         <div className="ui-field">
           <span className="ui-field__label">Modelo exacto del catalogo</span>
@@ -115,24 +111,6 @@ export function AdminRepairCreateBasicPanel({
           />
           <span className="ui-field__hint">Se habilita cuando elegis una marca exacta y mejora la precision del calculo.</span>
         </div>
-        <TextField
-          label="Marca visible"
-          value={values.deviceBrand}
-          onChange={(event) => onDeviceBrandChange(event.target.value)}
-          placeholder="Ej: Samsung"
-          hint="Si elegis una marca exacta del catalogo, la usamos como valor por defecto."
-          maxLength={120}
-          disabled={submitting}
-        />
-        <TextField
-          label="Modelo visible"
-          value={values.deviceModel}
-          onChange={(event) => onDeviceModelChange(event.target.value)}
-          placeholder="Ej: Galaxy A32"
-          hint="Podes dejarlo manual aunque uses catalogo."
-          maxLength={120}
-          disabled={submitting}
-        />
       </div>
     </SectionCard>
   );

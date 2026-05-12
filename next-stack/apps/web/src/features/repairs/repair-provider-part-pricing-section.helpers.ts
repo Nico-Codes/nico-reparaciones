@@ -54,6 +54,18 @@ export type VisibleProviderSearchState = {
   visiblePartResults: AdminProviderAggregatePartSearchItem[];
 };
 
+function cleanSearchToken(value: string | null | undefined) {
+  return (value ?? '').replace(/\s+/g, ' ').trim();
+}
+
+export function buildProviderPartAutoSearchQuery(context: TechnicalContext) {
+  const brand = cleanSearchToken(context.deviceBrand);
+  const model = cleanSearchToken(context.deviceModel);
+  const issue = cleanSearchToken(context.issueLabel);
+  if (!context.deviceModelId || !brand || !model || !issue) return '';
+  return [issue, brand, model].join(' ');
+}
+
 export function normalizeNullable(value: string) {
   const trimmed = value.trim();
   return trimmed || null;

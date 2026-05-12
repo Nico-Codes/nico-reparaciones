@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   availabilityLabel,
+  buildProviderPartAutoSearchQuery,
   buildProviderPricingStatusBadge,
   buildProviderFilterOptions,
   buildVisibleProviderSearchState,
@@ -37,6 +38,24 @@ describe('repair-provider-part-pricing-section helpers', () => {
     ).toContain('sup-1');
     expect(availabilityLabel('in_stock')).toBe('Disponible');
     expect(snapshotStatusLabel({ id: 'snap-1', status: 'APPLIED' } as any, 'snap-1')).toBe('Activo');
+  });
+
+  it('builds an automatic provider query only with exact model context and issue', () => {
+    expect(
+      buildProviderPartAutoSearchQuery({
+        deviceBrand: ' Samsung ',
+        deviceModel: ' A06 ',
+        issueLabel: ' Modulo ',
+        deviceModelId: 'model-1',
+      }),
+    ).toBe('Modulo Samsung A06');
+    expect(
+      buildProviderPartAutoSearchQuery({
+        deviceBrand: 'Samsung',
+        deviceModel: 'A06',
+        issueLabel: 'Modulo',
+      }),
+    ).toBe('');
   });
 
   it('only allows selecting parts with usable price and stock state', () => {

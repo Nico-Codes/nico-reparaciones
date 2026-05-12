@@ -19,6 +19,7 @@ import {
 
 type UseRepairProviderPartSearchArgs = {
   activeSnapshot: RepairPricingSnapshotItem | null;
+  autoSearchQuery?: string | null;
   hydrateKey: string;
   disabled: boolean;
   onResetPreviewAndPending: () => void;
@@ -26,12 +27,14 @@ type UseRepairProviderPartSearchArgs = {
 
 export function useRepairProviderPartSearch({
   activeSnapshot,
+  autoSearchQuery = '',
   hydrateKey,
   disabled,
   onResetPreviewAndPending,
 }: UseRepairProviderPartSearchArgs) {
   const providerRequestIdRef = useRef(0);
   const searchRequestIdRef = useRef(0);
+  const lastAutoSearchKeyRef = useRef('');
   const resetPreviewAndPendingRef = useRef(onResetPreviewAndPending);
 
   const [providerReloadToken, setProviderReloadToken] = useState(0);
@@ -169,9 +172,9 @@ export function useRepairProviderPartSearch({
     resetPreviewAndPendingRef.current();
   }
 
-  async function searchParts() {
+  async function searchParts(queryOverride?: string) {
     if (searchLoading || disabled) return;
-    const query = partQueryInput.trim();
+    const query = (queryOverride ?? partQueryInput).trim();
     if (query.length < 2) {
       setSearchError('Ingresa al menos 2 caracteres para buscar repuestos.');
       return;
@@ -211,6 +214,21 @@ export function useRepairProviderPartSearch({
       }
     }
   }
+
+  useEffect(() => {
+    const query = (autoSearchQuery ?? '').trim();
+    if (!query) {
+      lastAutoSearchKeyRef.current = '';
+      return;
+    }
+    if (disabled || providersLoading || providersError || searchLoading || activeSnapshot?.source === 'SUPPLIER_PART') return;
+
+    const key = [hydrateKey, query, supplierFilterId].join('::');
+    if (lastAutoSearchKeyRef.current === key) return;
+    lastAutoSearchKeyRef.current = key;
+    setPartQueryInput(query);
+    void searchParts(query);
+  }, [activeSnapshot?.source, autoSearchQuery, disabled, hydrateKey, providersError, providersLoading, searchLoading, supplierFilterId]);
 
   return {
     providersLoading,

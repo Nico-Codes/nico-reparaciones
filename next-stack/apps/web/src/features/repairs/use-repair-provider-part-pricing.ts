@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { repairsApi, type RepairProviderPartPricingPreviewResult } from './api';
 import {
+  buildProviderPartAutoSearchQuery,
   buildProviderPricingStatusBadge,
   normalizeNullable,
   partKey,
@@ -43,6 +44,7 @@ export function useRepairProviderPartPricing({
 
   const search = useRepairProviderPartSearch({
     activeSnapshot,
+    autoSearchQuery: mode === 'create' ? buildProviderPartAutoSearchQuery(technicalContext) : '',
     hydrateKey,
     disabled,
     onResetPreviewAndPending: clearPreviewAndPending,

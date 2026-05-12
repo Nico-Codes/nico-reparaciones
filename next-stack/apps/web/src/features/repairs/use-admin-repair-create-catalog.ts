@@ -182,16 +182,16 @@ export function useAdminRepairCreateCatalog({
   const selectedIssue = useMemo(() => issues.find((item) => item.id === deviceIssueTypeId) ?? null, [issues, deviceIssueTypeId]);
 
   useEffect(() => {
-    if (selectedBrand && !deviceBrand.trim()) setDeviceBrand(selectedBrand.name);
-  }, [deviceBrand, selectedBrand, setDeviceBrand]);
+    setDeviceBrand(selectedBrand?.name ?? '');
+  }, [selectedBrand, setDeviceBrand]);
 
   useEffect(() => {
-    if (selectedModel && !deviceModel.trim()) setDeviceModel(selectedModel.name);
-  }, [deviceModel, selectedModel, setDeviceModel]);
+    setDeviceModel(selectedModel?.name ?? '');
+  }, [selectedModel, setDeviceModel]);
 
   useEffect(() => {
-    if (selectedIssue && !issueLabel.trim()) setIssueLabel(selectedIssue.name);
-  }, [issueLabel, selectedIssue, setIssueLabel]);
+    if (selectedIssue) setIssueLabel(selectedIssue.name);
+  }, [selectedIssue, setIssueLabel]);
 
   return {
     loadingTypes,

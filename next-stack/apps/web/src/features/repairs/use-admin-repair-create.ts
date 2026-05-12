@@ -183,8 +183,6 @@ export function useAdminRepairCreate() {
       onDeviceTypeIdChange: setDeviceTypeId,
       onDeviceBrandIdChange: setDeviceBrandId,
       onDeviceModelIdChange: setDeviceModelId,
-      onDeviceBrandChange: setDeviceBrand,
-      onDeviceModelChange: setDeviceModel,
     },
     diagnosisSectionProps: {
       loadingIssues,
