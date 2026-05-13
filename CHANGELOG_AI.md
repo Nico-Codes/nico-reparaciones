@@ -12,6 +12,22 @@
 
 ---
 
+### 2026-05-13 - Codex
+- Alcance: corregir `Enter` en busqueda de repuestos durante el alta de reparacion.
+- Tipo de intervencion: UX frontend.
+- Archivos tocados:
+  - `next-stack/apps/web/src/features/repairs/repair-provider-part-search-controls.tsx`
+- ¿Cambio comportamiento funcional?: Si. Presionar `Enter` en el input `Buscar repuesto` dispara la busqueda de proveedores y ya no envia el formulario principal de creacion de reparacion.
+- Validaciones ejecutadas:
+  - `typecheck --workspace @nico/web`
+  - `test --workspace @nico/web -- repair-provider-part-pricing-section.helpers.test.ts`
+  - `build --workspace @nico/web`
+  - `git diff --check`
+- Riesgos / notas:
+  - El cambio queda acotado al input de busqueda de repuestos; el submit principal de reparacion no cambia.
+
+---
+
 ### 2026-05-12 - Codex
 - Alcance: permitir eliminacion definitiva de proveedores con perfiles de encargue vinculados.
 - Tipo de intervencion: backend admin, UX admin y tests.

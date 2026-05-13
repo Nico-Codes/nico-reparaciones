@@ -80,6 +80,12 @@ export function RepairProviderPartSearchControls({
           label="Buscar repuesto"
           value={partQueryInput}
           onChange={(event) => onPartQueryChange(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key !== 'Enter') return;
+            event.preventDefault();
+            event.stopPropagation();
+            if (!searchLoading && !disabled) onSearch();
+          }}
           placeholder="Ej: modulo Samsung A10"
           hint={selectedProviderHint}
           disabled={disabled}
