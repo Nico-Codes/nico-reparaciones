@@ -1,6 +1,7 @@
 import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, type Repair } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { resolveRepairIssueIconSlot } from '../device-catalog/repair-issue-icons.js';
 import {
   assertValidRepairStatusTransition,
   buildCreatedAtRange,
@@ -146,7 +147,13 @@ export class RepairsAdminService {
       take: 100,
     });
 
-    return { items: items.map((repair) => this.repairsSupportService.serializeRepair(repair)) };
+    const issueIconSlots = await this.resolveIssueIconSlots(items);
+    return {
+      items: items.map((repair) => ({
+        ...this.repairsSupportService.serializeRepair(repair),
+        issueIconSlot: issueIconSlots.get(repair.id) ?? resolveRepairIssueIconSlot(repair.issueLabel),
+      })),
+    };
   }
 
   async adminStats() {
@@ -191,10 +198,34 @@ export class RepairsAdminService {
     ]);
 
     return {
-      item: this.repairsSupportService.serializeRepair(repair),
+      item: {
+        ...this.repairsSupportService.serializeRepair(repair),
+        issueIconSlot: (await this.resolveIssueIconSlots([repair])).get(repair.id) ?? resolveRepairIssueIconSlot(repair.issueLabel),
+      },
       timeline,
       pricingSnapshots,
     };
+  }
+
+  private async resolveIssueIconSlots(repairs: Array<Pick<Repair, 'id' | 'deviceIssueTypeId' | 'issueLabel'>>) {
+    const issueIds = [...new Set(repairs.map((repair) => repair.deviceIssueTypeId).filter((id): id is string => Boolean(id)))];
+    if (issueIds.length === 0) return new Map<string, string>();
+
+    const issues = await this.prisma.deviceIssueType.findMany({
+      where: { id: { in: issueIds } },
+      select: { id: true, name: true, iconSlot: true },
+    });
+    const issueById = new Map(issues.map((issue) => [issue.id, issue]));
+
+    return new Map(
+      repairs.map((repair) => {
+        const issue = repair.deviceIssueTypeId ? issueById.get(repair.deviceIssueTypeId) : null;
+        return [
+          repair.id,
+          issue?.iconSlot ?? resolveRepairIssueIconSlot(issue?.name ?? repair.issueLabel),
+        ];
+      }),
+    );
   }
 
   async adminWhatsappDraft(id: string) {

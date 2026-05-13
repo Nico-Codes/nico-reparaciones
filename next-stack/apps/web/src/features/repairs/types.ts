@@ -60,6 +60,7 @@ export type RepairItem = {
   deviceBrand: string | null;
   deviceModel: string | null;
   issueLabel: string | null;
+  issueIconSlot?: string | null;
   status: string;
   quotedPrice: number | null;
   finalPrice: number | null;

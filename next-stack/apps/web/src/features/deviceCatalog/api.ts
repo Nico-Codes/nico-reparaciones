@@ -12,7 +12,7 @@ export const deviceCatalogApi = {
     );
   },
   issues(deviceTypeId?: string) {
-    return authJsonRequest<{ items: Array<{ id: string; deviceTypeId?: string | null; name: string; slug: string; active: boolean }> }>(
+    return authJsonRequest<{ items: Array<{ id: string; deviceTypeId?: string | null; name: string; slug: string; iconSlot?: string | null; active: boolean }> }>(
       `/device-catalog/issues${deviceTypeId ? `?deviceTypeId=${encodeURIComponent(deviceTypeId)}` : ''}`,
     );
   },
@@ -34,13 +34,13 @@ export const deviceCatalogApi = {
   updateModel(id: string, input: { brandId?: string; name?: string; slug?: string; active?: boolean }) {
     return authJsonRequest(`/device-catalog/models/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(input) });
   },
-  createIssue(input: { deviceTypeId?: string | null; name: string; slug: string; active?: boolean }) {
-    return authJsonRequest<{ item: { id: string; deviceTypeId?: string | null; name: string; slug: string; active: boolean } }>(
+  createIssue(input: { deviceTypeId?: string | null; name: string; slug: string; iconSlot?: string | null; active?: boolean }) {
+    return authJsonRequest<{ item: { id: string; deviceTypeId?: string | null; name: string; slug: string; iconSlot?: string | null; active: boolean } }>(
       '/device-catalog/issues',
       { method: 'POST', body: JSON.stringify(input) },
     );
   },
-  updateIssue(id: string, input: { deviceTypeId?: string | null; name?: string; slug?: string; active?: boolean }) {
+  updateIssue(id: string, input: { deviceTypeId?: string | null; name?: string; slug?: string; iconSlot?: string | null; active?: boolean }) {
     return authJsonRequest(`/device-catalog/issues/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(input) });
   },
   deleteBrand(id: string) {

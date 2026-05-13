@@ -9,7 +9,7 @@ export type ModelItem = {
   active: boolean;
   brand: { id: string; name: string; slug: string };
 };
-export type IssueItem = { id: string; deviceTypeId?: string | null; name: string; slug: string; active: boolean };
+export type IssueItem = { id: string; deviceTypeId?: string | null; name: string; slug: string; iconSlot?: string | null; active: boolean };
 export type SimilarModelMatch = { item: ModelItem; exact: boolean };
 
 export function slugify(value: string) {

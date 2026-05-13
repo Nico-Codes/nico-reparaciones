@@ -1,9 +1,12 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useId, useMemo, useState, type ChangeEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
+import { Upload } from 'lucide-react';
+import { BrandIcon } from '@/components/brand/BrandIcon';
 import { SectionCard } from '@/components/ui/section-card';
 import { CustomSelect, type CustomSelectMenuAction } from '@/components/ui/custom-select';
 import type { BrandItem, DeviceTypeItem, IssueItem, ModelItem, SimilarModelMatch } from './admin-devices-catalog.helpers';
+import { buildRepairIssueIconOptions, getRepairIssueIconFallback, resolveRepairIssueIconSlot } from './repair-issue-icons';
 import type { RepairRuleRow } from './admin-repair-pricing-rules.helpers';
 import type { RepairCalculationGroupItem, RepairCalculationScope } from './admin-repair-calculation-context';
 
@@ -569,22 +572,32 @@ export function AdminRepairCalculationsModelsPanel({
 export function AdminRepairCalculationsIssuesPanel({
   rows,
   draft,
+  draftIconSlot,
+  customIconSlots,
   typeSelected,
   onDraftChange,
+  onDraftIconSlotChange,
   onCreate,
   onRename,
   onToggle,
   onDelete,
+  onIconChange,
+  onUploadIcon,
   openTo,
 }: {
   rows: IssueItem[];
   draft: string;
+  draftIconSlot: string;
+  customIconSlots: string[];
   typeSelected: boolean;
   onDraftChange: (value: string) => void;
+  onDraftIconSlotChange: (value: string) => void;
   onCreate: () => void;
   onRename: (row: IssueItem) => void;
   onToggle: (row: IssueItem) => void;
   onDelete: (row: IssueItem) => void;
+  onIconChange: (row: IssueItem, slot: string) => void;
+  onUploadIcon: (seed: string, file: File) => Promise<string | null>;
   openTo: string;
 }) {
   return (
@@ -594,7 +607,7 @@ export function AdminRepairCalculationsIssuesPanel({
       actions={<Link to={openTo} className="btn-outline !h-9 !rounded-xl px-4 text-sm font-bold">Abrir editor</Link>}
     >
       <div className="space-y-3">
-        <div className="flex gap-2">
+        <div className="grid gap-2 md:grid-cols-[1fr_auto_auto] md:items-end">
           <input
             value={draft}
             onChange={(event) => onDraftChange(event.target.value)}
@@ -602,6 +615,17 @@ export function AdminRepairCalculationsIssuesPanel({
             className="h-11 flex-1 rounded-2xl border border-zinc-200 px-3 text-sm uppercase"
             disabled={!typeSelected}
             autoCapitalize="characters"
+          />
+          <IssueIconPicker
+            value={draftIconSlot || resolveRepairIssueIconSlot(draft)}
+            issueName={draft || 'Falla nueva'}
+            customSlots={customIconSlots}
+            disabled={!typeSelected}
+            onChange={onDraftIconSlotChange}
+            onUpload={async (file) => {
+              const slot = await onUploadIcon(draft || 'falla', file);
+              if (slot) onDraftIconSlotChange(slot);
+            }}
           />
           <button type="button" onClick={onCreate} disabled={!typeSelected || !draft.trim()} className="btn-primary !h-11 !rounded-2xl px-4 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-60">
             Agregar
@@ -613,19 +637,167 @@ export function AdminRepairCalculationsIssuesPanel({
         <div className="max-h-80 space-y-2 overflow-auto pr-1">
           {typeSelected && rows.length === 0 ? <PanelEmptyState label="No hay fallas para el tipo actual." /> : null}
           {rows.map((row) => (
-            <SimpleTaxonomyCard
+            <IssueTaxonomyCard
               key={row.id}
-              title={row.name}
-              subtitle={`slug: ${row.slug}`}
-              active={row.active}
+              row={row}
+              customIconSlots={customIconSlots}
               onRename={() => onRename(row)}
               onToggle={() => onToggle(row)}
               onDelete={() => onDelete(row)}
+              onIconChange={(slot) => onIconChange(row, slot)}
+              onUpload={async (file) => {
+                const slot = await onUploadIcon(row.slug || row.name, file);
+                if (slot) onIconChange(row, slot);
+              }}
             />
           ))}
         </div>
       </div>
     </SectionCard>
+  );
+}
+
+function IssueTaxonomyCard({
+  row,
+  customIconSlots,
+  onRename,
+  onToggle,
+  onDelete,
+  onIconChange,
+  onUpload,
+}: {
+  row: IssueItem;
+  customIconSlots: string[];
+  onRename: () => void;
+  onToggle: () => void;
+  onDelete: () => void;
+  onIconChange: (slot: string) => void;
+  onUpload: (file: File) => Promise<void>;
+}) {
+  const iconSlot = row.iconSlot || resolveRepairIssueIconSlot(row.name);
+  return (
+    <div className="rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm">
+      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+        <div className="flex min-w-0 gap-3">
+          <span className="flex h-11 w-11 flex-none items-center justify-center rounded-2xl border border-sky-100 bg-sky-50 p-2 text-slate-800">
+            <BrandIcon slot={iconSlot} className="h-full w-full" fallback={getRepairIssueIconFallback(iconSlot)} />
+          </span>
+          <div className="min-w-0">
+            <div className="font-bold text-zinc-900">{row.name}</div>
+            <div className="text-xs text-zinc-500">slug: {row.slug}</div>
+            <div className="mt-2 flex flex-wrap gap-3 text-xs font-semibold">
+              <button type="button" onClick={onRename} className="text-sky-700">
+                Renombrar
+              </button>
+              <button type="button" onClick={onToggle} className="text-zinc-700">
+                {row.active ? 'Desactivar' : 'Activar'}
+              </button>
+              <button type="button" onClick={onDelete} className="text-rose-700">
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+        <div className="flex flex-col items-start gap-2 md:items-end">
+          <span className={row.active ? 'badge-emerald' : 'badge-zinc'}>{row.active ? 'Activa' : 'Inactiva'}</span>
+          <IssueIconPicker
+            value={iconSlot}
+            issueName={row.name}
+            customSlots={customIconSlots}
+            onChange={onIconChange}
+            onUpload={onUpload}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function IssueIconPicker({
+  value,
+  issueName,
+  customSlots,
+  disabled,
+  onChange,
+  onUpload,
+}: {
+  value: string;
+  issueName: string;
+  customSlots: string[];
+  disabled?: boolean;
+  onChange: (slot: string) => void;
+  onUpload: (file: File) => Promise<void>;
+}) {
+  const inputId = useId();
+  const [open, setOpen] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const options = useMemo(() => buildRepairIssueIconOptions(value ? [...customSlots, value] : customSlots), [customSlots, value]);
+  const selected = options.find((option) => option.slot === value);
+
+  async function handleUpload(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0] ?? null;
+    event.target.value = '';
+    if (!file) return;
+    setUploading(true);
+    try {
+      await onUpload(file);
+      setOpen(false);
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen((current) => !current)}
+        className="inline-flex h-11 min-w-[9rem] items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-3 text-xs font-black text-zinc-800 shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        <span className="flex h-6 w-6 items-center justify-center text-slate-800">
+          <BrandIcon slot={value} className="h-full w-full" fallback={getRepairIssueIconFallback(value)} />
+        </span>
+        <span className="truncate">{selected?.label ?? 'Icono'}</span>
+      </button>
+
+      {open ? (
+        <div className="absolute right-0 z-30 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl">
+          <div className="border-b border-zinc-100 px-3 py-2">
+            <div className="text-xs font-black uppercase tracking-wide text-zinc-500">Icono de falla</div>
+            <div className="truncate text-sm font-bold text-zinc-900">{issueName}</div>
+          </div>
+          <div className="max-h-72 overflow-auto p-2">
+            {options.map((option) => (
+              <button
+                key={option.slot}
+                type="button"
+                onClick={() => {
+                  onChange(option.slot);
+                  setOpen(false);
+                }}
+                className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-bold ${
+                  value === option.slot ? 'bg-sky-50 text-sky-900' : 'text-zinc-800 hover:bg-zinc-50'
+                }`}
+              >
+                <span className="flex h-8 w-8 flex-none items-center justify-center rounded-xl border border-zinc-100 bg-white p-1.5 text-slate-800">
+                  <BrandIcon slot={option.slot} className="h-full w-full" fallback={getRepairIssueIconFallback(option.slot)} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate">{option.label}</span>
+                  <span className="block text-[0.68rem] font-black uppercase tracking-wide text-zinc-400">{option.group === 'recommended' ? 'Fallas' : option.group === 'custom' ? 'Personalizado' : 'Existente'}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+          <label className="flex cursor-pointer items-center justify-center gap-2 border-t border-zinc-100 px-3 py-3 text-sm font-black text-sky-800 hover:bg-sky-50">
+            <Upload className="h-4 w-4" />
+            {uploading ? 'Subiendo icono...' : 'Subir icono nuevo'}
+            <input id={inputId} type="file" accept=".svg,.png,.jpg,.jpeg,.webp" className="sr-only" onChange={(event) => void handleUpload(event)} disabled={uploading} />
+          </label>
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -708,6 +880,7 @@ export function AdminRepairCalculationsQuickCreateDialog({
   value,
   matches,
   hasExactDuplicate,
+  iconPicker,
   onValueChange,
   onClose,
   onSubmit,
@@ -722,6 +895,13 @@ export function AdminRepairCalculationsQuickCreateDialog({
   value: string;
   matches: SimilarModelMatch[];
   hasExactDuplicate: boolean;
+  iconPicker?: {
+    value: string;
+    issueName: string;
+    customSlots: string[];
+    onChange: (slot: string) => void;
+    onUpload: (file: File) => Promise<void>;
+  } | null;
   onValueChange: (value: string) => void;
   onClose: () => void;
   onSubmit: () => void;
@@ -781,16 +961,27 @@ export function AdminRepairCalculationsQuickCreateDialog({
             <span className="font-black">Contexto activo:</span> {contextLabel}
           </div>
 
-          <div>
-            <label className="mb-1.5 block text-sm font-bold text-zinc-800">{fieldLabel}</label>
-            <input
-              value={value}
-              onChange={(event) => onValueChange(event.target.value)}
-              placeholder={placeholder}
-              className="h-12 w-full rounded-2xl border border-zinc-200 px-4 text-sm font-semibold text-zinc-900 uppercase"
-              autoFocus
-              autoCapitalize="characters"
-            />
+          <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
+            <div>
+              <label className="mb-1.5 block text-sm font-bold text-zinc-800">{fieldLabel}</label>
+              <input
+                value={value}
+                onChange={(event) => onValueChange(event.target.value)}
+                placeholder={placeholder}
+                className="h-12 w-full rounded-2xl border border-zinc-200 px-4 text-sm font-semibold text-zinc-900 uppercase"
+                autoFocus
+                autoCapitalize="characters"
+              />
+            </div>
+            {iconPicker ? (
+              <IssueIconPicker
+                value={iconPicker.value}
+                issueName={iconPicker.issueName}
+                customSlots={iconPicker.customSlots}
+                onChange={iconPicker.onChange}
+                onUpload={iconPicker.onUpload}
+              />
+            ) : null}
           </div>
 
           {matches.length > 0 ? (

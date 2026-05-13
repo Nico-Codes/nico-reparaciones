@@ -1,5 +1,6 @@
 import { AlertTriangle, Plus, RefreshCcw, Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { BrandIcon } from '@/components/brand/BrandIcon';
 import { Button } from '@/components/ui/button';
 import { CustomSelect } from '@/components/ui/custom-select';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -10,18 +11,14 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { TextField } from '@/components/ui/text-field';
 import {
   formatDateTime,
-  getRepairCommercialStatusLabel,
   getRepairDeviceLabel,
   getRepairIssueLabel,
-  getRepairOriginLabel,
-  getRepairReferencePrice,
-  money,
   repairCode,
   REPAIR_STATUS_FILTER_OPTIONS,
   repairStatusLabel,
   repairStatusTone,
-  timeAgo,
 } from './admin-repairs-list.helpers';
+import { getRepairIssueIconFallback, resolveRepairIssueIconSlot } from '@/features/admin/repair-issue-icons';
 import type { RepairItem } from './types';
 
 export function AdminRepairsHeaderActions({
@@ -155,7 +152,7 @@ export function AdminRepairsOperationsSection({
         </div>
       ) : null}
 
-      <div className="admin-collection">
+      <div className="admin-repairs-grid">
         {loading ? (
           <SectionCard tone="muted" bodyClassName="space-y-3">
             <LoadingBlock label="Cargando reparaciones" lines={4} />
@@ -173,53 +170,46 @@ export function AdminRepairsOperationsSection({
             }
           />
         ) : (
-          items.map((repair) => <AdminRepairRow key={repair.id} repair={repair} />)
+          items.map((repair) => <AdminRepairCard key={repair.id} repair={repair} />)
         )}
       </div>
     </SectionCard>
   );
 }
 
-function AdminRepairRow({ repair }: { repair: RepairItem }) {
+function AdminRepairCard({ repair }: { repair: RepairItem }) {
+  const issueLabel = getRepairIssueLabel(repair);
+  const iconSlot = repair.issueIconSlot || resolveRepairIssueIconSlot(issueLabel);
+
   return (
-    <article className="admin-entity-row">
-      <div className="admin-entity-row__top">
-        <div className="admin-entity-row__heading">
-          <div className="admin-entity-row__title-row">
-            <div className="admin-entity-row__title">{repairCode(repair.id)}</div>
-            <StatusBadge label={repairStatusLabel(repair.status)} tone={repairStatusTone(repair.status)} />
-            {repair.finalPrice != null ? <StatusBadge label="Precio final cargado" tone="success" /> : null}
-          </div>
-          <div className="admin-entity-row__meta">
-            <span>{repair.customerName}</span>
-            <span>{repair.customerPhone || 'Sin telefono'}</span>
-            <span>{formatDateTime(repair.createdAt)}</span>
-            <span>{timeAgo(repair.createdAt)}</span>
-          </div>
+    <article className="admin-repair-card">
+      <div className="admin-repair-card__top">
+        <span className="admin-repair-card__icon">
+          <BrandIcon slot={iconSlot} className="h-full w-full" fallback={getRepairIssueIconFallback(iconSlot)} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="admin-repair-card__customer">{repair.customerName}</div>
+          <div className="admin-repair-card__code">{repairCode(repair.id)}</div>
         </div>
-        <div className="admin-entity-row__aside">
-          <span className="admin-entity-row__eyebrow">Importe de referencia</span>
-          <div className="admin-entity-row__value">{money(getRepairReferencePrice(repair))}</div>
+        <StatusBadge label={repairStatusLabel(repair.status)} tone={repairStatusTone(repair.status)} />
+      </div>
+
+      <div className="admin-repair-card__body">
+        <div className="admin-repair-card__field">
+          <span>Fecha</span>
+          <strong>{formatDateTime(repair.createdAt)}</strong>
+        </div>
+        <div className="admin-repair-card__field">
+          <span>Equipo</span>
+          <strong>{getRepairDeviceLabel(repair)}</strong>
+        </div>
+        <div className="admin-repair-card__field">
+          <span>Falla</span>
+          <strong>{issueLabel}</strong>
         </div>
       </div>
 
-      <div className="admin-repair-row__details">
-        <div className="detail-panel detail-panel--compact">
-          <div className="detail-panel__label">Equipo</div>
-          <div className="detail-panel__value">{getRepairDeviceLabel(repair)}</div>
-        </div>
-        <div className="detail-panel detail-panel--compact">
-          <div className="detail-panel__label">Estado comercial</div>
-          <div className="detail-panel__value">{getRepairCommercialStatusLabel(repair)}</div>
-        </div>
-        <div className="detail-panel detail-panel--compact">
-          <div className="detail-panel__label">Falla reportada</div>
-          <div className="detail-panel__value">{getRepairIssueLabel(repair)}</div>
-        </div>
-      </div>
-
-      <div className="admin-entity-row__actions">
-        <StatusBadge label={getRepairOriginLabel(repair)} tone="neutral" />
+      <div className="admin-repair-card__actions">
         <Button asChild variant="outline" size="sm">
           <Link to={`/admin/repairs/${encodeURIComponent(repair.id)}`}>Ver detalle</Link>
         </Button>

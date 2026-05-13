@@ -25,6 +25,7 @@ const issueSchema = z.object({
   deviceTypeId: z.string().trim().max(191).optional().nullable(),
   name: z.string().trim().min(2).max(190),
   slug: z.string().trim().min(2).max(190),
+  iconSlot: z.string().trim().max(120).optional().nullable(),
   active: z.boolean().optional(),
 });
 const issuePatchSchema = issueSchema.partial();

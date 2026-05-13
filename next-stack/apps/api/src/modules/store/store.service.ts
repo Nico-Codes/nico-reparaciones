@@ -140,7 +140,9 @@ export class StoreService {
   async getBrandingAssets() {
     try {
       const brandAssetEntries = Object.entries(BRAND_ASSET_SLOTS);
-      const iconSlotEntries = brandAssetEntries.filter(([slot]) => slot.startsWith('icon_') || slot.startsWith('checkout_'));
+      const iconSlotEntries = brandAssetEntries.filter(
+        ([slot]) => slot.startsWith('icon_') || slot.startsWith('checkout_') || slot.startsWith('repair_issue_'),
+      );
       const keys = [
         'business_name',
         'shop_name',
@@ -178,7 +180,16 @@ export class StoreService {
         ...brandAssetEntries.map(([, spec]) => spec.settingKey),
       ] as const;
 
-      const rows = await this.prisma.appSetting.findMany({ where: { key: { in: [...new Set(keys)] } } });
+      const [rows, dynamicIconVersions] = await Promise.all([
+        this.prisma.appSetting.findMany({ where: { key: { in: [...new Set(keys)] } } }),
+        this.prisma.brandAssetVersion.findMany({
+          where: {
+            isActive: true,
+            slot: { startsWith: 'repair_issue_' },
+          },
+          orderBy: { createdAt: 'desc' },
+        }),
+      ]);
       const map = new Map(rows.map((r) => [r.key, r.value ?? '']));
       const rowsByKey = new Map(rows.map((row) => [row.key, row]));
       const legacyAuthTextColor = (map.get('auth_panel_text_color') || '#FFFFFF').trim() || '#FFFFFF';
@@ -245,12 +256,18 @@ export class StoreService {
           adminVentaRapida: this.resolveSettingAssetUrl(raw.iconAdminVentaRapida, rowsByKey.get('brand_asset.icon_admin_venta_rapida.path')?.updatedAt),
           adminProductos: this.resolveSettingAssetUrl(raw.iconAdminProductos, rowsByKey.get('brand_asset.icon_admin_productos.path')?.updatedAt),
         },
-        iconsBySlot: Object.fromEntries(
-          iconSlotEntries.map(([slot, spec]) => [
-            slot,
-            this.resolveSettingAssetUrl(map.get(spec.settingKey) || spec.defaultPath || '', rowsByKey.get(spec.settingKey)?.updatedAt),
-          ]),
-        ),
+        iconsBySlot: {
+          ...Object.fromEntries(
+            iconSlotEntries.map(([slot, spec]) => [
+              slot,
+              this.resolveSettingAssetUrl(map.get(spec.settingKey) || spec.defaultPath || '', rowsByKey.get(spec.settingKey)?.updatedAt),
+            ]),
+          ),
+          ...Object.fromEntries(dynamicIconVersions.map((version) => [
+            version.slot,
+            this.resolveSettingAssetUrl(version.path, version.createdAt),
+          ])),
+        },
         favicons: {
           faviconIco: this.resolveSettingAssetUrl(raw.faviconIco, rowsByKey.get('brand_asset.favicon_ico.path')?.updatedAt),
           favicon16: this.resolveSettingAssetUrl(raw.favicon16, rowsByKey.get('brand_asset.favicon_16.path')?.updatedAt),

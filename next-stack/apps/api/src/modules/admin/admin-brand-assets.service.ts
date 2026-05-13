@@ -1,7 +1,7 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { PublicAssetStorageService, type BufferedUploadFile } from '../../common/storage/public-asset-storage.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { BRAND_ASSET_SLOTS } from './app-settings.registry.js';
+import { getBrandAssetSlotSpec } from './app-settings.registry.js';
 import { AdminSettingsService } from './admin-settings.service.js';
 
 @Injectable()
@@ -13,7 +13,7 @@ export class AdminBrandAssetsService {
   ) {}
 
   async uploadBrandAsset(slot: string, file: BufferedUploadFile) {
-    const spec = BRAND_ASSET_SLOTS[slot as keyof typeof BRAND_ASSET_SLOTS];
+    const spec = getBrandAssetSlotSpec(slot);
     if (!spec) throw new BadRequestException('Slot de asset no soportado');
 
     const { ext, buffer } = this.assetStorage.validateUpload(file, spec.allowedExts as readonly string[], spec.maxKb);
@@ -50,7 +50,7 @@ export class AdminBrandAssetsService {
   }
 
   async resetBrandAsset(slot: string) {
-    const spec = BRAND_ASSET_SLOTS[slot as keyof typeof BRAND_ASSET_SLOTS];
+    const spec = getBrandAssetSlotSpec(slot);
     if (!spec) throw new BadRequestException('Slot de asset no soportado');
 
     await this.prisma.$transaction([
@@ -86,7 +86,7 @@ export class AdminBrandAssetsService {
   }
 
   async listBrandAssetVersions(slot: string) {
-    const spec = BRAND_ASSET_SLOTS[slot as keyof typeof BRAND_ASSET_SLOTS];
+    const spec = getBrandAssetSlotSpec(slot);
     if (!spec) throw new BadRequestException('Slot de asset no soportado');
 
     const [setting, versions] = await Promise.all([
@@ -135,7 +135,7 @@ export class AdminBrandAssetsService {
   }
 
   async activateBrandAssetVersion(slot: string, versionId: string) {
-    const spec = BRAND_ASSET_SLOTS[slot as keyof typeof BRAND_ASSET_SLOTS];
+    const spec = getBrandAssetSlotSpec(slot);
     if (!spec) throw new BadRequestException('Slot de asset no soportado');
 
     if (versionId === 'default') {

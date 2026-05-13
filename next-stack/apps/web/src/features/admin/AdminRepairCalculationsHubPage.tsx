@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import type { CustomSelectMenuAction } from '@/components/ui/custom-select';
 import { adminApi } from './api';
+import { brandAssetsApi } from './brandAssetsApi';
 import type { DeviceTypeItem, BrandItem, IssueItem, ModelItem } from './admin-devices-catalog.helpers';
 import { findExactCatalogMatch, findSimilarModels, hasExactModelMatch, slugify } from './admin-devices-catalog.helpers';
 import {
@@ -31,8 +32,10 @@ import {
   AdminRepairCalculationsTypesPanel,
 } from './admin-repair-calculations-hub.sections';
 import { fromApiRepairRule, type RepairRuleRow } from './admin-repair-pricing-rules.helpers';
+import { buildDynamicRepairIssueIconSlot, resolveRepairIssueIconSlot } from './repair-issue-icons';
 import { deviceCatalogApi } from '@/features/deviceCatalog/api';
 import { repairsApi } from '@/features/repairs/api';
+import { loadStoreBranding, setStoreBrandingCache } from '@/features/store/branding-cache';
 
 type RepairRulesApiRow = NonNullable<Awaited<ReturnType<typeof repairsApi.pricingRulesList>>['items']>;
 type QuickCreateKind = 'deviceType' | 'brand' | 'group' | 'model' | 'issue';
@@ -67,6 +70,8 @@ export function AdminRepairCalculationsHubPage() {
   const [groupDraftActive, setGroupDraftActive] = useState(true);
   const [modelDraft, setModelDraft] = useState('');
   const [issueDraft, setIssueDraft] = useState('');
+  const [issueDraftIconSlot, setIssueDraftIconSlot] = useState('');
+  const [quickCreateIssueIconSlot, setQuickCreateIssueIconSlot] = useState('');
   const [quickCreate, setQuickCreate] = useState<QuickCreateState | null>(null);
 
   const [creatingType, setCreatingType] = useState(false);
@@ -213,6 +218,10 @@ export function AdminRepairCalculationsHubPage() {
     () => (quickCreate?.kind === 'model' ? hasExactModelMatch(brandModels, quickCreate.value) : false),
     [brandModels, quickCreate],
   );
+  const customIssueIconSlots = useMemo(
+    () => [...new Set(issues.map((issue) => issue.iconSlot).filter((slot): slot is string => Boolean(slot?.startsWith('repair_issue_'))))],
+    [issues],
+  );
 
   const deviceTypeOptions = useMemo(
     () => [{ value: '', label: 'Tipo: Todos' }, ...deviceTypes.map((item) => ({ value: item.id, label: item.name }))],
@@ -349,13 +358,37 @@ export function AdminRepairCalculationsHubPage() {
     );
   }
 
-  async function createIssueValue(name: string, successMessage = 'Falla creada.') {
+  async function refreshBrandingCache() {
+    setStoreBrandingCache(null);
+    await loadStoreBranding();
+  }
+
+  async function uploadIssueIcon(seed: string, file: File) {
+    const slot = buildDynamicRepairIssueIconSlot(seed);
+    setError('');
+    setSuccess('');
+    try {
+      await brandAssetsApi.upload(slot, file);
+      await refreshBrandingCache();
+      setSuccess('Icono de falla subido.');
+      return slot;
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No se pudo subir el icono de falla.');
+      return null;
+    }
+  }
+
+  async function createIssueValue(name: string, iconSlot?: string | null, successMessage = 'Falla creada.') {
     if (!scope.deviceTypeId) return false;
     const normalizedName = normalizeTaxonomyDraft(name).trim();
     const existing = findExactCatalogMatch(filteredIssues, normalizedName);
+    const resolvedIconSlot = iconSlot || resolveRepairIssueIconSlot(normalizedName);
     if (existing) {
       setError('');
       setSuccess('La falla ya existia para este tipo; la seleccionamos en el scope.');
+      if (resolvedIconSlot && existing.iconSlot !== resolvedIconSlot) {
+        await deviceCatalogApi.updateIssue(existing.id, { iconSlot: resolvedIconSlot });
+      }
       patchScope({ deviceIssueTypeId: existing.id });
       return true;
     }
@@ -365,6 +398,7 @@ export function AdminRepairCalculationsHubPage() {
           deviceTypeId: scope.deviceTypeId,
           name: normalizedName,
           slug: slugify(normalizedName),
+          iconSlot: resolvedIconSlot,
           active: true,
         });
         pendingScopePatchRef.current = { deviceIssueTypeId: response.item.id };
@@ -376,14 +410,16 @@ export function AdminRepairCalculationsHubPage() {
 
   function openQuickCreate(kind: QuickCreateKind) {
     setError('');
+    if (kind === 'issue') setQuickCreateIssueIconSlot('');
     setQuickCreate({ kind, value: '' });
   }
 
   function closeQuickCreate() {
     setQuickCreate(null);
+    setQuickCreateIssueIconSlot('');
   }
 
-  async function submitQuickCreate() {
+  async function submitQuickCreate(): Promise<void> {
     if (!quickCreate || !quickCreate.value.trim()) return;
     let created = false;
     if (quickCreate.kind === 'deviceType') {
@@ -399,7 +435,7 @@ export function AdminRepairCalculationsHubPage() {
       created = await createModelValue(quickCreate.value, 'Modelo creado desde el scope.');
     }
     if (quickCreate.kind === 'issue') {
-      created = await createIssueValue(quickCreate.value, 'Falla creada desde el scope.');
+      created = await createIssueValue(quickCreate.value, quickCreateIssueIconSlot || resolveRepairIssueIconSlot(quickCreate.value), 'Falla creada desde el scope.');
     }
     if (created) {
       closeQuickCreate();
@@ -554,8 +590,11 @@ export function AdminRepairCalculationsHubPage() {
 
   async function createIssue() {
     if (!scope.deviceTypeId || !issueDraft.trim()) return;
-    const created = await createIssueValue(issueDraft);
-    if (created) setIssueDraft('');
+    const created = await createIssueValue(issueDraft, issueDraftIconSlot || resolveRepairIssueIconSlot(issueDraft));
+    if (created) {
+      setIssueDraft('');
+      setIssueDraftIconSlot('');
+    }
   }
 
   async function renameIssue(row: IssueItem) {
@@ -574,6 +613,15 @@ export function AdminRepairCalculationsHubPage() {
       'Falla actualizada.',
       'No se pudo actualizar la falla.',
     );
+  }
+
+  async function changeIssueIcon(row: IssueItem, iconSlot: string) {
+    await runCatalogAction(
+      () => deviceCatalogApi.updateIssue(row.id, { iconSlot }),
+      'Icono de falla actualizado.',
+      'No se pudo actualizar el icono de la falla.',
+    );
+    await refreshBrandingCache();
   }
 
   async function deleteIssue(row: IssueItem) {
@@ -612,7 +660,7 @@ export function AdminRepairCalculationsHubPage() {
         value: quickCreate.value,
         onValueChange: updateValue,
         onClose: closeQuickCreate,
-        onSubmit: () => void submitQuickCreate(),
+        onSubmit: (): void => { void submitQuickCreate(); },
         matches: [] as typeof quickCreateSimilarModels,
         hasExactDuplicate: false,
       };
@@ -629,7 +677,7 @@ export function AdminRepairCalculationsHubPage() {
         value: quickCreate.value,
         onValueChange: updateValue,
         onClose: closeQuickCreate,
-        onSubmit: () => void submitQuickCreate(),
+        onSubmit: (): void => { void submitQuickCreate(); },
         matches: [] as typeof quickCreateSimilarModels,
         hasExactDuplicate: false,
       };
@@ -646,7 +694,7 @@ export function AdminRepairCalculationsHubPage() {
         value: quickCreate.value,
         onValueChange: updateValue,
         onClose: closeQuickCreate,
-        onSubmit: () => void submitQuickCreate(),
+        onSubmit: (): void => { void submitQuickCreate(); },
         matches: [] as typeof quickCreateSimilarModels,
         hasExactDuplicate: false,
       };
@@ -663,7 +711,7 @@ export function AdminRepairCalculationsHubPage() {
         value: quickCreate.value,
         onValueChange: updateValue,
         onClose: closeQuickCreate,
-        onSubmit: () => void submitQuickCreate(),
+        onSubmit: (): void => { void submitQuickCreate(); },
         matches: quickCreateSimilarModels,
         hasExactDuplicate: quickCreateHasExactDuplicate,
       };
@@ -679,11 +727,21 @@ export function AdminRepairCalculationsHubPage() {
       value: quickCreate.value,
       onValueChange: updateValue,
       onClose: closeQuickCreate,
-      onSubmit: () => void submitQuickCreate(),
+      onSubmit: (): void => { void submitQuickCreate(); },
       matches: [] as typeof quickCreateSimilarModels,
       hasExactDuplicate: false,
+      iconPicker: {
+        value: quickCreateIssueIconSlot || resolveRepairIssueIconSlot(quickCreate.value),
+        issueName: quickCreate.value || 'Falla nueva',
+        customSlots: customIssueIconSlots,
+        onChange: setQuickCreateIssueIconSlot,
+        onUpload: async (file: File) => {
+          const slot = await uploadIssueIcon(quickCreate.value || 'falla', file);
+          if (slot) setQuickCreateIssueIconSlot(slot);
+        },
+      },
     };
-  }, [quickCreate, quickCreateHasExactDuplicate, quickCreateSimilarModels, selectedBrand, summary]);
+  }, [customIssueIconSlots, quickCreate, quickCreateHasExactDuplicate, quickCreateIssueIconSlot, quickCreateSimilarModels, selectedBrand, summary]);
 
   const deviceTypeMenuAction = useMemo<CustomSelectMenuAction>(
     () => ({
@@ -773,6 +831,7 @@ export function AdminRepairCalculationsHubPage() {
         value={quickCreateMeta?.value || ''}
         matches={quickCreateMeta?.matches || []}
         hasExactDuplicate={quickCreateMeta?.hasExactDuplicate || false}
+        iconPicker={quickCreateMeta && 'iconPicker' in quickCreateMeta ? quickCreateMeta.iconPicker : null}
         onValueChange={quickCreateMeta?.onValueChange || (() => {})}
         onClose={quickCreateMeta?.onClose || (() => {})}
         onSubmit={quickCreateMeta?.onSubmit || (() => {})}
@@ -878,12 +937,17 @@ export function AdminRepairCalculationsHubPage() {
           <AdminRepairCalculationsIssuesPanel
             rows={filteredIssues}
             draft={issueDraft}
+            draftIconSlot={issueDraftIconSlot}
+            customIconSlots={customIssueIconSlots}
             typeSelected={Boolean(scope.deviceTypeId)}
             onDraftChange={(value) => setIssueDraft(normalizeTaxonomyDraft(value))}
+            onDraftIconSlotChange={setIssueDraftIconSlot}
             onCreate={() => void createIssue()}
             onRename={(row) => void renameIssue(row)}
             onToggle={(row) => void toggleIssue(row)}
             onDelete={(row) => void deleteIssue(row)}
+            onIconChange={(row, slot) => void changeIssueIcon(row, slot)}
+            onUploadIcon={(seed, file) => uploadIssueIcon(seed, file)}
             openTo={`/admin/tiposreparacion${buildRepairCalculationSearch({
               deviceTypeId: scope.deviceTypeId,
               deviceIssueTypeId: scope.deviceIssueTypeId,

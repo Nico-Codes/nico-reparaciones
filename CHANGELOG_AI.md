@@ -13,6 +13,37 @@
 ---
 
 ### 2026-05-13 - Codex
+- Alcance: compactar la mesa operativa de reparaciones y sumar iconos configurables por falla.
+- Tipo de intervencion: backend, schema, frontend admin, branding e iconografia.
+- Archivos tocados:
+  - `next-stack/apps/api/prisma/schema.prisma`
+  - `next-stack/apps/api/prisma/migrations/20260513140000_add_issue_icon_slots/migration.sql`
+  - `next-stack/apps/api/src/modules/device-catalog/*`
+  - `next-stack/apps/api/src/modules/repairs/repairs-admin.service.ts`
+  - `next-stack/apps/api/src/modules/admin/*`
+  - `next-stack/apps/api/src/modules/store/store.service.ts`
+  - `next-stack/apps/web/src/features/admin/*`
+  - `next-stack/apps/web/src/features/repairs/*`
+  - `next-stack/apps/web/public/icons/repair-issues/*`
+  - `next-stack/apps/web/src/styles/admin.css`
+- ¿Cambio comportamiento funcional?: Si. `/admin/repairs` usa cards compactas en grid y las fallas pueden configurar un `iconSlot` reutilizable desde el hub de calculos/reparaciones.
+- Validaciones ejecutadas:
+  - `db:generate --workspace @nico/api`
+  - `db:migrate --workspace @nico/api`
+  - `typecheck --workspace @nico/api`
+  - `test --workspace @nico/api`
+  - `build --workspace @nico/api`
+  - `typecheck --workspace @nico/web`
+  - `test --workspace @nico/web`
+  - `build --workspace @nico/web`
+  - `smoke:web`
+  - `git diff --check`
+- Riesgos / notas:
+  - Los iconos nuevos para fallas usan el sistema existente de branding/versiones; si una falla no tiene icono manual, se resuelve por nombre y cae a icono generico.
+
+---
+
+### 2026-05-13 - Codex
 - Alcance: corregir `Enter` en busqueda de repuestos durante el alta de reparacion.
 - Tipo de intervencion: UX frontend.
 - Archivos tocados:

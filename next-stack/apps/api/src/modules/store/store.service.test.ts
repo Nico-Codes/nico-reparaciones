@@ -89,6 +89,9 @@ describe('StoreService', () => {
           { key: 'store_hero_image_mobile', value: 'brand-assets/identity/store-hero-mobile.png', updatedAt },
         ]),
       },
+      brandAssetVersion: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
     };
 
     const service = new StoreService(prisma as never);
@@ -326,6 +329,9 @@ describe('StoreService', () => {
       appSetting: {
         findMany: vi.fn().mockResolvedValue([]),
       },
+      brandAssetVersion: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
     };
 
     const service = new StoreService(prisma as never);
@@ -352,6 +358,9 @@ describe('StoreService', () => {
         findMany: vi.fn().mockResolvedValue([
           { key: 'auth_panel_text_color', value: '#AB12CD', updatedAt: new Date('2026-04-20T12:00:00.000Z') },
         ]),
+      },
+      brandAssetVersion: {
+        findMany: vi.fn().mockResolvedValue([]),
       },
     };
 

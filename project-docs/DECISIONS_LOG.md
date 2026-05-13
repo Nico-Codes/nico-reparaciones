@@ -20,6 +20,20 @@ Registrar decisiones tecnicas confirmadas para evitar dependencia de memoria ora
 
 ---
 
+### [DL-0140]
+- Fecha: 2026-05-13
+- Estado: aceptada
+- Tema: iconos configurables por falla y mesa operativa compacta
+- Contexto: la mesa operativa de reparaciones necesitaba mostrar mas reparaciones por pantalla sin perder identificacion rapida. Ademas, las fallas debian tener iconos configurables desde el flujo donde se gestionan tipos, marcas, grupos, modelos y fallas, sin crear un sistema paralelo de assets.
+- Decision: agregar `DeviceIssueType.iconSlot` como referencia opcional a iconos de branding. `/admin/repairs` pasa a un grid compacto de cards, usando el icono configurado o un fallback por nombre de falla. Los slots de fallas usan el sistema existente de `BrandIcon`, `iconsBySlot` y `BrandAssetVersion`; los slots dinamicos seguros `repair_issue_*` pueden subirse, historizarse y reutilizarse.
+- Impacto: la lista de reparaciones muestra 3 cards por fila en desktop y 1 en mobile. El hub `/admin/calculos/reparaciones` permite elegir iconos recomendados, iconos existentes o subir uno nuevo al crear/editar fallas. Branding publico expone tambien slots dinamicos de fallas.
+- Alternativas consideradas: hardcodear iconos por falla solo en frontend o crear una tabla separada de iconos de fallas; descartado porque duplicaba identidad visual y no daba historial/versionado.
+- Archivos / modulos afectados: `next-stack/apps/api/prisma/schema.prisma`, migracion `20260513140000_add_issue_icon_slots`, modulos API `device-catalog`, `repairs`, `admin`, `store`, features Web `admin`, `repairs`, iconos publicos `next-stack/apps/web/public/icons/repair-issues`, `CHANGELOG_AI.md`.
+- Validacion requerida: `db:migrate --workspace @nico/api`, typecheck/test/build API y web, `smoke:web`, `git diff --check`.
+- Responsable: Codex + operador humano
+
+---
+
 ### [DL-0139]
 - Fecha: 2026-05-11
 - Estado: aceptada

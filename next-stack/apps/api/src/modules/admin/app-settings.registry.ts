@@ -205,6 +205,15 @@ export const BRAND_ASSET_SLOTS = {
   icon_settings_hub_security: { settingKey: 'brand_asset.icon_settings_hub_security.path', defaultPath: '', fileBase: 'icon-settings-hub-security', maxKb: 2048, allowedExts: ['svg', 'png', 'jpg', 'jpeg', 'webp'] },
   icon_settings_hub_whatsapp_repairs: { settingKey: 'brand_asset.icon_settings_hub_whatsapp_repairs.path', defaultPath: '', fileBase: 'icon-settings-hub-whatsapp-repairs', maxKb: 2048, allowedExts: ['svg', 'png', 'jpg', 'jpeg', 'webp'] },
   icon_settings_hub_whatsapp_orders: { settingKey: 'brand_asset.icon_settings_hub_whatsapp_orders.path', defaultPath: '', fileBase: 'icon-settings-hub-whatsapp-orders', maxKb: 2048, allowedExts: ['svg', 'png', 'jpg', 'jpeg', 'webp'] },
+  repair_issue_screen: { settingKey: 'brand_asset.repair_issue_screen.path', defaultPath: 'icons/repair-issues/screen.svg', fileBase: 'repair-issue-screen', maxKb: 2048, allowedExts: ['svg', 'png', 'jpg', 'jpeg', 'webp'] },
+  repair_issue_battery: { settingKey: 'brand_asset.repair_issue_battery.path', defaultPath: 'icons/repair-issues/battery.svg', fileBase: 'repair-issue-battery', maxKb: 2048, allowedExts: ['svg', 'png', 'jpg', 'jpeg', 'webp'] },
+  repair_issue_charge: { settingKey: 'brand_asset.repair_issue_charge.path', defaultPath: 'icons/repair-issues/charge.svg', fileBase: 'repair-issue-charge', maxKb: 2048, allowedExts: ['svg', 'png', 'jpg', 'jpeg', 'webp'] },
+  repair_issue_board: { settingKey: 'brand_asset.repair_issue_board.path', defaultPath: 'icons/repair-issues/board.svg', fileBase: 'repair-issue-board', maxKb: 2048, allowedExts: ['svg', 'png', 'jpg', 'jpeg', 'webp'] },
+  repair_issue_camera: { settingKey: 'brand_asset.repair_issue_camera.path', defaultPath: 'icons/repair-issues/camera.svg', fileBase: 'repair-issue-camera', maxKb: 2048, allowedExts: ['svg', 'png', 'jpg', 'jpeg', 'webp'] },
+  repair_issue_audio: { settingKey: 'brand_asset.repair_issue_audio.path', defaultPath: 'icons/repair-issues/audio.svg', fileBase: 'repair-issue-audio', maxKb: 2048, allowedExts: ['svg', 'png', 'jpg', 'jpeg', 'webp'] },
+  repair_issue_software: { settingKey: 'brand_asset.repair_issue_software.path', defaultPath: 'icons/repair-issues/software.svg', fileBase: 'repair-issue-software', maxKb: 2048, allowedExts: ['svg', 'png', 'jpg', 'jpeg', 'webp'] },
+  repair_issue_water: { settingKey: 'brand_asset.repair_issue_water.path', defaultPath: 'icons/repair-issues/water.svg', fileBase: 'repair-issue-water', maxKb: 2048, allowedExts: ['svg', 'png', 'jpg', 'jpeg', 'webp'] },
+  repair_issue_generic: { settingKey: 'brand_asset.repair_issue_generic.path', defaultPath: 'icons/repair-issues/generic.svg', fileBase: 'repair-issue-generic', maxKb: 2048, allowedExts: ['svg', 'png', 'jpg', 'jpeg', 'webp'] },
   icon_settings: { settingKey: 'brand_asset.icon_settings.path', defaultPath: 'icons/v4/settings.svg', fileBase: 'icon-settings', maxKb: 2048, allowedExts: ['svg', 'png', 'jpg', 'jpeg', 'webp'] },
   icon_carrito: { settingKey: 'brand_asset.icon_carrito.path', defaultPath: 'icons/v4/carrito.svg', fileBase: 'icon-carrito', maxKb: 2048, allowedExts: ['svg', 'png', 'jpg', 'jpeg', 'webp'] },
   icon_logout: { settingKey: 'brand_asset.icon_logout.path', defaultPath: 'icons/v4/logout.svg', fileBase: 'icon-logout', maxKb: 2048, allowedExts: ['svg', 'png', 'jpg', 'jpeg', 'webp'] },
@@ -222,3 +231,21 @@ export const BRAND_ASSET_SLOTS = {
   icon_admin_productos: { settingKey: 'brand_asset.icon_admin_productos.path', defaultPath: 'icons/v4/admin-productos.svg', fileBase: 'icon-admin-productos', maxKb: 2048, allowedExts: ['svg', 'png', 'jpg', 'jpeg', 'webp'] },
   logo_principal: { settingKey: 'brand_asset.logo_principal.path', defaultPath: 'brand/logo.png', fileBase: 'logo-principal', maxKb: 4096, allowedExts: ['png', 'jpg', 'jpeg', 'webp', 'svg'] },
 } as const satisfies Record<string, BrandAssetSlotSpec>;
+
+export function isDynamicBrandAssetSlot(slot: string) {
+  return /^repair_issue_[a-z0-9_]{3,80}$/.test(slot);
+}
+
+export function getBrandAssetSlotSpec(slot: string): BrandAssetSlotSpec | null {
+  const staticSpec = BRAND_ASSET_SLOTS[slot as keyof typeof BRAND_ASSET_SLOTS];
+  if (staticSpec) return staticSpec;
+  if (!isDynamicBrandAssetSlot(slot)) return null;
+  const fileBase = slot.replace(/_/g, '-');
+  return {
+    settingKey: `brand_asset.${slot}.path`,
+    defaultPath: '',
+    fileBase,
+    maxKb: 2048,
+    allowedExts: ['svg', 'png', 'jpg', 'jpeg', 'webp'],
+  };
+}

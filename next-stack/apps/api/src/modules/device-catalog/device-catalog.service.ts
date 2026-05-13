@@ -1,6 +1,7 @@
 import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, type DeviceModel } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { normalizeRepairIssueIconSlot } from './repair-issue-icons.js';
 
 @Injectable()
 export class DeviceCatalogService {
@@ -128,13 +129,20 @@ export class DeviceCatalogService {
     });
   }
 
-  async createIssue(input: { deviceTypeId?: string | null; name: string; slug: string; active?: boolean }) {
+  async createIssue(input: { deviceTypeId?: string | null; name: string; slug: string; iconSlot?: string | null; active?: boolean }) {
     const name = this.normalizeCatalogName(input.name);
     const deviceTypeId = this.nullableId(input.deviceTypeId);
+    const iconSlot = this.normalizeIconSlot(input.iconSlot);
     const existing = await this.findEquivalentIssue(deviceTypeId, name);
     if (existing) {
       if ((input.active ?? true) && !existing.active) {
-        return this.prisma.deviceIssueType.update({ where: { id: existing.id }, data: { active: true } });
+        return this.prisma.deviceIssueType.update({
+          where: { id: existing.id },
+          data: { active: true, ...(input.iconSlot !== undefined ? { iconSlot } : {}) },
+        });
+      }
+      if (input.iconSlot !== undefined && iconSlot !== existing.iconSlot) {
+        return this.prisma.deviceIssueType.update({ where: { id: existing.id }, data: { iconSlot } });
       }
       return existing;
     }
@@ -144,15 +152,16 @@ export class DeviceCatalogService {
         deviceTypeId,
         name,
         slug,
+        iconSlot,
         active: input.active ?? true,
       },
     });
   }
 
-  async updateIssue(id: string, input: { deviceTypeId?: string | null; name?: string; slug?: string; active?: boolean }) {
+  async updateIssue(id: string, input: { deviceTypeId?: string | null; name?: string; slug?: string; iconSlot?: string | null; active?: boolean }) {
     const current = await this.prisma.deviceIssueType.findUnique({
       where: { id },
-      select: { id: true, deviceTypeId: true, name: true, slug: true },
+      select: { id: true, deviceTypeId: true, name: true, slug: true, iconSlot: true },
     });
     if (!current) throw new NotFoundException('Falla no encontrada');
     const nextTypeId = input.deviceTypeId !== undefined ? this.nullableId(input.deviceTypeId) : current.deviceTypeId ?? null;
@@ -171,6 +180,7 @@ export class DeviceCatalogService {
         ...(input.deviceTypeId !== undefined ? { deviceTypeId: nextTypeId } : {}),
         ...(input.name != null ? { name: nextName } : {}),
         ...(nextSlug !== undefined ? { slug: nextSlug } : {}),
+        ...(input.iconSlot !== undefined ? { iconSlot: this.normalizeIconSlot(input.iconSlot) } : {}),
         ...(input.active != null ? { active: input.active } : {}),
       },
     });
@@ -211,6 +221,14 @@ export class DeviceCatalogService {
     return v || null;
   }
 
+  private normalizeIconSlot(value?: string | null) {
+    const normalized = normalizeRepairIssueIconSlot(value);
+    if ((value ?? '').trim() && !normalized) {
+      throw new BadRequestException('Icono de falla invalido');
+    }
+    return normalized;
+  }
+
   private normalizeCatalogName(value: string) {
     return value.trim().toUpperCase();
   }
@@ -249,7 +267,7 @@ export class DeviceCatalogService {
     if (!compact) return null;
     const items = await this.prisma.deviceIssueType.findMany({
       where: { deviceTypeId },
-      select: { id: true, deviceTypeId: true, name: true, slug: true, active: true },
+      select: { id: true, deviceTypeId: true, name: true, slug: true, iconSlot: true, active: true },
     });
     return (
       items.find((item) => {

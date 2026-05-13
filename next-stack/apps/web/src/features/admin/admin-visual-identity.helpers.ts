@@ -76,7 +76,16 @@ export type VisualIconName =
   | 'tag'
   | 'banknote'
   | 'message'
-  | 'clipboard';
+  | 'clipboard'
+  | 'issueScreen'
+  | 'issueBattery'
+  | 'issueCharge'
+  | 'issueBoard'
+  | 'issueCamera'
+  | 'issueAudio'
+  | 'issueSoftware'
+  | 'issueWater'
+  | 'issueGeneric';
 
 export type AssetSectionDefinition = {
   title: string;
@@ -497,6 +506,114 @@ export const REPAIR_ICON_ASSETS: AssetCard[] = [
   editableIconAsset('Icono calculadora', 'icon_calculator', 'calculator', 'text-sky-700'),
   editableIconAsset('Icono proteccion/estado', 'icon_shield', 'shield', 'text-emerald-700'),
   editableIconAsset('Icono refrescar', 'icon_refresh', 'refresh', 'text-blue-600'),
+  {
+    title: 'Falla modulo / pantalla',
+    filename: 'icons/repair-issues/screen.svg',
+    slot: 'repair_issue_screen',
+    settingKey: 'brand_asset.repair_issue_screen.path',
+    defaultPath: 'icons/repair-issues/screen.svg',
+    formats: 'SVG, PNG, JPG, JPEG, WEBP',
+    maxKb: 2048,
+    recommendedPx: ICON_RECOMMENDED_SIZE,
+    preview: { kind: 'icon', icon: 'issueScreen', tint: 'text-slate-800' },
+    showReset: true,
+  },
+  {
+    title: 'Falla bateria',
+    filename: 'icons/repair-issues/battery.svg',
+    slot: 'repair_issue_battery',
+    settingKey: 'brand_asset.repair_issue_battery.path',
+    defaultPath: 'icons/repair-issues/battery.svg',
+    formats: 'SVG, PNG, JPG, JPEG, WEBP',
+    maxKb: 2048,
+    recommendedPx: ICON_RECOMMENDED_SIZE,
+    preview: { kind: 'icon', icon: 'issueBattery', tint: 'text-slate-800' },
+    showReset: true,
+  },
+  {
+    title: 'Falla placa de carga',
+    filename: 'icons/repair-issues/charge.svg',
+    slot: 'repair_issue_charge',
+    settingKey: 'brand_asset.repair_issue_charge.path',
+    defaultPath: 'icons/repair-issues/charge.svg',
+    formats: 'SVG, PNG, JPG, JPEG, WEBP',
+    maxKb: 2048,
+    recommendedPx: ICON_RECOMMENDED_SIZE,
+    preview: { kind: 'icon', icon: 'issueCharge', tint: 'text-slate-800' },
+    showReset: true,
+  },
+  {
+    title: 'Falla placa / mother',
+    filename: 'icons/repair-issues/board.svg',
+    slot: 'repair_issue_board',
+    settingKey: 'brand_asset.repair_issue_board.path',
+    defaultPath: 'icons/repair-issues/board.svg',
+    formats: 'SVG, PNG, JPG, JPEG, WEBP',
+    maxKb: 2048,
+    recommendedPx: ICON_RECOMMENDED_SIZE,
+    preview: { kind: 'icon', icon: 'issueBoard', tint: 'text-slate-800' },
+    showReset: true,
+  },
+  {
+    title: 'Falla camara',
+    filename: 'icons/repair-issues/camera.svg',
+    slot: 'repair_issue_camera',
+    settingKey: 'brand_asset.repair_issue_camera.path',
+    defaultPath: 'icons/repair-issues/camera.svg',
+    formats: 'SVG, PNG, JPG, JPEG, WEBP',
+    maxKb: 2048,
+    recommendedPx: ICON_RECOMMENDED_SIZE,
+    preview: { kind: 'icon', icon: 'issueCamera', tint: 'text-slate-800' },
+    showReset: true,
+  },
+  {
+    title: 'Falla audio / parlante',
+    filename: 'icons/repair-issues/audio.svg',
+    slot: 'repair_issue_audio',
+    settingKey: 'brand_asset.repair_issue_audio.path',
+    defaultPath: 'icons/repair-issues/audio.svg',
+    formats: 'SVG, PNG, JPG, JPEG, WEBP',
+    maxKb: 2048,
+    recommendedPx: ICON_RECOMMENDED_SIZE,
+    preview: { kind: 'icon', icon: 'issueAudio', tint: 'text-slate-800' },
+    showReset: true,
+  },
+  {
+    title: 'Falla software',
+    filename: 'icons/repair-issues/software.svg',
+    slot: 'repair_issue_software',
+    settingKey: 'brand_asset.repair_issue_software.path',
+    defaultPath: 'icons/repair-issues/software.svg',
+    formats: 'SVG, PNG, JPG, JPEG, WEBP',
+    maxKb: 2048,
+    recommendedPx: ICON_RECOMMENDED_SIZE,
+    preview: { kind: 'icon', icon: 'issueSoftware', tint: 'text-slate-800' },
+    showReset: true,
+  },
+  {
+    title: 'Falla humedad / agua',
+    filename: 'icons/repair-issues/water.svg',
+    slot: 'repair_issue_water',
+    settingKey: 'brand_asset.repair_issue_water.path',
+    defaultPath: 'icons/repair-issues/water.svg',
+    formats: 'SVG, PNG, JPG, JPEG, WEBP',
+    maxKb: 2048,
+    recommendedPx: ICON_RECOMMENDED_SIZE,
+    preview: { kind: 'icon', icon: 'issueWater', tint: 'text-slate-800' },
+    showReset: true,
+  },
+  {
+    title: 'Falla generica',
+    filename: 'icons/repair-issues/generic.svg',
+    slot: 'repair_issue_generic',
+    settingKey: 'brand_asset.repair_issue_generic.path',
+    defaultPath: 'icons/repair-issues/generic.svg',
+    formats: 'SVG, PNG, JPG, JPEG, WEBP',
+    maxKb: 2048,
+    recommendedPx: ICON_RECOMMENDED_SIZE,
+    preview: { kind: 'icon', icon: 'issueGeneric', tint: 'text-slate-800' },
+    showReset: true,
+  },
 ];
 
 export const ADMIN_ACTION_ICON_ASSETS: AssetCard[] = [
