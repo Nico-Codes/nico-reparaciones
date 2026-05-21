@@ -4,6 +4,14 @@
 
 Definir una metodologia unica y repetible para que Codex trabaje sobre el repo con foco en simplicidad, orden, validacion por impacto y documentacion util.
 
+## Modelo de trabajo IA
+
+- ChatGPT analiza, audita, compara alternativas y decide estrategia cuando hay ambiguedad o riesgo.
+- Codex inspecciona el repo, ejecuta cambios, automatiza pasos seguros, corre validaciones y deja trazabilidad documental.
+- Codex no debe pedir pasos manuales si puede hacerlos de forma segura, reversible y verificable con las herramientas disponibles.
+- Usar MCPs disponibles cuando aporten contexto real, acceso a sistemas conectados, validacion o automatizacion concreta.
+- Seguridad, performance, orden, mantenibilidad y UI/UX son requisitos de aceptacion, no mejoras opcionales.
+
 ## Invariantes del repo
 
 - Tomar `project-docs/` como fuente viva de contexto.
@@ -13,6 +21,17 @@ Definir una metodologia unica y repetible para que Codex trabaje sobre el repo c
 - No crear nuevas fuentes de verdad para assets, env o documentacion.
 
 ## Flujo operativo obligatorio
+
+### 0. Trabajar por etapas
+
+- Dividir trabajos grandes en etapas cerrables con objetivo, alcance, validacion y entregable propio.
+- No mezclar decisiones de arquitectura, cambios funcionales, refactors y deploys en una misma etapa salvo que dependan directamente entre si.
+- Cada etapa debe dejar claro:
+  - que cambia
+  - que no cambia
+  - como se valida
+  - que decision queda pendiente si no se puede cerrar
+- Si una etapa revela deuda inmediata dentro del mismo subdominio, Codex puede ordenar esa zona si reduce riesgo y no cambia el alcance funcional acordado.
 
 ### 1. Clasificar la tarea
 
@@ -58,6 +77,46 @@ Definir una metodologia unica y repetible para que Codex trabaje sobre el repo c
 - Ejecutar checks relevantes al cambio antes de cerrar la tarea.
 - Analizar errores antes de seguir; no taparlos con mas cambios.
 - No asumir que todo requiere QA maxima si el impacto es acotado.
+
+## Cuando abrir un nuevo chat con Codex
+
+- Al empezar una etapa nueva con alcance claro despues de cerrar la anterior.
+- Cuando el contexto acumulado sea demasiado largo y ya exista un resumen operativo suficiente.
+- Cuando se cambia de subdominio principal, por ejemplo de `repairs` a `catalog-admin` o de backend a deploy.
+- Despues de un commit/push aceptado, para que la siguiente tarea parta de un estado limpio.
+- Cuando un bloqueo requiere redefinir alcance con ChatGPT y luego volver a ejecucion.
+
+## Cuando volver a ChatGPT
+
+- Cuando falte una decision de producto, UX, datos, arquitectura, seguridad o costo operativo.
+- Cuando existan dos o mas rutas razonables con impactos distintos.
+- Antes de introducir librerias, servicios externos, cambios de infraestructura o migraciones relevantes.
+- Si una validacion muestra un riesgo que cambia el plan original.
+- Si Codex detecta mezcla con cambios ajenos y no puede separar la tarea sin decision humana.
+
+## Prompts eficientes para Codex
+
+- Incluir ruta del repo, etapa actual, objetivo, restricciones y lista de tareas verificables.
+- Referenciar archivos canonicos por path en vez de pegar documentacion completa cuando el repo ya la contiene.
+- Indicar comandos permitidos y prohibidos si hay restricciones de entorno.
+- Pedir entregables concretos: archivos a tocar, validaciones esperadas, formato de cierre y si se permite commit.
+- Evitar repetir contexto historico que no afecta la etapa actual; basta con decision vigente, rama, estado git y ultima version relevante.
+- Si el cambio es visual, incluir criterios UI/UX concretos y pedir validacion con navegador o `nico-dev.bat` solo cuando aporte senal real.
+
+## Formato de respuesta esperado de Codex
+
+- Resumen corto de lo hecho.
+- Archivos modificados o creados.
+- Comandos ejecutados.
+- Resultado de validacion, incluyendo checks omitidos y motivo.
+- Riesgos, notas o siguiente paso concreto si no queda cerrado.
+- Sugerencia de commit con formato `V1.xxx-DetalleCorto` cuando corresponda, sin commitear si el usuario no lo pidio.
+
+## Formato ANTES/DESPUES
+
+- Usar `ANTES` / `DESPUES` cuando se modifique codigo o documentacion importante y ayude a revisar el cambio sin releer todo el archivo.
+- Mantenerlo breve: describir el comportamiento, regla o estructura antes y despues.
+- No usarlo para cambios triviales donde agregue ruido.
 
 ## Politica de validacion por impacto
 

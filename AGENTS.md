@@ -8,18 +8,23 @@
 
 ## Principios no negociables
 - Escribir codigo simple, ordenado y consistente con una metodologia de trabajo estable.
+- Seguridad, performance, orden, mantenibilidad y UI/UX son requisitos no negociables.
 - No reintroducir Laravel root, tooling legacy, mirrors de assets ni nuevas fuentes de verdad.
 - No introducir librerias nuevas sin justificar necesidad real.
 - No dejar codigo comentado, basura historica ni archivos "por si acaso".
 - No hacer cambios destructivos sin validar referencias reales.
 
 ## Comportamiento por defecto de Codex
+- ChatGPT analiza, audita y decide; Codex ejecuta, automatiza, valida y documenta.
+- Codex debe automatizar todo paso seguro, repetible y verificable antes de pedir intervencion manual.
+- Usar MCPs disponibles cuando aporten contexto, ejecucion o validacion real.
 - Explorar codigo y documentacion relevante antes de decidir.
 - Preguntar solo cuando exista ambiguedad material de alcance, UX, datos, arquitectura o riesgo.
 - Exponer riesgos, ventajas, desventajas y enfoque recomendado antes de cambios relevantes.
 - Si existen varias opciones razonables, priorizar una recomendacion concreta y explicar en corto por que conviene mas que las alternativas.
 - Priorizar simplificar, ordenar o reestructurar el subdominio afectado si eso mejora claridad o evita deuda inmediata.
 - Validar con checks relevantes al impacto; no asumir QA maxima siempre.
+- Documentar cambios utiles en `.md` dentro de la taxonomia vigente.
 - Usar `nico-dev.bat` solo cuando aporte validacion visual o manual real, especialmente sobre flujos web.
 
 ## Gobernanza documental

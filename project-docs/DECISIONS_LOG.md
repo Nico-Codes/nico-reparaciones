@@ -20,6 +20,22 @@ Registrar decisiones tecnicas confirmadas para evitar dependencia de memoria ora
 
 ---
 
+### [DL-0141]
+- Fecha: 2026-05-21
+- Estado: aceptada
+- Tema: Railway todo en uno para el primer deploy
+- Contexto: el stack operativo actual vive en `next-stack/` y combina frontend React/Vite, backend NestJS/Node, PostgreSQL y uploads persistentes. Para el primer deploy conviene reducir la cantidad de proveedores y puntos operativos mientras se valida produccion real.
+- Decision: usar Railway todo en uno para el primer deploy. El frontend React/Vite, el backend NestJS/Node, PostgreSQL y el storage persistente de uploads quedan dentro de Railway. Se usa dominio gratuito Railway inicialmente, auth propia actual, SMTP externo y WhatsApp Cloud API solo si queda configurado.
+- Impacto: el primer deploy prioriza simplicidad operativa, menor cantidad de servicios y menor superficie de configuracion. El backend conserva servidor Node propio, PostgreSQL administrado por Railway y un Railway Volume para uploads en vez de depender del filesystem efimero.
+- Alcance: frontend React/Vite en Railway; backend NestJS/Node en Railway; PostgreSQL Railway; Railway Volume para uploads; dominio gratuito Railway inicialmente; auth propia actual; SMTP externo; WhatsApp si aplica.
+- Alternativas consideradas: Vercel + Supabase, Vercel + Render + Supabase y VPS. Se descartan por ahora porque agregan mas servicios, mas integracion operativa o mas mantenimiento inicial que Railway todo en uno.
+- Condicion futura: se puede migrar a VPS o separar frontend, backend, base de datos y storage mas adelante si el proyecto crece o si Railway deja de ser la opcion mas simple.
+- Archivos / modulos afectados: `AGENTS.md`, `project-docs/WORKFLOW_AI.md`, `project-docs/DECISIONS_LOG.md`, `project-docs/INDEX.md`, `next-stack/docs/INDEX.md`, `next-stack/docs/deploy/RAILWAY_DEPLOY.md`, `CHANGELOG_AI.md`.
+- Validacion requerida: `git diff --check`, `git status`.
+- Responsable: Codex + operador humano
+
+---
+
 ### [DL-0140]
 - Fecha: 2026-05-13
 - Estado: aceptada

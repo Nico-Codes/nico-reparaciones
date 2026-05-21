@@ -12,6 +12,26 @@
 
 ---
 
+### 2026-05-21 - Codex
+- Alcance: documentar metodologia IA y decision de Railway todo en uno para el primer deploy.
+- Tipo de intervencion: gobernanza documental, decision tecnica y runbook operativo.
+- Archivos tocados:
+  - `AGENTS.md`
+  - `project-docs/WORKFLOW_AI.md`
+  - `project-docs/DECISIONS_LOG.md`
+  - `project-docs/INDEX.md`
+  - `next-stack/docs/INDEX.md`
+  - `next-stack/docs/deploy/RAILWAY_DEPLOY.md`
+- ¿Cambio comportamiento funcional?: No.
+- Validaciones ejecutadas:
+  - `git diff --check`
+  - `git status`
+- Riesgos / notas:
+  - No se ejecutaron builds porque el alcance fue solo documentacion.
+  - Antes del deploy real se debe validar que el Railway Volume montado en `WEB_PUBLIC_DIR` sea el mismo origen servido por la API para uploads.
+
+---
+
 ### 2026-05-13 - Codex
 - Alcance: compactar la mesa operativa de reparaciones y sumar iconos configurables por falla.
 - Tipo de intervencion: backend, schema, frontend admin, branding e iconografia.

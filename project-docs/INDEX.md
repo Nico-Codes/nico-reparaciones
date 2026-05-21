@@ -7,6 +7,7 @@
 - `WORKFLOW_AI.md`: metodologia operativa detallada para Codex.
 - `DECISIONS_LOG.md`: decisiones tecnicas y criterios aceptados.
 - `../next-stack/docs/INDEX.md`: runbooks operativos del stack actual.
+- `../next-stack/docs/deploy/RAILWAY_DEPLOY.md`: runbook inicial para deploy Railway todo en uno.
 
 ## Lectura recomendada
 
@@ -20,6 +21,7 @@
 6. `frontend/FRONTEND_MAP.md`
 7. `backend/BACKEND_MAP.md`
 8. `DECISIONS_LOG.md`
+9. `../next-stack/docs/deploy/RAILWAY_DEPLOY.md`
 
 ### Lecturas complementarias
 
@@ -61,6 +63,7 @@
 
 ### Operaciones
 - `operations/WHATSAPP_CLOUD_API_INTEGRATION.md`
+- `../next-stack/docs/deploy/RAILWAY_DEPLOY.md`
 
 ### Planes activos
 - `plans/REPAIR_PROVIDER_PART_PRICING_PLAN.md`
