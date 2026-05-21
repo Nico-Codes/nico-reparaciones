@@ -13,6 +13,23 @@
 ---
 
 ### 2026-05-21 - Codex
+- Alcance: preparar la API para servir uploads persistentes desde Railway Volume.
+- Tipo de intervencion: ajuste backend de resolucion de assets publicos y registro minimo de etapa.
+- Archivos tocados:
+  - `next-stack/apps/api/src/main.ts`
+  - `CHANGELOG_AI.md`
+- ¿Cambio comportamiento funcional?: Si. La API ahora registra todos los directorios publicos existentes, priorizando `WEB_PUBLIC_DIR`/`APP_WEB_PUBLIC_DIR` y manteniendo fallbacks locales.
+- Validaciones ejecutadas:
+  - `npm run typecheck --workspace @nico/api`
+  - `npm run build --workspace @nico/api`
+  - `git diff --check`
+- Riesgos / notas:
+  - No se ejecutaron migraciones ni deploy.
+  - `next-stack/docs/deploy/RAILWAY_DEPLOY.md` ya documentaba `WEB_PUBLIC_DIR=/data/nico-public`, mount path `/data/nico-public` y la advertencia sobre filesystem efimero.
+
+---
+
+### 2026-05-21 - Codex
 - Alcance: documentar metodologia IA y decision de Railway todo en uno para el primer deploy.
 - Tipo de intervencion: gobernanza documental, decision tecnica y runbook operativo.
 - Archivos tocados:

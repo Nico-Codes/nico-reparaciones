@@ -72,14 +72,20 @@ function shouldLogHttpRequests() {
   return isTruthy(explicit);
 }
 
-function resolveWebPublicDir() {
+function resolveWebPublicDirs() {
   const cwd = process.cwd();
+  const envCandidates = [process.env.WEB_PUBLIC_DIR, process.env.APP_WEB_PUBLIC_DIR]
+    .map((value) => (value ?? '').trim())
+    .filter((value): value is string => Boolean(value))
+    .map((value) => path.resolve(value));
+
   const candidates = [
+    ...envCandidates,
     path.resolve(cwd, 'apps/web/public'),
     path.resolve(cwd, '../web/public'),
     path.resolve(cwd, '../../apps/web/public'),
   ];
-  return candidates.find((p) => existsSync(p)) ?? null;
+  return Array.from(new Set(candidates)).filter((p) => existsSync(p));
 }
 
 function setWebPublicAssetCacheHeaders(publicDir: string, res: { setHeader: (name: string, value: string) => void }, filePath: string) {
@@ -250,8 +256,7 @@ async function bootstrap() {
     expressApp.disable('x-powered-by');
   }
   registerSeoRootRoutes(expressApp);
-  const webPublicDir = resolveWebPublicDir();
-  if (webPublicDir) {
+  for (const webPublicDir of resolveWebPublicDirs()) {
     app.useStaticAssets(webPublicDir, {
       index: false,
       setHeaders: (res, filePath) => setWebPublicAssetCacheHeaders(webPublicDir, res, filePath),
